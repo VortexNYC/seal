@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
-import { ROLE_TEMPLATES } from "../../auth/permissions";
+import { ROLE_PERMISSIONS } from "../../auth.utils";
+import { listComponentRolesByOrganization } from "../../lib/componentOrgReads";
+import { ensureVortexAuthSystemRoles } from "../../lib/vortexAuthOrganizations";
 import { createTestContext } from "../../test.setup";
-import { seedSystemRoles } from "../helpers";
 
-describe("seedSystemRoles", () => {
+describe("ensureVortexAuthSystemRoles", () => {
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
 
@@ -24,128 +25,56 @@ describe("seedSystemRoles", () => {
     });
   });
 
-  test("creates 3 system roles (Administrator, Member, Viewer)", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
+  async function seedAndListRoles(orgId = organizationId) {
+    return await t.run(async (ctx) => {
+      await ensureVortexAuthSystemRoles(ctx, orgId);
+      const organization = await ctx.db.get(orgId);
+      if (!organization) {
+        throw new Error("test organization missing");
+      }
+      return await listComponentRolesByOrganization(ctx, organization);
     });
+  }
 
-    const roles = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-        .collect();
-    });
+  test("creates the Vortex Auth system role catalog", async () => {
+    const roles = await seedAndListRoles();
 
-    expect(roles).toHaveLength(3);
-
-    const names = roles.map((r) => r.name).sort();
-    expect(names).toEqual(["Administrator", "Member", "Viewer"]);
+    expect(roles).toHaveLength(Object.keys(ROLE_PERMISSIONS).length);
+    expect(roles.map((role) => role.name).sort()).toEqual(Object.keys(ROLE_PERMISSIONS).sort());
   });
 
-  test("Administrator role has correct permissions from admin template", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
+  test("component roles have the canonical permissions", async () => {
+    const roles = await seedAndListRoles();
 
-    const adminRole = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_name", (q) =>
-          q.eq("organizationId", organizationId).eq("name", "Administrator"),
-        )
-        .first();
-    });
-
-    expect(adminRole).not.toBeNull();
-    expect(adminRole!.permissions).toEqual([...ROLE_TEMPLATES.admin.permissions]);
-  });
-
-  test("Member role has correct permissions from member template", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
-
-    const memberRole = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_name", (q) => q.eq("organizationId", organizationId).eq("name", "Member"))
-        .first();
-    });
-
-    expect(memberRole).not.toBeNull();
-    expect(memberRole!.permissions).toEqual([...ROLE_TEMPLATES.member.permissions]);
-  });
-
-  test("Viewer role has correct permissions from viewer template", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
-
-    const viewerRole = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_name", (q) => q.eq("organizationId", organizationId).eq("name", "Viewer"))
-        .first();
-    });
-
-    expect(viewerRole).not.toBeNull();
-    expect(viewerRole!.permissions).toEqual([...ROLE_TEMPLATES.viewer.permissions]);
-  });
-
-  test("all roles have type 'system'", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
-
-    const roles = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-        .collect();
-    });
-
-    for (const role of roles) {
-      expect(role.type).toBe("system");
+    for (const [name, permissions] of Object.entries(ROLE_PERMISSIONS)) {
+      const role = roles.find((candidate) => candidate.name === name);
+      if (!role) {
+        throw new Error(`missing role: ${name}`);
+      }
+      expect(role.permissions).toEqual(permissions);
+      expect(role.isSystem).toBe(true);
     }
   });
 
-  test("running twice is idempotent (does not create duplicates)", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
+  test("running twice is idempotent", async () => {
+    const first = await seedAndListRoles();
+    const second = await seedAndListRoles();
 
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
-
-    const roles = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-        .collect();
-    });
-
-    expect(roles).toHaveLength(3);
+    expect(second).toHaveLength(first.length);
+    expect(second.map((role) => role.roleId).sort()).toEqual(
+      first.map((role) => role.roleId).sort(),
+    );
   });
 
-  test("roles are created for the correct organizationId", async () => {
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
-
-    const roles = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-        .collect();
-    });
+  test("roles are anchored to the correct Seal organization", async () => {
+    const roles = await seedAndListRoles();
 
     for (const role of roles) {
       expect(role.organizationId).toBe(organizationId);
     }
   });
 
-  test("different orgs get separate roles", async () => {
+  test("different orgs get separate component roles", async () => {
     const otherOrgId = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
         name: "Other Org",
@@ -157,41 +86,16 @@ describe("seedSystemRoles", () => {
       });
     });
 
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, organizationId);
-    });
+    const org1Roles = await seedAndListRoles(organizationId);
+    const org2Roles = await seedAndListRoles(otherOrgId);
 
-    await t.run(async (ctx) => {
-      await seedSystemRoles(ctx.db, otherOrgId);
-    });
-
-    const org1Roles = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-        .collect();
-    });
-
-    const org2Roles = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", otherOrgId))
-        .collect();
-    });
-
-    expect(org1Roles).toHaveLength(3);
-    expect(org2Roles).toHaveLength(3);
-
-    // Verify IDs are distinct between orgs
-    const org1Ids = new Set(org1Roles.map((r) => r._id));
-    const org2Ids = new Set(org2Roles.map((r) => r._id));
-    for (const id of org2Ids) {
-      expect(org1Ids.has(id)).toBe(false);
+    const org1Ids = new Set(org1Roles.map((role) => role.roleId));
+    for (const role of org2Roles) {
+      expect(role.organizationId).toBe(otherOrgId);
+      expect(org1Ids.has(role.roleId)).toBe(false);
     }
-
-    // Both orgs have the same role names
-    const org1Names = org1Roles.map((r) => r.name).sort();
-    const org2Names = org2Roles.map((r) => r.name).sort();
-    expect(org1Names).toEqual(org2Names);
+    expect(org2Roles.map((role) => role.name).sort()).toEqual(
+      org1Roles.map((role) => role.name).sort(),
+    );
   });
 });

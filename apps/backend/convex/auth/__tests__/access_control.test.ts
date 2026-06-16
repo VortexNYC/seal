@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+import { seedTestOrganizationMember } from "../../testVortexAuth";
 import {
   ACCESS_ERRORS,
   canManageDocument,
@@ -80,19 +81,17 @@ describe("access_control", () => {
 
     // Add owner and otherUser as active org members
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: ownerId,
         organizationId,
         role: "owner",
         status: "active",
-        isPrimary: true,
       });
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: otherUserId,
         organizationId,
         role: "member",
         status: "active",
-        isPrimary: false,
       });
     });
 
@@ -345,12 +344,11 @@ describe("access_control", () => {
           locale: "en-US",
           activeOrganizationId: organizationId,
         });
-        await ctx.db.insert("organization_members", {
+        await seedTestOrganizationMember(ctx, {
           userId: uid,
           organizationId,
           role: "member",
-          status: "inactive",
-          isPrimary: false,
+          status: "suspended",
         });
         return uid;
       });
@@ -611,12 +609,11 @@ describe("access_control", () => {
           locale: "en-US",
           activeOrganizationId: organizationId,
         });
-        await ctx.db.insert("organization_members", {
+        await seedTestOrganizationMember(ctx, {
           userId: uid,
           organizationId,
           role: "member",
-          status: "inactive",
-          isPrimary: false,
+          status: "suspended",
         });
         return uid;
       });

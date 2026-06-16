@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
+import { seedTestOrganizationMember } from "../testVortexAuth";
 
 describe("Payment field queries", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -39,12 +40,11 @@ describe("Payment field queries", () => {
     });
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: ownerId,
         organizationId,
         role: "owner",
         status: "active",
-        isPrimary: true,
       });
     });
 

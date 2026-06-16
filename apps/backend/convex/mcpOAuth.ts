@@ -19,7 +19,7 @@ import {
   type OAuthAuthorizationServerMetadata,
   type OAuthProtectedResourceMetadata,
   type PkcePair,
-} from "@plasmapos/vortex-auth/mcp";
+} from "@plasmapos/auth/mcp";
 
 import {
   API_SCOPES,

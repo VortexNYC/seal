@@ -15,6 +15,7 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import { logDocumentAction } from "../audit_logs/helpers";
+import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
 import { findFirstIncompleteGroup } from "./recipient_helpers";
@@ -46,7 +47,7 @@ type ExpirationPeriod = {
   unit: "day" | "week" | "month";
 };
 
-type DocumentMutationCtx = Pick<MutationCtx, "db">;
+type DocumentMutationCtx = Pick<MutationCtx, "db" | "runQuery">;
 
 type MarkDocumentAsSentArgs = {
   documentId: Id<"documents">;
@@ -311,12 +312,10 @@ async function syncRecipientAccess(
     return false;
   }
 
-  const orgMember = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", existingUser._id).eq("organizationId", document.organizationId),
-    )
-    .first();
+  const organization = await ctx.db.get(document.organizationId);
+  const orgMember = organization
+    ? await resolveComponentMembershipForOrganization(ctx, existingUser, organization)
+    : null;
 
   let grantedAccess = false;
   if (orgMember?.status === "active") {

@@ -10,7 +10,7 @@ import rateLimiter from "@convex-dev/rate-limiter/convex.config";
 import resend from "@convex-dev/resend/convex.config";
 import workflow from "@convex-dev/workflow/convex.config";
 import workpool from "@convex-dev/workpool/convex.config";
-import vortexAuth from "@plasmapos/vortex-auth/convex.config.js";
+import vortexAuth from "@plasmapos/auth/convex.config.js";
 import timeline from "convex-timeline/convex.config";
 import { defineApp } from "convex/server";
 

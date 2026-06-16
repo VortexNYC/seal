@@ -36,7 +36,7 @@ import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { RoleSelector } from "./role-selector";
 
 interface Member {
-  id: Id<"organization_members">;
+  id: string;
   userId: Id<"users">;
   name: string | null;
   email: string;

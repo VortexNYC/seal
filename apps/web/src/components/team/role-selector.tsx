@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 
 interface RoleSelectorProps {
-  memberId: Id<"organization_members">;
+  memberId: string;
   currentRole: "system" | "owner" | "admin" | "member" | "viewer";
   organizationId: Id<"organizations">;
 }

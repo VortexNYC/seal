@@ -20,7 +20,11 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { listComponentInvitationsByOrganization } from "./lib/componentOrgReads";
+import {
+  listComponentInvitationsByOrganization,
+  listComponentMembersByOrganization,
+  resolveComponentMembershipForOrganization,
+} from "./lib/componentOrgReads";
 import { setVortexAuthInvitationStatus } from "./lib/vortexAuthOrganizations";
 import { getOrCreateStripeCustomer } from "./stripe/helpers";
 
@@ -55,12 +59,11 @@ async function resolveE2eDocumentOwner(
       throw new Error(`e2e_owner_auth_subject_not_found: ${ownerAuthSubject}`);
     }
 
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", owner._id).eq("organizationId", organizationId),
-      )
-      .first();
+    const organization = await ctx.db.get(organizationId);
+    if (!organization) {
+      throw new Error(`e2e_organization_not_found: ${organizationId}`);
+    }
+    const membership = await resolveComponentMembershipForOrganization(ctx, owner, organization);
 
     if (membership?.status !== "active") {
       throw new Error(`e2e_owner_auth_subject_not_active_member: ${ownerAuthSubject}`);
@@ -80,12 +83,11 @@ async function resolveE2eDocumentOwner(
     }
 
     for (const owner of owners) {
-      const membership = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user_organization", (q) =>
-          q.eq("userId", owner._id).eq("organizationId", organizationId),
-        )
-        .first();
+      const organization = await ctx.db.get(organizationId);
+      if (!organization) {
+        throw new Error(`e2e_organization_not_found: ${organizationId}`);
+      }
+      const membership = await resolveComponentMembershipForOrganization(ctx, owner, organization);
 
       if (membership?.status === "active") {
         return owner;
@@ -95,18 +97,20 @@ async function resolveE2eDocumentOwner(
     throw new Error(`e2e_owner_not_active_member: ${ownerEmail}`);
   }
 
-  const activeMember = await ctx.db
-    .query("organization_members")
-    .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active"),
-    )
-    .first();
+  const organization = await ctx.db.get(organizationId);
+  if (!organization) {
+    throw new Error(`e2e_organization_not_found: ${organizationId}`);
+  }
+  const activeMember = (
+    await listComponentMembersByOrganization(ctx, organization, { status: "active" })
+  ).find((member) => member.userId !== null);
 
-  if (!activeMember) {
+  if (!activeMember?.userId) {
     throw new Error(`no_active_member_found_for_org: ${organizationId}`);
   }
 
-  const owner = await ctx.db.get(activeMember.userId);
+  const ownerUserId = activeMember.userId;
+  const owner = await ctx.db.get(ownerUserId);
   if (!owner) {
     throw new Error(`member_user_not_found_for_org: ${organizationId}`);
   }
@@ -290,6 +294,7 @@ export const purgeE2EPendingInvitations = mutation({
 
     for (const invitation of toRevoke) {
       await setVortexAuthInvitationStatus(ctx, {
+        organizationId: invitation.organizationId,
         invitationId: invitation._id,
         status: "revoked",
       });

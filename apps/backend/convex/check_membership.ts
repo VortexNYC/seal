@@ -6,6 +6,7 @@
 import { ConvexError } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { resolveComponentMemberships } from "./lib/componentOrgReads";
 
 /**
  * Check if current user has any organization memberships
@@ -37,11 +38,8 @@ export const hasOrganization = query({
       return { hasOrganization: false, userId: null, needsActiveOrgFix: false };
     }
 
-    // Check if user has any organization memberships
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .first();
+    const memberships = await resolveComponentMemberships(ctx, user);
+    const membership = memberships[0] ?? null;
 
     let activeOrganizationId = user.activeOrganizationId ?? null;
     let activeOrganizationSlug: string | null = null;
@@ -113,10 +111,8 @@ export const ensureActiveOrganization = mutation({
     }
 
     // Find user's first membership
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .first();
+    const memberships = await resolveComponentMemberships(ctx, user);
+    const membership = memberships[0] ?? null;
 
     if (!membership) {
       return { success: false, reason: "No organization memberships found" };
@@ -161,10 +157,7 @@ export const listUserOrganizations = query({
       return [];
     }
 
-    const memberships = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+    const memberships = await resolveComponentMemberships(ctx, user);
 
     const organizations = await Promise.all(
       memberships.map(async (membership) => {

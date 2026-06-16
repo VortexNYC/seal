@@ -21,7 +21,7 @@ const FAKE_DOC_ID = "fake_doc" as Id<"documents">;
 const FAKE_ORG_ID = "fake_org" as Id<"organizations">;
 
 type Member = {
-  id: Id<"organization_members">;
+  id: string;
   email: string;
   name: string | undefined;
   avatarUrl: string | null;
@@ -30,7 +30,7 @@ type Member = {
 
 function makeMembers(overrides: Partial<Member>[] = []): Member[] {
   return overrides.map((o, i) => ({
-    id: `member_${i}` as Id<"organization_members">,
+    id: `member_${i}`,
     email: `member${i}@example.com`,
     name: `Member ${i}`,
     avatarUrl: null,
@@ -422,7 +422,7 @@ describe("AddRecipientDialog", () => {
       // Achieved by setting name to empty string via member override
       const members = [
         {
-          id: "member_0" as Id<"organization_members">,
+          id: "member_0",
           email: "test@example.com",
           name: "",
           avatarUrl: null,

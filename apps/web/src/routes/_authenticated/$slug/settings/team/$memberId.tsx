@@ -48,7 +48,7 @@ function MemberDetails() {
     orgId && memberId
       ? {
           organizationId: orgId,
-          memberId: memberId as Id<"organization_members">,
+          memberId,
         }
       : "skip",
   );
@@ -61,7 +61,7 @@ function MemberDetails() {
     setIsRemoving(true);
     try {
       await removeMember({
-        memberId: memberId as Id<"organization_members">,
+        memberId,
       });
 
       toast.success("Member removed successfully");

@@ -1,4 +1,4 @@
-import { createConvexAuthConfig } from "@plasmapos/vortex-auth/better-auth/server";
+import { createConvexAuthConfig } from "@plasmapos/auth/better-auth/server";
 
 // Single-origin Better-Auth provider: this deployment signs AND validates
 // its own tokens, issuer derived from CONVEX_SITE_URL (set by Convex on

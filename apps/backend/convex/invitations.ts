@@ -5,7 +5,7 @@
  * emailed, only its sha256 hash is stored. Acceptance materializes a
  * component membership.
  */
-import { createOrganizationInvitationEmailDraft } from "@plasmapos/vortex-auth/convex";
+import { createOrganizationInvitationEmailDraft } from "@plasmapos/auth/convex";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -178,6 +178,7 @@ export const revokeInvitation = mutation({
       throw new ConvexError("Invitation not found in this organization");
     }
     await setVortexAuthInvitationStatus(ctx, {
+      organizationId: auth.organization._id,
       invitationId: args.invitationId,
       status: "revoked",
     });
@@ -235,6 +236,7 @@ export const redeemInvitation = mutation({
     }
     if (invitation.expiresAt < Date.now()) {
       await setVortexAuthInvitationStatus(ctx, {
+        organizationId: invitation.organizationId,
         invitationId: invitation._id,
         status: "expired",
       });
@@ -251,6 +253,7 @@ export const redeemInvitation = mutation({
       acceptedAt: now,
     });
     await setVortexAuthInvitationStatus(ctx, {
+      organizationId: invitation.organizationId,
       invitationId: invitation._id,
       status: "accepted",
       acceptedByUserId: user._id,

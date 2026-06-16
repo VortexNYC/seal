@@ -8,7 +8,7 @@ import {
   createApiKeySecret,
   formatApiKeyToken,
   hashApiKeySecret,
-} from "@plasmapos/vortex-auth/convex";
+} from "@plasmapos/auth/convex";
 import { ConvexError, v } from "convex/values";
 
 import { internalQuery, mutation, query } from "../_generated/server";
@@ -138,7 +138,10 @@ export const revokeApiKey = mutation({
     if (!keys.some((k) => k._id === args.apiKeyId)) {
       throw new ConvexError("API key not found in this organization");
     }
-    await revokeVortexAuthApiKey(ctx, args.apiKeyId);
+    await revokeVortexAuthApiKey(ctx, {
+      apiKeyId: args.apiKeyId,
+      organizationId: auth.organization._id,
+    });
     return { success: true };
   },
 });

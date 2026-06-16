@@ -10,6 +10,12 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
+import { ROLE_PERMISSIONS } from "../auth.utils";
+import {
+  listComponentMembersByOrganization,
+  resolveComponentMemberships,
+  resolveComponentMembershipForOrganization,
+} from "../lib/componentOrgReads";
 
 /**
  * Get membership for user in organization.
@@ -26,12 +32,25 @@ export const getMembership = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    return ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first();
+    const [user, organization] = await Promise.all([
+      ctx.db.get(args.userId),
+      ctx.db.get(args.organizationId),
+    ]);
+    if (!user || !organization) {
+      return null;
+    }
+    const membership = await resolveComponentMembershipForOrganization(ctx, user, organization);
+    if (!membership) {
+      return null;
+    }
+    return {
+      userId: args.userId,
+      organizationId: args.organizationId,
+      role: membership.role,
+      status: membership.status,
+      permissions: ROLE_PERMISSIONS[membership.role] ?? [],
+      isPrimary: user.activeOrganizationId === args.organizationId,
+    };
   },
 });
 
@@ -69,29 +88,22 @@ export const getUserPermissions = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
+    const [user, organization] = await Promise.all([
+      ctx.db.get(args.userId),
+      ctx.db.get(args.organizationId),
+    ]);
+    if (!user || !organization) {
+      return null;
+    }
+    const membership = await resolveComponentMembershipForOrganization(ctx, user, organization);
     if (!membership || membership.status !== "active") {
       return null;
     }
 
-    // Get role permissions
-    const role = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_name", (q) =>
-        q.eq("organizationId", args.organizationId).eq("name", membership.role),
-      )
-      .first();
-
     return {
       role: membership.role,
-      permissions: role?.permissions ?? [],
-      isPrimary: membership.isPrimary ?? false,
+      permissions: ROLE_PERMISSIONS[membership.role] ?? [],
+      isPrimary: user.activeOrganizationId === args.organizationId,
     };
   },
 });
@@ -110,40 +122,25 @@ export const getUserPermissions = internalQuery({
 export const getOrganizationOwner = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    // First, try to find primary member (owner)
-    const primaryMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .filter((q) => q.eq(q.field("isPrimary"), true))
-      .first();
-
-    if (primaryMembership) {
-      return ctx.db.get(primaryMembership.userId);
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      return null;
     }
 
-    // Fallback: find any active owner-role member
-    const ownerMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization_role", (q) =>
-        q.eq("organizationId", args.organizationId).eq("role", "owner"),
-      )
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
+    const members = await listComponentMembersByOrganization(ctx, organization);
+    const ownerMembership = members.find(
+      (member) => member.role === "owner" && member.status === "active" && member.userId,
+    );
 
-    if (ownerMembership) {
+    if (ownerMembership?.userId) {
       return ctx.db.get(ownerMembership.userId);
     }
 
-    // Last fallback: find any active admin member
-    const adminMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization_role", (q) =>
-        q.eq("organizationId", args.organizationId).eq("role", "admin"),
-      )
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
+    const adminMembership = members.find(
+      (member) => member.role === "admin" && member.status === "active" && member.userId,
+    );
 
-    if (!adminMembership) {
+    if (!adminMembership?.userId) {
       return null;
     }
 
@@ -194,11 +191,11 @@ export const getDocumentForApi = internalQuery({
 export const getUserOrganizationMemberships = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const memberships = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    const memberships = await resolveComponentMemberships(ctx, user);
 
     // Fetch organization details for each membership
     const membershipsWithOrgs = await Promise.all(
@@ -206,6 +203,7 @@ export const getUserOrganizationMemberships = internalQuery({
         const org = await ctx.db.get(membership.organizationId);
         return {
           ...membership,
+          userId: args.userId,
           organization: org,
         };
       }),

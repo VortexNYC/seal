@@ -43,6 +43,38 @@
     },
     "//#clean": {
       "cache": false
+    },
+    "repo:check": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "react:doctor": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "react:doctor:full": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "check:preferred-stack": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "convex:insights": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "convex:insights:prod": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "auth:check": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "auth:preflight": {
+      "dependsOn": [],
+      "outputs": []
     }
   },
   "globalEnv": [

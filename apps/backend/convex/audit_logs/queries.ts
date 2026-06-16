@@ -210,27 +210,11 @@ export const getOrganizationAuditLogs = authQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.auth.user._id;
-
-    // 1. Verify user is an admin of the organization
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    if (!member || member.status !== "active") {
+    if (ctx.auth.organization._id !== args.organizationId || ctx.auth.member.status !== "active") {
       throw new ConvexError("You are not a member of this organization");
     }
 
-    // Get role to check if admin (roleId may be undefined for some members)
-    if (member.roleId) {
-      const role = await ctx.db.get(member.roleId);
-      if (!role || role.name !== "admin") {
-        throw new ConvexError("Only admins can view organization audit logs");
-      }
-    } else {
+    if (!["owner", "admin"].includes(ctx.auth.member.role)) {
       throw new ConvexError("Only admins can view organization audit logs");
     }
 

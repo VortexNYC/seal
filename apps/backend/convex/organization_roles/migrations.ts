@@ -6,7 +6,7 @@
 import { v } from "convex/values";
 
 import { internalMutation } from "../_generated/server";
-import { seedSystemRoles } from "./helpers";
+import { ensureVortexAuthSystemRoles } from "../lib/vortexAuthOrganizations";
 
 /**
  * Seed system roles for all existing organizations
@@ -29,33 +29,18 @@ export const seedAllOrganizations = internalMutation({
     const organizations = [...activeOrganizations, ...inactiveOrganizations];
 
     let seededCount = 0;
-    let skippedCount = 0;
 
     for (const org of organizations) {
-      // Check if organization already has roles
-      const existingRoles = await ctx.db
-        .query("organization_roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .collect();
-
-      if (existingRoles.length === 0) {
-        // Seed roles for this organization
-        await seedSystemRoles(ctx.db, org._id);
-        seededCount++;
-        console.info(`Seeded roles for organization: ${org.name} (${org._id})`);
-      } else {
-        skippedCount++;
-        console.info(
-          `Skipped organization: ${org.name} (${org._id}) - already has ${existingRoles.length} roles`,
-        );
-      }
+      await ensureVortexAuthSystemRoles(ctx, org._id);
+      seededCount++;
+      console.info(`Seeded component roles for organization: ${org.name} (${org._id})`);
     }
 
     return {
       success: true,
       totalOrganizations: organizations.length,
       seeded: seededCount,
-      skipped: skippedCount,
+      skipped: 0,
     };
   },
 });
@@ -78,30 +63,11 @@ export const seedOrganization = internalMutation({
       throw new Error(`Organization not found: ${args.organizationId}`);
     }
 
-    // Check if organization already has roles
-    const existingRoles = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .collect();
-
-    if (existingRoles.length > 0) {
-      return {
-        success: false,
-        message: `Organization already has ${existingRoles.length} roles`,
-        existingRoles: existingRoles.map((r) => ({
-          id: r._id,
-          name: r.name,
-          type: r.type,
-        })),
-      };
-    }
-
-    // Seed roles for this organization
-    await seedSystemRoles(ctx.db, args.organizationId);
+    await ensureVortexAuthSystemRoles(ctx, args.organizationId);
 
     return {
       success: true,
-      message: `Successfully seeded roles for organization: ${org.name}`,
+      message: `Successfully seeded component roles for organization: ${org.name}`,
     };
   },
 });

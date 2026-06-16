@@ -20,7 +20,7 @@
 import {
   createBetterAuthApiTokenVerifierFromConvexAuthConfig,
   createConvexAuthConfig,
-} from "@plasmapos/vortex-auth/better-auth";
+} from "@plasmapos/auth/better-auth";
 import {
   ApiAuthError,
   createConvexApiAuthLookupAdapter,
@@ -29,7 +29,7 @@ import {
   resolveAuthorizedApiAuthContext,
   resolveLinkedBetterAuthMcpSession,
   resolveStoredApiKeyCredential,
-} from "@plasmapos/vortex-auth/convex";
+} from "@plasmapos/auth/convex";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -609,7 +609,9 @@ function getBetterAuthRuntime(): BetterAuthRuntime {
 
   betterAuthRuntime = {
     issuer: provider.issuer,
-    verifier: createBetterAuthApiTokenVerifierFromConvexAuthConfig(provider),
+    verifier: createBetterAuthApiTokenVerifierFromConvexAuthConfig(provider, {
+      audience: MCP_OAUTH_AUDIENCE,
+    }),
   };
 
   return betterAuthRuntime;

@@ -9,10 +9,11 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { permissionMutation } from "../auth";
+import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
-type WorkflowMutationDbCtx = Pick<MutationCtx, "db">;
+type WorkflowMutationDbCtx = Pick<MutationCtx, "db" | "runQuery">;
 type WorkflowMutationSchedulerCtx = Pick<MutationCtx, "db" | "scheduler">;
 
 function isRecipientFinished(status: Doc<"document_recipients">["status"]): boolean {
@@ -65,12 +66,10 @@ async function shareDocumentWithRecipientUsers(
       continue;
     }
 
-    const orgMember = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", existingUser._id).eq("organizationId", document.organizationId),
-      )
-      .first();
+    const organization = await ctx.db.get(document.organizationId);
+    const orgMember = organization
+      ? await resolveComponentMembershipForOrganization(ctx, existingUser, organization)
+      : null;
 
     if (orgMember && orgMember.status === "active") {
       const existingAccess = await ctx.db

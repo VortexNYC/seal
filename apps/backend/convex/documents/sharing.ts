@@ -16,9 +16,10 @@ import {
   requireManageAccess,
   requireOwnership,
 } from "../auth/access_control";
+import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { createNotification } from "../notifications";
 
-type SharingQueryDbCtx = Pick<QueryCtx, "db">;
+type SharingQueryDbCtx = Pick<QueryCtx, "db" | "runQuery">;
 
 async function canViewSharedDocument(
   ctx: SharingQueryDbCtx,
@@ -30,12 +31,7 @@ async function canViewSharedDocument(
   }
 
   if (document.sharingMode === "workspace") {
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", document.organizationId),
-      )
-      .first();
+    const member = await getActiveMembership(ctx, userId, document.organizationId);
 
     if (member !== null && isAccountValid(member)) {
       return true;
@@ -202,12 +198,7 @@ export const grantAccess = permissionMutation("documents:share")({
       );
     }
 
-    const targetMember = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", document.organizationId),
-      )
-      .first();
+    const targetMember = await getActiveMembership(ctx, args.userId, document.organizationId);
 
     if (!targetMember || targetMember.status !== "active") {
       throw new ConvexError("User is not an active member of this organization");
@@ -323,12 +314,7 @@ export const grantAccessBulk = permissionMutation("documents:share")({
         continue;
       }
 
-      const targetMember = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user_organization", (q) =>
-          q.eq("userId", userId).eq("organizationId", document.organizationId),
-        )
-        .first();
+      const targetMember = await getActiveMembership(ctx, userId, document.organizationId);
 
       if (!targetMember || targetMember.status !== "active") {
         skipped++;
@@ -541,12 +527,7 @@ export const transferOwnership = permissionMutation("documents:share")({
     const document = await getDocumentOrThrow(ctx, args.documentId);
     requireOwnership(currentUserId, document, ACCESS_ERRORS.OWNER_REQUIRED);
 
-    const newOwnerMember = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.newOwnerId).eq("organizationId", document.organizationId),
-      )
-      .first();
+    const newOwnerMember = await getActiveMembership(ctx, args.newOwnerId, document.organizationId);
 
     if (!newOwnerMember || newOwnerMember.status !== "active") {
       throw new ConvexError("New owner must be an active member of this organization");
@@ -663,13 +644,13 @@ export const getShareableMembers = authQuery({
       return [];
     }
 
-    // 3. Get all organization members
-    const members = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", document.organizationId))
-      .collect();
-
-    const activeMembers = members.filter((m) => m.status === "active");
+    const organization = await ctx.db.get(document.organizationId);
+    if (!organization) {
+      return [];
+    }
+    const activeMembers = await listComponentMembersByOrganization(ctx, organization, {
+      status: "active",
+    });
 
     // 4. Get existing access records to mark already-shared members
     const accessRecords = await ctx.db
@@ -686,6 +667,9 @@ export const getShareableMembers = authQuery({
     // 5. Get user details for each member
     const shareableMembers = await Promise.all(
       activeMembers.map(async (member) => {
+        if (!member.userId) {
+          return null;
+        }
         const user = await ctx.db.get(member.userId);
         const isOwner = member.userId === document.ownerId;
         const existingAccess = activeAccessMap.get(member.userId.toString());
@@ -703,10 +687,12 @@ export const getShareableMembers = authQuery({
     );
 
     // Sort: owner first, then by name
-    return shareableMembers.sort((a, b) => {
-      if (a.isOwner) return -1;
-      if (b.isOwner) return 1;
-      return (a.name ?? a.email).localeCompare(b.name ?? b.email);
-    });
+    return shareableMembers
+      .filter((member) => member !== null)
+      .sort((a, b) => {
+        if (a.isOwner) return -1;
+        if (b.isOwner) return 1;
+        return (a.name ?? a.email).localeCompare(b.name ?? b.email);
+      });
   },
 });

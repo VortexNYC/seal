@@ -4,6 +4,7 @@
  */
 
 import { internalQuery } from "../_generated/server";
+import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 
 /**
  * Get the first organization and its owner for eval testing.
@@ -14,11 +15,8 @@ export const getTestOrganization = internalQuery({
     const org = await ctx.db.query("organizations").first();
     if (!org) return null;
 
-    // Find the org owner (first member)
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-      .first();
+    const members = await listComponentMembersByOrganization(ctx, org);
+    const member = members.find((m) => m.userId !== null);
 
     return {
       organizationId: org._id,

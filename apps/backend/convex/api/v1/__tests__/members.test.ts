@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { internal } from "../../../_generated/api";
 import type { Id } from "../../../_generated/dataModel";
 import { createTestContext } from "../../../test.setup";
+import { seedTestOrganizationMember } from "../../../testVortexAuth";
 
 describe("api/v1/members", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -11,9 +12,9 @@ describe("api/v1/members", () => {
   let ownerId: Id<"users">;
   let adminId: Id<"users">;
   let memberId: Id<"users">;
-  let ownerMemberId: Id<"organization_members">;
-  let adminMemberId: Id<"organization_members">;
-  let _regularMemberId: Id<"organization_members">;
+  let ownerMemberId: string;
+  let adminMemberId: string;
+  let _regularMemberId: string;
 
   beforeEach(async () => {
     t = createTestContext();
@@ -77,32 +78,29 @@ describe("api/v1/members", () => {
     });
 
     ownerMemberId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organization_members", {
+      return await seedTestOrganizationMember(ctx, {
         userId: ownerId,
         organizationId,
         role: "owner",
         status: "active",
-        isPrimary: true,
       });
     });
 
     adminMemberId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organization_members", {
+      return await seedTestOrganizationMember(ctx, {
         userId: adminId,
         organizationId,
         role: "admin",
         status: "active",
-        isPrimary: false,
       });
     });
 
     _regularMemberId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organization_members", {
+      return await seedTestOrganizationMember(ctx, {
         userId: memberId,
         organizationId,
         role: "member",
         status: "active",
-        isPrimary: false,
       });
     });
   });
@@ -175,12 +173,11 @@ describe("api/v1/members", () => {
         });
       });
       await t.run(async (ctx) => {
-        await ctx.db.insert("organization_members", {
+        await seedTestOrganizationMember(ctx, {
           userId: systemUserId,
           organizationId,
           role: "system",
           status: "active",
-          isPrimary: false,
         });
       });
 
@@ -265,7 +262,10 @@ describe("api/v1/members", () => {
       });
 
       expect(result?.joined_at).toBeDefined();
-      expect(new Date(result!.joined_at).toISOString()).toBe(result!.joined_at);
+      if (!result?.joined_at) {
+        throw new Error("joined_at missing");
+      }
+      expect(new Date(result.joined_at).toISOString()).toBe(result.joined_at);
     });
   });
 });

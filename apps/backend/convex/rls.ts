@@ -13,6 +13,7 @@ import type { Rules } from "convex-helpers/server/rowLevelSecurity";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { getAuthContextWithPermissions } from "./auth/auth.permissions";
+import { resolveComponentMembershipForOrganization } from "./lib/componentOrgReads";
 import type { RecipientRole } from "./schemas/document_recipients";
 
 /**
@@ -155,12 +156,13 @@ function getUserManagementRules(
         if (doc._id === rlsCtx.userId) return true;
         const currentOrgId = rlsCtx.orgId;
         if (rlsCtx.hasPermission("users:view") && currentOrgId) {
-          const membership = await ctx.db
-            .query("organization_members")
-            .withIndex("by_user_organization", (q) =>
-              q.eq("userId", doc._id).eq("organizationId", currentOrgId),
-            )
-            .first();
+          const organization = await ctx.db.get(currentOrgId);
+          if (!organization) return false;
+          const membership = await resolveComponentMembershipForOrganization(
+            ctx,
+            doc,
+            organization,
+          );
           return membership !== null && membership.status === "active";
         }
         return false;
@@ -205,10 +207,7 @@ function getUserManagementRules(
 function getOrganizationManagementRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null,
-): Pick<
-  StrictRules,
-  "organizations" | "organization_members" | "organization_invitations" | "organization_roles"
-> {
+): Pick<StrictRules, "organizations"> {
   return {
     organizations: {
       read: async (_queryCtx, doc) => {
@@ -221,49 +220,6 @@ function getOrganizationManagementRules(
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc._id) return false;
         return rlsCtx.hasPermission("organization:manage");
-      },
-    },
-    organization_members: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.userId === rlsCtx.userId) return true;
-        return rlsCtx.orgId === doc.organizationId;
-      },
-      modify: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (rlsCtx.orgId !== doc.organizationId) return false;
-        if (rlsCtx.isOwner) return true;
-        return rlsCtx.isAdmin && doc.role !== "owner";
-      },
-    },
-    organization_invitations: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (rlsCtx.orgId === doc.organizationId) return true;
-        return doc.invitedBy === rlsCtx.userId;
-      },
-      modify: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (rlsCtx.orgId !== doc.organizationId) return false;
-        if (doc.invitedBy === rlsCtx.userId) return true;
-        return rlsCtx.isAdmin;
-      },
-    },
-    organization_roles: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return rlsCtx.orgId === doc.organizationId;
-      },
-      modify: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (rlsCtx.orgId !== doc.organizationId) return false;
-        return rlsCtx.hasPermission("users:roles");
       },
     },
   };

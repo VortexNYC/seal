@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
+import { seedTestOrganizationMember } from "../testVortexAuth";
 
 /**
  * Shared test data factory for payment field tests.
@@ -55,12 +56,11 @@ describe("Payment field mutations", () => {
     });
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: ownerId,
         organizationId,
         role: "owner",
         status: "active",
-        isPrimary: true,
       });
     });
 

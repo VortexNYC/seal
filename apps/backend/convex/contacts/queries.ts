@@ -22,10 +22,11 @@ export const list = permissionQuery("contacts:view")({
     const organizationId = ctx.auth.organization._id;
 
     if (args.status) {
+      const status = args.status;
       return await ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
-          q.eq("organizationId", organizationId).eq("status", args.status!),
+          q.eq("organizationId", organizationId).eq("status", status),
         )
         .order("desc")
         .collect();

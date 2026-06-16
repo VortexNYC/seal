@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-React 19 SPA using TanStack Router (file-based) + Vite, with Better-Auth (via @plasmapos/vortex-auth) and Convex data.
+React 19 SPA using TanStack Router (file-based) + Vite, with Better-Auth through Vortex Auth (`@plasmapos/auth`) and Convex data.
 
 ## STRUCTURE
 

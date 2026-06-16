@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../../_generated/server";
+import { listComponentMembersByOrganization } from "../../lib/componentOrgReads";
 
 export interface ApiAccountInfo {
   /** Organization name */
@@ -66,11 +67,7 @@ export const getAccountInfo = internalQuery({
       throw new Error("Organization not found");
     }
 
-    // Member counts
-    const allMembers = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .collect();
+    const allMembers = await listComponentMembersByOrganization(ctx, org);
 
     const activeMembers = allMembers.filter((m) => m.status === "active");
 

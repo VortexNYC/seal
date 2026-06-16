@@ -17,10 +17,7 @@
  * ```
  */
 
-import {
-  createMcpOAuthAccessRuntime,
-  createMcpOAuthHttpHandlers,
-} from "@plasmapos/vortex-auth/mcp";
+import { createMcpOAuthAccessRuntime, createMcpOAuthHttpHandlers } from "@plasmapos/auth/mcp";
 import { httpRouter } from "convex/server";
 import Stripe from "stripe";
 
