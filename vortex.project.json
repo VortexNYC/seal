@@ -15,10 +15,6 @@
     "baseBranch": "staging",
     "packageManager": "bun@1.3.11",
     "setupCommands": ["bun install"],
-    "ciPreinstallCommands": [
-      "git clone --depth 1 \"https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git\" \"$GITHUB_WORKSPACE/../vortex-core\"",
-      "(cd \"$GITHUB_WORKSPACE/../vortex-core\" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build)"
-    ],
     "verificationCommands": [
       "bun run project-kit:check",
       "bun run project-kit:doctor",

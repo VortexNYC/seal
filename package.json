@@ -69,7 +69,7 @@
   },
   "devDependencies": {
     "@plasmapos/auth": "0.5.1",
-    "@plasmapos/tooling": "0.2.11",
+    "@plasmapos/tooling": "0.2.12",
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
