@@ -61,14 +61,15 @@
     "convex:insights:prod": "bunx convex insights --prod --details",
     "auth:check": "vortex-auth check --convex-dir ./apps/backend/convex",
     "auth:preflight": "vortex-auth preflight --repo-root . --convex-dir ./apps/backend/convex --",
-    "lint:strict": "vortex-lint --strict ."
+    "lint:strict": "vortex-lint --strict .",
+    "lint:advisory": "vortex-lint --strict --advisory ."
   },
   "dependencies": {
     "@tanstack/router-core": "1.168.9"
   },
   "devDependencies": {
-    "@plasmapos/auth": "file:../vortex-core/packages/vortex-auth",
-    "@plasmapos/tooling": "file:../vortex-core/packages/tooling",
+    "@plasmapos/auth": "0.5.1",
+    "@plasmapos/tooling": "0.2.11",
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
