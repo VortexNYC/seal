@@ -25,6 +25,9 @@
   },
   "scripts": {
     "dev": "turbo run dev --filter=@seal/backend --filter=@seal/web --filter=@seal/landing",
+    "dev:web": "cd apps/web && bun run dev -- --host 0.0.0.0",
+    "dev:landing": "cd apps/landing && bun run dev -- --host 0.0.0.0",
+    "dev:all": "bun run dev",
     "build": "turbo run build",
     "lint": "vortex-lint .",
     "lint:fix": "vortex-lint --fix --fix-suggestions --fix-dangerously .",
@@ -57,7 +60,8 @@
     "convex:insights": "bunx convex insights --details",
     "convex:insights:prod": "bunx convex insights --prod --details",
     "auth:check": "vortex-auth check --convex-dir ./apps/backend/convex",
-    "auth:preflight": "vortex-auth preflight --repo-root . --convex-dir ./apps/backend/convex --"
+    "auth:preflight": "vortex-auth preflight --repo-root . --convex-dir ./apps/backend/convex --",
+    "lint:strict": "vortex-lint --strict ."
   },
   "dependencies": {
     "@tanstack/router-core": "1.168.9"

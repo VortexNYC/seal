@@ -17,6 +17,15 @@ import {
 } from "./_generated/server";
 import { authMutation, authQuery } from "./auth";
 import { resolveComponentMemberships } from "./lib/componentOrgReads";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 function buildUserProfile(user: Doc<"users">) {
   return {
@@ -131,7 +140,9 @@ async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
 
   const subscription = await ctx.db
     .query("subscriptions")
-    .withIndex("by_organization_id", (q) => q.eq("organizationId", user.activeOrganizationId!))
+    .withIndex("by_organization_id", (q) =>
+      q.eq("organizationId", sealAssertPresent(user.activeOrganizationId)),
+    )
     .first();
 
   if (!subscription) {

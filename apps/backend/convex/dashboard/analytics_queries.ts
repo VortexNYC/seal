@@ -9,6 +9,15 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import { permissionQuery } from "../auth";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 // ─── Helpers ────────────────────────────────────
 
@@ -155,7 +164,7 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
     }
 
     // Get recipients for those documents
-    const docSentAtMap = new Map(sentDocs.map((d) => [d._id, d.sentAt!]));
+    const docSentAtMap = new Map(sentDocs.map((d) => [d._id, sealAssertPresent(d.sentAt)]));
 
     const allRecipients: Doc<"document_recipients">[] = [];
     for (const doc of sentDocs) {

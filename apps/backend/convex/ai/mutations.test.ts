@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("AI mutations", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -209,7 +218,7 @@ describe("AI mutations", () => {
 
       expect(id).toBeTruthy();
       const annotation = (await t.run(async (ctx) =>
-        ctx.db.get(id!),
+        ctx.db.get(sealAssertPresent(id)),
       )) as Doc<"ai_document_annotations"> | null;
       expect(annotation?.status).toBe("active");
       expect(annotation?.annotations).toHaveLength(1);
@@ -253,12 +262,12 @@ describe("AI mutations", () => {
       });
 
       const first = (await t.run(async (ctx) =>
-        ctx.db.get(firstId!),
+        ctx.db.get(sealAssertPresent(firstId)),
       )) as Doc<"ai_document_annotations"> | null;
       expect(first?.status).toBe("dismissed");
 
       const second = (await t.run(async (ctx) =>
-        ctx.db.get(secondId!),
+        ctx.db.get(sealAssertPresent(secondId)),
       )) as Doc<"ai_document_annotations"> | null;
       expect(second?.status).toBe("active");
     });
@@ -277,7 +286,7 @@ describe("AI mutations", () => {
       });
 
       await t.run(async (ctx) => {
-        await ctx.db.patch(firstId!, { status: "dismissed" });
+        await ctx.db.patch(sealAssertPresent(firstId), { status: "dismissed" });
       });
 
       // New analysis without force flag should be skipped
@@ -307,7 +316,7 @@ describe("AI mutations", () => {
       });
 
       await t.run(async (ctx) => {
-        await ctx.db.patch(firstId!, { status: "dismissed" });
+        await ctx.db.patch(sealAssertPresent(firstId), { status: "dismissed" });
       });
 
       // Force flag overrides
@@ -323,7 +332,7 @@ describe("AI mutations", () => {
 
       expect(secondId).toBeTruthy();
       const second = (await t.run(async (ctx) =>
-        ctx.db.get(secondId!),
+        ctx.db.get(sealAssertPresent(secondId)),
       )) as Doc<"ai_document_annotations"> | null;
       expect(second?.status).toBe("active");
     });

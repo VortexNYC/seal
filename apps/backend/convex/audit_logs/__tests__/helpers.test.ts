@@ -11,6 +11,15 @@ import {
   logFieldAction,
   logRecipientAction,
 } from "../helpers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("audit_logs/helpers", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -103,17 +112,17 @@ describe("audit_logs/helpers", () => {
       });
 
       expect(record).not.toBeNull();
-      expect(record!.organizationId).toBe(organizationId);
-      expect(record!.userId).toBe("test_user");
-      expect(record!.actorType).toBe("user");
-      expect(record!.actorId).toBe("test_user");
-      expect(record!.action).toBe("document.created");
-      expect(record!.resourceType).toBe("document");
-      expect(record!.resourceId).toBe(documentId);
-      expect(record!.documentId).toBe(documentId);
-      expect(record!.ipAddress).toBe("192.168.1.1");
-      expect(record!.userAgent).toBe("TestAgent/1.0");
-      expect(record!.createdAt).toBeTypeOf("number");
+      expect(sealAssertPresent(record).organizationId).toBe(organizationId);
+      expect(sealAssertPresent(record).userId).toBe("test_user");
+      expect(sealAssertPresent(record).actorType).toBe("user");
+      expect(sealAssertPresent(record).actorId).toBe("test_user");
+      expect(sealAssertPresent(record).action).toBe("document.created");
+      expect(sealAssertPresent(record).resourceType).toBe("document");
+      expect(sealAssertPresent(record).resourceId).toBe(documentId);
+      expect(sealAssertPresent(record).documentId).toBe(documentId);
+      expect(sealAssertPresent(record).ipAddress).toBe("192.168.1.1");
+      expect(sealAssertPresent(record).userAgent).toBe("TestAgent/1.0");
+      expect(sealAssertPresent(record).createdAt).toBeTypeOf("number");
     });
 
     test("creates audit record with optional fields omitted", async () => {
@@ -132,17 +141,17 @@ describe("audit_logs/helpers", () => {
       });
 
       expect(record).not.toBeNull();
-      expect(record!.organizationId).toBe(organizationId);
-      expect(record!.actorType).toBe("system");
-      expect(record!.action).toBe("document.completed");
-      expect(record!.userId).toBeUndefined();
-      expect(record!.actorId).toBeUndefined();
-      expect(record!.documentId).toBeUndefined();
-      expect(record!.recipientId).toBeUndefined();
-      expect(record!.oldValues).toBeUndefined();
-      expect(record!.newValues).toBeUndefined();
-      expect(record!.metadata).toBeUndefined();
-      expect(record!.userAgent).toBeUndefined();
+      expect(sealAssertPresent(record).organizationId).toBe(organizationId);
+      expect(sealAssertPresent(record).actorType).toBe("system");
+      expect(sealAssertPresent(record).action).toBe("document.completed");
+      expect(sealAssertPresent(record).userId).toBeUndefined();
+      expect(sealAssertPresent(record).actorId).toBeUndefined();
+      expect(sealAssertPresent(record).documentId).toBeUndefined();
+      expect(sealAssertPresent(record).recipientId).toBeUndefined();
+      expect(sealAssertPresent(record).oldValues).toBeUndefined();
+      expect(sealAssertPresent(record).newValues).toBeUndefined();
+      expect(sealAssertPresent(record).metadata).toBeUndefined();
+      expect(sealAssertPresent(record).userAgent).toBeUndefined();
     });
 
     test("stores metadata when provided", async () => {
@@ -167,7 +176,7 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Document sent to recipients",
         source: "api",
         sessionId: "sess_abc123",
@@ -195,8 +204,8 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(record!.oldValues).toEqual({ title: "Old Title" });
-      expect(record!.newValues).toEqual({ title: "New Title" });
+      expect(sealAssertPresent(record).oldValues).toEqual({ title: "Old Title" });
+      expect(sealAssertPresent(record).newValues).toEqual({ title: "New Title" });
     });
   });
 
@@ -241,15 +250,15 @@ describe("audit_logs/helpers", () => {
       });
 
       expect(record).not.toBeNull();
-      expect(record!.action).toBe("field.created");
-      expect(record!.resourceType).toBe("signature_field");
-      expect(record!.resourceId).toBe(fieldId);
-      expect(record!.documentId).toBe(documentId);
-      expect(record!.recipientId).toBe(recipientId);
-      expect(record!.actorType).toBe("user");
-      expect(record!.actorId).toBe("test_user");
-      expect(record!.newValues).toEqual({ fieldType: "signature", page: 1 });
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("field.created");
+      expect(sealAssertPresent(record).resourceType).toBe("signature_field");
+      expect(sealAssertPresent(record).resourceId).toBe(fieldId);
+      expect(sealAssertPresent(record).documentId).toBe(documentId);
+      expect(sealAssertPresent(record).recipientId).toBe(recipientId);
+      expect(sealAssertPresent(record).actorType).toBe("user");
+      expect(sealAssertPresent(record).actorId).toBe("test_user");
+      expect(sealAssertPresent(record).newValues).toEqual({ fieldType: "signature", page: 1 });
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Field created for document",
         source: "web",
       });
@@ -289,8 +298,8 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(record!.action).toBe("field.deleted");
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("field.deleted");
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Field deleted for document",
         source: "web",
       });
@@ -319,19 +328,19 @@ describe("audit_logs/helpers", () => {
       });
 
       expect(record).not.toBeNull();
-      expect(record!.action).toBe("document.sent");
-      expect(record!.resourceType).toBe("document");
-      expect(record!.resourceId).toBe(documentId);
-      expect(record!.documentId).toBe(documentId);
-      expect(record!.actorType).toBe("user");
-      expect(record!.actorId).toBe("test_user");
-      expect(record!.userId).toBe("test_user");
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("document.sent");
+      expect(sealAssertPresent(record).resourceType).toBe("document");
+      expect(sealAssertPresent(record).resourceId).toBe(documentId);
+      expect(sealAssertPresent(record).documentId).toBe(documentId);
+      expect(sealAssertPresent(record).actorType).toBe("user");
+      expect(sealAssertPresent(record).actorId).toBe("test_user");
+      expect(sealAssertPresent(record).userId).toBe("test_user");
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Document sent to 3 recipients",
         source: "web",
       });
-      expect(record!.ipAddress).toBe("192.168.1.1");
-      expect(record!.userAgent).toBe("Chrome/120");
+      expect(sealAssertPresent(record).ipAddress).toBe("192.168.1.1");
+      expect(sealAssertPresent(record).userAgent).toBe("Chrome/120");
     });
 
     test("creates record without optional description", async () => {
@@ -349,8 +358,8 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(record!.action).toBe("document.cancelled");
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("document.cancelled");
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: undefined,
         source: "web",
       });
@@ -381,16 +390,16 @@ describe("audit_logs/helpers", () => {
       });
 
       expect(record).not.toBeNull();
-      expect(record!.action).toBe("recipient.signed");
-      expect(record!.resourceType).toBe("recipient");
-      expect(record!.resourceId).toBe(recipientId);
-      expect(record!.documentId).toBe(documentId);
-      expect(record!.recipientId).toBe(recipientId);
-      expect(record!.actorType).toBe("recipient");
-      expect(record!.actorId).toBe(recipientId);
-      expect(record!.userId).toBeUndefined();
-      expect(record!.newValues).toEqual({ status: "signed" });
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("recipient.signed");
+      expect(sealAssertPresent(record).resourceType).toBe("recipient");
+      expect(sealAssertPresent(record).resourceId).toBe(recipientId);
+      expect(sealAssertPresent(record).documentId).toBe(documentId);
+      expect(sealAssertPresent(record).recipientId).toBe(recipientId);
+      expect(sealAssertPresent(record).actorType).toBe("recipient");
+      expect(sealAssertPresent(record).actorId).toBe(recipientId);
+      expect(sealAssertPresent(record).userId).toBeUndefined();
+      expect(sealAssertPresent(record).newValues).toEqual({ status: "signed" });
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Recipient signed",
         source: "web",
       });
@@ -415,10 +424,10 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(record!.action).toBe("recipient.added");
-      expect(record!.actorType).toBe("user");
-      expect(record!.userId).toBe("test_user");
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("recipient.added");
+      expect(sealAssertPresent(record).actorType).toBe("user");
+      expect(sealAssertPresent(record).userId).toBe("test_user");
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Recipient added",
         source: "web",
       });
@@ -442,8 +451,8 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(record!.action).toBe("recipient.esign_consent");
-      expect(record!.metadata).toEqual({
+      expect(sealAssertPresent(record).action).toBe("recipient.esign_consent");
+      expect(sealAssertPresent(record).metadata).toEqual({
         description: "Recipient esign_consent",
         source: "web",
       });

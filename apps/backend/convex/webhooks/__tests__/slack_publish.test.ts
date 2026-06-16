@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { publishWebhookEvent } from "../publish";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("publishWebhookEvent — Slack format endpoints", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -85,8 +94,8 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
     });
 
     expect(deliveries).toHaveLength(1);
-    expect(deliveries[0]!.eventType).toBe("document.completed");
-    expect(deliveries[0]!.status).toBe("pending");
+    expect(sealAssertPresent(deliveries[0]).eventType).toBe("document.completed");
+    expect(sealAssertPresent(deliveries[0]).status).toBe("pending");
   });
 
   // ---------------------------------------------------------------------------
@@ -157,7 +166,7 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
 
     expect(deliveries).toHaveLength(2);
     // Both deliveries share the same eventId
-    expect(deliveries[0]!.eventId).toBe(deliveries[1]!.eventId);
+    expect(sealAssertPresent(deliveries[0]).eventId).toBe(sealAssertPresent(deliveries[1]).eventId);
   });
 
   // ---------------------------------------------------------------------------
@@ -204,7 +213,7 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
       created_at: string;
       organization_id: string;
       data: Record<string, unknown>;
-    } = JSON.parse(deliveries[0]!.payload);
+    } = JSON.parse(sealAssertPresent(deliveries[0]).payload);
 
     expect(payload.id).toMatch(/^evt_\d+_[a-z0-9]+$/);
     expect(payload.type).toBe("document.sent");

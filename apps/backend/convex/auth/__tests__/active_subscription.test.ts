@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /**
  * Tests for the `by_organization_status` compound index on subscriptions.
@@ -74,8 +83,8 @@ describe("getActiveSubscription (by_organization_status index)", () => {
 
     const result = await queryActiveSubscription(orgId);
     expect(result).not.toBeNull();
-    expect(result!.organizationId).toBe(orgId);
-    expect(result!.status).toBe("active");
+    expect(sealAssertPresent(result).organizationId).toBe(orgId);
+    expect(sealAssertPresent(result).status).toBe("active");
   });
 
   test("returns undefined when no subscription exists", async () => {
@@ -134,8 +143,8 @@ describe("getActiveSubscription (by_organization_status index)", () => {
 
     const result = await queryActiveSubscription(orgId);
     expect(result).not.toBeNull();
-    expect(result!.status).toBe("active");
-    expect(result!.externalSubscriptionId).toBe("sub_active");
+    expect(sealAssertPresent(result).status).toBe("active");
+    expect(sealAssertPresent(result).externalSubscriptionId).toBe("sub_active");
   });
 
   test("does not return trialing subscription when querying for active", async () => {

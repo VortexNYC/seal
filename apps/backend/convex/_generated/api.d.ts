@@ -13,6 +13,7 @@ import type * as ai_agent from "../ai/agent.js";
 import type * as ai_analyzeFieldsAction from "../ai/analyzeFieldsAction.js";
 import type * as ai_analyzeFieldsSchema from "../ai/analyzeFieldsSchema.js";
 import type * as ai_cleanup from "../ai/cleanup.js";
+import type * as ai_component_ctx from "../ai/component_ctx.js";
 import type * as ai_eval from "../ai/eval.js";
 import type * as ai_evalExtraction from "../ai/evalExtraction.js";
 import type * as ai_eval_helpers from "../ai/eval_helpers.js";
@@ -265,11 +266,7 @@ import type * as workflows_document_completion from "../workflows/document_compl
 import type * as workflows_document_completion_steps from "../workflows/document_completion_steps.js";
 import type * as workflows_index from "../workflows/index.js";
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
+import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   "ai/actions": typeof ai_actions;
@@ -277,6 +274,7 @@ declare const fullApi: ApiFromModules<{
   "ai/analyzeFieldsAction": typeof ai_analyzeFieldsAction;
   "ai/analyzeFieldsSchema": typeof ai_analyzeFieldsSchema;
   "ai/cleanup": typeof ai_cleanup;
+  "ai/component_ctx": typeof ai_component_ctx;
   "ai/eval": typeof ai_eval;
   "ai/evalExtraction": typeof ai_evalExtraction;
   "ai/eval_helpers": typeof ai_eval_helpers;
@@ -538,10 +536,7 @@ declare const fullApi: ApiFromModules<{
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
->;
+export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
 
 /**
  * A utility for referencing Convex functions in your app's internal API.
@@ -551,10 +546,7 @@ export declare const api: FilterApi<
  * const myFunctionReference = internal.myModule.myFunction;
  * ```
  */
-export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "internal">
->;
+export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;
 
 export declare const components: {
   agent: import("@convex-dev/agent/_generated/component.js").ComponentApi<"agent">;

@@ -3,6 +3,15 @@ import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/content/types";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /* ── AI Review Card Mockup — animated clause reveal loop ───────────────── */
 const AI_CLAUSES = [
@@ -339,7 +348,7 @@ function DevApiMockup() {
     return () => clearTimeout(timeout);
   }, []);
 
-  const current = API_STEPS[step] ?? API_STEPS[0]!;
+  const current = API_STEPS[step] ?? sealAssertPresent(API_STEPS[0]);
 
   return (
     <div className="border-border bg-card w-full overflow-hidden rounded-xl border font-mono text-xs shadow-lg">

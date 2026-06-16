@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("recurring invoice sync via upsertRecurringInvoice", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -112,7 +121,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     expect(result).not.toBeNull();
-    expect(result!.created).toBe(true);
+    expect(sealAssertPresent(result).created).toBe(true);
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
@@ -122,15 +131,15 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     expect(invoices).toHaveLength(1);
-    expect(invoices[0]!.documentId).toBe(documentId);
-    expect(invoices[0]!.organizationId).toBe(organizationId);
-    expect(invoices[0]!.stripeSubscriptionId).toBe("sub_recurring_123");
-    expect(invoices[0]!.stripeCustomerId).toBe("cus_test_789");
-    expect(invoices[0]!.customerEmail).toBe("customer@example.com");
-    expect(invoices[0]!.amountDue).toBe(10000);
-    expect(invoices[0]!.status).toBe("draft");
+    expect(sealAssertPresent(invoices[0]).documentId).toBe(documentId);
+    expect(sealAssertPresent(invoices[0]).organizationId).toBe(organizationId);
+    expect(sealAssertPresent(invoices[0]).stripeSubscriptionId).toBe("sub_recurring_123");
+    expect(sealAssertPresent(invoices[0]).stripeCustomerId).toBe("cus_test_789");
+    expect(sealAssertPresent(invoices[0]).customerEmail).toBe("customer@example.com");
+    expect(sealAssertPresent(invoices[0]).amountDue).toBe(10000);
+    expect(sealAssertPresent(invoices[0]).status).toBe("draft");
     // Draft invoices should not have finalizedAt
-    expect(invoices[0]!.finalizedAt).toBeUndefined();
+    expect(sealAssertPresent(invoices[0]).finalizedAt).toBeUndefined();
   });
 
   test("idempotent — does not create duplicate records", async () => {
@@ -149,8 +158,8 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const first = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, args);
     const second = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, args);
 
-    expect(first!.created).toBe(true);
-    expect(second!.created).toBe(false);
+    expect(sealAssertPresent(first).created).toBe(true);
+    expect(sealAssertPresent(second).created).toBe(false);
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
@@ -197,10 +206,14 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     expect(invoices).toHaveLength(1);
-    expect(invoices[0]!.status).toBe("open");
-    expect(invoices[0]!.hostedInvoiceUrl).toBe("https://invoice.stripe.com/finalized");
-    expect(invoices[0]!.invoicePdf).toBe("https://invoice.stripe.com/finalized.pdf");
-    expect(invoices[0]!.finalizedAt).toBeDefined();
+    expect(sealAssertPresent(invoices[0]).status).toBe("open");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
+      "https://invoice.stripe.com/finalized",
+    );
+    expect(sealAssertPresent(invoices[0]).invoicePdf).toBe(
+      "https://invoice.stripe.com/finalized.pdf",
+    );
+    expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
   });
 
   test("returns null for unknown subscription", async () => {
@@ -241,9 +254,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     expect(invoices).toHaveLength(1);
-    expect(invoices[0]!.status).toBe("open");
-    expect(invoices[0]!.finalizedAt).toBeDefined();
-    expect(invoices[0]!.hostedInvoiceUrl).toBe("https://invoice.stripe.com/open");
+    expect(sealAssertPresent(invoices[0]).status).toBe("open");
+    expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://invoice.stripe.com/open");
   });
 
   test("tracks multiple billing cycles as separate invoice records", async () => {
@@ -308,8 +321,8 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     );
 
     expect(result).not.toBeNull();
-    expect(result!.invoiceRecordId).toBeDefined();
-    expect(result!.documentId).toBe(documentId);
+    expect(sealAssertPresent(result).invoiceRecordId).toBeDefined();
+    expect(sealAssertPresent(result).documentId).toBe(documentId);
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
@@ -318,8 +331,8 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
         .collect();
     });
 
-    expect(invoices[0]!.status).toBe("paid");
-    expect(invoices[0]!.paidAt).toBeDefined();
+    expect(sealAssertPresent(invoices[0]).status).toBe("paid");
+    expect(sealAssertPresent(invoices[0]).paidAt).toBeDefined();
   });
 
   test("P2: replayed create/finalize does not regress terminal status", async () => {
@@ -361,6 +374,6 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     // Status should remain "paid", not regressed to "draft"
-    expect(invoices[0]!.status).toBe("paid");
+    expect(sealAssertPresent(invoices[0]).status).toBe("paid");
   });
 });

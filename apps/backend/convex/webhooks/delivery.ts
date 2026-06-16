@@ -27,6 +27,15 @@ import {
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
 import { formatSlackMessage } from "./slack_formatter";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /** Maximum delivery attempts before abandoning */
 const MAX_ATTEMPTS = 5;
@@ -89,7 +98,9 @@ function getNextRetryAt(attemptCount: number): number | undefined {
   }
 
   return (
-    Date.now() + (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!)
+    Date.now() +
+    (RETRY_INTERVALS[attemptCount - 1] ??
+      sealAssertPresent(RETRY_INTERVALS[RETRY_INTERVALS.length - 1]))
   );
 }
 

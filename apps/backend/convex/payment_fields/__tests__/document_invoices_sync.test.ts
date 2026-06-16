@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromWebhook", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -110,14 +119,14 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     });
 
     expect(invoices).toHaveLength(1);
-    expect(invoices[0]!.stripeInvoiceId).toBe("in_test_123");
-    expect(invoices[0]!.stripeAccountId).toBe("acct_test_456");
-    expect(invoices[0]!.customerEmail).toBe("customer@example.com");
-    expect(invoices[0]!.customerName).toBe("Jane Doe");
-    expect(invoices[0]!.amountDue).toBe(50000);
-    expect(invoices[0]!.currency).toBe("usd");
-    expect(invoices[0]!.status).toBe("open");
-    expect(invoices[0]!.hostedInvoiceUrl).toBe("https://invoice.stripe.com/test");
+    expect(sealAssertPresent(invoices[0]).stripeInvoiceId).toBe("in_test_123");
+    expect(sealAssertPresent(invoices[0]).stripeAccountId).toBe("acct_test_456");
+    expect(sealAssertPresent(invoices[0]).customerEmail).toBe("customer@example.com");
+    expect(sealAssertPresent(invoices[0]).customerName).toBe("Jane Doe");
+    expect(sealAssertPresent(invoices[0]).amountDue).toBe(50000);
+    expect(sealAssertPresent(invoices[0]).currency).toBe("usd");
+    expect(sealAssertPresent(invoices[0]).status).toBe("open");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://invoice.stripe.com/test");
   });
 
   test("document_invoices accepts Vortex Billing invoice records without Stripe IDs", async () => {
@@ -216,7 +225,7 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     );
 
     expect(result).not.toBeNull();
-    expect(result!.documentId).toBe(documentId);
+    expect(sealAssertPresent(result).documentId).toBe(documentId);
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
@@ -226,8 +235,8 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     });
 
     expect(invoices).toHaveLength(1);
-    expect(invoices[0]!.status).toBe("paid");
-    expect(invoices[0]!.paidAt).toBeDefined();
+    expect(sealAssertPresent(invoices[0]).status).toBe("paid");
+    expect(sealAssertPresent(invoices[0]).paidAt).toBeDefined();
   });
 
   test("updatePaymentStatusFromWebhook syncs failed status as uncollectible", async () => {
@@ -253,7 +262,7 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
         .collect();
     });
 
-    expect(invoices[0]!.status).toBe("uncollectible");
+    expect(sealAssertPresent(invoices[0]).status).toBe("uncollectible");
   });
 
   test("updatePaymentStatusFromWebhook syncs cancelled status as void", async () => {
@@ -279,7 +288,7 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
         .collect();
     });
 
-    expect(invoices[0]!.status).toBe("void");
-    expect(invoices[0]!.voidedAt).toBeDefined();
+    expect(sealAssertPresent(invoices[0]).status).toBe("void");
+    expect(sealAssertPresent(invoices[0]).voidedAt).toBeDefined();
   });
 });

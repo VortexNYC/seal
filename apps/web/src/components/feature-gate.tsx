@@ -5,6 +5,15 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 interface FeatureGateProps {
   tier: "pro" | "enterprise";
@@ -37,7 +46,7 @@ export function FeatureGate({ tier, feature, description, children }: FeatureGat
             </p>
             <p className="text-muted-foreground text-sm">{description}</p>
             <Button variant="outline" size="sm" className="mt-2" asChild>
-              <Link to="/$slug/settings/billing" params={{ slug: slug! }}>
+              <Link to="/$slug/settings/billing" params={{ slug: sealAssertPresent(slug) }}>
                 {tier === "pro" ? "Start free trial" : "Contact sales"}
               </Link>
             </Button>

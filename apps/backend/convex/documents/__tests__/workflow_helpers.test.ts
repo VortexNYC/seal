@@ -11,6 +11,15 @@ import {
   transitionWorkflowStatus,
   verifyDocumentOwnership,
 } from "../workflow_helpers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 // ─── Pure function tests ────────────────────────────────────────────
 
@@ -147,8 +156,8 @@ describe("transitionWorkflowStatus", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("sent");
-    expect(doc!.sentAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("sent");
+    expect(sealAssertPresent(doc).sentAt).toBeTypeOf("number");
   });
 
   test("in_progress -> completed sets completedAt timestamp", async () => {
@@ -168,8 +177,8 @@ describe("transitionWorkflowStatus", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("completed");
-    expect(doc!.completedAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("completed");
+    expect(sealAssertPresent(doc).completedAt).toBeTypeOf("number");
   });
 
   test("invalid transition draft -> completed throws ConvexError", async () => {
@@ -193,8 +202,8 @@ describe("transitionWorkflowStatus", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("expired");
-    expect(doc!.expiredAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("expired");
+    expect(sealAssertPresent(doc).expiredAt).toBeTypeOf("number");
   });
 
   test("expired -> sent re-enables document (re-send flow)", async () => {
@@ -216,8 +225,8 @@ describe("transitionWorkflowStatus", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("sent");
-    expect(doc!.sentAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("sent");
+    expect(sealAssertPresent(doc).sentAt).toBeTypeOf("number");
   });
 
   test("non-existent document throws 'Document not found'", async () => {

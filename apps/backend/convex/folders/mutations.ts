@@ -3,6 +3,15 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseWriter } from "../_generated/server";
 import { adminMutation } from "../auth";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 const MAX_FOLDER_DEPTH = 10;
 
@@ -150,7 +159,7 @@ export const deleteFolder = adminMutation({
     const queue: Id<"folders">[] = [args.folderId];
 
     while (queue.length > 0) {
-      const currentId = queue.shift()!;
+      const currentId = sealAssertPresent(queue.shift());
       const children = await ctx.db
         .query("folders")
         .withIndex("by_parent", (q) => q.eq("parentId", currentId))

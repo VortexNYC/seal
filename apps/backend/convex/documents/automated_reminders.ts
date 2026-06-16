@@ -7,6 +7,15 @@
 
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -46,7 +55,7 @@ export const processAutomatedReminders = internalMutation({
       if (!docsByOrg.has(orgId)) {
         docsByOrg.set(orgId, []);
       }
-      docsByOrg.get(orgId)!.push(doc);
+      sealAssertPresent(docsByOrg.get(orgId)).push(doc);
     }
 
     for (const [orgId, docs] of docsByOrg) {
@@ -57,7 +66,7 @@ export const processAutomatedReminders = internalMutation({
       ];
 
       for (const doc of docs) {
-        const daysSinceSent = Math.floor((now - doc.sentAt!) / DAY_MS);
+        const daysSinceSent = Math.floor((now - sealAssertPresent(doc.sentAt)) / DAY_MS);
 
         // Which reminder intervals are due?
         const dueIntervals = reminderSchedule.filter((days: number) => daysSinceSent >= days);
@@ -90,7 +99,7 @@ export const processAutomatedReminders = internalMutation({
 
           // For each due interval, check if we already sent/scheduled a reminder
           for (const intervalDays of dueIntervals) {
-            const intervalTarget = doc.sentAt! + intervalDays * DAY_MS;
+            const intervalTarget = sealAssertPresent(doc.sentAt) + intervalDays * DAY_MS;
 
             // Check if a reminder already exists near this interval
             // (within 12 hours to account for cron timing)

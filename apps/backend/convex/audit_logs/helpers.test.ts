@@ -12,6 +12,15 @@ import {
   logRecipientAction,
   logSignatureAction,
 } from "./helpers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("Audit log helpers", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -100,15 +109,15 @@ describe("Audit log helpers", () => {
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
       expect(log).not.toBeNull();
-      expect(log!.organizationId).toBe(organizationId);
-      expect(log!.userId).toBe("test_owner");
-      expect(log!.actorType).toBe("user");
-      expect(log!.action).toBe("document.created");
-      expect(log!.resourceType).toBe("document");
-      expect(log!.documentId).toBe(documentId);
-      expect(log!.ipAddress).toBe("127.0.0.1");
-      expect(log!.userAgent).toBe("TestAgent/1.0");
-      expect(log!.createdAt).toBeGreaterThan(0);
+      expect(sealAssertPresent(log).organizationId).toBe(organizationId);
+      expect(sealAssertPresent(log).userId).toBe("test_owner");
+      expect(sealAssertPresent(log).actorType).toBe("user");
+      expect(sealAssertPresent(log).action).toBe("document.created");
+      expect(sealAssertPresent(log).resourceType).toBe("document");
+      expect(sealAssertPresent(log).documentId).toBe(documentId);
+      expect(sealAssertPresent(log).ipAddress).toBe("127.0.0.1");
+      expect(sealAssertPresent(log).userAgent).toBe("TestAgent/1.0");
+      expect(sealAssertPresent(log).createdAt).toBeGreaterThan(0);
     });
 
     test("creates audit log with optional fields omitted", async () => {
@@ -125,10 +134,10 @@ describe("Audit log helpers", () => {
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
       expect(log).not.toBeNull();
-      expect(log!.userId).toBeUndefined();
-      expect(log!.actorId).toBeUndefined();
-      expect(log!.documentId).toBeUndefined();
-      expect(log!.recipientId).toBeUndefined();
+      expect(sealAssertPresent(log).userId).toBeUndefined();
+      expect(sealAssertPresent(log).actorId).toBeUndefined();
+      expect(sealAssertPresent(log).documentId).toBeUndefined();
+      expect(sealAssertPresent(log).recipientId).toBeUndefined();
     });
   });
 
@@ -150,13 +159,13 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("document.created");
-      expect(log!.actorType).toBe("user");
-      expect(log!.actorId).toBe("test_owner");
-      expect(log!.resourceType).toBe("document");
-      expect(log!.resourceId).toBe(documentId);
-      expect(log!.metadata?.description).toBe("Document created");
-      expect(log!.metadata?.source).toBe("web");
+      expect(sealAssertPresent(log).action).toBe("document.created");
+      expect(sealAssertPresent(log).actorType).toBe("user");
+      expect(sealAssertPresent(log).actorId).toBe("test_owner");
+      expect(sealAssertPresent(log).resourceType).toBe("document");
+      expect(sealAssertPresent(log).resourceId).toBe(documentId);
+      expect(sealAssertPresent(log).metadata?.description).toBe("Document created");
+      expect(sealAssertPresent(log).metadata?.source).toBe("web");
     });
 
     test("logs document.sent action", async () => {
@@ -174,8 +183,8 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("document.sent");
-      expect(log!.documentId).toBe(documentId);
+      expect(sealAssertPresent(log).action).toBe("document.sent");
+      expect(sealAssertPresent(log).documentId).toBe(documentId);
     });
   });
 
@@ -198,16 +207,16 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("recipient.signed");
-      expect(log!.actorType).toBe("recipient");
-      expect(log!.actorId).toBe(recipientId);
-      expect(log!.userId).toBeUndefined();
-      expect(log!.resourceType).toBe("recipient");
-      expect(log!.resourceId).toBe(recipientId);
-      expect(log!.documentId).toBe(documentId);
-      expect(log!.recipientId).toBe(recipientId);
-      expect(log!.ipAddress).toBe("203.0.113.1");
-      expect(log!.metadata?.description).toBe("Recipient signed");
+      expect(sealAssertPresent(log).action).toBe("recipient.signed");
+      expect(sealAssertPresent(log).actorType).toBe("recipient");
+      expect(sealAssertPresent(log).actorId).toBe(recipientId);
+      expect(sealAssertPresent(log).userId).toBeUndefined();
+      expect(sealAssertPresent(log).resourceType).toBe("recipient");
+      expect(sealAssertPresent(log).resourceId).toBe(recipientId);
+      expect(sealAssertPresent(log).documentId).toBe(documentId);
+      expect(sealAssertPresent(log).recipientId).toBe(recipientId);
+      expect(sealAssertPresent(log).ipAddress).toBe("203.0.113.1");
+      expect(sealAssertPresent(log).metadata?.description).toBe("Recipient signed");
     });
 
     test("logs recipient.signed for authenticated user", async () => {
@@ -227,10 +236,10 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("recipient.signed");
-      expect(log!.actorType).toBe("user");
-      expect(log!.userId).toBe("test_owner");
-      expect(log!.actorId).toBe("test_owner");
+      expect(sealAssertPresent(log).action).toBe("recipient.signed");
+      expect(sealAssertPresent(log).actorType).toBe("user");
+      expect(sealAssertPresent(log).userId).toBe("test_owner");
+      expect(sealAssertPresent(log).actorId).toBe("test_owner");
     });
 
     test("logs recipient.declined", async () => {
@@ -249,8 +258,8 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("recipient.declined");
-      expect(log!.metadata?.description).toBe("Recipient declined");
+      expect(sealAssertPresent(log).action).toBe("recipient.declined");
+      expect(sealAssertPresent(log).metadata?.description).toBe("Recipient declined");
     });
 
     test("logs recipient.viewed", async () => {
@@ -269,8 +278,8 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("recipient.viewed");
-      expect(log!.metadata?.description).toBe("Recipient viewed");
+      expect(sealAssertPresent(log).action).toBe("recipient.viewed");
+      expect(sealAssertPresent(log).metadata?.description).toBe("Recipient viewed");
     });
   });
 
@@ -309,9 +318,9 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("field.created");
-      expect(log!.resourceType).toBe("signature_field");
-      expect(log!.resourceId).toBe(fieldId);
+      expect(sealAssertPresent(log).action).toBe("field.created");
+      expect(sealAssertPresent(log).resourceType).toBe("signature_field");
+      expect(sealAssertPresent(log).resourceId).toBe(fieldId);
     });
   });
 
@@ -366,10 +375,10 @@ describe("Audit log helpers", () => {
 
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
-      expect(log!.action).toBe("signature.created");
-      expect(log!.actorType).toBe("recipient");
-      expect(log!.resourceType).toBe("signature");
-      expect(log!.resourceId).toBe(signatureId);
+      expect(sealAssertPresent(log).action).toBe("signature.created");
+      expect(sealAssertPresent(log).actorType).toBe("recipient");
+      expect(sealAssertPresent(log).resourceType).toBe("signature");
+      expect(sealAssertPresent(log).resourceId).toBe(signatureId);
     });
   });
 

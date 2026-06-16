@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { createVersionSnapshot } from "../version_helpers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("createVersionSnapshot", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -104,7 +113,7 @@ describe("createVersionSnapshot", () => {
     });
 
     expect(versionRecord).not.toBeNull();
-    expect(versionRecord!.snapshot).toEqual({
+    expect(sealAssertPresent(versionRecord).snapshot).toEqual({
       name: "Test Document",
       description: "A test document description",
       storageId: "storage-abc-123",
@@ -113,9 +122,9 @@ describe("createVersionSnapshot", () => {
       pageCount: 5,
       documentHash: "sha256-abc123def456",
     });
-    expect(versionRecord!.versionNumber).toBe(1);
-    expect(versionRecord!.createdBy).toBe(ownerId);
-    expect(versionRecord!.createdAt).toBeTypeOf("number");
+    expect(sealAssertPresent(versionRecord).versionNumber).toBe(1);
+    expect(sealAssertPresent(versionRecord).createdBy).toBe(ownerId);
+    expect(sealAssertPresent(versionRecord).createdAt).toBeTypeOf("number");
   });
 
   test("optional fields captured when present", async () => {
@@ -134,9 +143,11 @@ describe("createVersionSnapshot", () => {
         .first();
     });
 
-    expect(versionRecord!.snapshot.description).toBe("A test document description");
-    expect(versionRecord!.snapshot.pageCount).toBe(5);
-    expect(versionRecord!.snapshot.documentHash).toBe("sha256-abc123def456");
+    expect(sealAssertPresent(versionRecord).snapshot.description).toBe(
+      "A test document description",
+    );
+    expect(sealAssertPresent(versionRecord).snapshot.pageCount).toBe(5);
+    expect(sealAssertPresent(versionRecord).snapshot.documentHash).toBe("sha256-abc123def456");
   });
 
   test("optional fields omitted when not on document", async () => {
@@ -171,9 +182,9 @@ describe("createVersionSnapshot", () => {
         .first();
     });
 
-    expect(versionRecord!.snapshot.description).toBeUndefined();
-    expect(versionRecord!.snapshot.pageCount).toBeUndefined();
-    expect(versionRecord!.snapshot.documentHash).toBeUndefined();
+    expect(sealAssertPresent(versionRecord).snapshot.description).toBeUndefined();
+    expect(sealAssertPresent(versionRecord).snapshot.pageCount).toBeUndefined();
+    expect(sealAssertPresent(versionRecord).snapshot.documentHash).toBeUndefined();
   });
 
   test("changeDescription and restoredFromVersion stored correctly", async () => {
@@ -194,8 +205,8 @@ describe("createVersionSnapshot", () => {
         .first();
     });
 
-    expect(versionRecord!.changeDescription).toBe("Restored from version 2");
-    expect(versionRecord!.restoredFromVersion).toBe(2);
+    expect(sealAssertPresent(versionRecord).changeDescription).toBe("Restored from version 2");
+    expect(sealAssertPresent(versionRecord).restoredFromVersion).toBe(2);
   });
 
   test("throws for non-existent document", async () => {
@@ -230,7 +241,7 @@ describe("createVersionSnapshot", () => {
           .first();
       });
 
-      expect(versionRecord!.changeType).toBe(changeType);
+      expect(sealAssertPresent(versionRecord).changeType).toBe(changeType);
     },
   );
 });

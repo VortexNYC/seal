@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("Webhook delivery", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -182,12 +191,12 @@ describe("Webhook delivery", () => {
       });
 
       expect(delivery).not.toBeNull();
-      expect(delivery!.status).toBe("delivered");
-      expect(delivery!.attemptCount).toBe(1);
-      expect(delivery!.responseCode).toBe(200);
-      expect(delivery!.responseBody).toBe('{"ok":true}');
-      expect(delivery!.responseTimeMs).toBe(150);
-      expect(delivery!.deliveredAt).toBe(now);
+      expect(sealAssertPresent(delivery).status).toBe("delivered");
+      expect(sealAssertPresent(delivery).attemptCount).toBe(1);
+      expect(sealAssertPresent(delivery).responseCode).toBe(200);
+      expect(sealAssertPresent(delivery).responseBody).toBe('{"ok":true}');
+      expect(sealAssertPresent(delivery).responseTimeMs).toBe(150);
+      expect(sealAssertPresent(delivery).deliveredAt).toBe(now);
     });
 
     test("updates delivery to pending (retry) with nextRetryAt and incremented attemptCount", async () => {
@@ -211,10 +220,10 @@ describe("Webhook delivery", () => {
       });
 
       expect(delivery).not.toBeNull();
-      expect(delivery!.status).toBe("pending");
-      expect(delivery!.attemptCount).toBe(1);
-      expect(delivery!.nextRetryAt).toBe(nextRetry);
-      expect(delivery!.errorMessage).toBe("HTTP 500: Internal Server Error");
+      expect(sealAssertPresent(delivery).status).toBe("pending");
+      expect(sealAssertPresent(delivery).attemptCount).toBe(1);
+      expect(sealAssertPresent(delivery).nextRetryAt).toBe(nextRetry);
+      expect(sealAssertPresent(delivery).errorMessage).toBe("HTTP 500: Internal Server Error");
     });
 
     test("updates delivery to abandoned with error message", async () => {
@@ -232,9 +241,9 @@ describe("Webhook delivery", () => {
       });
 
       expect(delivery).not.toBeNull();
-      expect(delivery!.status).toBe("abandoned");
-      expect(delivery!.attemptCount).toBe(5);
-      expect(delivery!.errorMessage).toBe("Max retry attempts exceeded");
+      expect(sealAssertPresent(delivery).status).toBe("abandoned");
+      expect(sealAssertPresent(delivery).attemptCount).toBe(5);
+      expect(sealAssertPresent(delivery).errorMessage).toBe("Max retry attempts exceeded");
     });
   });
 
@@ -260,10 +269,10 @@ describe("Webhook delivery", () => {
       });
 
       expect(endpoint).not.toBeNull();
-      expect(endpoint!.failureCount).toBe(0);
-      expect(endpoint!.lastSuccessAt).toBeDefined();
-      expect(endpoint!.lastAttemptAt).toBeDefined();
-      expect(endpoint!.status).toBe("active");
+      expect(sealAssertPresent(endpoint).failureCount).toBe(0);
+      expect(sealAssertPresent(endpoint).lastSuccessAt).toBeDefined();
+      expect(sealAssertPresent(endpoint).lastAttemptAt).toBeDefined();
+      expect(sealAssertPresent(endpoint).status).toBe("active");
     });
 
     test("on failure, increments failureCount", async () => {
@@ -279,9 +288,9 @@ describe("Webhook delivery", () => {
       });
 
       expect(endpoint).not.toBeNull();
-      expect(endpoint!.failureCount).toBe(1);
-      expect(endpoint!.lastAttemptAt).toBeDefined();
-      expect(endpoint!.status).toBe("active");
+      expect(sealAssertPresent(endpoint).failureCount).toBe(1);
+      expect(sealAssertPresent(endpoint).lastAttemptAt).toBeDefined();
+      expect(sealAssertPresent(endpoint).status).toBe("active");
     });
 
     test("auto-disables endpoint after 10 consecutive failures", async () => {
@@ -302,8 +311,8 @@ describe("Webhook delivery", () => {
       });
 
       expect(endpoint).not.toBeNull();
-      expect(endpoint!.failureCount).toBe(10);
-      expect(endpoint!.status).toBe("disabled");
+      expect(sealAssertPresent(endpoint).failureCount).toBe(10);
+      expect(sealAssertPresent(endpoint).status).toBe("disabled");
     });
 
     test("does not disable endpoint at 9 failures (below threshold)", async () => {
@@ -323,8 +332,8 @@ describe("Webhook delivery", () => {
       });
 
       expect(endpoint).not.toBeNull();
-      expect(endpoint!.failureCount).toBe(9);
-      expect(endpoint!.status).toBe("active");
+      expect(sealAssertPresent(endpoint).failureCount).toBe(9);
+      expect(sealAssertPresent(endpoint).status).toBe("active");
     });
 
     test("success after failures resets failureCount", async () => {
@@ -346,8 +355,8 @@ describe("Webhook delivery", () => {
       });
 
       expect(endpoint).not.toBeNull();
-      expect(endpoint!.failureCount).toBe(0);
-      expect(endpoint!.lastSuccessAt).toBeDefined();
+      expect(sealAssertPresent(endpoint).failureCount).toBe(0);
+      expect(sealAssertPresent(endpoint).lastSuccessAt).toBeDefined();
     });
   });
 
@@ -363,10 +372,10 @@ describe("Webhook delivery", () => {
       });
 
       expect(endpoint).not.toBeNull();
-      expect(endpoint!._id).toBe(endpointId);
-      expect(endpoint!.name).toBe("Test Endpoint");
-      expect(endpoint!.url).toBe("https://example.com/webhook");
-      expect(endpoint!.status).toBe("active");
+      expect(sealAssertPresent(endpoint)._id).toBe(endpointId);
+      expect(sealAssertPresent(endpoint).name).toBe("Test Endpoint");
+      expect(sealAssertPresent(endpoint).url).toBe("https://example.com/webhook");
+      expect(sealAssertPresent(endpoint).status).toBe("active");
     });
 
     test("returns null for non-existent ID", async () => {

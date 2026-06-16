@@ -16,6 +16,15 @@ import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/
 import { generateSignatureCertificate } from "../crypto/helpers";
 import { findRecipientByToken } from "../documents/recipient_helpers";
 import { auditActionTuple } from "../schemas/audit_logs";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 type AuditExportDocument = Doc<"documents">;
 type AuditExportRecipients = Doc<"document_recipients">[];
@@ -368,7 +377,7 @@ export const listOrgAuditLogs = adminQuery({
 
     let filtered = logs;
     if (args.actions && args.actions.length > 0) {
-      filtered = filtered.filter((l) => args.actions!.includes(l.action));
+      filtered = filtered.filter((l) => sealAssertPresent(args.actions).includes(l.action));
     }
     if (args.actorUserId) {
       filtered = filtered.filter((l) => l.userId === args.actorUserId);

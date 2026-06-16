@@ -1,3 +1,12 @@
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 // Set before imports — expiration_sweep.ts imports email.ts which initializes Resend at module level
 process.env.RESEND_API_KEY = "re_test_dummy";
 
@@ -118,8 +127,8 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("expired");
-    expect(recipient!.expirationNotifiedAt).toBeTypeOf("number");
+    expect(sealAssertPresent(recipient).status).toBe("expired");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeTypeOf("number");
   });
 
   test("does NOT expire recipients with future expiresAt", async () => {
@@ -140,8 +149,8 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("pending");
-    expect(recipient!.expirationNotifiedAt).toBeUndefined();
+    expect(sealAssertPresent(recipient).status).toBe("pending");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeUndefined();
   });
 
   test("transitions document to expired when all recipients are expired", async () => {
@@ -162,8 +171,8 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("expired");
-    expect(doc!.expiredAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("expired");
+    expect(sealAssertPresent(doc).expiredAt).toBeTypeOf("number");
   });
 
   test("does NOT transition document when some recipients still active", async () => {
@@ -197,8 +206,8 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("sent");
-    expect(doc!.expiredAt).toBeUndefined();
+    expect(sealAssertPresent(doc).workflowStatus).toBe("sent");
+    expect(sealAssertPresent(doc).expiredAt).toBeUndefined();
 
     // Verify the expired recipient was still marked
     const recipients = await t.run(async (ctx) => {
@@ -211,8 +220,8 @@ describe("sweepExpiredRecipients", () => {
     const expiredRecipient = recipients.find((r) => r.email === "expired@test.com");
     const activeRecipient = recipients.find((r) => r.email === "active@test.com");
 
-    expect(expiredRecipient!.status).toBe("expired");
-    expect(activeRecipient!.status).toBe("pending");
+    expect(sealAssertPresent(expiredRecipient).status).toBe("expired");
+    expect(sealAssertPresent(activeRecipient).status).toBe("pending");
   });
 
   test("expires viewed recipients past their expiresAt", async () => {
@@ -233,8 +242,8 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("expired");
-    expect(recipient!.expirationNotifiedAt).toBeTypeOf("number");
+    expect(sealAssertPresent(recipient).status).toBe("expired");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeTypeOf("number");
   });
 
   test("skips already-notified recipients (idempotent)", async () => {
@@ -261,7 +270,7 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.expirationNotifiedAt).toBe(notifiedAt);
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBe(notifiedAt);
   });
 
   test("does not expire recipients without expiresAt set", async () => {
@@ -282,7 +291,7 @@ describe("sweepExpiredRecipients", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("pending");
+    expect(sealAssertPresent(recipient).status).toBe("pending");
   });
 
   test("returns correct counts", async () => {

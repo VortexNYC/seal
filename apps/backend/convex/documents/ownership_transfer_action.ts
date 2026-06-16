@@ -4,6 +4,15 @@ import { Resend } from "resend";
 
 import { internalAction } from "../_generated/server";
 import { sendEmailManuallyFromAction } from "../emails/resend_component";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 const SITE_URL = process.env.SITE_URL ?? "https://app.seal.so";
@@ -47,7 +56,7 @@ export const sendOwnershipTransferredEmail = internalAction({
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
   },
