@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { Resend } from "resend";
 
 import { internalAction } from "../_generated/server";
-import { resendComponent } from "../emails/resend_component";
+import { sendEmailManuallyFromAction } from "../emails/resend_component";
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 const SITE_URL = process.env.SITE_URL ?? "https://app.seal.so";
@@ -30,7 +30,7 @@ export const sendOwnershipTransferredEmail = internalAction({
 
     const subject = `You are now the owner of "${args.documentName}"`;
 
-    await resendComponent.sendEmailManually(
+    await sendEmailManuallyFromAction(
       ctx,
       {
         from: FROM_EMAIL,

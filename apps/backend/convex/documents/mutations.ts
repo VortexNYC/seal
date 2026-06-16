@@ -12,6 +12,7 @@ import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { isAccountValid } from "../auth.utils";
+import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { retrier } from "../retrier";
 import { expirationPeriodToMs } from "./send_document_action";
 import { validateFile } from "./upload_config";
@@ -24,7 +25,7 @@ import {
   verifyDocumentOwnership,
 } from "./workflow_helpers";
 
-type DocumentMutationDbCtx = Pick<MutationCtx, "db">;
+type DocumentMutationDbCtx = Pick<MutationCtx, "db" | "runQuery">;
 
 /** Check if the org has AI auto-analyze enabled (defaults to true). */
 async function shouldAutoAnalyze(db: DatabaseReader, organizationId: Id<"organizations">) {
@@ -124,12 +125,7 @@ async function assertTransferOwnershipAllowed(
     throw new ConvexError("Target user not found");
   }
 
-  const membership = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", newOwnerId).eq("organizationId", document.organizationId),
-    )
-    .unique();
+  const membership = await resolveComponentMembershipForOrganization(ctx, newOwner, org);
   if (!membership) {
     throw new ConvexError("Target user is not a member of this organization");
   }
@@ -184,13 +180,15 @@ export const createDocument = permissionMutation("documents:create")({
     }
 
     // 2. Verify user is a member of the organization
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
-
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+    const member = await resolveComponentMembershipForOrganization(
+      ctx,
+      ctx.auth.user,
+      organization,
+    );
     if (!member) {
       throw new ConvexError("You are not a member of this organization");
     }
@@ -389,13 +387,10 @@ export const updateThumbnail = authMutation({
     let hasAccess = document.ownerId === userId;
 
     if (!hasAccess) {
-      const member = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user_organization", (q) =>
-          q.eq("userId", userId).eq("organizationId", document.organizationId),
-        )
-        .first();
-
+      const organization = await ctx.db.get(document.organizationId);
+      const member = organization
+        ? await resolveComponentMembershipForOrganization(ctx, ctx.auth.user, organization)
+        : null;
       hasAccess = member !== null && isAccountValid(member);
     }
 

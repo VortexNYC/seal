@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+import { seedTestOrganizationMember } from "../../testVortexAuth";
 import {
   PLAN_LIMITS,
   ensureProFeature,
@@ -103,12 +104,11 @@ describe("subscription_guards", () => {
     });
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         organizationId,
         userId,
         role: "member",
         status: "active",
-        isPrimary: false,
       });
     });
   }
@@ -287,7 +287,7 @@ describe("subscription_guards", () => {
   describe("ensureSeatLimit", () => {
     test("does not throw when org has no members (free plan, 0 of 1)", async () => {
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx.db, organizationId)).resolves.toBeUndefined();
+        await expect(ensureSeatLimit(ctx, organizationId)).resolves.toBeUndefined();
       });
     });
 
@@ -295,7 +295,7 @@ describe("subscription_guards", () => {
       await seedMember();
 
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx.db, organizationId)).rejects.toThrow(ConvexError);
+        await expect(ensureSeatLimit(ctx, organizationId)).rejects.toThrow(ConvexError);
       });
     });
 
@@ -307,7 +307,7 @@ describe("subscription_guards", () => {
       }
 
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx.db, organizationId)).resolves.toBeUndefined();
+        await expect(ensureSeatLimit(ctx, organizationId)).resolves.toBeUndefined();
       });
     });
 
@@ -319,7 +319,7 @@ describe("subscription_guards", () => {
       }
 
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx.db, organizationId)).rejects.toThrow(ConvexError);
+        await expect(ensureSeatLimit(ctx, organizationId)).rejects.toThrow(ConvexError);
       });
     });
 
@@ -328,7 +328,7 @@ describe("subscription_guards", () => {
 
       try {
         await t.run(async (ctx) => {
-          await ensureSeatLimit(ctx.db, organizationId);
+          await ensureSeatLimit(ctx, organizationId);
         });
         expect.unreachable("Expected ensureSeatLimit to throw");
       } catch (error) {

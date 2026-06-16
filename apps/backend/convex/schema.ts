@@ -39,13 +39,11 @@ import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import { type NotificationType, notificationsTable } from "./schemas/notifications";
-import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
   type OrganizationMemberRole,
   type OrganizationMemberStatus,
-  organizationMembersTable,
 } from "./schemas/organization_members";
-import { type OrganizationRoleType, organizationRolesTable } from "./schemas/organization_roles";
+import { type OrganizationRoleType } from "./schemas/organization_roles";
 import {
   type BrandingSettings,
   type OrganizationStatus,
@@ -163,9 +161,6 @@ export default defineSchema({
   users: usersTable,
   user_profiles: userProfilesTable,
   organizations: organizationsTable,
-  organization_members: organizationMembersTable,
-  organization_invitations: organizationInvitationsTable,
-  organization_roles: organizationRolesTable,
 
   documents: documentsTable,
   document_versions: documentVersionsTable,

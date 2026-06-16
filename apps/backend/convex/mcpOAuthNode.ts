@@ -13,7 +13,7 @@ import {
   verifyMcpOAuthAccessTokenWithStoredKeys,
   type McpOAuthSignedAccessToken,
   type McpOAuthSigningKeyRecord,
-} from "@plasmapos/vortex-auth/mcp";
+} from "@plasmapos/auth/mcp";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";

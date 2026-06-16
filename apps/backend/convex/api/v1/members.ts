@@ -8,6 +8,10 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../../_generated/server";
+import {
+  getComponentMemberById,
+  listComponentMembersByOrganization,
+} from "../../lib/componentOrgReads";
 
 /** API representation of a workspace member */
 export interface ApiMember {
@@ -43,10 +47,11 @@ export const listMembers = internalQuery({
     ),
   },
   handler: async (ctx, args): Promise<ApiMember[]> => {
-    const members = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .collect();
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      return [];
+    }
+    const members = await listComponentMembersByOrganization(ctx, organization);
 
     const roleOrder: Record<string, number> = {
       owner: 0,
@@ -63,18 +68,19 @@ export const listMembers = internalQuery({
       // Filter by role if requested
       if (args.role && member.role !== args.role) continue;
 
+      if (!member.userId) continue;
       const user = await ctx.db.get(member.userId);
       if (!user) continue;
 
       results.push({
-        id: member._id,
+        id: member.memberId,
         user_id: user._id,
         name: user.name ?? user.email,
         email: user.email,
         avatar_url: user.avatar ?? undefined,
         role: member.role as ApiMember["role"],
         status: member.status,
-        joined_at: new Date(member._creationTime).toISOString(),
+        joined_at: new Date(member.createdAt).toISOString(),
       });
     }
 
@@ -95,24 +101,31 @@ export const getMember = internalQuery({
   args: {
     userId: v.id("users"),
     organizationId: v.id("organizations"),
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
   },
   handler: async (ctx, args): Promise<ApiMember | null> => {
-    const member = await ctx.db.get(args.memberId);
-    if (!member || member.organizationId !== args.organizationId) return null;
+    const member = await getComponentMemberById(ctx, args.memberId);
+    if (
+      !member ||
+      member.organizationId !== args.organizationId ||
+      !member.userId ||
+      !member.role
+    ) {
+      return null;
+    }
 
     const user = await ctx.db.get(member.userId);
     if (!user) return null;
 
     return {
-      id: member._id,
+      id: member.memberId,
       user_id: user._id,
       name: user.name ?? user.email,
       email: user.email,
       avatar_url: user.avatar ?? undefined,
       role: member.role as ApiMember["role"],
       status: member.status,
-      joined_at: new Date(member._creationTime).toISOString(),
+      joined_at: new Date(member.createdAt).toISOString(),
     };
   },
 });

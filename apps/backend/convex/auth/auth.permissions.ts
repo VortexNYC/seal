@@ -3,10 +3,13 @@
  * This extends the existing auth.ts with fine-grained permission management
  */
 
-import { ConvexError } from "convex/values";
+import { ConvexError, type GenericId } from "convex/values";
 
+import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { AuthMember } from "../auth.utils";
+import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import {
   getExpandedPermissions,
   hasAllPermissions,
@@ -35,7 +38,7 @@ export interface AuthContextWithPermissions {
 
   // Include the full docs for backward compatibility
   user: Doc<"users">;
-  member: Doc<"organization_members">;
+  member: AuthMember;
   organization: Doc<"organizations">;
 }
 
@@ -66,19 +69,30 @@ async function getMembershipOrThrow(
   userId: Id<"users">,
   organizationId: Id<"organizations">,
   notFoundMessage: string,
-): Promise<Doc<"organization_members">> {
-  const membership = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", userId).eq("organizationId", organizationId),
-    )
-    .first();
+): Promise<AuthMember> {
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    throwPermissionAuthError("UNAUTHORIZED", "User not found");
+  }
+  const organization = await getOrganizationOrThrow(ctx, organizationId);
+  const componentMembership = await resolveComponentMembershipForOrganization(
+    ctx,
+    user,
+    organization,
+  );
 
-  if (!membership) {
+  if (!componentMembership) {
     throwPermissionAuthError("FORBIDDEN", notFoundMessage);
   }
 
-  return membership;
+  return {
+    userId,
+    organizationId,
+    role: componentMembership.role,
+    status: componentMembership.status,
+    permissions: [],
+    roleId: componentMembership.roleId,
+  };
 }
 
 async function getOrganizationOrThrow(
@@ -94,7 +108,7 @@ async function getOrganizationOrThrow(
 
 function buildSuperAdminContext(
   user: Doc<"users">,
-  member: Doc<"organization_members">,
+  member: AuthMember,
   organization: Doc<"organizations">,
   organizationId: Id<"organizations">,
 ): AuthContextWithPermissions {
@@ -120,7 +134,7 @@ async function buildActiveMembershipContext(
   ctx: QueryCtx | MutationCtx,
   user: Doc<"users">,
 ): Promise<{
-  membership: Doc<"organization_members">;
+  membership: AuthMember;
   organization: Doc<"organizations">;
   organizationId: Id<"organizations">;
 }> {
@@ -155,12 +169,16 @@ function isPermissionKey(permission: string): permission is PermissionKey {
 
 async function resolvePermissions(
   ctx: QueryCtx | MutationCtx,
-  membership: Doc<"organization_members">,
+  membership: AuthMember,
+  organization: Doc<"organizations">,
 ): Promise<PermissionKey[]> {
   let permissions: PermissionKey[] = getExpandedPermissions(membership.role as RoleTemplate);
 
-  if (membership.roleId) {
-    const role = await ctx.db.get(membership.roleId);
+  if (membership.roleId && organization.vortexAuthOrganizationId) {
+    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
+      roleId: membership.roleId as GenericId<"organization_roles">,
+      organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
+    });
     permissions = role
       ? role.permissions.filter(isPermissionKey)
       : getExpandedPermissions(membership.role as RoleTemplate);
@@ -179,7 +197,7 @@ async function resolvePermissions(
 
 function buildPermissionContext(
   user: Doc<"users">,
-  membership: Doc<"organization_members">,
+  membership: AuthMember,
   organization: Doc<"organizations">,
   organizationId: Id<"organizations">,
   permissions: string[],
@@ -245,7 +263,7 @@ export async function getAuthContextWithPermissions(
     ctx,
     user,
   );
-  const permissions = await resolvePermissions(ctx, membership);
+  const permissions = await resolvePermissions(ctx, membership, organization);
 
   return buildPermissionContext(user, membership, organization, organizationId, permissions);
 }

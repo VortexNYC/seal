@@ -16,6 +16,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { authMutation, authQuery } from "./auth";
+import { resolveComponentMemberships } from "./lib/componentOrgReads";
 
 function buildUserProfile(user: Doc<"users">) {
   return {
@@ -61,10 +62,11 @@ async function getDocumentExports(ctx: QueryCtx, userId: Id<"users">) {
 }
 
 async function getMembershipExports(ctx: QueryCtx, userId: Id<"users">) {
-  const memberships = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    return [];
+  }
+  const memberships = await resolveComponentMemberships(ctx, user);
   const organizations = await Promise.all(
     memberships.map((membership) => ctx.db.get(membership.organizationId)),
   );
@@ -73,7 +75,7 @@ async function getMembershipExports(ctx: QueryCtx, userId: Id<"users">) {
     organizationName: organizations[index]?.name ?? "Unknown",
     role: membership.role,
     status: membership.status,
-    joinedAt: membership._creationTime,
+    joinedAt: undefined,
   }));
 }
 

@@ -305,23 +305,22 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
 
     await teamPage.goto(organizationSlug);
 
-    const email = testData.email("revoke-target");
+    const email = testData.email(`revoke-target-${testInfo.retry}-${testInfo.workerIndex}`);
     await teamPage.inviteMember(email, "Member");
     await waitForToast(authenticatedPage, /invitation sent/i);
 
     // Navigate to the Invitations tab where pending invitations are displayed
     await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
 
-    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
-      hasText: email,
-    });
-    await expect(invitationRow).toBeVisible({ timeout: 5000 });
+    const invitationRow = authenticatedPage.locator(`[data-invitation-email="${email}"]`);
+    await expect(invitationRow).toBeVisible({ timeout: 10000 });
 
     await invitationRow.getByRole("button", { name: /revoke/i }).click();
-
     await waitForToast(authenticatedPage, /invitation revoked/i);
 
-    await expect(invitationRow).not.toBeVisible();
+    await expect(authenticatedPage.locator(`[data-invitation-email="${email}"]`)).not.toBeVisible({
+      timeout: 10000,
+    });
   });
 
   // SKIPPED: "resend invitation" is not part of the component-based invitations

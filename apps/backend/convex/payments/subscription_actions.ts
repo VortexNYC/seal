@@ -1,23 +1,18 @@
 "use node";
 
 import { ConvexError, v } from "convex/values";
-import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { type ActionCtx, action } from "../_generated/server";
-import { getOrCreateStripeCustomer } from "../stripe/helpers";
-
-function initializeStripe(): Stripe {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeSecretKey) {
-    throw new Error("STRIPE_SECRET_KEY not configured");
-  }
-
-  return new Stripe(stripeSecretKey, {
-    apiVersion: "2026-02-25.clover",
-  });
-}
+import {
+  cancelProcessorSubscription,
+  createCustomerPortalUrl,
+  createHostedCheckoutSession,
+  getOrCreateBillingCustomerId,
+  pauseProcessorSubscription,
+  resumeProcessorSubscription,
+} from "../stripe/subscription_processor";
 
 async function resolveProcessorContext(
   ctx: ActionCtx,
@@ -62,7 +57,6 @@ async function resolveAuthContext(ctx: ActionCtx): Promise<{
 
 async function resolveOrgBillingCustomer(
   ctx: ActionCtx,
-  stripe: Stripe,
   organization: Doc<"organizations">,
   adminEmail: string,
 ): Promise<string> {
@@ -70,13 +64,11 @@ async function resolveOrgBillingCustomer(
     return organization.stripeCustomerId;
   }
 
-  const stripeCustomerId = await getOrCreateStripeCustomer(
-    stripe,
-    organization._id,
+  const stripeCustomerId = await getOrCreateBillingCustomerId({
+    organizationId: organization._id,
     adminEmail,
-    organization.name,
-    undefined,
-  );
+    organizationName: organization.name,
+  });
 
   await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
     organizationId: organization._id,
@@ -103,10 +95,9 @@ export const createCheckoutSession = action({
     cancelUrl: v.string(),
   },
   handler: async (ctx, args): Promise<{ checkoutUrl: string }> => {
-    const stripe = initializeStripe();
     const { user, organization } = await resolveAuthContext(ctx);
 
-    const stripeCustomerId = await resolveOrgBillingCustomer(ctx, stripe, organization, user.email);
+    const stripeCustomerId = await resolveOrgBillingCustomer(ctx, organization, user.email);
     const memberCount = await getOrgMemberCount(ctx, organization._id);
 
     const priceData = await ctx.runMutation(
@@ -118,30 +109,17 @@ export const createCheckoutSession = action({
       throw new ConvexError(`Price not found for lookup key: ${args.lookupKey}`);
     }
 
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId,
-      mode: "subscription",
-      line_items: [
-        {
-          price: priceData.price.externalPriceId,
-          quantity: memberCount,
-        },
-      ],
-      success_url: args.successUrl,
-      cancel_url: args.cancelUrl,
-      subscription_data: {
-        metadata: {
-          organizationId: organization._id,
-          lookupKey: args.lookupKey,
-        },
-      },
+    const checkoutUrl = await createHostedCheckoutSession({
+      customerId: stripeCustomerId,
+      externalPriceId: priceData.price.externalPriceId,
+      quantity: memberCount,
+      successUrl: args.successUrl,
+      cancelUrl: args.cancelUrl,
+      organizationId: organization._id,
+      lookupKey: args.lookupKey,
     });
 
-    if (!session.url) {
-      throw new ConvexError("Failed to create checkout session");
-    }
-
-    return { checkoutUrl: session.url };
+    return { checkoutUrl };
   },
 });
 
@@ -150,19 +128,16 @@ export const createCustomerPortalSession = action({
     returnUrl: v.string(),
   },
   handler: async (ctx, args): Promise<{ url: string }> => {
-    const stripe = initializeStripe();
-    const { organization } = await resolveAuthContext(ctx);
+    const { user, organization } = await resolveAuthContext(ctx);
 
-    if (!organization.stripeCustomerId) {
-      throw new ConvexError("No billing account found. Please contact support.");
-    }
+    const stripeCustomerId = await resolveOrgBillingCustomer(ctx, organization, user.email);
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: organization.stripeCustomerId,
-      return_url: args.returnUrl,
+    const url = await createCustomerPortalUrl({
+      customerId: stripeCustomerId,
+      returnUrl: args.returnUrl,
     });
 
-    return { url: session.url };
+    return { url };
   },
 });
 
@@ -173,13 +148,7 @@ export const pauseSubscription = action({
   },
   handler: async (ctx, args) => {
     const processor = await resolveProcessorContext(ctx, args);
-    const stripe = initializeStripe();
-
-    await stripe.subscriptions.update(
-      processor.processorSubscriptionId,
-      { pause_collection: { behavior: "void" } },
-      { stripeAccount: processor.processorAccountId },
-    );
+    await pauseProcessorSubscription(processor);
 
     return { success: true };
   },
@@ -192,13 +161,7 @@ export const resumeSubscription = action({
   },
   handler: async (ctx, args) => {
     const processor = await resolveProcessorContext(ctx, args);
-    const stripe = initializeStripe();
-
-    await stripe.subscriptions.update(
-      processor.processorSubscriptionId,
-      { pause_collection: null },
-      { stripeAccount: processor.processorAccountId },
-    );
+    await resumeProcessorSubscription(processor);
 
     return { success: true };
   },
@@ -211,13 +174,7 @@ export const cancelSubscription = action({
   },
   handler: async (ctx, args) => {
     const processor = await resolveProcessorContext(ctx, args);
-    const stripe = initializeStripe();
-
-    await stripe.subscriptions.update(
-      processor.processorSubscriptionId,
-      { cancel_at_period_end: true },
-      { stripeAccount: processor.processorAccountId },
-    );
+    await cancelProcessorSubscription(processor);
 
     return { success: true };
   },

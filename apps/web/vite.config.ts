@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -65,7 +66,7 @@ export default defineConfig(() => {
   };
 
   return {
-    plugins: [tailwindcss(), tanstackRouter({}), react()],
+    plugins: [cloudflare(), tailwindcss(), tanstackRouter({}), react()],
 
     resolve: {
       alias: {

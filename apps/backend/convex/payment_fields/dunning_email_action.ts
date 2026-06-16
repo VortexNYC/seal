@@ -11,7 +11,7 @@ import { Resend } from "resend";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalQuery } from "../_generated/server";
-import { resendComponent } from "../emails/resend_component";
+import { sendEmailManuallyFromAction } from "../emails/resend_component";
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 
@@ -166,7 +166,7 @@ export const sendDunningEmail = internalAction({
     const html = renderDunningHtml(content, customerName, invoice.hostedInvoiceUrl);
 
     try {
-      await resendComponent.sendEmailManually(
+      await sendEmailManuallyFromAction(
         ctx,
         { from: FROM_EMAIL, to: [invoice.customerEmail], subject: content.subject },
         async (idempotencyKey: string) => {

@@ -2,10 +2,13 @@
  * Mutations for organization roles
  */
 
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type GenericId, v } from "convex/values";
 
+import { components } from "../_generated/api";
 import { isValidPermission } from "../auth/permissions";
 import { permissionMutation } from "../auth/wrappers";
+import { getComponentRoleByKey } from "../lib/componentOrgReads";
+import { ensureVortexAuthOrganization } from "../lib/vortexAuthOrganizations";
 
 /**
  * Create a new custom role
@@ -26,32 +29,29 @@ export const create = permissionMutation("users:roles")({
       });
     }
 
-    // Check for duplicate name
-    const existing = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_name", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
-      )
-      .first();
-
-    if (existing) {
+    const existing = await getComponentRoleByKey(ctx, ctx.auth.organization, args.name);
+    if (existing !== null) {
       throw new ConvexError({
         code: "CONFLICT",
         message: "Role name already exists in this organization",
       });
     }
 
-    const now = Date.now();
-    const id = await ctx.db.insert("organization_roles", {
+    const organizationId = await ensureVortexAuthOrganization(
+      ctx,
+      ctx.auth.organizationId,
+      ctx.auth.user.vortexAuthUserId,
+    );
+    const result = await ctx.runMutation(components.vortexAuth.organizations.ensureRole, {
+      organizationId: organizationId as GenericId<"organizations">,
+      key: args.name,
       name: args.name,
       permissions: validPermissions,
-      organizationId: ctx.auth.organizationId,
-      type: "custom",
-      createdAt: now,
-      updatedAt: now,
+      isSystem: false,
+      createdBy: ctx.auth.user.vortexAuthUserId as GenericId<"users"> | undefined,
     });
 
-    return { roleId: id };
+    return { roleId: String(result.roleId) };
   },
 });
 
@@ -60,12 +60,23 @@ export const create = permissionMutation("users:roles")({
  */
 export const update = permissionMutation("users:roles")({
   args: {
-    roleId: v.id("organization_roles"),
+    roleId: v.string(),
     name: v.optional(v.string()),
     permissions: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const role = await ctx.db.get(args.roleId);
+    const componentOrganizationId = ctx.auth.organization.vortexAuthOrganizationId;
+    if (!componentOrganizationId) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Role not found",
+      });
+    }
+
+    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
+      roleId: args.roleId as GenericId<"organization_roles">,
+      organizationId: componentOrganizationId as GenericId<"organizations">,
+    });
 
     if (!role) {
       throw new ConvexError({
@@ -74,8 +85,7 @@ export const update = permissionMutation("users:roles")({
       });
     }
 
-    // Ensure role belongs to user's organization
-    if (role.organizationId !== ctx.auth.organizationId) {
+    if (role.organizationId !== componentOrganizationId) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Cannot modify role from different organization",
@@ -83,43 +93,30 @@ export const update = permissionMutation("users:roles")({
     }
 
     // Prevent system role modification
-    if (role.type === "system") {
+    if (role.isSystem) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Cannot modify system role",
       });
     }
 
-    const updates: {
-      name?: string;
-      permissions?: string[];
-      updatedAt: number;
-    } = {
-      updatedAt: Date.now(),
-    };
+    let nextName: string | undefined;
+    let nextPermissions: string[] | undefined;
 
-    // Update name if provided
     if (args.name !== undefined) {
       const newName = args.name;
-      // Check for duplicate
-      const duplicate = await ctx.db
-        .query("organization_roles")
-        .withIndex("by_name", (q) =>
-          q.eq("organizationId", ctx.auth.organizationId).eq("name", newName),
-        )
-        .first();
+      const duplicate = await getComponentRoleByKey(ctx, ctx.auth.organization, newName);
 
-      if (duplicate && duplicate._id !== args.roleId) {
+      if (duplicate && duplicate.roleId !== args.roleId) {
         throw new ConvexError({
           code: "CONFLICT",
           message: "Role name already exists in this organization",
         });
       }
 
-      updates.name = args.name;
+      nextName = args.name;
     }
 
-    // Update permissions if provided
     if (args.permissions !== undefined) {
       const validPermissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
 
@@ -130,10 +127,14 @@ export const update = permissionMutation("users:roles")({
         });
       }
 
-      updates.permissions = validPermissions;
+      nextPermissions = validPermissions;
     }
 
-    await ctx.db.patch(args.roleId, updates);
+    await ctx.runMutation(components.vortexAuth.organizations.setRoleDetails, {
+      roleId: args.roleId as GenericId<"organization_roles">,
+      name: nextName,
+      permissions: nextPermissions,
+    });
     return { ok: true };
   },
 });
@@ -142,9 +143,20 @@ export const update = permissionMutation("users:roles")({
  * Delete a custom role
  */
 export const remove = permissionMutation("users:roles")({
-  args: { roleId: v.id("organization_roles") },
+  args: { roleId: v.string() },
   handler: async (ctx, args) => {
-    const role = await ctx.db.get(args.roleId);
+    const componentOrganizationId = ctx.auth.organization.vortexAuthOrganizationId;
+    if (!componentOrganizationId) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Role not found",
+      });
+    }
+
+    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
+      roleId: args.roleId as GenericId<"organization_roles">,
+      organizationId: componentOrganizationId as GenericId<"organizations">,
+    });
 
     if (!role) {
       throw new ConvexError({
@@ -153,8 +165,7 @@ export const remove = permissionMutation("users:roles")({
       });
     }
 
-    // Ensure role belongs to user's organization
-    if (role.organizationId !== ctx.auth.organizationId) {
+    if (role.organizationId !== componentOrganizationId) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Cannot delete role from different organization",
@@ -162,27 +173,17 @@ export const remove = permissionMutation("users:roles")({
     }
 
     // Prevent system role deletion
-    if (role.type === "system") {
+    if (role.isSystem) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Cannot delete system role",
       });
     }
 
-    // Check if role is assigned to any members
-    const assigned = await ctx.db
-      .query("organization_members")
-      .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
-      .first();
-
-    if (assigned) {
-      throw new ConvexError({
-        code: "CONFLICT",
-        message: "Role is assigned to members. Reassign members before deleting.",
-      });
-    }
-
-    await ctx.db.delete(args.roleId);
+    await ctx.runMutation(components.vortexAuth.organizations.deleteRole, {
+      roleId: args.roleId as GenericId<"organization_roles">,
+      organizationId: componentOrganizationId as GenericId<"organizations">,
+    });
     return { ok: true };
   },
 });

@@ -1,0 +1,70 @@
+{
+  "date": "2026-06-12",
+  "target": "Seal Stripe-to-Vortex Payments migration proof",
+  "canonicalLocalUrl": "http://seal.localhost:1355",
+  "e2eAppUrl": "http://localhost:5180",
+  "stagingUrl": "https://staging-app.seal.nyc",
+  "notes": [
+    "staging-app.seal.nyc is now served by Cloudflare Worker seal-web-staging and resolves through Cloudflare.",
+    "clever-goose-484 BETTER_AUTH_TRUSTED_ORIGINS includes https://staging-app.seal.nyc so browser sign-in can consume Better-Auth responses.",
+    "portless seal.localhost:1355 routed auth paths to the landing 404; the authenticated app proof used apps/web's Playwright server on localhost:5180.",
+    "Manual vb sign-up on localhost:4093 hung at Creating account when pointed at the root dev server env; Playwright auth setup passed on the app E2E server/env.",
+    "Full billing E2E with dependencies passed after fixing seeded API document ownership in the E2E Convex helpers and deploying the backend to clever-goose-484."
+  ],
+  "actions": [
+    {
+      "step": "Static adoption proof sweep",
+      "result": "All Vortex billing, payments settings, merchant settings, operational payments, and backend adapter adoption proofs passed."
+    },
+    {
+      "step": "Fix billing page Vortex handler ownership",
+      "result": "Changed VortexPlanComparison to receive onPlanSelect={handlePlanSelect}; billing adoption proof now passes."
+    },
+    {
+      "step": "Fix billing portal action for new/free organizations",
+      "result": "createCustomerPortalSession now resolves or creates the org billing customer through the same path as checkout instead of throwing No billing account found."
+    },
+    {
+      "step": "Extract Stripe subscription processor boundary",
+      "result": "payments/subscription_actions delegates hosted checkout, billing portal, and subscription pause/resume/cancel calls to stripe/subscription_processor instead of importing the Stripe SDK directly."
+    },
+    {
+      "step": "Fix full E2E smoke-contract dependency",
+      "result": "createTestDocument and createSignableTestDocument now resolve an active organization member as document owner instead of falling back to the wrong user."
+    },
+    {
+      "step": "Deploy E2E backend",
+      "command": "CONVEX_DEPLOY_KEY=<from apps/web/.env.test> bun run deploy",
+      "result": "Deployed Convex backend to clever-goose-484 so Playwright used the seeded document fix."
+    },
+    {
+      "step": "Billing browser E2E",
+      "command": "bunx playwright test e2e/tests/billing.e2e.ts --project chromium",
+      "result": "12 passed: setup-auth, setup-app, setup-backend, smoke-contract, billing page render, available plans, customer portal session, and checkout session."
+    },
+    {
+      "step": "Vortex payments surface browser E2E",
+      "command": "bunx playwright test e2e/tests/vortex-payments-surfaces.e2e.ts --project chromium --no-deps",
+      "result": "8 passed: settings/payments plus payments overview, balances, payouts, history, disputes, tax, and subscriptions render Vortex surfaces or Vortex no-account states without error boundary or visible Stripe embedded copy."
+    },
+    {
+      "step": "Create staging web surface",
+      "command": "bun run --cwd apps/web deploy:staging",
+      "result": "Deployed Cloudflare Worker seal-web-staging and attached staging-app.seal.nyc as a custom domain."
+    },
+    {
+      "step": "Fix staging browser auth origin",
+      "result": "Set clever-goose-484 BETTER_AUTH_TRUSTED_ORIGINS to include https://staging-app.seal.nyc."
+    },
+    {
+      "step": "Staging browser proof",
+      "command": "vb --fresh seal-staging-payments-2",
+      "result": "Signed in at https://staging-app.seal.nyc, landed on /seal-e2e/home, then verified billing settings, Vortex Connect settings, and payments overview/balances/payouts/history/disputes/tax/subscriptions rendered without error."
+    },
+    {
+      "step": "Root verification",
+      "result": "typecheck, lint, build, unit tests, Convex cost guard, and git diff --check passed."
+    }
+  ],
+  "knownBlockers": []
+}

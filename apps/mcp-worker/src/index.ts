@@ -64,12 +64,17 @@ function getConvexSiteOrigin(env: Env): string {
   return new URL(env.SEAL_API_BASE_URL).origin;
 }
 
+type WorkerGlobalWithProcess = typeof globalThis & {
+  process?: {
+    env: Record<string, string>;
+  };
+};
+
 // Bridge the Worker's `env` arg into process.env so `getConfig()` and other
 // modules that read process.env keep working unchanged. nodejs_compat provides
 // the process shim; we just need to populate env values.
 function bridgeEnvToProcess(env: Env): void {
-  // biome-ignore lint/suspicious/noExplicitAny: process shim from nodejs_compat
-  const g = globalThis as any;
+  const g = globalThis as WorkerGlobalWithProcess;
   g.process = g.process || { env: {} };
   for (const [k, v] of Object.entries(env)) {
     if (typeof v === "string") g.process.env[k] = v;

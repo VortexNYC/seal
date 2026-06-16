@@ -16,11 +16,55 @@ function getConvexSetupContext(): {
 }
 
 export async function cleanupPendingInvitations(): Promise<void> {
-  // Invitations are now component-based (Better-Auth / vortex-auth), so the old
-  // external invitation-cleanup API call no longer applies. This is a safe no-op
-  // that keeps `prepareBackendState` working until a replacement is wired up.
-  // TODO(auth): port invitation cleanup to the vortex-auth component if needed
-  console.info("[setup] Invitation cleanup skipped (no-op): no component cleanup wired yet");
+  const { convexUrl, deployKey, organizationSlug } = getConvexSetupContext();
+  if (!deployKey) {
+    console.warn("[setup] CONVEX_DEPLOY_KEY not set — skipping E2E invitation cleanup");
+    return;
+  }
+
+  try {
+    let totalRevoked = 0;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const cleanupRes = await fetch(`${convexUrl}/api/mutation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Convex ${deployKey}`,
+        },
+        body: JSON.stringify({
+          path: "test_e2e_helpers:purgeE2EPendingInvitations",
+          args: { organizationSlug, batchSize: 50 },
+          format: "json",
+        }),
+      });
+
+      if (!cleanupRes.ok) {
+        console.warn(
+          "[setup] purgeE2EPendingInvitations HTTP error:",
+          cleanupRes.status,
+          await cleanupRes.text(),
+        );
+        break;
+      }
+
+      const cleanupData = (await cleanupRes.json()) as {
+        status: string;
+        value?: { revoked?: number; hasMore?: boolean };
+      };
+      const revoked = cleanupData.value?.revoked ?? 0;
+      totalRevoked += revoked;
+
+      if (!cleanupData.value?.hasMore || revoked === 0) {
+        break;
+      }
+    }
+
+    if (totalRevoked > 0) {
+      console.info(`[setup] Revoked ${totalRevoked} stale E2E invitation(s)`);
+    }
+  } catch (err) {
+    console.warn("[setup] purgeE2EPendingInvitations failed:", err);
+  }
 }
 
 export async function purgeE2eDocuments(): Promise<void> {

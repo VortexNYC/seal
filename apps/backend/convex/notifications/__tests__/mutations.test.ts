@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+import { seedTestOrganizationMember } from "../../testVortexAuth";
 
 describe("Notifications mutations", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -38,12 +39,11 @@ describe("Notifications mutations", () => {
     });
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: ownerId,
         organizationId,
         role: "owner",
         status: "active",
-        isPrimary: true,
       });
     });
 
@@ -225,12 +225,11 @@ describe("Notifications mutations", () => {
           activeOrganizationId: organizationId,
         });
 
-        await ctx.db.insert("organization_members", {
+        await seedTestOrganizationMember(ctx, {
           userId: otherUserId,
           organizationId,
           role: "member",
           status: "active",
-          isPrimary: false,
         });
 
         return await ctx.db.insert("notifications", {
@@ -320,12 +319,11 @@ describe("Notifications mutations", () => {
           activeOrganizationId: organizationId,
         });
 
-        await ctx.db.insert("organization_members", {
+        await seedTestOrganizationMember(ctx, {
           userId: otherUserId,
           organizationId,
           role: "member",
           status: "active",
-          isPrimary: false,
         });
 
         return await ctx.db.insert("notifications", {
@@ -386,12 +384,11 @@ describe("Notifications mutations", () => {
           activeOrganizationId: organizationId,
         });
 
-        await ctx.db.insert("organization_members", {
+        await seedTestOrganizationMember(ctx, {
           userId: otherUserId,
           organizationId,
           role: "member",
           status: "active",
-          isPrimary: false,
         });
 
         return await ctx.db.insert("notifications", {

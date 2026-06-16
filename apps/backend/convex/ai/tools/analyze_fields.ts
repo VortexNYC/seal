@@ -4,6 +4,7 @@ import { z } from "zod";
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { fieldAnalysisCache, type FieldAnalysisResult } from "../analyzeFieldsAction";
+import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
 export const analyzeDocumentFields = createTool({
@@ -30,7 +31,7 @@ export const analyzeDocumentFields = createTool({
       if (!document) throw new Error("Document not found");
 
       // Use cached Gemini analysis — same PDF (storageId) returns cached result
-      const result = (await fieldAnalysisCache.fetch(ctx, {
+      const result = (await fieldAnalysisCache.fetch(toActionCacheCtx(ctx), {
         storageId: document.storageId as Id<"_storage">,
       })) as FieldAnalysisResult;
 

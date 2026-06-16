@@ -1,5 +1,5 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
-import { expect, test as base, type Page } from "@playwright/test";
+import { test as base, type Page } from "@playwright/test";
 
 import { createDocument, deleteDocument } from "../factories/document-factory";
 import { ensureAuthenticatedWorkspaceHome, getTestWorkspaceConfig } from "./auth-helpers";
@@ -12,6 +12,15 @@ type AuthFixtures = {
   organizationSlug: string;
   /** Create a document via Convex API (~300ms) and return its ID and name. Auto-deletes after test. */
   createApiDocument: () => Promise<{ id: string; name: string }>;
+};
+
+type BetterAuthSessionData = {
+  user?: {
+    id?: unknown;
+  };
+  session?: {
+    userId?: unknown;
+  };
 };
 
 /** Shared in-memory cache of the PDF storageId across all workers in a process */
@@ -35,6 +44,23 @@ async function getStorageId(): Promise<string> {
   return cachedStorageId;
 }
 
+async function getBetterAuthSubject(page: Page): Promise<string | undefined> {
+  const subject = await page.evaluate(() => {
+    const raw = localStorage.getItem("better-auth_session_data");
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw) as BetterAuthSessionData;
+      const userId = parsed.user?.id ?? parsed.session?.userId;
+      return typeof userId === "string" ? userId : null;
+    } catch {
+      return null;
+    }
+  });
+
+  return subject ?? undefined;
+}
+
 /**
  * Extended test with authentication fixtures
  *
@@ -47,12 +73,17 @@ export const test = base.extend<AuthFixtures>({
     await use(page);
   },
 
-  createApiDocument: async ({ organizationSlug }, use) => {
+  createApiDocument: async ({ organizationSlug, authenticatedPage }, use) => {
     const created: Array<{ id: string }> = [];
 
     const factory = async () => {
       const storageId = await getStorageId();
-      const { id, name } = await createDocument({ organizationSlug, storageId });
+      const ownerAuthSubject = await getBetterAuthSubject(authenticatedPage);
+      const { id, name } = await createDocument({
+        organizationSlug,
+        storageId,
+        ownerAuthSubject,
+      });
       created.push({ id });
       return { id, name };
     };

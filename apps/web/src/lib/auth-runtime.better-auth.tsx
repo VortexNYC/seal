@@ -1,11 +1,11 @@
-import { createBetterAuthConvexClient } from "@plasmapos/vortex-auth/better-auth/client";
+import { createBetterAuthConvexClient } from "@plasmapos/auth/better-auth/client";
 import {
   createVortexAuthEventCapture,
   createVortexAuthFlowStorage,
   createVortexAuthRoutePaths,
   createVortexBetterAuthRuntime,
   type VortexBetterAuthClient,
-} from "@plasmapos/vortex-auth/react";
+} from "@plasmapos/auth/react";
 /**
  * Seal vortex-auth (Better-Auth) web runtime — P4 foundation.
  *

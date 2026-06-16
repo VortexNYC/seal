@@ -6,6 +6,7 @@
 import { v } from "convex/values";
 
 import { mutation } from "./_generated/server";
+import { resolveComponentMemberships } from "./lib/componentOrgReads";
 
 /**
  * Fix a user who has a membership but no activeOrganizationId set
@@ -34,11 +35,8 @@ export const fixUserActiveOrganization = mutation({
       };
     }
 
-    // Find user's first membership
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .first();
+    // Find user's first Vortex Auth-owned membership.
+    const membership = (await resolveComponentMemberships(ctx, user))[0];
 
     if (!membership) {
       return { success: false, error: "User has no organization memberships" };

@@ -2,9 +2,27 @@
  * Queries for organization roles
  */
 
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type GenericId, v } from "convex/values";
 
+import { components } from "../_generated/api";
 import { permissionQuery } from "../auth/wrappers";
+import {
+  type ComponentResolvedRole,
+  getComponentRoleByKey,
+  listComponentRolesByOrganization,
+} from "../lib/componentOrgReads";
+
+function toLegacyRole(role: ComponentResolvedRole) {
+  return {
+    _id: role.roleId,
+    organizationId: role.organizationId,
+    name: role.name,
+    permissions: role.permissions,
+    type: role.isSystem ? "system" : "custom",
+    createdAt: role.createdAt,
+    updatedAt: role.updatedAt,
+  };
+}
 
 /**
  * List all roles for the current organization
@@ -13,12 +31,8 @@ import { permissionQuery } from "../auth/wrappers";
 export const list = permissionQuery("users:roles")({
   args: {},
   handler: async (ctx) => {
-    const roles = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
-      .collect();
-
-    return roles;
+    const roles = await listComponentRolesByOrganization(ctx, ctx.auth.organization);
+    return roles.map(toLegacyRole);
   },
 });
 
@@ -26,9 +40,20 @@ export const list = permissionQuery("users:roles")({
  * Get a specific role by ID
  */
 export const getById = permissionQuery("users:roles")({
-  args: { id: v.id("organization_roles") },
+  args: { id: v.string() },
   handler: async (ctx, args) => {
-    const role = await ctx.db.get(args.id);
+    const componentOrganizationId = ctx.auth.organization.vortexAuthOrganizationId;
+    if (!componentOrganizationId) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Role not found",
+      });
+    }
+
+    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
+      roleId: args.id as GenericId<"organization_roles">,
+      organizationId: componentOrganizationId as GenericId<"organizations">,
+    });
 
     if (!role) {
       throw new ConvexError({
@@ -37,15 +62,22 @@ export const getById = permissionQuery("users:roles")({
       });
     }
 
-    // Ensure role belongs to user's organization
-    if (role.organizationId !== ctx.auth.organizationId) {
+    if (role.organizationId !== componentOrganizationId) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Cannot access role from different organization",
       });
     }
 
-    return role;
+    return toLegacyRole({
+      roleId: String(role._id),
+      organizationId: ctx.auth.organizationId,
+      name: role.key,
+      permissions: role.permissions,
+      isSystem: role.isSystem,
+      createdAt: role.createdAt,
+      updatedAt: role.updatedAt,
+    });
   },
 });
 
@@ -55,12 +87,7 @@ export const getById = permissionQuery("users:roles")({
 export const getByName = permissionQuery("users:roles")({
   args: { name: v.string() },
   handler: async (ctx, args) => {
-    const role = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_name", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
-      )
-      .first();
+    const role = await getComponentRoleByKey(ctx, ctx.auth.organization, args.name);
 
     if (!role) {
       throw new ConvexError({
@@ -69,7 +96,7 @@ export const getByName = permissionQuery("users:roles")({
       });
     }
 
-    return role;
+    return toLegacyRole(role);
   },
 });
 
@@ -79,13 +106,8 @@ export const getByName = permissionQuery("users:roles")({
 export const listCustom = permissionQuery("users:roles")({
   args: {},
   handler: async (ctx) => {
-    const roles = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
-      .filter((q) => q.eq(q.field("type"), "custom"))
-      .collect();
-
-    return roles;
+    const roles = await listComponentRolesByOrganization(ctx, ctx.auth.organization);
+    return roles.filter((role) => !role.isSystem).map(toLegacyRole);
   },
 });
 
@@ -95,13 +117,7 @@ export const listCustom = permissionQuery("users:roles")({
 export const isNameAvailable = permissionQuery("users:roles")({
   args: { name: v.string() },
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("organization_roles")
-      .withIndex("by_name", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
-      )
-      .first();
-
+    const existing = await getComponentRoleByKey(ctx, ctx.auth.organization, args.name);
     return { available: !existing };
   },
 });

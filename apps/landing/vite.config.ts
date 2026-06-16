@@ -13,6 +13,7 @@ import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
 const shikiPackageDir = path.dirname(path.dirname(require.resolve("shiki")));
+const contentToolCacheDir = process.env.VITE_SEAL_CONTENT_TOOL === "1";
 
 function matchesPackage(id: string, pkg: string): boolean {
   return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
@@ -53,6 +54,8 @@ function getManualChunkName(id: string): string | undefined {
 }
 
 export default defineConfig(async ({ command }) => ({
+  cacheDir: contentToolCacheDir ? "node_modules/.vite-content-tools" : "node_modules/.vite",
+
   server: {
     host: "127.0.0.1",
     port: parseInt(process.env.PORT ?? "5181"),

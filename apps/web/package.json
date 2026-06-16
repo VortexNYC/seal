@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
+    "preview": "vite preview",
     "lint": "oxlint -c ../../.oxlintrc.json -A eslint/complexity -A eslint/max-lines-per-function",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
@@ -20,7 +21,13 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
-    "test:e2e:codegen": "playwright codegen http://localhost:5180"
+    "test:e2e:codegen": "playwright codegen http://localhost:5180",
+    "deploy": "bun run build && wrangler deploy",
+    "deploy:staging": "VITE_APP_URL=https://staging-app.seal.nyc VITE_CONVEX_URL=https://clever-goose-484.convex.cloud VITE_BETTER_AUTH_URL=https://clever-goose-484.convex.site/api/auth bun run build && wrangler deploy --name seal-web-staging --domain staging-app.seal.nyc",
+    "react:doctor": "vortex-react-doctor --diff",
+    "react:doctor:full": "vortex-react-doctor --full --advisory",
+    "cf:types:mkdir": "bun -e \"import { mkdirSync } from 'node:fs'; mkdirSync('.wrangler/types', { recursive: true })\"",
+    "cf:types": "bun run cf:types:mkdir && wrangler types .wrangler/types/cloudflare-env.d.ts --include-runtime false"
   },
   "dependencies": {
     "@convex-dev/agent": "^0.3.2",
@@ -28,7 +35,8 @@
     "@convex-dev/react-query": "0.1.0",
     "@hookform/resolvers": "^5.2.2",
     "@jam.dev/sdk": "^0.0.6",
-    "@plasmapos/vortex-auth": "0.1.172",
+    "@plasmapos/auth": "file:../../../vortex-core/packages/vortex-auth",
+    "@plasmapos/observability": "file:../../../vortex-core/packages/observability",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -55,7 +63,7 @@
     "@tanstack/react-router-devtools": "^1.154.13",
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "^1.154.13",
-    "@vortex/payments": "file:../../../vortex-payments/packages/payments",
+    "@vortex/payments": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -88,6 +96,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.40.2",
+    "@plasmapos/tooling": "file:../../../vortex-core/packages/tooling",
     "@playwright/test": "1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -102,6 +112,7 @@
     "react-grab": "^0.1.7",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "wrangler": "^4.100.0"
   }
 }

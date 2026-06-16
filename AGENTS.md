@@ -8,7 +8,7 @@
 
 ## OVERVIEW
 
-Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth (via @plasmapos/vortex-auth); the product UI uses Tailwind v4 + Shadcn patterns.
+Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@plasmapos/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
 
 ## STRUCTURE
 

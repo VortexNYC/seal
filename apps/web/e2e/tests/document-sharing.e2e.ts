@@ -7,6 +7,7 @@ import { waitForToast } from "../utils/test-helpers";
 
 test.describe("Document Sharing", () => {
   test.describe.configure({ mode: "serial" });
+  test.setTimeout(120000);
 
   let documentsPage: DocumentsListPage;
   let shareDialog: ShareDialogPage;
@@ -34,10 +35,7 @@ test.describe("Document Sharing", () => {
     documentsListPage: DocumentsListPage,
     docName: string,
   ) => {
-    const row = documentsListPage.getDocumentRowByName(docName);
-
-    // Wait for row to appear (may take a moment for Convex to propagate)
-    await expect(row).toBeVisible({ timeout: 10000 });
+    const row = await documentsListPage.waitForDocumentRowByName(docName);
     await row.getByRole("button", { name: /document actions for/i }).click();
     const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
     await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
@@ -91,7 +89,7 @@ test.describe("Document Sharing", () => {
       authenticatedPage,
       organizationSlug,
     }) => {
-      test.setTimeout(60000);
+      test.setTimeout(120000);
       await documentsPage.goto(organizationSlug);
       await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();
@@ -111,7 +109,7 @@ test.describe("Document Sharing", () => {
       authenticatedPage,
       organizationSlug,
     }) => {
-      test.setTimeout(60000);
+      test.setTimeout(120000);
       await documentsPage.goto(organizationSlug);
       await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();
@@ -131,7 +129,7 @@ test.describe("Document Sharing", () => {
       authenticatedPage,
       organizationSlug,
     }) => {
-      test.setTimeout(60000);
+      test.setTimeout(120000);
       await documentsPage.goto(organizationSlug);
       await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+import { seedTestOrganizationMember } from "../../testVortexAuth";
 
 describe("Organization settings", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -50,23 +51,21 @@ describe("Organization settings", () => {
 
     // Admin membership
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: adminUserId,
         organizationId,
         role: "admin",
         status: "active",
-        isPrimary: false,
       });
     });
 
     // Owner membership
     await t.run(async (ctx) => {
-      await ctx.db.insert("organization_members", {
+      await seedTestOrganizationMember(ctx, {
         userId: ownerUserId,
         organizationId,
         role: "owner",
         status: "active",
-        isPrimary: true,
       });
     });
 

@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 
 import { authQuery } from "../auth";
 import { AuthUtils } from "../auth.utils";
+import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 
 export const listFolders = authQuery({
   args: {
@@ -12,13 +13,13 @@ export const listFolders = authQuery({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    // Check membership for role-based visibility filtering
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) throw new ConvexError("Organization not found");
+    const member = await resolveComponentMembershipForOrganization(
+      ctx,
+      ctx.auth.user,
+      organization,
+    );
 
     if (!member) throw new ConvexError("No access to this organization");
 
@@ -97,12 +98,13 @@ export const getAllFoldersFlat = authQuery({
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
-      )
-      .first();
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) throw new ConvexError("Organization not found");
+    const member = await resolveComponentMembershipForOrganization(
+      ctx,
+      ctx.auth.user,
+      organization,
+    );
 
     if (!member) throw new ConvexError("No access to this organization");
     const isAdminOrOwner = AuthUtils.isAdminOrOwner(member);

@@ -12,6 +12,7 @@ import { z } from "zod";
 
 import type { SearchResult } from "../search";
 import { searchCache } from "../search";
+import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
 export const searchDocuments = createTool({
@@ -26,7 +27,7 @@ export const searchDocuments = createTool({
   execute: async (ctx: SealAICtx, { query }): Promise<string> => {
     try {
       // Use cached search — identical queries within 1 hour skip re-embedding
-      const results = (await searchCache.fetch(ctx, {
+      const results = (await searchCache.fetch(toActionCacheCtx(ctx), {
         organizationId: ctx.organizationId,
         query,
         limit: 10,

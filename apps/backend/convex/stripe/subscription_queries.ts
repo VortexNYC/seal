@@ -30,12 +30,14 @@ export const getActiveSubscriptions = memberQuery({
       recurring.map(async (config) => {
         const document = await ctx.db.get(config.documentId);
 
-        const invoice = config.stripeInvoiceId
+        const stripeInvoiceId = config.stripeInvoiceId;
+        const stripeSubscriptionId = config.stripeSubscriptionId;
+        if (!stripeSubscriptionId) return null;
+
+        const invoice = stripeInvoiceId
           ? await ctx.db
               .query("document_invoices")
-              .withIndex("by_stripe_invoice", (q) =>
-                q.eq("stripeInvoiceId", config.stripeInvoiceId!),
-              )
+              .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", stripeInvoiceId))
               .first()
           : null;
 
@@ -51,12 +53,12 @@ export const getActiveSubscriptions = memberQuery({
           intervalCount: config.recurringConfig?.intervalCount ?? 1,
           endCondition: config.recurringConfig?.endCondition ?? "never",
           paymentStatus: config.paymentStatus ?? "pending",
-          stripeSubscriptionId: config.stripeSubscriptionId!,
+          stripeSubscriptionId,
           createdAt: config.createdAt,
         };
       }),
     );
 
-    return subscriptions;
+    return subscriptions.filter((subscription) => subscription !== null);
   },
 });

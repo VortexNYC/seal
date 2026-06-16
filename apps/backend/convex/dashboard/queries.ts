@@ -9,6 +9,7 @@
 import { v } from "convex/values";
 
 import { adminQuery, permissionQuery } from "../auth";
+import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
 /**
@@ -465,12 +466,9 @@ export const getMemberActivity = adminQuery({
   handler: async (ctx) => {
     const organizationId = ctx.auth.organization._id;
 
-    // Get all active members
-    const members = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+    const members = await listComponentMembersByOrganization(ctx, ctx.auth.organization, {
+      status: "active",
+    });
 
     // Get all non-deleted documents
     const documents = await ctx.db
@@ -482,6 +480,9 @@ export const getMemberActivity = adminQuery({
     // Build per-member stats
     const memberStats = await Promise.all(
       members.map(async (member) => {
+        if (!member.userId) {
+          return null;
+        }
         const user = await ctx.db.get(member.userId);
         const memberDocs = documents.filter((d) => d.ownerId === member.userId);
 
@@ -520,8 +521,9 @@ export const getMemberActivity = adminQuery({
     );
 
     // Sort by created count descending
-    memberStats.sort((a, b) => b.created - a.created);
+    const resolvedMemberStats = memberStats.filter((stat) => stat !== null);
+    resolvedMemberStats.sort((a, b) => b.created - a.created);
 
-    return memberStats;
+    return resolvedMemberStats;
   },
 });

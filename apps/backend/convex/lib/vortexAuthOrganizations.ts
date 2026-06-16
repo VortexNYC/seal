@@ -251,14 +251,17 @@ export async function createVortexAuthInvitation(
 export async function setVortexAuthInvitationStatus(
   ctx: VortexAuthMutationCtx,
   args: {
+    organizationId: Id<"organizations">;
     invitationId: string;
     status: ComponentInvitationStatus;
     acceptedByUserId?: Id<"users">;
     acceptedAt?: number;
   },
 ): Promise<void> {
+  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
   await ctx.runMutation(components.vortexAuth.organizations.setInvitationStatus, {
     invitationId: args.invitationId as GenericId<"organization_invitations">,
+    organizationId,
     status: args.status,
     acceptedByUserId: await getOptionalVortexAuthUserId(ctx, args.acceptedByUserId),
     acceptedAt: args.acceptedAt,
@@ -272,6 +275,7 @@ export async function setVortexAuthInvitationStatus(
 export async function recordVortexAuthInvitationEmailDelivery(
   ctx: VortexAuthMutationCtx,
   args: {
+    organizationId: Id<"organizations">;
     invitationId: string;
     emailId?: string | null;
     emailDeliveryStatus: ComponentInvitationEmailDeliveryStatus;
@@ -279,8 +283,10 @@ export async function recordVortexAuthInvitationEmailDelivery(
     emailDeliveryError?: string | null;
   },
 ): Promise<void> {
+  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
   await ctx.runMutation(components.vortexAuth.organizations.recordInvitationEmailDelivery, {
     invitationId: args.invitationId as GenericId<"organization_invitations">,
+    organizationId,
     emailId: args.emailId ?? null,
     emailDeliveryStatus: args.emailDeliveryStatus,
     emailDeliveryEvent: args.emailDeliveryEvent ?? null,
@@ -346,18 +352,24 @@ export async function createVortexAuthApiKey(
 /** Revoke a COMPONENT apiKey (idempotent). `apiKeyId` is the COMPONENT id. */
 export async function revokeVortexAuthApiKey(
   ctx: VortexAuthMutationCtx,
-  apiKeyId: string,
+  args: { apiKeyId: string; organizationId: Id<"organizations"> },
 ): Promise<void> {
-  await ctx.runMutation(components.vortexAuth.apiKeys.revokeApiKey, { apiKeyId });
+  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
+  await ctx.runMutation(components.vortexAuth.apiKeys.revokeApiKey, {
+    apiKeyId: args.apiKeyId,
+    organizationId,
+  });
 }
 
 /** Record lastUsed timestamp/ip on a COMPONENT apiKey (hot auth path). */
 export async function touchVortexAuthApiKeyLastUsed(
   ctx: VortexAuthMutationCtx,
-  args: { apiKeyId: string; ip?: string | null },
+  args: { apiKeyId: string; organizationId: Id<"organizations">; ip?: string | null },
 ): Promise<void> {
+  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
   await ctx.runMutation(components.vortexAuth.apiKeys.touchApiKeyLastUsed, {
     apiKeyId: args.apiKeyId,
+    organizationId,
     ip: args.ip ?? null,
   });
 }

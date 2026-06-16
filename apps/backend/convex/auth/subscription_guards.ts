@@ -11,7 +11,8 @@
 import { ConvexError } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
-import type { DatabaseReader } from "../_generated/server";
+import type { DatabaseReader, QueryCtx } from "../_generated/server";
+import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 
 export { PLAN_LIMITS, type TierPlan };
@@ -136,17 +137,17 @@ export async function ensureProFeature(
  * Throw if adding another member would exceed the org's seat limit.
  */
 export async function ensureSeatLimit(
-  db: DatabaseReader,
+  ctx: { db: DatabaseReader; runQuery: QueryCtx["runQuery"] },
   organizationId: Id<"organizations">,
 ): Promise<void> {
-  const { plan } = await getSubscriptionPlan(db, organizationId);
+  const { plan } = await getSubscriptionPlan(ctx.db, organizationId);
   const limits = PLAN_LIMITS[plan];
 
-  const members = await db
-    .query("organization_members")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("status"), "active"))
-    .collect();
+  const organization = await ctx.db.get(organizationId);
+  if (!organization) {
+    throw new ConvexError("Organization not found");
+  }
+  const members = await listComponentMembersByOrganization(ctx, organization, { status: "active" });
 
   if (members.length >= limits.maxSeats) {
     throw new ConvexError(

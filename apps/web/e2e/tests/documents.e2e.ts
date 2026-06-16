@@ -26,7 +26,7 @@ test.describe("Document Management", () => {
 
     try {
       await documentsPage.waitForAnyDocumentRow();
-      await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
+      await expect(await documentsPage.waitForDocumentRowByName(createdName)).toBeVisible();
     } finally {
       await documentsPage.goto(organizationSlug);
       await documentsPage.deleteDocument(createdName).catch(() => {});
@@ -52,9 +52,7 @@ test.describe("Document Management", () => {
 
     const documentsPage = new DocumentsListPage(authenticatedPage);
     await documentsPage.goto(organizationSlug);
-    await documentsPage.waitForAnyDocumentRow();
-    await documentsPage.searchDocuments(docName);
-    await authenticatedPage.waitForTimeout(1000);
+    await documentsPage.waitForDocumentRowByName(docName);
 
     expect(await documentsPage.getDocumentCount()).toBeGreaterThan(0);
     await expect(documentsPage.getDocumentRowByName(docName)).toBeVisible();
@@ -153,8 +151,7 @@ test.describe("Document Lifecycle", () => {
     await expect(documentPage.sendButton).toBeEnabled();
 
     await documentsPage.goto(organizationSlug);
-    await documentsPage.waitForAnyDocumentRow();
-    await expect(documentsPage.getDocumentRowByName(docName)).toBeVisible();
+    await expect(await documentsPage.waitForDocumentRowByName(docName)).toBeVisible();
     // createApiDocument fixture auto-deletes after test
   });
 });

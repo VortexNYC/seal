@@ -13,6 +13,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { type ActionCtx, internalAction } from "../_generated/server";
 import { fetchFieldAnalysisWithRetry } from "./analyzeFieldsAction";
+import { toActionCacheCtx } from "./component_ctx";
 
 /** Max PDF size for AI analysis (50MB — Gemini inline PDF limit). */
 const MAX_AI_PDF_SIZE = 50 * 1024 * 1024;
@@ -215,7 +216,10 @@ async function runDocumentProcessing(ctx: ActionCtx, args: ProcessDocumentArgs):
     return;
   }
 
-  const result = await fetchFieldAnalysisWithRetry(ctx, document.storageId as Id<"_storage">);
+  const result = await fetchFieldAnalysisWithRetry(
+    toActionCacheCtx(ctx),
+    document.storageId as Id<"_storage">,
+  );
   const suggestionId = await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
     documentId: args.documentId,
     organizationId: args.organizationId,

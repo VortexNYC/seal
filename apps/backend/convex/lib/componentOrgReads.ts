@@ -54,6 +54,7 @@ export type ComponentResolvedMembership = {
   role: OrganizationMemberRole;
   status: SealMembershipStatus;
   vortexAuthMemberId: string;
+  roleId: string;
 };
 
 export type ComponentResolvedOrganizationMember = {
@@ -179,7 +180,7 @@ export async function listComponentMembersByOrganization(
 
   const resolved: ComponentResolvedOrganizationMember[] = [];
   for (const member of members) {
-    const role = await resolveRole(ctx, member.roleId);
+    const role = await resolveRole(ctx, member.roleId, member.organizationId);
     if (role === null) {
       continue;
     }
@@ -204,7 +205,7 @@ export async function getComponentMemberById(
   ctx: ReadCtx,
   componentMemberId: string,
 ): Promise<ComponentResolvedMemberById | null> {
-  const member = await ctx.runQuery(components.vortexAuth.organizations.getMember, {
+  const member = await ctx.runQuery(components.vortexAuth.organizations.getMemberByIdForSystem, {
     memberId: componentMemberId as ComponentMemberId,
   });
   if (member === null) {
@@ -212,7 +213,7 @@ export async function getComponentMemberById(
   }
   const organizationId = await resolveSealOrganizationId(ctx, member.organizationId);
   const userId = await resolveSealUserId(ctx, member.userId ?? null);
-  const role = await resolveRole(ctx, member.roleId);
+  const role = await resolveRole(ctx, member.roleId, member.organizationId);
   return {
     memberId: String(member._id),
     organizationId,
@@ -333,7 +334,7 @@ async function mapComponentMembership(
     return null;
   }
 
-  const role = await resolveRole(ctx, member.roleId);
+  const role = await resolveRole(ctx, member.roleId, member.organizationId);
   if (role === null) {
     return null;
   }
@@ -343,14 +344,19 @@ async function mapComponentMembership(
     role,
     status: mapComponentStatus(member.status),
     vortexAuthMemberId: String(member._id),
+    roleId: String(member.roleId),
   };
 }
 
 async function resolveRole(
   ctx: ReadCtx,
   roleId: ComponentRoleId,
+  organizationId: ComponentOrganizationId,
 ): Promise<OrganizationMemberRole | null> {
-  const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, { roleId });
+  const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
+    roleId,
+    organizationId,
+  });
   if (role === null || !isOrganizationMemberRole(role.key)) {
     return null;
   }
@@ -550,7 +556,7 @@ async function mapComponentInvitation(
   if (organizationId === null) {
     return null;
   }
-  const role = await resolveRole(ctx, invitation.roleId);
+  const role = await resolveRole(ctx, invitation.roleId, invitation.organizationId);
   if (role === null) {
     return null;
   }
@@ -625,6 +631,7 @@ export async function listComponentInvitationsByOrganization(
   ctx: ReadCtx,
   organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">,
   status?: "pending" | "accepted" | "revoked" | "expired",
+  options?: { limit?: number },
 ): Promise<ComponentResolvedInvitation[]> {
   const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
   if (!vortexAuthOrganizationId) {
@@ -634,6 +641,7 @@ export async function listComponentInvitationsByOrganization(
     components.vortexAuth.organizations.listInvitationsByOrganization,
     {
       organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      limit: options?.limit ?? 500,
       status,
     },
   );
@@ -644,5 +652,5 @@ export async function listComponentInvitationsByOrganization(
       mapped.push(resolved);
     }
   }
-  return mapped;
+  return mapped.sort((a, b) => b.createdAt - a.createdAt);
 }

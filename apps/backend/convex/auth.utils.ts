@@ -1,6 +1,19 @@
 import type { Doc } from "./_generated/dataModel";
 import type { OrganizationMemberRole } from "./schema";
 
+export type AuthMember = {
+  userId?: string;
+  organizationId: string;
+  role: OrganizationMemberRole;
+  status: string;
+  permissions?: string[];
+  roleId?: string;
+  permissionOverrides?: {
+    add?: string[];
+    remove?: string[];
+  };
+};
+
 /**
  * Role hierarchy levels for permission comparison
  * Higher numbers = more permissions
@@ -210,7 +223,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 
 /** Returns true if the member has the named permission via role or individual grant. */
 // Authoritative permission check for a member.
-export function hasPermission(member: Doc<"organization_members">, permission: string): boolean {
+export function hasPermission(member: AuthMember, permission: string): boolean {
   // Check if user is active
   if (member.status !== "active") {
     return false;
@@ -234,10 +247,7 @@ export function hasPermission(member: Doc<"organization_members">, permission: s
  * Check if user has specific role or higher
  */
 /** Returns true if the member's role is at or above the required level. */
-export function hasRole(
-  member: Doc<"organization_members">,
-  requiredRole: OrganizationMemberRole,
-): boolean {
+export function hasRole(member: AuthMember, requiredRole: OrganizationMemberRole): boolean {
   const userLevel = ROLE_HIERARCHY[member.role] || 0;
   const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
   return userLevel >= requiredLevel;
@@ -247,10 +257,7 @@ export function hasRole(
  * Check if user can access specific organization
  */
 /** Returns true if the member can access the given organization. */
-export function canAccessOrganization(
-  member: Doc<"organization_members">,
-  targetOrgId: string,
-): boolean {
+export function canAccessOrganization(member: AuthMember, targetOrgId: string): boolean {
   return member.organizationId === targetOrgId;
 }
 
@@ -258,7 +265,7 @@ export function canAccessOrganization(
  * Get effective permissions for user (role-based + individual permissions)
  */
 /** Returns the union of role permissions and individual permissions for the member. */
-export function getEffectivePermissions(member: Doc<"organization_members">): string[] {
+export function getEffectivePermissions(member: AuthMember): string[] {
   const rolePermissions = ROLE_PERMISSIONS[member.role] || [];
   const individualPermissions = member.permissions || [];
 
@@ -267,7 +274,7 @@ export function getEffectivePermissions(member: Doc<"organization_members">): st
 }
 
 /** Returns true if the member's account is valid (active, not suspended). */
-export function isAccountValid(member: Doc<"organization_members">): boolean {
+export function isAccountValid(member: AuthMember): boolean {
   return member.status === "active";
 }
 
@@ -352,7 +359,7 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
 /**
  * Check if user can manage documents
  */
-export function canManageDocuments(member: Doc<"organization_members">, orgId: string): boolean {
+export function canManageDocuments(member: AuthMember, orgId: string): boolean {
   // Must have document management permission
   if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_CREATE)) {
     return false;
@@ -365,14 +372,14 @@ export function canManageDocuments(member: Doc<"organization_members">, orgId: s
 /**
  * Check if user can send documents for signing
  */
-export function canSendDocuments(member: Doc<"organization_members">): boolean {
+export function canSendDocuments(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_SEND);
 }
 
 /**
  * Check if user can manage templates
  */
-export function canManageTemplates(member: Doc<"organization_members">, orgId: string): boolean {
+export function canManageTemplates(member: AuthMember, orgId: string): boolean {
   // Must have template management permission
   if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_CREATE)) {
     return false;
@@ -385,56 +392,56 @@ export function canManageTemplates(member: Doc<"organization_members">, orgId: s
 /**
  * Check if user can download documents
  */
-export function canDownloadDocuments(member: Doc<"organization_members">): boolean {
+export function canDownloadDocuments(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_DOWNLOAD);
 }
 
 /**
  * Check if user can access signatures
  */
-export function canAccessSignatures(member: Doc<"organization_members">): boolean {
+export function canAccessSignatures(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SIGNATURES_READ);
 }
 
 /**
  * Check if user can manage webhooks
  */
-export function canManageWebhooks(member: Doc<"organization_members">): boolean {
+export function canManageWebhooks(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.WEBHOOKS_CREATE);
 }
 
 /**
  * Check if user can manage API keys
  */
-export function canManageAPIKeys(member: Doc<"organization_members">): boolean {
+export function canManageAPIKeys(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.API_CREATE);
 }
 
 /**
  * Check if user can access audit logs
  */
-export function canAccessAuditLogs(member: Doc<"organization_members">): boolean {
+export function canAccessAuditLogs(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.AUDIT_READ);
 }
 
 /**
  * Check if user can manage subscription/billing
  */
-export function canManageSubscription(member: Doc<"organization_members">): boolean {
+export function canManageSubscription(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE);
 }
 
 /**
  * Check if user can manage organization settings
  */
-export function canManageOrganization(member: Doc<"organization_members">): boolean {
+export function canManageOrganization(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ORG_MANAGE);
 }
 
 /**
  * Check if user can invite/remove members
  */
-export function canManageMembers(member: Doc<"organization_members">): boolean {
+export function canManageMembers(member: AuthMember): boolean {
   return (
     hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE) ||
     hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE)
@@ -445,7 +452,7 @@ export function canManageMembers(member: Doc<"organization_members">): boolean {
  * Get user's highest permission level for a specific domain
  */
 export function getHighestPermissionLevel(
-  member: Doc<"organization_members">,
+  member: AuthMember,
   domain: "documents" | "templates" | "signatures" | "webhooks" | "api",
 ): "none" | "read" | "write" | "delete" {
   const permissions = getEffectivePermissions(member);
@@ -470,14 +477,14 @@ export function getHighestPermissionLevel(
 /**
  * Check if user is an organization owner
  */
-export function isOwner(member: Doc<"organization_members">): boolean {
+export function isOwner(member: AuthMember): boolean {
   return member.role === "owner";
 }
 
 /**
  * Check if user is an organization admin or higher
  */
-export function isAdmin(member: Doc<"organization_members">): boolean {
+export function isAdmin(member: AuthMember): boolean {
   return hasRole(member, "admin");
 }
 
@@ -485,7 +492,7 @@ export function isAdmin(member: Doc<"organization_members">): boolean {
  * Check if user is an organization owner or admin
  * Common guard for admin-scoped resources (e.g. visibility-restricted folders)
  */
-export function isAdminOrOwner(member: Doc<"organization_members">): boolean {
+export function isAdminOrOwner(member: AuthMember): boolean {
   return member.role === "owner" || member.role === "admin";
 }
 
@@ -494,46 +501,46 @@ export function isAdminOrOwner(member: Doc<"organization_members">): boolean {
  * Note: userType was removed from organization_members schema, defaulting to personal
  */
 /** Returns true if the user account is a personal (non-business) account. */
-export function isPersonalUser(_member: Doc<"organization_members">): boolean {
+export function isPersonalUser(_member: AuthMember): boolean {
   return true; // Default to personal since userType was removed
 }
 
-export function isBusinessUser(_member: Doc<"organization_members">): boolean {
+export function isBusinessUser(_member: AuthMember): boolean {
   return false; // Default to false since userType was removed
 }
 
 /**
  * Check if user can export data
  */
-export function canExportData(member: Doc<"organization_members">): boolean {
+export function canExportData(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DATA_EXPORT);
 }
 
 /**
  * Check if user can generate reports
  */
-export function canGenerateReports(member: Doc<"organization_members">): boolean {
+export function canGenerateReports(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.REPORTS_GENERATE);
 }
 
 /**
  * Check if user can access analytics
  */
-export function canAccessAnalytics(member: Doc<"organization_members">): boolean {
+export function canAccessAnalytics(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ANALYTICS_READ);
 }
 
 /**
  * Check if user can use templates
  */
-export function canUseTemplates(member: Doc<"organization_members">): boolean {
+export function canUseTemplates(member: AuthMember): boolean {
   return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_USE);
 }
 
 /**
  * Check if user has document signing access
  */
-export function hasDocumentSigningAccess(member: Doc<"organization_members">): boolean {
+export function hasDocumentSigningAccess(member: AuthMember): boolean {
   return (
     hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_READ) ||
     hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SIGNATURES_READ)

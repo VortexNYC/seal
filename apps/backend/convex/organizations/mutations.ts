@@ -10,9 +10,16 @@ import { internalMutation, type MutationCtx, mutation } from "../_generated/serv
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
 import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
-import { getComponentMemberRefForUserOrganization } from "../lib/componentOrgReads";
-import { anchorNewOrganizationOwner } from "../lib/vortexAuthOrganizations";
-import { seedSystemRoles } from "../organization_roles/helpers";
+import {
+  getComponentMemberById,
+  getComponentMemberRefForUserOrganization,
+  listComponentMembersByOrganization,
+} from "../lib/componentOrgReads";
+import {
+  anchorNewOrganizationOwner,
+  ensureComponentRoleForTemplate,
+  upsertVortexAuthMember,
+} from "../lib/vortexAuthOrganizations";
 import { organizationBaseSchema } from "../validations/organizations";
 
 // Type for organization update operations
@@ -82,8 +89,6 @@ async function upsertPersonalOrganization(
       updatedAt: Date.now(),
     });
 
-    await seedSystemRoles(ctx.db, organizationId);
-
     const organization = await ctx.db.get(organizationId);
     if (!organization) {
       throw new ConvexError("Failed to upsert organization");
@@ -111,52 +116,89 @@ async function ensurePrimaryOwnerMembership(
   userId: Id<"users">,
   organizationId: Id<"organizations">,
 ): Promise<void> {
-  const membership = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", userId).eq("organizationId", organizationId),
-    )
-    .first();
-
-  if (!membership) {
-    await ctx.db.insert("organization_members", {
-      organizationId,
-      userId,
-      role: "owner",
-      status: "active",
-      isPrimary: true,
-      permissions: [],
-    });
-    return;
-  }
-
-  const updates: Partial<Doc<"organization_members">> = {};
-  if (!membership.isPrimary) {
-    updates.isPrimary = true;
-  }
-  if (membership.status !== "active") {
-    updates.status = "active";
-  }
-  if (Object.keys(updates).length > 0) {
-    await ctx.db.patch(membership._id, updates);
-  }
+  await upsertVortexAuthMember(ctx, {
+    organizationId,
+    userId,
+    role: "owner",
+    status: "active",
+  });
 }
 
 async function clearOtherPrimaryMemberships(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-  organizationId: Id<"organizations">,
+  _ctx: MutationCtx,
+  _userId: Id<"users">,
+  _organizationId: Id<"organizations">,
 ): Promise<void> {
-  const otherMemberships = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+  // Component auth owns membership truth. Active organization is stored on the
+  // local user anchor, so no per-membership primary flag is maintained here.
+}
 
-  await Promise.all(
-    otherMemberships
-      .filter((membership) => membership.organizationId !== organizationId && membership.isPrimary)
-      .map((membership) => ctx.db.patch(membership._id, { isPrimary: false })),
-  );
+type ComponentMemberStatus = "active" | "invited" | "suspended";
+type ComponentMemberMutationCtx = Pick<MutationCtx, "db" | "runQuery" | "runMutation">;
+type SealComponentMember = NonNullable<Awaited<ReturnType<typeof getComponentMemberById>>> & {
+  userId: Id<"users">;
+  role: "system" | "owner" | "admin" | "member" | "viewer";
+};
+
+function toComponentMemberStatus(
+  status: "active" | "inactive" | "suspended" | "pending",
+): ComponentMemberStatus {
+  if (status === "pending") {
+    return "invited";
+  }
+  if (status === "inactive") {
+    return "suspended";
+  }
+  return status;
+}
+
+async function requireComponentMemberInOrganization(
+  ctx: ComponentMemberMutationCtx,
+  organization: Doc<"organizations">,
+  memberId: string,
+): Promise<SealComponentMember> {
+  const membership = await getComponentMemberById(ctx, memberId);
+  if (!membership || membership.organizationId !== organization._id || !membership.userId) {
+    throw new ConvexError("Member not found");
+  }
+  if (!membership.role) {
+    throw new ConvexError("Member role is not supported by Seal");
+  }
+  return {
+    ...membership,
+    userId: membership.userId,
+    role: membership.role,
+  };
+}
+
+async function setComponentMemberStatus(
+  ctx: ComponentMemberMutationCtx,
+  memberId: string,
+  status: ComponentMemberStatus,
+): Promise<void> {
+  await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
+    memberId: memberId as GenericId<"organization_members">,
+    status,
+  });
+}
+
+async function setComponentMemberRole(
+  ctx: ComponentMemberMutationCtx,
+  organization: Doc<"organizations">,
+  memberId: string,
+  role: "owner" | "admin" | "member" | "viewer",
+  assignedByVortexAuthUserId?: string,
+): Promise<void> {
+  if (!organization.vortexAuthOrganizationId) {
+    throw new ConvexError("Organization is not anchored to Vortex Auth");
+  }
+  const roleId = await ensureComponentRoleForTemplate(ctx, organization._id, role);
+  await ctx.runMutation(components.vortexAuth.organizations.setMemberRole, {
+    memberId: memberId as GenericId<"organization_members">,
+    organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
+    roleId,
+    assignedBy: assignedByVortexAuthUserId as GenericId<"users"> | undefined,
+  });
 }
 
 async function resolveBrandingLogoState(
@@ -332,19 +374,6 @@ export const createWorkspace = authMutation({
       updatedAt: Date.now(),
     });
 
-    // Seed system roles for the new organization
-    await seedSystemRoles(ctx.db, organizationId);
-
-    // Add creator as owner
-    await ctx.db.insert("organization_members", {
-      organizationId,
-      userId: user._id,
-      role: "owner",
-      status: "active",
-      isPrimary: true,
-      permissions: [],
-    });
-
     // Mirror the org + owner into the vortexAuth component immediately so
     // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
     await anchorNewOrganizationOwner(ctx, {
@@ -398,42 +427,21 @@ export const deleteWorkspace = authMutation({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const { user } = ctx.auth;
-
     const organization = await ctx.db.get(args.organizationId);
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
 
-    // Check if user is owner
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", user._id).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    if (!membership || membership.role !== "owner") {
+    if (ctx.auth.organization._id !== args.organizationId || ctx.auth.member.role !== "owner") {
       throw new ConvexError("Only organization owners can delete the organization");
     }
 
-    // Get all members and related data
-    const [members, invitations] = await Promise.all([
-      ctx.db
-        .query("organization_members")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-        .collect(),
-      ctx.db
-        .query("organization_invitations")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-        .collect(),
-    ]);
-
-    // Delete all related data
-    await Promise.all([
-      ...members.map((member) => ctx.db.delete(member._id)),
-      ...invitations.map((invitation) => ctx.db.delete(invitation._id)),
-    ]);
+    if (organization.vortexAuthOrganizationId) {
+      await ctx.runMutation(components.vortexAuth.organizations.setOrganizationStatus, {
+        organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
+        status: "deleted",
+      });
+    }
 
     // Delete organization
     await ctx.db.delete(args.organizationId);
@@ -454,7 +462,7 @@ export const addMember = adminMutation({
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
 
-    await ensureSeatLimit(ctx.db, organization._id);
+    await ensureSeatLimit(ctx, organization._id);
 
     // Check if user exists
     const user = await ctx.db.get(args.userId);
@@ -462,26 +470,21 @@ export const addMember = adminMutation({
       throw new ConvexError("User not found");
     }
 
-    // Check if user is already a member
-    const existingMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", organization._id),
-      )
-      .first();
-
-    if (existingMembership) {
+    const existingMembership = await getComponentMemberRefForUserOrganization(
+      ctx,
+      user,
+      organization,
+    );
+    if (existingMembership !== null) {
       throw new ConvexError("User is already a member of this organization");
     }
 
-    // Create membership
-    const membershipId = await ctx.db.insert("organization_members", {
+    const membershipId = await upsertVortexAuthMember(ctx, {
       organizationId: organization._id,
       userId: args.userId,
       role: args.role,
       status: "active",
-      isPrimary: false,
-      permissions: [],
+      assignedBy: ctx.auth.user._id,
     });
 
     return { id: membershipId };
@@ -493,47 +496,36 @@ export const addMember = adminMutation({
  */
 export const updateMemberRole = adminMutation({
   args: {
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
     role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member"), v.literal("viewer")),
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
-      throw new ConvexError("Member not found");
-    }
-
-    if (membership.organizationId !== organization._id) {
-      throw new ConvexError("Member not found");
-    }
+    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
 
     // Don't allow changing own role
     if (membership.userId === currentUser._id) {
       throw new ConvexError("Cannot change your own role");
     }
 
-    // Don't allow changing owner role unless current user is owner
-    const currentMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", currentUser._id).eq("organizationId", organization._id),
-      )
-      .first();
-
-    if (membership.role === "owner" && currentMembership?.role !== "owner") {
+    if (membership.role === "owner" && ctx.auth.member.role !== "owner") {
       throw new ConvexError("Only owners can change owner roles");
     }
 
-    if (args.role === "owner" && currentMembership?.role !== "owner") {
+    if (args.role === "owner" && ctx.auth.member.role !== "owner") {
       throw new ConvexError("Only owners can assign owner roles");
     }
 
     const previousRole = membership.role;
 
-    await ctx.db.patch(args.memberId, {
-      role: args.role,
-    });
+    await setComponentMemberRole(
+      ctx,
+      organization,
+      args.memberId,
+      args.role,
+      currentUser.vortexAuthUserId,
+    );
 
     await logAction(ctx, {
       organizationId: organization._id,
@@ -558,44 +550,27 @@ export const updateMemberRole = adminMutation({
  */
 export const removeMember = adminMutation({
   args: {
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
-      throw new ConvexError("Member not found");
-    }
-
-    if (membership.organizationId !== organization._id) {
-      throw new ConvexError("Member not found");
-    }
+    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
 
     // Don't allow removing self
     if (membership.userId === currentUser._id) {
       throw new ConvexError("Cannot remove yourself from the organization");
     }
 
-    // Don't allow removing owner unless current user is owner
-    const currentMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", currentUser._id).eq("organizationId", organization._id),
-      )
-      .first();
-
-    if (membership.role === "owner" && currentMembership?.role !== "owner") {
+    if (membership.role === "owner" && ctx.auth.member.role !== "owner") {
       throw new ConvexError("Only owners can remove other owners");
     }
 
     // Check if this is the last owner
     if (membership.role === "owner") {
-      const ownerCount = await ctx.db
-        .query("organization_members")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organization._id))
-        .filter((q) => q.eq(q.field("role"), "owner"))
-        .collect();
+      const ownerCount = (await listComponentMembersByOrganization(ctx, organization)).filter(
+        (member) => member.role === "owner" && member.status === "active",
+      );
 
       if (ownerCount.length <= 1) {
         throw new ConvexError("Cannot remove the last owner of the organization");
@@ -605,25 +580,7 @@ export const removeMember = adminMutation({
     const removedUserId = membership.userId;
     const removedRole = membership.role;
 
-    // Remove the component membership (B2B: suspend, never touch the auth
-    // account — a user can belong to multiple orgs). Resolve the component
-    // member ref via the user + org bridge ids; no-op when either is absent.
-    const removedUser = await ctx.db.get(removedUserId);
-    if (removedUser) {
-      const componentMemberRef = await getComponentMemberRefForUserOrganization(
-        ctx,
-        removedUser,
-        organization,
-      );
-      if (componentMemberRef) {
-        await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
-          memberId: componentMemberRef.memberId as GenericId<"organization_members">,
-          status: "suspended",
-        });
-      }
-    }
-
-    await ctx.db.delete(args.memberId);
+    await setComponentMemberStatus(ctx, args.memberId, "suspended");
 
     await logAction(ctx, {
       organizationId: organization._id,
@@ -647,7 +604,7 @@ export const removeMember = adminMutation({
  */
 export const updateMemberStatus = adminMutation({
   args: {
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
     status: v.union(
       v.literal("active"),
       v.literal("inactive"),
@@ -658,14 +615,7 @@ export const updateMemberStatus = adminMutation({
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
-      throw new ConvexError("Member not found");
-    }
-
-    if (membership.organizationId !== organization._id) {
-      throw new ConvexError("Member not found");
-    }
+    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
 
     // Don't allow changing own status
     if (membership.userId === currentUser._id) {
@@ -677,9 +627,7 @@ export const updateMemberStatus = adminMutation({
       throw new ConvexError("Cannot suspend or deactivate organization owner");
     }
 
-    await ctx.db.patch(args.memberId, {
-      status: args.status,
-    });
+    await setComponentMemberStatus(ctx, args.memberId, toComponentMemberStatus(args.status));
 
     return { success: true };
   },
@@ -690,29 +638,26 @@ export const updateMemberStatus = adminMutation({
  */
 export const activateMember = adminMutation({
   args: {
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
     role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
   },
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
 
-    const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
-      throw new ConvexError("Member not found");
-    }
-
-    if (membership.organizationId !== organization._id) {
-      throw new ConvexError("Member not found");
-    }
+    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
 
     if (membership.status === "active") {
       throw new ConvexError("Member is already active");
     }
 
-    await ctx.db.patch(args.memberId, {
-      role: args.role,
-      status: "active",
-    });
+    await setComponentMemberRole(
+      ctx,
+      organization,
+      args.memberId,
+      args.role,
+      ctx.auth.user.vortexAuthUserId,
+    );
+    await setComponentMemberStatus(ctx, args.memberId, "active");
 
     return { success: true };
   },
@@ -723,19 +668,12 @@ export const activateMember = adminMutation({
  */
 export const suspendMember = adminMutation({
   args: {
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
-      throw new ConvexError("Member not found");
-    }
-
-    if (membership.organizationId !== organization._id) {
-      throw new ConvexError("Member not found");
-    }
+    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
 
     if (membership.userId === currentUser._id) {
       throw new ConvexError("Cannot suspend yourself");
@@ -745,9 +683,7 @@ export const suspendMember = adminMutation({
       throw new ConvexError("Cannot suspend organization owner");
     }
 
-    await ctx.db.patch(args.memberId, {
-      status: "suspended",
-    });
+    await setComponentMemberStatus(ctx, args.memberId, "suspended");
 
     return { success: true };
   },
@@ -758,23 +694,13 @@ export const suspendMember = adminMutation({
  */
 export const reactivateMember = adminMutation({
   args: {
-    memberId: v.id("organization_members"),
+    memberId: v.string(),
   },
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
 
-    const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
-      throw new ConvexError("Member not found");
-    }
-
-    if (membership.organizationId !== organization._id) {
-      throw new ConvexError("Member not found");
-    }
-
-    await ctx.db.patch(args.memberId, {
-      status: "active",
-    });
+    await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    await setComponentMemberStatus(ctx, args.memberId, "active");
 
     return { success: true };
   },
@@ -787,7 +713,7 @@ export const bulkActivateMembers = adminMutation({
   args: {
     memberUpdates: v.array(
       v.object({
-        memberId: v.id("organization_members"),
+        memberId: v.string(),
         role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
       }),
     ),
@@ -799,24 +725,11 @@ export const bulkActivateMembers = adminMutation({
 
     for (const update of args.memberUpdates) {
       try {
-        const membership = await ctx.db.get(update.memberId);
-        if (!membership) {
-          results.push({
-            memberId: update.memberId,
-            success: false,
-            error: "Member not found",
-          });
-          continue;
-        }
-
-        if (membership.organizationId !== organization._id) {
-          results.push({
-            memberId: update.memberId,
-            success: false,
-            error: "Member not found",
-          });
-          continue;
-        }
+        const membership = await requireComponentMemberInOrganization(
+          ctx,
+          organization,
+          update.memberId,
+        );
 
         if (membership.status === "active") {
           results.push({
@@ -827,10 +740,14 @@ export const bulkActivateMembers = adminMutation({
           continue;
         }
 
-        await ctx.db.patch(update.memberId, {
-          role: update.role,
-          status: "active",
-        });
+        await setComponentMemberRole(
+          ctx,
+          organization,
+          update.memberId,
+          update.role,
+          ctx.auth.user.vortexAuthUserId,
+        );
+        await setComponentMemberStatus(ctx, update.memberId, "active");
 
         results.push({
           memberId: update.memberId,
@@ -856,22 +773,8 @@ export const bulkActivateMembers = adminMutation({
 export const cleanupExpiredInvitations = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
-
-    // Get all pending invitations that have expired
-    const expiredInvitations = await ctx.db
-      .query("organization_invitations")
-      .filter((q) => q.and(q.eq(q.field("status"), "pending"), q.lt(q.field("expiresAt"), now)))
-      .collect();
-
-    // Mark each as expired
-    let expiredCount = 0;
-    for (const invitation of expiredInvitations) {
-      await ctx.db.patch(invitation._id, {
-        status: "expired",
-      });
-      expiredCount++;
-    }
+    void ctx;
+    const expiredCount = 0;
 
     console.info(`[cleanupExpiredInvitations] Marked ${expiredCount} invitations as expired`);
 
@@ -1069,14 +972,7 @@ export const updateSecuritySettings = adminMutation({
   },
   handler: async (ctx, args) => {
     // Security settings require owner role — stricter than admin
-    const member = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", ctx.auth.user._id).eq("organizationId", ctx.auth.organization._id),
-      )
-      .first();
-
-    if (!member || member.role !== "owner") {
+    if (ctx.auth.member.role !== "owner") {
       throw new ConvexError("Only organization owners can modify security settings");
     }
 
@@ -1141,14 +1037,7 @@ export const resetOrgSettings = adminMutation({
   handler: async (ctx, args) => {
     // Security category requires owner role
     if (args.category === "security") {
-      const member = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user_organization", (q) =>
-          q.eq("userId", ctx.auth.user._id).eq("organizationId", ctx.auth.organization._id),
-        )
-        .first();
-
-      if (!member || member.role !== "owner") {
+      if (ctx.auth.member.role !== "owner") {
         throw new ConvexError("Only organization owners can reset security settings");
       }
     }

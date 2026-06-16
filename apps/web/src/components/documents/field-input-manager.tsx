@@ -1,5 +1,6 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -53,33 +54,225 @@ interface FieldInputManagerProps {
   signingToken?: string;
 }
 
-export function FieldInputManager({
-  open,
-  onOpenChange,
+interface FieldInputContentProps {
+  fieldId: Id<"signature_fields">;
+  fieldType: FieldType;
+  label: string;
+  value: string;
+  isRequired: boolean;
+  properties?: FieldInputManagerProps["properties"];
+  validationRules?: FieldInputManagerProps["validationRules"];
+  signingToken?: string;
+  recipientName?: string;
+  onValueChange: (value: string) => void;
+  onValidationChange: (valid: boolean, error?: string) => void;
+  onSignatureCapture: (
+    signatureData: string,
+    signatureType: "drawn" | "typed" | "uploaded",
+  ) => Promise<void>;
+  onCancelSignature: () => void;
+}
+
+interface CommonFieldInputProps {
+  label: string;
+  value: string;
+  isRequired: boolean;
+  helpText?: string;
+  onChange: (value: string) => void;
+  onValidationChange: (valid: boolean, error?: string) => void;
+}
+
+type FieldRendererProps = FieldInputContentProps & {
+  commonProps: CommonFieldInputProps;
+};
+
+const FIELD_INPUT_RENDERERS: Record<FieldType, (props: FieldRendererProps) => ReactNode> = {
+  text: ({ commonProps, properties }) => (
+    <TextFieldInput
+      {...commonProps}
+      placeholder={properties?.placeholder}
+      maxLength={properties?.maxLength}
+      minLength={properties?.minLength}
+      pattern={properties?.pattern}
+    />
+  ),
+  number: ({ commonProps, properties, validationRules }) => (
+    <NumberFieldInput
+      {...commonProps}
+      placeholder={properties?.placeholder}
+      min={validationRules?.min}
+      max={validationRules?.max}
+    />
+  ),
+  date: ({ commonProps }) => <DateFieldInput {...commonProps} />,
+  checkbox: ({ commonProps, properties }) => (
+    <CheckboxFieldInput {...commonProps} options={properties?.options || []} />
+  ),
+  dropdown: ({ commonProps, properties }) => (
+    <DropdownFieldInput {...commonProps} options={properties?.options || []} />
+  ),
+  radio: ({ commonProps, properties }) => (
+    <RadioFieldInput {...commonProps} options={properties?.options || []} />
+  ),
+  attachment: ({ commonProps, signingToken }) => (
+    <AttachmentFieldInput {...commonProps} signingToken={signingToken} />
+  ),
+  payment: ({ fieldId, signingToken }) => (
+    <PaymentFieldSummary
+      fieldId={fieldId}
+      token={signingToken}
+      showInlinePayment={!!signingToken}
+    />
+  ),
+  signature: ({ recipientName, onSignatureCapture, onCancelSignature }) => (
+    <SignatureCapture
+      recipientName={recipientName}
+      onSignatureCapture={onSignatureCapture}
+      onCancel={onCancelSignature}
+    />
+  ),
+};
+
+function getDialogClassName(fieldType: FieldType): string {
+  if (fieldType === "signature") return "max-w-2xl";
+  if (fieldType === "payment") return "max-w-lg";
+  return "max-w-md";
+}
+
+function getDialogText(fieldType: FieldType, isRequired: boolean) {
+  if (fieldType === "signature") {
+    return {
+      title: "Sign Here",
+      description: "Draw, type, or upload your signature below.",
+    };
+  }
+  if (fieldType === "payment") {
+    return {
+      title: "Payment Details",
+      description: "Review the payment details below.",
+    };
+  }
+  return {
+    title: "Fill Field",
+    description: isRequired
+      ? "This field is required. Please provide a value."
+      : "Fill in the field value below.",
+  };
+}
+
+function FieldInputContent({
   fieldId,
   fieldType,
   label,
+  value,
   isRequired,
-  currentValue,
-  currentSignatureImageUrl,
   properties,
   validationRules,
-  onSave,
-  recipientName,
   signingToken,
-}: FieldInputManagerProps) {
-  const [value, setValue] = useState(currentValue || properties?.defaultValue || "");
+  recipientName,
+  onValueChange,
+  onValidationChange,
+  onSignatureCapture,
+  onCancelSignature,
+}: FieldInputContentProps) {
+  const commonProps = {
+    label,
+    value,
+    isRequired,
+    helpText: properties?.helpText,
+    onChange: onValueChange,
+    onValidationChange,
+  };
+
+  return FIELD_INPUT_RENDERERS[fieldType]({
+    fieldId,
+    fieldType,
+    label,
+    value,
+    isRequired,
+    properties,
+    validationRules,
+    signingToken,
+    recipientName,
+    onValueChange,
+    onValidationChange,
+    onSignatureCapture,
+    onCancelSignature,
+    commonProps,
+  });
+}
+
+interface FieldInputFooterProps {
+  fieldType: FieldType;
+  isSaving: boolean;
+  isValid: boolean;
+  isRequired: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+  onClose: () => void;
+}
+
+function FieldInputFooter({
+  fieldType,
+  isSaving,
+  isValid,
+  isRequired,
+  onCancel,
+  onSave,
+  onClose,
+}: FieldInputFooterProps) {
+  if (fieldType === "signature") return null;
+  if (fieldType === "payment") {
+    return (
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Close
+        </Button>
+      </DialogFooter>
+    );
+  }
+
+  return (
+    <DialogFooter>
+      <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+        Cancel
+      </Button>
+      <Button onClick={onSave} disabled={isSaving || (!isValid && isRequired)}>
+        {isSaving ? "Saving..." : "Save Field"}
+      </Button>
+    </DialogFooter>
+  );
+}
+
+interface UseFieldInputStateArgs {
+  currentValue?: string;
+  currentSignatureImageUrl?: string;
+  defaultValue?: string;
+  isRequired: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: FieldInputManagerProps["onSave"];
+}
+
+function useFieldInputState({
+  currentValue,
+  currentSignatureImageUrl,
+  defaultValue,
+  isRequired,
+  onOpenChange,
+  onSave,
+}: UseFieldInputStateArgs) {
+  const [value, setValue] = useState(currentValue || defaultValue || "");
   const [signatureImageUrl, setSignatureImageUrl] = useState(currentSignatureImageUrl);
-  const [isValid, setIsValid] = useState(!isRequired); // If not required, start as valid
+  const [isValid, setIsValid] = useState(!isRequired);
   const [validationError, setValidationError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setValue(currentValue || properties?.defaultValue || "");
+    setValue(currentValue || defaultValue || "");
     setSignatureImageUrl(currentSignatureImageUrl);
     setIsValid(!isRequired);
     setValidationError(undefined);
-  }, [currentValue, currentSignatureImageUrl, isRequired, properties?.defaultValue]);
+  }, [currentValue, currentSignatureImageUrl, defaultValue, isRequired]);
 
   const handleValidationChange = (valid: boolean, error?: string) => {
     setIsValid(valid);
@@ -91,7 +284,6 @@ export function FieldInputManager({
       toast.error(validationError || "Please fix validation errors");
       return;
     }
-
     if (isRequired && !value && !signatureImageUrl) {
       toast.error("This field is required");
       return;
@@ -119,11 +311,7 @@ export function FieldInputManager({
     onOpenChange(false);
   };
 
-  // Signature capture handlers
-  const handleSignatureCapture = async (
-    signatureData: string,
-    _signatureType: "drawn" | "typed" | "uploaded",
-  ) => {
+  const handleSignatureCapture = async (signatureData: string) => {
     setSignatureImageUrl(signatureData);
     setIsSaving(true);
     try {
@@ -139,135 +327,78 @@ export function FieldInputManager({
     }
   };
 
-  const handleCancelSignature = () => {
-    onOpenChange(false);
+  return {
+    value,
+    setValue,
+    isValid,
+    isSaving,
+    handleValidationChange,
+    handleSave,
+    handleCancel,
+    handleSignatureCapture,
   };
+}
 
-  // Render appropriate input component based on field type
-  const renderFieldInput = () => {
-    const commonProps = {
-      label,
-      value,
-      isRequired,
-      helpText: properties?.helpText,
-      onChange: setValue,
-      onValidationChange: handleValidationChange,
-    };
-
-    switch (fieldType) {
-      case "text":
-        return (
-          <TextFieldInput
-            {...commonProps}
-            placeholder={properties?.placeholder}
-            maxLength={properties?.maxLength}
-            minLength={properties?.minLength}
-            pattern={properties?.pattern}
-          />
-        );
-
-      case "number":
-        return (
-          <NumberFieldInput
-            {...commonProps}
-            placeholder={properties?.placeholder}
-            min={validationRules?.min}
-            max={validationRules?.max}
-          />
-        );
-
-      case "date":
-        return <DateFieldInput {...commonProps} />;
-
-      case "checkbox":
-        return <CheckboxFieldInput {...commonProps} options={properties?.options || []} />;
-
-      case "dropdown":
-        return <DropdownFieldInput {...commonProps} options={properties?.options || []} />;
-
-      case "radio":
-        return <RadioFieldInput {...commonProps} options={properties?.options || []} />;
-
-      case "attachment":
-        return <AttachmentFieldInput {...commonProps} signingToken={signingToken} />;
-
-      case "payment":
-        return (
-          <PaymentFieldSummary
-            fieldId={fieldId}
-            token={signingToken}
-            showInlinePayment={!!signingToken}
-          />
-        );
-
-      case "signature":
-        return (
-          <SignatureCapture
-            recipientName={recipientName}
-            onSignatureCapture={handleSignatureCapture}
-            onCancel={handleCancelSignature}
-          />
-        );
-
-      default:
-        return (
-          <div className="py-4 text-center">
-            <p className="text-destructive text-sm">Unsupported field type: {fieldType}</p>
-          </div>
-        );
-    }
-  };
+export function FieldInputManager({
+  open,
+  onOpenChange,
+  fieldId,
+  fieldType,
+  label,
+  isRequired,
+  currentValue,
+  currentSignatureImageUrl,
+  properties,
+  validationRules,
+  onSave,
+  recipientName,
+  signingToken,
+}: FieldInputManagerProps) {
+  const dialogText = getDialogText(fieldType, isRequired);
+  const fieldState = useFieldInputState({
+    currentValue,
+    currentSignatureImageUrl,
+    defaultValue: properties?.defaultValue,
+    isRequired,
+    onOpenChange,
+    onSave,
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={
-          fieldType === "signature"
-            ? "max-w-2xl"
-            : fieldType === "payment"
-              ? "max-w-lg"
-              : "max-w-md"
-        }
-      >
+      <DialogContent className={getDialogClassName(fieldType)}>
         <DialogHeader>
-          <DialogTitle>
-            {fieldType === "signature"
-              ? "Sign Here"
-              : fieldType === "payment"
-                ? "Payment Details"
-                : "Fill Field"}
-          </DialogTitle>
-          <DialogDescription>
-            {fieldType === "signature"
-              ? "Draw, type, or upload your signature below."
-              : fieldType === "payment"
-                ? "Review the payment details below."
-                : isRequired
-                  ? "This field is required. Please provide a value."
-                  : "Fill in the field value below."}
-          </DialogDescription>
+          <DialogTitle>{dialogText.title}</DialogTitle>
+          <DialogDescription>{dialogText.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">{renderFieldInput()}</div>
+        <div className="py-4">
+          <FieldInputContent
+            fieldId={fieldId}
+              fieldType={fieldType}
+              label={label}
+              value={fieldState.value}
+              isRequired={isRequired}
+              properties={properties}
+              validationRules={validationRules}
+              signingToken={signingToken}
+              recipientName={recipientName}
+              onValueChange={fieldState.setValue}
+              onValidationChange={fieldState.handleValidationChange}
+              onSignatureCapture={fieldState.handleSignatureCapture}
+              onCancelSignature={() => onOpenChange(false)}
+            />
+          </div>
 
-        {/* Only show footer for non-signature, non-payment fields (signature has its own buttons, payment is read-only) */}
-        {fieldType !== "signature" && fieldType !== "payment" && (
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || (!isValid && isRequired)}>
-              {isSaving ? "Saving..." : "Save Field"}
-            </Button>
-          </DialogFooter>
-        )}
-        {fieldType === "payment" && (
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        )}
+          <FieldInputFooter
+            fieldType={fieldType}
+            isSaving={fieldState.isSaving}
+            isValid={fieldState.isValid}
+            isRequired={isRequired}
+            onCancel={fieldState.handleCancel}
+            onSave={fieldState.handleSave}
+            onClose={() => onOpenChange(false)}
+          />
       </DialogContent>
     </Dialog>
   );

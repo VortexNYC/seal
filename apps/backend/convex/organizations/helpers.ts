@@ -7,6 +7,10 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
+import {
+  listComponentMembersByOrganization,
+  resolveComponentMembershipForOrganization,
+} from "../lib/componentOrgReads";
 
 /**
  * Get organization by ID (internal query for actions)
@@ -56,18 +60,26 @@ export const getActiveMembershipByUserAndOrganization = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first();
+    const [user, organization] = await Promise.all([
+      ctx.db.get(args.userId),
+      ctx.db.get(args.organizationId),
+    ]);
+    if (!user || !organization) {
+      return null;
+    }
+    const membership = await resolveComponentMembershipForOrganization(ctx, user, organization);
 
     if (!membership || membership.status !== "active") {
       return null;
     }
 
-    return membership;
+    return {
+      userId: args.userId,
+      organizationId: args.organizationId,
+      role: membership.role,
+      status: membership.status,
+      roleId: membership.roleId,
+    };
   },
 });
 
@@ -79,11 +91,13 @@ export const getActiveMemberCount = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const members = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      return 0;
+    }
+    const members = await listComponentMembersByOrganization(ctx, organization, {
+      status: "active",
+    });
     return members.length;
   },
 });

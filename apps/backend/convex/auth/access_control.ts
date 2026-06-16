@@ -17,6 +17,9 @@ import type { GenericDatabaseReader } from "convex/server";
 import { ConvexError } from "convex/values";
 
 import type { DataModel, Doc, Id } from "../_generated/dataModel";
+import type { QueryCtx } from "../_generated/server";
+import type { AuthMember } from "../auth.utils";
+import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import type { DocumentPermissionLevel } from "../schemas/document_access";
 
 /**
@@ -25,6 +28,7 @@ import type { DocumentPermissionLevel } from "../schemas/document_access";
  */
 type DbContext = {
   db: GenericDatabaseReader<DataModel>;
+  runQuery: QueryCtx["runQuery"];
 };
 
 /**
@@ -97,14 +101,8 @@ export async function checkDocumentAccess(
   }
 
   // 2. Check organization membership
-  const member = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", userId).eq("organizationId", document.organizationId),
-    )
-    .first();
-
-  if (!member || member.status !== "active") {
+  const member = await getActiveMembership(ctx, userId, document.organizationId);
+  if (!member) {
     return result; // Not an active member, no access
   }
 
@@ -250,19 +248,25 @@ export async function getActiveMembership(
   ctx: DbContext,
   userId: Id<"users">,
   organizationId: Id<"organizations">,
-): Promise<Doc<"organization_members"> | null> {
-  const member = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", userId).eq("organizationId", organizationId),
-    )
-    .first();
+): Promise<AuthMember | null> {
+  const [user, organization] = await Promise.all([ctx.db.get(userId), ctx.db.get(organizationId)]);
+  if (!user || !organization) {
+    return null;
+  }
+  const member = await resolveComponentMembershipForOrganization(ctx, user, organization);
 
   if (!member || member.status !== "active") {
     return null;
   }
 
-  return member;
+  return {
+    userId,
+    organizationId,
+    role: member.role,
+    status: member.status,
+    permissions: [],
+    roleId: member.roleId,
+  };
 }
 
 /**
@@ -280,7 +284,7 @@ export async function requireActiveMembership(
   userId: Id<"users">,
   organizationId: Id<"organizations">,
   errorMessage?: string,
-): Promise<Doc<"organization_members">> {
+): Promise<AuthMember> {
   const member = await getActiveMembership(ctx, userId, organizationId);
 
   if (!member) {

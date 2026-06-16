@@ -123,3 +123,4 @@ apps/web/convex/_generated/
 .agents/skills/openlogs-server-logs/
 apps/*/PORT
 apps/landing/.wrangler/
+apps/web/.wrangler/

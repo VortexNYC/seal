@@ -1,0 +1,114 @@
+{
+  "packageScriptMode": "bin",
+  "rootScriptPolicy": "replace",
+  "instructionFiles": {
+    "agents": false,
+    "claude": false
+  },
+  "auth": {
+    "enabled": true,
+    "convexDir": "apps/backend/convex"
+  },
+  "instructions": {
+    "name": "seal",
+    "displayName": "Seal",
+    "baseBranch": "staging",
+    "packageManager": "bun@1.3.11",
+    "setupCommands": ["bun install"],
+    "ciPreinstallCommands": [
+      "git clone --depth 1 \"https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git\" \"$GITHUB_WORKSPACE/../vortex-core\"",
+      "(cd \"$GITHUB_WORKSPACE/../vortex-core\" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build)"
+    ],
+    "verificationCommands": [
+      "bun run project-kit:check",
+      "bun run project-kit:doctor",
+      "bun run migrate:legacy-auth-package:check",
+      "bun run typecheck",
+      "bun run lint",
+      "bun run format:changed:check",
+      "bun run check:preferred-stack",
+      "bun run build",
+      "bun run test",
+      "bun run auth:check",
+      "bun run auth:preflight"
+    ],
+    "devUrls": [
+      "http://seal.localhost:1355",
+      "http://seal-landing.localhost:1355",
+      "https://staging-app.seal.nyc",
+      "https://app.seal.nyc",
+      "https://aware-buzzard-568.convex.cloud",
+      "https://aware-buzzard-568.convex.site",
+      "https://clever-goose-484.convex.cloud",
+      "https://clever-goose-484.convex.site"
+    ],
+    "convexDeployment": "dev:aware-buzzard-568",
+    "convexInsightsCommand": "bunx convex insights --details",
+    "apps": [
+      "apps/web - React 19 Vite product app with TanStack Router, Better Auth, Convex, and Cloudflare deploys",
+      "apps/landing - TanStack Start/Fumadocs marketing and developer docs site",
+      "apps/backend - Convex backend and auth/payment/API surface",
+      "apps/mcp-worker - Cloudflare Worker MCP server"
+    ],
+    "packages": [
+      "packages/transactional - React Email templates",
+      "packages/react-sdk - embeddable signing components",
+      "packages/tokens - shared Seal design tokens",
+      "packages/vortex-payments - Vortex payments adapter package"
+    ],
+    "forbiddenTouchZones": [
+      "apps/backend/convex/_generated/*",
+      "apps/web/src/routeTree.gen.ts",
+      "apps/landing/src/routeTree.gen.ts",
+      "apps/landing/.source/*",
+      "apps/landing/content/docs/api-reference/*",
+      "apps/backend/convex/schemas/subscription_coupons.ts",
+      "apps/backend/convex/schemas/subscription_promo_codes.ts"
+    ],
+    "cloudNotes": [
+      "Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.",
+      "Use staging for Stripe Connect, subscriptions, webhooks, billing, and payment verification.",
+      "Do not target the retired self-hosted Convex URLs."
+    ],
+    "localOnlyNotes": [
+      "Read .test-env before live proof; it is the local source of truth for dev URLs and deployments.",
+      "Use vb or vb --fresh against TEST_WEB_URL for browser proof.",
+      "Do not reopen payments migration scope unless the active task explicitly requires it."
+    ],
+    "designContext": [
+      "Seal is a workflow-focused document signing and collaboration app for B2B teams.",
+      "Prioritize reliability, speed, clear task completion, and high trust over decorative UI.",
+      "Use packages/tokens for brand colors, typography, status colors, signer slots, motion, and form affordances.",
+      "Support light and dark themes with practical, restrained motion."
+    ],
+    "referenceRepos": [
+      "vortex-core for shared auth/tooling contracts",
+      "crm for the current clean Vortex Core consumer proof"
+    ],
+    "firstActions": [
+      "Run `bun run repo:status` from the repo root.",
+      "Read AGENTS.md and any subdirectory AGENTS.md before touching code.",
+      "Read .test-env before live proof or dev-server work.",
+      "Attack the single active limiter; do not broaden payments, auth, or docs scope without evidence."
+    ],
+    "testEnvEntries": [
+      "PLATFORM=web",
+      "TESTING_TOOL=vb",
+      "TEST_WEB_URL=http://localhost:5180",
+      "TEST_LANDING_URL=http://seal-landing.localhost:1355",
+      "CONVEX_URL=https://aware-buzzard-568.convex.cloud",
+      "CONVEX_SITE_URL=https://aware-buzzard-568.convex.site",
+      "CONVEX_DEPLOYMENT=dev:aware-buzzard-568",
+      "VITE_CONVEX_URL=https://aware-buzzard-568.convex.cloud",
+      "VITE_BETTER_AUTH_URL=https://aware-buzzard-568.convex.site/api/auth",
+      "BETTER_AUTH_URL=https://aware-buzzard-568.convex.site/api/auth",
+      "BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:5180,http://seal.localhost:1355,https://staging-app.seal.nyc,https://app.seal.nyc",
+      "STAGING_WEB_URL=https://staging-app.seal.nyc",
+      "STAGING_CONVEX_URL=https://clever-goose-484.convex.cloud",
+      "STAGING_CONVEX_DEPLOYMENT=clever-goose-484",
+      "PRODUCTION_WEB_URL=https://app.seal.nyc",
+      "PRODUCTION_CONVEX_URL=https://compassionate-robin-742.convex.cloud",
+      "PRODUCTION_CONVEX_DEPLOYMENT=compassionate-robin-742"
+    ]
+  }
+}

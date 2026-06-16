@@ -691,7 +691,10 @@ async function createCustomFirstInstallment(
   customerEmail: string,
   customerName?: string,
 ): Promise<PaymentInvoiceResult> {
-  const firstAmount = installmentsConfig.firstPaymentAmount!;
+  const firstAmount = installmentsConfig.firstPaymentAmount;
+  if (firstAmount === undefined) {
+    throw new Error("Custom installment schedule requires a first payment amount");
+  }
   const remainingCount = installmentsConfig.count - 1;
   const installmentAmount = Math.round((config.totalAmountCents - firstAmount) / remainingCount);
   const firstInvoice = await createOneTimeInvoiceForAmount(

@@ -1,6 +1,7 @@
 // VAL-REAL-1776573534487
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
+import { createVortexPostHogWebInitOptions } from "@plasmapos/observability";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
@@ -88,12 +89,19 @@ if (!rootElement) {
 }
 
 const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY as string;
+const posthogInitOptions = createVortexPostHogWebInitOptions({
+  apiHost: "/ingest",
+  uiHost: "https://us.i.posthog.com",
+});
 
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {
     defaults: "2026-01-30",
-    api_host: "/ingest",
-    ui_host: "https://us.i.posthog.com",
+    api_host: posthogInitOptions.apiHost,
+    ui_host: posthogInitOptions.uiHost,
+    autocapture: posthogInitOptions.autocapture,
+    capture_pageview: posthogInitOptions.capturePageview,
+    persistence: posthogInitOptions.persistence,
     person_profiles: "identified_only",
     secure_cookie: true,
     enable_heatmaps: true,

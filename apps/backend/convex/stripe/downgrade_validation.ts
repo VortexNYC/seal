@@ -9,6 +9,7 @@ import { v } from "convex/values";
 
 import { internalMutation } from "../_generated/server";
 import { PLAN_LIMITS } from "../auth/subscription_guards";
+import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 
 /**
  * Validate that an org can safely downgrade to a target tier.
@@ -22,12 +23,10 @@ export const validateDowngrade = internalMutation({
   handler: async (ctx, { organizationId, targetTier }) => {
     const limits = PLAN_LIMITS[targetTier];
 
-    // Check seat count
-    const members = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+    const organization = await ctx.db.get(organizationId);
+    const members = organization
+      ? await listComponentMembersByOrganization(ctx, organization, { status: "active" })
+      : [];
 
     if (members.length > limits.maxSeats) {
       const tierLabel = targetTier === "free" ? "Free" : "Professional";

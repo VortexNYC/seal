@@ -3,13 +3,12 @@ import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
-import { AuthUtils } from "./auth.utils";
+import { AuthUtils, type AuthMember } from "./auth.utils";
 import { resolveComponentMembershipForOrganization } from "./lib/componentOrgReads";
-import { upsertVortexAuthMember } from "./lib/vortexAuthOrganizations";
-import type { MemberStatus, OrganizationMemberRole, OrganizationRole, UserType } from "./schema";
+import type { OrganizationMemberRole, OrganizationRole, UserType } from "./schema";
 
 export type AuthContext = {
-  member: Doc<"organization_members">;
+  member: AuthMember;
   user: Doc<"users">;
   organization: Doc<"organizations">;
   subscription?: Doc<"subscriptions">; // Active subscription (if any)
@@ -161,24 +160,6 @@ async function getOrganizationOrThrow(
   return organization;
 }
 
-/** Component membership status → local MemberStatus (all three are valid). */
-function componentStatusToLocal(status: "active" | "pending" | "suspended"): MemberStatus {
-  return status;
-}
-
-/** Local MemberStatus → component member status for lazy materialization. */
-function localStatusToComponent(status: MemberStatus): "active" | "invited" | "suspended" {
-  switch (status) {
-    case "active":
-      return "active";
-    case "pending":
-      return "invited";
-    default:
-      // inactive / suspended / blocked all map to suspended in the component.
-      return "suspended";
-  }
-}
-
 /**
  * Synthesize an `organization_members` doc from a component membership for the
  * post-teardown (P7) path where the local row no longer exists. AuthUtils reads
@@ -188,44 +169,32 @@ function localStatusToComponent(status: MemberStatus): "active" | "invited" | "s
 function synthesizeMemberFromComponent(
   user: Doc<"users">,
   organization: Doc<"organizations">,
-  membership: { role: OrganizationMemberRole; status: "active" | "pending" | "suspended" },
-): Doc<"organization_members"> {
+  membership: {
+    role: OrganizationMemberRole;
+    status: "active" | "pending" | "suspended";
+    roleId: string;
+  },
+): AuthMember {
   return {
-    _id: `component:${membership.role}:${organization._id}` as unknown as Id<"organization_members">,
-    _creationTime: Date.now(),
     userId: user._id,
     organizationId: organization._id,
     role: membership.role,
-    status: componentStatusToLocal(membership.status),
-    isPrimary: false,
+    status: membership.status,
     permissions: [],
+    roleId: membership.roleId,
   };
 }
 
 /**
- * Resolve the active-org membership with the vortexAuth component as the
- * FORWARD source of truth (P2c dual-read):
- *  - If a component membership exists for this (user, org), it owns role+status;
- *    during the transition the local row is preserved for its app-specific
- *    fields (_id, isPrimary, permission grants) with role+status overridden.
- *  - Otherwise fall back to the local `organization_members` row (today's
- *    behavior). In mutation contexts, lazily mirror that local membership into
- *    the component (once the user is bridged) so the component catches up.
- *  - Users not yet bridged to the component (no vortexAuthUserId) short-circuit
- *    to the local read with zero component queries.
+ * Resolve the active-org membership from the vortexAuth component only.
+ * Local organization_members rows are no longer a fallback because component
+ * truth must fail loud when a consumer is not anchored.
  */
-async function resolveOrganizationMemberDualRead(
+async function resolveOrganizationMemberFromComponent(
   ctx: QueryCtx | MutationCtx,
   user: Doc<"users">,
   organization: Doc<"organizations">,
-): Promise<Doc<"organization_members">> {
-  const localMember = await ctx.db
-    .query("organization_members")
-    .withIndex("by_user_organization", (q) =>
-      q.eq("userId", user._id).eq("organizationId", organization._id),
-    )
-    .first();
-
+): Promise<AuthMember> {
   const componentMembership = await resolveComponentMembershipForOrganization(
     ctx,
     user,
@@ -233,38 +202,17 @@ async function resolveOrganizationMemberDualRead(
   );
 
   if (componentMembership !== null) {
-    if (localMember !== null) {
-      return {
-        ...localMember,
-        role: componentMembership.role,
-        status: componentStatusToLocal(componentMembership.status),
-      };
-    }
     return synthesizeMemberFromComponent(user, organization, componentMembership);
   }
 
-  if (localMember === null) {
-    throwAuthError("NO_MEMBER_RECORD", undefined, {
-      userId: user._id,
-      organizationId: organization._id,
-    });
-  }
-
-  // Lazy materialization (mutation contexts only — queries cannot write). Mirror
-  // the local membership into the component so it becomes the forward truth.
-  if (user.vortexAuthUserId && organization.vortexAuthOrganizationId && "runMutation" in ctx) {
-    await upsertVortexAuthMember(ctx as MutationCtx, {
-      organizationId: organization._id,
-      userId: user._id,
-      role: localMember.role,
-      status: localStatusToComponent(localMember.status),
-    });
-  }
-
-  return localMember;
+  throwAuthError("NO_MEMBER_RECORD", undefined, {
+    userId: user._id,
+    organizationId: organization._id,
+    source: "vortexAuthComponent",
+  });
 }
 
-function validateMemberStatus(user: Doc<"users">, member: Doc<"organization_members">): void {
+function validateMemberStatus(user: Doc<"users">, member: AuthMember): void {
   if (!AuthUtils.isAccountValid(member)) {
     throwAuthError(getStatusErrorType(member.status), undefined, {
       userId: user._id,
@@ -289,7 +237,7 @@ async function getActiveSubscription(
 }
 
 function buildAuthContext(
-  member: Doc<"organization_members">,
+  member: AuthMember,
   user: Doc<"users">,
   organization: Doc<"organizations">,
   subscription?: Doc<"subscriptions">,
@@ -322,7 +270,7 @@ export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthC
   // Org resolved first: the dual-read membership resolver needs the org's
   // vortexAuthOrganizationId anchor to query the component.
   const organization = await getOrganizationOrThrow(ctx, user, organizationId);
-  const member = await resolveOrganizationMemberDualRead(ctx, user, organization);
+  const member = await resolveOrganizationMemberFromComponent(ctx, user, organization);
 
   validateMemberStatus(user, member);
 
@@ -333,7 +281,7 @@ export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthC
 /**
  * Map user status to error type
  */
-function getStatusErrorType(status: MemberStatus): keyof typeof AuthErrorType {
+function getStatusErrorType(status: string): keyof typeof AuthErrorType {
   switch (status) {
     case "inactive":
       return "ACCOUNT_INACTIVE";

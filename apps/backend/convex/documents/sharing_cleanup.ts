@@ -8,7 +8,13 @@ import { v } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, type QueryCtx } from "../_generated/server";
+import {
+  listComponentMembersByOrganization,
+  resolveComponentMemberships,
+} from "../lib/componentOrgReads";
 import { createNotification } from "../notifications";
+
+type OrganizationReadCtx = Pick<QueryCtx | MutationCtx, "db" | "runQuery">;
 
 async function revokeAllDocumentAccess(
   ctx: MutationCtx,
@@ -56,38 +62,28 @@ async function revokeAllDocumentAccess(
 }
 
 async function getOrganizationAdmin(
-  ctx: QueryCtx,
+  ctx: OrganizationReadCtx,
   organizationId: Id<"organizations">,
   excludeUserId?: Id<"users">,
 ): Promise<Id<"users"> | null> {
-  const owner = await ctx.db
-    .query("organization_members")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) =>
-      q.and(
-        q.eq(q.field("role"), "owner"),
-        q.eq(q.field("status"), "active"),
-        excludeUserId ? q.neq(q.field("userId"), excludeUserId) : true,
-      ),
-    )
-    .first();
+  const organization = await ctx.db.get(organizationId);
+  if (!organization) {
+    return null;
+  }
 
-  if (owner) {
+  const activeMembers = await listComponentMembersByOrganization(ctx, organization, {
+    status: "active",
+  });
+  const assignableMembers = activeMembers.filter(
+    (member) => member.userId !== null && member.userId !== excludeUserId,
+  );
+
+  const owner = assignableMembers.find((member) => member.role === "owner");
+  if (owner?.userId) {
     return owner.userId;
   }
 
-  const admin = await ctx.db
-    .query("organization_members")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) =>
-      q.and(
-        q.eq(q.field("role"), "admin"),
-        q.eq(q.field("status"), "active"),
-        excludeUserId ? q.neq(q.field("userId"), excludeUserId) : true,
-      ),
-    )
-    .first();
-
+  const admin = assignableMembers.find((member) => member.role === "admin");
   return admin?.userId ?? null;
 }
 
@@ -144,11 +140,10 @@ export const downgradeUserSharing = internalMutation({
 
     const user = await ctx.db.get(args.userId);
     if (user) {
-      const membership = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .filter((q) => q.eq(q.field("isPrimary"), true))
-        .first();
+      const memberships = await resolveComponentMemberships(ctx, user);
+      const membership =
+        memberships.find((candidate) => candidate.organizationId === user.activeOrganizationId) ??
+        memberships[0];
 
       if (membership) {
         await createNotification(ctx, {

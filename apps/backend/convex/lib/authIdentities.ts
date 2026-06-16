@@ -7,4 +7,4 @@ export {
   buildBetterAuthTokenIdentifier,
   getBetterAuthIdentityIssuer,
   getBetterAuthIdentityProvider,
-} from "@plasmapos/vortex-auth/better-auth";
+} from "@plasmapos/auth/better-auth";

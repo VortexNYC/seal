@@ -44,13 +44,13 @@ export class ShareDialogPage {
   }
 
   async waitForOpen(): Promise<void> {
-    await this.dialogRoot.waitFor({ state: "visible" });
+    await this.dialogRoot.waitFor({ state: "visible", timeout: 10000 });
     await this.page.waitForTimeout(200);
     await this.page.waitForLoadState("domcontentloaded");
   }
 
   async waitForClose(): Promise<void> {
-    await this.dialogRoot.waitFor({ state: "hidden" });
+    await this.dialogRoot.waitFor({ state: "hidden", timeout: 10000 });
   }
 
   async isOpen(): Promise<boolean> {
@@ -78,7 +78,7 @@ export class ShareDialogPage {
     }
 
     await button.click();
-    await waitForConvexMutation(this.page, "updateSharingMode");
+    await this.waitForSharingModeSelected(mode);
   }
 
   private getSharingModeButton(mode: SharingMode): Locator {
@@ -107,6 +107,20 @@ export class ShareDialogPage {
       normalizedClasses.includes("text-info") ||
       normalizedClasses.includes("bg-info-surface")
     );
+  }
+
+  private async waitForSharingModeSelected(mode: SharingMode, timeoutMs = 10000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      if (await this.isSharingModeSelected(mode).catch(() => false)) {
+        return;
+      }
+
+      await this.page.waitForTimeout(250);
+    }
+
+    throw new Error(`Timed out waiting for sharing mode to become selected: ${mode}`);
   }
 
   async getCurrentSharingMode(): Promise<SharingMode | null> {

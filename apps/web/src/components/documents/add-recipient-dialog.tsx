@@ -57,7 +57,7 @@ export function AddRecipientDialog({
 }: AddRecipientDialogProps) {
   const [activeTab, setActiveTab] = useState<"team" | "outsider">("team");
   const [selectedMember, setSelectedMember] = useState<{
-    id: Id<"organization_members">;
+    id: string;
     email: string;
     name: string | null;
   } | null>(null);

@@ -23,7 +23,7 @@ import { Resend } from "resend";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { resendComponent } from "../emails/resend_component";
+import { sendEmailManuallyFromAction } from "../emails/resend_component";
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 
@@ -118,7 +118,7 @@ export async function sendDocumentInvitation(
 
     const subject = `${senderName} sent you a document to sign: ${documentName}`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       {
         from: fromEmail,
@@ -193,7 +193,7 @@ export async function sendSigningComplete(
 
     const subject = `You have ${actionText} "${documentName}"`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -266,7 +266,7 @@ export async function sendDocumentCompleted(
 
     const subject = `✓ Document Complete: ${documentName}`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -349,7 +349,7 @@ export async function sendReminder(
 
     const subject = `Reminder: "${documentName}" is waiting for your signature`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       {
         from: fromEmail,
@@ -406,7 +406,7 @@ export async function sendWelcome(
 
     const subject = "Welcome to Seal - Your document signing journey starts here";
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -465,7 +465,7 @@ export async function sendTeamInvitation(
 
     const subject = `${inviterName} invited you to join ${organizationName} on Seal`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -521,7 +521,7 @@ export async function sendCancellationNotification(
 
     const subject = `Document cancelled: ${documentName}`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -587,7 +587,7 @@ export async function sendExpirationAlert(
 
     const subject = `⏰ "${documentName}" expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -646,7 +646,7 @@ export async function sendDocumentViewed(
 
     const subject = `${recipientName} viewed "${documentName}"`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -713,7 +713,7 @@ export async function sendDocumentShared(
 
     const subject = `${sharerName} shared "${documentName}" with you`;
 
-    const emailId = await resendComponent.sendEmailManually(
+    const emailId = await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
@@ -767,7 +767,7 @@ export async function sendDocumentExpiredNotification(
 
     const subject = `Your document "${params.documentName}" has expired`;
 
-    await resendComponent.sendEmailManually(
+    await sendEmailManuallyFromAction(
       ctx,
       { from: FROM_EMAIL, to: [params.to], subject },
       async (idempotencyKey: string) => {
