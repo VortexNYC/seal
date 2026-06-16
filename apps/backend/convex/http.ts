@@ -37,7 +37,7 @@ import {
 } from "./api";
 import { ApiError } from "./api/errors";
 import { registerAuthRoutes } from "./betterAuth";
-import { resendComponent } from "./emails/resend_component";
+import { handleResendEventWebhookFromAction } from "./emails/resend_component";
 import {
   buildBetterAuthTokenIdentifier,
   getBetterAuthIdentityIssuer,
@@ -2505,7 +2505,7 @@ http.route({
   path: "/resend-webhooks",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    return await resendComponent.handleResendEventWebhook(ctx, request);
+    return await handleResendEventWebhookFromAction(ctx, request);
   }),
 });
 

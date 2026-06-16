@@ -15,6 +15,7 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
+import { toActionCacheCtx } from "./component_ctx";
 import { paymentExtractionCache } from "./tools/extract_payment_terms";
 
 /**
@@ -39,7 +40,7 @@ export const extractPaymentTermsForSuggestion = internalAction({
 
     // Use shared cache — same storageId yields same result across pipeline and agent paths.
     // Cache miss calls extractPaymentInternal which has retry + the latest prompt.
-    const extracted = await paymentExtractionCache.fetch(ctx, {
+    const extracted = await paymentExtractionCache.fetch(toActionCacheCtx(ctx), {
       storageId: document.storageId as Id<"_storage">,
     });
 

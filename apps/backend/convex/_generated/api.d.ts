@@ -162,6 +162,7 @@ import type * as payments_merchant_account_validators from "../payments/merchant
 import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_queries from "../payments/queries.js";
 import type * as payments_subscription_actions from "../payments/subscription_actions.js";
+import type * as posthog from "../posthog.js";
 import type * as presence from "../presence.js";
 import type * as retrier from "../retrier.js";
 import type * as rls from "../rls.js";
@@ -425,6 +426,7 @@ declare const fullApi: ApiFromModules<{
   "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/queries": typeof payments_queries;
   "payments/subscription_actions": typeof payments_subscription_actions;
+  posthog: typeof posthog;
   presence: typeof presence;
   retrier: typeof retrier;
   rls: typeof rls;
@@ -559,6 +561,7 @@ export declare const components: {
   rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
   vortexAuth: import("@plasmapos/auth/_generated/component.js").ComponentApi<"vortexAuth">;
+  posthog: import("@posthog/convex/_generated/component.js").ComponentApi<"posthog">;
   actionCache: import("@convex-dev/action-cache/_generated/component.js").ComponentApi<"actionCache">;
   actionRetrier: import("@convex-dev/action-retrier/_generated/component.js").ComponentApi<"actionRetrier">;
   rag: import("@convex-dev/rag/_generated/component.js").ComponentApi<"rag">;

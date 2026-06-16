@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { components, internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
+import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
 // Re-export schema from standalone module (keeps imports stable for consumers
@@ -69,7 +70,7 @@ export const extractPaymentTerms = createTool({
       if (!document) throw new Error("Document not found");
 
       // Use cached payment extraction — same storageId = same result
-      const extracted = (await paymentExtractionCache.fetch(ctx, {
+      const extracted = (await paymentExtractionCache.fetch(toActionCacheCtx(ctx), {
         storageId: document.storageId as Id<"_storage">,
       })) as PaymentExtractionResult;
 

@@ -10,11 +10,13 @@
  */
 
 import { Resend } from "@convex-dev/resend";
+import type { SendEmailOptions } from "@convex-dev/resend";
 import { vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import type { ActionCtx } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 
@@ -22,6 +24,36 @@ export const resendComponent: Resend = new Resend(components.resend, {
   testMode: false,
   onEmailEvent: internal.emails.resend_component.handleEmailEvent,
 });
+
+type ResendManualCtx = Parameters<typeof resendComponent.sendEmailManually>[0];
+type ResendManualOptions = Parameters<typeof resendComponent.sendEmailManually>[1];
+type ResendManualCallback = Parameters<typeof resendComponent.sendEmailManually>[2];
+
+function toResendManualCtx(ctx: Pick<ActionCtx, "runMutation">): ResendManualCtx {
+  return { runMutation: ctx.runMutation } as unknown as ResendManualCtx;
+}
+
+export async function sendEmailFromAction(
+  ctx: Pick<ActionCtx, "runMutation">,
+  options: SendEmailOptions,
+): ReturnType<typeof resendComponent.sendEmail> {
+  return await resendComponent.sendEmail(toResendManualCtx(ctx), options);
+}
+
+export async function sendEmailManuallyFromAction(
+  ctx: Pick<ActionCtx, "runMutation">,
+  options: ResendManualOptions,
+  sendCallback: ResendManualCallback,
+): ReturnType<typeof resendComponent.sendEmailManually> {
+  return await resendComponent.sendEmailManually(toResendManualCtx(ctx), options, sendCallback);
+}
+
+export async function handleResendEventWebhookFromAction(
+  ctx: Pick<ActionCtx, "runMutation">,
+  request: Request,
+): ReturnType<typeof resendComponent.handleResendEventWebhook> {
+  return await resendComponent.handleResendEventWebhook(toResendManualCtx(ctx), request);
+}
 
 /**
  * Handle email delivery events from Resend.

@@ -17,7 +17,7 @@ import {
   query,
 } from "./_generated/server";
 import { getAuthContext } from "./auth";
-import { resendComponent } from "./emails/resend_component";
+import { sendEmailFromAction } from "./emails/resend_component";
 import {
   getComponentInvitationByTokenHash,
   listComponentInvitationsByOrganization,
@@ -131,7 +131,7 @@ export const sendInviteEmail = internalAction({
       console.error(`[invite-email] not sent to ${args.to}: ${draft.reason}`);
       return;
     }
-    await resendComponent.sendEmail(ctx, draft);
+    await sendEmailFromAction(ctx, draft);
   },
 });
 
