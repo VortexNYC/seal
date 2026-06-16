@@ -35,7 +35,7 @@
     "@convex-dev/react-query": "0.1.0",
     "@hookform/resolvers": "^5.2.2",
     "@jam.dev/sdk": "^0.0.6",
-    "@plasmapos/auth": "0.5.0",
+    "@plasmapos/auth": "file:../../../vortex-core/packages/vortex-auth",
     "@plasmapos/observability": "0.1.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

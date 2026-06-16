@@ -26,8 +26,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vortex-payments sibling (file dependency in apps/web)
+      - name: Clone Vortex sibling repos (file dependencies)
         run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -50,8 +51,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vortex-payments sibling (file dependency in apps/web)
+      - name: Clone Vortex sibling repos (file dependencies)
         run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -74,8 +76,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vortex-payments sibling (file dependency in apps/web)
+      - name: Clone Vortex sibling repos (file dependencies)
         run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -101,8 +104,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vortex-payments sibling (file dependency in apps/web)
+      - name: Clone Vortex sibling repos (file dependencies)
         run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -153,8 +157,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vortex-payments sibling (file dependency in apps/web)
+      - name: Clone Vortex sibling repos (file dependencies)
         run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -201,8 +206,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vortex-payments sibling (file dependency in apps/web)
+      - name: Clone Vortex sibling repos (file dependencies)
         run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
