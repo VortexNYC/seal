@@ -102,6 +102,9 @@ export const Route = createRootRoute({
     ],
     scripts: [
       {
+        children: THEME_DETECTION_SCRIPT,
+      },
+      {
         type: "application/ld+json",
         children: JSON.stringify(organizationSchema),
       },
@@ -144,8 +147,6 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        {/* Inline theme detection — static constant, no user input (safe from XSS) */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_DETECTION_SCRIPT }} />
       </head>
       <body className="font-sans antialiased">
         {children}

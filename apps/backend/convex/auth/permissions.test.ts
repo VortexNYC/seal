@@ -11,6 +11,15 @@ import {
   PERMISSIONS,
   ROLE_TEMPLATES,
 } from "./permissions";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("hasPermission", () => {
   it("returns true for exact match", () => {
@@ -159,7 +168,7 @@ describe("getPermissionsByDomain", () => {
 
   it("each domain entry has key and description", () => {
     const byDomain = getPermissionsByDomain();
-    for (const entry of byDomain.documents!) {
+    for (const entry of sealAssertPresent(byDomain.documents)) {
       expect(entry.key).toMatch(/^documents:/);
       expect(typeof entry.description).toBe("string");
     }

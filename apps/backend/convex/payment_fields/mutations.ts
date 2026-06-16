@@ -8,6 +8,15 @@ import {
   paymentTypeTuple,
 } from "../schemas/payment_field_configs";
 import { computeTotalAmountCents, validatePaymentConfig } from "./helpers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /**
  * Payment Field Config Mutations
@@ -367,7 +376,9 @@ export const storeStripeIds = internalMutation({
       // Check if record already exists (idempotent)
       const existing = await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId!))
+        .withIndex("by_stripe_invoice", (q) =>
+          q.eq("stripeInvoiceId", sealAssertPresent(args.stripeInvoiceId)),
+        )
         .first();
 
       if (!existing) {

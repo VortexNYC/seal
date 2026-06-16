@@ -8,6 +8,15 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../../_generated/server";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /** API analytics summary */
 export interface ApiAnalytics {
@@ -108,15 +117,21 @@ export const getAnalytics = internalQuery({
     let median_signing_hours: number | null = null;
     const signingTimes = completedInPeriod
       .filter((d) => d.sentAt !== undefined && d.completedAt !== undefined)
-      .map((d) => (d.completedAt! - d.sentAt!) / (1000 * 60 * 60));
+      .map(
+        (d) => (sealAssertPresent(d.completedAt) - sealAssertPresent(d.sentAt)) / (1000 * 60 * 60),
+      );
 
     if (signingTimes.length >= 2) {
       signingTimes.sort((a, b) => a - b);
       const mid = Math.floor(signingTimes.length / 2);
       median_signing_hours =
         signingTimes.length % 2 === 0
-          ? Math.round(((signingTimes[mid - 1]! + signingTimes[mid]!) / 2) * 10) / 10
-          : Math.round(signingTimes[mid]! * 10) / 10;
+          ? Math.round(
+              ((sealAssertPresent(signingTimes[mid - 1]) + sealAssertPresent(signingTimes[mid])) /
+                2) *
+                10,
+            ) / 10
+          : Math.round(sealAssertPresent(signingTimes[mid]) * 10) / 10;
     }
 
     return {

@@ -2,6 +2,38 @@ import { describe, expect, test } from "vitest";
 
 import { formatSlackMessage } from "../slack_formatter";
 
+type SlackBlock = ReturnType<typeof formatSlackMessage>["blocks"][number];
+type SlackSectionBlock = Extract<SlackBlock, { type: "section" }>;
+type SlackContextBlock = Extract<SlackBlock, { type: "context" }>;
+
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
+
+function expectSectionBlock(block: SlackBlock | undefined): SlackSectionBlock {
+  const present = sealAssertPresent(block);
+  expect(present.type).toBe("section");
+  if (present.type !== "section") {
+    throw new Error("Expected Slack section block.");
+  }
+  return present;
+}
+
+function expectContextBlock(block: SlackBlock | undefined): SlackContextBlock {
+  const present = sealAssertPresent(block);
+  expect(present.type).toBe("context");
+  if (present.type !== "context") {
+    throw new Error("Expected Slack context block.");
+  }
+  return present;
+}
+
 describe("formatSlackMessage", () => {
   // ---------------------------------------------------------------------------
   // Basic structure
@@ -36,12 +68,8 @@ describe("formatSlackMessage", () => {
     });
 
     const headerBlock = result.blocks[0];
-    expect(headerBlock).toBeDefined();
-    expect(headerBlock!.type).toBe("section");
-    if (headerBlock!.type === "section") {
-      expect(headerBlock!.text.text).toContain(":white_check_mark:");
-      expect(headerBlock!.text.text).toContain("Document Completed");
-    }
+    expect(expectSectionBlock(headerBlock).text.text).toContain(":white_check_mark:");
+    expect(expectSectionBlock(headerBlock).text.text).toContain("Document Completed");
   });
 
   // ---------------------------------------------------------------------------
@@ -58,11 +86,8 @@ describe("formatSlackMessage", () => {
     });
 
     const detailBlock = result.blocks[1];
-    expect(detailBlock).toBeDefined();
-    if (detailBlock!.type === "section") {
-      expect(detailBlock!.text.text).toContain("Service Agreement");
-      expect(detailBlock!.text.text).toContain("doc_abc");
-    }
+    expect(expectSectionBlock(detailBlock).text.text).toContain("Service Agreement");
+    expect(expectSectionBlock(detailBlock).text.text).toContain("doc_abc");
   });
 
   // ---------------------------------------------------------------------------
@@ -79,11 +104,8 @@ describe("formatSlackMessage", () => {
     });
 
     const detailBlock = result.blocks[1];
-    expect(detailBlock).toBeDefined();
-    if (detailBlock!.type === "section") {
-      expect(detailBlock!.text.text).toContain("Jane Doe");
-      expect(detailBlock!.text.text).toContain("jane@example.com");
-    }
+    expect(expectSectionBlock(detailBlock).text.text).toContain("Jane Doe");
+    expect(expectSectionBlock(detailBlock).text.text).toContain("jane@example.com");
   });
 
   // ---------------------------------------------------------------------------
@@ -100,10 +122,7 @@ describe("formatSlackMessage", () => {
     });
 
     const detailBlock = result.blocks[1];
-    expect(detailBlock).toBeDefined();
-    if (detailBlock!.type === "section") {
-      expect(detailBlock!.text.text).toContain("Terms unacceptable");
-    }
+    expect(expectSectionBlock(detailBlock).text.text).toContain("Terms unacceptable");
   });
 
   // ---------------------------------------------------------------------------
@@ -120,12 +139,9 @@ describe("formatSlackMessage", () => {
     });
 
     const lastBlock = result.blocks[result.blocks.length - 1];
-    expect(lastBlock).toBeDefined();
-    expect(lastBlock!.type).toBe("context");
-    if (lastBlock!.type === "context") {
-      expect(lastBlock!.elements[0]!.text).toContain("document.sent");
-      expect(lastBlock!.elements[0]!.text).toContain("Seal");
-    }
+    const firstElement = sealAssertPresent(expectContextBlock(lastBlock).elements[0]);
+    expect(firstElement.text).toContain("document.sent");
+    expect(firstElement.text).toContain("Seal");
   });
 
   // ---------------------------------------------------------------------------
@@ -142,11 +158,8 @@ describe("formatSlackMessage", () => {
     });
 
     const headerBlock = result.blocks[0];
-    expect(headerBlock).toBeDefined();
-    if (headerBlock!.type === "section") {
-      expect(headerBlock!.text.text).toContain(":bell:");
-      expect(headerBlock!.text.text).toContain("custom.unknown_event");
-    }
+    expect(expectSectionBlock(headerBlock).text.text).toContain(":bell:");
+    expect(expectSectionBlock(headerBlock).text.text).toContain("custom.unknown_event");
   });
 
   // ---------------------------------------------------------------------------
@@ -163,16 +176,10 @@ describe("formatSlackMessage", () => {
     });
 
     const headerBlock = result.blocks[0];
-    expect(headerBlock).toBeDefined();
-    if (headerBlock!.type === "section") {
-      expect(headerBlock!.text.text).toContain(":wave:");
-    }
+    expect(expectSectionBlock(headerBlock).text.text).toContain(":wave:");
 
     const detailBlock = result.blocks[1];
-    expect(detailBlock).toBeDefined();
-    if (detailBlock!.type === "section") {
-      expect(detailBlock!.text.text).toContain("This is a test webhook from Seal");
-    }
+    expect(expectSectionBlock(detailBlock).text.text).toContain("This is a test webhook from Seal");
   });
 
   // ---------------------------------------------------------------------------
@@ -190,8 +197,8 @@ describe("formatSlackMessage", () => {
 
     // Header + context, no detail block
     expect(result.blocks).toHaveLength(2);
-    expect(result.blocks[0]!.type).toBe("section");
-    expect(result.blocks[1]!.type).toBe("context");
+    expect(sealAssertPresent(result.blocks[0]).type).toBe("section");
+    expect(sealAssertPresent(result.blocks[1]).type).toBe("context");
   });
 
   // ---------------------------------------------------------------------------
@@ -228,10 +235,7 @@ describe("formatSlackMessage", () => {
     });
 
     const headerBlock = result.blocks[0];
-    expect(headerBlock).toBeDefined();
-    if (headerBlock!.type === "section") {
-      // Should NOT use the fallback :bell: emoji for known events
-      expect(headerBlock!.text.text).not.toContain(":bell:");
-    }
+    // Should NOT use the fallback :bell: emoji for known events
+    expect(expectSectionBlock(headerBlock).text.text).not.toContain(":bell:");
   });
 });

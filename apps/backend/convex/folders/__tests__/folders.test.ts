@@ -4,6 +4,15 @@ import { api } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("Folders", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -113,11 +122,11 @@ describe("Folders", () => {
       })) as Doc<"folders"> | null;
 
       expect(folder).not.toBeNull();
-      expect(folder!.name).toBe("Contracts");
-      expect(folder!.type).toBe("document");
-      expect(folder!.parentId).toBeUndefined();
-      expect(folder!.visibility).toBe("everyone");
-      expect(folder!.organizationId).toEqual(organizationId);
+      expect(sealAssertPresent(folder).name).toBe("Contracts");
+      expect(sealAssertPresent(folder).type).toBe("document");
+      expect(sealAssertPresent(folder).parentId).toBeUndefined();
+      expect(sealAssertPresent(folder).visibility).toBe("everyone");
+      expect(sealAssertPresent(folder).organizationId).toEqual(organizationId);
     });
 
     test("creates a nested folder", async () => {
@@ -140,7 +149,7 @@ describe("Folders", () => {
         return await ctx.db.get(child.id);
       })) as Doc<"folders"> | null;
 
-      expect(childFolder!.parentId).toEqual(parent.id);
+      expect(sealAssertPresent(childFolder).parentId).toEqual(parent.id);
     });
 
     test("rejects empty name", async () => {
@@ -221,7 +230,7 @@ describe("Folders", () => {
         return await ctx.db.get(folderId);
       })) as Doc<"folders"> | null;
 
-      expect(folder!.name).toBe("New Name");
+      expect(sealAssertPresent(folder).name).toBe("New Name");
     });
 
     test("changes visibility", async () => {
@@ -243,7 +252,7 @@ describe("Folders", () => {
         return await ctx.db.get(folderId);
       })) as Doc<"folders"> | null;
 
-      expect(folder!.visibility).toBe("admin");
+      expect(sealAssertPresent(folder).visibility).toBe("admin");
     });
   });
 
@@ -359,9 +368,9 @@ describe("Folders", () => {
       const template = await t.run(async (ctx) => ctx.db.get(templateId));
 
       expect(doc).not.toBeNull();
-      expect(doc!.folderId).toBeUndefined();
+      expect(sealAssertPresent(doc).folderId).toBeUndefined();
       expect(template).not.toBeNull();
-      expect(template!.folderId).toBeUndefined();
+      expect(sealAssertPresent(template).folderId).toBeUndefined();
     });
   });
 
@@ -393,7 +402,7 @@ describe("Folders", () => {
         });
 
       const moved = (await t.run(async (ctx) => ctx.db.get(folderA))) as Doc<"folders"> | null;
-      expect(moved!.parentId).toEqual(folderB);
+      expect(sealAssertPresent(moved).parentId).toEqual(folderB);
     });
 
     test("moves folder to root", async () => {
@@ -420,7 +429,7 @@ describe("Folders", () => {
         });
 
       const moved = (await t.run(async (ctx) => ctx.db.get(childId))) as Doc<"folders"> | null;
-      expect(moved!.parentId).toBeUndefined();
+      expect(sealAssertPresent(moved).parentId).toBeUndefined();
     });
 
     test("rejects circular reference", async () => {
@@ -527,7 +536,7 @@ describe("Folders", () => {
       expect(result.moved).toBe(1);
 
       const doc = await t.run(async (ctx) => ctx.db.get(docId));
-      expect(doc!.folderId).toEqual(folderId);
+      expect(sealAssertPresent(doc).folderId).toEqual(folderId);
     });
 
     test("rejects type mismatch (document into template folder)", async () => {

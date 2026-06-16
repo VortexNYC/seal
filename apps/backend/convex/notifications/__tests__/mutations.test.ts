@@ -4,6 +4,15 @@ import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("Notifications mutations", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -104,7 +113,9 @@ describe("Notifications mutations", () => {
       expect(result.items).toHaveLength(3);
       // Verify descending order by createdAt
       for (let i = 0; i < result.items.length - 1; i++) {
-        expect(result.items[i]!.createdAt).toBeGreaterThanOrEqual(result.items[i + 1]!.createdAt);
+        expect(sealAssertPresent(result.items[i]).createdAt).toBeGreaterThanOrEqual(
+          sealAssertPresent(result.items[i + 1]).createdAt,
+        );
       }
     });
 
@@ -162,7 +173,7 @@ describe("Notifications mutations", () => {
 
   describe("markAsRead", () => {
     test("marks notification as read and sets readAt", async () => {
-      const unreadId = notificationIds[0]!;
+      const unreadId = sealAssertPresent(notificationIds[0]);
 
       const result = await t
         .withIdentity({ subject: "test_owner" })
@@ -182,7 +193,7 @@ describe("Notifications mutations", () => {
     });
 
     test("returns success true for already-read notification (idempotent)", async () => {
-      const readId = notificationIds[1]!;
+      const readId = sealAssertPresent(notificationIds[1]);
 
       const result = await t
         .withIdentity({ subject: "test_owner" })
@@ -195,7 +206,7 @@ describe("Notifications mutations", () => {
 
     test("returns error for non-existent notification", async () => {
       // Delete a notification to get a valid-format but non-existent ID
-      const idToDelete = notificationIds[0]!;
+      const idToDelete = sealAssertPresent(notificationIds[0]);
       await t.run(async (ctx) => {
         await ctx.db.delete(idToDelete);
       });
@@ -290,7 +301,7 @@ describe("Notifications mutations", () => {
 
   describe("deleteNotification", () => {
     test("deletes the notification", async () => {
-      const idToDelete = notificationIds[0]!;
+      const idToDelete = sealAssertPresent(notificationIds[0]);
 
       const result = await t
         .withIdentity({ subject: "test_owner" })

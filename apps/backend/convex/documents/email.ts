@@ -24,6 +24,15 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { sendEmailManuallyFromAction } from "../emails/resend_component";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 
@@ -137,7 +146,7 @@ export async function sendDocumentInvitation(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -206,7 +215,7 @@ export async function sendSigningComplete(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -279,7 +288,7 @@ export async function sendDocumentCompleted(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -368,7 +377,7 @@ export async function sendReminder(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -419,7 +428,7 @@ export async function sendWelcome(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -478,7 +487,7 @@ export async function sendTeamInvitation(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -534,7 +543,7 @@ export async function sendCancellationNotification(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -600,7 +609,7 @@ export async function sendExpirationAlert(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -659,7 +668,7 @@ export async function sendDocumentViewed(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -726,7 +735,7 @@ export async function sendDocumentShared(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 
@@ -780,7 +789,7 @@ export async function sendDocumentExpiredNotification(
           headers: { "Idempotency-Key": idempotencyKey },
         });
         if (error) throw new Error(error.message);
-        return data!.id;
+        return sealAssertPresent(data).id;
       },
     );
 

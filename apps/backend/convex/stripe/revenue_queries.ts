@@ -2,6 +2,15 @@ import { ConvexError, v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
 import { memberQuery } from "../auth";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /**
  * Get aggregate revenue statistics for the organization.
@@ -362,7 +371,7 @@ export const getRevenueTrends = memberQuery({
     for (const inv of invoices) {
       if (inv.status !== "paid" || !inv.paidAt || inv.paidAt < startDate) continue;
 
-      const date = new Date(inv.paidAt).toISOString().split("T")[0]!;
+      const date = sealAssertPresent(new Date(inv.paidAt).toISOString().split("T")[0]);
       const existing = dailyMap.get(date) ?? { revenue: 0, count: 0 };
       existing.revenue += inv.amountDue;
       existing.count += 1;
@@ -372,7 +381,7 @@ export const getRevenueTrends = memberQuery({
     // Fill in missing days with zeros for clean charting
     const trends: Array<{ date: string; revenue: number; count: number }> = [];
     for (let d = startDate; d <= now; d += DAY_MS) {
-      const date = new Date(d).toISOString().split("T")[0]!;
+      const date = sealAssertPresent(new Date(d).toISOString().split("T")[0]);
       const entry = dailyMap.get(date);
       trends.push({
         date,

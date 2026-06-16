@@ -76,7 +76,7 @@ bun run project-kit:check
 bun run project-kit:doctor
 bun run migrate:legacy-auth-package:check
 bun run typecheck
-bun run lint
+bun run lint:strict
 bun run format:changed:check
 bun run check:preferred-stack
 bun run build

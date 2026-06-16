@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("dunning (payment recovery)", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -81,10 +90,10 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.get(invoiceId);
     });
 
-    expect(invoice!.dunningStatus).toBe("active");
-    expect(invoice!.dunningStep).toBe(0);
-    expect(invoice!.dunningStartedAt).toBeDefined();
-    expect(invoice!.nextDunningAt).toBeDefined();
+    expect(sealAssertPresent(invoice).dunningStatus).toBe("active");
+    expect(sealAssertPresent(invoice).dunningStep).toBe(0);
+    expect(sealAssertPresent(invoice).dunningStartedAt).toBeDefined();
+    expect(sealAssertPresent(invoice).nextDunningAt).toBeDefined();
   });
 
   test("startDunning is idempotent — does not restart active dunning", async () => {
@@ -94,7 +103,7 @@ describe("dunning (payment recovery)", () => {
 
     const firstStart = await t.run(async (ctx) => {
       const inv = await ctx.db.get(invoiceId);
-      return inv!.dunningStartedAt;
+      return sealAssertPresent(inv).dunningStartedAt;
     });
 
     // Try to start again
@@ -102,7 +111,7 @@ describe("dunning (payment recovery)", () => {
 
     const secondStart = await t.run(async (ctx) => {
       const inv = await ctx.db.get(invoiceId);
-      return inv!.dunningStartedAt;
+      return sealAssertPresent(inv).dunningStartedAt;
     });
 
     // Should not have changed
@@ -124,7 +133,7 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.get(invoiceId);
     });
 
-    expect(invoice!.dunningStatus).toBeUndefined();
+    expect(sealAssertPresent(invoice).dunningStatus).toBeUndefined();
   });
 
   test("startDunning does not restart completed dunning", async () => {
@@ -152,7 +161,7 @@ describe("dunning (payment recovery)", () => {
     const invoice = await t.run(async (ctx) => {
       return await ctx.db.get(invoiceId);
     });
-    expect(invoice!.dunningStatus).toBe("completed");
+    expect(sealAssertPresent(invoice).dunningStatus).toBe("completed");
   });
 
   test("startDunning does not restart cancelled dunning", async () => {
@@ -168,7 +177,7 @@ describe("dunning (payment recovery)", () => {
     const invoice = await t.run(async (ctx) => {
       return await ctx.db.get(invoiceId);
     });
-    expect(invoice!.dunningStatus).toBe("cancelled");
+    expect(sealAssertPresent(invoice).dunningStatus).toBe("cancelled");
   });
 
   test("cancelDunning stops active dunning", async () => {
@@ -181,9 +190,9 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.get(invoiceId);
     });
 
-    expect(invoice!.dunningStatus).toBe("cancelled");
-    expect(invoice!.dunningCompletedAt).toBeDefined();
-    expect(invoice!.nextDunningAt).toBeUndefined();
+    expect(sealAssertPresent(invoice).dunningStatus).toBe("cancelled");
+    expect(sealAssertPresent(invoice).dunningCompletedAt).toBeDefined();
+    expect(sealAssertPresent(invoice).nextDunningAt).toBeUndefined();
   });
 
   test("cancelDunning does nothing if not active", async () => {
@@ -196,7 +205,7 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.get(invoiceId);
     });
 
-    expect(invoice!.dunningStatus).toBeUndefined();
+    expect(sealAssertPresent(invoice).dunningStatus).toBeUndefined();
   });
 
   test("advanceDunningStep moves to next step", async () => {
@@ -212,13 +221,14 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.get(invoiceId);
     });
 
-    expect(invoice!.dunningStep).toBe(1);
-    expect(invoice!.lastDunningEmailAt).toBeDefined();
-    expect(invoice!.nextDunningAt).toBeDefined();
+    expect(sealAssertPresent(invoice).dunningStep).toBe(1);
+    expect(sealAssertPresent(invoice).lastDunningEmailAt).toBeDefined();
+    expect(sealAssertPresent(invoice).nextDunningAt).toBeDefined();
     // Next step should be ~3 days from now
-    expect(invoice!.nextDunningAt! - invoice!.lastDunningEmailAt!).toBeGreaterThanOrEqual(
-      3 * 24 * 60 * 60 * 1000 - 1000,
-    );
+    expect(
+      sealAssertPresent(sealAssertPresent(invoice).nextDunningAt) -
+        sealAssertPresent(sealAssertPresent(invoice).lastDunningEmailAt),
+    ).toBeGreaterThanOrEqual(3 * 24 * 60 * 60 * 1000 - 1000);
   });
 
   test("advanceDunningStep completes after final step", async () => {
@@ -242,9 +252,9 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.get(invoiceId);
     });
 
-    expect(invoice!.dunningStatus).toBe("completed");
-    expect(invoice!.dunningCompletedAt).toBeDefined();
-    expect(invoice!.nextDunningAt).toBeUndefined();
+    expect(sealAssertPresent(invoice).dunningStatus).toBe("completed");
+    expect(sealAssertPresent(invoice).dunningCompletedAt).toBeDefined();
+    expect(sealAssertPresent(invoice).nextDunningAt).toBeUndefined();
   });
 
   test("processDunningEmails skips invoices not yet due", async () => {
@@ -291,6 +301,6 @@ describe("dunning (payment recovery)", () => {
     const invoice = await t.run(async (ctx) => {
       return await ctx.db.get(invoiceId);
     });
-    expect(invoice!.dunningStatus).toBe("cancelled");
+    expect(sealAssertPresent(invoice).dunningStatus).toBe("cancelled");
   });
 });

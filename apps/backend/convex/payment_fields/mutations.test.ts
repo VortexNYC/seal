@@ -4,6 +4,15 @@ import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
 import { seedTestOrganizationMember } from "../testVortexAuth";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /**
  * Shared test data factory for payment field tests.
@@ -536,7 +545,7 @@ describe("Payment field mutations", () => {
         return await ctx.db.get(configId);
       })) as Doc<"payment_field_configs"> | null;
 
-      expect(afterUpdate?.updatedAt).toBeGreaterThan(beforeTimestamp!);
+      expect(afterUpdate?.updatedAt).toBeGreaterThan(sealAssertPresent(beforeTimestamp));
       expect(afterUpdate?.paymentStatus).toBe("cancelled");
     });
   });

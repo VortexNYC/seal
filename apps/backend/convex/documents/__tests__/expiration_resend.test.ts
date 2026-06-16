@@ -1,3 +1,12 @@
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 /**
  * Tests for document expiration re-send flow:
  * - expirationPeriodToMs utility (tested via mutation behavior)
@@ -127,9 +136,9 @@ describe("resetExpiredRecipient", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("pending");
-    expect(recipient!.expiresAt).toBe(newExpiresAt);
-    expect(recipient!.expirationNotifiedAt).toBeUndefined();
+    expect(sealAssertPresent(recipient).status).toBe("pending");
+    expect(sealAssertPresent(recipient).expiresAt).toBe(newExpiresAt);
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeUndefined();
   });
 
   test("works without providing new expiresAt", async () => {
@@ -159,10 +168,10 @@ describe("resetExpiredRecipient", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("pending");
-    expect(recipient!.expirationNotifiedAt).toBeUndefined();
+    expect(sealAssertPresent(recipient).status).toBe("pending");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeUndefined();
     // expiresAt should be undefined since we didn't provide one
-    expect(recipient!.expiresAt).toBeUndefined();
+    expect(sealAssertPresent(recipient).expiresAt).toBeUndefined();
   });
 });
 
@@ -228,11 +237,11 @@ describe("reactivateExpiredDocument", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("sent");
-    expect(doc!.expiredAt).toBeUndefined();
-    expect(doc!.sentAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("sent");
+    expect(sealAssertPresent(doc).expiredAt).toBeUndefined();
+    expect(sealAssertPresent(doc).sentAt).toBeTypeOf("number");
     // sentAt should be recent (within last second)
-    expect(doc!.sentAt!).toBeGreaterThan(Date.now() - 1000);
+    expect(sealAssertPresent(sealAssertPresent(doc).sentAt)).toBeGreaterThan(Date.now() - 1000);
   });
 
   test("does nothing if document is not expired", async () => {
@@ -262,7 +271,7 @@ describe("reactivateExpiredDocument", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("sent");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("sent");
   });
 });
 
@@ -351,11 +360,13 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
     });
 
     expect(recipient).not.toBeNull();
-    expect(recipient!.status).toBe("pending");
-    expect(recipient!.expirationNotifiedAt).toBeUndefined();
+    expect(sealAssertPresent(recipient).status).toBe("pending");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeUndefined();
     // New expiresAt should be ~14 days from now
-    expect(recipient!.expiresAt).toBeGreaterThan(Date.now());
-    expect(recipient!.expiresAt).toBeLessThanOrEqual(Date.now() + 14 * ONE_DAY + 1000);
+    expect(sealAssertPresent(recipient).expiresAt).toBeGreaterThan(Date.now());
+    expect(sealAssertPresent(recipient).expiresAt).toBeLessThanOrEqual(
+      Date.now() + 14 * ONE_DAY + 1000,
+    );
   });
 
   test("clears expiredAt on document when re-sending", async () => {
@@ -402,9 +413,9 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
     });
 
     expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("sent");
-    expect(doc!.expiredAt).toBeUndefined();
-    expect(doc!.sentAt).toBeTypeOf("number");
+    expect(sealAssertPresent(doc).workflowStatus).toBe("sent");
+    expect(sealAssertPresent(doc).expiredAt).toBeUndefined();
+    expect(sealAssertPresent(doc).sentAt).toBeTypeOf("number");
   });
 
   test("does not reset non-expired recipients", async () => {
@@ -468,10 +479,10 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
     });
 
     // Expired recipient should be reset
-    expect(expired!.status).toBe("pending");
-    expect(expired!.expirationNotifiedAt).toBeUndefined();
+    expect(sealAssertPresent(expired).status).toBe("pending");
+    expect(sealAssertPresent(expired).expirationNotifiedAt).toBeUndefined();
 
     // Signed recipient should NOT be touched
-    expect(signed!.status).toBe("signed");
+    expect(sealAssertPresent(signed).status).toBe("signed");
   });
 });

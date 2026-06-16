@@ -66,6 +66,15 @@ import {
 import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
 import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /**
  * Extract client IP address from request headers
@@ -2281,9 +2290,9 @@ http.route({
       const result = await ctx.runMutation(internal.api.v1.contacts.createContact, {
         userId: auth.userId,
         organizationId: auth.organizationId,
-        first_name: body.first_name!,
-        last_name: body.last_name!,
-        email: body.email!,
+        first_name: sealAssertPresent(body.first_name),
+        last_name: sealAssertPresent(body.last_name),
+        email: sealAssertPresent(body.email),
         phone: body.phone,
         company: body.company,
         title: body.title,
@@ -2422,7 +2431,7 @@ http.route({
         userId: auth.userId,
         organizationId: auth.organizationId,
         document_ids: body.document_ids as Parameters<typeof ctx.runMutation>[1]["document_ids"],
-        reason: body.reason!,
+        reason: sealAssertPresent(body.reason),
       });
       return apiResponse(200, result);
     },

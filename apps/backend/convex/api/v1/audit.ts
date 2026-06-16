@@ -8,6 +8,15 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../../_generated/server";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /** API representation of an org-level audit log entry */
 export interface ApiAuditLogEntry {
@@ -64,7 +73,9 @@ export const listAuditLog = internalQuery({
       query = ctx.db
         .query("audit_logs")
         .withIndex("by_document_created", (q) =>
-          q.eq("documentId", args.document_id!).gte("createdAt", args.created_after ?? 0),
+          q
+            .eq("documentId", sealAssertPresent(args.document_id))
+            .gte("createdAt", args.created_after ?? 0),
         );
     } else {
       // Org-wide filter
@@ -106,7 +117,9 @@ export const listAuditLog = internalQuery({
           // Look up user by auth subject in our users table
           const user = await ctx.db
             .query("users")
-            .withIndex("by_auth_subject", (q) => q.eq("authSubject", entry.userId!))
+            .withIndex("by_auth_subject", (q) =>
+              q.eq("authSubject", sealAssertPresent(entry.userId)),
+            )
             .first();
           if (user) {
             actor_name = user.name;

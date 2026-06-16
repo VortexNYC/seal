@@ -1,4 +1,13 @@
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 export type ViewportKind = "desktop" | "mobile" | "tablet";
 
@@ -8,7 +17,7 @@ function requireBox(
 ): Promise<NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>> {
   return locator.boundingBox().then((box) => {
     expect(box, `${name} should have a bounding box`).not.toBeNull();
-    return box!;
+    return sealAssertPresent(box);
   });
 }
 

@@ -69,6 +69,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -1276,7 +1285,7 @@ function SigningPage() {
                           className="text-info hover:bg-info-surface mt-2 h-8 px-0"
                           onClick={() => {
                             if (unfilledFields.length > 0) {
-                              scrollToField(unfilledFields[0]!._id);
+                              scrollToField(sealAssertPresent(unfilledFields[0])._id);
                             }
                           }}
                           aria-label="Jump to the next incomplete field"

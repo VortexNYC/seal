@@ -10,6 +10,15 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { sendExpirationAlert } from "./email";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -43,7 +52,7 @@ export const getDocumentsApproachingDeadline = internalQuery({
       if (!docsByOrg.has(orgId)) {
         docsByOrg.set(orgId, []);
       }
-      docsByOrg.get(orgId)!.push(doc);
+      sealAssertPresent(docsByOrg.get(orgId)).push(doc);
     }
 
     const alertCandidates: Array<{
@@ -60,7 +69,7 @@ export const getDocumentsApproachingDeadline = internalQuery({
       const expirationAlertDays = org?.notificationSettings?.expirationAlertDays ?? 3;
 
       for (const doc of docs) {
-        const daysUntilDeadline = Math.ceil((doc.deadline! - now) / DAY_MS);
+        const daysUntilDeadline = Math.ceil((sealAssertPresent(doc.deadline) - now) / DAY_MS);
 
         // Alert if within the configured window, not already past, and not already alerted
         const alreadyAlerted = (doc.expirationAlertsSent ?? []).includes(daysUntilDeadline);
@@ -70,7 +79,7 @@ export const getDocumentsApproachingDeadline = internalQuery({
             documentName: doc.name,
             ownerId: doc.ownerId,
             organizationId: doc.organizationId,
-            deadline: doc.deadline!,
+            deadline: sealAssertPresent(doc.deadline),
             daysRemaining: daysUntilDeadline,
           });
         }

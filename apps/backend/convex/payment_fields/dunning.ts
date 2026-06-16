@@ -13,6 +13,15 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -120,7 +129,7 @@ export const advanceDunningStep = internalMutation({
 
     // Schedule next step
     const nextStep = args.completedStep + 1;
-    const nextAt = now + DUNNING_DELAYS[nextStep]!;
+    const nextAt = now + sealAssertPresent(DUNNING_DELAYS[nextStep]);
 
     await ctx.db.patch(args.invoiceId, {
       dunningStep: nextStep,

@@ -8,6 +8,15 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { generateStringHash } from "../crypto/helpers";
 import { isRecipientTerminal } from "../schemas/document_recipients";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 // Generic context type that works with both standard and custom auth contexts
 type GenericCtx = Pick<MutationCtx | QueryCtx, "db">;
@@ -117,7 +126,7 @@ export function groupRecipientsByOrder(
   for (const r of recipients) {
     const order = r.order ?? 0;
     if (!groups.has(order)) groups.set(order, []);
-    groups.get(order)!.push(r);
+    sealAssertPresent(groups.get(order)).push(r);
   }
   return new Map([...groups].sort(([a], [b]) => a - b));
 }
@@ -165,7 +174,7 @@ export function getNextPendingGroup(
   // Find the next order after completedOrder
   for (const order of sortedOrders) {
     if (order > completedOrder) {
-      const group = groups.get(order)!;
+      const group = sealAssertPresent(groups.get(order));
       // Only return if the group has pending recipients
       const pendingInGroup = group.filter((r) => r.status === "pending");
       if (pendingInGroup.length > 0) {

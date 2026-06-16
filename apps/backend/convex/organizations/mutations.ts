@@ -21,6 +21,15 @@ import {
   upsertVortexAuthMember,
 } from "../lib/vortexAuthOrganizations";
 import { organizationBaseSchema } from "../validations/organizations";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 // Type for organization update operations
 type OrganizationUpdateData = Partial<
@@ -65,7 +74,7 @@ async function findExistingOrganizationForPersonalWorkspace(
 
   return ctx.db
     .query("organizations")
-    .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug!))
+    .withIndex("by_slug", (q) => q.eq("slug", sealAssertPresent(args.organizationSlug)))
     .first();
 }
 

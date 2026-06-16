@@ -18,6 +18,15 @@ import {
   requireManageAccess,
   requireOwnership,
 } from "../access_control";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 describe("access_control", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -119,14 +128,14 @@ describe("access_control", () => {
       const document = await t.run(async (ctx) => {
         return await ctx.db.get(documentId);
       });
-      expect(() => requireOwnership(ownerId, document!)).not.toThrow();
+      expect(() => requireOwnership(ownerId, sealAssertPresent(document))).not.toThrow();
     });
 
     test("throws ConvexError when userId does not match ownerId", async () => {
       const document = await t.run(async (ctx) => {
         return await ctx.db.get(documentId);
       });
-      expect(() => requireOwnership(otherUserId, document!)).toThrow(ConvexError);
+      expect(() => requireOwnership(otherUserId, sealAssertPresent(document))).toThrow(ConvexError);
     });
 
     test("throws with default OWNER_REQUIRED message", async () => {
@@ -134,7 +143,7 @@ describe("access_control", () => {
         return await ctx.db.get(documentId);
       });
       try {
-        requireOwnership(otherUserId, document!);
+        requireOwnership(otherUserId, sealAssertPresent(document));
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
@@ -147,7 +156,7 @@ describe("access_control", () => {
         return await ctx.db.get(documentId);
       });
       try {
-        requireOwnership(otherUserId, document!, "Custom owner error");
+        requireOwnership(otherUserId, sealAssertPresent(document), "Custom owner error");
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
@@ -161,7 +170,7 @@ describe("access_control", () => {
   describe("checkDocumentAccess", () => {
     test("returns owner access for document owner", async () => {
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await checkDocumentAccess(ctx, ownerId, document);
       });
 
@@ -174,7 +183,7 @@ describe("access_control", () => {
 
     test("returns no access for non-owner on private document", async () => {
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await checkDocumentAccess(ctx, otherUserId, document);
       });
 
@@ -185,7 +194,7 @@ describe("access_control", () => {
 
     test("returns no access for non-member user", async () => {
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await checkDocumentAccess(ctx, nonMemberUserId, document);
       });
 
@@ -216,7 +225,7 @@ describe("access_control", () => {
 
       test("grants access to active org member", async () => {
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(workspaceDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(workspaceDocId));
           return await checkDocumentAccess(ctx, otherUserId, document);
         });
 
@@ -228,7 +237,7 @@ describe("access_control", () => {
 
       test("denies access to non-member", async () => {
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(workspaceDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(workspaceDocId));
           return await checkDocumentAccess(ctx, nonMemberUserId, document);
         });
 
@@ -238,7 +247,7 @@ describe("access_control", () => {
 
       test("owner still gets owner access on workspace doc", async () => {
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(workspaceDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(workspaceDocId));
           return await checkDocumentAccess(ctx, ownerId, document);
         });
 
@@ -280,7 +289,7 @@ describe("access_control", () => {
         });
 
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(specificDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(specificDocId));
           return await checkDocumentAccess(ctx, otherUserId, document);
         });
 
@@ -304,7 +313,7 @@ describe("access_control", () => {
         });
 
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(specificDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(specificDocId));
           return await checkDocumentAccess(ctx, otherUserId, document);
         });
 
@@ -314,7 +323,7 @@ describe("access_control", () => {
 
       test("denies access when no document_access record exists", async () => {
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(specificDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(specificDocId));
           return await checkDocumentAccess(ctx, otherUserId, document);
         });
 
@@ -324,7 +333,7 @@ describe("access_control", () => {
 
       test("denies access for non-member even with specific sharing mode", async () => {
         const result = await t.run(async (ctx) => {
-          const document = (await ctx.db.get(specificDocId))!;
+          const document = sealAssertPresent(await ctx.db.get(specificDocId));
           return await checkDocumentAccess(ctx, nonMemberUserId, document);
         });
 
@@ -370,7 +379,7 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(workspaceDocId))!;
+        const document = sealAssertPresent(await ctx.db.get(workspaceDocId));
         return await checkDocumentAccess(ctx, inactiveUserId, document);
       });
 
@@ -384,7 +393,7 @@ describe("access_control", () => {
   describe("requireDocumentAccess", () => {
     test("returns access result when user has access", async () => {
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await requireDocumentAccess(ctx, ownerId, document);
       });
 
@@ -395,7 +404,7 @@ describe("access_control", () => {
     test("throws ConvexError when user has no access", async () => {
       await expect(
         t.run(async (ctx) => {
-          const document = (await ctx.db.get(documentId))!;
+          const document = sealAssertPresent(await ctx.db.get(documentId));
           return await requireDocumentAccess(ctx, otherUserId, document);
         }),
       ).rejects.toThrow(ConvexError);
@@ -404,7 +413,7 @@ describe("access_control", () => {
     test("throws with default NO_ACCESS message", async () => {
       try {
         await t.run(async (ctx) => {
-          const document = (await ctx.db.get(documentId))!;
+          const document = sealAssertPresent(await ctx.db.get(documentId));
           return await requireDocumentAccess(ctx, otherUserId, document);
         });
         expect.fail("Should have thrown");
@@ -417,7 +426,7 @@ describe("access_control", () => {
     test("throws with custom error message when provided", async () => {
       try {
         await t.run(async (ctx) => {
-          const document = (await ctx.db.get(documentId))!;
+          const document = sealAssertPresent(await ctx.db.get(documentId));
           return await requireDocumentAccess(ctx, otherUserId, document, "Forbidden");
         });
         expect.fail("Should have thrown");
@@ -433,7 +442,7 @@ describe("access_control", () => {
   describe("canManageDocument", () => {
     test("returns true for document owner", async () => {
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await canManageDocument(ctx, ownerId, document);
       });
 
@@ -442,7 +451,7 @@ describe("access_control", () => {
 
     test("returns false for non-owner without manage permission", async () => {
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await canManageDocument(ctx, otherUserId, document);
       });
 
@@ -461,7 +470,7 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await canManageDocument(ctx, otherUserId, document);
       });
 
@@ -480,7 +489,7 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await canManageDocument(ctx, otherUserId, document);
       });
 
@@ -499,7 +508,7 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await canManageDocument(ctx, otherUserId, document);
       });
 
@@ -520,7 +529,7 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         return await canManageDocument(ctx, otherUserId, document);
       });
 
@@ -533,7 +542,7 @@ describe("access_control", () => {
   describe("requireManageAccess", () => {
     test("does not throw for document owner", async () => {
       await t.run(async (ctx) => {
-        const document = (await ctx.db.get(documentId))!;
+        const document = sealAssertPresent(await ctx.db.get(documentId));
         await requireManageAccess(ctx, ownerId, document);
       });
     });
@@ -541,7 +550,7 @@ describe("access_control", () => {
     test("throws ConvexError for non-owner without manage permission", async () => {
       await expect(
         t.run(async (ctx) => {
-          const document = (await ctx.db.get(documentId))!;
+          const document = sealAssertPresent(await ctx.db.get(documentId));
           await requireManageAccess(ctx, otherUserId, document);
         }),
       ).rejects.toThrow(ConvexError);
@@ -550,7 +559,7 @@ describe("access_control", () => {
     test("throws with default MANAGE_REQUIRED message", async () => {
       try {
         await t.run(async (ctx) => {
-          const document = (await ctx.db.get(documentId))!;
+          const document = sealAssertPresent(await ctx.db.get(documentId));
           await requireManageAccess(ctx, otherUserId, document);
         });
         expect.fail("Should have thrown");
@@ -565,7 +574,7 @@ describe("access_control", () => {
     test("throws with custom error message when provided", async () => {
       try {
         await t.run(async (ctx) => {
-          const document = (await ctx.db.get(documentId))!;
+          const document = sealAssertPresent(await ctx.db.get(documentId));
           await requireManageAccess(ctx, otherUserId, document, "Nope");
         });
         expect.fail("Should have thrown");
@@ -585,9 +594,9 @@ describe("access_control", () => {
       });
 
       expect(result).not.toBeNull();
-      expect(result!.userId).toBe(otherUserId);
-      expect(result!.organizationId).toBe(organizationId);
-      expect(result!.status).toBe("active");
+      expect(sealAssertPresent(result).userId).toBe(otherUserId);
+      expect(sealAssertPresent(result).organizationId).toBe(organizationId);
+      expect(sealAssertPresent(result).status).toBe("active");
     });
 
     test("returns null for non-member", async () => {
@@ -839,8 +848,8 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const privateDoc = (await ctx.db.get(documentId))!;
-        const workspaceDoc = (await ctx.db.get(workspaceDocId))!;
+        const privateDoc = sealAssertPresent(await ctx.db.get(documentId));
+        const workspaceDoc = sealAssertPresent(await ctx.db.get(workspaceDocId));
         return await filterAccessibleDocuments(ctx, otherUserId, [privateDoc, workspaceDoc]);
       });
 
@@ -865,8 +874,8 @@ describe("access_control", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const doc1 = (await ctx.db.get(documentId))!;
-        const doc2 = (await ctx.db.get(doc2Id))!;
+        const doc1 = sealAssertPresent(await ctx.db.get(documentId));
+        const doc2 = sealAssertPresent(await ctx.db.get(doc2Id));
         return await filterAccessibleDocuments(ctx, ownerId, [doc1, doc2]);
       });
 
@@ -875,7 +884,7 @@ describe("access_control", () => {
 
     test("returns empty array when no documents are accessible", async () => {
       const result = await t.run(async (ctx) => {
-        const doc = (await ctx.db.get(documentId))!;
+        const doc = sealAssertPresent(await ctx.db.get(documentId));
         return await filterAccessibleDocuments(ctx, nonMemberUserId, [doc]);
       });
 

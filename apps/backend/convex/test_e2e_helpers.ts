@@ -27,6 +27,15 @@ import {
 } from "./lib/componentOrgReads";
 import { setVortexAuthInvitationStatus } from "./lib/vortexAuthOrganizations";
 import { getOrCreateStripeCustomer } from "./stripe/helpers";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /**
  * Gate all public test helpers behind an env var that is only set on the E2E
@@ -177,7 +186,7 @@ export const seedProSubscriptionForE2E = mutation({
       await ctx.db.insert("subscription_prices", {
         externalPriceId,
         externalProductId,
-        subscriptionProductId: product!._id,
+        subscriptionProductId: sealAssertPresent(product)._id,
         type: "recurring",
         billingScheme: "per_unit",
         currency: "usd",
@@ -608,10 +617,14 @@ export const seedProSubscription = internalMutation({
       await ctx.db.insert("subscription_prices", {
         externalPriceId,
         externalProductId,
-        subscriptionProductId: (await ctx.db
-          .query("subscription_products")
-          .withIndex("by_external_product_id", (q) => q.eq("externalProductId", externalProductId))
-          .first())!._id,
+        subscriptionProductId: sealAssertPresent(
+          await ctx.db
+            .query("subscription_products")
+            .withIndex("by_external_product_id", (q) =>
+              q.eq("externalProductId", externalProductId),
+            )
+            .first(),
+        )._id,
         type: "recurring",
         billingScheme: "per_unit",
         currency: "usd",

@@ -4,6 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { ExportContacts } from "./export-contacts";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 function makeContact(overrides: Partial<Doc<"contacts">> = {}): Doc<"contacts"> {
   return {
@@ -89,7 +98,7 @@ describe("ExportContacts", () => {
       render(<ExportContacts contacts={[contact]} />);
       await user.click(screen.getByRole("button", { name: /export csv/i }));
 
-      const csvText = await capturedBlob!.text();
+      const csvText = await sealAssertPresent(capturedBlob).text();
 
       expect(csvText).toContain(
         "First Name,Last Name,Email,Phone,Company,Title,Status,Notes,Created",
@@ -113,7 +122,7 @@ describe("ExportContacts", () => {
       render(<ExportContacts contacts={[contact]} />);
       await user.click(screen.getByRole("button", { name: /export csv/i }));
 
-      const csvText = await capturedBlob!.text();
+      const csvText = await sealAssertPresent(capturedBlob).text();
       expect(csvText).toContain('"Smith, Jones & Associates"');
     });
 
@@ -126,7 +135,7 @@ describe("ExportContacts", () => {
       render(<ExportContacts contacts={[contact]} />);
       await user.click(screen.getByRole("button", { name: /export csv/i }));
 
-      const csvText = await capturedBlob!.text();
+      const csvText = await sealAssertPresent(capturedBlob).text();
       expect(csvText).toContain('"Said ""hello world"""');
     });
 
@@ -137,7 +146,7 @@ describe("ExportContacts", () => {
       render(<ExportContacts contacts={[contact]} />);
       await user.click(screen.getByRole("button", { name: /export csv/i }));
 
-      const csvText = await capturedBlob!.text();
+      const csvText = await sealAssertPresent(capturedBlob).text();
       const dataRow = csvText.split("\n")[1];
 
       // Should have empty fields for phone, company, title, notes
@@ -158,7 +167,7 @@ describe("ExportContacts", () => {
       render(<ExportContacts contacts={contacts} />);
       await user.click(screen.getByRole("button", { name: /export csv/i }));
 
-      const csvText = await capturedBlob!.text();
+      const csvText = await sealAssertPresent(capturedBlob).text();
       const lines = csvText.split("\n");
 
       expect(lines).toHaveLength(3); // header + 2 data rows

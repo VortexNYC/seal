@@ -8,6 +8,15 @@
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../../_generated/server";
+function sealAssertPresent<T>(
+  value: T | null | undefined,
+  message = "Expected value to be present.",
+): NonNullable<T> {
+  if (value === null || value === undefined) {
+    throw new Error(message);
+  }
+  return value;
+}
 
 /** API representation of a contact */
 export interface ApiContact {
@@ -66,7 +75,7 @@ export const listContacts = internalQuery({
       raw = await ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status!),
+          q.eq("organizationId", args.organizationId).eq("status", sealAssertPresent(args.status)),
         )
         .collect();
     } else {
@@ -80,8 +89,8 @@ export const listContacts = internalQuery({
     const filtered = args.search
       ? raw.filter(
           (c) =>
-            c.fullName.toLowerCase().includes(args.search!.toLowerCase()) ||
-            c.email.toLowerCase().includes(args.search!.toLowerCase()),
+            c.fullName.toLowerCase().includes(sealAssertPresent(args.search).toLowerCase()) ||
+            c.email.toLowerCase().includes(sealAssertPresent(args.search).toLowerCase()),
         )
       : raw;
 
