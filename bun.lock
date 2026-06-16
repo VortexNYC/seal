@@ -9,7 +9,7 @@
       },
       "devDependencies": {
         "@plasmapos/auth": "0.5.1",
-        "@plasmapos/tooling": "0.2.12",
+        "@plasmapos/tooling": "0.2.13",
         "@seal/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
@@ -197,7 +197,7 @@
       },
       "devDependencies": {
         "@cloudflare/vite-plugin": "^1.40.2",
-        "@plasmapos/tooling": "0.2.12",
+        "@plasmapos/tooling": "0.2.13",
         "@playwright/test": "1.59.1",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
@@ -1225,7 +1225,7 @@
 
     "@plasmapos/observability": ["@plasmapos/observability@0.1.1", "https://npm.pkg.github.com/download/@plasmapos/observability/0.1.1/3f90bb8091e043a0129138cc8ac53acb2edd05d2", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-5U+3famj0M6+8T65g1nNDDuBmI5hMpnjPfPQU5LJl3L53sklmOueXNemYVVhT5+N9n6tmIcsiMPSTihCiBtNww=="],
 
-    "@plasmapos/tooling": ["@plasmapos/tooling@0.2.12", "https://npm.pkg.github.com/download/@plasmapos/tooling/0.2.12/68053db9f698fac41b21678f461de0a2abeac35e", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-j/TPwHskWZ/bruXU7zAnfkUPRIIGQ5vdTSHsvchoBAU/0juzo/PSpgVA6uZHuP2MHzL7BNhVvNRr1MuOpXXGug=="],
+    "@plasmapos/tooling": ["@plasmapos/tooling@0.2.13", "https://npm.pkg.github.com/download/@plasmapos/tooling/0.2.13/9074b1e0f54741035773ce94dfa5ba75a08eb321", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-RJvuKhf2FAYUsgzgxgqS+zMN22rHWN5BtwdJ5IhI1JaopnqPYr6YSIDY3DamPBsGgVPsOPALhdLqGILYODcpwg=="],
 
     "@playwright/browser-chromium": ["@playwright/browser-chromium@1.59.1", "", { "dependencies": { "playwright-core": "1.59.1" } }, "sha512-XDwr0qOrzLXAuBAzg4WO/xctVMb+ldJ54yz9KCpFu8G8MVJzUVFO6BvK1tBtBl4DIoFcoFRKHgUGZT+8wOC8BQ=="],
 
