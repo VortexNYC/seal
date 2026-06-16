@@ -53,8 +53,8 @@
     "repo:status": "vortex-repo-check --status .",
     "repo:check": "vortex-repo-check .",
     "check:preferred-stack": "vortex-stack-check .",
-    "convex:insights": "convex insights --details",
-    "convex:insights:prod": "convex insights --prod --details",
+    "convex:insights": "bunx convex insights --details",
+    "convex:insights:prod": "bunx convex insights --prod --details",
     "auth:check": "vortex-auth check --convex-dir ./apps/backend/convex",
     "auth:preflight": "vortex-auth preflight --repo-root . --convex-dir ./apps/backend/convex --"
   },

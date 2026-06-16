@@ -35,6 +35,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Build Vortex Core file package
+        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -60,6 +63,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Build Vortex Core file package
+        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -84,6 +90,9 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Build Vortex Core file package
+        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -112,6 +121,9 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Build Vortex Core file package
+        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -166,6 +178,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Build Vortex Core file package
+        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -214,6 +229,9 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Build Vortex Core file package
+        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

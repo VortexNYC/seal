@@ -75,7 +75,6 @@ Run from the repo root before committing meaningful changes:
 bun run project-kit:check
 bun run project-kit:doctor
 bun run migrate:legacy-auth-package:check
-bun run convex:insights
 bun run typecheck
 bun run lint
 bun run format:changed:check
