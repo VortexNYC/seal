@@ -50,6 +50,40 @@ export interface ApiContact {
   updated_at: string;
 }
 
+function formatContact(c: {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  status: "active" | "inactive" | "lead";
+  notes?: string;
+  tags?: string[];
+  lastContactedAt?: number;
+  createdAt: number;
+  updatedAt: number;
+}): ApiContact {
+  return {
+    id: c._id,
+    first_name: c.firstName,
+    last_name: c.lastName,
+    full_name: c.fullName,
+    email: c.email,
+    phone: c.phone,
+    company: c.company,
+    title: c.title,
+    status: c.status,
+    notes: c.notes,
+    tags: c.tags,
+    last_contacted_at: c.lastContactedAt ? new Date(c.lastContactedAt).toISOString() : undefined,
+    created_at: new Date(c.createdAt).toISOString(),
+    updated_at: new Date(c.updatedAt).toISOString(),
+  };
+}
+
 /**
  * Internal query to list contacts in the workspace.
  *
@@ -70,61 +104,75 @@ export const listContacts = internalQuery({
   ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
     const limit = args.limit ?? 20;
 
-    let raw;
+    if (args.search) {
+      let raw;
+      if (args.status) {
+        raw = await ctx.db
+          .query("contacts")
+          .withIndex("by_org_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", sealAssertPresent(args.status)),
+          )
+          .collect();
+      } else {
+        raw = await ctx.db
+          .query("contacts")
+          .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+          .collect();
+      }
+
+      const searchTerm = sealAssertPresent(args.search).toLowerCase();
+      const filtered = raw.filter(
+        (c) =>
+          c.fullName.toLowerCase().includes(searchTerm) ||
+          c.email.toLowerCase().includes(searchTerm),
+      );
+
+      let start = 0;
+      if (args.cursor) {
+        const idx = filtered.findIndex((c) => c._id === args.cursor);
+        if (idx !== -1) start = idx + 1;
+      }
+
+      const page = filtered.slice(start, start + limit + 1);
+      const has_more = page.length > limit;
+      const items = has_more ? page.slice(0, limit) : page;
+      const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
+
+      return {
+        contacts: items.map(formatContact),
+        has_more,
+        next_cursor,
+      };
+    }
+
+    let query;
     if (args.status) {
-      raw = await ctx.db
+      query = ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
           q.eq("organizationId", args.organizationId).eq("status", sealAssertPresent(args.status)),
-        )
-        .collect();
+        );
     } else {
-      raw = await ctx.db
+      query = ctx.db
         .query("contacts")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-        .collect();
+        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId));
     }
 
-    // Client-side search filter
-    const filtered = args.search
-      ? raw.filter(
-          (c) =>
-            c.fullName.toLowerCase().includes(sealAssertPresent(args.search).toLowerCase()) ||
-            c.email.toLowerCase().includes(sealAssertPresent(args.search).toLowerCase()),
-        )
-      : raw;
-
-    // Cursor pagination
-    let start = 0;
     if (args.cursor) {
-      const idx = filtered.findIndex((c) => c._id === args.cursor);
-      if (idx !== -1) start = idx + 1;
+      const cursorDoc = await ctx.db.get(args.cursor as never);
+      if (cursorDoc) {
+        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+      }
     }
 
-    const page = filtered.slice(start, start + limit + 1);
-    const has_more = page.length > limit;
-    const items = has_more ? page.slice(0, limit) : page;
+    const raw = await query.order("desc").take(limit + 1);
+
+    const has_more = raw.length > limit;
+    const items = has_more ? raw.slice(0, limit) : raw;
     const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
 
     return {
-      contacts: items.map((c) => ({
-        id: c._id,
-        first_name: c.firstName,
-        last_name: c.lastName,
-        full_name: c.fullName,
-        email: c.email,
-        phone: c.phone,
-        company: c.company,
-        title: c.title,
-        status: c.status,
-        notes: c.notes,
-        tags: c.tags,
-        last_contacted_at: c.lastContactedAt
-          ? new Date(c.lastContactedAt).toISOString()
-          : undefined,
-        created_at: new Date(c.createdAt).toISOString(),
-        updated_at: new Date(c.updatedAt).toISOString(),
-      })),
+      contacts: items.map(formatContact),
       has_more,
       next_cursor,
     };
