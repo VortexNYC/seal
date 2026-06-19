@@ -66,10 +66,6 @@ export const listAuditLog = internalQuery({
   ): Promise<{ entries: ApiAuditLogEntry[]; has_more: boolean; next_cursor?: string }> => {
     const limit = args.limit ?? 20;
 
-    // When post-filters are active, fetch more to ensure we can fill the page
-    const hasFilters = !!(args.action || args.created_before);
-    const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
-
     let query;
 
     if (args.document_id) {
@@ -98,17 +94,18 @@ export const listAuditLog = internalQuery({
       }
     }
 
-    const allEntries = await query.order("desc").take(fetchLimit);
+    // Narrow results at the Convex level before transfer
+    if (args.created_before) {
+      query = query.filter((q) => q.lte(q.field("createdAt"), args.created_before as number));
+    }
+    if (args.action) {
+      query = query.filter((q) => q.eq(q.field("action"), args.action));
+    }
 
-    // Apply upper date bound and action filter in-memory (Convex single-range index)
-    const filtered = allEntries.filter((e) => {
-      if (args.created_before && e.createdAt > args.created_before) return false;
-      if (args.action && e.action !== args.action) return false;
-      return true;
-    });
+    const allEntries = await query.order("desc").take(limit + 1);
 
-    const has_more = filtered.length > limit;
-    const items = has_more ? filtered.slice(0, limit) : filtered;
+    const has_more = allEntries.length > limit;
+    const items = has_more ? allEntries.slice(0, limit) : allEntries;
     const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
 
     // Resolve actor names for user-type actors
