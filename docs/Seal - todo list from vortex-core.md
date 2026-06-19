@@ -65,6 +65,23 @@ Worker scope: move one low-risk protected function from the legacy raw `apps/bac
 
 Result: `contacts.queries.getByEmail` was the first proved candidate. Added targeted coverage for unauthenticated denial before lookup, cross-org non-leakage, authenticated-org row selection under duplicate email, and audit-log count unchanged by the migrated read query.
 
+## Review pause - 2026-06-19
+
+Pause here for a separate review session. Do not continue Seal implementation from this thread.
+
+Current review state:
+
+- Branch state: `staging...origin/staging [ahead 7]`.
+- Latest commit: `53a4aa08 docs: record Seal third cleanup result`.
+- First wrapper migration landed: `contacts.queries.getByEmail` now uses the RLS-backed wrapper path.
+- Verification from the third run: diff check, changed-file format check, lint, typecheck, `auth:check`, targeted contacts tests, and repo status passed.
+
+Recommended separate-session target:
+
+- Review the first migrated read query and its tests.
+- Pick the next single low-risk wrapper candidate only after the proof pattern is accepted.
+- Do not migrate document, sharing, recipient, or mutation paths until denial, cross-org, RLS, and audit proof is explicit.
+
 ## Wrapper audit - 2026-06-19
 
 The first wrapper migration has landed. Existing proof now covers one read-only candidate, but it does not justify broad import sweeps. Future migrations still need denied-before-handler behavior, cross-org denial, RLS-scoped reads/writes, audit behavior, and recipient-token access proof where applicable.
