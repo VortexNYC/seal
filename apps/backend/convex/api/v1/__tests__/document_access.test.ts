@@ -458,4 +458,29 @@ describe("api/v1/documents — access and bulk operations", () => {
       expect(result.failed).toBe(1);
     });
   });
+
+  // =========================================================================
+  // metadata_b904969164
+  // =========================================================================
+
+  describe("metadata_b904969164", () => {
+    test("listDocuments returns metadata_b904969164 on each document", async () => {
+      const documentId = await insertDocument({ workflowStatus: "draft" });
+      await insertRecipient(documentId);
+
+      const result = await t.query(internal.api.v1.documents.listDocuments, {
+        userId,
+        organizationId,
+        limit: 10,
+      });
+
+      expect(result.documents.length).toBeGreaterThanOrEqual(1);
+      const doc = result.documents[0]!;
+      expect(doc.metadata_b904969164).toBeDefined();
+      expect(doc.metadata_b904969164.version).toBe("1.0");
+      expect(doc.metadata_b904969164.generated_at).toBeDefined();
+      expect(typeof doc.metadata_b904969164.generated_at).toBe("string");
+      expect(() => new Date(doc.metadata_b904969164.generated_at)).not.toThrow();
+    });
+  });
 });
