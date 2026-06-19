@@ -3,8 +3,9 @@ import type { FunctionReference, FunctionVisibility } from "convex/server";
 
 import type { ActionCtx } from "../_generated/server";
 
-type ActionCacheCtx<Action extends FunctionReference<"action", FunctionVisibility>> =
-  Parameters<ActionCache<Action>["fetch"]>[0];
+type ActionCacheCtx<Action extends FunctionReference<"action", FunctionVisibility>> = Parameters<
+  ActionCache<Action>["fetch"]
+>[0];
 
 export function toActionCacheCtx<Action extends FunctionReference<"action", FunctionVisibility>>(
   ctx: Pick<ActionCtx, "runQuery" | "runMutation" | "runAction">,

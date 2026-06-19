@@ -1,4 +1,3 @@
-import { PostHog } from "@posthog/convex";
 import {
   createVortexPostHogConvexObservability,
   detectRuntimeEnvironment,
@@ -8,6 +7,7 @@ import {
   type VortexPostHogGroupIdentifyArgs,
   type VortexPostHogIdentifyArgs,
 } from "@plasmapos/observability";
+import { PostHog } from "@posthog/convex";
 
 import { components } from "./_generated/api";
 

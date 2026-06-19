@@ -10,9 +10,9 @@
 import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
 
+import { toActionCacheCtx } from "../component_ctx";
 import type { SearchResult } from "../search";
 import { searchCache } from "../search";
-import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
 export const searchDocuments = createTool({
