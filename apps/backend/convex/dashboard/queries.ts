@@ -28,8 +28,9 @@ export const getDocumentStats = permissionQuery("documents:view")({
 
     let documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.neq(q.field("status"), "deleted"))
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "active"),
+      )
       .collect();
 
     if (scope === "personal") {
