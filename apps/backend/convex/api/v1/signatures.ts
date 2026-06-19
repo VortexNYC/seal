@@ -335,7 +335,7 @@ export const getAuditTrail = internalQuery({
     }
 
     // Get audit log entries for this document
-    const limit = Math.min(args.limit ?? 100, 500);
+    const limit = args.limit ?? 100;
 
     const auditLogs = await ctx.db
       .query("audit_logs")
