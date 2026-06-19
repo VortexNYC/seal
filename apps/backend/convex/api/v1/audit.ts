@@ -64,7 +64,7 @@ export const listAuditLog = internalQuery({
     ctx,
     args,
   ): Promise<{ entries: ApiAuditLogEntry[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = args.limit ?? 20;
 
     let query;
 
