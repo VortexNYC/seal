@@ -359,5 +359,20 @@ describe("api/v1/analytics", () => {
       expect(result.workspace_snapshot.cancelled).toBe(1);
       expect(result.workspace_snapshot.declined).toBe(1);
     });
+
+    test("returns metadata_b904969164 with version and generated_at", async () => {
+      const result = await t.query(internal.api.v1.analytics.getAnalytics, {
+        userId,
+        organizationId,
+        from,
+        to,
+      });
+
+      expect(result.metadata_b904969164).toBeDefined();
+      expect(result.metadata_b904969164.version).toBe("1.0");
+      expect(result.metadata_b904969164.generated_at).toBeDefined();
+      expect(typeof result.metadata_b904969164.generated_at).toBe("string");
+      expect(() => new Date(result.metadata_b904969164.generated_at)).not.toThrow();
+    });
   });
 });

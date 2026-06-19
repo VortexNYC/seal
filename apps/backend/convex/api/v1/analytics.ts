@@ -53,6 +53,13 @@ export interface ApiAnalytics {
     cancelled: number;
     declined: number;
   };
+  /** API response metadata */
+  metadata_b904969164: {
+    /** API version */
+    version: string;
+    /** ISO 8601 timestamp when the response was generated */
+    generated_at: string;
+  };
 }
 
 /**
@@ -149,6 +156,10 @@ export const getAnalytics = internalQuery({
         median_signing_hours,
       },
       workspace_snapshot: snapshot,
+      metadata_b904969164: {
+        version: "1.0",
+        generated_at: new Date().toISOString(),
+      },
     };
   },
 });
