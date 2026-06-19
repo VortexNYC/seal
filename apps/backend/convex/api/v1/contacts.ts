@@ -70,20 +70,32 @@ export const listContacts = internalQuery({
   ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
     const limit = args.limit ?? 20;
 
-    let raw;
+    // When search is active, fetch more to ensure we can fill the page after post-filtering
+    const hasSearch = !!args.search;
+    const fetchLimit = hasSearch ? Math.min(limit * 5, 500) : limit + 1;
+
+    let query;
     if (args.status) {
-      raw = await ctx.db
+      query = ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
           q.eq("organizationId", args.organizationId).eq("status", sealAssertPresent(args.status)),
-        )
-        .collect();
+        );
     } else {
-      raw = await ctx.db
+      query = ctx.db
         .query("contacts")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-        .collect();
+        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId));
     }
+
+    // Apply cursor if provided (use _creationTime for index-based pagination)
+    if (args.cursor) {
+      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      if (cursorDoc) {
+        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+      }
+    }
+
+    const raw = await query.order("desc").take(fetchLimit);
 
     // Client-side search filter
     const filtered = args.search
@@ -94,16 +106,8 @@ export const listContacts = internalQuery({
         )
       : raw;
 
-    // Cursor pagination
-    let start = 0;
-    if (args.cursor) {
-      const idx = filtered.findIndex((c) => c._id === args.cursor);
-      if (idx !== -1) start = idx + 1;
-    }
-
-    const page = filtered.slice(start, start + limit + 1);
-    const has_more = page.length > limit;
-    const items = has_more ? page.slice(0, limit) : page;
+    const has_more = filtered.length > limit;
+    const items = has_more ? filtered.slice(0, limit) : filtered;
     const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
 
     return {
