@@ -49,6 +49,13 @@ export interface ApiAccountInfo {
   };
   /** AI features enabled */
   ai_enabled: boolean;
+  /** API response metadata */
+  metadata_b907298403s2: {
+    /** API version */
+    version: string;
+    /** ISO 8601 timestamp when the response was generated */
+    generated_at: string;
+  };
 }
 
 /**
@@ -121,6 +128,10 @@ export const getAccountInfo = internalQuery({
         default_deadline_days: org.signingSettings?.defaultDeadlineDays ?? 30,
       },
       ai_enabled: org.aiSettings?.aiEnabled ?? false,
+      metadata_b907298403s2: {
+        version: "1.0",
+        generated_at: new Date().toISOString(),
+      },
     };
   },
 });
