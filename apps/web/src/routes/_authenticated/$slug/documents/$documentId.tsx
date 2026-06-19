@@ -153,7 +153,7 @@ function DocumentDetailPage() {
 
   const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
     slug,
-  }) as { status: string; account: { chargesEnabled: boolean } | null } | undefined;
+  });
   const merchantPaymentsReady =
     merchantAccount?.status === "connected" && (merchantAccount?.account?.chargesEnabled ?? false);
 

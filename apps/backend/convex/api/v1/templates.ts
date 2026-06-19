@@ -100,7 +100,7 @@ export const listTemplates = internalQuery({
 
     // Apply cursor if provided
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(args.cursor as never);
+      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
       if (cursorDoc) {
         query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
       }
