@@ -6,7 +6,7 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 
 ## Current state
 
-- Branch: `staging`, upstream `origin/staging`, ahead by 3 after `89482646 docs: update Seal cleanup target`.
+- Branch: `staging`, upstream `origin/staging`, ahead by 4 after `daa83393 docs: classify Seal auth wrappers`.
 - Working tree was clean after the cleanup pass.
 - Package baseline is current for the Core audit: root `@plasmapos/auth@0.5.1`, root `@plasmapos/tooling@0.2.13`, backend `@convex-dev/better-auth@0.12.2`, backend `better-auth@1.6.9`, backend `convex-helpers@^0.1.114`, catalog `convex@^1.41.0`.
 - Seal does not currently need the `@plasmapos/vortex-core` umbrella package just to satisfy standards. Direct `@plasmapos/auth` plus `@plasmapos/tooling` is enough until another Core surface is adopted.
@@ -16,6 +16,7 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 - `bun run migrate:legacy-auth-package:check` passes after install.
 - Full local proof passed in the cleanup pass: install, repo status, migration check, format changed check, lint, typecheck, auth check, auth preflight, preferred stack, project-kit check, knip, test, and build.
 - Active app/package/script/.test-env scan for `@clerk`, `Clerk`, `clerk`, and `CLERK_` returns zero matches outside generated/test output. Remaining Clerk text is docs/history and cosmetic field names.
+- The migration runbook is now marked historical evidence, not active operator guidance.
 
 ## Do now
 
@@ -50,6 +51,16 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 - Finish active stale-instruction cleanup only where docs are current operator guidance.
 - Audit `apps/backend/convex/auth.ts`, `apps/backend/convex/auth/wrappers.ts`, and `apps/backend/convex/auth/recipient_wrappers.ts`; classify what is Seal-specific RLS/recipient policy versus generic Core authz.
 - Pick one low-risk wrapper migration only if proof can show identical RLS, recipient, denial, and audit behavior.
+
+## Third standards run assignment - 2026-06-19
+
+Worker scope: move one low-risk protected function from the legacy raw `apps/backend/convex/auth.ts` wrapper path to the RLS-backed `apps/backend/convex/auth/wrappers.ts` path, or prove that no safe first candidate exists yet.
+
+- Start by finding one simple `permissionQuery` or `permissionMutation` call site with existing auth/denial coverage and no recipient-token behavior.
+- Preserve `wrapDatabaseReader`, `wrapDatabaseWriter`, `rlsRules`, denied-before-handler behavior, cross-org denial, audit/log behavior, and generated Convex types.
+- Do not touch recipient-token wrappers in this run.
+- Do not sweep all imports. One proved migration is the target.
+- If no low-risk call site has enough coverage, add the missing targeted denial/RLS proof first and document the blocker.
 
 ## Wrapper audit - 2026-06-19
 
