@@ -84,11 +84,19 @@ export const listDocuments = internalQuery({
     const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
 
     // Get documents for the organization
-    const query = ctx.db
+    let query = ctx.db
       .query("documents")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", args.organizationId).eq("status", "active"),
       );
+
+    // Apply cursor if provided (use _creationTime for index-based pagination)
+    if (args.cursor) {
+      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      if (cursorDoc) {
+        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+      }
+    }
 
     const documents = await query.order("desc").take(fetchLimit);
 
