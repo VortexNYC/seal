@@ -7,6 +7,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { permissionQuery } from "../auth";
+import { permissionQuery as rlsPermissionQuery } from "../auth/wrappers";
 import { contactStatusValidator } from "../schemas/contacts";
 
 /**
@@ -99,7 +100,7 @@ export const search = permissionQuery("contacts:view")({
  * Useful for duplicate detection.
  * Requires contacts:view permission.
  */
-export const getByEmail = permissionQuery("contacts:view")({
+export const getByEmail = rlsPermissionQuery("contacts:view")({
   args: {
     email: v.string(),
   },

@@ -134,6 +134,104 @@ describe("Contact queries", () => {
       expect(contact?.fullName).toBe("Email Lookup");
     });
 
+    test("denies unauthenticated callers before lookup", async () => {
+      await asOwner().mutation(api.contacts.mutations.create, {
+        firstName: "Auth",
+        lastName: "Required",
+        email: "auth-required@test.com",
+      });
+
+      await expect(
+        t.query(api.contacts.queries.getByEmail, {
+          email: "auth-required@test.com",
+        }),
+      ).rejects.toThrow("Authentication required");
+    });
+
+    test("does not return a contact from another organization", async () => {
+      const otherOrganizationId = await t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Other Contacts Query Org",
+          slug: "other-contacts-query-org",
+          type: "company",
+          isActive: true,
+          timezone: "UTC",
+          updatedAt: Date.now(),
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("contacts", {
+          organizationId: otherOrganizationId,
+          firstName: "Other",
+          lastName: "Org",
+          fullName: "Other Org",
+          email: "shared@test.com",
+          status: "active",
+          tags: [],
+          createdBy: userId,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      });
+
+      const contact = await asOwner().query(api.contacts.queries.getByEmail, {
+        email: "shared@test.com",
+      });
+
+      expect(contact).toBeNull();
+    });
+
+    test("uses the authenticated organization's row and leaves audit logs unchanged", async () => {
+      await asOwner().mutation(api.contacts.mutations.create, {
+        firstName: "Scoped",
+        lastName: "Contact",
+        email: "scoped@test.com",
+      });
+
+      const otherOrganizationId = await t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Other Scoped Org",
+          slug: "other-scoped-org",
+          type: "company",
+          isActive: true,
+          timezone: "UTC",
+          updatedAt: Date.now(),
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("contacts", {
+          organizationId: otherOrganizationId,
+          firstName: "Wrong",
+          lastName: "Org",
+          fullName: "Wrong Org",
+          email: "scoped@test.com",
+          status: "active",
+          tags: [],
+          createdBy: userId,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      });
+
+      const beforeCount = await t.run(async (ctx) => {
+        return (await ctx.db.query("audit_logs").collect()).length;
+      });
+
+      const contact = await asOwner().query(api.contacts.queries.getByEmail, {
+        email: "scoped@test.com",
+      });
+      const afterCount = await t.run(async (ctx) => {
+        return (await ctx.db.query("audit_logs").collect()).length;
+      });
+
+      expect(contact).not.toBeNull();
+      expect(contact?.organizationId).toBe(organizationId);
+      expect(contact?.fullName).toBe("Scoped Contact");
+      expect(afterCount).toBe(beforeCount);
+    });
+
     test("returns null for non-existent email", async () => {
       const contact = await asOwner().query(api.contacts.queries.getByEmail, {
         email: "nonexistent@test.com",
