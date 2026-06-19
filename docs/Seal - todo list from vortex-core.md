@@ -6,14 +6,15 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 
 ## Current state
 
-- Branch: `staging`, upstream `origin/staging`, ahead by 1 from `c9aa913f docs: add vortex-core todo list`.
-- Working tree was clean at the start of this pass.
+- Branch: `staging`, upstream `origin/staging`, ahead by 2 after `275d0939 docs: update Seal core cleanup state`.
+- Working tree was clean after the cleanup pass.
 - Package baseline is current for the Core audit: root `@plasmapos/auth@0.5.1`, root `@plasmapos/tooling@0.2.13`, backend `@convex-dev/better-auth@0.12.2`, backend `better-auth@1.6.9`, backend `convex-helpers@^0.1.114`, catalog `convex@^1.41.0`.
 - Seal does not currently need the `@plasmapos/vortex-core` umbrella package just to satisfy standards. Direct `@plasmapos/auth` plus `@plasmapos/tooling` is enough until another Core surface is adopted.
 - Root scripts already point at Core-owned binaries: `repo:status`, `repo:check`, `check:preferred-stack`, `auth:check`, `auth:preflight`, `project-kit:check`, `lint`, `format`, `lint:strict`, and `lint:advisory`.
 - `bun install --frozen-lockfile` is required on a fresh checkout before those binaries exist in `node_modules/.bin`.
 - `bun run repo:status` passes after install.
 - `bun run migrate:legacy-auth-package:check` passes after install.
+- Full local proof passed in the cleanup pass: install, repo status, migration check, format changed check, lint, typecheck, auth check, auth preflight, preferred stack, project-kit check, knip, test, and build.
 - Active app/package/script/.test-env scan for `@clerk`, `Clerk`, `clerk`, and `CLERK_` returns zero matches outside generated/test output. Remaining Clerk text is docs/history and cosmetic field names.
 
 ## Do now
@@ -42,6 +43,13 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 5. Keep billing/payment migration separate.
    - Auth cleanup PRs should not change billing, payment, Stripe, RLS, or document access behavior unless a single proof path requires it.
    - Billing/payment proof commands stay targeted: `prove:vortex-billing-settings-adoption`, `prove:vortex-payments-settings-adoption`, `prove:vortex-merchant-settings-adoption`, `prove:vortex-operational-payments-adoption`, and `prove:vortex-payments-backend-adapter-adoption`.
+
+## Next run target
+
+- Do not redo package/tooling alignment; it is already current.
+- Finish active stale-instruction cleanup only where docs are current operator guidance.
+- Audit `apps/backend/convex/auth.ts`, `apps/backend/convex/auth/wrappers.ts`, and `apps/backend/convex/auth/recipient_wrappers.ts`; classify what is Seal-specific RLS/recipient policy versus generic Core authz.
+- Pick one low-risk wrapper migration only if proof can show identical RLS, recipient, denial, and audit behavior.
 
 ## Known cleanup debt
 
