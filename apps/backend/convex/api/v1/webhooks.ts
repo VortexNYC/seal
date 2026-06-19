@@ -342,7 +342,7 @@ export const createEndpoint = internalMutation({
     const existingEndpoints = await ctx.db
       .query("webhook_endpoints")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .collect();
+      .take(10);
 
     if (existingEndpoints.length >= 10) {
       return {
