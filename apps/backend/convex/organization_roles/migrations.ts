@@ -13,7 +13,7 @@ import { ensureVortexAuthSystemRoles } from "../lib/vortexAuthOrganizations";
  * This is a one-time migration to add roles to organizations created before the role system
  *
  * Usage: Call this via the Convex dashboard or CLI:
- * npx convex run organization_roles/migrations:seedAllOrganizations
+ * bunx convex run organization_roles/migrations:seedAllOrganizations
  */
 export const seedAllOrganizations = internalMutation({
   args: {},
@@ -50,7 +50,7 @@ export const seedAllOrganizations = internalMutation({
  * Useful for fixing individual organizations
  *
  * Usage: Call this via the Convex dashboard or CLI:
- * npx convex run organization_roles/migrations:seedOrganization '{"organizationId": "..."}'
+ * bunx convex run organization_roles/migrations:seedOrganization '{"organizationId": "..."}'
  */
 export const seedOrganization = internalMutation({
   args: {

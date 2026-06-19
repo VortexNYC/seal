@@ -26,7 +26,7 @@ For organizations that existed **before** the role system was implemented, you n
 To seed roles for all existing organizations that don't have roles yet:
 
 ```bash
-npx convex run organization_roles/migrations:seedAllOrganizations
+bunx convex run organization_roles/migrations:seedAllOrganizations
 ```
 
 This will:
@@ -52,7 +52,7 @@ Example output:
 To seed roles for a specific organization:
 
 ```bash
-npx convex run organization_roles/migrations:seedOrganization '{"organizationId": "jx7abc123def456"}'
+bunx convex run organization_roles/migrations:seedOrganization '{"organizationId": "jx7abc123def456"}'
 ```
 
 Replace `jx7abc123def456` with your organization ID.
@@ -98,7 +98,7 @@ To verify roles were seeded correctly, you can:
 
 2. **Via Query:**
    ```bash
-   npx convex run organization_roles/queries:list --org-id "jx7abc123def456"
+   bunx convex run organization_roles/queries:list --org-id "jx7abc123def456"
    ```
 
 Each organization should have 3 system roles:

@@ -2,19 +2,18 @@
 
 <!-- [CLEAN] VAL-T2-SEAL-1777054289449: minimal edit pipeline proof -->
 
-**Generated:** 2026-03-10 14:37 CET
-**Commit:** f7b9cd2
-**Branch:** main
+**Updated:** 2026-06-19
+**Branch:** staging
 
 ## OVERVIEW
 
-Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@plasmapos/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
+Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP worker, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@plasmapos/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
 
 ## STRUCTURE
 
 ```text
 seal/
-├── apps/               # web, landing, backend, mcp-server
+├── apps/               # web, landing, backend, mcp-worker
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
 ├── docs/               # planning, architecture, design notes (mostly archival)
@@ -37,7 +36,7 @@ seal/
 | Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
 | Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
 | API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |
-| MCP tools/resources    | `apps/mcp-server/src/tools/`, `apps/mcp-server/src/resources/` | MCP server surface                              |
+| MCP worker             | `apps/mcp-worker/src/`                                         | Worker adapter for MCP surface                  |
 | Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
 | React SDK              | `packages/react-sdk/src/`                                      | Embeddable signing components                   |
 | Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
@@ -48,7 +47,6 @@ seal/
 - `apps/web/AGENTS.md`
 - `apps/landing/AGENTS.md`
 - `apps/backend/convex/AGENTS.md`
-- `apps/mcp-server/AGENTS.md`
 - `packages/transactional/AGENTS.md`
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
@@ -68,7 +66,7 @@ seal/
 - Hand-edit generated API reference docs under `apps/landing/content/docs/api-reference/`; update `apps/landing/openapi.yaml` and regenerate instead.
 - Use CSS-class selectors in E2E tests.
 - Commit secrets or `.env*` files.
-- Run `git push --force` or `git push --force-with-lease` without explicit user approval in the current thread. If a branch needs to be updated from `main` and the user did not explicitly request a rebase, prefer merging `main` into the branch.
+- Run `git push --force` or `git push --force-with-lease` without explicit user approval in the current thread. If `staging` needs upstream changes and the user did not explicitly request a rebase, prefer merging the target branch.
 
 ## UNIQUE STYLES
 
@@ -84,7 +82,7 @@ bun run dev
 bunx turbo run dev --filter=@seal/web
 bunx turbo run dev --filter=@seal/landing
 bunx turbo run dev --filter=@seal/backend
-bunx turbo run dev --filter=@seal/mcp-server
+bunx turbo run dev --filter=@seal/mcp-worker
 bunx turbo run dev --filter=@seal/transactional
 
 bun run build
@@ -100,7 +98,7 @@ bun --cwd apps/web run test:e2e
 bun --cwd apps/landing run docs:generate:api
 ```
 
-`bun run dev` starts the main product stack only: `@seal/backend` and `@seal/web`.
+`bun run dev` starts `@seal/backend`, `@seal/web`, and `@seal/landing`.
 Use targeted `dev --filter=...` commands for other workspaces; `@seal/landing` and `@seal/transactional` both default to port `3001`.
 
 ## NOTES
