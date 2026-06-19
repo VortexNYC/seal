@@ -64,7 +64,11 @@ export const listAuditLog = internalQuery({
     ctx,
     args,
   ): Promise<{ entries: ApiAuditLogEntry[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = args.limit ?? 20;
+
+    // When post-filters are active, fetch more to ensure we can fill the page
+    const hasFilters = !!(args.action || args.created_before);
+    const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
 
     let query;
 
@@ -86,25 +90,25 @@ export const listAuditLog = internalQuery({
         );
     }
 
-    // Apply upper date bound and action filter in-memory (Convex single-range index)
-    const allEntries = await query.order("desc").collect();
+    // Apply cursor if provided (use _creationTime for index-based pagination)
+    if (args.cursor) {
+      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      if (cursorDoc) {
+        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+      }
+    }
 
+    const allEntries = await query.order("desc").take(fetchLimit);
+
+    // Apply upper date bound and action filter in-memory (Convex single-range index)
     const filtered = allEntries.filter((e) => {
       if (args.created_before && e.createdAt > args.created_before) return false;
       if (args.action && e.action !== args.action) return false;
       return true;
     });
 
-    // Manual cursor pagination
-    let start = 0;
-    if (args.cursor) {
-      const idx = filtered.findIndex((e) => e._id === args.cursor);
-      if (idx !== -1) start = idx + 1;
-    }
-
-    const page = filtered.slice(start, start + limit + 1);
-    const has_more = page.length > limit;
-    const items = has_more ? page.slice(0, limit) : page;
+    const has_more = filtered.length > limit;
+    const items = has_more ? filtered.slice(0, limit) : filtered;
     const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
 
     // Resolve actor names for user-type actors

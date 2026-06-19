@@ -88,7 +88,7 @@ export const listTemplates = internalQuery({
     hasMore: boolean;
     nextCursor?: string;
   }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = args.limit ?? 20;
 
     let query = ctx.db.query("templates").withIndex("by_organization_status", (q) => {
       const base = q.eq("organizationId", args.organizationId);
@@ -111,13 +111,18 @@ export const listTemplates = internalQuery({
     const hasMore = templates.length > limit;
     const resultTemplates = hasMore ? templates.slice(0, -1) : templates;
 
-    // Get field counts for each template
+    // Get field counts for each template using the highest order value
     const templatesWithCounts = await Promise.all(
       resultTemplates.map(async (template) => {
-        const fields = await ctx.db
+        const lastField = await ctx.db
           .query("template_fields")
-          .withIndex("by_template", (q) => q.eq("templateId", template._id))
-          .collect();
+          .withIndex("by_template_order", (q) =>
+            q.eq("templateId", template._id),
+          )
+          .order("desc")
+          .take(1);
+
+        const field_count = lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
 
         return {
           id: template._id,
@@ -126,7 +131,7 @@ export const listTemplates = internalQuery({
           status: template.status as "active" | "archived",
           use_count: template.useCount,
           page_count: template.pageCount,
-          field_count: fields.length,
+          field_count,
           created_at: new Date(template.createdAt).toISOString(),
           updated_at: new Date(template.updatedAt).toISOString(),
         };
@@ -167,11 +172,16 @@ export const getTemplate = internalQuery({
       return null;
     }
 
-    // Get field count
-    const fields = await ctx.db
+    // Get field count using highest order value
+    const lastField = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
-      .collect();
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId),
+      )
+      .order("desc")
+      .take(1);
+
+    const field_count = lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
 
     const result: ApiTemplate & { fields?: ApiTemplateField[] } = {
       id: template._id,
@@ -180,12 +190,17 @@ export const getTemplate = internalQuery({
       status: template.status as "active" | "archived",
       use_count: template.useCount,
       page_count: template.pageCount,
-      field_count: fields.length,
+      field_count,
       created_at: new Date(template.createdAt).toISOString(),
       updated_at: new Date(template.updatedAt).toISOString(),
     };
 
     if (args.includeFields) {
+      const fields = await ctx.db
+        .query("template_fields")
+        .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+        .collect();
+
       result.fields = fields.map((f) => ({
         id: f._id,
         type: f.fieldType,

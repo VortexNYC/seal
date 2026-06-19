@@ -55,6 +55,13 @@ export interface ApiSettings {
     /** Session timeout in minutes (null = browser default) */
     session_timeout_minutes: number | null;
   };
+  /** API response metadata */
+  metadata_b900811966: {
+    /** API version */
+    version: string;
+    /** ISO 8601 timestamp when the response was generated */
+    generated_at: string;
+  };
 }
 
 /**
@@ -128,6 +135,10 @@ function buildApiSettings(org: OrganizationDoc): ApiSettings {
     notifications: buildNotificationResponse(org),
     ai: buildAiResponse(org),
     security: buildSecurityResponse(org),
+    metadata_b900811966: {
+      version: "1.0",
+      generated_at: new Date().toISOString(),
+    },
   };
 }
 
