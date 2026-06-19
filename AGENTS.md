@@ -24,23 +24,23 @@ seal/
 
 ## WHERE TO LOOK
 
-| Task                   | Location                                                       | Notes                                           |
-| ---------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
-| Architecture overview  | `docs/archive/root/DOCUMENTATION_INDEX.md`                     | Current index lives under `archive/root`        |
-| Permissions & roles    | `docs/archive/root/ROLES_AND_PERMISSIONS.md`                   | Historical reference; verify live auth code too |
-| Backend auth wrappers  | `apps/backend/convex/auth.ts`                                  | Always use wrappers                             |
-| Backend permissions    | `apps/backend/convex/auth.utils.ts`                            | Role hierarchy + permission helpers             |
-| REST API v1            | `apps/backend/convex/api/v1/`                                  | Public API endpoints                            |
-| Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
-| Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + Convex + Router setup             |
-| Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
-| Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
-| API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |
-| MCP worker             | `apps/mcp-worker/src/`                                         | Worker adapter for MCP surface                  |
-| Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
-| React SDK              | `packages/react-sdk/src/`                                      | Embeddable signing components                   |
-| Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
-| E2E tests              | `apps/web/e2e/`                                                | Playwright POM pattern                          |
+| Task                   | Location                                     | Notes                                           |
+| ---------------------- | -------------------------------------------- | ----------------------------------------------- |
+| Architecture overview  | `docs/archive/root/DOCUMENTATION_INDEX.md`   | Current index lives under `archive/root`        |
+| Permissions & roles    | `docs/archive/root/ROLES_AND_PERMISSIONS.md` | Historical reference; verify live auth code too |
+| Backend auth wrappers  | `apps/backend/convex/auth.ts`                | Always use wrappers                             |
+| Backend permissions    | `apps/backend/convex/auth.utils.ts`          | Role hierarchy + permission helpers             |
+| REST API v1            | `apps/backend/convex/api/v1/`                | Public API endpoints                            |
+| Product web routing    | `apps/web/src/routes/`                       | TanStack file-based routes                      |
+| Product web entry      | `apps/web/src/main.tsx`                      | Better-Auth + Convex + Router setup             |
+| Landing/docs routes    | `apps/landing/src/routes/`                   | Marketing site, docs, API reference             |
+| Published docs content | `apps/landing/content/docs/`                 | Fumadocs MDX source                             |
+| API spec source        | `apps/landing/openapi.yaml`                  | Generates API docs                              |
+| MCP worker             | `apps/mcp-worker/src/`                       | Worker adapter for MCP surface                  |
+| Email templates        | `packages/transactional/src/emails/`         | React Email templates                           |
+| React SDK              | `packages/react-sdk/src/`                    | Embeddable signing components                   |
+| Shared design tokens   | `packages/tokens/src/`                       | Shared fonts/theme exports                      |
+| E2E tests              | `apps/web/e2e/`                              | Playwright POM pattern                          |
 
 ## SUBDIRECTORY GUIDES
 
