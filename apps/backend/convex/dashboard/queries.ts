@@ -358,19 +358,19 @@ export const getPeriodStats = permissionQuery("documents:view")({
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
     }
 
-    let allDocs = await ctx.db
+    let completedDocs = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.neq(q.field("status"), "deleted"))
+      .withIndex("by_organization_workflow", (q) =>
+        q.eq("organizationId", organizationId).eq("workflowStatus", "completed"),
+      )
+      .filter((q) => q.gte(q.field("updatedAt"), startDate))
       .collect();
 
     if (scope === "personal") {
-      allDocs = allDocs.filter((d) => d.ownerId === ctx.auth.user._id);
+      completedDocs = completedDocs.filter((d) => d.ownerId === ctx.auth.user._id);
     }
 
-    const completed = allDocs.filter(
-      (d) => d.workflowStatus === "completed" && d.updatedAt && d.updatedAt >= startDate,
-    ).length;
+    const completed = completedDocs.length;
 
     return {
       created: documents.length,
