@@ -558,6 +558,8 @@ export type DocumentSharingMode = "private" | "workspace" | "specific";
 export interface ApiDocumentAccess {
   /** Document ID */
   document_id: string;
+  /** Document name */
+  document_name: string;
   /**
    * Who can access this document:
    * - "private" — owner only
@@ -585,6 +587,7 @@ export const getDocumentAccess = internalQuery({
 
     return {
       document_id: args.documentId,
+      document_name: document.name,
       sharing_mode: (document.sharingMode ?? "private") as DocumentSharingMode,
     };
   },

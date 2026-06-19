@@ -131,6 +131,7 @@ describe("api/v1/documents — access and bulk operations", () => {
 
       expect(result).not.toBeNull();
       expect(result?.document_id).toBe(documentId);
+      expect(result?.document_name).toBe("Test Document");
       expect(result?.sharing_mode).toBe("private");
     });
 
@@ -144,6 +145,7 @@ describe("api/v1/documents — access and bulk operations", () => {
       });
 
       expect(result?.sharing_mode).toBe("workspace");
+      expect(result?.document_name).toBe("Test Document");
     });
 
     test("returns specific sharing mode when set", async () => {
@@ -156,6 +158,7 @@ describe("api/v1/documents — access and bulk operations", () => {
       });
 
       expect(result?.sharing_mode).toBe("specific");
+      expect(result?.document_name).toBe("Test Document");
     });
 
     test("returns null for document in different org", async () => {
@@ -206,6 +209,7 @@ describe("api/v1/documents — access and bulk operations", () => {
         documentId,
       });
       expect(access?.sharing_mode).toBe("workspace");
+      expect(access?.document_name).toBe("Test Document");
     });
 
     test("changes sharing mode back to private", async () => {
@@ -224,6 +228,7 @@ describe("api/v1/documents — access and bulk operations", () => {
         documentId,
       });
       expect(access?.sharing_mode).toBe("private");
+      expect(access?.document_name).toBe("Test Document");
     });
 
     test("throws for document in different org", async () => {
