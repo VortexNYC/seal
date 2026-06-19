@@ -61,6 +61,8 @@ export interface ApiSettings {
     version: string;
     /** ISO 8601 timestamp when the response was generated */
     generated_at: string;
+    /** Unique request identifier for this response */
+    request_id_b907298403s1: string;
   };
 }
 
@@ -138,6 +140,7 @@ function buildApiSettings(org: OrganizationDoc): ApiSettings {
     metadata_b900811966: {
       version: "1.0",
       generated_at: new Date().toISOString(),
+      request_id_b907298403s1: crypto.randomUUID(),
     },
   };
 }

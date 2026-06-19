@@ -86,7 +86,7 @@ describe("api/v1/settings", () => {
       expect(result.security.session_timeout_minutes).toBeNull();
     });
 
-    test("returns metadata_b900811966 with version and generated_at", async () => {
+    test("returns metadata_b900811966 with version, generated_at, and request_id_b907298403s1", async () => {
       const result = await t.query(internal.api.v1.settings.getSettings, {
         userId,
         organizationId,
@@ -98,6 +98,12 @@ describe("api/v1/settings", () => {
       expect(typeof result.metadata_b900811966.generated_at).toBe("string");
       // Should be a valid ISO 8601 timestamp
       expect(() => new Date(result.metadata_b900811966.generated_at)).not.toThrow();
+      expect(result.metadata_b900811966.request_id_b907298403s1).toBeDefined();
+      expect(typeof result.metadata_b900811966.request_id_b907298403s1).toBe("string");
+      // Should be a valid UUID v4 (36 chars with dashes)
+      expect(result.metadata_b900811966.request_id_b907298403s1).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
     });
 
     test("returns saved signing settings", async () => {
