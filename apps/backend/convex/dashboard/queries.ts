@@ -349,28 +349,29 @@ export const getPeriodStats = permissionQuery("documents:view")({
 
     let documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) =>
-        q.and(q.neq(q.field("status"), "deleted"), q.gte(q.field("createdAt"), startDate)),
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "active"),
       )
+      .filter((q) => q.gte(q.field("createdAt"), startDate))
       .collect();
 
     if (scope === "personal") {
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
     }
 
-    let allDocs = await ctx.db
+    let completedDocs = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.neq(q.field("status"), "deleted"))
+      .withIndex("by_organization_workflow", (q) =>
+        q.eq("organizationId", organizationId).eq("workflowStatus", "completed"),
+      )
       .collect();
 
     if (scope === "personal") {
-      allDocs = allDocs.filter((d) => d.ownerId === ctx.auth.user._id);
+      completedDocs = completedDocs.filter((d) => d.ownerId === ctx.auth.user._id);
     }
 
-    const completed = allDocs.filter(
-      (d) => d.workflowStatus === "completed" && d.updatedAt && d.updatedAt >= startDate,
+    const completed = completedDocs.filter(
+      (d) => d.status !== "deleted" && d.updatedAt && d.updatedAt >= startDate,
     ).length;
 
     return {
