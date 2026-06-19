@@ -29,7 +29,7 @@ type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchant
 type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
-    _id: string;
+    _id: Id<"stripe_accounts">;
     processorAccountId: string;
     accountType: "standard" | "express";
     chargesEnabled: boolean;
@@ -129,7 +129,7 @@ export function VortexMerchantOperationalSurface({
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
   const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
     slug,
-  }) as MerchantAccountResult | undefined;
+  });
 
   if (organization === undefined || merchantAccountResult === undefined) {
     return null;

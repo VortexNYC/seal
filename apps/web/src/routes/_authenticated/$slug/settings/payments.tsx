@@ -60,7 +60,7 @@ const vortexPaymentsClassNames = {
 type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
-    _id: string;
+    _id: Id<"stripe_accounts">;
     processorAccountId: string;
     accountType: "standard" | "express";
     chargesEnabled: boolean;
@@ -94,7 +94,7 @@ function PaymentsSettingsPage() {
 
   const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
     slug,
-  }) as MerchantAccountResult | undefined;
+  });
 
   const createMerchantAccount = useAction(
     api.payments.merchant_account_actions.createMerchantAccount,

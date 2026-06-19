@@ -34,8 +34,11 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
 
 type BillingSubscription = {
   readonly status: string;
+  readonly currentPeriodStart: number;
   readonly currentPeriodEnd: number;
   readonly cancelAtPeriodEnd: boolean;
+  readonly canceledAt?: number;
+  readonly trialStart?: number;
   readonly trialEnd?: number;
   readonly tier: string;
   readonly planName: string;
@@ -57,6 +60,7 @@ type AvailablePlan = {
   readonly name: string;
   readonly description: string | null;
   readonly tier: string | null;
+  readonly useType: string | null;
   readonly features: string | null;
   readonly pricing: {
     readonly monthly: AvailablePlanPrice | null;
@@ -101,13 +105,8 @@ const vortexBillingClassNames = {
 } satisfies VortexEmbeddedComponentClassNames;
 
 function BillingSettingsPage() {
-  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails) as
-    | BillingSubscription
-    | null
-    | undefined;
-  const plans = useQuery(api.payments.billing_queries.getAvailablePlans) as
-    | AvailablePlan[]
-    | undefined;
+  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails);
+  const plans = useQuery(api.payments.billing_queries.getAvailablePlans);
   const createCheckout = useAction(api.payments.subscription_actions.createCheckoutSession);
   const createPortal = useAction(api.payments.subscription_actions.createCustomerPortalSession);
 
