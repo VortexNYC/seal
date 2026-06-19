@@ -6,7 +6,7 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 
 ## Current state
 
-- Branch: `staging`, upstream `origin/staging`, ahead by 2 after `275d0939 docs: update Seal core cleanup state`.
+- Branch: `staging`, upstream `origin/staging`, ahead by 3 after `89482646 docs: update Seal cleanup target`.
 - Working tree was clean after the cleanup pass.
 - Package baseline is current for the Core audit: root `@plasmapos/auth@0.5.1`, root `@plasmapos/tooling@0.2.13`, backend `@convex-dev/better-auth@0.12.2`, backend `better-auth@1.6.9`, backend `convex-helpers@^0.1.114`, catalog `convex@^1.41.0`.
 - Seal does not currently need the `@plasmapos/vortex-core` umbrella package just to satisfy standards. Direct `@plasmapos/auth` plus `@plasmapos/tooling` is enough until another Core surface is adopted.
@@ -50,6 +50,19 @@ Purpose: keep Seal as the high-pressure Vortex Core consumer without turning the
 - Finish active stale-instruction cleanup only where docs are current operator guidance.
 - Audit `apps/backend/convex/auth.ts`, `apps/backend/convex/auth/wrappers.ts`, and `apps/backend/convex/auth/recipient_wrappers.ts`; classify what is Seal-specific RLS/recipient policy versus generic Core authz.
 - Pick one low-risk wrapper migration only if proof can show identical RLS, recipient, denial, and audit behavior.
+
+## Wrapper audit - 2026-06-19
+
+No wrapper migration was made in this pass. Existing tests prove the current package/tooling baseline, but they do not yet prove a wrapper import swap preserves denied-before-handler behavior, cross-org denial, RLS-scoped reads/writes, audit behavior, and recipient-token access.
+
+| Path                                             | Surface                                                                | Classification                                                                | Action                                                                                                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/backend/convex/auth.ts`                    | `getAuthContext` and its component-membership helpers                  | `core-builder` candidate with Seal-local subscription and role utility policy | Keep until Core exposes an equivalent active-org/component-membership builder and Seal can keep its subscription/userType fields without behavior drift. |
+| `apps/backend/convex/auth.ts`                    | `authQuery`, `authMutation`, `permissionQuery`, `permissionMutation`   | `local-member-policy`; future delete after migration                          | These are still widely imported and do not wrap `ctx.db` with RLS. Migrate call sites to RLS wrappers only with targeted proof.                          |
+| `apps/backend/convex/auth.ts`                    | `adminQuery`, `adminMutation`, `memberQuery`, `memberMutation`         | `local-admin-policy` / `local-member-policy`                                  | Keep local for now; these enforce Seal role semantics and expose raw `ctx.db`.                                                                           |
+| `apps/backend/convex/auth/wrappers.ts`           | `authQuery`, `permission*Query`, `authMutation`, `permission*Mutation` | `core-builder-plus-RLS`                                                       | Best migration target: it delegates auth to component permissions and wraps reads/writes with `rlsRules`.                                                |
+| `apps/backend/convex/auth/wrappers.ts`           | `adminQuery`, `ownerQuery`, `adminMutation`, `ownerMutation`           | `core-builder-plus-RLS` with local admin/owner policy                         | Keep as Seal-specific role policy unless Core gains a role-threshold wrapper factory that accepts local role semantics.                                  |
+| `apps/backend/convex/auth/recipient_wrappers.ts` | `recipientQuery`, `recipientMutation`, `validateRecipientToken`        | `recipient-token-policy`                                                      | Keep local. RLS is intentionally not applied; signing-token validation is the access boundary.                                                           |
 
 ## Known cleanup debt
 

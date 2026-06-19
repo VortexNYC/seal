@@ -1,5 +1,8 @@
 # Seal → vortex-auth migration runbook
 
+> [!IMPORTANT]
+> Historical migration evidence, not active operator guidance. Use `AGENTS.md` and `docs/Seal - todo list from vortex-core.md` for current Core standards work. Do not treat Clerk-era phase text below as live requirements unless this runbook is intentionally promoted back to active planning.
+
 > ## ▶ MCP OAuth cutover — IN PROGRESS (2026-06-02): the LAST Clerk in Seal
 >
 > **DECISION (supersedes the old "repoint vs retire the worker" fork): Topology 2 — MCP rides the existing `/api/v1` resource server.** Seal's 49 MCP tools are 1:1 wrappers over `/api/v1` REST, and `/api/v1` is already component-backed (P5). So we do NOT clone 49 in-Convex `/mcp` handlers (idiot-index violation) and we do NOT keep a fat Clerk worker. Instead: `/api/v1` validates the Better-Auth MCP token via the package resolver; the worker becomes a thin pass-through; the dedicated `/mcp` dispatch is deleted. crm keeps a worker too, so "worker + Convex" is NOT a divergence.
