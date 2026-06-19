@@ -68,7 +68,7 @@ export const listContacts = internalQuery({
     ctx,
     args,
   ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = args.limit ?? 20;
 
     let raw;
     if (args.status) {

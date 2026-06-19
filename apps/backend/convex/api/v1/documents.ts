@@ -72,7 +72,7 @@ export const listDocuments = internalQuery({
     hasMore: boolean;
     nextCursor?: string;
   }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = args.limit ?? 20;
 
     // When filters are active, fetch more to ensure we can fill the page after post-filtering
     const hasFilters = !!(
