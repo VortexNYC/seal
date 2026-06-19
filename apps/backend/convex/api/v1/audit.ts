@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../../_generated/server";
+import { clampPaginationLimit } from "../middleware";
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present.",
@@ -64,7 +65,7 @@ export const listAuditLog = internalQuery({
     ctx,
     args,
   ): Promise<{ entries: ApiAuditLogEntry[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = clampPaginationLimit(args.limit);
 
     let query;
 

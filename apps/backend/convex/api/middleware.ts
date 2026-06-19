@@ -308,6 +308,24 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
 }
 
 /**
+ * Clamps a raw limit value to a valid range with defaults.
+ * Used by internal queries to enforce consistent pagination bounds.
+ *
+ * @param limit - Raw limit value (may be undefined)
+ * @param defaults - Default and max values
+ * @returns Clamped limit value
+ */
+export function clampPaginationLimit(
+  limit: number | undefined,
+  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
+): number {
+  if (limit === undefined || Number.isNaN(limit) || limit < 1) {
+    return defaults.limit;
+  }
+  return Math.min(limit, defaults.maxLimit);
+}
+
+/**
  * Parses and validates pagination parameters from query string.
  *
  * @param query - Query parameters object

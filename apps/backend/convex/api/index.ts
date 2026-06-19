@@ -51,6 +51,7 @@ export {
   type ApiHandler,
   type ApiRequestContext,
   apiHttpAction,
+  clampPaginationLimit,
   paginatedResponse,
   parseJsonBody,
   parsePagination,
