@@ -86,6 +86,20 @@ describe("api/v1/settings", () => {
       expect(result.security.session_timeout_minutes).toBeNull();
     });
 
+    test("returns metadata_b900811966 with version and generated_at", async () => {
+      const result = await t.query(internal.api.v1.settings.getSettings, {
+        userId,
+        organizationId,
+      });
+
+      expect(result.metadata_b900811966).toBeDefined();
+      expect(result.metadata_b900811966.version).toBe("1.0");
+      expect(result.metadata_b900811966.generated_at).toBeDefined();
+      expect(typeof result.metadata_b900811966.generated_at).toBe("string");
+      // Should be a valid ISO 8601 timestamp
+      expect(() => new Date(result.metadata_b900811966.generated_at)).not.toThrow();
+    });
+
     test("returns saved signing settings", async () => {
       await t.run(async (ctx) => {
         await ctx.db.patch(organizationId, {
