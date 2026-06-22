@@ -12,7 +12,7 @@
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "@vortexnyc/auth": "0.5.2",
-        "@vortexnyc/tooling": "0.2.15",
+        "@vortexnyc/tooling": "0.2.17",
         "baseline-browser-mapping": "^2.10.14",
         "browserslist": "^4.28.2",
         "knip": "^6.3.0",
@@ -205,7 +205,7 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@vitejs/plugin-react": "^5.1.2",
-        "@vortexnyc/tooling": "0.2.15",
+        "@vortexnyc/tooling": "0.2.17",
         "dotenv": "^17.4.0",
         "happy-dom": "^20.6.1",
         "jsdom": "29.0.1",
@@ -1953,7 +1953,7 @@
 
     "@vortexnyc/observability": ["@vortexnyc/observability@0.1.2", "https://npm.pkg.github.com/download/@VortexNYC/observability/0.1.2/c642511b5592f3af1f646c8b3bcce5c85abf2d2a", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-LUIv4CxvA5ululXmIaGIyvukK5qYodJYy7fkbRMlBCxBbidkxJx49GC8p9BXXkgy/eDG6M7X0TZycP+wFuKP7w=="],
 
-    "@vortexnyc/tooling": ["@vortexnyc/tooling@0.2.15", "https://npm.pkg.github.com/download/@VortexNYC/tooling/0.2.15/bd44b3985daf498ab0a6e48b168aa5ae18c4b322", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-LfHwlRT1ZQpszAmCd4eOmDghl21v9NJHrKI6DzgZzb4/myQZFgeCy+40xWwBewIrrl5Md3q96Z8DnTVwK7kvbg=="],
+    "@vortexnyc/tooling": ["@vortexnyc/tooling@0.2.17", "https://npm.pkg.github.com/download/@VortexNYC/tooling/0.2.17/00dad8e445d17d4408ff9dbd576105e4c7ca9e2d", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-EzIA7JSoFyq8AK6aaEC6CjFQOt+Yu9Q07yrdk555ykJWVcobwW+rLptwkfjaEFIfWp2p0NoVfJ+bChBXzkvAyA=="],
 
     "@xmldom/xmldom": ["@xmldom/xmldom@0.8.12", "", {}, "sha512-9k/gHF6n/pAi/9tqr3m3aqkuiNosYTurLLUtc7xQ9sxB/wm7WPygCv8GYa6mS0fLJEHhqMC1ATYhz++U/lRHqg=="],
 
