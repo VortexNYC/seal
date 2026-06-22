@@ -16,7 +16,7 @@
 import {
   buildApiAuthOrganizationAccessResult,
   buildApiAuthUserIdentityResult,
-} from "@plasmapos/auth/convex";
+} from "@vortexnyc/auth/convex";
 import { v } from "convex/values";
 
 import { components } from "./_generated/api";

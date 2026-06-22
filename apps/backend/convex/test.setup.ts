@@ -4,7 +4,7 @@ import presenceComponent from "@convex-dev/presence/test";
 import rateLimiterComponent from "@convex-dev/rate-limiter/test";
 import resendComponent from "@convex-dev/resend/test";
 import workflowComponent from "@convex-dev/workflow/test";
-import vortexAuthComponent from "@plasmapos/auth/test";
+import vortexAuthComponent from "@vortexnyc/auth/test";
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import timelineComponent from "convex-timeline/test";

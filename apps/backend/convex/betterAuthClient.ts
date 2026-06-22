@@ -1,5 +1,5 @@
 import { createClient, type AuthFunctions } from "@convex-dev/better-auth";
-import { createBetterAuthUserSyncTriggers } from "@plasmapos/auth/better-auth/convex";
+import { createBetterAuthUserSyncTriggers } from "@vortexnyc/auth/better-auth/convex";
 
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";

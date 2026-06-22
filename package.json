@@ -68,11 +68,11 @@
     "@tanstack/router-core": "1.168.9"
   },
   "devDependencies": {
-    "@plasmapos/auth": "0.5.1",
-    "@plasmapos/tooling": "0.2.13",
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
+    "@vortexnyc/auth": "0.5.2",
+    "@vortexnyc/tooling": "0.2.15",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "knip": "^6.3.0",

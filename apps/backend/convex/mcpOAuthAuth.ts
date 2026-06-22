@@ -1,4 +1,4 @@
-import type { McpOAuthClient } from "@plasmapos/auth/mcp";
+import type { McpOAuthClient } from "@vortexnyc/auth/mcp";
 import type { FunctionReference } from "convex/server";
 /**
  * MCP OAuth internal queries/mutations that delegate to the vortexAuth

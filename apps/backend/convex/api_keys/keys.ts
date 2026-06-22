@@ -8,7 +8,7 @@ import {
   createApiKeySecret,
   formatApiKeyToken,
   hashApiKeySecret,
-} from "@plasmapos/auth/convex";
+} from "@vortexnyc/auth/convex";
 import { ConvexError, v } from "convex/values";
 
 import { internalQuery, mutation, query } from "../_generated/server";

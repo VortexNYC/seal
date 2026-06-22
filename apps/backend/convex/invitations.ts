@@ -5,7 +5,7 @@
  * emailed, only its sha256 hash is stored. Acceptance materializes a
  * component membership.
  */
-import { createOrganizationInvitationEmailDraft } from "@plasmapos/auth/convex";
+import { createOrganizationInvitationEmailDraft } from "@vortexnyc/auth/convex";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
