@@ -19,7 +19,7 @@
  *    mirrors the legacy auth.utils permission semantics.
  */
 
-import { createVortexAuthGlue, type B2BModeAdapters, type GlueCtx } from "@plasmapos/auth/convex";
+import { createVortexAuthGlue, type B2BModeAdapters, type GlueCtx } from "@vortexnyc/auth/convex";
 
 import { components, internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";

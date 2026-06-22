@@ -7,7 +7,7 @@ import {
   type VortexPostHogExceptionArgs,
   type VortexPostHogGroupIdentifyArgs,
   type VortexPostHogIdentifyArgs,
-} from "@plasmapos/observability";
+} from "@vortexnyc/observability";
 
 import { components } from "./_generated/api";
 

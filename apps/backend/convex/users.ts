@@ -1,4 +1,4 @@
-import { createBetterAuthIdentityProvisionPayload } from "@plasmapos/auth/better-auth";
+import { createBetterAuthIdentityProvisionPayload } from "@vortexnyc/auth/better-auth";
 import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";

@@ -8,11 +8,11 @@
         "@tanstack/router-core": "1.168.9",
       },
       "devDependencies": {
-        "@plasmapos/auth": "0.5.1",
-        "@plasmapos/tooling": "0.2.13",
         "@seal/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
+        "@vortexnyc/auth": "0.5.2",
+        "@vortexnyc/tooling": "0.2.17",
         "baseline-browser-mapping": "^2.10.14",
         "browserslist": "^4.28.2",
         "knip": "^6.3.0",
@@ -39,12 +39,12 @@
         "@convex-dev/resend": "^0.2.4",
         "@convex-dev/workflow": "^0.3.9",
         "@convex-dev/workpool": "^0.4.7",
-        "@plasmapos/auth": "0.5.1",
-        "@plasmapos/observability": "0.1.1",
         "@posthog/convex": "^2.0.28",
         "@seal/transactional": "workspace:*",
         "@signpdf/placeholder-pdf-lib": "^3.3.0",
         "@signpdf/signpdf": "^3.3.0",
+        "@vortexnyc/auth": "0.5.2",
+        "@vortexnyc/observability": "0.1.2",
         "ai": "^6.0.146",
         "better-auth": "1.6.9",
         "convex": "catalog:",
@@ -69,7 +69,6 @@
       "name": "@seal/landing",
       "version": "0.0.0",
       "dependencies": {
-        "@plasmapos/observability": "0.1.1",
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-dialog": "^1.1.15",
         "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -79,6 +78,7 @@
         "@tanstack/react-router": "^1.168.10",
         "@tanstack/react-start": "^1.167.16",
         "@tanstack/router-core": "1.168.9",
+        "@vortexnyc/observability": "0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "fumadocs-core": "^16.7.10",
@@ -135,8 +135,6 @@
         "@convex-dev/react-query": "0.1.0",
         "@hookform/resolvers": "^5.2.2",
         "@jam.dev/sdk": "^0.0.6",
-        "@plasmapos/auth": "0.5.1",
-        "@plasmapos/observability": "0.1.1",
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-alert-dialog": "^1.1.15",
         "@radix-ui/react-avatar": "^1.1.11",
@@ -164,6 +162,8 @@
         "@tanstack/react-virtual": "^3.13.18",
         "@tanstack/router-plugin": "^1.154.13",
         "@vortex/payments": "workspace:*",
+        "@vortexnyc/auth": "0.5.2",
+        "@vortexnyc/observability": "0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -197,7 +197,6 @@
       },
       "devDependencies": {
         "@cloudflare/vite-plugin": "^1.40.2",
-        "@plasmapos/tooling": "0.2.13",
         "@playwright/test": "1.59.1",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
@@ -206,6 +205,7 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@vitejs/plugin-react": "^5.1.2",
+        "@vortexnyc/tooling": "0.2.17",
         "dotenv": "^17.4.0",
         "happy-dom": "^20.6.1",
         "jsdom": "29.0.1",
@@ -1221,12 +1221,6 @@
 
     "@pdf-lib/upng": ["@pdf-lib/upng@1.0.1", "", { "dependencies": { "pako": "^1.0.10" } }, "sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ=="],
 
-    "@plasmapos/auth": ["@plasmapos/auth@0.5.1", "https://npm.pkg.github.com/download/@plasmapos/auth/0.5.1/423d87d7d3891ab582c12bda913b84025d1daf8e", { "dependencies": { "@react-email/components": "^1.0.12", "@react-email/render": "^2.0.8", "jose": "^6.2.2" }, "peerDependencies": { "@better-auth/expo": ">=1.6.9", "@convex-dev/better-auth": ">=0.12.2", "better-auth": ">=1.6.9", "convex": ">=1.39.0", "expo-constants": ">=17.0.0", "expo-linking": ">=7.0.0", "expo-network": ">=8.0.7", "expo-secure-store": ">=14.0.0", "expo-web-browser": ">=14.0.0", "react": ">=19.0.0", "react-dom": ">=19.0.0", "react-native": ">=0.79.0", "react-native-css-interop": ">=0.2.0" }, "bin": { "vortex-auth": "scripts/cli.ts" } }, "sha512-2U1G9RW8Go2FFlNDkYR6ltmdG6dU7pluLqO2hka8oXNrOxscV9HQngNNZKhkAmYA3664O0asm4MdSU85RGPXBA=="],
-
-    "@plasmapos/observability": ["@plasmapos/observability@0.1.1", "https://npm.pkg.github.com/download/@plasmapos/observability/0.1.1/3f90bb8091e043a0129138cc8ac53acb2edd05d2", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-5U+3famj0M6+8T65g1nNDDuBmI5hMpnjPfPQU5LJl3L53sklmOueXNemYVVhT5+N9n6tmIcsiMPSTihCiBtNww=="],
-
-    "@plasmapos/tooling": ["@plasmapos/tooling@0.2.13", "https://npm.pkg.github.com/download/@plasmapos/tooling/0.2.13/9074b1e0f54741035773ce94dfa5ba75a08eb321", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-RJvuKhf2FAYUsgzgxgqS+zMN22rHWN5BtwdJ5IhI1JaopnqPYr6YSIDY3DamPBsGgVPsOPALhdLqGILYODcpwg=="],
-
     "@playwright/browser-chromium": ["@playwright/browser-chromium@1.59.1", "", { "dependencies": { "playwright-core": "1.59.1" } }, "sha512-XDwr0qOrzLXAuBAzg4WO/xctVMb+ldJ54yz9KCpFu8G8MVJzUVFO6BvK1tBtBl4DIoFcoFRKHgUGZT+8wOC8BQ=="],
 
     "@playwright/test": ["@playwright/test@1.59.1", "", { "dependencies": { "playwright": "1.59.1" }, "bin": { "playwright": "cli.js" } }, "sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg=="],
@@ -1954,6 +1948,12 @@
     "@vitest/utils": ["@vitest/utils@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-xw2/TiX82lQHA06cgbqRKFb5lCAy3axQ4H4SoUFhUsg+wztiet+co86IAMDtF6Vm1hc7J6j09oh/rgDn+JdKIQ=="],
 
     "@vortex/payments": ["@vortex/payments@workspace:packages/vortex-payments"],
+
+    "@vortexnyc/auth": ["@vortexnyc/auth@0.5.2", "https://npm.pkg.github.com/download/@VortexNYC/auth/0.5.2/efd02e3f8b25810d07c6973c806f7e17be36685f", { "dependencies": { "@react-email/components": "^1.0.12", "@react-email/render": "^2.0.8", "jose": "^6.2.2" }, "peerDependencies": { "@better-auth/expo": ">=1.6.9", "@convex-dev/better-auth": ">=0.12.2", "better-auth": ">=1.6.9", "convex": ">=1.39.0", "expo-constants": ">=17.0.0", "expo-linking": ">=7.0.0", "expo-network": ">=8.0.7", "expo-secure-store": ">=14.0.0", "expo-web-browser": ">=14.0.0", "react": ">=19.0.0", "react-dom": ">=19.0.0", "react-native": ">=0.79.0", "react-native-css-interop": ">=0.2.0" }, "bin": { "vortex-auth": "scripts/cli.ts" } }, "sha512-7M1F4pm3BZad2MlHtBTyV5b1SHbkpow6N9tjDZvw++7wIpIHMf+UYZ1ckqgXId0gxMwEpw8zRiFWSYwh+gooWg=="],
+
+    "@vortexnyc/observability": ["@vortexnyc/observability@0.1.2", "https://npm.pkg.github.com/download/@VortexNYC/observability/0.1.2/c642511b5592f3af1f646c8b3bcce5c85abf2d2a", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-LUIv4CxvA5ululXmIaGIyvukK5qYodJYy7fkbRMlBCxBbidkxJx49GC8p9BXXkgy/eDG6M7X0TZycP+wFuKP7w=="],
+
+    "@vortexnyc/tooling": ["@vortexnyc/tooling@0.2.17", "https://npm.pkg.github.com/download/@VortexNYC/tooling/0.2.17/00dad8e445d17d4408ff9dbd576105e4c7ca9e2d", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-EzIA7JSoFyq8AK6aaEC6CjFQOt+Yu9Q07yrdk555ykJWVcobwW+rLptwkfjaEFIfWp2p0NoVfJ+bChBXzkvAyA=="],
 
     "@xmldom/xmldom": ["@xmldom/xmldom@0.8.12", "", {}, "sha512-9k/gHF6n/pAi/9tqr3m3aqkuiNosYTurLLUtc7xQ9sxB/wm7WPygCv8GYa6mS0fLJEHhqMC1ATYhz++U/lRHqg=="],
 

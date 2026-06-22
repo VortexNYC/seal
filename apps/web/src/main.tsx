@@ -1,7 +1,7 @@
 // VAL-REAL-1776573534487
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import { createVortexPostHogWebInitOptions } from "@plasmapos/observability";
+import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";

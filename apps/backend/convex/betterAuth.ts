@@ -1,9 +1,9 @@
-import { createBetterAuthConvexRuntime } from "@plasmapos/auth/better-auth/convex";
-import type { BetterAuthConvexRuntime } from "@plasmapos/auth/better-auth/convex";
+import { createBetterAuthConvexRuntime } from "@vortexnyc/auth/better-auth/convex";
+import type { BetterAuthConvexRuntime } from "@vortexnyc/auth/better-auth/convex";
 import {
   createEmailVerificationEmailDraft,
   createPasswordResetEmailDraft,
-} from "@plasmapos/auth/convex";
+} from "@vortexnyc/auth/convex";
 
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";

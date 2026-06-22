@@ -35,7 +35,7 @@ type ReadCtx = Pick<QueryCtx | MutationCtx, "db" | "runQuery">;
 type SealMembershipStatus = "active" | "pending" | "suspended";
 
 // The vortexAuth component exposes its own table ids as opaque STRINGS over
-// the query boundary (Seal's @plasmapos/vortex-auth codegen does not brand
+// the query boundary (Seal's @vortexnyc/vortex-auth codegen does not brand
 // them). Treat every component-side id as a plain string.
 type ComponentOrganizationId = string;
 type ComponentUserId = string;

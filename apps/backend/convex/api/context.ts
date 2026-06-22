@@ -3,7 +3,7 @@
  * to an internal user/organization auth context. HTTP actions don't have
  * access to `ctx.auth`, so we resolve credentials manually.
  *
- * Two credential types are accepted, both fully on `@plasmapos/vortex-auth`:
+ * Two credential types are accepted, both fully on `@vortexnyc/vortex-auth`:
  *  - **API keys** (non-JWT bearer) → the vortexAuth component (`resolveApiAuth`).
  *  - **MCP OAuth access tokens** (ES256 JWT issued by this deployment's
  *    Better-Auth MCP OAuth server) → the package MCP resolver
@@ -20,7 +20,7 @@
 import {
   createBetterAuthApiTokenVerifierFromConvexAuthConfig,
   createConvexAuthConfig,
-} from "@plasmapos/auth/better-auth";
+} from "@vortexnyc/auth/better-auth";
 import {
   ApiAuthError,
   createConvexApiAuthLookupAdapter,
@@ -29,7 +29,7 @@ import {
   resolveAuthorizedApiAuthContext,
   resolveLinkedBetterAuthMcpSession,
   resolveStoredApiKeyCredential,
-} from "@plasmapos/auth/convex";
+} from "@vortexnyc/auth/convex";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -404,7 +404,7 @@ export async function resolveApiAuth(
  * Resolves an MCP OAuth access token (ES256 JWT issued by this deployment's
  * Better-Auth MCP OAuth server) to an internal `ApiAuthContext`.
  *
- * Flow (all `@plasmapos/vortex-auth`):
+ * Flow (all `@vortexnyc/vortex-auth`):
  * 1. Verify the token signature/claims via the deployment's stored JWKS
  *    (`mcpOAuthNode.verifyAccessToken`), bound to the MCP audience.
  * 2. Link the Better-Auth subject → Seal user + active org and authorize org

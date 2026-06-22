@@ -5,7 +5,7 @@
  * tools/list / tools/call) via the Agents SDK `createMcpHandler`, and each tool
  * forwards to Seal's `/api/v1` REST resource server (see ./tools + ./client).
  *
- * Auth is delegated entirely to Seal Convex (`@plasmapos/vortex-auth` MCP OAuth
+ * Auth is delegated entirely to Seal Convex (`@vortexnyc/vortex-auth` MCP OAuth
  * server + `resolveMcpApiAuth` at `/api/v1`). The worker does NOT verify tokens
  * itself: it requires a bearer to be present and passes it straight through;
  * Seal's `/api/v1` validates the Better-Auth MCP access token. The authorization

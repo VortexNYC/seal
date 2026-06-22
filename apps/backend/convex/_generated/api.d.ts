@@ -552,7 +552,7 @@ export declare const components: {
   agent: import("@convex-dev/agent/_generated/component.js").ComponentApi<"agent">;
   rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
-  vortexAuth: import("@plasmapos/auth/_generated/component.js").ComponentApi<"vortexAuth">;
+  vortexAuth: import("@vortexnyc/auth/_generated/component.js").ComponentApi<"vortexAuth">;
   posthog: import("@posthog/convex/_generated/component.js").ComponentApi<"posthog">;
   actionCache: import("@convex-dev/action-cache/_generated/component.js").ComponentApi<"actionCache">;
   actionRetrier: import("@convex-dev/action-retrier/_generated/component.js").ComponentApi<"actionRetrier">;

@@ -30,7 +30,7 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 
 - Bun `1.3.0` or newer
 - A Convex deployment for backend-backed local work
-- Better-Auth (via @plasmapos/vortex-auth) is the auth provider; no external auth credentials needed for local work
+- Better-Auth (via @vortexnyc/vortex-auth) is the auth provider; no external auth credentials needed for local work
 - Optional: Stripe, Resend, and other integration secrets for billing/email flows
 
 Install dependencies once from the repo root:
