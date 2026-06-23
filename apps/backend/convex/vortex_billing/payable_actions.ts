@@ -1,0 +1,657 @@
+"use node";
+
+import { ConvexError, v } from "convex/values";
+
+import { internal } from "../_generated/api";
+import type { Doc } from "../_generated/dataModel";
+import { internalAction } from "../_generated/server";
+
+type Env = {
+  readonly [key: string]: string | undefined;
+};
+
+type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type JsonObject = { readonly [key: string]: Json };
+
+type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
+
+export type DocumentPaymentProvider = "stripe" | "vortex_billing";
+
+export type VortexBillingEnvInput = {
+  readonly apiBaseUrl?: string;
+  readonly apiKey?: string;
+  readonly sourceNamespace?: string;
+  readonly customerMapJson?: string;
+  readonly billingAccountMapJson?: string;
+  readonly defaultBillingAccountId?: string;
+  readonly merchantAccountMapJson?: string;
+  readonly defaultMerchantAccountId?: string;
+  readonly paymentsEnvironment?: string;
+  readonly priceMapJson?: string;
+};
+
+export type VortexBillingEnv = {
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
+  readonly sourceNamespace: string;
+  readonly paymentsEnvironment: string;
+  readonly customerMap: Record<string, string>;
+  readonly billingAccountMap: Record<string, string>;
+  readonly defaultBillingAccountId?: string;
+  readonly merchantAccountMap: Record<string, string>;
+  readonly defaultMerchantAccountId?: string;
+  readonly priceMap: Record<string, string>;
+};
+
+type PaymentFieldConfigInput = {
+  readonly _id: string;
+  readonly fieldId: string;
+  readonly documentId: string;
+  readonly organizationId: string;
+  readonly paymentType: "one_time" | "recurring" | "installments" | "deposit_balance";
+  readonly items: readonly {
+    readonly id: string;
+    readonly description: string;
+    readonly quantity: number;
+    readonly unitPrice: number;
+  }[];
+  readonly currency: string;
+  readonly dueDateTerms: "on_receipt" | "net_15" | "net_30" | "net_60" | "custom";
+  readonly customDueDays?: number;
+  readonly customDueDate?: string;
+  readonly totalAmountCents: number;
+  readonly feeHandling: "absorb" | "pass_to_recipient";
+  readonly taxEnabled: boolean;
+};
+
+type PaymentRecipient = {
+  readonly email: string;
+  readonly name: string | undefined;
+};
+
+type FeePolicyOwnerMode =
+  | "merchant_pays_processing"
+  | "customer_pays_processing"
+  | "platform_absorbs_processing"
+  | "platform_fee_deducted";
+
+type FeePolicy = {
+  readonly policyId: string;
+  readonly ownerMode: FeePolicyOwnerMode;
+  readonly platformFee: {
+    readonly mode: "none";
+  };
+  readonly source: {
+    readonly scope: "document_payment_field";
+    readonly scopeId: string;
+  };
+  readonly audit: {
+    readonly createdByType: "adopter";
+    readonly createdByRef: string;
+    readonly reason: string;
+  };
+  readonly execution: {
+    readonly status: "modeled_not_settlement_executed";
+    readonly stopCondition: string;
+  };
+  readonly evidence: readonly string[];
+};
+
+export type CreatePayableRequest = {
+  readonly sourceType: "document_payment_field";
+  readonly sourceId: string;
+  readonly documentId: string;
+  readonly paymentFieldId: string;
+  readonly customerExternalId: string;
+  readonly billingAccountId: string;
+  readonly collectionIntent: "manual";
+  readonly feePolicy: FeePolicy;
+  readonly dueAt?: string;
+  readonly lineItems: readonly JsonObject[];
+  readonly metadata: Record<string, string>;
+};
+
+type CreatePayableResult = {
+  readonly payableId: string;
+  readonly paymentRequestId: string | undefined;
+  readonly checkoutUrl: string | undefined;
+};
+
+const DOCUMENT_PAYMENT_ALLOWLIST_ENV = "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS";
+const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
+const API_KEY_ENV = "VORTEX_BILLING_API_KEY";
+const DOCUMENT_CUSTOMER_MAP_ENV = "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP";
+const SHARED_CUSTOMER_MAP_ENV = "VORTEX_BILLING_CUSTOMER_MAP";
+const DOCUMENT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP";
+const SHARED_ACCOUNT_MAP_ENV = "VORTEX_BILLING_ACCOUNT_MAP";
+const DOCUMENT_DEFAULT_ACCOUNT_ID_ENV = "VORTEX_BILLING_DOCUMENT_ACCOUNT_ID";
+const SHARED_ACCOUNT_ID_ENV = "VORTEX_BILLING_ACCOUNT_ID";
+const DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP";
+const DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV = "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_ID";
+const DOCUMENT_PRICE_MAP_ENV = "VORTEX_BILLING_DOCUMENT_PRICE_MAP";
+const PAYMENTS_ENVIRONMENT_ENV = "VORTEX_BILLING_PAYMENTS_ENVIRONMENT";
+
+export function selectDocumentPaymentProvider(
+  organizationId: string,
+  configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
+  env: Env = process.env,
+): DocumentPaymentProvider {
+  if (!isOrganizationAllowlisted(organizationId, env[DOCUMENT_PAYMENT_ALLOWLIST_ENV])) {
+    return "stripe";
+  }
+  if (configs.length === 0) {
+    return "stripe";
+  }
+  return configs.every((config) => config.paymentType === "one_time" && !config.taxEnabled)
+    ? "vortex_billing"
+    : "stripe";
+}
+
+export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillingEnv {
+  const customerMap = parseOptionalStringRecord(input.customerMapJson, "customerMapJson");
+  const billingAccountMap = parseOptionalStringRecord(
+    input.billingAccountMapJson,
+    "billingAccountMapJson",
+  );
+  const merchantAccountMap = parseOptionalStringRecord(
+    input.merchantAccountMapJson,
+    "merchantAccountMapJson",
+  );
+  const priceMap = parseOptionalStringRecord(input.priceMapJson, "priceMapJson");
+
+  return {
+    apiBaseUrl: readRequiredValue(input.apiBaseUrl, "apiBaseUrl"),
+    apiKey: readRequiredValue(input.apiKey, "apiKey"),
+    sourceNamespace: input.sourceNamespace ?? "seal",
+    paymentsEnvironment: input.paymentsEnvironment ?? "sandbox",
+    customerMap,
+    billingAccountMap,
+    defaultBillingAccountId: input.defaultBillingAccountId,
+    merchantAccountMap,
+    defaultMerchantAccountId: input.defaultMerchantAccountId,
+    priceMap,
+  };
+}
+
+function readVortexBillingEnvFromProcess(env: Env = process.env): VortexBillingEnv {
+  return readVortexBillingEnv({
+    apiBaseUrl: env[API_BASE_URL_ENV],
+    apiKey: env[API_KEY_ENV],
+    sourceNamespace: "seal",
+    customerMapJson: env[DOCUMENT_CUSTOMER_MAP_ENV] ?? env[SHARED_CUSTOMER_MAP_ENV],
+    billingAccountMapJson: env[DOCUMENT_ACCOUNT_MAP_ENV] ?? env[SHARED_ACCOUNT_MAP_ENV],
+    defaultBillingAccountId: env[DOCUMENT_DEFAULT_ACCOUNT_ID_ENV] ?? env[SHARED_ACCOUNT_ID_ENV],
+    merchantAccountMapJson: env[DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV],
+    defaultMerchantAccountId: env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV],
+    paymentsEnvironment: env[PAYMENTS_ENVIRONMENT_ENV] ?? "sandbox",
+    priceMapJson: env[DOCUMENT_PRICE_MAP_ENV],
+  });
+}
+
+export function buildCreatePayableRequest(input: {
+  readonly config: PaymentFieldConfigInput;
+  readonly recipient: PaymentRecipient;
+  readonly env: VortexBillingEnv;
+  readonly now: number;
+}): CreatePayableRequest {
+  const { config, recipient, env, now } = input;
+  if (config.paymentType !== "one_time") {
+    throw new ConvexError("Vortex Billing document bridge only supports one-time payments");
+  }
+  if (config.taxEnabled) {
+    throw new ConvexError("Vortex Billing document bridge does not support Seal tax-enabled fields yet");
+  }
+  if (config.items.length === 0) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+
+  const organizationKey = String(config.organizationId);
+  const customerExternalId = env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
+  if (!customerExternalId) {
+    throw new ConvexError(`Vortex Billing customer missing for recipient: ${recipient.email}`);
+  }
+
+  const billingAccountId = env.billingAccountMap[organizationKey] ?? env.defaultBillingAccountId;
+  if (!billingAccountId) {
+    throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
+  }
+
+  const merchantAccountId =
+    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const sourceId = String(config._id);
+  const dueAt = getDueAt(config, now);
+
+  return {
+    sourceType: "document_payment_field",
+    sourceId,
+    documentId: String(config.documentId),
+    paymentFieldId: String(config.fieldId),
+    customerExternalId,
+    billingAccountId,
+    collectionIntent: "manual",
+    feePolicy: buildFeePolicy(config),
+    ...(dueAt !== undefined ? { dueAt } : {}),
+    lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
+    metadata: {
+      sourceSystem: env.sourceNamespace,
+      vortexPaymentsEnvironment: env.paymentsEnvironment,
+      sealOrganizationId: organizationKey,
+      sealDocumentId: String(config.documentId),
+      sealPaymentFieldId: String(config.fieldId),
+      sealPaymentConfigId: sourceId,
+      recipientEmail: recipient.email,
+      ...(recipient.name !== undefined ? { recipientName: recipient.name } : {}),
+      ...(merchantAccountId.length > 0 ? { vortexMerchantAccountId: merchantAccountId } : {}),
+    },
+  };
+}
+
+function buildPayableLineItem(
+  item: PaymentFieldConfigInput["items"][number],
+  priceMap: Record<string, string>,
+): JsonObject {
+  const priceId = priceMap[item.id];
+  if (!priceId) {
+    throw new ConvexError(`Vortex Billing price missing for payment item: ${item.id}`);
+  }
+
+  return {
+    priceId,
+    quantity: item.quantity,
+    taxable: false,
+    metadata: {
+      sealLineItemId: item.id,
+      sealLineItemDescription: item.description,
+      sealLineItemUnitPrice: String(item.unitPrice),
+    },
+  };
+}
+
+function buildFeePolicy(config: Pick<PaymentFieldConfigInput, "_id" | "feeHandling">): FeePolicy {
+  const ownerMode: FeePolicyOwnerMode =
+    config.feeHandling === "pass_to_recipient"
+      ? "customer_pays_processing"
+      : "merchant_pays_processing";
+  const sourceId = String(config._id);
+
+  return {
+    policyId: `seal_document_payment_${normalizeExternalIdPart(sourceId)}`,
+    ownerMode,
+    platformFee: { mode: "none" },
+    source: {
+      scope: "document_payment_field",
+      scopeId: sourceId,
+    },
+    audit: {
+      createdByType: "adopter",
+      createdByRef: "seal-document-payment-field",
+      reason: "Seal document payment fee handling",
+    },
+    execution: {
+      status: "modeled_not_settlement_executed",
+      stopCondition:
+        "fee policy is modeled for Vortex payable creation; settlement execution remains provider-owned",
+    },
+    evidence: [
+      `source:document_payment_field:${sourceId}`,
+      `fee_owner:${ownerMode}`,
+      "platform_fee:none",
+      `seal_fee_handling:${config.feeHandling}`,
+    ],
+  };
+}
+
+function getDueAt(
+  config: Pick<PaymentFieldConfigInput, "dueDateTerms" | "customDueDays" | "customDueDate">,
+  now: number,
+): string | undefined {
+  if (config.customDueDate !== undefined && config.customDueDate.trim().length > 0) {
+    const dueAt = new Date(config.customDueDate);
+    if (Number.isNaN(dueAt.getTime())) {
+      throw new ConvexError("Payment field custom due date is invalid");
+    }
+    return dueAt.toISOString();
+  }
+
+  const dueDays = getDueDays(config.dueDateTerms, config.customDueDays);
+  return new Date(now + dueDays * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function getDueDays(terms: PaymentFieldConfigInput["dueDateTerms"], customDueDays?: number): number {
+  switch (terms) {
+    case "on_receipt":
+      return 0;
+    case "net_15":
+      return 15;
+    case "net_30":
+      return 30;
+    case "net_60":
+      return 60;
+    case "custom":
+      return customDueDays ?? 30;
+  }
+}
+
+function resolvePaymentFieldRecipient(
+  config: Doc<"payment_field_configs">,
+  fieldMap: Map<string, Doc<"signature_fields">>,
+  recipientMap: Map<string, Doc<"document_recipients">>,
+): PaymentRecipient {
+  if (config.items.length === 0) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+
+  const field = fieldMap.get(config.fieldId.toString());
+  if (!field) {
+    throw new ConvexError("Payment field not found");
+  }
+  if (!field.recipientId) {
+    throw new ConvexError("Payment field must be assigned to a recipient before processing");
+  }
+
+  const recipient = recipientMap.get(field.recipientId.toString());
+  if (!recipient) {
+    throw new ConvexError("Recipient for payment field not found");
+  }
+
+  return {
+    email: recipient.email,
+    name: recipient.name ?? undefined,
+  };
+}
+
+async function createVortexPayable(
+  request: CreatePayableRequest,
+  env: VortexBillingEnv,
+  idempotencyKey: string,
+  fetcher: Fetcher = (input, init) => fetch(input, init),
+): Promise<CreatePayableResult> {
+  const responseBody = await requestVortexBillingJson(
+    {
+      apiBaseUrl: env.apiBaseUrl,
+      apiKey: env.apiKey,
+      path: "/v1/payables",
+      idempotencyKey,
+      body: request as unknown as JsonObject,
+    },
+    fetcher,
+  );
+  return readCreatePayableResult(responseBody);
+}
+
+async function requestVortexBillingJson(
+  input: {
+    readonly apiBaseUrl: string;
+    readonly apiKey: string;
+    readonly path: string;
+    readonly idempotencyKey: string;
+    readonly body: JsonObject;
+  },
+  fetcher: Fetcher,
+): Promise<unknown> {
+  const response = await fetcher(`${trimTrailingSlash(input.apiBaseUrl)}${input.path}`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${input.apiKey}`,
+      "content-type": "application/json",
+      "idempotency-key": input.idempotencyKey,
+      "x-vortex-service": "billing",
+    },
+    body: JSON.stringify(input.body),
+  });
+
+  const text = await response.text();
+  const responseBody = text.length > 0 ? parseJson(text, "Vortex Billing response") : null;
+
+  if (!response.ok) {
+    throw new ConvexError(
+      `Vortex Billing payable failed (${response.status}): ${summarizeJson(responseBody)}`,
+    );
+  }
+
+  return responseBody;
+}
+
+function readCreatePayableResult(body: unknown): CreatePayableResult {
+  const root = readObject(body, "Vortex Billing payable response");
+  const data = readObject(root.data, "Vortex Billing payable response data");
+  const payable = readObject(data.payable, "Vortex Billing payable response payable");
+  const lineage = readObject(payable.lineage, "Vortex Billing payable response lineage");
+  const payableId = readString(payable.payableId, "Vortex Billing payable id");
+  const paymentRequestId = readOptionalString(
+    lineage.paymentRequestId,
+    "Vortex Billing payment request id",
+  );
+  const checkoutUrl = readOptionalString(lineage.checkoutUrl, "Vortex Billing checkout URL");
+
+  return {
+    payableId,
+    paymentRequestId,
+    checkoutUrl,
+  };
+}
+
+export const createVortexPaymentObjectsForDocumentFields = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+  },
+  returns: v.object({
+    paymentLinks: v.array(
+      v.object({
+        recipientEmail: v.string(),
+        hostedInvoiceUrl: v.union(v.string(), v.null()),
+        providerInvoiceId: v.string(),
+        totalAmountCents: v.number(),
+        currency: v.string(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const configs: Doc<"payment_field_configs">[] = await ctx.runQuery(
+      internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
+      { documentId: args.documentId },
+    );
+
+    if (configs.length === 0) {
+      return { paymentLinks: [] };
+    }
+    if (selectDocumentPaymentProvider(args.organizationId, configs) !== "vortex_billing") {
+      throw new ConvexError("Vortex Billing document payment bridge is not enabled");
+    }
+
+    const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+      internal.documents.recipients_queries.getDocumentRecipientsInternal,
+      { documentId: args.documentId },
+    );
+    const recipientMap = new Map(recipients.map((recipient) => [recipient._id.toString(), recipient]));
+
+    const fields: Doc<"signature_fields">[] = await ctx.runQuery(
+      internal.signature_fields.queries.getFieldsByDocumentInternal,
+      { documentId: args.documentId },
+    );
+    const fieldMap = new Map(fields.map((field) => [field._id.toString(), field]));
+
+    const env = readVortexBillingEnvFromProcess();
+    const paymentLinks: Array<{
+      recipientEmail: string;
+      hostedInvoiceUrl: string | null;
+      providerInvoiceId: string;
+      totalAmountCents: number;
+      currency: string;
+    }> = [];
+
+    for (const config of configs) {
+      const recipient = resolvePaymentFieldRecipient(config, fieldMap, recipientMap);
+      const payableRequest = buildCreatePayableRequest({
+        config: toPaymentFieldConfigInput(config),
+        recipient,
+        env,
+        now: Date.now(),
+      });
+      const payable = await createVortexPayable(
+        payableRequest,
+        env,
+        `seal-document-payable:${config._id}`,
+      );
+      if (payable.checkoutUrl === undefined) {
+        throw new ConvexError("Vortex Billing payable response did not include checkout URL");
+      }
+
+      await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+        configId: config._id,
+        paymentStatus: "awaiting",
+        vortexPayableId: payable.payableId,
+        vortexPaymentRequestId: payable.paymentRequestId,
+        hostedInvoiceUrl: payable.checkoutUrl,
+        customerEmail: recipient.email,
+        customerName: recipient.name,
+      });
+
+      paymentLinks.push({
+        recipientEmail: recipient.email,
+        hostedInvoiceUrl: payable.checkoutUrl,
+        providerInvoiceId: payable.payableId,
+        totalAmountCents: config.totalAmountCents,
+        currency: config.currency,
+      });
+    }
+
+    return { paymentLinks };
+  },
+});
+
+function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): PaymentFieldConfigInput {
+  return {
+    _id: config._id,
+    fieldId: config.fieldId,
+    documentId: config.documentId,
+    organizationId: config.organizationId,
+    paymentType: config.paymentType,
+    items: config.items,
+    currency: config.currency,
+    dueDateTerms: config.dueDateTerms,
+    customDueDays: config.customDueDays,
+    customDueDate: config.customDueDate,
+    totalAmountCents: config.totalAmountCents,
+    feeHandling: config.feeHandling,
+    taxEnabled: config.taxEnabled,
+  };
+}
+
+function isOrganizationAllowlisted(
+  organizationId: string,
+  configured: string | undefined,
+): boolean {
+  if (configured === undefined || configured.trim() === "" || configured.trim() === "[]") {
+    return false;
+  }
+
+  const normalized = configured.trim();
+  if (normalized === "*") {
+    return true;
+  }
+
+  if (normalized.startsWith("[")) {
+    const parsed = parseJson(normalized, DOCUMENT_PAYMENT_ALLOWLIST_ENV);
+    if (!Array.isArray(parsed)) {
+      throw new ConvexError(
+        `${DOCUMENT_PAYMENT_ALLOWLIST_ENV} must be a JSON string array, "*", or "[]"`,
+      );
+    }
+
+    return parsed.some((entry) => entry === organizationId);
+  }
+
+  return normalized
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .includes(organizationId);
+}
+
+function readRequiredValue(value: string | undefined, label: string): string {
+  if (value === undefined || value.trim() === "") {
+    throw new ConvexError(`Vortex Billing ${label} is required for document payments`);
+  }
+  return value;
+}
+
+function parseOptionalStringRecord(raw: string | undefined, name: string): Record<string, string> {
+  if (raw === undefined || raw.trim() === "") {
+    return {};
+  }
+  return parseStringRecord(raw, name);
+}
+
+function parseStringRecord(raw: string, name: string): Record<string, string> {
+  const parsed = parseJson(raw, name);
+  const object = readObject(parsed, name);
+  const record: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(object)) {
+    if (typeof value !== "string" || value.length === 0) {
+      throw new ConvexError(`${name} must map strings to non-empty strings`);
+    }
+    record[key] = value;
+  }
+
+  return record;
+}
+
+function parseJson(raw: string, label: string): unknown {
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ConvexError(`${label} is not valid JSON: ${message}`);
+  }
+}
+
+function readObject(value: unknown, label: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new ConvexError(`${label} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function readString(value: unknown, label: string): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new ConvexError(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function readOptionalString(value: unknown, label: string): string | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "string" || value.length === 0) {
+    throw new ConvexError(`${label} must be a non-empty string when present`);
+  }
+  return value;
+}
+
+function trimTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
+function normalizeExternalIdPart(value: string): string {
+  return value
+    .replace(/[^a-zA-Z0-9]+/gu, "_")
+    .replace(/^_+|_+$/gu, "")
+    .toLowerCase();
+}
+
+function summarizeJson(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "unreadable response";
+  }
+}

@@ -405,6 +405,102 @@ export const storeStripeIds = internalMutation({
 });
 
 /**
+ * Internal mutation to store Vortex Billing payable IDs back on a payment config
+ * after Vortex creates the payable and manual payment request during send.
+ * Also creates a document_invoices record for revenue tracking.
+ */
+export const storeVortexPayableIds = internalMutation({
+  args: {
+    configId: v.id("payment_field_configs"),
+    paymentStatus: paymentStatusTuple,
+    vortexPayableId: v.string(),
+    vortexPaymentRequestId: v.optional(v.string()),
+    hostedInvoiceUrl: v.optional(v.string()),
+    customerEmail: v.string(),
+    customerName: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const config = await ctx.db.get(args.configId);
+    if (!config) {
+      throw new ConvexError("Payment config not found");
+    }
+
+    const now = Date.now();
+
+    await ctx.db.patch(args.configId, {
+      paymentStatus: args.paymentStatus,
+      vortexPayableId: args.vortexPayableId,
+      ...(args.vortexPaymentRequestId !== undefined && {
+        vortexPaymentRequestId: args.vortexPaymentRequestId,
+      }),
+      ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
+      updatedAt: now,
+    });
+
+    const invoiceStatus = documentInvoiceStatusForPaymentStatus(args.paymentStatus);
+    const existing = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .first();
+
+    if (existing) {
+      const terminalStatuses = new Set(["paid", "void", "uncollectible"]);
+      if (terminalStatuses.has(existing.status)) {
+        return null;
+      }
+
+      await ctx.db.patch(existing._id, {
+        status: invoiceStatus,
+        vortexPaymentRequestId: args.vortexPaymentRequestId,
+        amountDue: config.totalAmountCents,
+        hostedInvoiceUrl: args.hostedInvoiceUrl,
+        ...(invoiceStatus === "open" && existing.finalizedAt === undefined && { finalizedAt: now }),
+        updatedAt: now,
+      });
+      return null;
+    }
+
+    await ctx.db.insert("document_invoices", {
+      documentId: config.documentId,
+      organizationId: config.organizationId,
+      provider: "vortex_billing",
+      vortexPayableId: args.vortexPayableId,
+      vortexPaymentRequestId: args.vortexPaymentRequestId,
+      status: invoiceStatus,
+      customerEmail: args.customerEmail,
+      customerName: args.customerName,
+      amountDue: config.totalAmountCents,
+      currency: config.currency,
+      hostedInvoiceUrl: args.hostedInvoiceUrl,
+      ...(invoiceStatus === "open" && { finalizedAt: now }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return null;
+  },
+});
+
+function documentInvoiceStatusForPaymentStatus(
+  paymentStatus: "pending" | "created" | "awaiting" | "paid" | "failed" | "cancelled",
+): "draft" | "open" | "paid" | "void" | "uncollectible" {
+  switch (paymentStatus) {
+    case "pending":
+    case "created":
+      return "draft";
+    case "awaiting":
+      return "open";
+    case "paid":
+      return "paid";
+    case "failed":
+      return "uncollectible";
+    case "cancelled":
+      return "void";
+  }
+}
+
+/**
  * Internal mutation to upsert a document_invoices record from a Stripe
  * subscription invoice webhook (invoice.created / invoice.finalized).
  *

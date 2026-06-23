@@ -455,6 +455,66 @@ describe("Payment field mutations", () => {
     });
   });
 
+  describe("storeVortexPayableIds (internal)", () => {
+    test("stores Vortex payable IDs and creates one document invoice record", async () => {
+      const configId = await t
+        .withIdentity({ subject: "test_owner" })
+        .mutation(
+          api.payment_fields.mutations.upsertPaymentConfig,
+          makeValidPaymentArgs(paymentFieldId),
+        );
+
+      await t.run(async (ctx) => {
+        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+          configId,
+          paymentStatus: "awaiting",
+          vortexPayableId: "payable_vortex_123",
+          vortexPaymentRequestId: "pr_vortex_123",
+          hostedInvoiceUrl: "https://payments.vortex.test/pay/token_123",
+          customerEmail: "signer@example.com",
+          customerName: "Test Signer",
+        });
+        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+          configId,
+          paymentStatus: "awaiting",
+          vortexPayableId: "payable_vortex_123",
+          vortexPaymentRequestId: "pr_vortex_123",
+          hostedInvoiceUrl: "https://payments.vortex.test/pay/token_456",
+          customerEmail: "signer@example.com",
+          customerName: "Test Signer",
+        });
+      });
+
+      const result = await t.run(async (ctx) => {
+        const config = await ctx.db.get(configId);
+        const invoices = await ctx.db
+          .query("document_invoices")
+          .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", "payable_vortex_123"))
+          .collect();
+        return { config, invoices };
+      });
+
+      expect(result.config?.paymentStatus).toBe("awaiting");
+      expect(result.config?.vortexPayableId).toBe("payable_vortex_123");
+      expect(result.config?.vortexPaymentRequestId).toBe("pr_vortex_123");
+      expect(result.config?.hostedInvoiceUrl).toBe("https://payments.vortex.test/pay/token_456");
+      expect(result.invoices).toHaveLength(1);
+      expect(sealAssertPresent(result.invoices[0])).toMatchObject({
+        documentId,
+        organizationId,
+        provider: "vortex_billing",
+        vortexPayableId: "payable_vortex_123",
+        vortexPaymentRequestId: "pr_vortex_123",
+        status: "open",
+        customerEmail: "signer@example.com",
+        customerName: "Test Signer",
+        amountDue: 15000,
+        currency: "usd",
+        hostedInvoiceUrl: "https://payments.vortex.test/pay/token_456",
+      });
+    });
+  });
+
   describe("updatePaymentStatusFromSubscriptionWebhook (internal)", () => {
     test("finds config by subscriptionId and updates status", async () => {
       const configId = await t
