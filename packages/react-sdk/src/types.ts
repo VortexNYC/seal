@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /** Events emitted by the Seal signing embed (Seal → Host) */
 export interface SealReadyEvent {
   type: "seal:ready";
@@ -58,7 +60,7 @@ export interface SealSigningEmbedProps {
   /** CSS class name for the iframe container */
   className?: string;
   /** Inline styles for the iframe */
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }
 
 /** Imperative handle for the SealSigningEmbed ref */
