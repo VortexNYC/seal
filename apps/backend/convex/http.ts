@@ -66,6 +66,7 @@ import {
 import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
 import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
+import { handleVortexBillingWebhookRequest } from "./vortex_billing/webhook_handlers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present.",
@@ -321,6 +322,23 @@ http.route({
 // MCP tool calls ride the standard /api/v1 resource server (auth via
 // resolveMcpApiAuth in api/context.ts). This deployment only hosts the MCP
 // OAuth *authorization* server (metadata, JWKS, authorize, token, register).
+
+http.route({
+  path: "/vortex-billing-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const webhookSecret = process.env.VORTEX_BILLING_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("Vortex Billing webhook configuration missing", {
+        operation: "vortexBillingWebhook.configCheck",
+        requiredConfig: "VORTEX_BILLING_WEBHOOK_SECRET",
+      });
+      return new Response("Webhook configuration error", { status: 500 });
+    }
+
+    return await handleVortexBillingWebhookRequest(ctx, request, webhookSecret);
+  }),
+});
 
 http.route({
   path: "/stripe-webhook",

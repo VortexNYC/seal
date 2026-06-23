@@ -163,6 +163,7 @@ import type * as payments_merchant_account_validators from "../payments/merchant
 import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_queries from "../payments/queries.js";
 import type * as payments_subscription_actions from "../payments/subscription_actions.js";
+import type * as payments_vortex_billing_processor from "../payments/vortex_billing_processor.js";
 import type * as posthog from "../posthog.js";
 import type * as presence from "../presence.js";
 import type * as retrier from "../retrier.js";
@@ -255,6 +256,9 @@ import type * as user_profiles_queries from "../user_profiles/queries.js";
 import type * as users from "../users.js";
 import type * as validations_api from "../validations/api.js";
 import type * as validations_organizations from "../validations/organizations.js";
+import type * as vortex_billing_projection from "../vortex_billing/projection.js";
+import type * as vortex_billing_webhook_handlers from "../vortex_billing/webhook_handlers.js";
+import type * as vortex_billing_webhook_signature from "../vortex_billing/webhook_signature.js";
 import type * as webhooks_delivery from "../webhooks/delivery.js";
 import type * as webhooks_index from "../webhooks/index.js";
 import type * as webhooks_mutations from "../webhooks/mutations.js";
@@ -424,6 +428,7 @@ declare const fullApi: ApiFromModules<{
   "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/queries": typeof payments_queries;
   "payments/subscription_actions": typeof payments_subscription_actions;
+  "payments/vortex_billing_processor": typeof payments_vortex_billing_processor;
   posthog: typeof posthog;
   presence: typeof presence;
   retrier: typeof retrier;
@@ -516,6 +521,9 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   "validations/api": typeof validations_api;
   "validations/organizations": typeof validations_organizations;
+  "vortex_billing/projection": typeof vortex_billing_projection;
+  "vortex_billing/webhook_handlers": typeof vortex_billing_webhook_handlers;
+  "vortex_billing/webhook_signature": typeof vortex_billing_webhook_signature;
   "webhooks/delivery": typeof webhooks_delivery;
   "webhooks/index": typeof webhooks_index;
   "webhooks/mutations": typeof webhooks_mutations;
