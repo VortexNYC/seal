@@ -137,6 +137,12 @@ describe("api/v1/members", () => {
       expect(owner?.id).toBe(ownerMemberId);
       expect(owner?.user_id).toBe(ownerId);
       expect(owner?.joined_at).toBeDefined();
+      expect(owner?.metadata_b232789977s4).toBeDefined();
+      expect(owner?.metadata_b232789977s4?.version).toBe("1.0");
+      expect(owner?.metadata_b232789977s4?.generated_at).toBeDefined();
+      expect(
+        new Date(owner!.metadata_b232789977s4!.generated_at).toISOString(),
+      ).toBe(owner?.metadata_b232789977s4?.generated_at);
     });
 
     test("uses email as name fallback when user has no name", async () => {
@@ -232,6 +238,8 @@ describe("api/v1/members", () => {
       expect(result?.id).toBe(adminMemberId);
       expect(result?.email).toBe("admin@members-test.com");
       expect(result?.role).toBe("admin");
+      expect(result?.metadata_b232789977s4).toBeDefined();
+      expect(result?.metadata_b232789977s4?.version).toBe("1.0");
     });
 
     test("returns null when member does not exist", async () => {
