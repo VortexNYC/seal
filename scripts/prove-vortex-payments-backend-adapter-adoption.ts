@@ -15,10 +15,14 @@ const providerSubscriptionProcessorPath = "apps/backend/convex/stripe/subscripti
 const paymentsPaymentFieldActionsPath = "apps/backend/convex/payments/payment_field_actions.ts";
 const paymentsMerchantAccountActionsPath =
   "apps/backend/convex/payments/merchant_account_actions.ts";
+const vortexBillingWebhookProjectionPath = "apps/backend/convex/vortex_billing/projection.ts";
+const vortexBillingWebhookHandlersPath = "apps/backend/convex/vortex_billing/webhook_handlers.ts";
+const vortexBillingWebhookSignaturePath = "apps/backend/convex/vortex_billing/webhook_signature.ts";
 const providerPaymentFieldActionsPath = "apps/backend/convex/stripe/payment_field_actions.ts";
 const providerConnectActionsPath = "apps/backend/convex/stripe/connect_actions.ts";
 const generatedApiPath = "apps/backend/convex/_generated/api.d.ts";
 const billingE2ePath = "apps/web/e2e/tests/billing.e2e.ts";
+const httpPath = "apps/backend/convex/http.ts";
 const deletedProviderBillingQueriesPath = "apps/backend/convex/stripe/queries.ts";
 const deletedProviderSubscriptionActionsPath =
   "apps/backend/convex/stripe/connect_subscription_actions.ts";
@@ -28,6 +32,9 @@ for (const requiredPath of [
   paymentsQueriesPath,
   paymentsSubscriptionActionsPath,
   vortexBillingProcessorPath,
+  vortexBillingWebhookProjectionPath,
+  vortexBillingWebhookHandlersPath,
+  vortexBillingWebhookSignaturePath,
   providerSubscriptionProcessorPath,
   paymentsPaymentFieldActionsPath,
   paymentsMerchantAccountActionsPath,
@@ -58,6 +65,7 @@ const subscriptionsRoute = readFileSync(join(repoRoot, subscriptionsRoutePath), 
 const documentRoute = readFileSync(join(repoRoot, documentRoutePath), "utf8");
 const documentSidebar = readFileSync(join(repoRoot, documentSidebarPath), "utf8");
 const fieldToolbar = readFileSync(join(repoRoot, fieldToolbarPath), "utf8");
+const http = readFileSync(join(repoRoot, httpPath), "utf8");
 const paymentsQueries = readFileSync(join(repoRoot, paymentsQueriesPath), "utf8");
 const paymentsSubscriptionActions = readFileSync(
   join(repoRoot, paymentsSubscriptionActionsPath),
@@ -72,6 +80,18 @@ const providerSubscriptionProcessor = readFileSync(
   "utf8",
 );
 const vortexBillingProcessor = readFileSync(join(repoRoot, vortexBillingProcessorPath), "utf8");
+const vortexBillingWebhookProjection = readFileSync(
+  join(repoRoot, vortexBillingWebhookProjectionPath),
+  "utf8",
+);
+const vortexBillingWebhookHandlers = readFileSync(
+  join(repoRoot, vortexBillingWebhookHandlersPath),
+  "utf8",
+);
+const vortexBillingWebhookSignature = readFileSync(
+  join(repoRoot, vortexBillingWebhookSignaturePath),
+  "utf8",
+);
 const paymentsMerchantAccountActions = readFileSync(
   join(repoRoot, paymentsMerchantAccountActionsPath),
   "utf8",
@@ -182,6 +202,60 @@ for (const requiredFragment of [
   if (!vortexBillingProcessor.includes(requiredFragment)) {
     failures.push(
       `${vortexBillingProcessorPath} missing SaaS Vortex Billing cutover fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  'path: "/vortex-billing-webhook"',
+  "VORTEX_BILLING_WEBHOOK_SECRET",
+  "handleVortexBillingWebhookRequest",
+]) {
+  if (!http.includes(requiredFragment)) {
+    failures.push(
+      `${httpPath} missing signed Vortex Billing webhook route fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  "export const projectSubscriptionUpdated = internalMutation",
+  "vortex_billing_webhook_events",
+  "by_event_id",
+  "externalCustomerId: args.customerExternalId",
+  "externalSubscriptionId: args.subscriptionExternalId",
+  "externalPriceId: args.planCode",
+  "activeStripeIdPresent",
+]) {
+  if (!vortexBillingWebhookProjection.includes(requiredFragment)) {
+    failures.push(
+      `${vortexBillingWebhookProjectionPath} missing subscription projection fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  "verifyVortexWebhookSignature",
+  "parseVortexSubscriptionUpdatedProjection",
+  'event.type !== "subscription.updated"',
+  "internal.vortex_billing.projection.projectSubscriptionUpdated",
+]) {
+  if (!vortexBillingWebhookHandlers.includes(requiredFragment)) {
+    failures.push(
+      `${vortexBillingWebhookHandlersPath} missing Vortex webhook handler fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  "export async function verifyVortexWebhookSignature",
+  "export async function createVortexWebhookSignature",
+  "timestamp_outside_tolerance",
+  "invalid_signature",
+]) {
+  if (!vortexBillingWebhookSignature.includes(requiredFragment)) {
+    failures.push(
+      `${vortexBillingWebhookSignaturePath} missing Vortex signature fragment: ${requiredFragment}`,
     );
   }
 }
