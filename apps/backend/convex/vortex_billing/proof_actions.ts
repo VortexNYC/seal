@@ -24,6 +24,9 @@ type SeedVortexRecurringDocumentPayableProofDocumentResult = {
   readonly lineItemId: string;
 };
 
+type SeedVortexInstallmentDocumentPayableProofDocumentResult =
+  SeedVortexRecurringDocumentPayableProofDocumentResult;
+
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
   readonly plan: {
@@ -215,10 +218,7 @@ export const seedVortexRecurringDocumentPayableProofDocument = internalMutation(
     lineItemId: v.string(),
     recipientEmail: v.string(),
   },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<SeedVortexRecurringDocumentPayableProofDocumentResult> => {
+  handler: async (ctx, args): Promise<SeedVortexRecurringDocumentPayableProofDocumentResult> => {
     const now = Date.now();
     const organizationId = await insertSaasProofOrganization(
       ctx,
@@ -310,6 +310,122 @@ export const seedVortexRecurringDocumentPayableProofDocument = internalMutation(
       feeHandling: "absorb",
       taxEnabled: false,
       totalAmountCents: 4200,
+      paymentStatus: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      paymentConfigId,
+      configId: paymentConfigId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const seedVortexInstallmentDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (ctx, args): Promise<SeedVortexInstallmentDocumentPayableProofDocumentResult> => {
+    const now = Date.now();
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      `installment-document-${args.proofRunId}`,
+      now,
+    );
+    const ownerId = await insertSaasProofOwner(
+      ctx,
+      `installment-document-${args.proofRunId}`,
+      organizationId,
+    );
+    const documentId = await ctx.db.insert("documents", {
+      organizationId,
+      ownerId,
+      name: `Vortex installment document payable proof ${args.proofRunId}`,
+      fileSize: 1024,
+      fileType: "application/pdf",
+      storageId: `vortex-installment-document-proof-${args.proofRunId}`,
+      sharingMode: "private",
+      status: "active",
+      workflowStatus: "draft",
+      signingMode: "parallel",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const recipientId = await ctx.db.insert("document_recipients", {
+      documentId,
+      email: args.recipientEmail,
+      name: "Vortex Installment Proof Recipient",
+      role: "signer",
+      status: "pending",
+      order: 1,
+      signingToken: `vortex-installment-proof-token-${args.proofRunId}`,
+      tokenExpiresAt: now + 30 * 24 * 60 * 60 * 1000,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const signatureFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      isRequired: true,
+      isMainSignature: true,
+      x: 10,
+      y: 10,
+      width: 25,
+      height: 8,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "Installment payment",
+      isRequired: true,
+      x: 10,
+      y: 24,
+      width: 35,
+      height: 10,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentConfigId = await ctx.db.insert("payment_field_configs", {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      paymentType: "installments",
+      items: [
+        {
+          id: args.lineItemId,
+          description: "Vortex installment document payable proof",
+          quantity: 3,
+          unitPrice: 4200,
+        },
+      ],
+      currency: "usd",
+      dueDateTerms: "net_30",
+      installmentsConfig: {
+        count: 3,
+        interval: "month",
+      },
+      allowedPaymentMethods: ["card"],
+      feeHandling: "absorb",
+      taxEnabled: false,
+      totalAmountCents: 12600,
       paymentStatus: "pending",
       createdAt: now,
       updatedAt: now,

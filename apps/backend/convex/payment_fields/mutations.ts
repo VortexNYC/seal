@@ -415,6 +415,7 @@ export const storeVortexPayableIds = internalMutation({
     paymentStatus: paymentStatusTuple,
     vortexPayableId: v.string(),
     vortexRecurringPayableId: v.optional(v.string()),
+    vortexInstallmentPayableId: v.optional(v.string()),
     vortexPaymentRequestId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
     customerEmail: v.string(),
@@ -434,6 +435,9 @@ export const storeVortexPayableIds = internalMutation({
       vortexPayableId: args.vortexPayableId,
       ...(args.vortexRecurringPayableId !== undefined && {
         vortexRecurringPayableId: args.vortexRecurringPayableId,
+      }),
+      ...(args.vortexInstallmentPayableId !== undefined && {
+        vortexInstallmentPayableId: args.vortexInstallmentPayableId,
       }),
       ...(args.vortexPaymentRequestId !== undefined && {
         vortexPaymentRequestId: args.vortexPaymentRequestId,

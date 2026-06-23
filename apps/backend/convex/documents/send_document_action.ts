@@ -40,6 +40,7 @@ type ProvePaymentInvoiceLinksResult = {
     configId: string;
     paymentStatus?: string;
     vortexRecurringPayableId?: string;
+    vortexInstallmentPayableId?: string;
     vortexPayableId?: string;
     vortexPaymentRequestId?: string;
     hostedInvoiceUrl?: string;
@@ -324,6 +325,7 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         configId: v.string(),
         paymentStatus: v.optional(v.string()),
         vortexRecurringPayableId: v.optional(v.string()),
+        vortexInstallmentPayableId: v.optional(v.string()),
         vortexPayableId: v.optional(v.string()),
         vortexPaymentRequestId: v.optional(v.string()),
         hostedInvoiceUrl: v.optional(v.string()),
@@ -354,12 +356,21 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         ...(config.vortexRecurringPayableId !== undefined
           ? { vortexRecurringPayableId: config.vortexRecurringPayableId }
           : {}),
-        ...(config.vortexPayableId !== undefined ? { vortexPayableId: config.vortexPayableId } : {}),
+        ...(config.vortexInstallmentPayableId !== undefined
+          ? { vortexInstallmentPayableId: config.vortexInstallmentPayableId }
+          : {}),
+        ...(config.vortexPayableId !== undefined
+          ? { vortexPayableId: config.vortexPayableId }
+          : {}),
         ...(config.vortexPaymentRequestId !== undefined
           ? { vortexPaymentRequestId: config.vortexPaymentRequestId }
           : {}),
-        ...(config.hostedInvoiceUrl !== undefined ? { hostedInvoiceUrl: config.hostedInvoiceUrl } : {}),
-        ...(config.stripeInvoiceId !== undefined ? { stripeInvoiceId: config.stripeInvoiceId } : {}),
+        ...(config.hostedInvoiceUrl !== undefined
+          ? { hostedInvoiceUrl: config.hostedInvoiceUrl }
+          : {}),
+        ...(config.stripeInvoiceId !== undefined
+          ? { stripeInvoiceId: config.stripeInvoiceId }
+          : {}),
         ...(config.stripePaymentIntentId !== undefined
           ? { stripePaymentIntentId: config.stripePaymentIntentId }
           : {}),

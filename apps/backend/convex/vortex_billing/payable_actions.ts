@@ -69,6 +69,11 @@ type PaymentFieldConfigInput = {
     readonly endAfterCount?: number;
     readonly endOnDate?: number;
   };
+  readonly installmentsConfig?: {
+    readonly count: number;
+    readonly interval: "week" | "month";
+    readonly firstPaymentAmount?: number;
+  };
 };
 
 type PaymentRecipient = {
@@ -168,6 +173,37 @@ type CreateRecurringPayableResult = {
   readonly checkoutUrl: string | undefined;
 };
 
+type InstallmentPlanItem = {
+  readonly installmentNumber: number;
+  readonly role: "installment";
+  readonly dueAt: string;
+  readonly amountDue: number;
+  readonly lineItems: readonly JsonObject[];
+};
+
+export type CreateInstallmentPayableRequest = {
+  readonly sourceType: "document_payment_field";
+  readonly sourceId: string;
+  readonly documentId: string;
+  readonly paymentFieldId: string;
+  readonly customerExternalId: string;
+  readonly billingAccountId: string;
+  readonly merchantAccountId?: string;
+  readonly currency: VortexCurrency;
+  readonly taxMode: "not_taxable";
+  readonly collectionIntent: "manual";
+  readonly feePolicy: FeePolicy;
+  readonly installments: readonly InstallmentPlanItem[];
+  readonly metadata: Record<string, string>;
+};
+
+type CreateInstallmentPayableResult = {
+  readonly installmentPayableId: string;
+  readonly payableId: string;
+  readonly paymentRequestId: string | undefined;
+  readonly checkoutUrl: string | undefined;
+};
+
 const DOCUMENT_PAYMENT_ALLOWLIST_ENV = "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS";
 const SHARED_PAYABLE_ALLOWLIST_ENV = "VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
@@ -201,7 +237,9 @@ export function selectDocumentPaymentProvider(
   }
   return configs.every(
     (config) =>
-      (config.paymentType === "one_time" || config.paymentType === "recurring") &&
+      (config.paymentType === "one_time" ||
+        config.paymentType === "recurring" ||
+        config.paymentType === "installments") &&
       !config.taxEnabled,
   )
     ? "vortex_billing"
@@ -385,6 +423,80 @@ export function buildCreateRecurringPayableRequest(input: {
   };
 }
 
+export function buildCreateInstallmentPayableRequest(input: {
+  readonly config: PaymentFieldConfigInput;
+  readonly recipient: PaymentRecipient;
+  readonly env: VortexBillingEnv;
+  readonly now: number;
+}): CreateInstallmentPayableRequest {
+  const { config, recipient, env, now } = input;
+  if (config.paymentType !== "installments") {
+    throw new ConvexError("Vortex Billing installment document bridge requires installments");
+  }
+  if (config.taxEnabled) {
+    throw new ConvexError(
+      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
+    );
+  }
+  if (config.items.length === 0) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+  if (config.installmentsConfig === undefined) {
+    throw new ConvexError("Installment payment field is missing installment configuration");
+  }
+  const installmentsConfig = config.installmentsConfig;
+
+  const organizationKey = String(config.organizationId);
+  const customerExternalId = env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
+  if (!customerExternalId) {
+    throw new ConvexError(`Vortex Billing customer missing for recipient: ${recipient.email}`);
+  }
+
+  const billingAccountId = env.billingAccountMap[organizationKey] ?? env.defaultBillingAccountId;
+  if (!billingAccountId) {
+    throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
+  }
+
+  const merchantAccountId =
+    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const sourceId = String(config._id);
+  const firstDueAt = getDueAt(config, now) ?? new Date(now).toISOString();
+  const amounts = buildInstallmentAmounts(config.totalAmountCents, installmentsConfig);
+
+  return {
+    sourceType: "document_payment_field",
+    sourceId,
+    documentId: String(config.documentId),
+    paymentFieldId: String(config.fieldId),
+    customerExternalId,
+    billingAccountId,
+    ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
+    currency: toVortexCurrency(config.currency),
+    taxMode: "not_taxable",
+    collectionIntent: "manual",
+    feePolicy: buildFeePolicy(config),
+    installments: amounts.map((amountDue, index) => ({
+      installmentNumber: index + 1,
+      role: "installment",
+      dueAt: addInstallmentInterval(firstDueAt, installmentsConfig.interval, index),
+      amountDue,
+      lineItems: buildInstallmentLineItems(config, amountDue, env.priceMap),
+    })),
+    metadata: {
+      sourceSystem: env.sourceNamespace,
+      vortexPaymentsEnvironment: env.paymentsEnvironment,
+      sealOrganizationId: organizationKey,
+      sealDocumentId: String(config.documentId),
+      sealPaymentFieldId: String(config.fieldId),
+      sealPaymentConfigId: sourceId,
+      sealPaymentType: config.paymentType,
+      recipientEmail: recipient.email,
+      ...(recipient.name !== undefined ? { recipientName: recipient.name } : {}),
+      ...(merchantAccountId.length > 0 ? { vortexMerchantAccountId: merchantAccountId } : {}),
+    },
+  };
+}
+
 function buildPayableLineItem(
   item: PaymentFieldConfigInput["items"][number],
   priceMap: Record<string, string>,
@@ -404,6 +516,79 @@ function buildPayableLineItem(
       sealLineItemUnitPrice: String(item.unitPrice),
     },
   };
+}
+
+function buildInstallmentLineItems(
+  config: Pick<PaymentFieldConfigInput, "items">,
+  amountDue: number,
+  priceMap: Record<string, string>,
+): readonly JsonObject[] {
+  if (config.items.length !== 1) {
+    throw new ConvexError("Vortex Billing installment bridge requires exactly one line item");
+  }
+  const item = config.items[0];
+  if (item === undefined) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+  if (!Number.isInteger(item.unitPrice) || item.unitPrice <= 0) {
+    throw new ConvexError("Installment line item unit price must be a positive integer");
+  }
+  if (amountDue % item.unitPrice !== 0) {
+    throw new ConvexError("Installment amount must divide evenly into the configured line item");
+  }
+
+  return [buildPayableLineItem({ ...item, quantity: amountDue / item.unitPrice }, priceMap)];
+}
+
+function buildInstallmentAmounts(
+  totalAmountCents: number,
+  config: NonNullable<PaymentFieldConfigInput["installmentsConfig"]>,
+): readonly number[] {
+  if (!Number.isInteger(totalAmountCents) || totalAmountCents <= 0) {
+    throw new ConvexError("Installment total amount must be a positive integer");
+  }
+  if (!Number.isInteger(config.count) || config.count < 2) {
+    throw new ConvexError("Installment count must be at least two");
+  }
+  if (config.firstPaymentAmount !== undefined) {
+    if (!Number.isInteger(config.firstPaymentAmount) || config.firstPaymentAmount <= 0) {
+      throw new ConvexError("Installment first payment amount must be a positive integer");
+    }
+    if (config.firstPaymentAmount >= totalAmountCents) {
+      throw new ConvexError("Installment first payment amount must be less than the total");
+    }
+    return [
+      config.firstPaymentAmount,
+      ...splitInstallmentAmount(totalAmountCents - config.firstPaymentAmount, config.count - 1),
+    ];
+  }
+
+  return splitInstallmentAmount(totalAmountCents, config.count);
+}
+
+function splitInstallmentAmount(totalAmountCents: number, count: number): readonly number[] {
+  const baseAmount = Math.floor(totalAmountCents / count);
+  const remainder = totalAmountCents % count;
+  if (baseAmount <= 0) {
+    throw new ConvexError("Installment amount must be greater than zero");
+  }
+
+  return Array.from({ length: count }, (_, index) =>
+    index < remainder ? baseAmount + 1 : baseAmount,
+  );
+}
+
+function addInstallmentInterval(
+  firstDueAt: string,
+  interval: NonNullable<PaymentFieldConfigInput["installmentsConfig"]>["interval"],
+  offset: number,
+): string {
+  const firstDueTime = new Date(firstDueAt).getTime();
+  if (Number.isNaN(firstDueTime)) {
+    throw new ConvexError("Installment first due date is invalid");
+  }
+  const days = interval === "week" ? 7 * offset : 30 * offset;
+  return new Date(firstDueTime + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
 function buildRecurringEndPolicy(
@@ -573,6 +758,25 @@ async function createVortexRecurringPayable(
   return readCreateRecurringPayableResult(responseBody);
 }
 
+async function createVortexInstallmentPayable(
+  request: CreateInstallmentPayableRequest,
+  env: VortexBillingEnv,
+  idempotencyKey: string,
+  fetcher: Fetcher = (input, init) => fetch(input, init),
+): Promise<CreateInstallmentPayableResult> {
+  const responseBody = await requestVortexBillingJson(
+    {
+      apiBaseUrl: env.apiBaseUrl,
+      apiKey: env.apiKey,
+      path: "/v1/installment-payables",
+      idempotencyKey,
+      body: request as unknown as JsonObject,
+    },
+    fetcher,
+  );
+  return readCreateInstallmentPayableResult(responseBody);
+}
+
 async function requestVortexBillingJson(
   input: {
     readonly apiBaseUrl: string;
@@ -650,6 +854,40 @@ function readCreateRecurringPayableResult(body: unknown): CreateRecurringPayable
 
   return {
     recurringPayableId,
+    payableId,
+    paymentRequestId,
+    checkoutUrl,
+  };
+}
+
+function readCreateInstallmentPayableResult(body: unknown): CreateInstallmentPayableResult {
+  const root = readObject(body, "Vortex Billing installment payable response");
+  const data = readObject(root.data, "Vortex Billing installment payable response data");
+  const installmentPayable = readObject(
+    data.installmentPayable,
+    "Vortex Billing installment payable response installment payable",
+  );
+  const payable = readObject(data.payable, "Vortex Billing installment payable response payable");
+  const lineage = readObject(
+    payable.lineage,
+    "Vortex Billing installment payable response lineage",
+  );
+  const installmentPayableId = readString(
+    installmentPayable.installmentPayableId,
+    "Vortex Billing installment payable id",
+  );
+  const payableId = readString(payable.payableId, "Vortex Billing first installment payable id");
+  const paymentRequestId = readOptionalString(
+    lineage.paymentRequestId,
+    "Vortex Billing first installment payment request id",
+  );
+  const checkoutUrl = readOptionalString(
+    lineage.checkoutUrl,
+    "Vortex Billing first installment checkout URL",
+  );
+
+  return {
+    installmentPayableId,
     payableId,
     paymentRequestId,
     checkoutUrl,
@@ -748,6 +986,42 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
+      } else if (configInput.paymentType === "installments") {
+        const installmentRequest = buildCreateInstallmentPayableRequest({
+          config: configInput,
+          recipient,
+          env,
+          now: Date.now(),
+        });
+        const installmentPayable = await createVortexInstallmentPayable(
+          installmentRequest,
+          env,
+          `seal-document-installment-payable:${config._id}`,
+        );
+        if (installmentPayable.checkoutUrl === undefined) {
+          throw new ConvexError(
+            "Vortex Billing installment payable response did not include checkout URL",
+          );
+        }
+
+        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+          configId: config._id,
+          paymentStatus: "awaiting",
+          vortexPayableId: installmentPayable.payableId,
+          vortexInstallmentPayableId: installmentPayable.installmentPayableId,
+          vortexPaymentRequestId: installmentPayable.paymentRequestId,
+          hostedInvoiceUrl: installmentPayable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
+
+        paymentLinks.push({
+          recipientEmail: recipient.email,
+          hostedInvoiceUrl: installmentPayable.checkoutUrl,
+          providerInvoiceId: installmentPayable.payableId,
+          totalAmountCents: config.totalAmountCents,
+          currency: config.currency,
+        });
       } else {
         const payableRequest = buildCreatePayableRequest({
           config: configInput,
@@ -804,6 +1078,7 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
     feeHandling: config.feeHandling,
     taxEnabled: config.taxEnabled,
     recurringConfig: config.recurringConfig,
+    installmentsConfig: config.installmentsConfig,
   };
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  buildCreateInstallmentPayableRequest,
   buildCreatePayableRequest,
   buildCreateRecurringPayableRequest,
   readVortexBillingEnv,
@@ -9,6 +10,7 @@ import {
 
 type BuildPayableInput = Parameters<typeof buildCreatePayableRequest>[0];
 type BuildRecurringPayableInput = Parameters<typeof buildCreateRecurringPayableRequest>[0];
+type BuildInstallmentPayableInput = Parameters<typeof buildCreateInstallmentPayableRequest>[0];
 
 const baseConfig: BuildPayableInput["config"] = {
   _id: "seal_config_123",
@@ -55,6 +57,13 @@ describe("Vortex Billing document payable bridge", () => {
       selectDocumentPaymentProvider(
         "org_seal_123",
         [{ ...baseConfig, paymentType: "installments" }],
+        { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
+      ),
+    ).toBe("vortex_billing");
+    expect(
+      selectDocumentPaymentProvider(
+        "org_seal_123",
+        [{ ...baseConfig, paymentType: "deposit_balance" }],
         { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
       ),
     ).toBe("stripe");
@@ -194,6 +203,85 @@ describe("Vortex Billing document payable bridge", () => {
         },
       },
     ]);
+    expect(request.feePolicy.ownerMode).toBe("customer_pays_processing");
+  });
+
+  test("builds a Vortex installment payable request from a Seal installment config", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      sourceNamespace: "seal-proof",
+      paymentsEnvironment: "sandbox",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_seal_123" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
+      priceMapJson: JSON.stringify({ seal_line_1: "price_seal_line_1" }),
+    });
+    const installmentConfig: BuildInstallmentPayableInput["config"] = {
+      ...baseConfig,
+      paymentType: "installments",
+      items: [
+        {
+          id: "seal_line_1",
+          description: "Seal document installment",
+          quantity: 3,
+          unitPrice: 4200,
+        },
+      ],
+      totalAmountCents: 12600,
+      installmentsConfig: {
+        count: 3,
+        interval: "month",
+      },
+    };
+
+    const request = buildCreateInstallmentPayableRequest({
+      config: installmentConfig,
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+    });
+
+    expect(request).toMatchObject({
+      sourceType: "document_payment_field",
+      sourceId: "seal_config_123",
+      documentId: "seal_doc_123",
+      paymentFieldId: "seal_field_123",
+      customerExternalId: "cust_seal_123",
+      billingAccountId: "bacc_seal_123",
+      merchantAccountId: "ma_seal_123",
+      currency: "USD",
+      taxMode: "not_taxable",
+      collectionIntent: "manual",
+      metadata: {
+        sourceSystem: "seal-proof",
+        vortexPaymentsEnvironment: "sandbox",
+        sealPaymentType: "installments",
+        recipientEmail: "buyer@seal.test",
+      },
+    });
+    expect(request.installments).toHaveLength(3);
+    expect(request.installments.map((installment) => installment.amountDue)).toEqual([
+      4200, 4200, 4200,
+    ]);
+    expect(request.installments[0]).toMatchObject({
+      installmentNumber: 1,
+      role: "installment",
+      dueAt: "2026-01-31T00:00:00.000Z",
+      lineItems: [
+        {
+          priceId: "price_seal_line_1",
+          quantity: 1,
+          taxable: false,
+          metadata: {
+            sealLineItemId: "seal_line_1",
+            sealLineItemDescription: "Seal document installment",
+            sealLineItemUnitPrice: "4200",
+          },
+        },
+      ],
+    });
+    expect(request.installments[1]?.dueAt).toBe("2026-03-02T00:00:00.000Z");
     expect(request.feePolicy.ownerMode).toBe("customer_pays_processing");
   });
 
