@@ -257,6 +257,7 @@ import type * as users from "../users.js";
 import type * as validations_api from "../validations/api.js";
 import type * as validations_organizations from "../validations/organizations.js";
 import type * as vortex_billing_projection from "../vortex_billing/projection.js";
+import type * as vortex_billing_proof_actions from "../vortex_billing/proof_actions.js";
 import type * as vortex_billing_webhook_handlers from "../vortex_billing/webhook_handlers.js";
 import type * as vortex_billing_webhook_signature from "../vortex_billing/webhook_signature.js";
 import type * as webhooks_delivery from "../webhooks/delivery.js";
@@ -522,6 +523,7 @@ declare const fullApi: ApiFromModules<{
   "validations/api": typeof validations_api;
   "validations/organizations": typeof validations_organizations;
   "vortex_billing/projection": typeof vortex_billing_projection;
+  "vortex_billing/proof_actions": typeof vortex_billing_proof_actions;
   "vortex_billing/webhook_handlers": typeof vortex_billing_webhook_handlers;
   "vortex_billing/webhook_signature": typeof vortex_billing_webhook_signature;
   "webhooks/delivery": typeof webhooks_delivery;
