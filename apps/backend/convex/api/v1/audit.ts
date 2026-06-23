@@ -107,9 +107,14 @@ export const listAuditLog = internalQuery({
       return true;
     });
 
-    const has_more = filtered.length > limit;
+    const rawExhausted = allEntries.length === fetchLimit;
+    const has_more = filtered.length > limit || rawExhausted;
     const items = has_more ? filtered.slice(0, limit) : filtered;
-    const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
+    const lastEntry =
+      rawExhausted && filtered.length <= limit
+        ? allEntries[allEntries.length - 1]
+        : items[items.length - 1];
+    const next_cursor = has_more && lastEntry ? lastEntry._id : undefined;
 
     // Resolve actor names for user-type actors
     const entries: ApiAuditLogEntry[] = await Promise.all(
