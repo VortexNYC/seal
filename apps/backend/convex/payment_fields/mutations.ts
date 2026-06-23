@@ -414,6 +414,7 @@ export const storeVortexPayableIds = internalMutation({
     configId: v.id("payment_field_configs"),
     paymentStatus: paymentStatusTuple,
     vortexPayableId: v.string(),
+    vortexRecurringPayableId: v.optional(v.string()),
     vortexPaymentRequestId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
     customerEmail: v.string(),
@@ -431,6 +432,9 @@ export const storeVortexPayableIds = internalMutation({
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
       vortexPayableId: args.vortexPayableId,
+      ...(args.vortexRecurringPayableId !== undefined && {
+        vortexRecurringPayableId: args.vortexRecurringPayableId,
+      }),
       ...(args.vortexPaymentRequestId !== undefined && {
         vortexPaymentRequestId: args.vortexPaymentRequestId,
       }),

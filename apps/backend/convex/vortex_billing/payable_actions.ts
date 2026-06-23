@@ -62,6 +62,13 @@ type PaymentFieldConfigInput = {
   readonly totalAmountCents: number;
   readonly feeHandling: "absorb" | "pass_to_recipient";
   readonly taxEnabled: boolean;
+  readonly recurringConfig?: {
+    readonly interval: "week" | "month" | "year";
+    readonly intervalCount: number;
+    readonly endCondition: "never" | "after_count" | "on_date";
+    readonly endAfterCount?: number;
+    readonly endOnDate?: number;
+  };
 };
 
 type PaymentRecipient = {
@@ -117,9 +124,55 @@ type CreatePayableResult = {
   readonly checkoutUrl: string | undefined;
 };
 
+type VortexCurrency = "USD" | "CAD";
+
+type RecurringEndPolicy =
+  | {
+      readonly mode: "never";
+    }
+  | {
+      readonly mode: "after_count";
+      readonly cycleCount: number;
+    }
+  | {
+      readonly mode: "on_date";
+      readonly endAt: string;
+    };
+
+export type CreateRecurringPayableRequest = {
+  readonly sourceType: "document_payment_field";
+  readonly sourceId: string;
+  readonly documentId: string;
+  readonly paymentFieldId: string;
+  readonly customerExternalId: string;
+  readonly billingAccountId: string;
+  readonly merchantAccountId?: string;
+  readonly currency: VortexCurrency;
+  readonly lineItems: readonly JsonObject[];
+  readonly taxMode: "not_taxable";
+  readonly collectionIntent: "manual";
+  readonly feePolicy: FeePolicy;
+  readonly cadence: {
+    readonly interval: "week" | "month" | "year";
+    readonly intervalCount: number;
+  };
+  readonly endPolicy: RecurringEndPolicy;
+  readonly startAt: string;
+  readonly metadata: Record<string, string>;
+};
+
+type CreateRecurringPayableResult = {
+  readonly recurringPayableId: string;
+  readonly payableId: string;
+  readonly paymentRequestId: string | undefined;
+  readonly checkoutUrl: string | undefined;
+};
+
 const DOCUMENT_PAYMENT_ALLOWLIST_ENV = "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS";
+const SHARED_PAYABLE_ALLOWLIST_ENV = "VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
 const API_KEY_ENV = "VORTEX_BILLING_API_KEY";
+const SOURCE_NAMESPACE_ENV = "VORTEX_BILLING_SOURCE_NAMESPACE";
 const DOCUMENT_CUSTOMER_MAP_ENV = "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP";
 const SHARED_CUSTOMER_MAP_ENV = "VORTEX_BILLING_CUSTOMER_MAP";
 const DOCUMENT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP";
@@ -127,8 +180,11 @@ const SHARED_ACCOUNT_MAP_ENV = "VORTEX_BILLING_ACCOUNT_MAP";
 const DOCUMENT_DEFAULT_ACCOUNT_ID_ENV = "VORTEX_BILLING_DOCUMENT_ACCOUNT_ID";
 const SHARED_ACCOUNT_ID_ENV = "VORTEX_BILLING_ACCOUNT_ID";
 const DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP";
+const SHARED_MERCHANT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_MERCHANT_ACCOUNT_MAP";
 const DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV = "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_ID";
+const SHARED_MERCHANT_ACCOUNT_ID_ENV = "VORTEX_BILLING_MERCHANT_ACCOUNT_ID";
 const DOCUMENT_PRICE_MAP_ENV = "VORTEX_BILLING_DOCUMENT_PRICE_MAP";
+const SHARED_PRICE_MAP_ENV = "VORTEX_BILLING_PRICE_MAP";
 const PAYMENTS_ENVIRONMENT_ENV = "VORTEX_BILLING_PAYMENTS_ENVIRONMENT";
 
 export function selectDocumentPaymentProvider(
@@ -136,13 +192,18 @@ export function selectDocumentPaymentProvider(
   configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
   env: Env = process.env,
 ): DocumentPaymentProvider {
-  if (!isOrganizationAllowlisted(organizationId, env[DOCUMENT_PAYMENT_ALLOWLIST_ENV])) {
+  const allowlist = env[DOCUMENT_PAYMENT_ALLOWLIST_ENV] ?? env[SHARED_PAYABLE_ALLOWLIST_ENV];
+  if (!isOrganizationAllowlisted(organizationId, allowlist)) {
     return "stripe";
   }
   if (configs.length === 0) {
     return "stripe";
   }
-  return configs.every((config) => config.paymentType === "one_time" && !config.taxEnabled)
+  return configs.every(
+    (config) =>
+      (config.paymentType === "one_time" || config.paymentType === "recurring") &&
+      !config.taxEnabled,
+  )
     ? "vortex_billing"
     : "stripe";
 }
@@ -177,14 +238,16 @@ function readVortexBillingEnvFromProcess(env: Env = process.env): VortexBillingE
   return readVortexBillingEnv({
     apiBaseUrl: env[API_BASE_URL_ENV],
     apiKey: env[API_KEY_ENV],
-    sourceNamespace: "seal",
+    sourceNamespace: env[SOURCE_NAMESPACE_ENV] ?? "seal",
     customerMapJson: env[DOCUMENT_CUSTOMER_MAP_ENV] ?? env[SHARED_CUSTOMER_MAP_ENV],
     billingAccountMapJson: env[DOCUMENT_ACCOUNT_MAP_ENV] ?? env[SHARED_ACCOUNT_MAP_ENV],
     defaultBillingAccountId: env[DOCUMENT_DEFAULT_ACCOUNT_ID_ENV] ?? env[SHARED_ACCOUNT_ID_ENV],
-    merchantAccountMapJson: env[DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV],
-    defaultMerchantAccountId: env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV],
+    merchantAccountMapJson:
+      env[DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV] ?? env[SHARED_MERCHANT_ACCOUNT_MAP_ENV],
+    defaultMerchantAccountId:
+      env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV] ?? env[SHARED_MERCHANT_ACCOUNT_ID_ENV],
     paymentsEnvironment: env[PAYMENTS_ENVIRONMENT_ENV] ?? "sandbox",
-    priceMapJson: env[DOCUMENT_PRICE_MAP_ENV],
+    priceMapJson: env[DOCUMENT_PRICE_MAP_ENV] ?? env[SHARED_PRICE_MAP_ENV],
   });
 }
 
@@ -199,7 +262,9 @@ export function buildCreatePayableRequest(input: {
     throw new ConvexError("Vortex Billing document bridge only supports one-time payments");
   }
   if (config.taxEnabled) {
-    throw new ConvexError("Vortex Billing document bridge does not support Seal tax-enabled fields yet");
+    throw new ConvexError(
+      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
+    );
   }
   if (config.items.length === 0) {
     throw new ConvexError("Payment field has no line items configured");
@@ -246,6 +311,80 @@ export function buildCreatePayableRequest(input: {
   };
 }
 
+export function buildCreateRecurringPayableRequest(input: {
+  readonly config: PaymentFieldConfigInput;
+  readonly recipient: PaymentRecipient;
+  readonly env: VortexBillingEnv;
+  readonly now: number;
+}): CreateRecurringPayableRequest {
+  const { config, recipient, env, now } = input;
+  if (config.paymentType !== "recurring") {
+    throw new ConvexError("Vortex Billing recurring document bridge requires recurring payments");
+  }
+  if (config.taxEnabled) {
+    throw new ConvexError(
+      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
+    );
+  }
+  if (config.items.length === 0) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+  if (config.recurringConfig === undefined) {
+    throw new ConvexError("Recurring payment field is missing recurring configuration");
+  }
+  if (config.recurringConfig.intervalCount <= 0) {
+    throw new ConvexError("Recurring payment interval count must be greater than zero");
+  }
+
+  const organizationKey = String(config.organizationId);
+  const customerExternalId = env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
+  if (!customerExternalId) {
+    throw new ConvexError(`Vortex Billing customer missing for recipient: ${recipient.email}`);
+  }
+
+  const billingAccountId = env.billingAccountMap[organizationKey] ?? env.defaultBillingAccountId;
+  if (!billingAccountId) {
+    throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
+  }
+
+  const merchantAccountId =
+    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const sourceId = String(config._id);
+
+  return {
+    sourceType: "document_payment_field",
+    sourceId,
+    documentId: String(config.documentId),
+    paymentFieldId: String(config.fieldId),
+    customerExternalId,
+    billingAccountId,
+    ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
+    currency: toVortexCurrency(config.currency),
+    lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
+    taxMode: "not_taxable",
+    collectionIntent: "manual",
+    feePolicy: buildFeePolicy(config),
+    cadence: {
+      interval: config.recurringConfig.interval,
+      intervalCount: config.recurringConfig.intervalCount,
+    },
+    endPolicy: buildRecurringEndPolicy(config.recurringConfig),
+    startAt: new Date(now).toISOString(),
+    metadata: {
+      sourceSystem: env.sourceNamespace,
+      vortexPaymentsEnvironment: env.paymentsEnvironment,
+      sealOrganizationId: organizationKey,
+      sealDocumentId: String(config.documentId),
+      sealPaymentFieldId: String(config.fieldId),
+      sealPaymentConfigId: sourceId,
+      sealPaymentType: config.paymentType,
+      recipientEmail: recipient.email,
+      ...(recipient.name !== undefined ? { recipientName: recipient.name } : {}),
+      ...(merchantAccountId.length > 0 ? { vortexMerchantAccountId: merchantAccountId } : {}),
+    },
+  };
+}
+
 function buildPayableLineItem(
   item: PaymentFieldConfigInput["items"][number],
   priceMap: Record<string, string>,
@@ -265,6 +404,39 @@ function buildPayableLineItem(
       sealLineItemUnitPrice: String(item.unitPrice),
     },
   };
+}
+
+function buildRecurringEndPolicy(
+  config: NonNullable<PaymentFieldConfigInput["recurringConfig"]>,
+): RecurringEndPolicy {
+  switch (config.endCondition) {
+    case "never":
+      return { mode: "never" };
+    case "after_count":
+      if (config.endAfterCount === undefined || config.endAfterCount <= 0) {
+        throw new ConvexError("Recurring payment end-after count must be greater than zero");
+      }
+      return {
+        mode: "after_count",
+        cycleCount: config.endAfterCount,
+      };
+    case "on_date":
+      if (config.endOnDate === undefined) {
+        throw new ConvexError("Recurring payment end date is required");
+      }
+      return {
+        mode: "on_date",
+        endAt: new Date(config.endOnDate).toISOString(),
+      };
+  }
+}
+
+function toVortexCurrency(currency: string): VortexCurrency {
+  const normalized = currency.toUpperCase();
+  if (normalized === "USD" || normalized === "CAD") {
+    return normalized;
+  }
+  throw new ConvexError("Vortex Billing document bridge only supports USD and CAD");
 }
 
 function buildFeePolicy(config: Pick<PaymentFieldConfigInput, "_id" | "feeHandling">): FeePolicy {
@@ -317,7 +489,10 @@ function getDueAt(
   return new Date(now + dueDays * 24 * 60 * 60 * 1000).toISOString();
 }
 
-function getDueDays(terms: PaymentFieldConfigInput["dueDateTerms"], customDueDays?: number): number {
+function getDueDays(
+  terms: PaymentFieldConfigInput["dueDateTerms"],
+  customDueDays?: number,
+): number {
   switch (terms) {
     case "on_receipt":
       return 0;
@@ -379,6 +554,25 @@ async function createVortexPayable(
   return readCreatePayableResult(responseBody);
 }
 
+async function createVortexRecurringPayable(
+  request: CreateRecurringPayableRequest,
+  env: VortexBillingEnv,
+  idempotencyKey: string,
+  fetcher: Fetcher = (input, init) => fetch(input, init),
+): Promise<CreateRecurringPayableResult> {
+  const responseBody = await requestVortexBillingJson(
+    {
+      apiBaseUrl: env.apiBaseUrl,
+      apiKey: env.apiKey,
+      path: "/v1/recurring-payables",
+      idempotencyKey,
+      body: request as unknown as JsonObject,
+    },
+    fetcher,
+  );
+  return readCreateRecurringPayableResult(responseBody);
+}
+
 async function requestVortexBillingJson(
   input: {
     readonly apiBaseUrl: string;
@@ -431,6 +625,37 @@ function readCreatePayableResult(body: unknown): CreatePayableResult {
   };
 }
 
+function readCreateRecurringPayableResult(body: unknown): CreateRecurringPayableResult {
+  const root = readObject(body, "Vortex Billing recurring payable response");
+  const data = readObject(root.data, "Vortex Billing recurring payable response data");
+  const recurringPayable = readObject(
+    data.recurringPayable,
+    "Vortex Billing recurring payable response recurring payable",
+  );
+  const payable = readObject(data.payable, "Vortex Billing recurring payable response payable");
+  const lineage = readObject(payable.lineage, "Vortex Billing recurring payable response lineage");
+  const recurringPayableId = readString(
+    recurringPayable.recurringPayableId,
+    "Vortex Billing recurring payable id",
+  );
+  const payableId = readString(payable.payableId, "Vortex Billing recurring cycle payable id");
+  const paymentRequestId = readOptionalString(
+    lineage.paymentRequestId,
+    "Vortex Billing recurring cycle payment request id",
+  );
+  const checkoutUrl = readOptionalString(
+    lineage.checkoutUrl,
+    "Vortex Billing recurring cycle checkout URL",
+  );
+
+  return {
+    recurringPayableId,
+    payableId,
+    paymentRequestId,
+    checkoutUrl,
+  };
+}
+
 export const createVortexPaymentObjectsForDocumentFields = internalAction({
   args: {
     documentId: v.id("documents"),
@@ -465,7 +690,9 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
       { documentId: args.documentId },
     );
-    const recipientMap = new Map(recipients.map((recipient) => [recipient._id.toString(), recipient]));
+    const recipientMap = new Map(
+      recipients.map((recipient) => [recipient._id.toString(), recipient]),
+    );
 
     const fields: Doc<"signature_fields">[] = await ctx.runQuery(
       internal.signature_fields.queries.getFieldsByDocumentInternal,
@@ -484,38 +711,77 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
 
     for (const config of configs) {
       const recipient = resolvePaymentFieldRecipient(config, fieldMap, recipientMap);
-      const payableRequest = buildCreatePayableRequest({
-        config: toPaymentFieldConfigInput(config),
-        recipient,
-        env,
-        now: Date.now(),
-      });
-      const payable = await createVortexPayable(
-        payableRequest,
-        env,
-        `seal-document-payable:${config._id}`,
-      );
-      if (payable.checkoutUrl === undefined) {
-        throw new ConvexError("Vortex Billing payable response did not include checkout URL");
+      const configInput = toPaymentFieldConfigInput(config);
+      if (configInput.paymentType === "recurring") {
+        const recurringRequest = buildCreateRecurringPayableRequest({
+          config: configInput,
+          recipient,
+          env,
+          now: Date.now(),
+        });
+        const recurringPayable = await createVortexRecurringPayable(
+          recurringRequest,
+          env,
+          `seal-document-recurring-payable:${config._id}`,
+        );
+        if (recurringPayable.checkoutUrl === undefined) {
+          throw new ConvexError(
+            "Vortex Billing recurring payable response did not include checkout URL",
+          );
+        }
+
+        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+          configId: config._id,
+          paymentStatus: "awaiting",
+          vortexPayableId: recurringPayable.payableId,
+          vortexRecurringPayableId: recurringPayable.recurringPayableId,
+          vortexPaymentRequestId: recurringPayable.paymentRequestId,
+          hostedInvoiceUrl: recurringPayable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
+
+        paymentLinks.push({
+          recipientEmail: recipient.email,
+          hostedInvoiceUrl: recurringPayable.checkoutUrl,
+          providerInvoiceId: recurringPayable.payableId,
+          totalAmountCents: config.totalAmountCents,
+          currency: config.currency,
+        });
+      } else {
+        const payableRequest = buildCreatePayableRequest({
+          config: configInput,
+          recipient,
+          env,
+          now: Date.now(),
+        });
+        const payable = await createVortexPayable(
+          payableRequest,
+          env,
+          `seal-document-payable:${config._id}`,
+        );
+        if (payable.checkoutUrl === undefined) {
+          throw new ConvexError("Vortex Billing payable response did not include checkout URL");
+        }
+
+        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+          configId: config._id,
+          paymentStatus: "awaiting",
+          vortexPayableId: payable.payableId,
+          vortexPaymentRequestId: payable.paymentRequestId,
+          hostedInvoiceUrl: payable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
+
+        paymentLinks.push({
+          recipientEmail: recipient.email,
+          hostedInvoiceUrl: payable.checkoutUrl,
+          providerInvoiceId: payable.payableId,
+          totalAmountCents: config.totalAmountCents,
+          currency: config.currency,
+        });
       }
-
-      await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
-        configId: config._id,
-        paymentStatus: "awaiting",
-        vortexPayableId: payable.payableId,
-        vortexPaymentRequestId: payable.paymentRequestId,
-        hostedInvoiceUrl: payable.checkoutUrl,
-        customerEmail: recipient.email,
-        customerName: recipient.name,
-      });
-
-      paymentLinks.push({
-        recipientEmail: recipient.email,
-        hostedInvoiceUrl: payable.checkoutUrl,
-        providerInvoiceId: payable.payableId,
-        totalAmountCents: config.totalAmountCents,
-        currency: config.currency,
-      });
     }
 
     return { paymentLinks };
@@ -537,6 +803,7 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
     totalAmountCents: config.totalAmountCents,
     feeHandling: config.feeHandling,
     taxEnabled: config.taxEnabled,
+    recurringConfig: config.recurringConfig,
   };
 }
 
