@@ -115,7 +115,8 @@ export const listDocuments = internalQuery({
       return true;
     });
 
-    const hasMore = filteredDocs.length > limit;
+    const rawExhausted = documents.length === fetchLimit;
+    const hasMore = filteredDocs.length > limit || rawExhausted;
     const resultDocs = hasMore ? filteredDocs.slice(0, limit) : filteredDocs;
 
     // Get recipient counts for each document
@@ -144,7 +145,10 @@ export const listDocuments = internalQuery({
       }),
     );
 
-    const lastDoc = resultDocs[resultDocs.length - 1];
+    const lastDoc =
+      rawExhausted && filteredDocs.length <= limit
+        ? documents[documents.length - 1]
+        : resultDocs[resultDocs.length - 1];
     const nextCursor = hasMore && lastDoc ? lastDoc._id : undefined;
 
     return {
