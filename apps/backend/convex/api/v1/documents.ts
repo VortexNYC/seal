@@ -573,6 +573,13 @@ export interface ApiDocumentAccess {
    * - "specific" — only explicitly granted users (Pro plan)
    */
   sharing_mode: DocumentSharingMode;
+  /** API response metadata */
+  metadata_b173838934s4: {
+    /** API version */
+    version: string;
+    /** ISO 8601 timestamp when the response was generated */
+    generated_at: string;
+  };
 }
 
 /**
@@ -594,6 +601,10 @@ export const getDocumentAccess = internalQuery({
     return {
       document_id: args.documentId,
       sharing_mode: (document.sharingMode ?? "private") as DocumentSharingMode,
+      metadata_b173838934s4: {
+        version: "1.0",
+        generated_at: new Date().toISOString(),
+      },
     };
   },
 });

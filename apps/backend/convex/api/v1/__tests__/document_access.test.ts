@@ -181,6 +181,23 @@ describe("api/v1/documents — access and bulk operations", () => {
 
       expect(result).toBeNull();
     });
+
+    test("returns metadata_b173838934s4 with version and generated_at", async () => {
+      const documentId = await insertDocument();
+
+      const result = await t.query(internal.api.v1.documents.getDocumentAccess, {
+        userId,
+        organizationId,
+        documentId,
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata_b173838934s4).toBeDefined();
+      expect(result?.metadata_b173838934s4.version).toBe("1.0");
+      expect(result?.metadata_b173838934s4.generated_at).toBeDefined();
+      expect(typeof result?.metadata_b173838934s4.generated_at).toBe("string");
+      expect(() => new Date(result!.metadata_b173838934s4.generated_at)).not.toThrow();
+    });
   });
 
   // =========================================================================
