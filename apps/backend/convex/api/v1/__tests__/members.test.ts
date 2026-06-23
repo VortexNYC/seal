@@ -232,6 +232,13 @@ describe("api/v1/members", () => {
       expect(result?.id).toBe(adminMemberId);
       expect(result?.email).toBe("admin@members-test.com");
       expect(result?.role).toBe("admin");
+      expect(result?.metadata_b237457360s4).toEqual({
+        version: "1.0",
+        generated_at: expect.any(String),
+      });
+      expect(new Date(result!.metadata_b237457360s4.generated_at).toISOString()).toBe(
+        result!.metadata_b237457360s4.generated_at,
+      );
     });
 
     test("returns null when member does not exist", async () => {

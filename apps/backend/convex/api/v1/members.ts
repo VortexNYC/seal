@@ -31,6 +31,11 @@ export interface ApiMember {
   status: string;
   /** ISO 8601 timestamp when member joined */
   joined_at: string;
+  /** API response metadata */
+  metadata_b237457360s4: {
+    version: string;
+    generated_at: string;
+  };
 }
 
 /**
@@ -81,6 +86,10 @@ export const listMembers = internalQuery({
         role: member.role as ApiMember["role"],
         status: member.status,
         joined_at: new Date(member.createdAt).toISOString(),
+        metadata_b237457360s4: {
+          version: "1.0",
+          generated_at: new Date().toISOString(),
+        },
       });
     }
 
@@ -126,6 +135,10 @@ export const getMember = internalQuery({
       role: member.role as ApiMember["role"],
       status: member.status,
       joined_at: new Date(member.createdAt).toISOString(),
+      metadata_b237457360s4: {
+        version: "1.0",
+        generated_at: new Date().toISOString(),
+      },
     };
   },
 });
