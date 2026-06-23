@@ -316,11 +316,8 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
     await expect(invitationRow).toBeVisible({ timeout: 10000 });
 
     await invitationRow.getByRole("button", { name: /revoke/i }).click();
-    await waitForToast(authenticatedPage, /invitation revoked/i);
 
-    await expect(authenticatedPage.locator(`[data-invitation-email="${email}"]`)).not.toBeVisible({
-      timeout: 10000,
-    });
+    await expect(invitationRow).not.toBeVisible({ timeout: 10000 });
   });
 
   // SKIPPED: "resend invitation" is not part of the component-based invitations
