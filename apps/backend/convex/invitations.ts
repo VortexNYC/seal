@@ -19,6 +19,7 @@ import {
 import { getAuthContext } from "./auth";
 import { sendEmailFromAction } from "./emails/resend_component";
 import {
+  getComponentInvitationById,
   getComponentInvitationByTokenHash,
   listComponentInvitationsByOrganization,
 } from "./lib/componentOrgReads";
@@ -173,9 +174,12 @@ export const revokeInvitation = mutation({
     if (!auth.hasPermission("org:users:remove")) {
       throw new ConvexError("You do not have permission to revoke invitations");
     }
-    const invitations = await listComponentInvitationsByOrganization(ctx, auth.organization);
-    if (!invitations.some((inv) => inv._id === args.invitationId)) {
+    const invitation = await getComponentInvitationById(ctx, args.invitationId);
+    if (invitation === null || invitation.organizationId !== auth.organization._id) {
       throw new ConvexError("Invitation not found in this organization");
+    }
+    if (invitation.status !== "pending") {
+      throw new ConvexError("Only pending invitations can be revoked");
     }
     await setVortexAuthInvitationStatus(ctx, {
       organizationId: auth.organization._id,

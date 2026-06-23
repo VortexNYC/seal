@@ -624,6 +624,25 @@ export async function getComponentInvitationByEmailId(
 }
 
 /**
+ * Resolve a component invitation by component id. Use this from server-side
+ * mutations/actions that already have an id and still need to prove tenant
+ * ownership before writing.
+ */
+export async function getComponentInvitationById(
+  ctx: ReadCtx,
+  invitationId: string,
+): Promise<ComponentResolvedInvitation | null> {
+  const invitation = await ctx.runQuery(
+    components.vortexAuth.organizations.getInvitationByIdForSystem,
+    { invitationId: invitationId as ComponentInvitationId },
+  );
+  if (invitation === null) {
+    return null;
+  }
+  return await mapComponentInvitation(ctx, invitation as RawComponentInvitation);
+}
+
+/**
  * List a Seal organization's component invitations (optionally filtered by
  * status). Invitations whose anchors cannot be resolved are dropped.
  */
