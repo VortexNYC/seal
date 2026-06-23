@@ -28,6 +28,27 @@ type PaymentHandoffLink = {
   currency: string;
 };
 
+type ProvePaymentInvoiceLinksResult = {
+  invoiceLinks: {
+    recipientEmail: string;
+    hostedInvoiceUrl: string | null;
+    paymentObjectId?: string;
+    totalAmountCents: number;
+    currency: string;
+  }[];
+  configs: {
+    configId: string;
+    paymentStatus?: string;
+    vortexRecurringPayableId?: string;
+    vortexPayableId?: string;
+    vortexPaymentRequestId?: string;
+    hostedInvoiceUrl?: string;
+    stripeInvoiceId?: string;
+    stripePaymentIntentId?: string;
+    stripeSubscriptionId?: string;
+  }[];
+};
+
 type InvitationEmailResult = {
   recipientId: Id<"document_recipients">;
   success: boolean;
@@ -281,6 +302,74 @@ async function getPaymentHandoffLinksForDocument(
 
   return paymentResult.paymentLinks;
 }
+
+export const provePaymentInvoiceLinksForDocument = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+  },
+  returns: v.object({
+    invoiceLinks: v.array(
+      v.object({
+        recipientEmail: v.string(),
+        hostedInvoiceUrl: v.union(v.string(), v.null()),
+        paymentObjectId: v.optional(v.string()),
+        totalAmountCents: v.number(),
+        currency: v.string(),
+      }),
+    ),
+    configs: v.array(
+      v.object({
+        configId: v.string(),
+        paymentStatus: v.optional(v.string()),
+        vortexRecurringPayableId: v.optional(v.string()),
+        vortexPayableId: v.optional(v.string()),
+        vortexPaymentRequestId: v.optional(v.string()),
+        hostedInvoiceUrl: v.optional(v.string()),
+        stripeInvoiceId: v.optional(v.string()),
+        stripePaymentIntentId: v.optional(v.string()),
+        stripeSubscriptionId: v.optional(v.string()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args): Promise<ProvePaymentInvoiceLinksResult> => {
+    const paymentLinks = await getPaymentHandoffLinksForDocument(ctx, args);
+    const configs = await ctx.runQuery(
+      internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
+      { documentId: args.documentId },
+    );
+
+    return {
+      invoiceLinks: paymentLinks.map((link) => ({
+        recipientEmail: link.recipientEmail,
+        hostedInvoiceUrl: link.hostedPaymentUrl,
+        paymentObjectId: link.processorInvoiceId,
+        totalAmountCents: link.totalAmountCents,
+        currency: link.currency,
+      })),
+      configs: configs.map((config) => ({
+        configId: config._id,
+        ...(config.paymentStatus !== undefined ? { paymentStatus: config.paymentStatus } : {}),
+        ...(config.vortexRecurringPayableId !== undefined
+          ? { vortexRecurringPayableId: config.vortexRecurringPayableId }
+          : {}),
+        ...(config.vortexPayableId !== undefined ? { vortexPayableId: config.vortexPayableId } : {}),
+        ...(config.vortexPaymentRequestId !== undefined
+          ? { vortexPaymentRequestId: config.vortexPaymentRequestId }
+          : {}),
+        ...(config.hostedInvoiceUrl !== undefined ? { hostedInvoiceUrl: config.hostedInvoiceUrl } : {}),
+        ...(config.stripeInvoiceId !== undefined ? { stripeInvoiceId: config.stripeInvoiceId } : {}),
+        ...(config.stripePaymentIntentId !== undefined
+          ? { stripePaymentIntentId: config.stripePaymentIntentId }
+          : {}),
+        ...(config.stripeSubscriptionId !== undefined
+          ? { stripeSubscriptionId: config.stripeSubscriptionId }
+          : {}),
+      })),
+    };
+  },
+});
 
 function buildSendDocumentEmailsResult(
   recipients: Doc<"document_recipients">[],

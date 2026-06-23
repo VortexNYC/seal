@@ -2,11 +2,13 @@ import { describe, expect, test } from "vitest";
 
 import {
   buildCreatePayableRequest,
+  buildCreateRecurringPayableRequest,
   readVortexBillingEnv,
   selectDocumentPaymentProvider,
 } from "./payable_actions";
 
 type BuildPayableInput = Parameters<typeof buildCreatePayableRequest>[0];
+type BuildRecurringPayableInput = Parameters<typeof buildCreateRecurringPayableRequest>[0];
 
 const baseConfig: BuildPayableInput["config"] = {
   _id: "seal_config_123",
@@ -32,7 +34,7 @@ const baseConfig: BuildPayableInput["config"] = {
 };
 
 describe("Vortex Billing document payable bridge", () => {
-  test("selects Vortex only for allowlisted one-time non-tax document payments", () => {
+  test("selects Vortex only for allowlisted supported non-tax document payments", () => {
     expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("stripe");
     expect(
       selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
@@ -40,18 +42,26 @@ describe("Vortex Billing document payable bridge", () => {
       }),
     ).toBe("vortex_billing");
     expect(
+      selectDocumentPaymentProvider("org_seal_123", [{ ...baseConfig, paymentType: "recurring" }], {
+        VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
+      }),
+    ).toBe("vortex_billing");
+    expect(
+      selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
+        VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS: JSON.stringify(["org_seal_123"]),
+      }),
+    ).toBe("vortex_billing");
+    expect(
       selectDocumentPaymentProvider(
         "org_seal_123",
-        [{ ...baseConfig, paymentType: "recurring" }],
+        [{ ...baseConfig, paymentType: "installments" }],
         { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
       ),
     ).toBe("stripe");
     expect(
-      selectDocumentPaymentProvider(
-        "org_seal_123",
-        [{ ...baseConfig, taxEnabled: true }],
-        { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
-      ),
+      selectDocumentPaymentProvider("org_seal_123", [{ ...baseConfig, taxEnabled: true }], {
+        VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
+      }),
     ).toBe("stripe");
   });
 
@@ -114,6 +124,77 @@ describe("Vortex Billing document payable bridge", () => {
         scopeId: "seal_config_123",
       },
     });
+  });
+
+  test("builds a Vortex recurring payable request from a Seal recurring payment config", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      sourceNamespace: "seal-proof",
+      paymentsEnvironment: "sandbox",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_seal_123" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
+      priceMapJson: JSON.stringify({ seal_line_1: "price_seal_line_1" }),
+    });
+    const recurringConfig: BuildRecurringPayableInput["config"] = {
+      ...baseConfig,
+      paymentType: "recurring",
+      recurringConfig: {
+        interval: "month",
+        intervalCount: 1,
+        endCondition: "after_count",
+        endAfterCount: 2,
+      },
+    };
+
+    const request = buildCreateRecurringPayableRequest({
+      config: recurringConfig,
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+    });
+
+    expect(request).toMatchObject({
+      sourceType: "document_payment_field",
+      sourceId: "seal_config_123",
+      documentId: "seal_doc_123",
+      paymentFieldId: "seal_field_123",
+      customerExternalId: "cust_seal_123",
+      billingAccountId: "bacc_seal_123",
+      merchantAccountId: "ma_seal_123",
+      currency: "USD",
+      taxMode: "not_taxable",
+      collectionIntent: "manual",
+      cadence: {
+        interval: "month",
+        intervalCount: 1,
+      },
+      endPolicy: {
+        mode: "after_count",
+        cycleCount: 2,
+      },
+      startAt: "2026-01-01T00:00:00.000Z",
+      metadata: {
+        sourceSystem: "seal-proof",
+        vortexPaymentsEnvironment: "sandbox",
+        sealPaymentType: "recurring",
+        recipientEmail: "buyer@seal.test",
+      },
+    });
+    expect(request.lineItems).toEqual([
+      {
+        priceId: "price_seal_line_1",
+        quantity: 2,
+        taxable: false,
+        metadata: {
+          sealLineItemId: "seal_line_1",
+          sealLineItemDescription: "Seal document payment",
+          sealLineItemUnitPrice: "2100",
+        },
+      },
+    ]);
+    expect(request.feePolicy.ownerMode).toBe("customer_pays_processing");
   });
 
   test("maps absorbed Seal fees to merchant-pays-processing", () => {

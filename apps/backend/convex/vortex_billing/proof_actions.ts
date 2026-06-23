@@ -11,6 +11,19 @@ type SeedVortexSaasBillingCatalogProjectionResult = {
   readonly subscriptionPriceId: Id<"subscription_prices">;
 };
 
+type SeedVortexRecurringDocumentPayableProofDocumentResult = {
+  readonly organizationId: Id<"organizations">;
+  readonly ownerId: Id<"users">;
+  readonly documentId: Id<"documents">;
+  readonly recipientId: Id<"document_recipients">;
+  readonly signatureFieldId: Id<"signature_fields">;
+  readonly paymentFieldId: Id<"signature_fields">;
+  readonly paymentConfigId: Id<"payment_field_configs">;
+  readonly configId: Id<"payment_field_configs">;
+  readonly recipientEmail: string;
+  readonly lineItemId: string;
+};
+
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
   readonly plan: {
@@ -192,6 +205,127 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
       ownerId,
       subscriptionProductId,
       subscriptionPriceId,
+    };
+  },
+});
+
+export const seedVortexRecurringDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<SeedVortexRecurringDocumentPayableProofDocumentResult> => {
+    const now = Date.now();
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      `recurring-document-${args.proofRunId}`,
+      now,
+    );
+    const ownerId = await insertSaasProofOwner(
+      ctx,
+      `recurring-document-${args.proofRunId}`,
+      organizationId,
+    );
+    const documentId = await ctx.db.insert("documents", {
+      organizationId,
+      ownerId,
+      name: `Vortex recurring document payable proof ${args.proofRunId}`,
+      fileSize: 1024,
+      fileType: "application/pdf",
+      storageId: `vortex-recurring-document-proof-${args.proofRunId}`,
+      sharingMode: "private",
+      status: "active",
+      workflowStatus: "draft",
+      signingMode: "parallel",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const recipientId = await ctx.db.insert("document_recipients", {
+      documentId,
+      email: args.recipientEmail,
+      name: "Vortex Recurring Proof Recipient",
+      role: "signer",
+      status: "pending",
+      order: 1,
+      signingToken: `vortex-recurring-proof-token-${args.proofRunId}`,
+      tokenExpiresAt: now + 30 * 24 * 60 * 60 * 1000,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const signatureFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      isRequired: true,
+      isMainSignature: true,
+      x: 10,
+      y: 10,
+      width: 25,
+      height: 8,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "Recurring payment",
+      isRequired: true,
+      x: 10,
+      y: 24,
+      width: 35,
+      height: 10,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentConfigId = await ctx.db.insert("payment_field_configs", {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      paymentType: "recurring",
+      items: [
+        {
+          id: args.lineItemId,
+          description: "Vortex recurring document payable proof",
+          quantity: 1,
+          unitPrice: 4200,
+        },
+      ],
+      currency: "usd",
+      dueDateTerms: "net_30",
+      recurringConfig: {
+        interval: "month",
+        intervalCount: 1,
+        endCondition: "after_count",
+        endAfterCount: 2,
+      },
+      allowedPaymentMethods: ["card"],
+      feeHandling: "absorb",
+      taxEnabled: false,
+      totalAmountCents: 4200,
+      paymentStatus: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      paymentConfigId,
+      configId: paymentConfigId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
     };
   },
 });
