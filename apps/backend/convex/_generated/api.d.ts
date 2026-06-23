@@ -163,6 +163,7 @@ import type * as payments_merchant_account_validators from "../payments/merchant
 import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_queries from "../payments/queries.js";
 import type * as payments_subscription_actions from "../payments/subscription_actions.js";
+import type * as payments_vortex_billing_processor from "../payments/vortex_billing_processor.js";
 import type * as posthog from "../posthog.js";
 import type * as presence from "../presence.js";
 import type * as retrier from "../retrier.js";
@@ -424,6 +425,7 @@ declare const fullApi: ApiFromModules<{
   "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/queries": typeof payments_queries;
   "payments/subscription_actions": typeof payments_subscription_actions;
+  "payments/vortex_billing_processor": typeof payments_vortex_billing_processor;
   posthog: typeof posthog;
   presence: typeof presence;
   retrier: typeof retrier;

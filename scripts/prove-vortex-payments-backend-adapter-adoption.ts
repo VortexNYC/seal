@@ -10,6 +10,7 @@ const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.
 const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
 const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
+const vortexBillingProcessorPath = "apps/backend/convex/payments/vortex_billing_processor.ts";
 const providerSubscriptionProcessorPath = "apps/backend/convex/stripe/subscription_processor.ts";
 const paymentsPaymentFieldActionsPath = "apps/backend/convex/payments/payment_field_actions.ts";
 const paymentsMerchantAccountActionsPath =
@@ -26,6 +27,7 @@ const failures: string[] = [];
 for (const requiredPath of [
   paymentsQueriesPath,
   paymentsSubscriptionActionsPath,
+  vortexBillingProcessorPath,
   providerSubscriptionProcessorPath,
   paymentsPaymentFieldActionsPath,
   paymentsMerchantAccountActionsPath,
@@ -69,6 +71,7 @@ const providerSubscriptionProcessor = readFileSync(
   join(repoRoot, providerSubscriptionProcessorPath),
   "utf8",
 );
+const vortexBillingProcessor = readFileSync(join(repoRoot, vortexBillingProcessorPath), "utf8");
 const paymentsMerchantAccountActions = readFileSync(
   join(repoRoot, paymentsMerchantAccountActionsPath),
   "utf8",
@@ -110,7 +113,9 @@ for (const forbiddenFragment of [
   "stripeSubscriptionId",
 ]) {
   if (overviewRoute.includes(forbiddenFragment) || subscriptionsRoute.includes(forbiddenFragment)) {
-    failures.push(`payment routes still expose Stripe backend adapter fragment: ${forbiddenFragment}`);
+    failures.push(
+      `payment routes still expose Stripe backend adapter fragment: ${forbiddenFragment}`,
+    );
   }
 }
 
@@ -138,7 +143,9 @@ for (const requiredFragment of [
   "document_invoices",
 ]) {
   if (!paymentsQueries.includes(requiredFragment)) {
-    failures.push(`${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`);
+    failures.push(
+      `${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`,
+    );
   }
 }
 
@@ -152,10 +159,29 @@ for (const requiredFragment of [
   "cancelProcessorSubscription(processor)",
   "createHostedCheckoutSession",
   "createCustomerPortalUrl",
+  "selectSaasBillingProvider",
+  "createVortexBillingCheckoutSession",
 ]) {
   if (!paymentsSubscriptionActions.includes(requiredFragment)) {
     failures.push(
       `${paymentsSubscriptionActionsPath} missing Vortex action fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  "VORTEX_BILLING_SAAS_ORGANIZATION_IDS",
+  "VORTEX_BILLING_API_BASE_URL",
+  "VORTEX_BILLING_API_KEY",
+  "VORTEX_BILLING_ACCOUNT_MAP",
+  "VORTEX_BILLING_SAAS_PRICE_MAP",
+  "export function selectSaasBillingProvider",
+  "export async function createVortexBillingCheckoutSession",
+  "Vortex Billing account missing",
+]) {
+  if (!vortexBillingProcessor.includes(requiredFragment)) {
+    failures.push(
+      `${vortexBillingProcessorPath} missing SaaS Vortex Billing cutover fragment: ${requiredFragment}`,
     );
   }
 }
@@ -169,7 +195,7 @@ for (const forbiddenFragment of ["import Stripe", "new Stripe(", "stripe.subscri
 }
 
 for (const requiredFragment of [
-  "import Stripe from \"stripe\"",
+  'import Stripe from "stripe"',
   "export async function createHostedCheckoutSession",
   "export async function createCustomerPortalUrl",
   "export async function pauseProcessorSubscription",
@@ -185,7 +211,9 @@ for (const requiredFragment of [
 }
 
 if (paymentsSubscriptionActions.includes("stripeAccountId: v.string()")) {
-  failures.push("Vortex subscription actions must not accept processor account ids from the browser.");
+  failures.push(
+    "Vortex subscription actions must not accept processor account ids from the browser.",
+  );
 }
 
 if (generatedApi.includes("stripe/connect_subscription_actions")) {
@@ -197,7 +225,9 @@ if (generatedApi.includes("stripe/queries")) {
 }
 
 if (!billingE2e.includes("api.payments.billing_queries.getAvailablePlans")) {
-  failures.push(`${billingE2ePath} must prove available plans through api.payments billing queries.`);
+  failures.push(
+    `${billingE2ePath} must prove available plans through api.payments billing queries.`,
+  );
 }
 
 if (billingE2e.includes("api.stripe.queries")) {
@@ -292,8 +322,11 @@ console.log("- Payment overview reads from api.payments queries, not api.stripe 
 console.log("- Subscription route reads and writes through api.payments.");
 console.log("- Browser no longer supplies processor account ids for subscription operations.");
 console.log("- Vortex subscription actions resolve processor context server-side.");
+console.log("- SaaS checkout can select Vortex Billing behind an org allowlist.");
 console.log("- Stripe subscription SDK calls live in the provider subscription processor.");
 console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
-console.log("- Dead public provider subscription actions stay deleted from source and generated API.");
+console.log(
+  "- Dead public provider subscription actions stay deleted from source and generated API.",
+);
 console.log("- Document payment object creation uses Vortex-owned payment link naming.");
 console.log("- Available billing plans enter through api.payments billing queries.");
