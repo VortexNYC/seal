@@ -42,6 +42,7 @@ export const subscriptionsTable = defineTable({
   // Latest invoice tracking
   latestInvoiceId: v.optional(v.string()), // Stripe invoice ID
   latestInvoiceStatus: v.optional(v.string()), // Invoice status
+  pastDueSince: v.optional(v.number()), // When subscription most recently entered past_due (epoch ms)
   lastSourceEventAt: v.optional(v.number()), // Last applied Vortex source event timestamp (ms)
 
   createdAt: v.number(),

@@ -42,6 +42,8 @@ type VortexSaasBillingProofState = {
     readonly cancelAtPeriodEnd: boolean;
     readonly currentPeriodStart: number;
     readonly currentPeriodEnd: number;
+    readonly latestInvoiceStatus: string | undefined;
+    readonly latestInvoiceId: string | undefined;
   } | null;
   readonly product: {
     readonly externalProductId: string;
@@ -109,6 +111,8 @@ function toProofSubscription(
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
     currentPeriodStart: subscription.currentPeriodStart,
     currentPeriodEnd: subscription.currentPeriodEnd,
+    latestInvoiceStatus: subscription.latestInvoiceStatus,
+    latestInvoiceId: subscription.latestInvoiceId,
   };
 }
 
@@ -463,6 +467,12 @@ export const getVortexSaasBillingProofState = internalQuery({
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
           q.eq("organizationId", args.organizationId).eq("status", "trialing"),
+        )
+        .first()) ??
+      (await ctx.db
+        .query("subscriptions")
+        .withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "past_due"),
         )
         .first());
     const price =
