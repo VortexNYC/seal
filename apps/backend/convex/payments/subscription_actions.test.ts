@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { createCheckoutSession } from "./subscription_actions";
+import { createCheckoutSession, createCustomerPortalSession } from "./subscription_actions";
 
 type CheckoutArgs = {
   readonly lookupKey: string;
@@ -17,6 +17,12 @@ type CheckoutHandler = (
 
 const checkoutHandler = (
   createCheckoutSession as unknown as { readonly _handler: CheckoutHandler }
+)._handler;
+
+type PortalHandler = (ctx: ActionCtx, args: { readonly returnUrl: string }) => Promise<{ url: string }>;
+
+const portalHandler = (
+  createCustomerPortalSession as unknown as { readonly _handler: PortalHandler }
 )._handler;
 
 const organizationId = "org_seal_123" as Id<"organizations">;
@@ -152,3 +158,21 @@ function createCheckoutActionCtx(args: { readonly priceLookupResult: unknown }):
     runMutation,
   } as unknown as ActionCtx;
 }
+
+describe("payments/subscription_actions.createCustomerPortalSession", () => {
+  afterEach(() => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
+    vi.restoreAllMocks();
+  });
+
+  test("blocks the Stripe billing portal for Vortex-billed orgs (no stray Stripe customer)", async () => {
+    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+    const ctx = createCheckoutActionCtx({ priceLookupResult: null });
+
+    await expect(
+      portalHandler(ctx, { returnUrl: "https://seal.test/billing" }),
+    ).rejects.toThrow("Billing portal is not yet available for Vortex billing");
+    // The Stripe-customer resolution mutation must never run for a Vortex org.
+    expect(ctx.runMutation).not.toHaveBeenCalled();
+  });
+});

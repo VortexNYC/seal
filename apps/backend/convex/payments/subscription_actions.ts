@@ -143,6 +143,13 @@ export const createCustomerPortalSession = action({
   handler: async (ctx, args): Promise<{ url: string }> => {
     const { user, organization } = await resolveAuthContext(ctx);
 
+    // Vortex-billed orgs must not fall through to the Stripe billing portal:
+    // resolveOrgBillingCustomer would create a stray Stripe customer, undermining
+    // the Vortex cutover. The hosted Vortex portal is a separate (cross-repo) item.
+    if (selectSaasBillingProvider(organization._id) === "vortex_billing") {
+      throw new ConvexError("Billing portal is not yet available for Vortex billing");
+    }
+
     const stripeCustomerId = await resolveOrgBillingCustomer(ctx, organization, user.email);
 
     const url = await createCustomerPortalUrl({
