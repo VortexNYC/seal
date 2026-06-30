@@ -1,13 +1,11 @@
 "use node";
 
+import { createClient, createCheckoutSession } from "@vortexnyc/payments-sdk";
 import { ConvexError } from "convex/values";
 
 type Env = {
   readonly [key: string]: string | undefined;
 };
-
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
-type JsonObject = { readonly [key: string]: Json };
 
 export type SaasBillingProvider = "stripe" | "vortex_billing";
 
@@ -25,8 +23,6 @@ type VortexBillingConfig = {
   readonly customerExternalId: string;
   readonly subscriptionExternalId: string;
 };
-
-type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
 
 const SAAS_ALLOWLIST_ENV = "VORTEX_BILLING_SAAS_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
@@ -48,35 +44,47 @@ export function selectSaasBillingProvider(
 export async function createVortexBillingCheckoutSession(
   args: VortexBillingCheckoutArgs,
   env: Env = process.env,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
+  fetchImpl?: typeof fetch,
 ): Promise<string> {
   const config = resolveVortexBillingConfig(args, env);
+  const billingClient = createClient({
+    baseUrl: trimTrailingSlash(config.apiBaseUrl),
+    headers: {
+      authorization: `Bearer ${config.apiKey}`,
+      "x-vortex-service": "billing",
+    },
+    ...(fetchImpl ? { fetch: fetchImpl } : {}),
+  });
+  const idempotencyKey = `seal-saas-checkout:${args.organizationId}:${normalizeExternalIdPart(args.lookupKey)}`;
 
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: config.apiBaseUrl,
-      apiKey: config.apiKey,
-      path: "/v1/checkout/sessions",
-      idempotencyKey: `seal-saas-checkout:${args.organizationId}:${normalizeExternalIdPart(args.lookupKey)}`,
-      body: {
-        mode: "subscription",
-        customerExternalId: config.customerExternalId,
-        billingAccountId: config.billingAccountId,
-        subscriptionExternalId: config.subscriptionExternalId,
-        collectionMode: "automatic",
-        lineItems: [{ priceId: config.priceId, quantity: args.quantity }],
-        createdByRef: "seal-saas-billing-settings",
-        metadata: {
-          sourceSystem: "seal",
-          sealOrganizationId: args.organizationId,
-          lookupKey: args.lookupKey,
-        },
+  const { data, error, response } = await createCheckoutSession({
+    client: billingClient,
+    parseAs: "json",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: {
+      mode: "subscription",
+      customerExternalId: config.customerExternalId,
+      billingAccountId: config.billingAccountId,
+      subscriptionExternalId: config.subscriptionExternalId,
+      collectionMode: "automatic",
+      lineItems: [{ priceId: config.priceId, quantity: args.quantity }],
+      createdByRef: "seal-saas-billing-settings",
+      metadata: {
+        sourceSystem: "seal",
+        sealOrganizationId: args.organizationId,
+        lookupKey: args.lookupKey,
       },
     },
-    fetcher,
-  );
+  });
 
-  return readCheckoutUrl(responseBody);
+  if (error !== undefined || response === undefined || !response.ok) {
+    const status = response?.status ?? "no-response";
+    throw new ConvexError(
+      `Vortex Billing checkout failed (${status}): ${summarizeJson(error ?? data)}`,
+    );
+  }
+
+  return readCheckoutUrl(data);
 }
 
 export function resolveVortexBillingConfig(
@@ -142,39 +150,6 @@ function isOrganizationAllowlisted(
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0)
     .includes(organizationId);
-}
-
-async function requestVortexBillingJson(
-  input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
-    readonly path: string;
-    readonly idempotencyKey: string;
-    readonly body: JsonObject;
-  },
-  fetcher: Fetcher,
-): Promise<unknown> {
-  const response = await fetcher(`${trimTrailingSlash(input.apiBaseUrl)}${input.path}`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${input.apiKey}`,
-      "content-type": "application/json",
-      "idempotency-key": input.idempotencyKey,
-      "x-vortex-service": "billing",
-    },
-    body: JSON.stringify(input.body),
-  });
-
-  const text = await response.text();
-  const responseBody = text.length > 0 ? parseJson(text, "Vortex Billing response") : null;
-
-  if (!response.ok) {
-    throw new ConvexError(
-      `Vortex Billing checkout failed (${response.status}): ${summarizeJson(responseBody)}`,
-    );
-  }
-
-  return responseBody;
 }
 
 function readCheckoutUrl(body: unknown): string {

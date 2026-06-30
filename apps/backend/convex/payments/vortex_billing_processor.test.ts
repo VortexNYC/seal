@@ -66,46 +66,55 @@ describe("Vortex Billing SaaS processor", () => {
   });
 
   test("creates a hosted checkout session through the Vortex API", async () => {
-    const calls: Array<{ readonly url: string; readonly init: RequestInit | undefined }> = [];
-    const fetcher = async (input: string, init: RequestInit): Promise<Response> => {
-      calls.push({ url: String(input), init });
-      return new Response(
-        JSON.stringify({
-          data: {
-            checkoutSession: {
-              checkoutUrl: "https://payments.vortex.test/pay/token_123",
+    let captured: Request | undefined;
+    const mockFetch: typeof fetch = Object.assign(
+      async (input: Parameters<typeof fetch>[0]): Promise<Response> => {
+        captured = input instanceof Request ? input : new Request(String(input));
+
+        return new Response(
+          JSON.stringify({
+            data: {
+              checkoutSession: {
+                checkoutUrl: "https://pay.vortex.test/abc",
+              },
             },
-          },
-          requestId: "req_123",
-        }),
-        { status: 201 },
-      );
-    };
+            requestId: "req_1",
+          }),
+          { status: 201, headers: { "content-type": "application/json" } },
+        );
+      },
+      { preconnect: fetch.preconnect },
+    );
 
     const checkoutUrl = await createVortexBillingCheckoutSession(
       checkoutArgs,
       {
-        VORTEX_BILLING_API_BASE_URL: "https://payments.vortex.test/",
+        VORTEX_BILLING_API_BASE_URL: "https://billing.vortex.test",
         VORTEX_BILLING_API_KEY: "vb_test",
         VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
         VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro" }),
       },
-      fetcher,
+      mockFetch,
     );
 
-    expect(checkoutUrl).toBe("https://payments.vortex.test/pay/token_123");
-    expect(calls).toHaveLength(1);
+    expect(checkoutUrl).toBe("https://pay.vortex.test/abc");
+    expect(captured).toBeInstanceOf(Request);
 
-    const call = calls[0];
-    expect(call?.url).toBe("https://payments.vortex.test/v1/checkout/sessions");
-    expect(call?.init?.method).toBe("POST");
-    expect(call?.init?.headers).toMatchObject({
-      authorization: "Bearer vb_test",
-      "content-type": "application/json",
-      "idempotency-key": "seal-saas-checkout:org_seal_123:pro_monthly_v2",
-      "x-vortex-service": "billing",
-    });
-    expect(JSON.parse(String(call?.init?.body))).toEqual({
+    const capturedRequest = captured;
+    if (capturedRequest === undefined) {
+      throw new Error("Expected Vortex Billing checkout request to be captured");
+    }
+
+    expect(capturedRequest.url).toBe("https://billing.vortex.test/v1/checkout/sessions");
+    expect(capturedRequest.method).toBe("POST");
+    expect(capturedRequest.headers.get("authorization")).toBe("Bearer vb_test");
+    expect(capturedRequest.headers.get("x-vortex-service")).toBe("billing");
+    expect(capturedRequest.headers.get("idempotency-key")).toBe(
+      "seal-saas-checkout:org_seal_123:pro_monthly_v2",
+    );
+
+    const sentBody = JSON.parse(await capturedRequest.clone().text()) as unknown;
+    expect(sentBody).toEqual({
       mode: "subscription",
       customerExternalId: "vtx_cust_seal_org_org_seal_123",
       billingAccountId: "bacc_seal_123",
@@ -119,5 +128,34 @@ describe("Vortex Billing SaaS processor", () => {
         lookupKey: "pro:monthly:v2",
       },
     });
+  });
+
+  test("raises a ConvexError when the Vortex API rejects checkout creation", async () => {
+    const mockFetch: typeof fetch = Object.assign(
+      async (): Promise<Response> =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "validation_failed",
+              message: "price is inactive",
+            },
+          }),
+          { status: 422, headers: { "content-type": "application/json" } },
+        ),
+      { preconnect: fetch.preconnect },
+    );
+
+    await expect(
+      createVortexBillingCheckoutSession(
+        checkoutArgs,
+        {
+          VORTEX_BILLING_API_BASE_URL: "https://billing.vortex.test",
+          VORTEX_BILLING_API_KEY: "vb_test",
+          VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+          VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro" }),
+        },
+        mockFetch,
+      ),
+    ).rejects.toThrow(/Vortex Billing checkout failed \(422\):/);
   });
 });
