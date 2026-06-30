@@ -102,15 +102,6 @@ export const createCheckoutSession = action({
     const { user, organization } = await resolveAuthContext(ctx);
     const memberCount = await getOrgMemberCount(ctx, organization._id);
 
-    const priceData = await ctx.runMutation(
-      internal.stripe.subscription_actions.getPriceByLookupKey,
-      { lookupKey: args.lookupKey },
-    );
-
-    if (!priceData?.price) {
-      throw new ConvexError(`Price not found for lookup key: ${args.lookupKey}`);
-    }
-
     if (selectSaasBillingProvider(organization._id) === "vortex_billing") {
       const checkoutUrl = await createVortexBillingCheckoutSession({
         organizationId: organization._id,
@@ -119,6 +110,15 @@ export const createCheckoutSession = action({
       });
 
       return { checkoutUrl };
+    }
+
+    const priceData = await ctx.runMutation(
+      internal.stripe.subscription_actions.getPriceByLookupKey,
+      { lookupKey: args.lookupKey },
+    );
+
+    if (!priceData?.price) {
+      throw new ConvexError(`Price not found for lookup key: ${args.lookupKey}`);
     }
 
     const stripeCustomerId = await resolveOrgBillingCustomer(ctx, organization, user.email);
