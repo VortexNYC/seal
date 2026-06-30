@@ -2,6 +2,7 @@ import type { GenericActionCtx } from "convex/server";
 
 import { internal } from "../_generated/api";
 import type { DataModel, Id } from "../_generated/dataModel";
+import { parseVortexInvoiceEvent } from "./projection";
 import { verifyVortexWebhookSignature } from "./webhook_signature";
 
 type HttpActionCtx = GenericActionCtx<DataModel>;
@@ -21,6 +22,7 @@ export type VortexSubscriptionUpdatedProjection = {
   readonly canceledAt?: string;
   readonly cancelReason?: string;
   readonly latestInvoiceId?: string;
+  readonly sourceCreatedAt?: number;
 };
 
 export type VortexWebhookEnvelope = UnknownRecord & {
@@ -137,8 +139,78 @@ export function parseVortexSubscriptionUpdatedProjection(
       optionalStringField(subscription, "cancelReason") ??
       optionalStringField(subscription, "cancellationReason"),
     latestInvoiceId: optionalStringField(subscription, "latestInvoiceId"),
+    sourceCreatedAt: event.createdAt,
   };
 }
+
+type VortexWebhookDispatchType =
+  | "subscription.updated"
+  | "invoice.paid"
+  | "invoice.payment_failed";
+
+type VortexWebhookDispatcher = (
+  ctx: HttpActionCtx,
+  event: VortexWebhookEnvelope,
+) => Promise<Response>;
+
+function isVortexWebhookDispatchType(type: string): type is VortexWebhookDispatchType {
+  return (
+    type === "subscription.updated" ||
+    type === "invoice.paid" ||
+    type === "invoice.payment_failed"
+  );
+}
+
+const vortexWebhookDispatchers: Record<VortexWebhookDispatchType, VortexWebhookDispatcher> = {
+  "subscription.updated": async (ctx, event): Promise<Response> => {
+    const projection = parseVortexSubscriptionUpdatedProjection(event);
+    if (projection === null) {
+      return jsonResponse({ error: "invalid_subscription_payload", eventId: event.id }, 400);
+    }
+
+    const result = await ctx.runMutation(
+      internal.vortex_billing.projection.projectSubscriptionUpdated,
+      projection,
+    );
+    return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+  },
+  "invoice.paid": async (ctx, event): Promise<Response> => {
+    const projection = parseVortexInvoiceEvent(event);
+    if (projection === null) {
+      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+    }
+    if (projection.eventType !== "invoice.paid") {
+      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+    }
+
+    const result = await ctx.runMutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        ...projection,
+        eventType: "invoice.paid",
+      },
+    );
+    return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+  },
+  "invoice.payment_failed": async (ctx, event): Promise<Response> => {
+    const projection = parseVortexInvoiceEvent(event);
+    if (projection === null) {
+      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+    }
+    if (projection.eventType !== "invoice.payment_failed") {
+      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+    }
+
+    const result = await ctx.runMutation(
+      internal.vortex_billing.projection.projectInvoicePaymentFailed,
+      {
+        ...projection,
+        eventType: "invoice.payment_failed",
+      },
+    );
+    return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+  },
+};
 
 export async function handleVortexBillingWebhookRequest(
   ctx: HttpActionCtx,
@@ -166,18 +238,9 @@ export async function handleVortexBillingWebhookRequest(
     return jsonResponse({ error: "invalid_payload" }, 400);
   }
 
-  if (event.type !== "subscription.updated") {
+  if (!isVortexWebhookDispatchType(event.type)) {
     return jsonResponse({ received: true, eventId: event.id, ignored: true }, 200);
   }
 
-  const projection = parseVortexSubscriptionUpdatedProjection(event);
-  if (projection === null) {
-    return jsonResponse({ error: "invalid_subscription_payload", eventId: event.id }, 400);
-  }
-
-  const result = await ctx.runMutation(
-    internal.vortex_billing.projection.projectSubscriptionUpdated,
-    projection,
-  );
-  return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+  return await vortexWebhookDispatchers[event.type](ctx, event);
 }
