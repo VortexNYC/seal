@@ -109,6 +109,7 @@ describe("Vortex Billing SaaS processor", () => {
     expect(capturedRequest.method).toBe("POST");
     expect(capturedRequest.headers.get("authorization")).toBe("Bearer vb_test");
     expect(capturedRequest.headers.get("x-vortex-service")).toBe("billing");
+    expect(capturedRequest.headers.get("content-type")).toBe("application/json");
     expect(capturedRequest.headers.get("idempotency-key")).toBe(
       "seal-saas-checkout:org_seal_123:pro_monthly_v2",
     );

@@ -230,6 +230,13 @@ function summarizeJson(value: unknown): string {
     return value;
   }
 
+  // Preserve diagnostic detail for Error values (e.g. JSON parse failures or
+  // network/transport errors surfaced by the SDK), which would otherwise
+  // JSON.stringify to "{}" and lose the message.
+  if (value instanceof Error) {
+    return value.message.length > 0 ? `${value.name}: ${value.message}` : value.name;
+  }
+
   try {
     return JSON.stringify(value);
   } catch {
