@@ -41,6 +41,7 @@ type ProvePaymentInvoiceLinksResult = {
     paymentStatus?: string;
     vortexRecurringPayableId?: string;
     vortexInstallmentPayableId?: string;
+    vortexDepositBalancePayableId?: string;
     vortexPayableId?: string;
     vortexPaymentRequestId?: string;
     hostedInvoiceUrl?: string;
@@ -326,6 +327,7 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         paymentStatus: v.optional(v.string()),
         vortexRecurringPayableId: v.optional(v.string()),
         vortexInstallmentPayableId: v.optional(v.string()),
+        vortexDepositBalancePayableId: v.optional(v.string()),
         vortexPayableId: v.optional(v.string()),
         vortexPaymentRequestId: v.optional(v.string()),
         hostedInvoiceUrl: v.optional(v.string()),
@@ -358,6 +360,9 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
           : {}),
         ...(config.vortexInstallmentPayableId !== undefined
           ? { vortexInstallmentPayableId: config.vortexInstallmentPayableId }
+          : {}),
+        ...(config.vortexDepositBalancePayableId !== undefined
+          ? { vortexDepositBalancePayableId: config.vortexDepositBalancePayableId }
           : {}),
         ...(config.vortexPayableId !== undefined
           ? { vortexPayableId: config.vortexPayableId }

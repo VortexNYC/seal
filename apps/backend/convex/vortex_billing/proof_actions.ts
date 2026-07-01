@@ -27,6 +27,9 @@ type SeedVortexRecurringDocumentPayableProofDocumentResult = {
 type SeedVortexInstallmentDocumentPayableProofDocumentResult =
   SeedVortexRecurringDocumentPayableProofDocumentResult;
 
+type SeedVortexDepositBalanceDocumentPayableProofDocumentResult =
+  SeedVortexRecurringDocumentPayableProofDocumentResult;
+
 type SeedVortexWebhookProofPaymentConfigResult = {
   readonly organizationId: Id<"organizations">;
   readonly ownerId: Id<"users">;
@@ -461,6 +464,125 @@ export const seedVortexInstallmentDocumentPayableProofDocument = internalMutatio
       feeHandling: "absorb",
       taxEnabled: false,
       totalAmountCents: 12600,
+      paymentStatus: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      paymentConfigId,
+      configId: paymentConfigId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const seedVortexDepositBalanceDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<SeedVortexDepositBalanceDocumentPayableProofDocumentResult> => {
+    const now = Date.now();
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      `deposit-balance-document-${args.proofRunId}`,
+      now,
+    );
+    const ownerId = await insertSaasProofOwner(
+      ctx,
+      `deposit-balance-document-${args.proofRunId}`,
+      organizationId,
+    );
+    const documentId = await ctx.db.insert("documents", {
+      organizationId,
+      ownerId,
+      name: `Vortex deposit balance document payable proof ${args.proofRunId}`,
+      fileSize: 1024,
+      fileType: "application/pdf",
+      storageId: `vortex-deposit-balance-document-proof-${args.proofRunId}`,
+      sharingMode: "private",
+      status: "active",
+      workflowStatus: "draft",
+      signingMode: "parallel",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const recipientId = await ctx.db.insert("document_recipients", {
+      documentId,
+      email: args.recipientEmail,
+      name: "Vortex Deposit Balance Proof Recipient",
+      role: "signer",
+      status: "pending",
+      order: 1,
+      signingToken: `vortex-deposit-balance-proof-token-${args.proofRunId}`,
+      tokenExpiresAt: now + 30 * 24 * 60 * 60 * 1000,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const signatureFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      isRequired: true,
+      isMainSignature: true,
+      x: 10,
+      y: 10,
+      width: 25,
+      height: 8,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "Deposit balance payment",
+      isRequired: true,
+      x: 10,
+      y: 24,
+      width: 35,
+      height: 10,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentConfigId = await ctx.db.insert("payment_field_configs", {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      paymentType: "deposit_balance",
+      items: [
+        {
+          id: args.lineItemId,
+          description: "Vortex deposit balance document payable proof",
+          quantity: 1,
+          unitPrice: 20000,
+        },
+      ],
+      currency: "usd",
+      dueDateTerms: "net_30",
+      depositBalanceConfig: {
+        depositPercent: 25,
+        balanceDueDays: 30,
+      },
+      allowedPaymentMethods: ["card"],
+      feeHandling: "absorb",
+      taxEnabled: false,
+      totalAmountCents: 20000,
       paymentStatus: "pending",
       createdAt: now,
       updatedAt: now,
