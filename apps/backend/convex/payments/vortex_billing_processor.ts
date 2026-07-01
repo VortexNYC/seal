@@ -15,6 +15,15 @@ export type VortexBillingCheckoutArgs = {
   readonly quantity: number;
 };
 
+export type VortexBillingPortalArgs = {
+  readonly organizationId: string;
+};
+
+type VortexBillingApiConfig = {
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
+};
+
 type VortexBillingConfig = {
   readonly apiBaseUrl: string;
   readonly apiKey: string;
@@ -22,6 +31,12 @@ type VortexBillingConfig = {
   readonly priceId: string;
   readonly customerExternalId: string;
   readonly subscriptionExternalId: string;
+};
+
+type VortexBillingPortalConfig = {
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
+  readonly customerExternalId: string;
 };
 
 const SAAS_ALLOWLIST_ENV = "VORTEX_BILLING_SAAS_ORGANIZATION_IDS";
@@ -87,12 +102,47 @@ export async function createVortexBillingCheckoutSession(
   return readCheckoutUrl(data);
 }
 
+export async function createVortexBillingPortalSession(
+  args: VortexBillingPortalArgs,
+  env: Env = process.env,
+  fetchImpl?: typeof fetch,
+): Promise<string> {
+  const config = resolveVortexBillingPortalConfig(args, env);
+  const billingClient = createClient({
+    baseUrl: trimTrailingSlash(config.apiBaseUrl),
+    headers: {
+      authorization: `Bearer ${config.apiKey}`,
+      "x-vortex-service": "billing",
+    },
+    ...(fetchImpl ? { fetch: fetchImpl } : {}),
+  });
+  const idempotencyKey = `seal-saas-portal:${args.organizationId}`;
+
+  const { data, error, response } = await billingClient.post({
+    url: "/v1/customers/{customerExternalId}/portal-links",
+    path: { customerExternalId: config.customerExternalId },
+    parseAs: "json",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: {
+      createdByRef: "seal-saas-billing-settings",
+    },
+  });
+
+  if (error !== undefined || response === undefined || !response.ok) {
+    const status = response?.status ?? "no-response";
+    throw new ConvexError(
+      `Vortex Billing portal failed (${status}): ${summarizeJson(error ?? data)}`,
+    );
+  }
+
+  return readPortalUrl(data);
+}
+
 export function resolveVortexBillingConfig(
   args: VortexBillingCheckoutArgs,
   env: Env = process.env,
 ): VortexBillingConfig {
-  const apiBaseUrl = readRequiredEnv(env, API_BASE_URL_ENV);
-  const apiKey = readRequiredEnv(env, API_KEY_ENV);
+  const apiConfig = resolveVortexBillingApiConfig(env);
   const priceMap = parseStringRecord(readRequiredEnv(env, PRICE_MAP_ENV), PRICE_MAP_ENV);
   const accountMap = parseOptionalStringRecord(env[ACCOUNT_MAP_ENV], ACCOUNT_MAP_ENV);
   const customerMap = parseOptionalStringRecord(env[CUSTOMER_MAP_ENV], CUSTOMER_MAP_ENV);
@@ -108,19 +158,51 @@ export function resolveVortexBillingConfig(
     throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
   }
 
-  const customerExternalId = customerMap[organizationKey] ?? `vtx_cust_seal_org_${organizationKey}`;
+  const customerExternalId = readVortexBillingCustomerExternalId(organizationKey, customerMap);
   const subscriptionExternalId = `vtx_sub_seal_org_${organizationKey}_${normalizeExternalIdPart(
     args.lookupKey,
   )}`;
 
   return {
-    apiBaseUrl,
-    apiKey,
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    apiKey: apiConfig.apiKey,
     billingAccountId,
     priceId,
     customerExternalId,
     subscriptionExternalId,
   };
+}
+
+export function resolveVortexBillingPortalConfig(
+  args: VortexBillingPortalArgs,
+  env: Env = process.env,
+): VortexBillingPortalConfig {
+  const apiConfig = resolveVortexBillingApiConfig(env);
+
+  return {
+    ...apiConfig,
+    customerExternalId: resolveVortexBillingCustomerExternalId(args.organizationId, env),
+  };
+}
+
+function resolveVortexBillingApiConfig(env: Env): VortexBillingApiConfig {
+  return {
+    apiBaseUrl: readRequiredEnv(env, API_BASE_URL_ENV),
+    apiKey: readRequiredEnv(env, API_KEY_ENV),
+  };
+}
+
+function resolveVortexBillingCustomerExternalId(organizationId: string, env: Env): string {
+  const organizationKey = String(organizationId);
+  const customerMap = parseOptionalStringRecord(env[CUSTOMER_MAP_ENV], CUSTOMER_MAP_ENV);
+  return readVortexBillingCustomerExternalId(organizationKey, customerMap);
+}
+
+function readVortexBillingCustomerExternalId(
+  organizationKey: string,
+  customerMap: Record<string, string>,
+): string {
+  return customerMap[organizationKey] ?? `vtx_cust_seal_org_${organizationKey}`;
 }
 
 function isOrganizationAllowlisted(
@@ -166,6 +248,19 @@ function readCheckoutUrl(body: unknown): string {
   }
 
   return checkoutUrl;
+}
+
+function readPortalUrl(body: unknown): string {
+  const root = readObject(body, "Vortex Billing portal response");
+  const data = readObject(root.data, "Vortex Billing portal response data");
+  const link = readObject(data.link, "Vortex Billing portal response link");
+  const portalUrl = link.url;
+
+  if (typeof portalUrl !== "string" || portalUrl.length === 0) {
+    throw new ConvexError("Vortex Billing portal response did not include link.url");
+  }
+
+  return portalUrl;
 }
 
 function readRequiredEnv(env: Env, name: string): string {
