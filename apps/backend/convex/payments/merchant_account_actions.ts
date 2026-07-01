@@ -4,6 +4,7 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
+import { isDocumentPaymentOrganizationAllowlisted } from "../vortex_billing/payable_actions";
 import { feeHandlingValidator } from "./merchant_account_validators";
 
 type CreateMerchantAccountResult = {
@@ -36,6 +37,20 @@ export const createMerchantAccount = action({
     processorAccountId: v.string(),
   }),
   handler: async (ctx, args): Promise<CreateMerchantAccountResult> => {
+    if (isDocumentPaymentOrganizationAllowlisted(args.organizationId)) {
+      const result = await ctx.runAction(
+        internal.payments.vortex_merchant_actions.createVortexMerchantAccount,
+        {
+          organizationId: args.organizationId,
+          feeHandling: args.feeHandling,
+        },
+      );
+
+      return {
+        processorAccountId: result.merchantAccountId,
+      };
+    }
+
     const result = await ctx.runAction(
       internal.stripe.connect_actions.createConnectedAccount,
       args,
@@ -117,6 +132,19 @@ export const refreshMerchantAccount = action({
     status: v.union(v.literal("not_connected"), v.literal("refreshed")),
   }),
   handler: async (ctx, args): Promise<RefreshMerchantAccountResult> => {
+    const existing = await ctx.runQuery(
+      internal.stripe.connect_mutations.getAccountByOrganizationId,
+      {
+        organizationId: args.organizationId,
+      },
+    );
+    if (existing?.provider === "vortex") {
+      return await ctx.runAction(
+        internal.payments.vortex_merchant_actions.refreshVortexMerchantAccount,
+        args,
+      );
+    }
+
     return await ctx.runAction(internal.stripe.connect_actions.refreshConnectedAccount, args);
   },
 });
