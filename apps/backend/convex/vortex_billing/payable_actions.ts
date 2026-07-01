@@ -262,8 +262,7 @@ export function selectDocumentPaymentProvider(
   configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
   env: Env = process.env,
 ): DocumentPaymentProvider {
-  const allowlist = env[DOCUMENT_PAYMENT_ALLOWLIST_ENV] ?? env[SHARED_PAYABLE_ALLOWLIST_ENV];
-  if (!isOrganizationAllowlisted(organizationId, allowlist)) {
+  if (!isDocumentPaymentOrganizationAllowlisted(organizationId, env)) {
     return "stripe";
   }
   if (configs.length === 0) {
@@ -307,7 +306,7 @@ export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillin
   };
 }
 
-function readVortexBillingEnvFromProcess(env: Env = process.env): VortexBillingEnv {
+export function readVortexBillingEnvFromProcess(env: Env = process.env): VortexBillingEnv {
   return readVortexBillingEnv({
     apiBaseUrl: env[API_BASE_URL_ENV],
     apiKey: env[API_KEY_ENV],
@@ -329,6 +328,7 @@ export function buildCreatePayableRequest(input: {
   readonly recipient: PaymentRecipient;
   readonly env: VortexBillingEnv;
   readonly now: number;
+  readonly vortexMerchantAccountId?: string;
 }): CreatePayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "one_time") {
@@ -354,8 +354,11 @@ export function buildCreatePayableRequest(input: {
     throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
   }
 
-  const merchantAccountId =
-    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const merchantAccountId = resolveVortexMerchantAccountId(
+    organizationKey,
+    env,
+    input.vortexMerchantAccountId,
+  );
   const sourceId = String(config._id);
   const dueAt = getDueAt(config, now);
 
@@ -389,6 +392,7 @@ export function buildCreateRecurringPayableRequest(input: {
   readonly recipient: PaymentRecipient;
   readonly env: VortexBillingEnv;
   readonly now: number;
+  readonly vortexMerchantAccountId?: string;
 }): CreateRecurringPayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "recurring") {
@@ -420,8 +424,11 @@ export function buildCreateRecurringPayableRequest(input: {
     throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
   }
 
-  const merchantAccountId =
-    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const merchantAccountId = resolveVortexMerchantAccountId(
+    organizationKey,
+    env,
+    input.vortexMerchantAccountId,
+  );
   const sourceId = String(config._id);
 
   return {
@@ -463,6 +470,7 @@ export function buildCreateInstallmentPayableRequest(input: {
   readonly recipient: PaymentRecipient;
   readonly env: VortexBillingEnv;
   readonly now: number;
+  readonly vortexMerchantAccountId?: string;
 }): CreateInstallmentPayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "installments") {
@@ -492,8 +500,11 @@ export function buildCreateInstallmentPayableRequest(input: {
     throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
   }
 
-  const merchantAccountId =
-    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const merchantAccountId = resolveVortexMerchantAccountId(
+    organizationKey,
+    env,
+    input.vortexMerchantAccountId,
+  );
   const sourceId = String(config._id);
   const firstDueAt = getDueAt(config, now) ?? new Date(now).toISOString();
   const amounts = buildInstallmentAmounts(config.totalAmountCents, installmentsConfig);
@@ -537,6 +548,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
   readonly recipient: PaymentRecipient;
   readonly env: VortexBillingEnv;
   readonly now: number;
+  readonly vortexMerchantAccountId?: string;
 }): CreateDepositBalancePayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "deposit_balance") {
@@ -567,8 +579,11 @@ export function buildCreateDepositBalancePayableRequest(input: {
     throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
   }
 
-  const merchantAccountId =
-    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const merchantAccountId = resolveVortexMerchantAccountId(
+    organizationKey,
+    env,
+    input.vortexMerchantAccountId,
+  );
   const sourceId = String(config._id);
   const depositDueAt = getDueAt(config, now) ?? new Date(now).toISOString();
   const amounts = buildDepositBalanceAmounts(config.totalAmountCents, config.depositBalanceConfig);
@@ -810,6 +825,19 @@ function toVortexCurrency(currency: string): VortexCurrency {
   throw new ConvexError("Vortex Billing document bridge only supports USD and CAD");
 }
 
+function resolveVortexMerchantAccountId(
+  organizationKey: string,
+  env: VortexBillingEnv,
+  vortexMerchantAccountId: string | undefined,
+): string {
+  return (
+    vortexMerchantAccountId ??
+    env.merchantAccountMap[organizationKey] ??
+    env.defaultMerchantAccountId ??
+    ""
+  );
+}
+
 function buildFeePolicy(config: Pick<PaymentFieldConfigInput, "_id" | "feeHandling">): FeePolicy {
   const ownerMode: FeePolicyOwnerMode =
     config.feeHandling === "pass_to_recipient"
@@ -982,25 +1010,36 @@ async function createVortexDepositBalancePayable(
   return readCreateDepositBalancePayableResult(responseBody);
 }
 
-async function requestVortexBillingJson(
+export async function requestVortexBillingJson(
   input: {
     readonly apiBaseUrl: string;
     readonly apiKey: string;
+    readonly method?: "GET" | "POST";
     readonly path: string;
-    readonly idempotencyKey: string;
-    readonly body: JsonObject;
+    readonly idempotencyKey?: string;
+    readonly body?: JsonObject;
+    readonly failureLabel?: string;
   },
   fetcher: Fetcher,
 ): Promise<unknown> {
+  const headers: Record<string, string> = {
+    authorization: `Bearer ${input.apiKey}`,
+    "x-vortex-service": "billing",
+  };
+  if (input.body !== undefined) {
+    headers["content-type"] = "application/json";
+  }
+  if (input.idempotencyKey !== undefined) {
+    headers["idempotency-key"] = input.idempotencyKey;
+  }
+
+  const init: RequestInit = {
+    method: input.method ?? "POST",
+    headers,
+    ...(input.body !== undefined ? { body: JSON.stringify(input.body) } : {}),
+  };
   const response = await fetcher(`${trimTrailingSlash(input.apiBaseUrl)}${input.path}`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${input.apiKey}`,
-      "content-type": "application/json",
-      "idempotency-key": input.idempotencyKey,
-      "x-vortex-service": "billing",
-    },
-    body: JSON.stringify(input.body),
+    ...init,
   });
 
   const text = await response.text();
@@ -1008,7 +1047,7 @@ async function requestVortexBillingJson(
 
   if (!response.ok) {
     throw new ConvexError(
-      `Vortex Billing payable failed (${response.status}): ${summarizeJson(responseBody)}`,
+      `${input.failureLabel ?? "Vortex Billing payable"} failed (${response.status}): ${summarizeJson(responseBody)}`,
     );
   }
 
@@ -1106,7 +1145,10 @@ function readCreateDepositBalancePayableResult(body: unknown): CreateDepositBala
     data.depositBalancePayable,
     "Vortex Billing deposit/balance payable response deposit balance payable",
   );
-  const payable = readObject(data.payable, "Vortex Billing deposit/balance payable response payable");
+  const payable = readObject(
+    data.payable,
+    "Vortex Billing deposit/balance payable response payable",
+  );
   const lineage = readObject(
     payable.lineage,
     "Vortex Billing deposit/balance payable response lineage",
@@ -1166,6 +1208,14 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
       throw new ConvexError("Vortex Billing document payment bridge is not enabled");
     }
 
+    // Prefer this org's own charges-ready Vortex merchant for the payable; falls back to the
+    // shared/static merchant map when the per-user merchant isn't provisioned/ready yet (1a is
+    // additive — routing is unchanged; only the merchant id is per-user when available).
+    const vortexMerchantAccountId = await ctx.runQuery(
+      internal.payments.vortex_merchant_queries.getVortexMerchantAccountIdForOrg,
+      { organizationId: args.organizationId },
+    );
+
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
       { documentId: args.documentId },
@@ -1198,6 +1248,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           recipient,
           env,
           now: Date.now(),
+          vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
         });
         const recurringPayable = await createVortexRecurringPayable(
           recurringRequest,
@@ -1234,6 +1285,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           recipient,
           env,
           now: Date.now(),
+          vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
         });
         const installmentPayable = await createVortexInstallmentPayable(
           installmentRequest,
@@ -1270,6 +1322,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           recipient,
           env,
           now: Date.now(),
+          vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
         });
         const depositBalancePayable = await createVortexDepositBalancePayable(
           depositBalanceRequest,
@@ -1306,6 +1359,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           recipient,
           env,
           now: Date.now(),
+          vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
         });
         const payable = await createVortexPayable(
           payableRequest,
@@ -1361,7 +1415,15 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
   };
 }
 
-function isOrganizationAllowlisted(
+export function isDocumentPaymentOrganizationAllowlisted(
+  organizationId: string,
+  env: Env = process.env,
+): boolean {
+  const allowlist = env[DOCUMENT_PAYMENT_ALLOWLIST_ENV] ?? env[SHARED_PAYABLE_ALLOWLIST_ENV];
+  return isOrganizationAllowlisted(organizationId, allowlist);
+}
+
+export function isOrganizationAllowlisted(
   organizationId: string,
   configured: string | undefined,
 ): boolean {

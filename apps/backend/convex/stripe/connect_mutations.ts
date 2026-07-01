@@ -34,7 +34,9 @@ export const getAccountByStripeId = internalQuery({
 export const upsertStripeAccount = internalMutation({
   args: {
     organizationId: v.id("organizations"),
+    provider: v.optional(v.union(v.literal("stripe"), v.literal("vortex"))),
     stripeAccountId: v.string(),
+    vortexMerchantAccountId: v.optional(v.string()),
     accountType: v.union(v.literal("standard"), v.literal("express")),
     chargesEnabled: v.boolean(),
     payoutsEnabled: v.boolean(),
@@ -67,7 +69,9 @@ export const upsertStripeAccount = internalMutation({
     const now = Date.now();
     const payload = {
       organizationId: args.organizationId,
+      provider: args.provider ?? existing?.provider,
       stripeAccountId: args.stripeAccountId,
+      vortexMerchantAccountId: args.vortexMerchantAccountId ?? existing?.vortexMerchantAccountId,
       accountType: args.accountType,
       chargesEnabled: args.chargesEnabled,
       payoutsEnabled: args.payoutsEnabled,

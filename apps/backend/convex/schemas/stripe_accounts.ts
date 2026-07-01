@@ -3,7 +3,9 @@ import { v } from "convex/values";
 
 export const stripeAccountsTable = defineTable({
   organizationId: v.id("organizations"),
+  provider: v.optional(v.union(v.literal("stripe"), v.literal("vortex"))),
   stripeAccountId: v.string(),
+  vortexMerchantAccountId: v.optional(v.string()),
   accountType: v.union(v.literal("standard"), v.literal("express")),
   chargesEnabled: v.boolean(),
   payoutsEnabled: v.boolean(),

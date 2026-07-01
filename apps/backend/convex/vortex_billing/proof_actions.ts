@@ -1,7 +1,13 @@
 import { v } from "convex/values";
 
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, internalQuery, type MutationCtx } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+} from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
 
 type SeedVortexSaasBillingCatalogProjectionResult = {
@@ -91,6 +97,41 @@ type VortexWebhookProofPaymentState = {
   readonly invoiceDunningStartedAt: number | undefined;
   readonly invoiceNextDunningAt: number | undefined;
   readonly invoiceDunningCompletedAt: number | undefined;
+};
+
+type VortexMerchantProofState = {
+  readonly provider: "stripe" | "vortex" | undefined;
+  readonly vortexMerchantAccountId: string | undefined;
+  readonly chargesEnabled: boolean | undefined;
+  readonly payoutsEnabled: boolean | undefined;
+  readonly requirements:
+    | {
+        readonly currentlyDue: string[];
+        readonly eventuallyDue: string[];
+        readonly pastDue: string[];
+        readonly disabledReason?: string;
+      }
+    | undefined;
+};
+
+type CreateVortexMerchantProofAccountResult = {
+  readonly merchantAccountId: string;
+  readonly state: {
+    readonly chargesEnabled: boolean;
+    readonly payoutsEnabled: boolean;
+    readonly detailsSubmitted: boolean;
+    readonly requirements: {
+      readonly currentlyDue: string[];
+      readonly eventuallyDue: string[];
+      readonly pastDue: string[];
+      readonly disabledReason?: string;
+    };
+    readonly capabilities: {
+      readonly cardPayments: string;
+      readonly transfers: string;
+      readonly usBankAccountAchPayments?: string;
+    };
+  };
 };
 
 async function insertSaasProofOrganization(
@@ -808,6 +849,72 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       invoiceDunningStartedAt: invoice?.dunningStartedAt,
       invoiceNextDunningAt: invoice?.nextDunningAt,
       invoiceDunningCompletedAt: invoice?.dunningCompletedAt,
+    };
+  },
+});
+
+export const createVortexMerchantProofAccount = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    merchantAccountId: v.string(),
+    state: v.object({
+      chargesEnabled: v.boolean(),
+      payoutsEnabled: v.boolean(),
+      detailsSubmitted: v.boolean(),
+      requirements: v.object({
+        currentlyDue: v.array(v.string()),
+        eventuallyDue: v.array(v.string()),
+        pastDue: v.array(v.string()),
+        disabledReason: v.optional(v.string()),
+      }),
+      capabilities: v.object({
+        cardPayments: v.string(),
+        transfers: v.string(),
+        usBankAccountAchPayments: v.optional(v.string()),
+      }),
+    }),
+  }),
+  handler: async (ctx, args): Promise<CreateVortexMerchantProofAccountResult> => {
+    return await ctx.runAction(
+      internal.payments.vortex_merchant_actions.createVortexMerchantProofAccount,
+      args,
+    );
+  },
+});
+
+export const forceRefreshVortexMerchantProofState = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    status: v.union(v.literal("not_connected"), v.literal("refreshed")),
+  }),
+  handler: async (ctx, args): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
+    return await ctx.runAction(
+      internal.payments.vortex_merchant_actions.refreshVortexMerchantProofAccount,
+      args,
+    );
+  },
+});
+
+export const getVortexMerchantProofState = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<VortexMerchantProofState> => {
+    const account = await ctx.db
+      .query("stripe_accounts")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .first();
+
+    return {
+      provider: account?.provider,
+      vortexMerchantAccountId: account?.vortexMerchantAccountId,
+      chargesEnabled: account?.chargesEnabled,
+      payoutsEnabled: account?.payoutsEnabled,
+      requirements: account?.requirements,
     };
   },
 });
