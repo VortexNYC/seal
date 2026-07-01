@@ -74,6 +74,10 @@ type PaymentFieldConfigInput = {
     readonly interval: "week" | "month";
     readonly firstPaymentAmount?: number;
   };
+  readonly depositBalanceConfig?: {
+    readonly depositPercent: number;
+    readonly balanceDueDays: number;
+  };
 };
 
 type PaymentRecipient = {
@@ -204,6 +208,36 @@ type CreateInstallmentPayableResult = {
   readonly checkoutUrl: string | undefined;
 };
 
+type DepositBalancePart = {
+  readonly dueAt: string;
+  readonly amountDue: number;
+  readonly lineItems: readonly JsonObject[];
+};
+
+export type CreateDepositBalancePayableRequest = {
+  readonly sourceType: "document_payment_field";
+  readonly sourceId: string;
+  readonly documentId: string;
+  readonly paymentFieldId: string;
+  readonly customerExternalId: string;
+  readonly billingAccountId: string;
+  readonly merchantAccountId?: string;
+  readonly currency: VortexCurrency;
+  readonly taxMode: "not_taxable";
+  readonly collectionIntent: "manual";
+  readonly feePolicy: FeePolicy;
+  readonly deposit: DepositBalancePart;
+  readonly balance: DepositBalancePart;
+  readonly metadata: Record<string, string>;
+};
+
+type CreateDepositBalancePayableResult = {
+  readonly depositBalancePayableId: string;
+  readonly payableId: string;
+  readonly paymentRequestId: string | undefined;
+  readonly checkoutUrl: string | undefined;
+};
+
 const DOCUMENT_PAYMENT_ALLOWLIST_ENV = "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS";
 const SHARED_PAYABLE_ALLOWLIST_ENV = "VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
@@ -239,7 +273,8 @@ export function selectDocumentPaymentProvider(
     (config) =>
       (config.paymentType === "one_time" ||
         config.paymentType === "recurring" ||
-        config.paymentType === "installments") &&
+        config.paymentType === "installments" ||
+        config.paymentType === "deposit_balance") &&
       !config.taxEnabled,
   )
     ? "vortex_billing"
@@ -497,6 +532,98 @@ export function buildCreateInstallmentPayableRequest(input: {
   };
 }
 
+export function buildCreateDepositBalancePayableRequest(input: {
+  readonly config: PaymentFieldConfigInput;
+  readonly recipient: PaymentRecipient;
+  readonly env: VortexBillingEnv;
+  readonly now: number;
+}): CreateDepositBalancePayableRequest {
+  const { config, recipient, env, now } = input;
+  if (config.paymentType !== "deposit_balance") {
+    throw new ConvexError(
+      "Vortex Billing deposit/balance document bridge requires deposit_balance payments",
+    );
+  }
+  if (config.taxEnabled) {
+    throw new ConvexError(
+      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
+    );
+  }
+  if (config.items.length === 0) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+  if (config.depositBalanceConfig === undefined) {
+    throw new ConvexError("Deposit/balance payment field is missing deposit balance configuration");
+  }
+
+  const organizationKey = String(config.organizationId);
+  const customerExternalId = env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
+  if (!customerExternalId) {
+    throw new ConvexError(`Vortex Billing customer missing for recipient: ${recipient.email}`);
+  }
+
+  const billingAccountId = env.billingAccountMap[organizationKey] ?? env.defaultBillingAccountId;
+  if (!billingAccountId) {
+    throw new ConvexError(`Vortex Billing account missing for organization: ${organizationKey}`);
+  }
+
+  const merchantAccountId =
+    env.merchantAccountMap[organizationKey] ?? env.defaultMerchantAccountId ?? "";
+  const sourceId = String(config._id);
+  const depositDueAt = getDueAt(config, now) ?? new Date(now).toISOString();
+  const amounts = buildDepositBalanceAmounts(config.totalAmountCents, config.depositBalanceConfig);
+  const balanceDueAt = addDepositBalanceDays(
+    depositDueAt,
+    config.depositBalanceConfig.balanceDueDays,
+  );
+
+  return {
+    sourceType: "document_payment_field",
+    sourceId,
+    documentId: String(config.documentId),
+    paymentFieldId: String(config.fieldId),
+    customerExternalId,
+    billingAccountId,
+    ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
+    currency: toVortexCurrency(config.currency),
+    taxMode: "not_taxable",
+    collectionIntent: "manual",
+    feePolicy: buildFeePolicy(config),
+    deposit: {
+      dueAt: depositDueAt,
+      amountDue: amounts.depositAmountDue,
+      lineItems: buildDepositBalanceLineItems(
+        config,
+        "deposit",
+        amounts.depositAmountDue,
+        env.priceMap,
+      ),
+    },
+    balance: {
+      dueAt: balanceDueAt,
+      amountDue: amounts.balanceAmountDue,
+      lineItems: buildDepositBalanceLineItems(
+        config,
+        "balance",
+        amounts.balanceAmountDue,
+        env.priceMap,
+      ),
+    },
+    metadata: {
+      sourceSystem: env.sourceNamespace,
+      vortexPaymentsEnvironment: env.paymentsEnvironment,
+      sealOrganizationId: organizationKey,
+      sealDocumentId: String(config.documentId),
+      sealPaymentFieldId: String(config.fieldId),
+      sealPaymentConfigId: sourceId,
+      sealPaymentType: config.paymentType,
+      recipientEmail: recipient.email,
+      ...(recipient.name !== undefined ? { recipientName: recipient.name } : {}),
+      ...(merchantAccountId.length > 0 ? { vortexMerchantAccountId: merchantAccountId } : {}),
+    },
+  };
+}
+
 function buildPayableLineItem(
   item: PaymentFieldConfigInput["items"][number],
   priceMap: Record<string, string>,
@@ -538,6 +665,65 @@ function buildInstallmentLineItems(
   }
 
   return [buildPayableLineItem({ ...item, quantity: amountDue / item.unitPrice }, priceMap)];
+}
+
+function buildDepositBalanceLineItems(
+  config: Pick<PaymentFieldConfigInput, "items">,
+  role: "deposit" | "balance",
+  amountDue: number,
+  priceMap: Record<string, string>,
+): readonly JsonObject[] {
+  if (config.items.length !== 1) {
+    throw new ConvexError("Vortex Billing deposit/balance bridge requires exactly one line item");
+  }
+  const item = config.items[0];
+  if (item === undefined) {
+    throw new ConvexError("Payment field has no line items configured");
+  }
+
+  return [
+    buildPayableLineItem(
+      {
+        ...item,
+        id: `${item.id}:${role}`,
+        description: `${item.description} (${role})`,
+        quantity: 1,
+        unitPrice: amountDue,
+      },
+      priceMap,
+    ),
+  ];
+}
+
+function buildDepositBalanceAmounts(
+  totalAmountCents: number,
+  config: NonNullable<PaymentFieldConfigInput["depositBalanceConfig"]>,
+): { readonly depositAmountDue: number; readonly balanceAmountDue: number } {
+  if (!Number.isInteger(totalAmountCents) || totalAmountCents <= 0) {
+    throw new ConvexError("Deposit/balance total amount must be a positive integer");
+  }
+  if (config.depositPercent <= 0 || config.depositPercent >= 100) {
+    throw new ConvexError("Deposit percent must be greater than 0 and less than 100");
+  }
+  if (!Number.isInteger(config.balanceDueDays) || config.balanceDueDays < 1) {
+    throw new ConvexError("Deposit/balance due days must be at least one");
+  }
+
+  const depositAmountDue = Math.round(totalAmountCents * (config.depositPercent / 100));
+  const balanceAmountDue = totalAmountCents - depositAmountDue;
+  if (depositAmountDue <= 0 || balanceAmountDue <= 0) {
+    throw new ConvexError("Deposit and balance amounts must both be greater than zero");
+  }
+
+  return { depositAmountDue, balanceAmountDue };
+}
+
+function addDepositBalanceDays(firstDueAt: string, balanceDueDays: number): string {
+  const firstDueTime = new Date(firstDueAt).getTime();
+  if (Number.isNaN(firstDueTime)) {
+    throw new ConvexError("Deposit due date is invalid");
+  }
+  return new Date(firstDueTime + balanceDueDays * 24 * 60 * 60 * 1000).toISOString();
 }
 
 function buildInstallmentAmounts(
@@ -777,6 +963,25 @@ async function createVortexInstallmentPayable(
   return readCreateInstallmentPayableResult(responseBody);
 }
 
+async function createVortexDepositBalancePayable(
+  request: CreateDepositBalancePayableRequest,
+  env: VortexBillingEnv,
+  idempotencyKey: string,
+  fetcher: Fetcher = (input, init) => fetch(input, init),
+): Promise<CreateDepositBalancePayableResult> {
+  const responseBody = await requestVortexBillingJson(
+    {
+      apiBaseUrl: env.apiBaseUrl,
+      apiKey: env.apiKey,
+      path: "/v1/deposit-balance-payables",
+      idempotencyKey,
+      body: request as unknown as JsonObject,
+    },
+    fetcher,
+  );
+  return readCreateDepositBalancePayableResult(responseBody);
+}
+
 async function requestVortexBillingJson(
   input: {
     readonly apiBaseUrl: string;
@@ -888,6 +1093,43 @@ function readCreateInstallmentPayableResult(body: unknown): CreateInstallmentPay
 
   return {
     installmentPayableId,
+    payableId,
+    paymentRequestId,
+    checkoutUrl,
+  };
+}
+
+function readCreateDepositBalancePayableResult(body: unknown): CreateDepositBalancePayableResult {
+  const root = readObject(body, "Vortex Billing deposit/balance payable response");
+  const data = readObject(root.data, "Vortex Billing deposit/balance payable response data");
+  const depositBalancePayable = readObject(
+    data.depositBalancePayable,
+    "Vortex Billing deposit/balance payable response deposit balance payable",
+  );
+  const payable = readObject(data.payable, "Vortex Billing deposit/balance payable response payable");
+  const lineage = readObject(
+    payable.lineage,
+    "Vortex Billing deposit/balance payable response lineage",
+  );
+  // Vortex models a deposit/balance payable on top of the installment payable object, so its id
+  // field is literally `installmentPayableId` (not a copy-paste bug). The Vortex proof asserts
+  // installmentPayableId === the deposit-balance payable id.
+  const depositBalancePayableId = readString(
+    depositBalancePayable.installmentPayableId,
+    "Vortex Billing deposit/balance payable id",
+  );
+  const payableId = readString(payable.payableId, "Vortex Billing deposit payable id");
+  const paymentRequestId = readOptionalString(
+    lineage.paymentRequestId,
+    "Vortex Billing deposit payment request id",
+  );
+  const checkoutUrl = readOptionalString(
+    lineage.checkoutUrl,
+    "Vortex Billing deposit checkout URL",
+  );
+
+  return {
+    depositBalancePayableId,
     payableId,
     paymentRequestId,
     checkoutUrl,
@@ -1022,6 +1264,42 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
+      } else if (configInput.paymentType === "deposit_balance") {
+        const depositBalanceRequest = buildCreateDepositBalancePayableRequest({
+          config: configInput,
+          recipient,
+          env,
+          now: Date.now(),
+        });
+        const depositBalancePayable = await createVortexDepositBalancePayable(
+          depositBalanceRequest,
+          env,
+          `seal-document-deposit-balance-payable:${config._id}`,
+        );
+        if (depositBalancePayable.checkoutUrl === undefined) {
+          throw new ConvexError(
+            "Vortex Billing deposit/balance payable response did not include checkout URL",
+          );
+        }
+
+        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
+          configId: config._id,
+          paymentStatus: "awaiting",
+          vortexPayableId: depositBalancePayable.payableId,
+          vortexDepositBalancePayableId: depositBalancePayable.depositBalancePayableId,
+          vortexPaymentRequestId: depositBalancePayable.paymentRequestId,
+          hostedInvoiceUrl: depositBalancePayable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
+
+        paymentLinks.push({
+          recipientEmail: recipient.email,
+          hostedInvoiceUrl: depositBalancePayable.checkoutUrl,
+          providerInvoiceId: depositBalancePayable.payableId,
+          totalAmountCents: config.totalAmountCents,
+          currency: config.currency,
+        });
       } else {
         const payableRequest = buildCreatePayableRequest({
           config: configInput,
@@ -1079,6 +1357,7 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
     taxEnabled: config.taxEnabled,
     recurringConfig: config.recurringConfig,
     installmentsConfig: config.installmentsConfig,
+    depositBalanceConfig: config.depositBalanceConfig,
   };
 }
 

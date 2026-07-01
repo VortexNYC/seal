@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  buildCreateDepositBalancePayableRequest,
   buildCreateInstallmentPayableRequest,
   buildCreatePayableRequest,
   buildCreateRecurringPayableRequest,
@@ -11,6 +12,7 @@ import {
 type BuildPayableInput = Parameters<typeof buildCreatePayableRequest>[0];
 type BuildRecurringPayableInput = Parameters<typeof buildCreateRecurringPayableRequest>[0];
 type BuildInstallmentPayableInput = Parameters<typeof buildCreateInstallmentPayableRequest>[0];
+type BuildDepositBalancePayableInput = Parameters<typeof buildCreateDepositBalancePayableRequest>[0];
 
 const baseConfig: BuildPayableInput["config"] = {
   _id: "seal_config_123",
@@ -66,7 +68,7 @@ describe("Vortex Billing document payable bridge", () => {
         [{ ...baseConfig, paymentType: "deposit_balance" }],
         { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
       ),
-    ).toBe("stripe");
+    ).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider("org_seal_123", [{ ...baseConfig, taxEnabled: true }], {
         VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
@@ -282,6 +284,98 @@ describe("Vortex Billing document payable bridge", () => {
       ],
     });
     expect(request.installments[1]?.dueAt).toBe("2026-03-02T00:00:00.000Z");
+    expect(request.feePolicy.ownerMode).toBe("customer_pays_processing");
+  });
+
+  test("builds a Vortex deposit/balance payable request from a Seal deposit balance config", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      sourceNamespace: "seal-proof",
+      paymentsEnvironment: "sandbox",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_seal_123" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
+      priceMapJson: JSON.stringify({
+        "seal_line_1:deposit": "price_seal_line_deposit",
+        "seal_line_1:balance": "price_seal_line_balance",
+      }),
+    });
+    const depositBalanceConfig: BuildDepositBalancePayableInput["config"] = {
+      ...baseConfig,
+      paymentType: "deposit_balance",
+      items: [
+        {
+          id: "seal_line_1",
+          description: "Seal document deposit balance",
+          quantity: 1,
+          unitPrice: 20000,
+        },
+      ],
+      totalAmountCents: 20000,
+      depositBalanceConfig: {
+        depositPercent: 25,
+        balanceDueDays: 30,
+      },
+    };
+
+    const request = buildCreateDepositBalancePayableRequest({
+      config: depositBalanceConfig,
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+    });
+
+    expect(request).toMatchObject({
+      sourceType: "document_payment_field",
+      sourceId: "seal_config_123",
+      documentId: "seal_doc_123",
+      paymentFieldId: "seal_field_123",
+      customerExternalId: "cust_seal_123",
+      billingAccountId: "bacc_seal_123",
+      merchantAccountId: "ma_seal_123",
+      currency: "USD",
+      taxMode: "not_taxable",
+      collectionIntent: "manual",
+      metadata: {
+        sourceSystem: "seal-proof",
+        vortexPaymentsEnvironment: "sandbox",
+        sealPaymentType: "deposit_balance",
+        recipientEmail: "buyer@seal.test",
+      },
+    });
+    expect(request.deposit).toEqual({
+      dueAt: "2026-01-31T00:00:00.000Z",
+      amountDue: 5000,
+      lineItems: [
+        {
+          priceId: "price_seal_line_deposit",
+          quantity: 1,
+          taxable: false,
+          metadata: {
+            sealLineItemId: "seal_line_1:deposit",
+            sealLineItemDescription: "Seal document deposit balance (deposit)",
+            sealLineItemUnitPrice: "5000",
+          },
+        },
+      ],
+    });
+    expect(request.balance).toEqual({
+      dueAt: "2026-03-02T00:00:00.000Z",
+      amountDue: 15000,
+      lineItems: [
+        {
+          priceId: "price_seal_line_balance",
+          quantity: 1,
+          taxable: false,
+          metadata: {
+            sealLineItemId: "seal_line_1:balance",
+            sealLineItemDescription: "Seal document deposit balance (balance)",
+            sealLineItemUnitPrice: "15000",
+          },
+        },
+      ],
+    });
     expect(request.feePolicy.ownerMode).toBe("customer_pays_processing");
   });
 

@@ -471,6 +471,7 @@ describe("Payment field mutations", () => {
           vortexPayableId: "payable_vortex_123",
           vortexRecurringPayableId: "recurring_payable_vortex_123",
           vortexInstallmentPayableId: "installment_payable_vortex_123",
+          vortexDepositBalancePayableId: "deposit_balance_payable_vortex_123",
           vortexPaymentRequestId: "pr_vortex_123",
           hostedInvoiceUrl: "https://payments.vortex.test/pay/token_123",
           customerEmail: "signer@example.com",
@@ -500,6 +501,9 @@ describe("Payment field mutations", () => {
       expect(result.config?.vortexPayableId).toBe("payable_vortex_123");
       expect(result.config?.vortexRecurringPayableId).toBe("recurring_payable_vortex_123");
       expect(result.config?.vortexInstallmentPayableId).toBe("installment_payable_vortex_123");
+      expect(result.config?.vortexDepositBalancePayableId).toBe(
+        "deposit_balance_payable_vortex_123",
+      );
       expect(result.config?.vortexPaymentRequestId).toBe("pr_vortex_123");
       expect(result.config?.hostedInvoiceUrl).toBe("https://payments.vortex.test/pay/token_456");
       expect(result.invoices).toHaveLength(1);
