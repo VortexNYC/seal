@@ -3,7 +3,9 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
+import { updateVortexPaymentStatusFromWebhookInDb } from "../payment_fields/mutations";
 import type { SubscriptionStatus } from "../schemas/subscriptions";
+import { publishWebhookEvent } from "../webhooks/publish";
 
 export type VortexSubscriptionProjectionResult = {
   readonly processed: boolean;
@@ -23,6 +25,7 @@ export type VortexInvoiceProjectionResult = {
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
 type VortexInvoiceEventType = "invoice.paid" | "invoice.payment_failed";
+type VortexPayableObjectStatus = "paid" | "failed" | "awaiting_payment";
 
 type VortexInvoiceEventInput = UnknownRecord & {
   readonly id: string;
@@ -38,6 +41,21 @@ export type VortexInvoiceProjection = {
   readonly invoiceNumber: string;
   readonly invoiceStatus: string;
   readonly sourceCreatedAt?: number;
+};
+
+export type VortexPayableObjectProjection = {
+  readonly eventId: string;
+  readonly payableId: string;
+  readonly status: VortexPayableObjectStatus;
+  readonly paymentRequestId?: string;
+  readonly hostedInvoiceUrl?: string;
+};
+
+export type VortexPayableObjectProjectionResult = {
+  readonly processed: boolean;
+  readonly duplicate: boolean;
+  readonly ignored: boolean;
+  readonly payableId: string;
 };
 
 const stripeIdPattern = /^(cus|sub|price|prod)_/u;
@@ -119,9 +137,9 @@ function blocksEqualMsPastDueWiden(
   );
 }
 
-function sourceEventPatch(
-  incomingCreatedAtMs: number | undefined,
-): { readonly lastSourceEventAt?: number } {
+function sourceEventPatch(incomingCreatedAtMs: number | undefined): {
+  readonly lastSourceEventAt?: number;
+} {
   return incomingCreatedAtMs === undefined ? {} : { lastSourceEventAt: incomingCreatedAtMs };
 }
 
@@ -139,10 +157,7 @@ async function insertProcessedVortexEvent(
 export function parseVortexInvoiceEvent(
   event: VortexInvoiceEventInput,
 ): VortexInvoiceProjection | null {
-  if (
-    event.type !== "invoice.paid" &&
-    event.type !== "invoice.payment_failed"
-  ) {
+  if (event.type !== "invoice.paid" && event.type !== "invoice.payment_failed") {
     return null;
   }
   if (!isRecord(event.data)) {
@@ -167,6 +182,41 @@ export function parseVortexInvoiceEvent(
     invoiceNumber,
     invoiceStatus,
     sourceCreatedAt: event.createdAt,
+  };
+}
+
+export function parseVortexPayableObjectEvent(
+  event: VortexInvoiceEventInput,
+): VortexPayableObjectProjection | null {
+  if (event.type !== "payable_object.updated") {
+    return null;
+  }
+  if (!isRecord(event.data)) {
+    return null;
+  }
+
+  const payableObject = event.data.payableObject;
+  if (!isRecord(payableObject)) {
+    return null;
+  }
+
+  const payableId = stringField(payableObject, "payableId");
+  const status = stringField(payableObject, "status");
+  if (
+    payableId === null ||
+    (status !== "paid" && status !== "failed" && status !== "awaiting_payment")
+  ) {
+    return null;
+  }
+
+  const lineage = isRecord(payableObject.lineage) ? payableObject.lineage : {};
+
+  return {
+    eventId: event.id,
+    payableId,
+    status,
+    paymentRequestId: optionalStringField(lineage, "paymentRequestId"),
+    hostedInvoiceUrl: optionalStringField(lineage, "checkoutUrl"),
   };
 }
 
@@ -442,8 +492,7 @@ async function projectInvoiceEvent(
   const entitlementPatch =
     statusPatch.status === "past_due"
       ? {
-          pastDueSince:
-            subscription.status === "past_due" ? subscription.pastDueSince : now,
+          pastDueSince: subscription.status === "past_due" ? subscription.pastDueSince : now,
         }
       : args.eventType === "invoice.paid" && subscription.status === "past_due"
         ? {
@@ -501,6 +550,305 @@ export const projectInvoicePaymentFailed = internalMutation({
     return await projectInvoiceEvent(ctx, args, {
       status: "past_due",
       latestInvoiceStatus: args.invoiceStatus,
+    });
+  },
+});
+
+function payableResult(input: {
+  readonly processed: boolean;
+  readonly duplicate: boolean;
+  readonly ignored: boolean;
+  readonly payableId: string;
+}): VortexPayableObjectProjectionResult {
+  return input;
+}
+
+function paymentStatusForPayableStatus(
+  status: VortexPayableObjectStatus,
+): "awaiting" | "paid" | "failed" {
+  switch (status) {
+    case "paid":
+      return "paid";
+    case "failed":
+      return "failed";
+    case "awaiting_payment":
+      return "awaiting";
+  }
+}
+
+function invoiceStatusForPayableStatus(
+  status: VortexPayableObjectStatus,
+): "open" | "paid" | "uncollectible" {
+  switch (status) {
+    case "paid":
+      return "paid";
+    case "failed":
+      return "uncollectible";
+    case "awaiting_payment":
+      return "open";
+  }
+}
+
+function shouldIgnoreTerminalPayableProjection(input: {
+  readonly currentInvoiceStatus: string | undefined;
+  readonly currentPaymentStatus: string | undefined;
+  readonly incomingInvoiceStatus: "open" | "paid" | "uncollectible";
+  readonly incomingPaymentStatus: "awaiting" | "paid" | "failed";
+}): boolean {
+  if (input.currentInvoiceStatus === "paid") {
+    return input.incomingInvoiceStatus !== "paid";
+  }
+  if (input.currentInvoiceStatus === "void") {
+    return input.incomingInvoiceStatus !== "paid";
+  }
+  if (input.currentInvoiceStatus === "uncollectible") {
+    return (
+      input.incomingInvoiceStatus === "open" || input.incomingInvoiceStatus === "uncollectible"
+    );
+  }
+  if (input.currentPaymentStatus === "paid") {
+    return input.incomingPaymentStatus !== "paid";
+  }
+  if (input.currentPaymentStatus === "cancelled") {
+    return input.incomingPaymentStatus !== "paid";
+  }
+  if (input.currentPaymentStatus === "failed") {
+    return input.incomingPaymentStatus === "awaiting" || input.incomingPaymentStatus === "failed";
+  }
+  return false;
+}
+
+async function patchPayableLineage(
+  ctx: MutationCtx,
+  input: {
+    readonly configId: Id<"payment_field_configs"> | undefined;
+    readonly invoiceRecordId: Id<"document_invoices"> | undefined;
+    readonly paymentRequestId: string | undefined;
+    readonly hostedInvoiceUrl: string | undefined;
+    readonly now: number;
+  },
+): Promise<void> {
+  const patch = {
+    ...(input.paymentRequestId !== undefined && {
+      vortexPaymentRequestId: input.paymentRequestId,
+    }),
+    ...(input.hostedInvoiceUrl !== undefined && {
+      hostedInvoiceUrl: input.hostedInvoiceUrl,
+    }),
+    updatedAt: input.now,
+  };
+
+  if (input.paymentRequestId === undefined && input.hostedInvoiceUrl === undefined) {
+    return;
+  }
+
+  if (input.configId !== undefined) {
+    await ctx.db.patch(input.configId, patch);
+  }
+  if (input.invoiceRecordId !== undefined) {
+    await ctx.db.patch(input.invoiceRecordId, patch);
+  }
+}
+
+async function cancelInvoiceDunning(
+  ctx: MutationCtx,
+  invoiceRecordId: Id<"document_invoices">,
+  now: number,
+): Promise<void> {
+  const invoice = await ctx.db.get(invoiceRecordId);
+  if (!invoice || invoice.dunningStatus !== "active") {
+    return;
+  }
+
+  await ctx.db.patch(invoiceRecordId, {
+    dunningStatus: "cancelled",
+    dunningCompletedAt: now,
+    nextDunningAt: undefined,
+    updatedAt: now,
+  });
+}
+
+async function startInvoiceDunning(
+  ctx: MutationCtx,
+  invoiceRecordId: Id<"document_invoices">,
+  now: number,
+): Promise<boolean> {
+  const invoice = await ctx.db.get(invoiceRecordId);
+  if (!invoice) {
+    return false;
+  }
+  if (
+    invoice.dunningStatus === "active" ||
+    invoice.dunningStatus === "completed" ||
+    invoice.dunningStatus === "cancelled"
+  ) {
+    return false;
+  }
+  if (invoice.status !== "open" && invoice.status !== "uncollectible") {
+    return false;
+  }
+
+  await ctx.db.patch(invoiceRecordId, {
+    dunningStatus: "active",
+    dunningStep: 0,
+    dunningStartedAt: now,
+    nextDunningAt: now,
+    updatedAt: now,
+  });
+  return true;
+}
+
+async function finalizeDocumentIfPaymentComplete(
+  ctx: MutationCtx,
+  documentId: Id<"documents">,
+  now: number,
+): Promise<void> {
+  const document = await ctx.db.get(documentId);
+  if (!document || document.workflowStatus !== "waiting_for_payment") {
+    return;
+  }
+
+  const paymentConfigs = await ctx.db
+    .query("payment_field_configs")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .collect();
+  const allPaid = paymentConfigs.every(
+    (config) => config.paymentStatus === "paid" || config.paymentStatus === "cancelled",
+  );
+
+  if (!allPaid) {
+    return;
+  }
+
+  await ctx.db.patch(documentId, {
+    workflowStatus: "completed",
+    completedAt: now,
+    updatedAt: now,
+  });
+
+  await publishWebhookEvent(ctx, {
+    organizationId: document.organizationId,
+    eventType: "document.completed",
+    data: {
+      document_id: documentId,
+      name: document.name,
+      completed_at: new Date(now).toISOString(),
+    },
+  });
+}
+
+export const projectPayableObjectUpdated = internalMutation({
+  args: {
+    eventId: v.string(),
+    payableId: v.string(),
+    status: v.union(v.literal("paid"), v.literal("failed"), v.literal("awaiting_payment")),
+    paymentRequestId: v.optional(v.string()),
+    hostedInvoiceUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<VortexPayableObjectProjectionResult> => {
+    const existingEvent = await ctx.db
+      .query("vortex_billing_webhook_events")
+      .withIndex("by_event_id", (q) => q.eq("eventId", args.eventId))
+      .first();
+    if (existingEvent) {
+      return payableResult({
+        processed: false,
+        duplicate: true,
+        ignored: false,
+        payableId: args.payableId,
+      });
+    }
+
+    const [config, invoiceRecord] = await Promise.all([
+      ctx.db
+        .query("payment_field_configs")
+        .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.payableId))
+        .first(),
+      ctx.db
+        .query("document_invoices")
+        .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.payableId))
+        .first(),
+    ]);
+
+    if (!config && !invoiceRecord) {
+      return payableResult({
+        processed: false,
+        duplicate: false,
+        ignored: true,
+        payableId: args.payableId,
+      });
+    }
+
+    const now = Date.now();
+    const paymentStatus = paymentStatusForPayableStatus(args.status);
+    const invoiceStatus = invoiceStatusForPayableStatus(args.status);
+    if (
+      shouldIgnoreTerminalPayableProjection({
+        currentInvoiceStatus: invoiceRecord?.status,
+        currentPaymentStatus: config?.paymentStatus,
+        incomingInvoiceStatus: invoiceStatus,
+        incomingPaymentStatus: paymentStatus,
+      })
+    ) {
+      await insertProcessedVortexEvent(ctx, {
+        eventId: args.eventId,
+        eventType: "payable_object.updated",
+        processedAt: now,
+      });
+      return payableResult({
+        processed: false,
+        duplicate: false,
+        ignored: true,
+        payableId: args.payableId,
+      });
+    }
+
+    const result = await updateVortexPaymentStatusFromWebhookInDb(ctx, {
+      vortexPayableId: args.payableId,
+      paymentStatus,
+    });
+    if (result === null) {
+      return payableResult({
+        processed: false,
+        duplicate: false,
+        ignored: true,
+        payableId: args.payableId,
+      });
+    }
+
+    await patchPayableLineage(ctx, {
+      configId: result.configId,
+      invoiceRecordId: result.invoiceRecordId,
+      paymentRequestId: args.paymentRequestId,
+      hostedInvoiceUrl: args.hostedInvoiceUrl,
+      now,
+    });
+
+    if (args.status === "paid") {
+      if (result.invoiceRecordId !== undefined) {
+        await cancelInvoiceDunning(ctx, result.invoiceRecordId, now);
+      }
+      if (result.documentId !== undefined) {
+        await finalizeDocumentIfPaymentComplete(ctx, result.documentId, now);
+      }
+    } else if (args.status === "failed" && result.invoiceRecordId !== undefined) {
+      // Open the dunning sequence (step 0, due now). Email delivery + step advancement are
+      // driven by Seal's existing processDunningEmails cron — the canonical dunning path — so
+      // the projection stays a pure state mutation and the post-webhook step is deterministic.
+      await startInvoiceDunning(ctx, result.invoiceRecordId, now);
+    }
+
+    await insertProcessedVortexEvent(ctx, {
+      eventId: args.eventId,
+      eventType: "payable_object.updated",
+      processedAt: now,
+    });
+
+    return payableResult({
+      processed: true,
+      duplicate: false,
+      ignored: false,
+      payableId: args.payableId,
     });
   },
 });

@@ -1,8 +1,10 @@
 import { ConvexError, v } from "convex/values";
 
-import { internalMutation, mutation } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
+import { internalMutation, mutation, type MutationCtx } from "../_generated/server";
 import {
   dueDateTermsTuple,
+  type PaymentStatus,
   paymentMethodTuple,
   paymentStatusTuple,
   paymentTypeTuple,
@@ -298,6 +300,160 @@ export const updatePaymentStatusFromWebhook = internalMutation({
       documentId: config?.documentId ?? invoiceRecord?.documentId,
       invoiceRecordId: invoiceRecord?._id,
     };
+  },
+});
+
+type DocumentInvoiceWebhookStatus = "open" | "paid" | "void" | "uncollectible";
+
+type PaymentWebhookUpdateResult = {
+  readonly configId: Id<"payment_field_configs"> | undefined;
+  readonly documentId: Id<"documents"> | undefined;
+  readonly invoiceRecordId: Id<"document_invoices"> | undefined;
+};
+
+const documentInvoiceStatusByPaymentStatus: Partial<
+  Record<PaymentStatus, DocumentInvoiceWebhookStatus>
+> = {
+  awaiting: "open",
+  paid: "paid",
+  failed: "uncollectible",
+  cancelled: "void",
+};
+
+function isTerminalInvoiceStatus(status: string): boolean {
+  return status === "paid" || status === "void" || status === "uncollectible";
+}
+
+function isTerminalPaymentStatus(status: PaymentStatus | undefined): boolean {
+  return status === "paid" || status === "failed" || status === "cancelled";
+}
+
+function shouldSkipTerminalInvoiceUpdate(
+  currentStatus: string,
+  incomingStatus: DocumentInvoiceWebhookStatus,
+): boolean {
+  if (!isTerminalInvoiceStatus(currentStatus)) {
+    return false;
+  }
+  if (currentStatus === "uncollectible" && incomingStatus === "paid") {
+    return false;
+  }
+  return currentStatus !== incomingStatus;
+}
+
+function shouldSkipTerminalConfigUpdate(
+  currentStatus: PaymentStatus | undefined,
+  incomingStatus: PaymentStatus,
+): boolean {
+  if (!isTerminalPaymentStatus(currentStatus)) {
+    return false;
+  }
+  if (currentStatus === "failed" && incomingStatus === "paid") {
+    return false;
+  }
+  return currentStatus !== incomingStatus;
+}
+
+export async function updateVortexPaymentStatusFromWebhookInDb(
+  ctx: Pick<MutationCtx, "db">,
+  args: {
+    readonly vortexPayableId: string;
+    readonly paymentStatus: PaymentStatus;
+  },
+): Promise<PaymentWebhookUpdateResult | null> {
+  const now = Date.now();
+  const invoiceStatus = documentInvoiceStatusByPaymentStatus[args.paymentStatus];
+
+  // Correlate strictly by vortexPayableId. The by_vortex_payable indexes are not unique, so a
+  // money webhook must FAIL CLOSED on any ambiguity rather than "join by hope": refuse if a payable
+  // id maps to more than one config/invoice, or if the config and invoice disagree on the document
+  // (a document belongs to exactly one org, so a documentId match is the tenant/correlation guard).
+  const configMatches = await ctx.db
+    .query("payment_field_configs")
+    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+    .collect();
+  if (configMatches.length > 1) {
+    throw new Error(`ambiguous vortexPayableId across payment_field_configs: ${args.vortexPayableId}`);
+  }
+  const config = configMatches[0] ?? null;
+
+  const invoiceMatches = await ctx.db
+    .query("document_invoices")
+    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+    .collect();
+  if (invoiceMatches.length > 1) {
+    throw new Error(`ambiguous vortexPayableId across document_invoices: ${args.vortexPayableId}`);
+  }
+  const invoiceRecord = invoiceMatches[0] ?? null;
+
+  if (!config && !invoiceRecord) {
+    return null;
+  }
+
+  if (config && invoiceRecord && config.documentId !== invoiceRecord.documentId) {
+    throw new Error(
+      `vortexPayableId ${args.vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`,
+    );
+  }
+
+  if (
+    invoiceRecord &&
+    invoiceStatus !== undefined &&
+    shouldSkipTerminalInvoiceUpdate(invoiceRecord.status, invoiceStatus)
+  ) {
+    return {
+      configId: config?._id,
+      documentId: config?.documentId ?? invoiceRecord.documentId,
+      invoiceRecordId: invoiceRecord._id,
+    };
+  }
+
+  if (
+    !invoiceRecord &&
+    config &&
+    shouldSkipTerminalConfigUpdate(config.paymentStatus, args.paymentStatus)
+  ) {
+    return {
+      configId: config._id,
+      documentId: config.documentId,
+      invoiceRecordId: undefined,
+    };
+  }
+
+  if (config) {
+    await ctx.db.patch(config._id, {
+      paymentStatus: args.paymentStatus,
+      updatedAt: now,
+    });
+  }
+
+  if (invoiceRecord && invoiceStatus !== undefined) {
+    await ctx.db.patch(invoiceRecord._id, {
+      status: invoiceStatus,
+      ...(invoiceStatus === "paid" && { paidAt: now }),
+      ...(invoiceStatus === "void" && { voidedAt: now }),
+      ...(invoiceStatus === "open" &&
+        invoiceRecord.finalizedAt === undefined && {
+          finalizedAt: now,
+        }),
+      updatedAt: now,
+    });
+  }
+
+  return {
+    configId: config?._id,
+    documentId: config?.documentId ?? invoiceRecord?.documentId,
+    invoiceRecordId: invoiceRecord?._id,
+  };
+}
+
+export const updateVortexPaymentStatusFromWebhook = internalMutation({
+  args: {
+    vortexPayableId: v.string(),
+    paymentStatus: paymentStatusTuple,
+  },
+  handler: async (ctx, args): Promise<PaymentWebhookUpdateResult | null> => {
+    return await updateVortexPaymentStatusFromWebhookInDb(ctx, args);
   },
 });
 
