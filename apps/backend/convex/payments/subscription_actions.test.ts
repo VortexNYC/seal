@@ -4,6 +4,17 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { createCheckoutSession, createCustomerPortalSession } from "./subscription_actions";
 
+const stripeProcessorMocks = vi.hoisted(() => ({
+  cancelProcessorSubscription: vi.fn(),
+  createCustomerPortalUrl: vi.fn(async (): Promise<string> => "https://billing.stripe.test/session"),
+  createHostedCheckoutSession: vi.fn(async (): Promise<string> => "https://checkout.stripe.test/session"),
+  getOrCreateBillingCustomerId: vi.fn(async (): Promise<string> => "cus_created"),
+  pauseProcessorSubscription: vi.fn(),
+  resumeProcessorSubscription: vi.fn(),
+}));
+
+vi.mock("../stripe/subscription_processor", () => stripeProcessorMocks);
+
 type CheckoutArgs = {
   readonly lookupKey: string;
   readonly successUrl: string;
@@ -38,6 +49,7 @@ const managedEnvKeys = [
   "VORTEX_BILLING_API_KEY",
   "VORTEX_BILLING_ACCOUNT_ID",
   "VORTEX_BILLING_ACCOUNT_MAP",
+  "VORTEX_BILLING_CUSTOMER_MAP",
   "VORTEX_BILLING_SAAS_PRICE_MAP",
 ] as const;
 
@@ -110,7 +122,10 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
   });
 });
 
-function createCheckoutActionCtx(args: { readonly priceLookupResult: unknown }): ActionCtx {
+function createCheckoutActionCtx(args: {
+  readonly priceLookupResult: unknown;
+  readonly organizationOverrides?: Partial<Doc<"organizations">>;
+}): ActionCtx {
   const user = {
     _id: "user_seal_123" as Id<"users">,
     _creationTime: 1,
@@ -132,6 +147,7 @@ function createCheckoutActionCtx(args: { readonly priceLookupResult: unknown }):
     isActive: true,
     timezone: "UTC",
     updatedAt: 1,
+    ...args.organizationOverrides,
   } as Doc<"organizations">;
 
   const queryResults: readonly unknown[] = [user, organization, 3];
@@ -161,18 +177,62 @@ function createCheckoutActionCtx(args: { readonly priceLookupResult: unknown }):
 
 describe("payments/subscription_actions.createCustomerPortalSession", () => {
   afterEach(() => {
-    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
+    for (const key of managedEnvKeys) {
+      delete process.env[key];
+    }
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
-  test("blocks the Stripe billing portal for Vortex-billed orgs (no stray Stripe customer)", async () => {
+  test("returns a Vortex billing portal for Vortex-billed orgs without a stray Stripe customer", async () => {
     process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+    process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
+    process.env.VORTEX_BILLING_API_KEY = "vb_test";
+    process.env.VORTEX_BILLING_CUSTOMER_MAP = JSON.stringify({
+      [organizationId]: "vtx_cust_mapped",
+    });
+    const mockFetch: typeof fetch = Object.assign(
+      async (): Promise<Response> =>
+        new Response(
+          JSON.stringify({
+            data: {
+              link: {
+                url: "https://pay.vortex.test/portal/plink_123",
+              },
+            },
+          }),
+          { status: 201, headers: { "content-type": "application/json" } },
+        ),
+      { preconnect: fetch.preconnect },
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
     const ctx = createCheckoutActionCtx({ priceLookupResult: null });
 
-    await expect(
-      portalHandler(ctx, { returnUrl: "https://seal.test/billing" }),
-    ).rejects.toThrow("Billing portal is not yet available for Vortex billing");
+    await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({
+      url: "https://pay.vortex.test/portal/plink_123",
+    });
     // The Stripe-customer resolution mutation must never run for a Vortex org.
+    expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(stripeProcessorMocks.getOrCreateBillingCustomerId).not.toHaveBeenCalled();
+    expect(stripeProcessorMocks.createCustomerPortalUrl).not.toHaveBeenCalled();
+  });
+
+  test("keeps non-allowlisted orgs on the Stripe billing portal path", async () => {
+    const ctx = createCheckoutActionCtx({
+      priceLookupResult: null,
+      organizationOverrides: { stripeCustomerId: "cus_existing" },
+    });
+
+    await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({
+      url: "https://billing.stripe.test/session",
+    });
+    expect(stripeProcessorMocks.createCustomerPortalUrl).toHaveBeenCalledWith({
+      customerId: "cus_existing",
+      returnUrl: "https://seal.test/billing",
+    });
+    expect(stripeProcessorMocks.getOrCreateBillingCustomerId).not.toHaveBeenCalled();
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
 });
