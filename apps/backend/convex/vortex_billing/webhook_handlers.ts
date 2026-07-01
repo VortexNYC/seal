@@ -2,7 +2,7 @@ import type { GenericActionCtx } from "convex/server";
 
 import { internal } from "../_generated/api";
 import type { DataModel, Id } from "../_generated/dataModel";
-import { parseVortexInvoiceEvent } from "./projection";
+import { parseVortexInvoiceEvent, parseVortexPayableObjectEvent } from "./projection";
 import { verifyVortexWebhookSignature } from "./webhook_signature";
 
 type HttpActionCtx = GenericActionCtx<DataModel>;
@@ -146,7 +146,8 @@ export function parseVortexSubscriptionUpdatedProjection(
 type VortexWebhookDispatchType =
   | "subscription.updated"
   | "invoice.paid"
-  | "invoice.payment_failed";
+  | "invoice.payment_failed"
+  | "payable_object.updated";
 
 type VortexWebhookDispatcher = (
   ctx: HttpActionCtx,
@@ -157,7 +158,8 @@ function isVortexWebhookDispatchType(type: string): type is VortexWebhookDispatc
   return (
     type === "subscription.updated" ||
     type === "invoice.paid" ||
-    type === "invoice.payment_failed"
+    type === "invoice.payment_failed" ||
+    type === "payable_object.updated"
   );
 }
 
@@ -183,13 +185,10 @@ const vortexWebhookDispatchers: Record<VortexWebhookDispatchType, VortexWebhookD
       return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
     }
 
-    const result = await ctx.runMutation(
-      internal.vortex_billing.projection.projectInvoicePaid,
-      {
-        ...projection,
-        eventType: "invoice.paid",
-      },
-    );
+    const result = await ctx.runMutation(internal.vortex_billing.projection.projectInvoicePaid, {
+      ...projection,
+      eventType: "invoice.paid",
+    });
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
   "invoice.payment_failed": async (ctx, event): Promise<Response> => {
@@ -207,6 +206,18 @@ const vortexWebhookDispatchers: Record<VortexWebhookDispatchType, VortexWebhookD
         ...projection,
         eventType: "invoice.payment_failed",
       },
+    );
+    return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+  },
+  "payable_object.updated": async (ctx, event): Promise<Response> => {
+    const projection = parseVortexPayableObjectEvent(event);
+    if (projection === null) {
+      return jsonResponse({ error: "invalid_payable_object_payload", eventId: event.id }, 400);
+    }
+
+    const result = await ctx.runMutation(
+      internal.vortex_billing.projection.projectPayableObjectUpdated,
+      projection,
     );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
