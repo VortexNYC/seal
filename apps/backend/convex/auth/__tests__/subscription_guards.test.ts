@@ -5,6 +5,7 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
 import {
+  GRACE_PERIOD_MS,
   PLAN_LIMITS,
   ensureProFeature,
   ensureSeatLimit,
@@ -41,6 +42,7 @@ describe("subscription_guards", () => {
       | "incomplete_expired"
       | "unpaid";
     tier?: string;
+    pastDueSince?: number;
   }) {
     const now = Date.now();
     const status = overrides?.subscriptionStatus ?? "active";
@@ -83,6 +85,7 @@ describe("subscription_guards", () => {
         currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
         currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
         cancelAtPeriodEnd: false,
+        pastDueSince: overrides?.pastDueSince,
         createdAt: now,
         updatedAt: now,
       });
@@ -197,8 +200,20 @@ describe("subscription_guards", () => {
       expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
-    test("returns free plan for past_due subscription", async () => {
-      await seedSubscription({ subscriptionStatus: "past_due" });
+    test("returns pro plan for past_due subscription within grace", async () => {
+      await seedSubscription({ subscriptionStatus: "past_due", pastDueSince: Date.now() });
+
+      const result = await t.run(async (ctx) => {
+        return await getSubscriptionPlan(ctx.db, organizationId);
+      });
+      expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
+    });
+
+    test("returns free plan for past_due subscription beyond grace", async () => {
+      await seedSubscription({
+        subscriptionStatus: "past_due",
+        pastDueSince: Date.now() - GRACE_PERIOD_MS - 24 * 60 * 60 * 1000,
+      });
 
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);

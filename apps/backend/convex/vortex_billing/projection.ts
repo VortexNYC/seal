@@ -439,8 +439,22 @@ async function projectInvoiceEvent(
     });
   }
 
+  const entitlementPatch =
+    statusPatch.status === "past_due"
+      ? {
+          pastDueSince:
+            subscription.status === "past_due" ? subscription.pastDueSince : now,
+        }
+      : args.eventType === "invoice.paid" && subscription.status === "past_due"
+        ? {
+            status: "active" as const,
+            pastDueSince: undefined,
+          }
+        : {};
+
   await ctx.db.patch(subscription._id, {
     ...statusPatch,
+    ...entitlementPatch,
     latestInvoiceId: args.invoiceNumber,
     ...sourceEventPatch(args.sourceCreatedAt),
     updatedAt: now,

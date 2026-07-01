@@ -10,43 +10,27 @@
 
 import { ConvexError } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 
 export { PLAN_LIMITS, type TierPlan };
 
-/**
- * Determine an organization's current subscription plan.
- *
- * Treats `"active"` and `"trialing"` statuses as paid tiers.
- * Falls back to `"free"` when no active subscription exists.
- */
-export async function getSubscriptionPlan(
+// Bounded dunning access: failed renewals keep paid entitlement during retries for 14 days.
+export const GRACE_PERIOD_MS = 14 * 24 * 60 * 60 * 1000;
+
+type SubscriptionPlanResult = { isPro: boolean; isEnterprise: boolean; plan: TierPlan };
+type PlanSubscription = Pick<
+  Doc<"subscriptions">,
+  "_creationTime" | "externalPriceId" | "externalSubscriptionId" | "pastDueSince" | "status"
+>;
+
+async function resolvePlanForSubscription(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
-): Promise<{ isPro: boolean; isEnterprise: boolean; plan: TierPlan }> {
-  const subscription =
-    (await db
-      .query("subscriptions")
-      .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
-      )
-      .order("desc")
-      .first()) ??
-    (await db
-      .query("subscriptions")
-      .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "trialing"),
-      )
-      .order("desc")
-      .first());
-
-  if (!subscription) {
-    return { isPro: false, isEnterprise: false, plan: "free" };
-  }
-
+  subscription: PlanSubscription,
+): Promise<SubscriptionPlanResult> {
   // Resolve the tier by joining through price → product
   const price = await db
     .query("subscription_prices")
@@ -111,6 +95,54 @@ export async function getSubscriptionPlan(
       }),
     );
   }
+  return { isPro: false, isEnterprise: false, plan: "free" };
+}
+
+/**
+ * Determine an organization's current subscription plan.
+ *
+ * Treats `"active"`, `"trialing"`, and bounded-grace `"past_due"` statuses as paid tiers.
+ * Falls back to `"free"` when no paid subscription exists.
+ */
+export async function getSubscriptionPlan(
+  db: DatabaseReader,
+  organizationId: Id<"organizations">,
+): Promise<SubscriptionPlanResult> {
+  const subscription =
+    (await db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "active"),
+      )
+      .order("desc")
+      .first()) ??
+    (await db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "trialing"),
+      )
+      .order("desc")
+      .first());
+
+  if (subscription) {
+    return await resolvePlanForSubscription(db, organizationId, subscription);
+  }
+
+  const pastDueSubscription = await db
+    .query("subscriptions")
+    .withIndex("by_organization_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "past_due"),
+    )
+    .order("desc")
+    .first();
+
+  if (pastDueSubscription) {
+    const pastDueStartedAt = pastDueSubscription.pastDueSince ?? pastDueSubscription._creationTime;
+    if (Date.now() - pastDueStartedAt <= GRACE_PERIOD_MS) {
+      return await resolvePlanForSubscription(db, organizationId, pastDueSubscription);
+    }
+  }
+
   return { isPro: false, isEnterprise: false, plan: "free" };
 }
 
