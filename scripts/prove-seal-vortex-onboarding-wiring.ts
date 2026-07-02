@@ -5,7 +5,6 @@ import { existsSync } from "node:fs";
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
-const repoRoot = new URL("..", import.meta.url).pathname;
 // Seal is a monorepo — the Convex app (and its `convex` dependency) lives in apps/backend,
 // so all Seal `convex run/env` commands must run from there, not the repo root.
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
