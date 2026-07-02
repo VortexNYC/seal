@@ -99,9 +99,13 @@ async function runCommand(input: {
   readonly command: readonly string[];
   readonly cwd: string;
   readonly label: string;
+  readonly deployment?: string;
 }): Promise<string> {
   const child = Bun.spawn(input.command, {
     cwd: input.cwd,
+    // Pin CONVEX_DEPLOYMENT per call: the parent process inherits a CONVEX_DEPLOYMENT that would
+    // otherwise override each call's cwd/.env.local and send every call to the same project.
+    env: input.deployment === undefined ? undefined : { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -127,7 +131,6 @@ async function runConvex<T extends Json>(input: {
     "bunx",
     "convex",
     "run",
-    `--deployment=${input.deployment}`,
     "--typecheck=disable",
     "--codegen=disable",
     ...(input.identity === undefined ? [] : ["--identity", JSON.stringify(input.identity)]),
@@ -138,6 +141,7 @@ async function runConvex<T extends Json>(input: {
     command,
     cwd: input.cwd,
     label: `convex run ${input.functionName}`,
+    deployment: input.deployment,
   });
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
@@ -151,9 +155,10 @@ async function getConvexEnv(input: {
   readonly name: string;
 }): Promise<string | undefined> {
   const child = Bun.spawn(
-    ["bunx", "convex", "env", "get", `--deployment=${input.deployment}`, input.name],
+    ["bunx", "convex", "env", "get", input.name],
     {
       cwd: input.cwd,
+      env: { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
       stdout: "pipe",
       stderr: "pipe",
     },
@@ -181,12 +186,12 @@ async function setConvexEnv(input: {
       "convex",
       "env",
       "set",
-      `--deployment=${input.deployment}`,
       input.name,
       input.value,
     ],
     cwd: input.cwd,
     label: `convex env set ${input.name}`,
+    deployment: input.deployment,
   });
 }
 
@@ -249,6 +254,37 @@ async function requestHostedForm(input: {
 
 function hostedKycForm(displayName: string): URLSearchParams {
   return new URLSearchParams({
+    doingBusinessAs: displayName,
+    businessTaxId: "123456789",
+    businessPhone: "1234567890",
+    mcc: "4900",
+    url: "https://vortex.nyc",
+    incorporationDateMonth: "6",
+    incorporationDateDay: "27",
+    incorporationDateYear: "1978",
+    businessAddressLine1: "631 Howard St",
+    businessAddressLine2: "",
+    businessAddressCity: "San Francisco",
+    businessAddressRegion: "CA",
+    businessAddressPostalCode: "94105",
+    businessAddressCountry: "USA",
+    firstName: "John",
+    lastName: "Smith",
+    email: `seal-vortex-primary+${proofRunId}@example.com`,
+    phone: "1234567890",
+    taxId: "123456789",
+    principalPercentageOwnership: "100",
+    dateOfBirthMonth: "6",
+    dateOfBirthDay: "27",
+    dateOfBirthYear: "1978",
+    personalAddressLine1: "631 Howard St",
+    personalAddressLine2: "",
+    personalAddressCity: "San Francisco",
+    personalAddressRegion: "CA",
+    personalAddressPostalCode: "94105",
+    personalAddressCountry: "USA",
+    maxTransactionAmount: "1000000",
+    hasAcceptedCreditCardsPreviously: "true",
     annualAchVolume: "200000",
     averageAchTransferAmount: "200000",
     achMaxTransactionAmount: "1000000",
