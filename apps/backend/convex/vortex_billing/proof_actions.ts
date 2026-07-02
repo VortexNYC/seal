@@ -9,6 +9,7 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
+import { seedTestOrganizationMember } from "../testVortexAuth";
 
 type SeedVortexSaasBillingCatalogProjectionResult = {
   readonly organizationId: Id<"organizations">;
@@ -134,6 +135,14 @@ type CreateVortexMerchantProofAccountResult = {
   };
 };
 
+type EnsureSealVortexOnboardingProofOrganizationResult = {
+  readonly organizationId: Id<"organizations">;
+  readonly slug: string;
+  readonly ownerAuthSubject: string;
+};
+
+const sealVortexOnboardingProofIdentityIssuer = "seal-vortex-onboarding-proof";
+
 async function insertSaasProofOrganization(
   ctx: MutationCtx,
   proofRunId: string,
@@ -166,6 +175,79 @@ async function insertSaasProofOwner(
     activeOrganizationId: organizationId,
   });
 }
+
+export const ensureSealVortexOnboardingProofOrganization = internalMutation({
+  args: {
+    proofRunId: v.string(),
+  },
+  returns: v.object({
+    organizationId: v.id("organizations"),
+    slug: v.string(),
+    ownerAuthSubject: v.string(),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<EnsureSealVortexOnboardingProofOrganizationResult> => {
+    const now = Date.now();
+    const slug = `seal-vortex-onboarding-proof-${args.proofRunId}`.toLowerCase();
+    const ownerAuthSubject = `seal_vortex_onboarding_proof_${args.proofRunId}`;
+    const existingOrganization = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+    const organizationId =
+      existingOrganization?._id ??
+      (await ctx.db.insert("organizations", {
+        name: `Seal Vortex Onboarding Proof ${args.proofRunId}`,
+        slug,
+        type: "company",
+        isActive: true,
+        status: "active",
+        timezone: "UTC",
+        updatedAt: now,
+      }));
+
+    const existingOwner = await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", ownerAuthSubject))
+      .first();
+    const ownerId =
+      existingOwner?._id ??
+      (await ctx.db.insert("users", {
+        email: `vortex-onboarding-owner+${args.proofRunId}@seal.test`,
+        name: "Seal Vortex Onboarding Proof Owner",
+        authSubject: ownerAuthSubject,
+        isEmailVerified: true,
+        timezone: "UTC",
+        locale: "en-US",
+        activeOrganizationId: organizationId,
+      }));
+
+    await seedTestOrganizationMember(ctx, {
+      organizationId,
+      userId: ownerId,
+      role: "owner",
+      status: "active",
+      identityIssuer: sealVortexOnboardingProofIdentityIssuer,
+    });
+
+    const organization = await ctx.db.get(organizationId);
+    await ctx.db.patch(ownerId, {
+      activeOrganizationId: organizationId,
+      ...(organization?.vortexAuthOrganizationId !== undefined
+        ? { activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId }
+        : {}),
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      slug,
+      ownerAuthSubject,
+    };
+  },
+});
 
 function hasStripePrefix(value: string | undefined): boolean {
   return value !== undefined && /^(cus|sub|price|prod)_/u.test(value);
