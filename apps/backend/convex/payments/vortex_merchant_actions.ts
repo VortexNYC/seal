@@ -5,7 +5,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { internalAction } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { isAdmin } from "../auth.utils";
 import {
   isDocumentPaymentOrganizationAllowlisted,
@@ -46,6 +46,236 @@ type CreateVortexOnboardingLinkResult = {
 };
 
 type FeeHandling = "absorb" | "pass_to_recipient";
+type SettlementStatus = "accruing" | "closed" | "approved" | "paid_out" | "failed" | "reversed";
+type PayoutStatus =
+  | "pending"
+  | "submitted"
+  | "in_transit"
+  | "succeeded"
+  | "failed"
+  | "returned"
+  | "held";
+type MoneyDirection = "credit" | "debit";
+
+type SettlementSnapshot = {
+  readonly id: string;
+  readonly environment: string;
+  readonly merchantAccountId: string;
+  readonly currency: string;
+  readonly status: SettlementStatus;
+  readonly grossAmount: number;
+  readonly feeAmount: number;
+  readonly refundAmount: number;
+  readonly adjustmentAmount: number;
+  readonly netAmount: number;
+  readonly direction: MoneyDirection;
+  readonly accrualStartAt?: string;
+  readonly accrualEndAt?: string;
+  readonly autoCloseAt?: string;
+  readonly openedAt?: string;
+  readonly closedAt?: string;
+  readonly approvedAt?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
+type PayoutSnapshot = {
+  readonly id: string;
+  readonly environment: string;
+  readonly merchantAccountId: string;
+  readonly payoutAccountId?: string;
+  readonly settlementId?: string;
+  readonly status: PayoutStatus;
+  readonly amount: number;
+  readonly currency: string;
+  readonly direction: MoneyDirection;
+  readonly expectedArrivalAt?: string;
+  readonly failureCode?: string;
+  readonly failureMessage?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
+type SellerPayoutCapability = {
+  readonly key: string;
+  readonly status: "enabled" | "disabled" | "unknown";
+  readonly reason: string;
+  readonly source: "payout_profile" | "agreement_guardrail" | "operator_policy";
+};
+
+type MerchantSellerPayoutProfileSnapshot = {
+  readonly environment: string;
+  readonly merchantAccountId: string;
+  readonly mode: string;
+  readonly payoutRail: string;
+  readonly payoutSchedule: string;
+  readonly currency?: string;
+  readonly settlementDelayDays?: number;
+  readonly submissionDelayDays?: number;
+  readonly fundingRequirement?: string;
+  readonly sameDayAchEligible?: boolean;
+  readonly instantPayoutEligible?: boolean;
+  readonly grossPayoutEnabled?: boolean;
+  readonly capabilities: SellerPayoutCapability[];
+  readonly fetchedAt: string;
+};
+
+type DerivedCurrencyBalance = {
+  readonly currency: string;
+  readonly derived: true;
+  readonly label: "derived_from_vortex_settlements_and_payouts";
+  readonly settledNet: number;
+  readonly pendingSettlement: number;
+  readonly paidOut: number;
+  readonly payoutInFlight: number;
+  readonly availableForPayout: number;
+};
+
+type DerivedBalance = {
+  readonly derived: true;
+  readonly label: "derived_from_vortex_settlements_and_payouts";
+  readonly currencies: DerivedCurrencyBalance[];
+};
+
+type MutableDerivedCurrencyBalance = {
+  derived: true;
+  label: "derived_from_vortex_settlements_and_payouts";
+  settledNet: number;
+  pendingSettlement: number;
+  paidOut: number;
+  payoutInFlight: number;
+  availableForPayout: number;
+};
+
+type VortexMerchantPayoutDataResult = {
+  readonly settlements: SettlementSnapshot[];
+  readonly payouts: PayoutSnapshot[];
+  readonly payoutProfile: MerchantSellerPayoutProfileSnapshot | null;
+  readonly derivedBalance: DerivedBalance;
+};
+
+const settlementStatusValidator = v.union(
+  v.literal("accruing"),
+  v.literal("closed"),
+  v.literal("approved"),
+  v.literal("paid_out"),
+  v.literal("failed"),
+  v.literal("reversed"),
+);
+const payoutStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("submitted"),
+  v.literal("in_transit"),
+  v.literal("succeeded"),
+  v.literal("failed"),
+  v.literal("returned"),
+  v.literal("held"),
+);
+const moneyDirectionValidator = v.union(v.literal("credit"), v.literal("debit"));
+
+const settlementSnapshotValidator = v.object({
+  id: v.string(),
+  environment: v.string(),
+  merchantAccountId: v.string(),
+  currency: v.string(),
+  status: settlementStatusValidator,
+  grossAmount: v.number(),
+  feeAmount: v.number(),
+  refundAmount: v.number(),
+  adjustmentAmount: v.number(),
+  netAmount: v.number(),
+  direction: moneyDirectionValidator,
+  accrualStartAt: v.optional(v.string()),
+  accrualEndAt: v.optional(v.string()),
+  autoCloseAt: v.optional(v.string()),
+  openedAt: v.optional(v.string()),
+  closedAt: v.optional(v.string()),
+  approvedAt: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
+const payoutSnapshotValidator = v.object({
+  id: v.string(),
+  environment: v.string(),
+  merchantAccountId: v.string(),
+  payoutAccountId: v.optional(v.string()),
+  settlementId: v.optional(v.string()),
+  status: payoutStatusValidator,
+  amount: v.number(),
+  currency: v.string(),
+  direction: moneyDirectionValidator,
+  expectedArrivalAt: v.optional(v.string()),
+  failureCode: v.optional(v.string()),
+  failureMessage: v.optional(v.string()),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+});
+
+const sellerPayoutCapabilityValidator = v.object({
+  key: v.string(),
+  status: v.union(v.literal("enabled"), v.literal("disabled"), v.literal("unknown")),
+  reason: v.string(),
+  source: v.union(
+    v.literal("payout_profile"),
+    v.literal("agreement_guardrail"),
+    v.literal("operator_policy"),
+  ),
+});
+
+const payoutProfileValidator = v.object({
+  environment: v.string(),
+  merchantAccountId: v.string(),
+  mode: v.string(),
+  payoutRail: v.string(),
+  payoutSchedule: v.string(),
+  currency: v.optional(v.string()),
+  settlementDelayDays: v.optional(v.number()),
+  submissionDelayDays: v.optional(v.number()),
+  fundingRequirement: v.optional(v.string()),
+  sameDayAchEligible: v.optional(v.boolean()),
+  instantPayoutEligible: v.optional(v.boolean()),
+  grossPayoutEnabled: v.optional(v.boolean()),
+  capabilities: v.array(sellerPayoutCapabilityValidator),
+  fetchedAt: v.string(),
+});
+
+const derivedCurrencyBalanceValidator = v.object({
+  currency: v.string(),
+  derived: v.literal(true),
+  label: v.literal("derived_from_vortex_settlements_and_payouts"),
+  settledNet: v.number(),
+  pendingSettlement: v.number(),
+  paidOut: v.number(),
+  payoutInFlight: v.number(),
+  availableForPayout: v.number(),
+});
+
+const derivedBalanceValidator = v.object({
+  derived: v.literal(true),
+  label: v.literal("derived_from_vortex_settlements_and_payouts"),
+  currencies: v.array(derivedCurrencyBalanceValidator),
+});
+
+const vortexMerchantPayoutDataResultValidator = v.object({
+  settlements: v.array(settlementSnapshotValidator),
+  payouts: v.array(payoutSnapshotValidator),
+  payoutProfile: v.union(payoutProfileValidator, v.null()),
+  derivedBalance: derivedBalanceValidator,
+});
+
+const EMPTY_DERIVED_BALANCE: DerivedBalance = {
+  derived: true,
+  label: "derived_from_vortex_settlements_and_payouts",
+  currencies: [],
+};
+
+const EMPTY_VORTEX_MERCHANT_PAYOUT_DATA: VortexMerchantPayoutDataResult = {
+  settlements: [],
+  payouts: [],
+  payoutProfile: null,
+  derivedBalance: EMPTY_DERIVED_BALANCE,
+};
 
 async function resolveAdminMembership(
   ctx: ActionCtx,
@@ -81,6 +311,36 @@ async function resolveAdminMembership(
   }
 }
 
+async function resolveOrganizationMembership(
+  ctx: ActionCtx,
+  organizationId: Id<"organizations">,
+): Promise<void> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new ConvexError("Authentication required");
+  }
+
+  const user = await ctx.runQuery(internal.organizations.helpers.getUserByAuthSubject, {
+    authSubject: identity.subject,
+  });
+
+  if (!user) {
+    throw new ConvexError("User not found");
+  }
+
+  const membership = await ctx.runQuery(
+    internal.organizations.helpers.getActiveMembershipByUserAndOrganization,
+    {
+      userId: user._id,
+      organizationId,
+    },
+  );
+
+  if (!membership) {
+    throw new ConvexError("Organization membership required");
+  }
+}
+
 function readObject(value: unknown, label: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new ConvexError(`${label} must be an object`);
@@ -95,6 +355,30 @@ function readString(value: unknown, label: string): string {
   return value;
 }
 
+function readNumber(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new ConvexError(`${label} must be a finite number`);
+  }
+  return value;
+}
+
+function readOptionalNumber(value: unknown, label: string): number | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return readNumber(value, label);
+}
+
+function readOptionalBoolean(value: unknown, label: string): boolean | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value !== "boolean") {
+    throw new ConvexError(`${label} must be a boolean when present`);
+  }
+  return value;
+}
+
 function readOptionalString(value: unknown, label: string): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
@@ -103,6 +387,42 @@ function readOptionalString(value: unknown, label: string): string | undefined {
     throw new ConvexError(`${label} must be a non-empty string when present`);
   }
   return value;
+}
+
+function readDirection(value: unknown, label: string): MoneyDirection {
+  if (value === "credit" || value === "debit") {
+    return value;
+  }
+  throw new ConvexError(`${label} must be credit or debit`);
+}
+
+function readSettlementStatus(value: unknown, label: string): SettlementStatus {
+  if (
+    value === "accruing" ||
+    value === "closed" ||
+    value === "approved" ||
+    value === "paid_out" ||
+    value === "failed" ||
+    value === "reversed"
+  ) {
+    return value;
+  }
+  throw new ConvexError(`${label} is not a supported settlement status`);
+}
+
+function readPayoutStatus(value: unknown, label: string): PayoutStatus {
+  if (
+    value === "pending" ||
+    value === "submitted" ||
+    value === "in_transit" ||
+    value === "succeeded" ||
+    value === "failed" ||
+    value === "returned" ||
+    value === "held"
+  ) {
+    return value;
+  }
+  throw new ConvexError(`${label} is not a supported payout status`);
 }
 
 function readBoolean(value: unknown, label: string): boolean {
@@ -117,6 +437,222 @@ function readStringArray(value: unknown, label: string): string[] {
     throw new ConvexError(`${label} must be a string array`);
   }
   return value.map((entry) => readString(entry, label));
+}
+
+function readListItems<T>(
+  body: unknown,
+  label: string,
+  mapItem: (item: Record<string, unknown>, index: number) => T,
+): T[] {
+  const root = readObject(body, `${label} response`);
+  const data = readObject(root.data, `${label} response data`);
+  if (!Array.isArray(data.items)) {
+    throw new ConvexError(`${label} response data.items must be an array`);
+  }
+  return data.items.map((item, index) => mapItem(readObject(item, `${label} item`), index));
+}
+
+function readSellerPayoutCapabilities(value: unknown, label: string): SellerPayoutCapability[] {
+  if (!Array.isArray(value)) {
+    throw new ConvexError(`${label} must be an array`);
+  }
+  return value.map((entry, index) => {
+    const capability = readObject(entry, `${label}[${index}]`);
+    const status = readString(capability.status, `${label}[${index}].status`);
+    if (status !== "enabled" && status !== "disabled" && status !== "unknown") {
+      throw new ConvexError(`${label}[${index}].status is invalid`);
+    }
+    const source = readString(capability.source, `${label}[${index}].source`);
+    if (
+      source !== "payout_profile" &&
+      source !== "agreement_guardrail" &&
+      source !== "operator_policy"
+    ) {
+      throw new ConvexError(`${label}[${index}].source is invalid`);
+    }
+    return {
+      key: readString(capability.key, `${label}[${index}].key`),
+      status,
+      reason: readString(capability.reason, `${label}[${index}].reason`),
+      source,
+    };
+  });
+}
+
+function readSettlementSnapshot(value: Record<string, unknown>, index: number): SettlementSnapshot {
+  const label = `Vortex settlement ${index}`;
+  return {
+    id: readString(value.id, `${label}.id`),
+    environment: readString(value.environment, `${label}.environment`),
+    merchantAccountId: readString(value.merchantAccountId, `${label}.merchantAccountId`),
+    currency: readString(value.currency, `${label}.currency`),
+    status: readSettlementStatus(value.status, `${label}.status`),
+    grossAmount: readNumber(value.grossAmount, `${label}.grossAmount`),
+    feeAmount: readNumber(value.feeAmount, `${label}.feeAmount`),
+    refundAmount: readNumber(value.refundAmount, `${label}.refundAmount`),
+    adjustmentAmount: readNumber(value.adjustmentAmount, `${label}.adjustmentAmount`),
+    netAmount: readNumber(value.netAmount, `${label}.netAmount`),
+    direction: readDirection(value.direction, `${label}.direction`),
+    accrualStartAt: readOptionalString(value.accrualStartAt, `${label}.accrualStartAt`),
+    accrualEndAt: readOptionalString(value.accrualEndAt, `${label}.accrualEndAt`),
+    autoCloseAt: readOptionalString(value.autoCloseAt, `${label}.autoCloseAt`),
+    openedAt: readOptionalString(value.openedAt, `${label}.openedAt`),
+    closedAt: readOptionalString(value.closedAt, `${label}.closedAt`),
+    approvedAt: readOptionalString(value.approvedAt, `${label}.approvedAt`),
+    createdAt: readString(value.createdAt, `${label}.createdAt`),
+    updatedAt: readString(value.updatedAt, `${label}.updatedAt`),
+  };
+}
+
+function readPayoutSnapshot(value: Record<string, unknown>, index: number): PayoutSnapshot {
+  const label = `Vortex payout ${index}`;
+  return {
+    id: readString(value.id, `${label}.id`),
+    environment: readString(value.environment, `${label}.environment`),
+    merchantAccountId: readString(value.merchantAccountId, `${label}.merchantAccountId`),
+    payoutAccountId: readOptionalString(value.payoutAccountId, `${label}.payoutAccountId`),
+    settlementId: readOptionalString(value.settlementId, `${label}.settlementId`),
+    status: readPayoutStatus(value.status, `${label}.status`),
+    amount: readNumber(value.amount, `${label}.amount`),
+    currency: readString(value.currency, `${label}.currency`),
+    direction: readDirection(value.direction, `${label}.direction`),
+    expectedArrivalAt: readOptionalString(value.expectedArrivalAt, `${label}.expectedArrivalAt`),
+    failureCode: readOptionalString(value.failureCode, `${label}.failureCode`),
+    failureMessage: readOptionalString(value.failureMessage, `${label}.failureMessage`),
+    createdAt: readString(value.createdAt, `${label}.createdAt`),
+    updatedAt: readString(value.updatedAt, `${label}.updatedAt`),
+  };
+}
+
+function readPayoutProfile(body: unknown): MerchantSellerPayoutProfileSnapshot | null {
+  const root = readObject(body, "Vortex payout profile response");
+  if (root.data === null) {
+    return null;
+  }
+  const data = readObject(root.data, "Vortex payout profile response data");
+  return {
+    environment: readString(data.environment, "Vortex payout profile environment"),
+    merchantAccountId: readString(data.merchantAccountId, "Vortex payout profile merchant id"),
+    mode: readString(data.mode, "Vortex payout profile mode"),
+    payoutRail: readString(data.payoutRail, "Vortex payout profile rail"),
+    payoutSchedule: readString(data.payoutSchedule, "Vortex payout profile schedule"),
+    currency: readOptionalString(data.currency, "Vortex payout profile currency"),
+    settlementDelayDays: readOptionalNumber(
+      data.settlementDelayDays,
+      "Vortex payout profile settlement delay days",
+    ),
+    submissionDelayDays: readOptionalNumber(
+      data.submissionDelayDays,
+      "Vortex payout profile submission delay days",
+    ),
+    fundingRequirement: readOptionalString(
+      data.fundingRequirement,
+      "Vortex payout profile funding requirement",
+    ),
+    sameDayAchEligible: readOptionalBoolean(
+      data.sameDayAchEligible,
+      "Vortex payout profile same day ACH eligibility",
+    ),
+    instantPayoutEligible: readOptionalBoolean(
+      data.instantPayoutEligible,
+      "Vortex payout profile instant payout eligibility",
+    ),
+    grossPayoutEnabled: readOptionalBoolean(
+      data.grossPayoutEnabled,
+      "Vortex payout profile gross payout flag",
+    ),
+    capabilities: readSellerPayoutCapabilities(
+      data.capabilities,
+      "Vortex payout profile capabilities",
+    ),
+    fetchedAt: readString(data.fetchedAt, "Vortex payout profile fetched at"),
+  };
+}
+
+function signedAmount(direction: MoneyDirection, amount: number): number {
+  return direction === "debit" ? -amount : amount;
+}
+
+function getOrCreateDerivedCurrency(
+  balances: Map<string, MutableDerivedCurrencyBalance>,
+  currency: string,
+): MutableDerivedCurrencyBalance {
+  const existing = balances.get(currency);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const created: MutableDerivedCurrencyBalance = {
+    derived: true,
+    label: "derived_from_vortex_settlements_and_payouts",
+    settledNet: 0,
+    pendingSettlement: 0,
+    paidOut: 0,
+    payoutInFlight: 0,
+    availableForPayout: 0,
+  };
+  balances.set(currency, created);
+  return created;
+}
+
+function deriveBalance(input: {
+  readonly settlements: readonly SettlementSnapshot[];
+  readonly payouts: readonly PayoutSnapshot[];
+}): DerivedBalance {
+  const balances = new Map<string, MutableDerivedCurrencyBalance>();
+  const availableSettlementIds = new Set<string>();
+
+  for (const settlement of input.settlements) {
+    const balance = getOrCreateDerivedCurrency(balances, settlement.currency);
+    const amount = signedAmount(settlement.direction, settlement.netAmount);
+
+    if (
+      settlement.status === "closed" ||
+      settlement.status === "approved" ||
+      settlement.status === "paid_out"
+    ) {
+      balance.settledNet += amount;
+    }
+    if (settlement.status === "accruing") {
+      balance.pendingSettlement += amount;
+    }
+    if (settlement.status === "closed" || settlement.status === "approved") {
+      balance.availableForPayout += amount;
+      availableSettlementIds.add(settlement.id);
+    }
+  }
+
+  for (const payout of input.payouts) {
+    const balance = getOrCreateDerivedCurrency(balances, payout.currency);
+    const amount = signedAmount(payout.direction, payout.amount);
+
+    if (payout.status === "succeeded") {
+      balance.paidOut += amount;
+    }
+    if (
+      payout.status === "pending" ||
+      payout.status === "submitted" ||
+      payout.status === "in_transit" ||
+      payout.status === "held"
+    ) {
+      balance.payoutInFlight += amount;
+    }
+    if (
+      payout.settlementId !== undefined &&
+      availableSettlementIds.has(payout.settlementId) &&
+      payout.status !== "failed" &&
+      payout.status !== "returned"
+    ) {
+      balance.availableForPayout -= Math.abs(amount);
+    }
+  }
+
+  return {
+    derived: true,
+    label: "derived_from_vortex_settlements_and_payouts",
+    currencies: [...balances.entries()]
+      .map(([currency, balance]) => ({ currency, ...balance }))
+      .sort((left, right) => left.currency.localeCompare(right.currency)),
+  };
 }
 
 function readVortexMerchantAccountId(body: unknown): string {
@@ -256,6 +792,60 @@ async function readRemoteVortexMerchantState(
     ),
   ]);
   return mapVortexState({ stateBody, capabilitiesBody });
+}
+
+async function readRemoteVortexMerchantPayoutData(
+  merchantAccountId: string,
+  fetcher: Fetcher = (input, init) => fetch(input, init),
+): Promise<VortexMerchantPayoutDataResult> {
+  const env = readVortexBillingEnvFromProcess();
+  const environment = encodeURIComponent(env.paymentsEnvironment);
+  const merchantPathSegment = encodeURIComponent(merchantAccountId);
+  const [settlementsBody, payoutsBody, payoutProfileBody] = await Promise.all([
+    requestVortexBillingJson(
+      {
+        apiBaseUrl: env.apiBaseUrl,
+        apiKey: env.apiKey,
+        method: "GET",
+        path: `/v1/merchant-accounts/${merchantPathSegment}/settlements?environment=${environment}`,
+        failureLabel: "Vortex merchant settlements read",
+      },
+      fetcher,
+    ),
+    requestVortexBillingJson(
+      {
+        apiBaseUrl: env.apiBaseUrl,
+        apiKey: env.apiKey,
+        method: "GET",
+        path: `/v1/merchant-accounts/${merchantPathSegment}/payouts?environment=${environment}`,
+        failureLabel: "Vortex merchant payouts read",
+      },
+      fetcher,
+    ),
+    requestVortexBillingJson(
+      {
+        apiBaseUrl: env.apiBaseUrl,
+        apiKey: env.apiKey,
+        method: "GET",
+        path: `/v1/merchant-accounts/${merchantPathSegment}/payout-profile?environment=${environment}`,
+        failureLabel: "Vortex merchant payout profile read",
+      },
+      fetcher,
+    ),
+  ]);
+  const settlements = readListItems(
+    settlementsBody,
+    "Vortex merchant settlements",
+    readSettlementSnapshot,
+  );
+  const payouts = readListItems(payoutsBody, "Vortex merchant payouts", readPayoutSnapshot);
+
+  return {
+    settlements,
+    payouts,
+    payoutProfile: readPayoutProfile(payoutProfileBody),
+    derivedBalance: deriveBalance({ settlements, payouts }),
+  };
 }
 
 async function persistVortexMerchantAccount(
@@ -546,5 +1136,32 @@ export const refreshVortexMerchantProofAccount = internalAction({
   }),
   handler: async (ctx, args): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
     return await refreshVortexMerchantAccountForOrganization(ctx, args.organizationId);
+  },
+});
+
+export const getVortexMerchantPayoutData = action({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: vortexMerchantPayoutDataResultValidator,
+  handler: async (ctx, args): Promise<VortexMerchantPayoutDataResult> => {
+    await resolveOrganizationMembership(ctx, args.organizationId);
+
+    if (!isDocumentPaymentOrganizationAllowlisted(args.organizationId)) {
+      return EMPTY_VORTEX_MERCHANT_PAYOUT_DATA;
+    }
+
+    const existing = await ctx.runQuery(
+      internal.stripe.connect_mutations.getAccountByOrganizationId,
+      {
+        organizationId: args.organizationId,
+      },
+    );
+
+    if (existing?.provider !== "vortex" || existing.vortexMerchantAccountId === undefined) {
+      return EMPTY_VORTEX_MERCHANT_PAYOUT_DATA;
+    }
+
+    return await readRemoteVortexMerchantPayoutData(existing.vortexMerchantAccountId);
   },
 });
