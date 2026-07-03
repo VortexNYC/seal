@@ -9,6 +9,7 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
+import { createVortexBillingCheckoutSessionDetails } from "../payments/vortex_billing_processor";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { seedTestOrganizationMember } from "../testVortexAuth";
 
@@ -962,6 +963,31 @@ export const getVortexSaasBillingProofState = internalQuery({
       product: toProofProduct(product),
       price: toProofPrice(price),
       activeStripeIdPresent: hasActiveStripeId(subscription, product),
+    };
+  },
+});
+
+export const createVortexSaasCheckoutProofSession = internalAction({
+  args: {
+    organizationId: v.string(),
+    lookupKey: v.string(),
+    quantity: v.number(),
+    promoCode: v.optional(v.string()),
+    priceUnitAmount: v.optional(v.number()),
+  },
+  returns: v.object({
+    checkoutUrl: v.string(),
+    amountTotal: v.number(),
+    amountRemaining: v.number(),
+    invoiceNumbers: v.array(v.string()),
+  }),
+  handler: async (_ctx, args) => {
+    const checkoutSession = await createVortexBillingCheckoutSessionDetails(args);
+    return {
+      checkoutUrl: checkoutSession.checkoutUrl,
+      amountTotal: checkoutSession.amountTotal,
+      amountRemaining: checkoutSession.amountRemaining,
+      invoiceNumbers: [...checkoutSession.invoiceNumbers],
     };
   },
 });

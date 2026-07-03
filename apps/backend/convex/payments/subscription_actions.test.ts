@@ -81,6 +81,9 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
             data: {
               checkoutSession: {
                 checkoutUrl: "https://pay.vortex.test/checkout",
+                amountTotal: 8700,
+                amountRemaining: 8700,
+                invoiceNumbers: ["INV-1"],
               },
             },
           }),

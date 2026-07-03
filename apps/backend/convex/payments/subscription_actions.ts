@@ -99,6 +99,7 @@ export const createCheckoutSession = action({
     lookupKey: v.string(),
     successUrl: v.string(),
     cancelUrl: v.string(),
+    promoCode: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{ checkoutUrl: string }> => {
     const { user, organization } = await resolveAuthContext(ctx);
@@ -124,6 +125,8 @@ export const createCheckoutSession = action({
         organizationId: organization._id,
         lookupKey: args.lookupKey,
         quantity: memberCount,
+        promoCode: args.promoCode,
+        priceUnitAmount: catalogPrice.unitAmount,
       });
 
       return { checkoutUrl };

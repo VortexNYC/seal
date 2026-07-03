@@ -16,6 +16,7 @@ export const getSubscriptionPriceByAnyId = internalQuery({
       externalProductId: v.string(),
       vortexProductId: v.optional(v.string()),
       status: v.union(v.literal("active"), v.literal("archived"), v.literal("deleted")),
+      unitAmount: v.optional(v.number()),
     }),
     v.null(),
   ),
@@ -33,6 +34,7 @@ export const getSubscriptionPriceByAnyId = internalQuery({
       externalProductId: price.externalProductId,
       vortexProductId: product?.vortexProductId,
       status: price.status,
+      unitAmount: price.unitAmount,
     };
   },
 });
