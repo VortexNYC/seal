@@ -1001,6 +1001,8 @@ export const resolveVortexSaasBillingProofRefs = internalAction({
     lookupKey: v.string(),
     priceId: v.string(),
     billingAccountId: v.string(),
+    apiBaseUrl: v.string(),
+    apiKey: v.string(),
   },
   returns: v.object({
     customerExternalId: v.string(),
@@ -1009,6 +1011,8 @@ export const resolveVortexSaasBillingProofRefs = internalAction({
     priceId: v.string(),
   }),
   handler: async (_ctx, args) => {
+    // V8 Convex actions do not expose deployment env vars via process.env, so pass the
+    // Vortex api config explicitly (the proof reads it from its own local env).
     const config = resolveVortexBillingConfig(
       {
         organizationId: args.organizationId,
@@ -1017,6 +1021,8 @@ export const resolveVortexSaasBillingProofRefs = internalAction({
       },
       {
         ...process.env,
+        VORTEX_BILLING_API_BASE_URL: args.apiBaseUrl,
+        VORTEX_BILLING_API_KEY: args.apiKey,
         VORTEX_BILLING_ACCOUNT_ID: args.billingAccountId,
         VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ [args.lookupKey]: args.priceId }),
       },

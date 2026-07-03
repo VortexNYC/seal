@@ -29,9 +29,10 @@ type ProofOrganizations = {
   readonly normalOrganization: ProofOrganization;
 };
 
-type ProofPrice = {
+type ProofPrices = {
   readonly productId: string;
-  readonly priceId: string;
+  readonly recurringPriceId: string;
+  readonly provisioningPriceId: string;
   readonly unitAmount: number;
 };
 
@@ -275,10 +276,10 @@ async function requestVortexJson(input: {
   return parsed;
 }
 
-async function createProofRecurringPrice(input: {
+async function createProofPrices(input: {
   readonly baseUrl: string;
   readonly apiKey: string;
-}): Promise<ProofPrice> {
+}): Promise<ProofPrices> {
   const productBody = await requestVortexJson({
     baseUrl: input.baseUrl,
     apiKey: input.apiKey,
@@ -330,9 +331,38 @@ async function createProofRecurringPrice(input: {
   assert(numberField(price, "billingIntervalCount") === 1, "Expected one-month proof price interval count");
   assert(numberField(price, "unitAmount") === 5000, "Expected proof price unit amount");
 
+  const oneTimePriceBody = await requestVortexJson({
+    baseUrl: input.baseUrl,
+    apiKey: input.apiKey,
+    method: "POST",
+    path: "/v1/prices",
+    idempotencyKey: `seal_coupon_one_time_price_${proofRunId}`,
+    label: "POST /v1/prices one-time provisioning",
+    body: {
+      priceId: `price_seal_coupon_provision_${proofRunId}`,
+      productId,
+      name: "Seal coupon proof one-time provisioning price",
+      priceType: "fixed_one_time",
+      currency: "USD",
+      unitAmount: 5000,
+      metadata: {
+        proof: "seal-coupons-vortex",
+        proofRunId,
+        purpose: "billing-account-provisioning",
+      },
+    },
+  });
+  const oneTimePrice = objectField(objectField(oneTimePriceBody, "data"), "price");
+
+  assert(stringField(oneTimePrice, "productId") === productId, "Expected created one-time price product id");
+  assert(stringField(oneTimePrice, "priceType") === "fixed_one_time", "Expected fixed_one_time proof price");
+  assert(stringField(oneTimePrice, "currency") === "USD", "Expected USD one-time proof price");
+  assert(numberField(oneTimePrice, "unitAmount") === 5000, "Expected one-time proof price unit amount");
+
   return {
     productId,
-    priceId: stringField(price, "priceId"),
+    recurringPriceId: stringField(price, "priceId"),
+    provisioningPriceId: stringField(oneTimePrice, "priceId"),
     unitAmount: numberField(price, "unitAmount"),
   };
 }
@@ -386,6 +416,8 @@ async function resolveProofRefs(input: {
   readonly deployment: string;
   readonly organizationId: string;
   readonly priceId: string;
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
 }): Promise<Pick<ProofOrganization, "customerExternalId" | "subscriptionExternalId">> {
   const body = await runConvex<JsonObject>({
     deployment: input.deployment,
@@ -395,6 +427,8 @@ async function resolveProofRefs(input: {
       lookupKey,
       priceId: input.priceId,
       billingAccountId: proofBillingAccountPlaceholder,
+      apiBaseUrl: input.apiBaseUrl,
+      apiKey: input.apiKey,
     },
   });
   return {
@@ -483,6 +517,7 @@ async function prepareProofOrganization(input: {
   readonly baseUrl: string;
   readonly apiKey: string;
   readonly priceId: string;
+  readonly provisioningPriceId: string;
   readonly label: ProofOrganization["label"];
 }): Promise<ProofOrganization> {
   const organizationId = await ensureSealProofOrganization({
@@ -493,6 +528,8 @@ async function prepareProofOrganization(input: {
     deployment: input.deployment,
     organizationId,
     priceId: input.priceId,
+    apiBaseUrl: input.baseUrl,
+    apiKey: input.apiKey,
   });
   const withoutAccount = {
     label: input.label,
@@ -508,7 +545,7 @@ async function prepareProofOrganization(input: {
     baseUrl: input.baseUrl,
     apiKey: input.apiKey,
     organization: withoutAccount,
-    priceId: input.priceId,
+    priceId: input.provisioningPriceId,
   });
   return {
     ...withoutAccount,
@@ -588,12 +625,14 @@ async function configureSealBillingEnv(input: LiveConfig & {
 
 async function prepareProofOrganizations(input: LiveConfig & {
   readonly priceId: string;
+  readonly provisioningPriceId: string;
 }): Promise<ProofOrganizations> {
   const discountedOrganization = await prepareProofOrganization({
     deployment: input.sealDeployment,
     baseUrl: input.vortexBaseUrl,
     apiKey: input.vortexApiKey,
     priceId: input.priceId,
+    provisioningPriceId: input.provisioningPriceId,
     label: "discounted",
   });
   const invalidOrganization = await prepareProofOrganization({
@@ -601,6 +640,7 @@ async function prepareProofOrganizations(input: LiveConfig & {
     baseUrl: input.vortexBaseUrl,
     apiKey: input.vortexApiKey,
     priceId: input.priceId,
+    provisioningPriceId: input.provisioningPriceId,
     label: "invalid",
   });
   const normalOrganization = await prepareProofOrganization({
@@ -608,6 +648,7 @@ async function prepareProofOrganizations(input: LiveConfig & {
     baseUrl: input.vortexBaseUrl,
     apiKey: input.vortexApiKey,
     priceId: input.priceId,
+    provisioningPriceId: input.provisioningPriceId,
     label: "normal",
   });
   await mergeConvexStringRecordEnv({
@@ -695,6 +736,7 @@ async function proveNormalCheckout(input: {
 function printProofResult(input: LiveConfig & ProofOrganizations & {
   readonly productId: string;
   readonly priceId: string;
+  readonly provisioningPriceId: string;
   readonly unitAmount: number;
   readonly discounted: JsonObject;
   readonly normal: JsonObject;
@@ -738,6 +780,7 @@ function printProofResult(input: LiveConfig & ProofOrganizations & {
         price: {
           productId: input.productId,
           priceId: input.priceId,
+          provisioningPriceId: input.provisioningPriceId,
           unitAmount: input.unitAmount,
         },
         coupon: {
@@ -764,15 +807,19 @@ function printProofResult(input: LiveConfig & ProofOrganizations & {
 
 async function main(): Promise<void> {
   const config = readLiveConfig();
-  const price = await createProofRecurringPrice({
+  const prices = await createProofPrices({
     baseUrl: config.vortexBaseUrl,
     apiKey: config.vortexApiKey,
   });
-  const { productId, priceId, unitAmount } = price;
+  const { productId, recurringPriceId, provisioningPriceId, unitAmount } = prices;
 
-  await createProofCoupon({ baseUrl: config.vortexBaseUrl, apiKey: config.vortexApiKey, priceId });
-  await configureSealBillingEnv({ ...config, priceId });
-  const organizations = await prepareProofOrganizations({ ...config, priceId });
+  await createProofCoupon({ baseUrl: config.vortexBaseUrl, apiKey: config.vortexApiKey, priceId: recurringPriceId });
+  await configureSealBillingEnv({ ...config, priceId: recurringPriceId });
+  const organizations = await prepareProofOrganizations({
+    ...config,
+    priceId: recurringPriceId,
+    provisioningPriceId,
+  });
   const discounted = await proveDiscountedCheckout({
     deployment: config.sealDeployment,
     organization: organizations.discountedOrganization,
@@ -793,7 +840,8 @@ async function main(): Promise<void> {
     ...config,
     ...organizations,
     productId,
-    priceId,
+    priceId: recurringPriceId,
+    provisioningPriceId,
     unitAmount,
     discounted,
     normal,
