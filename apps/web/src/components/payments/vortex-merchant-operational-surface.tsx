@@ -44,7 +44,7 @@ type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
     _id: string;
-    provider: "stripe" | "vortex";
+    provider?: "stripe" | "vortex";
     processorAccountId: string;
     vortexMerchantAccountId?: string;
     accountType: "standard" | "express";
@@ -254,22 +254,19 @@ export function VortexMerchantOperationalSurface({
   surface,
 }: VortexMerchantOperationalSurfaceProps) {
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const merchantAccountResult = useQuery(
-    api.payments.merchant_account_queries.getOperationalMerchantAccount,
-    {
-      slug,
-    },
-  ) as MerchantAccountResult | undefined;
+  const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+    slug,
+  }) as MerchantAccountResult | undefined;
   const orgId = organization?._id as Id<"organizations"> | undefined;
   const account = merchantAccountResult?.account ?? null;
-  const payoutDataState = useVortexMerchantPayoutData(orgId, account);
+  const payoutDataState = useVortexMerchantPayoutData(orgId, account, merchantAccountResult?.status);
 
   if (organization === undefined || merchantAccountResult === undefined) {
     return null;
   }
 
   const copy = surfaceCopy[surface];
-  if (!hasConnectedOperationalMerchant(merchantAccountResult)) {
+  if (!hasConnectedMerchantAccount(merchantAccountResult)) {
     return <NoVortexMerchantAccountState slug={slug} title={copy.title} />;
   }
 
@@ -334,7 +331,7 @@ function ConnectedOperationalSurface({
   );
 }
 
-function hasConnectedOperationalMerchant(
+function hasConnectedMerchantAccount(
   merchantAccountResult: MerchantAccountResult,
 ): merchantAccountResult is MerchantAccountResult & {
   account: NonNullable<MerchantAccountResult["account"]>;
@@ -346,6 +343,7 @@ function hasConnectedOperationalMerchant(
 function useVortexMerchantPayoutData(
   organizationId: Id<"organizations"> | undefined,
   account: MerchantAccountResult["account"],
+  status: ConnectionStatus | undefined,
 ): VortexMerchantPayoutDataState {
   const getVortexMerchantPayoutData = useAction(
     api.payments.vortex_merchant_actions.getVortexMerchantPayoutData,
@@ -353,10 +351,7 @@ function useVortexMerchantPayoutData(
   const [data, setData] = useState<VortexMerchantPayoutData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
-  const shouldFetch =
-    organizationId !== undefined &&
-    account?.provider === "vortex" &&
-    account.vortexMerchantAccountId !== undefined;
+  const shouldFetch = organizationId !== undefined && status === "connected" && account !== null;
 
   useEffect(() => {
     if (!shouldFetch || organizationId === undefined) {
@@ -391,7 +386,7 @@ function useVortexMerchantPayoutData(
     return () => {
       cancelled = true;
     };
-  }, [account?.vortexMerchantAccountId, getVortexMerchantPayoutData, organizationId, shouldFetch]);
+  }, [account?.processorAccountId, getVortexMerchantPayoutData, organizationId, shouldFetch]);
 
   return { data, loading, error, shouldFetch };
 }
