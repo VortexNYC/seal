@@ -91,12 +91,21 @@ type FeePolicyOwnerMode =
   | "platform_absorbs_processing"
   | "platform_fee_deducted";
 
+type PlatformFee =
+  | {
+      readonly mode: "none";
+    }
+  | {
+      readonly mode: "fixed_amount";
+      readonly amount: number;
+      readonly currency: VortexCurrency;
+      readonly rounding: "half_up";
+    };
+
 type FeePolicy = {
   readonly policyId: string;
   readonly ownerMode: FeePolicyOwnerMode;
-  readonly platformFee: {
-    readonly mode: "none";
-  };
+  readonly platformFee: PlatformFee;
   readonly source: {
     readonly scope: "document_payment_field";
     readonly scopeId: string;
@@ -329,6 +338,7 @@ export function buildCreatePayableRequest(input: {
   readonly env: VortexBillingEnv;
   readonly now: number;
   readonly vortexMerchantAccountId?: string;
+  readonly platformFeeCents?: number;
 }): CreatePayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "one_time") {
@@ -370,7 +380,7 @@ export function buildCreatePayableRequest(input: {
     customerExternalId,
     billingAccountId,
     collectionIntent: "manual",
-    feePolicy: buildFeePolicy(config),
+    feePolicy: buildFeePolicy(config, input.platformFeeCents),
     ...(dueAt !== undefined ? { dueAt } : {}),
     lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
     metadata: {
@@ -393,6 +403,7 @@ export function buildCreateRecurringPayableRequest(input: {
   readonly env: VortexBillingEnv;
   readonly now: number;
   readonly vortexMerchantAccountId?: string;
+  readonly platformFeeCents?: number;
 }): CreateRecurringPayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "recurring") {
@@ -443,7 +454,7 @@ export function buildCreateRecurringPayableRequest(input: {
     lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
     taxMode: "not_taxable",
     collectionIntent: "manual",
-    feePolicy: buildFeePolicy(config),
+    feePolicy: buildFeePolicy(config, input.platformFeeCents),
     cadence: {
       interval: config.recurringConfig.interval,
       intervalCount: config.recurringConfig.intervalCount,
@@ -471,6 +482,7 @@ export function buildCreateInstallmentPayableRequest(input: {
   readonly env: VortexBillingEnv;
   readonly now: number;
   readonly vortexMerchantAccountId?: string;
+  readonly platformFeeCents?: number;
 }): CreateInstallmentPayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "installments") {
@@ -520,7 +532,7 @@ export function buildCreateInstallmentPayableRequest(input: {
     currency: toVortexCurrency(config.currency),
     taxMode: "not_taxable",
     collectionIntent: "manual",
-    feePolicy: buildFeePolicy(config),
+    feePolicy: buildFeePolicy(config, input.platformFeeCents),
     installments: amounts.map((amountDue, index) => ({
       installmentNumber: index + 1,
       role: "installment",
@@ -549,6 +561,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
   readonly env: VortexBillingEnv;
   readonly now: number;
   readonly vortexMerchantAccountId?: string;
+  readonly platformFeeCents?: number;
 }): CreateDepositBalancePayableRequest {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "deposit_balance") {
@@ -603,7 +616,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
     currency: toVortexCurrency(config.currency),
     taxMode: "not_taxable",
     collectionIntent: "manual",
-    feePolicy: buildFeePolicy(config),
+    feePolicy: buildFeePolicy(config, input.platformFeeCents),
     deposit: {
       dueAt: depositDueAt,
       amountDue: amounts.depositAmountDue,
@@ -733,6 +746,30 @@ function buildDepositBalanceAmounts(
   return { depositAmountDue, balanceAmountDue };
 }
 
+function getInitialVortexChargeAmountCents(config: PaymentFieldConfigInput): number {
+  if (config.paymentType === "installments") {
+    if (config.installmentsConfig === undefined) {
+      throw new ConvexError("Installment payment field is missing installment configuration");
+    }
+    const firstInstallment = buildInstallmentAmounts(
+      config.totalAmountCents,
+      config.installmentsConfig,
+    )[0];
+    if (firstInstallment === undefined) {
+      throw new ConvexError("Installment payment field did not produce a first charge amount");
+    }
+    return firstInstallment;
+  }
+  if (config.paymentType === "deposit_balance") {
+    if (config.depositBalanceConfig === undefined) {
+      throw new ConvexError("Deposit/balance payment field is missing deposit balance configuration");
+    }
+    return buildDepositBalanceAmounts(config.totalAmountCents, config.depositBalanceConfig)
+      .depositAmountDue;
+  }
+  return config.totalAmountCents;
+}
+
 function addDepositBalanceDays(firstDueAt: string, balanceDueDays: number): string {
   const firstDueTime = new Date(firstDueAt).getTime();
   if (Number.isNaN(firstDueTime)) {
@@ -838,17 +875,33 @@ function resolveVortexMerchantAccountId(
   );
 }
 
-function buildFeePolicy(config: Pick<PaymentFieldConfigInput, "_id" | "feeHandling">): FeePolicy {
+function buildFeePolicy(
+  config: Pick<PaymentFieldConfigInput, "_id" | "feeHandling" | "currency">,
+  platformFeeCents?: number,
+): FeePolicy {
   const ownerMode: FeePolicyOwnerMode =
     config.feeHandling === "pass_to_recipient"
       ? "customer_pays_processing"
       : "merchant_pays_processing";
   const sourceId = String(config._id);
+  const platformFee: PlatformFee =
+    platformFeeCents !== undefined && platformFeeCents > 0
+      ? {
+          mode: "fixed_amount",
+          amount: platformFeeCents,
+          currency: toVortexCurrency(config.currency),
+          rounding: "half_up",
+        }
+      : { mode: "none" };
+  const platformFeeEvidence =
+    platformFee.mode === "fixed_amount"
+      ? `platform_fee:fixed_amount:${platformFee.amount}:${platformFee.currency}:${platformFee.rounding}`
+      : "platform_fee:none";
 
   return {
     policyId: `seal_document_payment_${normalizeExternalIdPart(sourceId)}`,
     ownerMode,
-    platformFee: { mode: "none" },
+    platformFee,
     source: {
       scope: "document_payment_field",
       scopeId: sourceId,
@@ -861,12 +914,14 @@ function buildFeePolicy(config: Pick<PaymentFieldConfigInput, "_id" | "feeHandli
     execution: {
       status: "modeled_not_settlement_executed",
       stopCondition:
-        "fee policy is modeled for Vortex payable creation; settlement execution remains provider-owned",
+        platformFee.mode === "fixed_amount"
+          ? "fixed application fee is modeled for Vortex payable creation; Vortex executes it on card charge"
+          : "fee policy is modeled for Vortex payable creation; no platform fee is requested",
     },
     evidence: [
       `source:document_payment_field:${sourceId}`,
       `fee_owner:${ownerMode}`,
-      "platform_fee:none",
+      platformFeeEvidence,
       `seal_fee_handling:${config.feeHandling}`,
     ],
   };
@@ -1242,6 +1297,14 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     for (const config of configs) {
       const recipient = resolvePaymentFieldRecipient(config, fieldMap, recipientMap);
       const configInput = toPaymentFieldConfigInput(config);
+      const platformFeeCents = await ctx.runQuery(
+        internal.auth.subscription_helpers.getApplicationFeeForOrganization,
+        {
+          organizationId: args.organizationId,
+          amountCents: getInitialVortexChargeAmountCents(configInput),
+          isAch: false,
+        },
+      );
       if (configInput.paymentType === "recurring") {
         const recurringRequest = buildCreateRecurringPayableRequest({
           config: configInput,
@@ -1249,6 +1312,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           env,
           now: Date.now(),
           vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
+          platformFeeCents,
         });
         const recurringPayable = await createVortexRecurringPayable(
           recurringRequest,
@@ -1286,6 +1350,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           env,
           now: Date.now(),
           vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
+          platformFeeCents,
         });
         const installmentPayable = await createVortexInstallmentPayable(
           installmentRequest,
@@ -1323,6 +1388,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           env,
           now: Date.now(),
           vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
+          platformFeeCents,
         });
         const depositBalancePayable = await createVortexDepositBalancePayable(
           depositBalanceRequest,
@@ -1360,6 +1426,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           env,
           now: Date.now(),
           vortexMerchantAccountId: vortexMerchantAccountId ?? undefined,
+          platformFeeCents,
         });
         const payable = await createVortexPayable(
           payableRequest,
