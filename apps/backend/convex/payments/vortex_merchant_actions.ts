@@ -39,6 +39,12 @@ type CreateVortexMerchantAccountResult = {
   readonly state: VortexMerchantState;
 };
 
+type CreateVortexOnboardingLinkResult = {
+  readonly url: string;
+  readonly onboardingSessionId: string;
+  readonly expiresAt: string;
+};
+
 type FeeHandling = "absorb" | "pass_to_recipient";
 
 async function resolveAdminMembership(
@@ -120,6 +126,19 @@ function readVortexMerchantAccountId(body: unknown): string {
     readOptionalString(data.merchantAccountId, "Vortex merchant account id") ??
     readString(data.id, "Vortex merchant id")
   );
+}
+
+function readVortexOnboardingLink(body: unknown): CreateVortexOnboardingLinkResult {
+  const root = readObject(body, "Vortex onboarding link response");
+  const data = readObject(root.data, "Vortex onboarding link response data");
+  return {
+    url: readString(data.url, "Vortex onboarding link url"),
+    onboardingSessionId: readString(
+      data.onboardingSessionId,
+      "Vortex onboarding session id",
+    ),
+    expiresAt: readString(data.expiresAt, "Vortex onboarding link expiration"),
+  };
 }
 
 function mapCapabilityStatus(
@@ -310,10 +329,16 @@ async function createVortexMerchantAccountForOrganization(
   const env = readVortexBillingEnvFromProcess();
   const body: JsonObject = {
     environment: env.paymentsEnvironment,
-    tenantId: organizationId,
+    // Do NOT send tenantId: Vortex derives the tenant from the API key's org context and rejects
+    // a mismatch ("tenantId must match current organization"). Seal's own org id is not the Vortex
+    // tenant. externalMerchantRef + metadata.sealOrganizationId carry the Seal linkage instead.
     externalMerchantRef: organizationId,
     displayName: organization.name,
-    legalEntityType: "company",
+    // Must be a valid Finix business_type enum (Vortex passes legalEntityType through to Finix,
+    // which rejects unknown values like "company"). Default to CORPORATION — the entity type the
+    // hosted-KYC underwriting dataset is proven against end-to-end to real-Finix charges-ready.
+    // TODO(1b-followup): collect the real entity type + entity-type-specific fields during hosted KYC.
+    legalEntityType: "CORPORATION",
     country: "USA",
     merchantMode: "processing",
     defaultCurrency: "USD",
@@ -383,6 +408,45 @@ async function refreshVortexMerchantAccountForOrganization(
   return { status: "refreshed" };
 }
 
+async function createVortexOnboardingLinkForOrganization(
+  ctx: ActionCtx,
+  organizationId: Id<"organizations">,
+): Promise<CreateVortexOnboardingLinkResult> {
+  if (!isDocumentPaymentOrganizationAllowlisted(organizationId)) {
+    throw new ConvexError("Vortex merchant onboarding is not enabled for this organization");
+  }
+
+  const existing = await ctx.runQuery(
+    internal.stripe.connect_mutations.getAccountByOrganizationId,
+    {
+      organizationId,
+    },
+  );
+  if (existing?.provider !== "vortex" || existing.vortexMerchantAccountId === undefined) {
+    throw new ConvexError("Create a Vortex Connect account before starting verification");
+  }
+
+  const env = readVortexBillingEnvFromProcess();
+  const body: JsonObject = {
+    environment: env.paymentsEnvironment,
+    createdByRef: `seal:${organizationId}`,
+  };
+  const responseBody = await requestVortexBillingJson(
+    {
+      apiBaseUrl: env.apiBaseUrl,
+      apiKey: env.apiKey,
+      path: `/v1/merchant-accounts/${encodeURIComponent(
+        existing.vortexMerchantAccountId,
+      )}/onboarding-link`,
+      body,
+      failureLabel: "Vortex merchant onboarding link create",
+    },
+    (input, init) => fetch(input, init),
+  );
+
+  return readVortexOnboardingLink(responseBody);
+}
+
 export const createVortexMerchantAccount = internalAction({
   args: {
     organizationId: v.id("organizations"),
@@ -414,6 +478,21 @@ export const createVortexMerchantAccount = internalAction({
       args.organizationId,
       args.feeHandling,
     );
+  },
+});
+
+export const createVortexOnboardingLink = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    url: v.string(),
+    onboardingSessionId: v.string(),
+    expiresAt: v.string(),
+  }),
+  handler: async (ctx, args): Promise<CreateVortexOnboardingLinkResult> => {
+    await resolveAdminMembership(ctx, args.organizationId);
+    return await createVortexOnboardingLinkForOrganization(ctx, args.organizationId);
   },
 });
 

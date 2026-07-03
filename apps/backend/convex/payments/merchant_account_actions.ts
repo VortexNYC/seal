@@ -13,6 +13,8 @@ type CreateMerchantAccountResult = {
 
 type MerchantOnboardingLinkResult = {
   url: string;
+  onboardingSessionId?: string;
+  expiresAt?: string;
 };
 
 type MerchantOAuthUrlResult = {
@@ -70,8 +72,25 @@ export const createMerchantOnboardingLink = action({
   },
   returns: v.object({
     url: v.string(),
+    onboardingSessionId: v.optional(v.string()),
+    expiresAt: v.optional(v.string()),
   }),
   handler: async (ctx, args): Promise<MerchantOnboardingLinkResult> => {
+    if (isDocumentPaymentOrganizationAllowlisted(args.organizationId)) {
+      const result = await ctx.runAction(
+        internal.payments.vortex_merchant_actions.createVortexOnboardingLink,
+        {
+          organizationId: args.organizationId,
+        },
+      );
+
+      return {
+        url: result.url,
+        onboardingSessionId: result.onboardingSessionId,
+        expiresAt: result.expiresAt,
+      };
+    }
+
     return await ctx.runAction(internal.stripe.connect_actions.createAccountLink, args);
   },
 });

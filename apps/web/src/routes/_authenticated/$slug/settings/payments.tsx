@@ -19,8 +19,8 @@ import {
   type VortexMerchantAccountPanelProps,
 } from "@vortex/payments/react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Loader2, PlugZap } from "lucide-react";
-import { useState } from "react";
+import { ExternalLink, Loader2, PlugZap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -99,10 +99,17 @@ function PaymentsSettingsPage() {
   const createMerchantAccount = useAction(
     api.payments.merchant_account_actions.createMerchantAccount,
   );
+  const createMerchantOnboardingLink = useAction(
+    api.payments.merchant_account_actions.createMerchantOnboardingLink,
+  );
+  const refreshMerchantAccount = useAction(
+    api.payments.merchant_account_actions.refreshMerchantAccount,
+  );
 
   const updateFeeHandling = useMutation(api.payments.merchant_account_mutations.updateFeeHandling);
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isCreatingOnboardingLink, setIsCreatingOnboardingLink] = useState(false);
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
 
   const orgId = organization?._id as Id<"organizations"> | undefined;
@@ -111,6 +118,7 @@ function PaymentsSettingsPage() {
   const canManage = merchantAccountResult?.canManage ?? false;
   const hasMerchantAccount =
     merchantAccountResult?.account !== null && merchantAccountResult?.account !== undefined;
+  const merchantChargesEnabled = merchantAccountResult?.account?.chargesEnabled ?? false;
 
   const feeHandling = merchantAccountResult?.account?.feeHandling ?? "absorb";
   const feePolicy =
@@ -126,6 +134,28 @@ function PaymentsSettingsPage() {
       ? null
       : buildMerchantState(merchantAccountResult.account, status);
 
+  useEffect(() => {
+    if (!orgId || !canManage) return;
+
+    async function refresh() {
+      if (!orgId) return;
+      try {
+        await refreshMerchantAccount({ organizationId: orgId });
+      } catch (error) {
+        console.warn("Failed to refresh merchant account", error);
+      }
+    }
+
+    void refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [canManage, orgId, refreshMerchantAccount]);
+
   async function handleCreateAccount() {
     if (!orgId) return;
 
@@ -137,6 +167,33 @@ function PaymentsSettingsPage() {
       toast.error(error instanceof Error ? error.message : "Failed to create merchant account");
     } finally {
       setIsCreatingAccount(false);
+    }
+  }
+
+  async function handleCreateOnboardingLink() {
+    if (!orgId) return;
+
+    const popup = window.open("", "_blank");
+    setIsCreatingOnboardingLink(true);
+    try {
+      const currentUrl = window.location.href;
+      const result = await createMerchantOnboardingLink({
+        organizationId: orgId,
+        returnUrl: currentUrl,
+        refreshUrl: currentUrl,
+      });
+      if (popup) {
+        popup.opener = null;
+        popup.location.href = result.url;
+      } else {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      }
+      toast.success("Verification opened in a new tab.");
+    } catch (error) {
+      popup?.close();
+      toast.error(error instanceof Error ? error.message : "Failed to start verification");
+    } finally {
+      setIsCreatingOnboardingLink(false);
     }
   }
 
@@ -199,6 +256,28 @@ function PaymentsSettingsPage() {
               copy={{ title: "Vortex Connect actions" }}
               disabled={!canManage}
             />
+            {!merchantChargesEnabled && isPro && (
+              <div className="mt-4 flex flex-col gap-3 rounded-md border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Verification required</p>
+                  <p className="text-muted-foreground text-sm">
+                    Complete verification before document payments route to this merchant.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleCreateOnboardingLink}
+                  disabled={!canManage || isCreatingOnboardingLink}
+                  className="shrink-0"
+                >
+                  {isCreatingOnboardingLink ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 size-4" />
+                  )}
+                  Complete verification
+                </Button>
+              </div>
+            )}
           </VortexPaymentsProvider>
         ) : (
           <Card>
