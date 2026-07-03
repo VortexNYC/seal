@@ -122,12 +122,17 @@ function readProductMetadata(value: unknown): ProductMetadata | undefined {
   };
 }
 
-function readPriceType(value: unknown): PriceType {
+// Vortex billing price types (packages/contracts/src/billing/catalog.ts). Seal's subscription
+// catalog only tracks fixed prices; usage/tiered types are skipped (returns null → filtered out).
+function readPriceType(value: unknown): PriceType | null {
   const priceType = readString(value, "Vortex catalog price.priceType");
-  if (priceType !== "recurring" && priceType !== "one_time") {
-    throw new ConvexError(`Unsupported Vortex catalog priceType: ${priceType}`);
+  if (priceType === "fixed_recurring") {
+    return "recurring";
   }
-  return priceType;
+  if (priceType === "fixed_one_time") {
+    return "one_time";
+  }
+  return null;
 }
 
 function readProduct(value: unknown): VortexCatalogProduct {
@@ -141,12 +146,16 @@ function readProduct(value: unknown): VortexCatalogProduct {
   };
 }
 
-function readPrice(value: unknown): VortexCatalogPrice {
+function readPrice(value: unknown): VortexCatalogPrice | null {
   const price = readObject(value, "Vortex catalog price");
+  const type = readPriceType(price.priceType);
+  if (type === null) {
+    return null; // unsupported (usage/tiered) — not a Seal subscription price; skip
+  }
   return {
     priceId: readString(price.priceId, "Vortex catalog price.priceId"),
     productId: readString(price.productId, "Vortex catalog price.productId"),
-    type: readPriceType(price.priceType),
+    type,
     currency: readString(price.currency, "Vortex catalog price.currency").toLowerCase(),
     billingInterval: readOptionalString(
       price.billingInterval,
@@ -167,7 +176,9 @@ function readCatalogResponse(body: unknown): {
   const data = readObject(root.data, "Vortex catalog response data");
   return {
     products: readArray(data.products, "Vortex catalog products").map(readProduct),
-    prices: readArray(data.prices, "Vortex catalog prices").map(readPrice),
+    prices: readArray(data.prices, "Vortex catalog prices")
+      .map(readPrice)
+      .filter((price): price is VortexCatalogPrice => price !== null),
     requestId: readOptionalString(root.requestId, "Vortex catalog requestId"),
   };
 }
