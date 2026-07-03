@@ -8,7 +8,7 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
-import { getSubscriptionPlan } from "./subscription_guards";
+import { getApplicationFee, getSubscriptionPlan } from "./subscription_guards";
 
 /**
  * Check whether an organization is on a Pro (or higher) plan.
@@ -20,5 +20,16 @@ export const checkProFeature = internalQuery({
   },
   handler: async (ctx, args) => {
     return await getSubscriptionPlan(ctx.db, args.organizationId);
+  },
+});
+
+export const getApplicationFeeForOrganization = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    amountCents: v.number(),
+    isAch: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    return await getApplicationFee(ctx.db, args.organizationId, args.amountCents, args.isAch);
   },
 });

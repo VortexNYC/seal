@@ -137,6 +137,35 @@ describe("Vortex Billing document payable bridge", () => {
     });
   });
 
+  test("models a resolved Seal card fee as a Vortex fixed platform fee", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_seal_123" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      priceMapJson: JSON.stringify({ seal_line_1: "price_seal_line_1" }),
+    });
+
+    const request = buildCreatePayableRequest({
+      config: baseConfig,
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+      platformFeeCents: 219,
+    });
+
+    expect(request.feePolicy.platformFee).toEqual({
+      mode: "fixed_amount",
+      amount: 219,
+      currency: "USD",
+      rounding: "half_up",
+    });
+    expect(request.feePolicy.evidence).toContain("platform_fee:fixed_amount:219:USD:half_up");
+    expect(request.feePolicy.execution.stopCondition).toBe(
+      "fixed application fee is modeled for Vortex payable creation; Vortex executes it on card charge",
+    );
+  });
+
   test("builds a Vortex recurring payable request from a Seal recurring payment config", () => {
     const env = readVortexBillingEnv({
       apiBaseUrl: "https://payments.vortex.test",
