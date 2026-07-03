@@ -105,6 +105,9 @@ describe("Vortex Billing SaaS processor", () => {
             data: {
               checkoutSession: {
                 checkoutUrl: "https://pay.vortex.test/abc",
+                amountTotal: 8700,
+                amountRemaining: 8700,
+                invoiceNumbers: ["INV-1"],
               },
             },
             requestId: "req_1",
@@ -158,6 +161,204 @@ describe("Vortex Billing SaaS processor", () => {
         lookupKey: "pro:monthly:v2",
       },
     });
+  });
+
+  test("applies and verifies a Vortex coupon before returning checkout", async () => {
+    const capturedRequests: Request[] = [];
+    const mockFetch: typeof fetch = Object.assign(
+      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        capturedRequests.push(request);
+
+        if (request.url === "https://billing.vortex.test/v1/coupons?status=active") {
+          return jsonResponse({
+            data: [
+              {
+                couponId: "coupon_25",
+                code: "SAVE25",
+                status: "active",
+                expiresAt: "2999-01-01T00:00:00.000Z",
+                targets: { priceIds: ["vtx_price_pro"] },
+              },
+            ],
+          });
+        }
+        if (request.url === "https://billing.vortex.test/v1/coupons/coupon_25/apply") {
+          return jsonResponse({
+            data: {
+              appliedCoupon: {
+                appliedCouponId: "seal-saas-coupon:org_seal_123:pro_monthly_v2:coupon_25",
+              },
+            },
+          });
+        }
+        if (request.url === "https://billing.vortex.test/v1/checkout/sessions") {
+          return jsonResponse(
+            {
+              data: {
+                checkoutSession: {
+                  checkoutUrl: "https://pay.vortex.test/discounted",
+                  amountTotal: 6525,
+                  amountRemaining: 6525,
+                  invoiceNumbers: ["INV-DISCOUNTED"],
+                },
+              },
+            },
+            201,
+          );
+        }
+
+        return jsonResponse({ error: { message: "unexpected request" } }, 500);
+      },
+      { preconnect: fetch.preconnect },
+    );
+
+    const checkoutUrl = await createVortexBillingCheckoutSession(
+      {
+        ...checkoutArgs,
+        promoCode: " SAVE25 ",
+        priceUnitAmount: 2900,
+      },
+      {
+        VORTEX_BILLING_API_BASE_URL: "https://billing.vortex.test",
+        VORTEX_BILLING_API_KEY: "vb_test",
+        VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+        VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro" }),
+      },
+      mockFetch,
+    );
+
+    expect(checkoutUrl).toBe("https://pay.vortex.test/discounted");
+    expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
+      "POST https://billing.vortex.test/v1/checkout/sessions",
+    ]);
+
+    const applyBody = JSON.parse(await capturedRequests[1].clone().text()) as Record<
+      string,
+      unknown
+    >;
+    expect(applyBody).toMatchObject({
+      appliedCouponId: "seal-saas-coupon:org_seal_123:pro_monthly_v2:coupon_25",
+      customerExternalId: "vtx_cust_seal_org_org_seal_123",
+      billingAccountId: "bacc_seal_123",
+    });
+    expect("subscriptionExternalId" in applyBody).toBe(false);
+  });
+
+  test("fails closed before checkout when a Vortex coupon code is invalid", async () => {
+    const capturedRequests: Request[] = [];
+    const mockFetch: typeof fetch = Object.assign(
+      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        capturedRequests.push(request);
+        return jsonResponse({
+          data: [
+            {
+              couponId: "coupon_25",
+              code: "SAVE25",
+              status: "active",
+              targets: { priceIds: ["vtx_price_pro"] },
+            },
+          ],
+        });
+      },
+      { preconnect: fetch.preconnect },
+    );
+
+    await expect(
+      createVortexBillingCheckoutSession(
+        {
+          ...checkoutArgs,
+          promoCode: "NOPE",
+          priceUnitAmount: 2900,
+        },
+        {
+          VORTEX_BILLING_API_BASE_URL: "https://billing.vortex.test",
+          VORTEX_BILLING_API_KEY: "vb_test",
+          VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+          VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro" }),
+        },
+        mockFetch,
+      ),
+    ).rejects.toThrow("Vortex Billing coupon code is invalid or inactive");
+    expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET https://billing.vortex.test/v1/coupons?status=active",
+    ]);
+  });
+
+  test("terminates an applied Vortex coupon when checkout creation fails", async () => {
+    const capturedRequests: Request[] = [];
+    const mockFetch = createCouponCheckoutMock(capturedRequests, {
+      checkoutStatus: 500,
+      checkoutBody: { error: { message: "checkout unavailable" } },
+    });
+
+    await expect(
+      createVortexBillingCheckoutSession(
+        {
+          ...checkoutArgs,
+          promoCode: "SAVE25",
+          priceUnitAmount: 2900,
+        },
+        {
+          VORTEX_BILLING_API_BASE_URL: "https://billing.vortex.test",
+          VORTEX_BILLING_API_KEY: "vb_test",
+          VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+          VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro" }),
+        },
+        mockFetch,
+      ),
+    ).rejects.toThrow(/Vortex Billing checkout failed \(500\):/);
+
+    expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
+      "POST https://billing.vortex.test/v1/checkout/sessions",
+      "POST https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate",
+    ]);
+  });
+
+  test("terminates an applied Vortex coupon when checkout does not reflect the discount", async () => {
+    const capturedRequests: Request[] = [];
+    const mockFetch = createCouponCheckoutMock(capturedRequests, {
+      checkoutStatus: 201,
+      checkoutBody: {
+        data: {
+          checkoutSession: {
+            checkoutUrl: "https://pay.vortex.test/full-price",
+            amountTotal: 8700,
+            amountRemaining: 8700,
+            invoiceNumbers: ["INV-FULL"],
+          },
+        },
+      },
+    });
+
+    await expect(
+      createVortexBillingCheckoutSession(
+        {
+          ...checkoutArgs,
+          promoCode: "SAVE25",
+          priceUnitAmount: 2900,
+        },
+        {
+          VORTEX_BILLING_API_BASE_URL: "https://billing.vortex.test",
+          VORTEX_BILLING_API_KEY: "vb_test",
+          VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+          VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro" }),
+        },
+        mockFetch,
+      ),
+    ).rejects.toThrow("Vortex Billing checkout did not reflect applied coupon");
+
+    expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
+      "POST https://billing.vortex.test/v1/checkout/sessions",
+      "POST https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate",
+    ]);
   });
 
   test("raises a ConvexError when the Vortex API rejects checkout creation", async () => {
@@ -305,3 +506,67 @@ describe("Vortex Billing SaaS processor", () => {
     ).rejects.toThrow("Vortex Billing portal response did not include link.url");
   });
 });
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function createCouponCheckoutMock(
+  capturedRequests: Request[],
+  checkout: {
+    readonly checkoutStatus: number;
+    readonly checkoutBody: unknown;
+  },
+): typeof fetch {
+  return Object.assign(
+    async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      capturedRequests.push(request);
+
+      if (request.url === "https://billing.vortex.test/v1/coupons?status=active") {
+        return jsonResponse({
+          data: [
+            {
+              couponId: "coupon_25",
+              code: "SAVE25",
+              status: "active",
+              expiresAt: "2999-01-01T00:00:00.000Z",
+              targets: { priceIds: ["vtx_price_pro"] },
+            },
+          ],
+        });
+      }
+      if (request.url === "https://billing.vortex.test/v1/coupons/coupon_25/apply") {
+        return jsonResponse({
+          data: {
+            appliedCoupon: {
+              appliedCouponId: "seal-saas-coupon:org_seal_123:pro_monthly_v2:coupon_25",
+            },
+          },
+        });
+      }
+      if (request.url === "https://billing.vortex.test/v1/checkout/sessions") {
+        return jsonResponse(checkout.checkoutBody, checkout.checkoutStatus);
+      }
+      if (
+        request.url ===
+        "https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate"
+      ) {
+        return jsonResponse({
+          data: {
+            appliedCoupon: {
+              appliedCouponId: "seal-saas-coupon:org_seal_123:pro_monthly_v2:coupon_25",
+              status: "terminated",
+            },
+          },
+        });
+      }
+
+      return jsonResponse({ error: { message: "unexpected request" } }, 500);
+    },
+    { preconnect: fetch.preconnect },
+  );
+}

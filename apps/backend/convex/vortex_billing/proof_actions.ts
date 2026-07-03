@@ -9,6 +9,10 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
+import {
+  createVortexBillingCheckoutSessionDetails,
+  resolveVortexBillingConfig,
+} from "../payments/vortex_billing_processor";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { seedTestOrganizationMember } from "../testVortexAuth";
 
@@ -962,6 +966,72 @@ export const getVortexSaasBillingProofState = internalQuery({
       product: toProofProduct(product),
       price: toProofPrice(price),
       activeStripeIdPresent: hasActiveStripeId(subscription, product),
+    };
+  },
+});
+
+export const createVortexSaasCheckoutProofSession = internalAction({
+  args: {
+    organizationId: v.string(),
+    lookupKey: v.string(),
+    quantity: v.number(),
+    promoCode: v.optional(v.string()),
+    priceUnitAmount: v.optional(v.number()),
+  },
+  returns: v.object({
+    checkoutUrl: v.string(),
+    amountTotal: v.number(),
+    amountRemaining: v.number(),
+    invoiceNumbers: v.array(v.string()),
+  }),
+  handler: async (_ctx, args) => {
+    const checkoutSession = await createVortexBillingCheckoutSessionDetails(args);
+    return {
+      checkoutUrl: checkoutSession.checkoutUrl,
+      amountTotal: checkoutSession.amountTotal,
+      amountRemaining: checkoutSession.amountRemaining,
+      invoiceNumbers: [...checkoutSession.invoiceNumbers],
+    };
+  },
+});
+
+export const resolveVortexSaasBillingProofRefs = internalAction({
+  args: {
+    organizationId: v.string(),
+    lookupKey: v.string(),
+    priceId: v.string(),
+    billingAccountId: v.string(),
+    apiBaseUrl: v.string(),
+    apiKey: v.string(),
+  },
+  returns: v.object({
+    customerExternalId: v.string(),
+    subscriptionExternalId: v.string(),
+    billingAccountId: v.string(),
+    priceId: v.string(),
+  }),
+  handler: async (_ctx, args) => {
+    // V8 Convex actions do not expose deployment env vars via process.env, so pass the
+    // Vortex api config explicitly (the proof reads it from its own local env).
+    const config = resolveVortexBillingConfig(
+      {
+        organizationId: args.organizationId,
+        lookupKey: args.lookupKey,
+        quantity: 1,
+      },
+      {
+        ...process.env,
+        VORTEX_BILLING_API_BASE_URL: args.apiBaseUrl,
+        VORTEX_BILLING_API_KEY: args.apiKey,
+        VORTEX_BILLING_ACCOUNT_ID: args.billingAccountId,
+        VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ [args.lookupKey]: args.priceId }),
+      },
+    );
+    return {
+      customerExternalId: config.customerExternalId,
+      subscriptionExternalId: config.subscriptionExternalId,
+      billingAccountId: config.billingAccountId,
+      priceId: config.priceId,
     };
   },
 });
