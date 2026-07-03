@@ -9,14 +9,40 @@ type CommandResult = {
   readonly exitCode: number;
 };
 
+type ProofOrganization = {
+  readonly label: "discounted" | "invalid" | "normal";
+  readonly organizationId: string;
+  readonly customerExternalId: string;
+  readonly subscriptionExternalId: string;
+  readonly billingAccountId: string;
+};
+
+type LiveConfig = {
+  readonly sealDeployment: string;
+  readonly vortexBaseUrl: string;
+  readonly vortexApiKey: string;
+};
+
+type ProofOrganizations = {
+  readonly discountedOrganization: ProofOrganization;
+  readonly invalidOrganization: ProofOrganization;
+  readonly normalOrganization: ProofOrganization;
+};
+
+type ProofPrice = {
+  readonly productId: string;
+  readonly priceId: string;
+  readonly unitAmount: number;
+};
+
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
 const defaultVortexBaseUrl = "https://notable-leopard-969.convex.site";
 const proofRunId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const lookupKey = `seal-coupon-proof:${proofRunId}`;
-const organizationIdBase = `seal_coupon_proof_${proofRunId}`;
 const couponId = `seal_coupon_${proofRunId}`;
 const promoCode = `SEAL${proofRunId.toUpperCase().replaceAll("_", "")}`;
 const invalidPromoCode = `INVALID${proofRunId.toUpperCase().replaceAll("_", "")}`;
+const proofBillingAccountPlaceholder = `bacc_seal_coupon_proof_pending_${proofRunId}`;
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name];
@@ -70,15 +96,6 @@ function stringField(value: JsonObject, field: string): string {
   return child;
 }
 
-function optionalStringField(value: JsonObject, field: string): string | undefined {
-  const child = value[field];
-  if (child === undefined || child === null) {
-    return undefined;
-  }
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
-  return child;
-}
-
 function numberField(value: JsonObject, field: string): number {
   const child = value[field];
   assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a number`);
@@ -87,10 +104,6 @@ function numberField(value: JsonObject, field: string): number {
 
 function urlWithoutTrailingSlash(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
-}
-
-function sealCustomerExternalId(organizationId: string): string {
-  return `vtx_cust_seal_org_${organizationId}`;
 }
 
 async function runCommand(input: {
@@ -134,6 +147,22 @@ async function runConvex<T extends Json>(input: {
     fail(`convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`);
   }
   return parseConvexJson<T>(result.stdout, input.functionName);
+}
+
+async function getConvexEnv(input: {
+  readonly deployment: string;
+  readonly name: string;
+}): Promise<string | undefined> {
+  const result = await runCommand({
+    command: ["bunx", "convex", "env", "get", input.name],
+    cwd: sealConvexCwd,
+    deployment: input.deployment,
+  });
+  if (result.exitCode !== 0) {
+    return undefined;
+  }
+  const value = result.stdout.trim();
+  return value.length > 0 ? value : undefined;
 }
 
 async function runConvexExpectFailure(input: {
@@ -180,10 +209,40 @@ async function setConvexEnv(input: {
   }
 }
 
+function readStringRecord(value: string | undefined, label: string): Record<string, string> {
+  if (value === undefined || value.trim().length === 0) {
+    return {};
+  }
+  const parsed = JSON.parse(value) as Json;
+  assert(isJsonObject(parsed), `Expected ${label} to be a JSON object`);
+  const record: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(parsed)) {
+    assert(typeof entry === "string", `Expected ${label}.${key} to be a string`);
+    record[key] = entry;
+  }
+  return record;
+}
+
+async function mergeConvexStringRecordEnv(input: {
+  readonly deployment: string;
+  readonly name: string;
+  readonly updates: Readonly<Record<string, string>>;
+}): Promise<void> {
+  const existing = readStringRecord(
+    await getConvexEnv({ deployment: input.deployment, name: input.name }),
+    input.name,
+  );
+  await setConvexEnv({
+    deployment: input.deployment,
+    name: input.name,
+    value: JSON.stringify({ ...existing, ...input.updates }),
+  });
+}
+
 async function requestVortexJson(input: {
   readonly baseUrl: string;
   readonly apiKey: string;
-  readonly method?: "GET" | "POST";
+  readonly method?: "GET" | "POST" | "PUT";
   readonly path: string;
   readonly body?: JsonObject;
   readonly idempotencyKey?: string;
@@ -216,30 +275,66 @@ async function requestVortexJson(input: {
   return parsed;
 }
 
-async function requestVortexCatalog(input: {
+async function createProofRecurringPrice(input: {
   readonly baseUrl: string;
   readonly apiKey: string;
-}): Promise<JsonObject> {
-  return await requestVortexJson({
+}): Promise<ProofPrice> {
+  const productBody = await requestVortexJson({
     baseUrl: input.baseUrl,
     apiKey: input.apiKey,
-    method: "GET",
-    path: "/v1/catalog",
-    label: "GET /v1/catalog",
+    method: "POST",
+    path: "/v1/products",
+    idempotencyKey: `seal_coupon_product_${proofRunId}`,
+    label: "POST /v1/products",
+    body: {
+      productId: `prod_seal_coupon_proof_${proofRunId}`,
+      name: "Seal coupon proof recurring product",
+      description: "Recurring product created by Seal coupons-to-Vortex proof",
+      metadata: {
+        proof: "seal-coupons-vortex",
+        proofRunId,
+      },
+    },
   });
-}
+  const product = objectField(objectField(productBody, "data"), "product");
+  const productId = stringField(product, "productId");
 
-function isActiveCatalogRecord(value: Json): value is JsonObject {
-  return isJsonObject(value) && (value.archivedAt === undefined || value.archivedAt === null);
-}
+  const priceBody = await requestVortexJson({
+    baseUrl: input.baseUrl,
+    apiKey: input.apiKey,
+    method: "POST",
+    path: "/v1/prices",
+    idempotencyKey: `seal_coupon_price_${proofRunId}`,
+    label: "POST /v1/prices",
+    body: {
+      priceId: `price_seal_coupon_proof_${proofRunId}`,
+      productId,
+      name: "Seal coupon proof monthly price",
+      priceType: "fixed_recurring",
+      currency: "USD",
+      unitAmount: 5000,
+      billingInterval: "month",
+      billingIntervalCount: 1,
+      metadata: {
+        proof: "seal-coupons-vortex",
+        proofRunId,
+      },
+    },
+  });
+  const price = objectField(objectField(priceBody, "data"), "price");
 
-function selectRecurringCatalogPrice(catalog: JsonObject): JsonObject {
-  const data = objectField(catalog, "data");
-  const prices = arrayField(data, "prices").filter(isActiveCatalogRecord);
-  const price = prices.find((candidate) => optionalStringField(candidate, "billingInterval") !== undefined);
-  assert(price !== undefined, "Expected Vortex catalog to include at least one active recurring price");
-  numberField(price, "unitAmount");
-  return price;
+  assert(stringField(price, "productId") === productId, "Expected created price product id");
+  assert(stringField(price, "priceType") === "fixed_recurring", "Expected fixed_recurring proof price");
+  assert(stringField(price, "currency") === "USD", "Expected USD proof price");
+  assert(stringField(price, "billingInterval") === "month", "Expected monthly proof price");
+  assert(numberField(price, "billingIntervalCount") === 1, "Expected one-month proof price interval count");
+  assert(numberField(price, "unitAmount") === 5000, "Expected proof price unit amount");
+
+  return {
+    productId,
+    priceId: stringField(price, "priceId"),
+    unitAmount: numberField(price, "unitAmount"),
+  };
 }
 
 async function createProofCoupon(input: {
@@ -271,6 +366,154 @@ async function createProofCoupon(input: {
   });
   const coupon = objectField(objectField(body, "data"), "coupon");
   assert(stringField(coupon, "couponId") === couponId, "Expected created coupon id");
+}
+
+async function ensureSealProofOrganization(input: {
+  readonly deployment: string;
+  readonly label: ProofOrganization["label"];
+}): Promise<string> {
+  const body = await runConvex<JsonObject>({
+    deployment: input.deployment,
+    functionName: "vortex_billing/proof_actions:ensureSealVortexOnboardingProofOrganization",
+    args: {
+      proofRunId: `${proofRunId}_${input.label}`,
+    },
+  });
+  return stringField(body, "organizationId");
+}
+
+async function resolveProofRefs(input: {
+  readonly deployment: string;
+  readonly organizationId: string;
+  readonly priceId: string;
+}): Promise<Pick<ProofOrganization, "customerExternalId" | "subscriptionExternalId">> {
+  const body = await runConvex<JsonObject>({
+    deployment: input.deployment,
+    functionName: "vortex_billing/proof_actions:resolveVortexSaasBillingProofRefs",
+    args: {
+      organizationId: input.organizationId,
+      lookupKey,
+      priceId: input.priceId,
+      billingAccountId: proofBillingAccountPlaceholder,
+    },
+  });
+  return {
+    customerExternalId: stringField(body, "customerExternalId"),
+    subscriptionExternalId: stringField(body, "subscriptionExternalId"),
+  };
+}
+
+async function upsertVortexCustomer(input: {
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly organization: Pick<ProofOrganization, "label" | "organizationId" | "customerExternalId">;
+}): Promise<void> {
+  const body = await requestVortexJson({
+    baseUrl: input.baseUrl,
+    apiKey: input.apiKey,
+    method: "PUT",
+    path: `/v1/customers/${encodeURIComponent(input.organization.customerExternalId)}`,
+    idempotencyKey: `seal_coupon_customer_${proofRunId}_${input.organization.label}`,
+    label: "PUT /v1/customers/:customerExternalId",
+    body: {
+      name: `Seal coupon proof ${input.organization.label}`,
+      email: `seal-coupon-${input.organization.label}+${proofRunId}@seal.test`,
+      billingCurrency: "USD",
+      timezone: "UTC",
+      metadata: {
+        proof: "seal-coupons-vortex",
+        proofRunId,
+        sealOrganizationId: input.organization.organizationId,
+      },
+    },
+  });
+  const customer = objectField(objectField(body, "data"), "customer");
+  assert(
+    stringField(customer, "customerExternalId") === input.organization.customerExternalId,
+    "Expected upserted Vortex customer external id",
+  );
+}
+
+async function provisionBillingAccountViaCheckout(input: {
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly organization: Pick<ProofOrganization, "label" | "organizationId" | "customerExternalId">;
+  readonly priceId: string;
+}): Promise<string> {
+  const body = await requestVortexJson({
+    baseUrl: input.baseUrl,
+    apiKey: input.apiKey,
+    method: "POST",
+    path: "/v1/checkout/sessions",
+    idempotencyKey: `seal_coupon_account_${proofRunId}_${input.organization.label}`,
+    label: "POST /v1/checkout/sessions account provisioning",
+    body: {
+      mode: "payment",
+      customerExternalId: input.organization.customerExternalId,
+      collectionMode: "automatic",
+      lineItems: [
+        {
+          priceId: input.priceId,
+          quantity: 1,
+          metadata: {
+            proof: "seal-coupons-vortex",
+            purpose: "billing-account-provisioning",
+          },
+        },
+      ],
+      createdByRef: "seal-coupons-vortex-proof",
+      metadata: {
+        proof: "seal-coupons-vortex",
+        proofRunId,
+        sealOrganizationId: input.organization.organizationId,
+        purpose: "billing-account-provisioning",
+      },
+    },
+  });
+  const checkoutSession = objectField(objectField(body, "data"), "checkoutSession");
+  assert(
+    stringField(checkoutSession, "customerExternalId") === input.organization.customerExternalId,
+    "Expected provisioning checkout customer external id",
+  );
+  return stringField(checkoutSession, "billingAccountId");
+}
+
+async function prepareProofOrganization(input: {
+  readonly deployment: string;
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly priceId: string;
+  readonly label: ProofOrganization["label"];
+}): Promise<ProofOrganization> {
+  const organizationId = await ensureSealProofOrganization({
+    deployment: input.deployment,
+    label: input.label,
+  });
+  const refs = await resolveProofRefs({
+    deployment: input.deployment,
+    organizationId,
+    priceId: input.priceId,
+  });
+  const withoutAccount = {
+    label: input.label,
+    organizationId,
+    ...refs,
+  };
+  await upsertVortexCustomer({
+    baseUrl: input.baseUrl,
+    apiKey: input.apiKey,
+    organization: withoutAccount,
+  });
+  const billingAccountId = await provisionBillingAccountViaCheckout({
+    baseUrl: input.baseUrl,
+    apiKey: input.apiKey,
+    organization: withoutAccount,
+    priceId: input.priceId,
+  });
+  return {
+    ...withoutAccount,
+    billingAccountId,
+  };
 }
 
 async function listAppliedCouponIds(input: {
@@ -309,80 +552,115 @@ async function createCheckout(input: {
   });
 }
 
-async function main(): Promise<void> {
+function readLiveConfig(): LiveConfig {
   const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
   const vortexBaseUrl = urlWithoutTrailingSlash(
     readEnv("VORTEX_BILLING_API_BASE_URL") ?? defaultVortexBaseUrl,
   );
   const vortexApiKey = readEnv("VORTEX_BILLING_API_KEY");
-  const billingAccountId = readEnv("VORTEX_BILLING_ACCOUNT_ID");
-  const missing = [
-    ...(vortexApiKey === undefined ? ["VORTEX_BILLING_API_KEY"] : []),
-    ...(billingAccountId === undefined ? ["VORTEX_BILLING_ACCOUNT_ID"] : []),
-  ];
+  const missing = vortexApiKey === undefined ? ["VORTEX_BILLING_API_KEY"] : [];
   if (missing.length > 0) {
     warnAndSkip(missing);
   }
   assert(vortexApiKey !== undefined, "Vortex API key is required");
-  assert(billingAccountId !== undefined, "Vortex billing account id is required");
+  return { sealDeployment, vortexBaseUrl, vortexApiKey };
+}
 
-  const catalog = await requestVortexCatalog({ baseUrl: vortexBaseUrl, apiKey: vortexApiKey });
-  const price = selectRecurringCatalogPrice(catalog);
-  const priceId = stringField(price, "priceId");
-  const unitAmount = numberField(price, "unitAmount");
-
-  await createProofCoupon({ baseUrl: vortexBaseUrl, apiKey: vortexApiKey, priceId });
+async function configureSealBillingEnv(input: LiveConfig & {
+  readonly priceId: string;
+}): Promise<void> {
   await setConvexEnv({
-    deployment: sealDeployment,
+    deployment: input.sealDeployment,
     name: "VORTEX_BILLING_API_BASE_URL",
-    value: vortexBaseUrl,
+    value: input.vortexBaseUrl,
   });
   await setConvexEnv({
-    deployment: sealDeployment,
+    deployment: input.sealDeployment,
     name: "VORTEX_BILLING_API_KEY",
-    value: vortexApiKey,
+    value: input.vortexApiKey,
   });
   await setConvexEnv({
-    deployment: sealDeployment,
-    name: "VORTEX_BILLING_ACCOUNT_ID",
-    value: billingAccountId,
-  });
-  await setConvexEnv({
-    deployment: sealDeployment,
+    deployment: input.sealDeployment,
     name: "VORTEX_BILLING_SAAS_PRICE_MAP",
-    value: JSON.stringify({ [lookupKey]: priceId }),
+    value: JSON.stringify({ [lookupKey]: input.priceId }),
   });
+}
 
-  const discounted = await createCheckout({
-    deployment: sealDeployment,
-    organizationId: `${organizationIdBase}_discounted`,
-    priceUnitAmount: unitAmount,
+async function prepareProofOrganizations(input: LiveConfig & {
+  readonly priceId: string;
+}): Promise<ProofOrganizations> {
+  const discountedOrganization = await prepareProofOrganization({
+    deployment: input.sealDeployment,
+    baseUrl: input.vortexBaseUrl,
+    apiKey: input.vortexApiKey,
+    priceId: input.priceId,
+    label: "discounted",
+  });
+  const invalidOrganization = await prepareProofOrganization({
+    deployment: input.sealDeployment,
+    baseUrl: input.vortexBaseUrl,
+    apiKey: input.vortexApiKey,
+    priceId: input.priceId,
+    label: "invalid",
+  });
+  const normalOrganization = await prepareProofOrganization({
+    deployment: input.sealDeployment,
+    baseUrl: input.vortexBaseUrl,
+    apiKey: input.vortexApiKey,
+    priceId: input.priceId,
+    label: "normal",
+  });
+  await mergeConvexStringRecordEnv({
+    deployment: input.sealDeployment,
+    name: "VORTEX_BILLING_ACCOUNT_MAP",
+    updates: {
+      [discountedOrganization.organizationId]: discountedOrganization.billingAccountId,
+      [invalidOrganization.organizationId]: invalidOrganization.billingAccountId,
+      [normalOrganization.organizationId]: normalOrganization.billingAccountId,
+    },
+  });
+  return { discountedOrganization, invalidOrganization, normalOrganization };
+}
+
+async function proveDiscountedCheckout(input: {
+  readonly deployment: string;
+  readonly organization: ProofOrganization;
+  readonly unitAmount: number;
+}): Promise<JsonObject> {
+  const checkout = await createCheckout({
+    deployment: input.deployment,
+    organizationId: input.organization.organizationId,
+    priceUnitAmount: input.unitAmount,
     promoCode,
   });
-  assert(stringField(discounted, "checkoutUrl").length > 0, "Expected discounted checkout URL");
+  assert(stringField(checkout, "checkoutUrl").length > 0, "Expected discounted checkout URL");
   assert(
-    numberField(discounted, "amountTotal") < unitAmount,
+    numberField(checkout, "amountTotal") < input.unitAmount,
     "Expected discounted checkout amountTotal to be below unitAmount",
   );
+  return checkout;
+}
 
-  const invalidOrganizationId = `${organizationIdBase}_invalid`;
-  const invalidCustomerExternalId = sealCustomerExternalId(invalidOrganizationId);
+async function proveInvalidCodeCreatesNoAppliedCoupon(input: LiveConfig & {
+  readonly organization: ProofOrganization;
+  readonly unitAmount: number;
+}): Promise<number> {
   const beforeInvalidApplied = new Set(
     await listAppliedCouponIds({
-      baseUrl: vortexBaseUrl,
-      apiKey: vortexApiKey,
-      customerExternalId: invalidCustomerExternalId,
+      baseUrl: input.vortexBaseUrl,
+      apiKey: input.vortexApiKey,
+      customerExternalId: input.organization.customerExternalId,
     }),
   );
   const invalidResult = await runConvexExpectFailure({
-    deployment: sealDeployment,
+    deployment: input.sealDeployment,
     functionName: "vortex_billing/proof_actions:createVortexSaasCheckoutProofSession",
     args: {
-      organizationId: invalidOrganizationId,
+      organizationId: input.organization.organizationId,
       lookupKey,
       quantity: 1,
       promoCode: invalidPromoCode,
-      priceUnitAmount: unitAmount,
+      priceUnitAmount: input.unitAmount,
     },
   });
   assert(
@@ -390,54 +668,137 @@ async function main(): Promise<void> {
     "Expected invalid code checkout to fail before checkout creation",
   );
   const afterInvalidApplied = await listAppliedCouponIds({
-    baseUrl: vortexBaseUrl,
-    apiKey: vortexApiKey,
-    customerExternalId: invalidCustomerExternalId,
+    baseUrl: input.vortexBaseUrl,
+    apiKey: input.vortexApiKey,
+    customerExternalId: input.organization.customerExternalId,
   });
   const newInvalidApplied = afterInvalidApplied.filter((id) => !beforeInvalidApplied.has(id));
   assert(newInvalidApplied.length === 0, "Expected invalid code to create no active applied coupon");
+  return newInvalidApplied.length;
+}
 
-  const normal = await createCheckout({
-    deployment: sealDeployment,
-    organizationId: `${organizationIdBase}_normal`,
-    priceUnitAmount: unitAmount,
+async function proveNormalCheckout(input: {
+  readonly deployment: string;
+  readonly organization: ProofOrganization;
+  readonly unitAmount: number;
+}): Promise<JsonObject> {
+  const checkout = await createCheckout({
+    deployment: input.deployment,
+    organizationId: input.organization.organizationId,
+    priceUnitAmount: input.unitAmount,
   });
-  assert(stringField(normal, "checkoutUrl").length > 0, "Expected normal checkout URL");
-  assert(numberField(normal, "amountTotal") === unitAmount, "Expected no-code checkout at full unitAmount");
+  assert(stringField(checkout, "checkoutUrl").length > 0, "Expected normal checkout URL");
+  assert(numberField(checkout, "amountTotal") === input.unitAmount, "Expected no-code checkout at full unitAmount");
+  return checkout;
+}
 
+function printProofResult(input: LiveConfig & ProofOrganizations & {
+  readonly productId: string;
+  readonly priceId: string;
+  readonly unitAmount: number;
+  readonly discounted: JsonObject;
+  readonly normal: JsonObject;
+  readonly newInvalidAppliedCoupons: number;
+}): void {
   console.log(
     JSON.stringify(
       {
         ok: true,
         check: "seal_coupons_vortex",
-        boundary: "Seal -> Vortex public coupons/applied-coupons/catalog API only",
-        sealDeployment,
-        vortexBaseUrl,
+        boundary: "Seal -> Vortex public catalog/customers/checkout/coupons/applied-coupons API only",
+        sealDeployment: input.sealDeployment,
+        vortexBaseUrl: input.vortexBaseUrl,
         proofRunId,
+        provisioning: {
+          model: "public checkout auto-provisions billing accounts after public customer upsert",
+          organizations: [
+            {
+              label: input.discountedOrganization.label,
+              organizationId: input.discountedOrganization.organizationId,
+              customerExternalId: input.discountedOrganization.customerExternalId,
+              subscriptionExternalId: input.discountedOrganization.subscriptionExternalId,
+              billingAccountId: input.discountedOrganization.billingAccountId,
+            },
+            {
+              label: input.invalidOrganization.label,
+              organizationId: input.invalidOrganization.organizationId,
+              customerExternalId: input.invalidOrganization.customerExternalId,
+              subscriptionExternalId: input.invalidOrganization.subscriptionExternalId,
+              billingAccountId: input.invalidOrganization.billingAccountId,
+            },
+            {
+              label: input.normalOrganization.label,
+              organizationId: input.normalOrganization.organizationId,
+              customerExternalId: input.normalOrganization.customerExternalId,
+              subscriptionExternalId: input.normalOrganization.subscriptionExternalId,
+              billingAccountId: input.normalOrganization.billingAccountId,
+            },
+          ],
+        },
         price: {
-          priceId,
-          unitAmount,
+          productId: input.productId,
+          priceId: input.priceId,
+          unitAmount: input.unitAmount,
         },
         coupon: {
           couponId,
           promoCode,
         },
         discounted: {
-          amountTotal: numberField(discounted, "amountTotal"),
-          amountRemaining: numberField(discounted, "amountRemaining"),
+          amountTotal: numberField(input.discounted, "amountTotal"),
+          amountRemaining: numberField(input.discounted, "amountRemaining"),
         },
         invalidCode: {
           createdCheckout: false,
-          newActiveAppliedCoupons: newInvalidApplied.length,
+          newActiveAppliedCoupons: input.newInvalidAppliedCoupons,
         },
         noCode: {
-          amountTotal: numberField(normal, "amountTotal"),
+          amountTotal: numberField(input.normal, "amountTotal"),
         },
       },
       null,
       2,
     ),
   );
+}
+
+async function main(): Promise<void> {
+  const config = readLiveConfig();
+  const price = await createProofRecurringPrice({
+    baseUrl: config.vortexBaseUrl,
+    apiKey: config.vortexApiKey,
+  });
+  const { productId, priceId, unitAmount } = price;
+
+  await createProofCoupon({ baseUrl: config.vortexBaseUrl, apiKey: config.vortexApiKey, priceId });
+  await configureSealBillingEnv({ ...config, priceId });
+  const organizations = await prepareProofOrganizations({ ...config, priceId });
+  const discounted = await proveDiscountedCheckout({
+    deployment: config.sealDeployment,
+    organization: organizations.discountedOrganization,
+    unitAmount,
+  });
+  const newInvalidAppliedCoupons = await proveInvalidCodeCreatesNoAppliedCoupon({
+    ...config,
+    organization: organizations.invalidOrganization,
+    unitAmount,
+  });
+  const normal = await proveNormalCheckout({
+    deployment: config.sealDeployment,
+    organization: organizations.normalOrganization,
+    unitAmount,
+  });
+
+  printProofResult({
+    ...config,
+    ...organizations,
+    productId,
+    priceId,
+    unitAmount,
+    discounted,
+    normal,
+    newInvalidAppliedCoupons,
+  });
 }
 
 await main();

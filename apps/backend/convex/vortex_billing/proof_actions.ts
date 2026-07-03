@@ -9,7 +9,10 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
-import { createVortexBillingCheckoutSessionDetails } from "../payments/vortex_billing_processor";
+import {
+  createVortexBillingCheckoutSessionDetails,
+  resolveVortexBillingConfig,
+} from "../payments/vortex_billing_processor";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { seedTestOrganizationMember } from "../testVortexAuth";
 
@@ -988,6 +991,41 @@ export const createVortexSaasCheckoutProofSession = internalAction({
       amountTotal: checkoutSession.amountTotal,
       amountRemaining: checkoutSession.amountRemaining,
       invoiceNumbers: [...checkoutSession.invoiceNumbers],
+    };
+  },
+});
+
+export const resolveVortexSaasBillingProofRefs = internalAction({
+  args: {
+    organizationId: v.string(),
+    lookupKey: v.string(),
+    priceId: v.string(),
+    billingAccountId: v.string(),
+  },
+  returns: v.object({
+    customerExternalId: v.string(),
+    subscriptionExternalId: v.string(),
+    billingAccountId: v.string(),
+    priceId: v.string(),
+  }),
+  handler: async (_ctx, args) => {
+    const config = resolveVortexBillingConfig(
+      {
+        organizationId: args.organizationId,
+        lookupKey: args.lookupKey,
+        quantity: 1,
+      },
+      {
+        ...process.env,
+        VORTEX_BILLING_ACCOUNT_ID: args.billingAccountId,
+        VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ [args.lookupKey]: args.priceId }),
+      },
+    );
+    return {
+      customerExternalId: config.customerExternalId,
+      subscriptionExternalId: config.subscriptionExternalId,
+      billingAccountId: config.billingAccountId,
+      priceId: config.priceId,
     };
   },
 });
