@@ -5,6 +5,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { updateVortexPaymentStatusFromWebhookInDb } from "../payment_fields/mutations";
 import type { SubscriptionStatus } from "../schemas/subscriptions";
+import { resolveSubscriptionPriceByAnyId } from "../subscription_price_resolver";
 import { publishWebhookEvent } from "../webhooks/publish";
 
 export type VortexSubscriptionProjectionResult = {
@@ -343,12 +344,11 @@ export const projectSubscriptionUpdated = internalMutation({
       };
     }
 
-    const price = await ctx.db
-      .query("subscription_prices")
-      .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", args.planCode))
-      .first();
+    const price = await resolveSubscriptionPriceByAnyId(ctx.db, args.planCode);
     if (!price) {
-      throw new Error(`Seal subscription price not found for Vortex planCode: ${args.planCode}`);
+      throw new Error(
+        `Seal subscription price not found for Vortex planCode: ${args.planCode}. Run Vortex catalog sync before projecting this subscription.`,
+      );
     }
 
     const projection = {

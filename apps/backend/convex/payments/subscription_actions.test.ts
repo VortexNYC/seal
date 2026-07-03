@@ -6,8 +6,12 @@ import { createCheckoutSession, createCustomerPortalSession } from "./subscripti
 
 const stripeProcessorMocks = vi.hoisted(() => ({
   cancelProcessorSubscription: vi.fn(),
-  createCustomerPortalUrl: vi.fn(async (): Promise<string> => "https://billing.stripe.test/session"),
-  createHostedCheckoutSession: vi.fn(async (): Promise<string> => "https://checkout.stripe.test/session"),
+  createCustomerPortalUrl: vi.fn(
+    async (): Promise<string> => "https://billing.stripe.test/session",
+  ),
+  createHostedCheckoutSession: vi.fn(
+    async (): Promise<string> => "https://checkout.stripe.test/session",
+  ),
   getOrCreateBillingCustomerId: vi.fn(async (): Promise<string> => "cus_created"),
   pauseProcessorSubscription: vi.fn(),
   resumeProcessorSubscription: vi.fn(),
@@ -21,16 +25,15 @@ type CheckoutArgs = {
   readonly cancelUrl: string;
 };
 
-type CheckoutHandler = (
+type CheckoutHandler = (ctx: ActionCtx, args: CheckoutArgs) => Promise<{ checkoutUrl: string }>;
+
+const checkoutHandler = (createCheckoutSession as unknown as { readonly _handler: CheckoutHandler })
+  ._handler;
+
+type PortalHandler = (
   ctx: ActionCtx,
-  args: CheckoutArgs,
-) => Promise<{ checkoutUrl: string }>;
-
-const checkoutHandler = (
-  createCheckoutSession as unknown as { readonly _handler: CheckoutHandler }
-)._handler;
-
-type PortalHandler = (ctx: ActionCtx, args: { readonly returnUrl: string }) => Promise<{ url: string }>;
+  args: { readonly returnUrl: string },
+) => Promise<{ url: string }>;
 
 const portalHandler = (
   createCustomerPortalSession as unknown as { readonly _handler: PortalHandler }
@@ -87,11 +90,42 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     );
     vi.stubGlobal("fetch", mockFetch);
 
-    const ctx = createCheckoutActionCtx({ priceLookupResult: null });
+    const ctx = createCheckoutActionCtx({
+      priceLookupResult: null,
+      catalogPriceLookupResult: {
+        subscriptionPriceId: "subprice_vortex" as Id<"subscription_prices">,
+        subscriptionProductId: "subprod_vortex" as Id<"subscription_products">,
+        externalPriceId: "vtx_price_pro",
+        vortexPriceId: "vtx_price_pro",
+        externalProductId: "vtx_prod_pro",
+        vortexProductId: "vtx_prod_pro",
+        status: "active",
+      },
+    });
 
     await expect(checkoutHandler(ctx, baseCheckoutArgs)).resolves.toEqual({
       checkoutUrl: "https://pay.vortex.test/checkout",
     });
+    expect(ctx.runMutation).not.toHaveBeenCalled();
+  });
+
+  test("fails closed on Vortex Billing when the local catalog price is missing", async () => {
+    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+    process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
+    process.env.VORTEX_BILLING_API_KEY = "vb_test";
+    process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
+    process.env.VORTEX_BILLING_SAAS_PRICE_MAP = JSON.stringify({
+      "pro:monthly:v2": "vtx_price_pro",
+    });
+
+    const ctx = createCheckoutActionCtx({
+      priceLookupResult: null,
+      catalogPriceLookupResult: null,
+    });
+
+    await expect(checkoutHandler(ctx, baseCheckoutArgs)).rejects.toThrow(
+      "Seal subscription price not found for Vortex checkout priceId: vtx_price_pro",
+    );
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
 
@@ -124,6 +158,7 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
 
 function createCheckoutActionCtx(args: {
   readonly priceLookupResult: unknown;
+  readonly catalogPriceLookupResult?: unknown;
   readonly organizationOverrides?: Partial<Doc<"organizations">>;
 }): ActionCtx {
   const user = {
@@ -150,7 +185,10 @@ function createCheckoutActionCtx(args: {
     ...args.organizationOverrides,
   } as Doc<"organizations">;
 
-  const queryResults: readonly unknown[] = [user, organization, 3];
+  const queryResults: readonly unknown[] =
+    args.catalogPriceLookupResult === undefined
+      ? [user, organization, 3]
+      : [user, organization, 3, args.catalogPriceLookupResult];
 
   const auth = {
     getUserIdentity: vi.fn(async () => ({

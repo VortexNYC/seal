@@ -24,6 +24,7 @@ export type SubscriptionProductPriceStatusTuple = Infer<typeof subscriptionProdu
 
 export const subscriptionPricesTable = defineTable({
   externalPriceId: v.string(), // Stripe price ID (price_xxx)
+  vortexPriceId: v.optional(v.string()),
 
   externalProductId: v.string(), // Link to product
   subscriptionProductId: v.id("subscription_products"),
@@ -54,6 +55,7 @@ export const subscriptionPricesTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_external_price_id", ["externalPriceId"])
+  .index("by_vortex_price_id", ["vortexPriceId"])
   .index("by_external_product_id", ["externalProductId"])
   .index("by_subscription_product_id", ["subscriptionProductId"])
   .index("by_lookup_key", ["lookupKey"]);

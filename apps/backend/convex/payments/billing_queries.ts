@@ -3,26 +3,13 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { query, type QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth/wrappers";
+import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { availablePlanValidator, billingSubscriptionValidator } from "./billing_query_validators";
 
 type BillingQueryDbCtx = Pick<QueryCtx, "db">;
 
 async function getPriceAndProduct(ctx: BillingQueryDbCtx, externalPriceId: string) {
-  const price = await ctx.db
-    .query("subscription_prices")
-    .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", externalPriceId))
-    .first();
-
-  const product = price
-    ? await ctx.db
-        .query("subscription_products")
-        .withIndex("by_external_product_id", (q) =>
-          q.eq("externalProductId", price.externalProductId),
-        )
-        .first()
-    : null;
-
-  return { price, product };
+  return await resolveSubscriptionPriceAndProductByAnyId(ctx.db, externalPriceId);
 }
 
 function selectPlanPrices(prices: Doc<"subscription_prices">[]) {
@@ -61,9 +48,7 @@ function toPricing(
 async function buildAvailablePlan(ctx: BillingQueryDbCtx, product: Doc<"subscription_products">) {
   const prices = await ctx.db
     .query("subscription_prices")
-    .withIndex("by_external_product_id", (q) =>
-      q.eq("externalProductId", product.externalProductId),
-    )
+    .withIndex("by_subscription_product_id", (q) => q.eq("subscriptionProductId", product._id))
     .filter((q) => q.eq(q.field("status"), "active"))
     .collect();
 
