@@ -38,7 +38,7 @@ const baseConfig: BuildPayableInput["config"] = {
 };
 
 describe("Vortex Billing document payable bridge", () => {
-  test("selects Vortex only for allowlisted supported non-tax document payments", () => {
+  test("selects Vortex only for allowlisted supported document payments", () => {
     expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("stripe");
     expect(
       selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
@@ -73,6 +73,9 @@ describe("Vortex Billing document payable bridge", () => {
       selectDocumentPaymentProvider("org_seal_123", [{ ...baseConfig, taxEnabled: true }], {
         VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
       }),
+    ).toBe("vortex_billing");
+    expect(
+      selectDocumentPaymentProvider("org_not_allowlisted", [{ ...baseConfig, taxEnabled: true }], {}),
     ).toBe("stripe");
   });
 
@@ -164,6 +167,134 @@ describe("Vortex Billing document payable bridge", () => {
     expect(request.feePolicy.execution.stopCondition).toBe(
       "fixed application fee is modeled for Vortex payable creation; Vortex executes it on card charge",
     );
+  });
+
+  test("builds taxable Vortex requests with Seal tax behavior and standard classification", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      sourceNamespace: "seal-proof",
+      paymentsEnvironment: "sandbox",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_seal_123" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
+      priceMapJson: JSON.stringify({
+        seal_line_1: "price_seal_line_1",
+        "seal_line_1:deposit": "price_seal_line_deposit",
+        "seal_line_1:balance": "price_seal_line_balance",
+      }),
+    });
+    const recipient = { email: "buyer@seal.test", name: "Seal Buyer" };
+    const now = Date.UTC(2026, 0, 1);
+    const taxableBaseConfig = {
+      ...baseConfig,
+      taxEnabled: true,
+      taxBehavior: "inclusive",
+    } satisfies BuildPayableInput["config"];
+
+    expect(
+      buildCreatePayableRequest({
+        config: taxableBaseConfig,
+        recipient,
+        env,
+        now,
+      }),
+    ).toMatchObject({
+      taxable: true,
+      taxBehavior: "inclusive",
+      taxClassificationKey: "standard_taxable",
+      lineItems: [{ taxable: false }],
+    });
+
+    expect(
+      buildCreateRecurringPayableRequest({
+        config: {
+          ...taxableBaseConfig,
+          paymentType: "recurring",
+          recurringConfig: {
+            interval: "month",
+            intervalCount: 1,
+            endCondition: "never",
+          },
+        },
+        recipient,
+        env,
+        now,
+      }),
+    ).toMatchObject({
+      taxMode: "taxable_requires_evidence",
+      taxable: true,
+      taxBehavior: "inclusive",
+      taxClassificationKey: "standard_taxable",
+      lineItems: [{ taxable: false }],
+    });
+
+    const installmentRequest = buildCreateInstallmentPayableRequest({
+      config: {
+        ...taxableBaseConfig,
+        paymentType: "installments",
+        installmentsConfig: {
+          count: 2,
+          interval: "month",
+        },
+      },
+      recipient,
+      env,
+      now,
+    });
+    expect(installmentRequest).toMatchObject({
+      taxMode: "taxable_requires_evidence",
+      taxable: true,
+      taxBehavior: "inclusive",
+      taxClassificationKey: "standard_taxable",
+    });
+    expect(installmentRequest.installments[0]?.lineItems[0]?.taxable).toBe(false);
+
+    const depositBalanceRequest = buildCreateDepositBalancePayableRequest({
+      config: {
+        ...taxableBaseConfig,
+        paymentType: "deposit_balance",
+        totalAmountCents: 4200,
+        depositBalanceConfig: {
+          depositPercent: 50,
+          balanceDueDays: 30,
+        },
+      },
+      recipient,
+      env,
+      now,
+    });
+    expect(depositBalanceRequest).toMatchObject({
+      taxMode: "taxable_requires_evidence",
+      taxable: true,
+      taxBehavior: "inclusive",
+      taxClassificationKey: "standard_taxable",
+    });
+    expect(depositBalanceRequest.deposit.lineItems[0]?.taxable).toBe(false);
+    expect(depositBalanceRequest.balance.lineItems[0]?.taxable).toBe(false);
+  });
+
+  test("defaults taxable Vortex request tax behavior to exclusive", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_seal_123" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      priceMapJson: JSON.stringify({ seal_line_1: "price_seal_line_1" }),
+    });
+
+    const request = buildCreatePayableRequest({
+      config: { ...baseConfig, taxEnabled: true },
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+    });
+
+    expect(request).toMatchObject({
+      taxable: true,
+      taxBehavior: "exclusive",
+      taxClassificationKey: "standard_taxable",
+    });
   });
 
   test("builds a Vortex recurring payable request from a Seal recurring payment config", () => {
