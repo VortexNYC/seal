@@ -173,6 +173,58 @@ describe("subscription_guards", () => {
       expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
+    test("returns pro plan when subscription resolves through vortexPriceId", async () => {
+      const now = Date.now();
+      const productId = await t.run(async (ctx) => {
+        return await ctx.db.insert("subscription_products", {
+          externalProductId: "vtx_prod_guard",
+          vortexProductId: "vtx_prod_guard",
+          name: "Seal Vortex Pro",
+          status: "active",
+          metadata: { tier: "pro" },
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscription_prices", {
+          externalPriceId: "catalog_shadow_guard",
+          vortexPriceId: "vtx_price_guard",
+          externalProductId: "vtx_prod_guard",
+          subscriptionProductId: productId,
+          type: "recurring",
+          billingScheme: "per_unit",
+          currency: "usd",
+          unitAmount: 1500,
+          recurring: { interval: "month", intervalCount: 1 },
+          status: "active",
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscriptions", {
+          organizationId,
+          externalCustomerId: "vtx_cust_guard",
+          externalSubscriptionId: "vtx_sub_guard",
+          externalPriceId: "vtx_price_guard",
+          status: "active",
+          currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+          currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const result = await t.run(async (ctx) => {
+        return await getSubscriptionPlan(ctx.db, organizationId);
+      });
+      expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
+    });
+
     test("returns pro plan for trialing subscription", async () => {
       await seedSubscription({ subscriptionStatus: "trialing" });
 

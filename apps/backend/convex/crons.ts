@@ -44,6 +44,13 @@ crons.daily(
   internal.stripe.handlers.checkSubscriptionStatus,
 );
 
+// Sync Seal's SaaS catalog projection from Vortex Billing daily
+crons.daily(
+  "sync-vortex-billing-catalog",
+  { hourUTC: 6, minuteUTC: 30 },
+  internal.vortex_billing.catalog_sync.syncCatalogFromVortex,
+);
+
 // Clean up expired download tokens weekly
 crons.weekly(
   "cleanup-expired-download-tokens",

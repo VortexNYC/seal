@@ -10,6 +10,7 @@ export type SubscriptionProductStatus = Infer<typeof subscriptionProductStatusTu
 
 export const subscriptionProductsTable = defineTable({
   externalProductId: v.string(),
+  vortexProductId: v.optional(v.string()),
 
   name: v.string(),
   description: v.optional(v.string()),
@@ -28,4 +29,5 @@ export const subscriptionProductsTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_external_product_id", ["externalProductId"])
+  .index("by_vortex_product_id", ["vortexProductId"])
   .index("by_status", ["status"]);

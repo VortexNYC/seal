@@ -39,6 +39,7 @@
     "prove:vortex-payments-settings-adoption": "bun run scripts/prove-vortex-payments-settings-adoption.ts",
     "prove:vortex-merchant-settings-adoption": "bun run scripts/prove-vortex-merchant-settings-adoption.ts",
     "prove:seal-vortex-onboarding-wiring": "bun run scripts/prove-seal-vortex-onboarding-wiring.ts",
+    "prove:seal-catalog-from-vortex": "bun run scripts/prove-seal-catalog-from-vortex.ts",
     "prove:vortex-operational-payments-adoption": "bun run scripts/prove-vortex-operational-payments-adoption.ts",
     "prove:vortex-payments-backend-adapter-adoption": "bun run scripts/prove-vortex-payments-backend-adapter-adoption.ts",
     "prove:vortex-saas-webhook-projection": "bun run --cwd apps/backend test convex/vortex_billing/__tests__/webhook_signature.test.ts convex/vortex_billing/__tests__/webhook_handlers.test.ts convex/vortex_billing/__tests__/webhook_projection.test.ts",

@@ -14,6 +14,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
+import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 
 export { PLAN_LIMITS, type TierPlan };
 
@@ -32,10 +33,10 @@ async function resolvePlanForSubscription(
   subscription: PlanSubscription,
 ): Promise<SubscriptionPlanResult> {
   // Resolve the tier by joining through price → product
-  const price = await db
-    .query("subscription_prices")
-    .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", subscription.externalPriceId))
-    .first();
+  const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
+    db,
+    subscription.externalPriceId,
+  );
 
   let tier: string | undefined;
   if (!price) {
@@ -51,12 +52,6 @@ async function resolvePlanForSubscription(
       }),
     );
   } else {
-    const product = await db
-      .query("subscription_products")
-      .withIndex("by_external_product_id", (q) =>
-        q.eq("externalProductId", price.externalProductId),
-      )
-      .first();
     if (!product) {
       console.error(
         JSON.stringify({

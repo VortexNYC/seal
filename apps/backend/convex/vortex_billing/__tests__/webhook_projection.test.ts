@@ -31,6 +31,7 @@ describe("Vortex Billing subscription projection", () => {
     const productId = await t.run((ctx) =>
       ctx.db.insert("subscription_products", {
         externalProductId: "vtx_prod_seal_pro",
+        vortexProductId: "vtx_prod_seal_pro",
         name: "Seal Pro",
         status: "active",
         metadata: { tier: "pro", features: "api_access,webhook_access" },
@@ -42,6 +43,7 @@ describe("Vortex Billing subscription projection", () => {
     await t.run((ctx) =>
       ctx.db.insert("subscription_prices", {
         externalPriceId: priceId,
+        vortexPriceId: priceId,
         externalProductId: "vtx_prod_seal_pro",
         subscriptionProductId: productId,
         type: "recurring",
@@ -185,6 +187,54 @@ describe("Vortex Billing subscription projection", () => {
     expect(plan).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
   });
 
+  test("projects active Vortex subscription through vortexPriceId resolver", async () => {
+    const priceId = "vtx_price_resolver_only";
+    const productId = await t.run((ctx) =>
+      ctx.db.insert("subscription_products", {
+        externalProductId: "vtx_prod_resolver_only",
+        vortexProductId: "vtx_prod_resolver_only",
+        name: "Seal Pro Resolver",
+        status: "active",
+        metadata: { tier: "pro" },
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+    await t.run((ctx) =>
+      ctx.db.insert("subscription_prices", {
+        externalPriceId: "catalog_shadow_resolver_only",
+        vortexPriceId: priceId,
+        externalProductId: "vtx_prod_resolver_only",
+        subscriptionProductId: productId,
+        type: "recurring",
+        billingScheme: "per_unit",
+        currency: "usd",
+        unitAmount: 2900,
+        recurring: { interval: "month", intervalCount: 1 },
+        status: "active",
+        lookupKey: "pro:resolver:month:v1",
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+
+    await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
+      eventId: "evt_vortex_subscription_resolver_only",
+      eventType: "subscription.updated",
+      sealOrganizationId: organizationId,
+      subscriptionExternalId: "vtx_sub_resolver_only",
+      customerExternalId: "vtx_cust_resolver_only",
+      planCode: priceId,
+      status: "active",
+      cancelAtPeriodEnd: false,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+    });
+
+    const plan = await t.run((ctx) => getSubscriptionPlan(ctx.db, organizationId));
+    expect(plan).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
+  });
+
   test("ignores duplicate Vortex event ids", async () => {
     const priceId = "vtx_price_duplicate_pro_monthly";
     await seedProCatalog(priceId);
@@ -260,14 +310,17 @@ describe("Vortex Billing subscription projection", () => {
     await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
 
     const failureStartedAfter = Date.now();
-    const result = await t.mutation(internal.vortex_billing.projection.projectInvoicePaymentFailed, {
-      eventId: "evt_vortex_invoice_failed",
-      eventType: "invoice.payment_failed",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_failed_001",
-      invoiceStatus: "payment_failed",
-      sourceCreatedAt: now + 2_000,
-    });
+    const result = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaymentFailed,
+      {
+        eventId: "evt_vortex_invoice_failed",
+        eventType: "invoice.payment_failed",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_failed_001",
+        invoiceStatus: "payment_failed",
+        sourceCreatedAt: now + 2_000,
+      },
+    );
     const failureStartedBefore = Date.now();
 
     expect(result).toMatchObject({ processed: true, duplicate: false, ignored: false });
@@ -357,7 +410,10 @@ describe("Vortex Billing subscription projection", () => {
       sourceCreatedAt: now + 5_000,
     };
 
-    const first = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, projection);
+    const first = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      projection,
+    );
     const second = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
       ...projection,
       invoiceNumber: "inv_vortex_duplicate_002",
@@ -480,16 +536,13 @@ describe("Vortex Billing subscription projection", () => {
     const eventId = "evt_vortex_invoice_redrive";
     await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
 
-    const uncorrelatable = await t.mutation(
-      internal.vortex_billing.projection.projectInvoicePaid,
-      {
-        eventId,
-        eventType: "invoice.paid",
-        invoiceNumber: "inv_vortex_redrive_uncorrelatable",
-        invoiceStatus: "paid",
-        sourceCreatedAt: now + 14_000,
-      },
-    );
+    const uncorrelatable = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
+      eventId,
+      eventType: "invoice.paid",
+      invoiceNumber: "inv_vortex_redrive_uncorrelatable",
+      invoiceStatus: "paid",
+      sourceCreatedAt: now + 14_000,
+    });
     const corrected = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
       eventId,
       eventType: "invoice.paid",

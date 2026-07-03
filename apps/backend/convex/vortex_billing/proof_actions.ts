@@ -9,6 +9,7 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
+import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { seedTestOrganizationMember } from "../testVortexAuth";
 
 type SeedVortexSaasBillingCatalogProjectionResult = {
@@ -67,11 +68,13 @@ type VortexSaasBillingProofState = {
   } | null;
   readonly product: {
     readonly externalProductId: string;
+    readonly vortexProductId: string | undefined;
     readonly tier: string | undefined;
     readonly features: string | undefined;
   } | null;
   readonly price: {
     readonly externalPriceId: string;
+    readonly vortexPriceId: string | undefined;
     readonly lookupKey: string | undefined;
     readonly currency: string;
     readonly unitAmount: number | undefined;
@@ -185,10 +188,7 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
     slug: v.string(),
     ownerAuthSubject: v.string(),
   }),
-  handler: async (
-    ctx,
-    args,
-  ): Promise<EnsureSealVortexOnboardingProofOrganizationResult> => {
+  handler: async (ctx, args): Promise<EnsureSealVortexOnboardingProofOrganizationResult> => {
     const now = Date.now();
     const slug = `seal-vortex-onboarding-proof-${args.proofRunId}`.toLowerCase();
     const ownerAuthSubject = `seal_vortex_onboarding_proof_${args.proofRunId}`;
@@ -282,6 +282,7 @@ function toProofProduct(
 
   return {
     externalProductId: product.externalProductId,
+    vortexProductId: product.vortexProductId,
     tier: product.metadata?.tier,
     features: product.metadata?.features,
   };
@@ -296,6 +297,7 @@ function toProofPrice(
 
   return {
     externalPriceId: price.externalPriceId,
+    vortexPriceId: price.vortexPriceId,
     lookupKey: price.lookupKey,
     currency: price.currency,
     unitAmount: price.unitAmount,
@@ -337,6 +339,7 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
     const ownerId = await insertSaasProofOwner(ctx, args.proofRunId, organizationId);
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
       externalProductId: args.vortexProductId,
+      vortexProductId: args.vortexProductId,
       name: args.tier === "enterprise" ? "Vortex Enterprise" : "Vortex Pro",
       description: "Vortex-projected Seal SaaS billing proof product",
       status: "active",
@@ -350,6 +353,7 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
     });
     const subscriptionPriceId = await ctx.db.insert("subscription_prices", {
       externalPriceId: args.vortexPriceId,
+      vortexPriceId: args.vortexPriceId,
       externalProductId: args.vortexProductId,
       subscriptionProductId,
       type: "recurring",
@@ -369,6 +373,86 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
       ownerId,
       subscriptionProductId,
       subscriptionPriceId,
+    };
+  },
+});
+
+export const seedStripeEntitlementSafetyProof = internalMutation({
+  args: {
+    proofRunId: v.string(),
+  },
+  returns: v.object({
+    organizationId: v.id("organizations"),
+    externalPriceId: v.string(),
+    externalSubscriptionId: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const externalProductId = `prod_catalog_safety_${args.proofRunId}`;
+    const externalPriceId = `price_catalog_safety_${args.proofRunId}`;
+    const externalSubscriptionId = `sub_catalog_safety_${args.proofRunId}`;
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      `catalog-safety-${args.proofRunId}`,
+      now,
+      `cus_catalog_safety_${args.proofRunId}`,
+    );
+    const ownerId = await insertSaasProofOwner(
+      ctx,
+      `catalog-safety-${args.proofRunId}`,
+      organizationId,
+    );
+    await seedTestOrganizationMember(ctx, {
+      organizationId,
+      userId: ownerId,
+      role: "owner",
+      status: "active",
+    });
+
+    const subscriptionProductId = await ctx.db.insert("subscription_products", {
+      externalProductId,
+      name: "Stripe Safety Control Pro",
+      status: "active",
+      metadata: {
+        tier: "pro",
+        useType: "business",
+        features: "api_access,webhook_access",
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.insert("subscription_prices", {
+      externalPriceId,
+      externalProductId,
+      subscriptionProductId,
+      type: "recurring",
+      billingScheme: "per_unit",
+      currency: "usd",
+      recurring: { interval: "month", intervalCount: 1 },
+      unitAmount: 2900,
+      usageType: "licensed",
+      status: "active",
+      lookupKey: `catalog-safety:${args.proofRunId}`,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.insert("subscriptions", {
+      organizationId,
+      externalCustomerId: `cus_catalog_safety_${args.proofRunId}`,
+      externalSubscriptionId,
+      externalPriceId,
+      status: "active",
+      currentPeriodStart: now,
+      currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+      cancelAtPeriodEnd: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      externalPriceId,
+      externalSubscriptionId,
     };
   },
 });
@@ -866,24 +950,10 @@ export const getVortexSaasBillingProofState = internalQuery({
           q.eq("organizationId", args.organizationId).eq("status", "past_due"),
         )
         .first());
-    const price =
+    const { price, product } =
       subscription === null
-        ? null
-        : await ctx.db
-            .query("subscription_prices")
-            .withIndex("by_external_price_id", (q) =>
-              q.eq("externalPriceId", subscription.externalPriceId),
-            )
-            .first();
-    const product =
-      price === null
-        ? null
-        : await ctx.db
-            .query("subscription_products")
-            .withIndex("by_external_product_id", (q) =>
-              q.eq("externalProductId", price.externalProductId),
-            )
-            .first();
+        ? { price: null, product: null }
+        : await resolveSubscriptionPriceAndProductByAnyId(ctx.db, subscription.externalPriceId);
 
     return {
       organizationId: args.organizationId,
@@ -892,6 +962,54 @@ export const getVortexSaasBillingProofState = internalQuery({
       product: toProofProduct(product),
       price: toProofPrice(price),
       activeStripeIdPresent: hasActiveStripeId(subscription, product),
+    };
+  },
+});
+
+export const getVortexCatalogProofPrice = internalQuery({
+  args: {
+    vortexPriceId: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      externalPriceId: v.string(),
+      vortexPriceId: v.optional(v.string()),
+      externalProductId: v.string(),
+      vortexProductId: v.optional(v.string()),
+      status: v.union(v.literal("active"), v.literal("archived"), v.literal("deleted")),
+      currency: v.string(),
+      unitAmount: v.optional(v.number()),
+      recurring: v.optional(
+        v.object({
+          interval: v.string(),
+          intervalCount: v.number(),
+        }),
+      ),
+      productName: v.string(),
+      productStatus: v.union(v.literal("active"), v.literal("archived"), v.literal("deleted")),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
+      ctx.db,
+      args.vortexPriceId,
+    );
+    if (price === null || product === null) {
+      return null;
+    }
+
+    return {
+      externalPriceId: price.externalPriceId,
+      vortexPriceId: price.vortexPriceId,
+      externalProductId: price.externalProductId,
+      vortexProductId: product.vortexProductId,
+      status: price.status,
+      currency: price.currency,
+      unitAmount: price.unitAmount,
+      recurring: price.recurring,
+      productName: product.name,
+      productStatus: product.status,
     };
   },
 });
