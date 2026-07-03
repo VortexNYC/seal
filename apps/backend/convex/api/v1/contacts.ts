@@ -58,7 +58,7 @@ export const listContacts = internalQuery({
   handler: async (
     ctx,
     args,
-  ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
+  ): Promise<{ contacts: ApiContact[]; total_count: number; has_more: boolean; next_cursor?: string }> => {
     const limit = Math.min(args.limit ?? 20, 100);
 
     let raw;
@@ -116,6 +116,7 @@ export const listContacts = internalQuery({
         created_at: new Date(c.createdAt).toISOString(),
         updated_at: new Date(c.updatedAt).toISOString(),
       })),
+      total_count: filtered.length,
       has_more,
       next_cursor,
     };

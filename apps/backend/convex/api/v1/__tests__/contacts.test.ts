@@ -234,6 +234,22 @@ describe("api/v1/contacts", () => {
       expect(result.contacts).toHaveLength(0);
       expect(result.has_more).toBe(false);
     });
+
+    test("returns total_count metadata", async () => {
+      await seedContact({ email: "a@test.com" });
+      await seedContact({ email: "b@test.com" });
+      await seedContact({ email: "c@test.com" });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        limit: 2,
+      });
+
+      expect(result.contacts).toHaveLength(2);
+      expect(result.has_more).toBe(true);
+      expect(result.total_count).toBe(3);
+    });
   });
 
   // =========================================================================
