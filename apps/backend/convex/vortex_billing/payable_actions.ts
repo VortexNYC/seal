@@ -62,6 +62,7 @@ type PaymentFieldConfigInput = {
   readonly totalAmountCents: number;
   readonly feeHandling: "absorb" | "pass_to_recipient";
   readonly taxEnabled: boolean;
+  readonly taxBehavior?: TaxBehavior;
   readonly recurringConfig?: {
     readonly interval: "week" | "month" | "year";
     readonly intervalCount: number;
@@ -133,6 +134,9 @@ export type CreatePayableRequest = {
   readonly feePolicy: FeePolicy;
   readonly dueAt?: string;
   readonly lineItems: readonly JsonObject[];
+  readonly taxable?: boolean;
+  readonly taxBehavior?: TaxBehavior;
+  readonly taxClassificationKey?: TaxClassificationKey;
   readonly metadata: Record<string, string>;
 };
 
@@ -143,6 +147,9 @@ type CreatePayableResult = {
 };
 
 type VortexCurrency = "USD" | "CAD";
+type TaxBehavior = "inclusive" | "exclusive";
+type TaxClassificationKey = "standard_taxable";
+type VortexTaxMode = "not_taxable" | "taxable_requires_evidence";
 
 type RecurringEndPolicy =
   | {
@@ -167,7 +174,10 @@ export type CreateRecurringPayableRequest = {
   readonly merchantAccountId?: string;
   readonly currency: VortexCurrency;
   readonly lineItems: readonly JsonObject[];
-  readonly taxMode: "not_taxable";
+  readonly taxMode: VortexTaxMode;
+  readonly taxable?: boolean;
+  readonly taxBehavior?: TaxBehavior;
+  readonly taxClassificationKey?: TaxClassificationKey;
   readonly collectionIntent: "manual";
   readonly feePolicy: FeePolicy;
   readonly cadence: {
@@ -203,7 +213,10 @@ export type CreateInstallmentPayableRequest = {
   readonly billingAccountId: string;
   readonly merchantAccountId?: string;
   readonly currency: VortexCurrency;
-  readonly taxMode: "not_taxable";
+  readonly taxMode: VortexTaxMode;
+  readonly taxable?: boolean;
+  readonly taxBehavior?: TaxBehavior;
+  readonly taxClassificationKey?: TaxClassificationKey;
   readonly collectionIntent: "manual";
   readonly feePolicy: FeePolicy;
   readonly installments: readonly InstallmentPlanItem[];
@@ -232,7 +245,10 @@ export type CreateDepositBalancePayableRequest = {
   readonly billingAccountId: string;
   readonly merchantAccountId?: string;
   readonly currency: VortexCurrency;
-  readonly taxMode: "not_taxable";
+  readonly taxMode: VortexTaxMode;
+  readonly taxable?: boolean;
+  readonly taxBehavior?: TaxBehavior;
+  readonly taxClassificationKey?: TaxClassificationKey;
   readonly collectionIntent: "manual";
   readonly feePolicy: FeePolicy;
   readonly deposit: DepositBalancePart;
@@ -279,11 +295,10 @@ export function selectDocumentPaymentProvider(
   }
   return configs.every(
     (config) =>
-      (config.paymentType === "one_time" ||
-        config.paymentType === "recurring" ||
-        config.paymentType === "installments" ||
-        config.paymentType === "deposit_balance") &&
-      !config.taxEnabled,
+      config.paymentType === "one_time" ||
+      config.paymentType === "recurring" ||
+      config.paymentType === "installments" ||
+      config.paymentType === "deposit_balance",
   )
     ? "vortex_billing"
     : "stripe";
@@ -344,11 +359,6 @@ export function buildCreatePayableRequest(input: {
   if (config.paymentType !== "one_time") {
     throw new ConvexError("Vortex Billing document bridge only supports one-time payments");
   }
-  if (config.taxEnabled) {
-    throw new ConvexError(
-      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
-    );
-  }
   if (config.items.length === 0) {
     throw new ConvexError("Payment field has no line items configured");
   }
@@ -383,6 +393,7 @@ export function buildCreatePayableRequest(input: {
     feePolicy: buildFeePolicy(config, input.platformFeeCents),
     ...(dueAt !== undefined ? { dueAt } : {}),
     lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
+    ...buildPayableTaxFields(config),
     metadata: {
       sourceSystem: env.sourceNamespace,
       vortexPaymentsEnvironment: env.paymentsEnvironment,
@@ -408,11 +419,6 @@ export function buildCreateRecurringPayableRequest(input: {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "recurring") {
     throw new ConvexError("Vortex Billing recurring document bridge requires recurring payments");
-  }
-  if (config.taxEnabled) {
-    throw new ConvexError(
-      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
-    );
   }
   if (config.items.length === 0) {
     throw new ConvexError("Payment field has no line items configured");
@@ -452,7 +458,8 @@ export function buildCreateRecurringPayableRequest(input: {
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
     currency: toVortexCurrency(config.currency),
     lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
-    taxMode: "not_taxable",
+    taxMode: buildPayableTaxMode(config),
+    ...buildPayableTaxFields(config),
     collectionIntent: "manual",
     feePolicy: buildFeePolicy(config, input.platformFeeCents),
     cadence: {
@@ -487,11 +494,6 @@ export function buildCreateInstallmentPayableRequest(input: {
   const { config, recipient, env, now } = input;
   if (config.paymentType !== "installments") {
     throw new ConvexError("Vortex Billing installment document bridge requires installments");
-  }
-  if (config.taxEnabled) {
-    throw new ConvexError(
-      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
-    );
   }
   if (config.items.length === 0) {
     throw new ConvexError("Payment field has no line items configured");
@@ -530,7 +532,8 @@ export function buildCreateInstallmentPayableRequest(input: {
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
     currency: toVortexCurrency(config.currency),
-    taxMode: "not_taxable",
+    taxMode: buildPayableTaxMode(config),
+    ...buildPayableTaxFields(config),
     collectionIntent: "manual",
     feePolicy: buildFeePolicy(config, input.platformFeeCents),
     installments: amounts.map((amountDue, index) => ({
@@ -567,11 +570,6 @@ export function buildCreateDepositBalancePayableRequest(input: {
   if (config.paymentType !== "deposit_balance") {
     throw new ConvexError(
       "Vortex Billing deposit/balance document bridge requires deposit_balance payments",
-    );
-  }
-  if (config.taxEnabled) {
-    throw new ConvexError(
-      "Vortex Billing document bridge does not support Seal tax-enabled fields yet",
     );
   }
   if (config.items.length === 0) {
@@ -614,7 +612,8 @@ export function buildCreateDepositBalancePayableRequest(input: {
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
     currency: toVortexCurrency(config.currency),
-    taxMode: "not_taxable",
+    taxMode: buildPayableTaxMode(config),
+    ...buildPayableTaxFields(config),
     collectionIntent: "manual",
     feePolicy: buildFeePolicy(config, input.platformFeeCents),
     deposit: {
@@ -649,6 +648,29 @@ export function buildCreateDepositBalancePayableRequest(input: {
       ...(recipient.name !== undefined ? { recipientName: recipient.name } : {}),
       ...(merchantAccountId.length > 0 ? { vortexMerchantAccountId: merchantAccountId } : {}),
     },
+  };
+}
+
+function buildPayableTaxMode(config: PaymentFieldConfigInput): VortexTaxMode {
+  return config.taxEnabled ? "taxable_requires_evidence" : "not_taxable";
+}
+
+function buildPayableTaxFields(
+  config: PaymentFieldConfigInput,
+):
+  | {
+      readonly taxable: true;
+      readonly taxBehavior: TaxBehavior;
+      readonly taxClassificationKey: TaxClassificationKey;
+    }
+  | Record<string, never> {
+  if (!config.taxEnabled) {
+    return {};
+  }
+  return {
+    taxable: true,
+    taxBehavior: config.taxBehavior ?? "exclusive",
+    taxClassificationKey: "standard_taxable",
   };
 }
 
@@ -1476,6 +1498,7 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
     totalAmountCents: config.totalAmountCents,
     feeHandling: config.feeHandling,
     taxEnabled: config.taxEnabled,
+    taxBehavior: config.taxBehavior,
     recurringConfig: config.recurringConfig,
     installmentsConfig: config.installmentsConfig,
     depositBalanceConfig: config.depositBalanceConfig,
