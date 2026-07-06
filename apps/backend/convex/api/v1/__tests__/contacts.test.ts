@@ -136,6 +136,24 @@ describe("api/v1/contacts", () => {
       expect(contact?.updated_at).toBeDefined();
     });
 
+    test("returns updated_at_label for each contact", async () => {
+      await seedContact({
+        first_name: "Alice",
+        last_name: "Smith",
+        email: "alice@test.com",
+      });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+      });
+
+      const contact = result.contacts[0];
+      expect(contact?.updated_at_label).toBeDefined();
+      expect(typeof contact?.updated_at_label).toBe("string");
+      expect(contact?.updated_at_label?.length).toBeGreaterThan(0);
+    });
+
     test("filters by status", async () => {
       await seedContact({ email: "active1@test.com", status: "active" });
       await seedContact({ email: "inactive@test.com", status: "inactive" });

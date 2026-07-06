@@ -796,6 +796,8 @@ export interface ApiContact {
   last_contacted_at?: string;
   created_at: string;
   updated_at: string;
+  /** Human-readable relative update label */
+  updated_at_label?: string;
 }
 
 // =============================================================================

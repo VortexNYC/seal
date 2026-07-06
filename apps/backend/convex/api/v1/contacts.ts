@@ -9,6 +9,32 @@ import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../../_generated/server";
 
+/**
+ * Format a timestamp as a human-readable relative label.
+ *
+ * @param timestampMs - Timestamp in milliseconds since epoch
+ * @returns Human-readable label like "Just now", "5 minutes ago", "2 hours ago", etc.
+ */
+function formatUpdatedAtLabel(timestampMs: number): string {
+  const now = Date.now();
+  const diffMs = now - timestampMs;
+  const diffSec = Math.round(diffMs / 1000);
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+  const diffDay = Math.round(diffHour / 24);
+
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
+  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
+  if (diffDay < 30) return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
+
+  return new Date(timestampMs).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** API representation of a contact */
 export interface ApiContact {
   /** Contact record ID */
@@ -39,6 +65,8 @@ export interface ApiContact {
   created_at: string;
   /** ISO 8601 last update timestamp */
   updated_at: string;
+  /** Human-readable relative update label */
+  updated_at_label?: string;
 }
 
 /**
@@ -115,6 +143,7 @@ export const listContacts = internalQuery({
           : undefined,
         created_at: new Date(c.createdAt).toISOString(),
         updated_at: new Date(c.updatedAt).toISOString(),
+        updated_at_label: formatUpdatedAtLabel(c.updatedAt),
       })),
       has_more,
       next_cursor,
@@ -152,6 +181,7 @@ export const getContact = internalQuery({
       last_contacted_at: c.lastContactedAt ? new Date(c.lastContactedAt).toISOString() : undefined,
       created_at: new Date(c.createdAt).toISOString(),
       updated_at: new Date(c.updatedAt).toISOString(),
+      updated_at_label: formatUpdatedAtLabel(c.updatedAt),
     };
   },
 });
