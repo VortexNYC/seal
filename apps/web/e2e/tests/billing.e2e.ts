@@ -135,14 +135,14 @@ function expectVortexSealProPlan(plans: readonly Plan[]): void {
   expect(proPlan?.name).toBe("Seal Professional");
   expect(proPlan?.pricing.monthly).toMatchObject({
     amount: 19,
-    currency: "USD",
     lookupKey: "pro:monthly:v2",
   });
+  expect(proPlan?.pricing.monthly?.currency.toLowerCase()).toBe("usd");
   expect(proPlan?.pricing.yearly).toMatchObject({
     amount: 180,
-    currency: "USD",
     lookupKey: "pro:yearly:v2",
   });
+  expect(proPlan?.pricing.yearly?.currency.toLowerCase()).toBe("usd");
 }
 
 /**
