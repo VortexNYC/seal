@@ -734,6 +734,7 @@ async function main(): Promise<void> {
   const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
   const vortexDeployment = readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
   const redriveDisabled = hasFlag("no-redrive-vortex-webhook");
+  const requireSettled = hasFlag("require-settled") || readEnv("SEAL_REQUIRE_VORTEX_SETTLED") === "true";
   const vortexPayableId =
     parseArgValue("vortex-payable-id") ??
     readEnv("VORTEX_PAYABLE_ID") ??
@@ -847,6 +848,28 @@ async function main(): Promise<void> {
     context: vortexContext,
     vortexPayableId,
   });
+  if (requireSettled && !vortexMoneyPath.settlement.fullySettled) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          check: "seal_document_payment_vortex_paid_state",
+          diagnosis: "vortex_payment_not_fully_settled",
+          sealDeployment,
+          vortexDeployment,
+          vortexPayableId,
+          hostedInvoiceUrl,
+          settlement: vortexMoneyPath.settlement,
+          nextAction: vortexMoneyPath.settlement.nextAction,
+        },
+        null,
+        2,
+      ),
+    );
+    fail(
+      `Expected Vortex payment to be fully settled; next action is ${vortexMoneyPath.settlement.nextAction}.`,
+    );
+  }
 
   console.log(
     JSON.stringify(
@@ -854,11 +877,14 @@ async function main(): Promise<void> {
         ok: true,
         check: "seal_document_payment_vortex_paid_state",
         boundary:
-          "Verifies Seal state and Vortex post-capture money path after a real Vortex-hosted document payment is paid; settlement batch and payout reconciliation remain follow-up proof.",
+          requireSettled
+            ? "Verifies Seal state plus fully settled Vortex document-payment money path after a real Vortex-hosted payment."
+            : "Verifies Seal state and Vortex post-capture money path after a real Vortex-hosted document payment is paid; settlement batch and payout reconciliation remain follow-up proof.",
         sealDeployment,
         vortexDeployment,
         vortexPayableId,
         hostedInvoiceUrl,
+        requireSettled,
         webhookRedrive,
         vortexMoneyPath,
         state: {
