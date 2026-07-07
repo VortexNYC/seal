@@ -2436,7 +2436,10 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
-      const { limit, cursor } = parsePagination(query);
+      if (!query.limit) {
+        throw new ApiError(400, "limit is required", "VALIDATION_ERROR");
+      }
+      const { limit, cursor } = parsePagination(query, { limit: 100, maxLimit: 100 });
       const result = await ctx.runQuery(internal.api.v1.audit.listAuditLog, {
         userId: auth.userId,
         organizationId: auth.organizationId,
