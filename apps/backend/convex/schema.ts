@@ -38,6 +38,7 @@ import {
 import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
+import { labelsTable } from "./schemas/labels";
 import {
   mcpOauthClientsTable,
   mcpOauthCodesTable,
@@ -180,6 +181,7 @@ export default defineSchema({
   document_recipients: documentRecipientsTable,
   document_reminders: documentRemindersTable,
   folders: foldersTable,
+  labels: labelsTable,
 
   // Signature workflow tables
   recipients: recipientsTable,
