@@ -45,6 +45,23 @@ type VortexDispatchResult = JsonObject & {
   readonly failed: number;
 };
 
+type VortexMoneyPathProof = {
+  readonly invoiceId: string;
+  readonly paymentRequestId: string | null;
+  readonly amountPaid: number;
+  readonly amountRemaining: number;
+  readonly paymentIntentId: string;
+  readonly paymentId: string;
+  readonly paymentStatus: string;
+  readonly paymentIntentStatus: string;
+  readonly allocationCount: number;
+  readonly receiptId: string;
+  readonly processorLineage: {
+    readonly paymentRefs: number;
+    readonly paymentIntentRefs: number;
+  };
+};
+
 type VortexRedriveResult =
   | {
       readonly attempted: false;
@@ -109,28 +126,61 @@ function parseJson(raw: string, label: string): Json {
 
 function optionalStringField(value: JsonObject, field: string): string | undefined {
   const child = value[field];
-  assert(
-    child === undefined || typeof child === "string",
-    `Expected ${field} to be a string when present`,
-  );
+  if (child === undefined) {
+    return undefined;
+  }
+  assert(typeof child === "string", `Expected ${field} to be a string when present`);
   return child;
 }
 
 function optionalNumberField(value: JsonObject, field: string): number | undefined {
   const child = value[field];
-  assert(
-    child === undefined || (typeof child === "number" && Number.isFinite(child)),
-    `Expected ${field} to be a finite number when present`,
-  );
+  if (child === undefined) {
+    return undefined;
+  }
+  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a finite number when present`);
   return child;
 }
 
 function optionalObjectField(value: JsonObject, field: string): JsonObject | undefined {
   const child = value[field];
-  assert(
-    child === undefined || isJsonObject(child),
-    `Expected ${field} to be an object when present`,
-  );
+  if (child === undefined) {
+    return undefined;
+  }
+  assert(isJsonObject(child), `Expected ${field} to be an object when present`);
+  return child;
+}
+
+function stringField(value: JsonObject, field: string): string {
+  const child = value[field];
+  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  return child;
+}
+
+function nullableStringField(value: JsonObject, field: string): string | null {
+  const child = value[field];
+  if (child === null) {
+    return null;
+  }
+  assert(typeof child === "string", `Expected ${field} to be a string or null`);
+  return child;
+}
+
+function numberField(value: JsonObject, field: string): number {
+  const child = value[field];
+  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a finite number`);
+  return child;
+}
+
+function objectField(value: JsonObject, field: string): JsonObject {
+  const child = value[field];
+  assert(isJsonObject(child), `Expected ${field} to be an object`);
+  return child;
+}
+
+function arrayField(value: JsonObject, field: string): readonly Json[] {
+  const child = value[field];
+  assert(Array.isArray(child), `Expected ${field} to be an array`);
   return child;
 }
 
@@ -319,14 +369,143 @@ async function resolveVortexContext(input: {
   });
   const organizationId = optionalStringField(context, "organizationId");
   const environment = optionalStringField(context, "environment");
-  assert(
-    environment === undefined || environment === "sandbox" || environment === "production",
-    `Expected Vortex environment sandbox/production, got ${environment ?? "missing"}`,
-  );
   if (organizationId === undefined || environment === undefined) {
     return null;
   }
+  assert(
+    environment === "sandbox" || environment === "production",
+    `Expected Vortex environment sandbox/production, got ${environment}`,
+  );
   return { organizationId, environment };
+}
+
+function assertProcessorLineage(record: JsonObject, field: string): readonly JsonObject[] {
+  const refs = arrayField(record, field).filter(isJsonObject);
+  assert(refs.length > 0, `Expected ${field} to include Vortex processor lineage`);
+  for (const ref of refs) {
+    assert(stringField(ref, "objectId").length > 0, `Expected ${field} processor object id`);
+  }
+  return refs;
+}
+
+async function readVortexMoneyPath(input: {
+  readonly deployment: string;
+  readonly context: VortexContext;
+  readonly vortexPayableId: string;
+}): Promise<VortexMoneyPathProof> {
+  const payable = await runVortexConvex<JsonObject | null>({
+    deployment: input.deployment,
+    functionName: "billingEnginePayables:getPayable",
+    args: {
+      organizationId: input.context.organizationId,
+      environment: input.context.environment,
+      payableId: input.vortexPayableId,
+    },
+  });
+  assert(payable !== null, `Expected Vortex payable ${input.vortexPayableId}`);
+  assert(stringField(payable, "status") === "paid", `Expected Vortex payable paid: ${JSON.stringify(payable)}`);
+  const payableTotal = numberField(payable, "total");
+  assert(numberField(payable, "amountPaid") === payableTotal, "Expected Vortex payable amountPaid to equal total");
+  assert(numberField(payable, "amountRemaining") === 0, "Expected Vortex payable amountRemaining to be zero");
+
+  const lineage = objectField(payable, "lineage");
+  const invoiceId = nullableStringField(lineage, "invoiceId");
+  const paymentRequestId = nullableStringField(lineage, "paymentRequestId");
+  assert(invoiceId !== null, `Expected Vortex payable ${input.vortexPayableId} to carry invoice lineage`);
+
+  const artifacts = await runVortexConvex<JsonObject | null>({
+    deployment: input.deployment,
+    functionName: "billingEngine:inspectInvoiceArtifacts",
+    args: {
+      organizationId: input.context.organizationId,
+      invoiceId,
+    },
+  });
+  assert(artifacts !== null, `Expected Vortex invoice artifacts for ${invoiceId}`);
+  const invoice = objectField(artifacts, "invoice");
+  assert(stringField(invoice, "invoiceId") === invoiceId, "Vortex invoice artifact id mismatch");
+  assert(stringField(invoice, "status") === "paid", `Expected Vortex invoice paid: ${JSON.stringify(invoice)}`);
+  assert(numberField(invoice, "amountPaid") === payableTotal, "Expected Vortex invoice amountPaid to equal payable total");
+  assert(numberField(invoice, "amountRemaining") === 0, "Expected Vortex invoice amountRemaining to be zero");
+
+  const attempts = arrayField(artifacts, "attempts").filter(isJsonObject);
+  const succeededAttempt = attempts.find((attempt) =>
+    optionalStringField(attempt, "status") === "succeeded" &&
+    optionalStringField(attempt, "paymentId") !== undefined &&
+    optionalStringField(attempt, "paymentIntentId") !== undefined
+  ) ?? null;
+  assert(succeededAttempt !== null, `Expected succeeded Vortex collection attempt: ${JSON.stringify(attempts)}`);
+  const paymentId = stringField(succeededAttempt, "paymentId");
+  const paymentIntentId = stringField(succeededAttempt, "paymentIntentId");
+  assert(numberField(succeededAttempt, "collectedAmount") === payableTotal, "Expected collectedAmount to equal payable total");
+
+  const allocations = arrayField(artifacts, "allocations").filter(isJsonObject);
+  const matchingAllocations = allocations.filter((allocation) =>
+    optionalStringField(allocation, "paymentId") === paymentId &&
+    optionalNumberField(allocation, "amount") === payableTotal
+  );
+  assert(matchingAllocations.length > 0, `Expected Vortex payment allocation for ${paymentId}: ${JSON.stringify(allocations)}`);
+
+  const receiptRows = await runVortexConvex<readonly Json[] & Json>({
+    deployment: input.deployment,
+    functionName: "billingEngine:listPaymentReceiptsForInvoice",
+    args: {
+      organizationId: input.context.organizationId,
+      environment: input.context.environment,
+      invoiceId,
+    },
+  });
+  const receipts = receiptRows
+    .filter(isJsonObject)
+    .map((row) => objectField(row, "receipt"));
+  const receipt = receipts.find((candidate) =>
+    optionalStringField(candidate, "paymentId") === paymentId &&
+    optionalNumberField(candidate, "amount") === payableTotal
+  ) ?? null;
+  assert(receipt !== null, `Expected Vortex receipt for captured payment ${paymentId}: ${JSON.stringify(receipts)}`);
+
+  const payment = await runVortexConvex<JsonObject | null>({
+    deployment: input.deployment,
+    functionName: "_paymentsCanonical:getPaymentsPaymentById",
+    args: {
+      environment: input.context.environment,
+      id: paymentId,
+    },
+  });
+  assert(payment !== null, `Expected canonical Vortex payment ${paymentId}`);
+  assert(stringField(payment, "status") === "captured", `Expected captured Vortex payment: ${JSON.stringify(payment)}`);
+  assert(stringField(payment, "paymentIntentId") === paymentIntentId, "Vortex payment intent lineage mismatch");
+  assert(numberField(payment, "amount") === payableTotal, "Expected canonical Vortex payment amount to equal payable total");
+  const paymentRefs = assertProcessorLineage(payment, "processorPaymentRefs");
+
+  const paymentIntent = await runVortexConvex<JsonObject | null>({
+    deployment: input.deployment,
+    functionName: "_paymentsCanonical:getPaymentsPaymentIntentById",
+    args: {
+      environment: input.context.environment,
+      id: paymentIntentId,
+    },
+  });
+  assert(paymentIntent !== null, `Expected canonical Vortex payment intent ${paymentIntentId}`);
+  assert(numberField(paymentIntent, "amount") === payableTotal, "Expected Vortex payment intent amount to equal payable total");
+  const paymentIntentRefs = assertProcessorLineage(paymentIntent, "processorIntentRefs");
+
+  return {
+    invoiceId,
+    paymentRequestId,
+    amountPaid: numberField(invoice, "amountPaid"),
+    amountRemaining: numberField(invoice, "amountRemaining"),
+    paymentIntentId,
+    paymentId,
+    paymentStatus: stringField(payment, "status"),
+    paymentIntentStatus: stringField(paymentIntent, "status"),
+    allocationCount: matchingAllocations.length,
+    receiptId: stringField(receipt, "receiptId"),
+    processorLineage: {
+      paymentRefs: paymentRefs.length,
+      paymentIntentRefs: paymentIntentRefs.length,
+    },
+  };
 }
 
 function parseEventPayload(event: VortexEvent): JsonObject | null {
@@ -604,18 +783,27 @@ async function main(): Promise<void> {
     `Expected hosted invoice URL ${hostedInvoiceUrl}, got ${finalHostedInvoiceUrl ?? "missing"}`,
   );
 
+  const vortexContext = await resolveVortexContext({ sealDeployment, vortexDeployment });
+  assert(vortexContext !== null, "Expected Seal Vortex API key to resolve to a Vortex organization");
+  const vortexMoneyPath = await readVortexMoneyPath({
+    deployment: vortexDeployment,
+    context: vortexContext,
+    vortexPayableId,
+  });
+
   console.log(
     JSON.stringify(
       {
         ok: true,
         check: "seal_document_payment_vortex_paid_state",
         boundary:
-          "Verifies Seal state after a real Vortex-hosted document payment is paid; settlement and payout reconciliation remain follow-up proof.",
+          "Verifies Seal state and Vortex post-capture money path after a real Vortex-hosted document payment is paid; settlement batch and payout reconciliation remain follow-up proof.",
         sealDeployment,
         vortexDeployment,
         vortexPayableId,
         hostedInvoiceUrl,
         webhookRedrive,
+        vortexMoneyPath,
         state: {
           paymentStatus: finalPaymentStatus,
           invoiceStatus: finalInvoiceStatus,

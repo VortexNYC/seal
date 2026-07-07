@@ -95,26 +95,6 @@ function findMerchantProcessorRefs(input: {
   return [];
 }
 
-function buildMerchantProcessorRefs(input: {
-  readonly existingRefs: readonly JsonObject[];
-  readonly finixMerchantId: string | undefined;
-  readonly recordedAt: string;
-}): readonly JsonObject[] {
-  if (input.finixMerchantId !== undefined) {
-    return [
-      {
-        provider: "finix",
-        objectType: "merchant",
-        objectId: input.finixMerchantId,
-        relationship: "merchant_account",
-        recordedAt: input.recordedAt,
-      },
-    ];
-  }
-
-  return input.existingRefs;
-}
-
 async function runCommand(input: {
   readonly command: readonly string[];
   readonly cwd: string;
@@ -345,14 +325,10 @@ async function main(): Promise<void> {
     functionName: "_paymentsCanonical:listPaymentsMerchantsByTenant",
     args: { environment, tenantId: vortexOrganizationId },
   });
-  const processorAccountRefs = buildMerchantProcessorRefs({
-    existingRefs: findMerchantProcessorRefs({ merchants: existingMerchants, merchantAccountId }),
-    finixMerchantId: readEnv("SEAL_VORTEX_DOCUMENT_PROOF_FINIX_MERCHANT_ID"),
-    recordedAt: canonicalSeededAt,
-  });
+  const processorAccountRefs = findMerchantProcessorRefs({ merchants: existingMerchants, merchantAccountId });
   assert(
     processorAccountRefs.length > 0,
-    `No provider merchant reference found for ${merchantAccountId}; set SEAL_VORTEX_DOCUMENT_PROOF_FINIX_MERCHANT_ID before live card proof`,
+    `No Vortex merchant processor reference found for ${merchantAccountId}; seed the merchant in Vortex Payments before live card proof`,
   );
 
   await runVortexConvexVoid({
