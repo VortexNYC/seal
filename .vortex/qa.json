@@ -1,0 +1,12 @@
+{
+  "$comment": "Vortex-agent QA manifest — declares how THIS repo is QA'd. Read by the reconciler; keeps the agent core repo-agnostic.",
+  "web": {
+    "previewDeploy": "From apps/backend: `bunx convex deploy --preview-create \"$VORTEX_PREVIEW_NAME\" --cmd-url-env-var-name VITE_CONVEX_URL --cmd 'cd ../web && bun run build'` (deploys an isolated preview backend and builds apps/web pointed at it). Then from apps/web: `bunx wrangler versions upload` — this prints a public preview URL. Drive browserless at that URL.",
+    "frontend": "apps/web",
+    "backend": "apps/backend",
+    "requiredSecrets": ["CONVEX_DEPLOY_KEY", "CLOUDFLARE_API_TOKEN"]
+  },
+  "backend": {
+    "test": "cd apps/backend && bun run test"
+  }
+}
