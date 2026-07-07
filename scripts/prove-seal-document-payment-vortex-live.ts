@@ -321,8 +321,8 @@ async function main(): Promise<void> {
       customerId,
       merchantAccountId,
       invoiceDeliveryMode: "api_only",
-      collectionMode: "manual",
-      autoCollectionEnabled: false,
+      collectionMode: "automatic",
+      autoCollectionEnabled: true,
       metadata: { proof: "seal-document-payment-vortex-live", proofRunId },
     },
   });

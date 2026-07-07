@@ -108,6 +108,8 @@ Paid-state checks failed because both Seal and Vortex still showed the proof pay
 
 That is not a webhook bug yet. The checkout has to be paid first.
 
+Browser payment attempt exposed one more proof-harness bug: the document-payment live proof created the Vortex billing account with `collectionMode: "manual"` and `autoCollectionEnabled: false`, so the hosted pay page refused to collect. The SaaS checkout proof already used `automatic`/`true`. The document-payment proof must do the same for the hosted-card money path.
+
 ## Immediate Execution Plan
 
 1. Keep the document-payment proof scripts under `scripts/`.
@@ -115,14 +117,15 @@ That is not a webhook bug yet. The checkout has to be paid first.
 3. One-time live creation passed with:
    - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
 4. Extend the live harness to recurring/installments/deposit-balance.
-5. Pay the hosted checkout from proof run `mrapd8pd_plvbr7`.
-6. Assert the resulting webhook projection with:
+5. Generate a fresh hosted checkout after the automatic-collection proof fix.
+6. Pay the fresh hosted checkout.
+7. Assert the resulting webhook projection with:
    - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state`
    - Or explicitly:
    - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state -- --vortex-payable-id payable_mrapdlpe_1o2l1to3 --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_Ndq_9H6WHLF28px1beIF5LIbz9mHJCUAMFLz4LEPjXI`
-7. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
-8. Assert Stripe absence explicitly where the state shape exposes it.
-9. Keep local proof green:
+8. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
+9. Assert Stripe absence explicitly where the state shape exposes it.
+10. Keep local proof green:
    - `bun run prove:seal-document-payment-vortex-local`
 
 ## Guardrails

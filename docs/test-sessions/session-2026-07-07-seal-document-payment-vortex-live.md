@@ -123,3 +123,15 @@ Paid-state check result: blocked because the Vortex payable is not paid yet.
 ```
 
 Next limiter: pay `https://notable-leopard-969.convex.site/pay/pay_Ndq_9H6WHLF28px1beIF5LIbz9mHJCUAMFLz4LEPjXI`, then run the paid-state proof with `payable_mrapdlpe_1o2l1to3`.
+
+## Browser Payment Attempt
+
+The hosted page for `payable_mrapdlpe_1o2l1to3` did not expose a card form. It showed:
+
+```text
+Uncaught Error: billing account bacc_seal_document_payment_mrapd8pd_plvbr7 is not configured for automatic collection
+```
+
+Cause: the document-payment live proof created the Vortex billing account with `collectionMode: "manual"` and `autoCollectionEnabled: false`, but hosted card payment collection requires `collectionMode: "automatic"` and `autoCollectionEnabled: true`.
+
+Fix: create future document-payment proof billing accounts with automatic collection enabled, then generate a fresh hosted payment link.
