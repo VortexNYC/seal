@@ -1,6 +1,6 @@
 "use node";
 
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
@@ -29,6 +29,24 @@ type RefreshMerchantAccountResult = {
 type MerchantAccountSessionResult = {
   clientSecret: string;
 };
+
+type MerchantSurfaceEnv = {
+  readonly [key: string]: string | undefined;
+};
+
+export function assertLegacyStripeMerchantSurfaceAllowed(
+  organizationId: string,
+  surface: string,
+  env: MerchantSurfaceEnv = process.env,
+): void {
+  if (!isDocumentPaymentOrganizationAllowlisted(organizationId, env)) {
+    return;
+  }
+
+  throw new ConvexError(
+    `Legacy Stripe ${surface} is disabled for Vortex document-payment organizations`,
+  );
+}
 
 export const createMerchantAccount = action({
   args: {
@@ -105,6 +123,8 @@ export const createMerchantOAuthUrl = action({
     state: v.string(),
   }),
   handler: async (ctx, args): Promise<MerchantOAuthUrlResult> => {
+    assertLegacyStripeMerchantSurfaceAllowed(args.organizationId, "OAuth onboarding");
+
     return await ctx.runAction(internal.stripe.connect_actions.createConnectOAuthUrl, args);
   },
 });
@@ -119,6 +139,8 @@ export const exchangeMerchantOAuthCode = action({
     processorAccountId: v.string(),
   }),
   handler: async (ctx, args): Promise<CreateMerchantAccountResult> => {
+    assertLegacyStripeMerchantSurfaceAllowed(args.organizationId, "OAuth exchange");
+
     const result = await ctx.runAction(
       internal.stripe.connect_actions.exchangeConnectOAuthCode,
       args,
@@ -139,6 +161,8 @@ export const createMerchantAccountSession = action({
     clientSecret: v.string(),
   }),
   handler: async (ctx, args): Promise<MerchantAccountSessionResult> => {
+    assertLegacyStripeMerchantSurfaceAllowed(args.organizationId, "embedded account session");
+
     return await ctx.runAction(internal.stripe.connect_actions.createAccountSession, args);
   },
 });
