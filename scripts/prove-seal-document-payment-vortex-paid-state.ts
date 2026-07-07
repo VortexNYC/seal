@@ -14,6 +14,54 @@ const defaultVortexPayableId = "payable_mraoq9vj_sv6qnc8z";
 const defaultHostedInvoiceUrl =
   "https://notable-leopard-969.convex.site/pay/pay_nUIiDG0pBcFAnaKiuK50gF1y4m3YleHOydRv3y98MKQ";
 const defaultVortexBaseUrl = "https://notable-leopard-969.convex.site";
+const defaultVortexDeployment = "dev:notable-leopard-969";
+const paidEventType = "payable_object.updated";
+
+type VortexApiConfig = {
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
+};
+
+type VortexContext = {
+  readonly organizationId: string;
+  readonly environment: "sandbox" | "production";
+};
+
+type VortexEvent = JsonObject & {
+  readonly eventId: string;
+  readonly eventType: string;
+  readonly aggregateId: string;
+};
+
+type VortexDelivery = JsonObject & {
+  readonly deliveryId: string;
+  readonly endpointId: string;
+  readonly status: string;
+};
+
+type VortexDispatchResult = JsonObject & {
+  readonly attempted: number;
+  readonly succeeded: number;
+  readonly failed: number;
+};
+
+type VortexRedriveResult =
+  | {
+      readonly attempted: false;
+      readonly reason: "disabled" | "missing_api_key" | "missing_event" | "already_succeeded";
+      readonly eventId?: string;
+      readonly deliveryId?: string;
+    }
+  | {
+      readonly attempted: true;
+      readonly eventId: string;
+      readonly deliveryId: string;
+      readonly dispatch: {
+        readonly attempted: number;
+        readonly succeeded: number;
+        readonly failed: number;
+      };
+    };
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name];
@@ -103,6 +151,10 @@ function parseArgValue(name: string): string | undefined {
   return undefined;
 }
 
+function hasFlag(name: string): boolean {
+  return process.argv.includes(`--${name}`);
+}
+
 async function getConvexEnv(input: {
   readonly deployment: string;
   readonly name: string;
@@ -118,6 +170,21 @@ async function getConvexEnv(input: {
   }
   const value = result.stdout.trim();
   return value.length > 0 ? value : undefined;
+}
+
+async function readVortexApiConfig(sealDeployment: string): Promise<VortexApiConfig | null> {
+  const apiKey =
+    readEnv("VORTEX_BILLING_API_KEY") ??
+    (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_API_KEY" }));
+  if (apiKey === undefined) {
+    return null;
+  }
+
+  const apiBaseUrl =
+    readEnv("VORTEX_BILLING_API_BASE_URL") ??
+    (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_API_BASE_URL" })) ??
+    defaultVortexBaseUrl;
+  return { apiBaseUrl, apiKey };
 }
 
 async function runCommand(input: {
@@ -168,6 +235,34 @@ async function runSealConvex<T extends Json>(input: {
   return parseJson(trimmed.slice(jsonStart), input.functionName) as T;
 }
 
+async function runVortexConvex<T extends Json>(input: {
+  readonly deployment: string;
+  readonly functionName: string;
+  readonly args: JsonObject;
+}): Promise<T> {
+  const result = await runCommand({
+    command: [
+      "bunx",
+      "convex",
+      "run",
+      "--typecheck=disable",
+      "--codegen=disable",
+      input.functionName,
+      JSON.stringify(input.args),
+    ],
+    cwd: new URL("../../vortex-payments/apps/backend", import.meta.url).pathname,
+    deployment: input.deployment,
+    label: `vortex convex run ${input.functionName}`,
+  });
+  if (result.exitCode !== 0) {
+    fail(`vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`);
+  }
+  const trimmed = result.stdout.trim();
+  const jsonStart = trimmed.search(/[[{"]/);
+  assert(jsonStart >= 0, `No JSON returned from ${input.functionName}: ${trimmed}`);
+  return parseJson(trimmed.slice(jsonStart), input.functionName) as T;
+}
+
 async function readPaymentState(input: {
   readonly deployment: string;
   readonly vortexPayableId: string;
@@ -185,20 +280,14 @@ async function readVortexPayable(input: {
   readonly deployment: string;
   readonly vortexPayableId: string;
 }): Promise<JsonObject | null> {
-  const apiKey =
-    readEnv("VORTEX_BILLING_API_KEY") ??
-    (await getConvexEnv({ deployment: input.deployment, name: "VORTEX_BILLING_API_KEY" }));
-  const apiBaseUrl =
-    readEnv("VORTEX_BILLING_API_BASE_URL") ??
-    (await getConvexEnv({ deployment: input.deployment, name: "VORTEX_BILLING_API_BASE_URL" })) ??
-    defaultVortexBaseUrl;
-  if (apiKey === undefined) {
+  const config = await readVortexApiConfig(input.deployment);
+  if (config === null) {
     return null;
   }
 
-  const response = await fetch(`${apiBaseUrl}/v1/payables/${input.vortexPayableId}`, {
+  const response = await fetch(`${config.apiBaseUrl}/v1/payables/${input.vortexPayableId}`, {
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
     },
   });
@@ -213,6 +302,153 @@ async function readVortexPayable(input: {
   const data = optionalObjectField(body, "data");
   const payable = data === undefined ? undefined : optionalObjectField(data, "payable");
   return payable ?? null;
+}
+
+async function resolveVortexContext(input: {
+  readonly sealDeployment: string;
+  readonly vortexDeployment: string;
+}): Promise<VortexContext | null> {
+  const config = await readVortexApiConfig(input.sealDeployment);
+  if (config === null) {
+    return null;
+  }
+  const context = await runVortexConvex<JsonObject>({
+    deployment: input.vortexDeployment,
+    functionName: "auth:resolveApiKeyContext",
+    args: { presentedKey: config.apiKey },
+  });
+  const organizationId = optionalStringField(context, "organizationId");
+  const environment = optionalStringField(context, "environment");
+  assert(
+    environment === undefined || environment === "sandbox" || environment === "production",
+    `Expected Vortex environment sandbox/production, got ${environment ?? "missing"}`,
+  );
+  if (organizationId === undefined || environment === undefined) {
+    return null;
+  }
+  return { organizationId, environment };
+}
+
+function parseEventPayload(event: VortexEvent): JsonObject | null {
+  const payload = optionalStringField(event, "payload");
+  if (payload === undefined) {
+    return null;
+  }
+  const parsed = parseJson(payload, `Vortex event ${event.eventId} payload`);
+  return isJsonObject(parsed) ? parsed : null;
+}
+
+function eventMatchesPaidPayable(event: VortexEvent, vortexPayableId: string): boolean {
+  if (event.eventType !== paidEventType || event.aggregateId !== vortexPayableId) {
+    return false;
+  }
+  const payload = parseEventPayload(event);
+  const payableObject = payload === null ? undefined : optionalObjectField(payload, "payableObject");
+  if (payableObject === undefined) {
+    return false;
+  }
+  return (
+    optionalStringField(payableObject, "payableId") === vortexPayableId &&
+    optionalStringField(payableObject, "status") === "paid"
+  );
+}
+
+async function attemptVortexWebhookRedrive(input: {
+  readonly sealDeployment: string;
+  readonly vortexDeployment: string;
+  readonly vortexPayableId: string;
+  readonly disabled: boolean;
+}): Promise<VortexRedriveResult> {
+  if (input.disabled) {
+    return { attempted: false, reason: "disabled" };
+  }
+
+  const context = await resolveVortexContext({
+    sealDeployment: input.sealDeployment,
+    vortexDeployment: input.vortexDeployment,
+  });
+  if (context === null) {
+    return { attempted: false, reason: "missing_api_key" };
+  }
+
+  const events = await runVortexConvex<readonly VortexEvent[] & Json>({
+    deployment: input.vortexDeployment,
+    functionName: "outboundWebhooks:listEvents",
+    args: {
+      organizationId: context.organizationId,
+      environment: context.environment,
+      eventType: paidEventType,
+      limit: 100,
+    },
+  });
+  const event = events.find((candidate) => eventMatchesPaidPayable(candidate, input.vortexPayableId));
+  if (event === undefined) {
+    return { attempted: false, reason: "missing_event" };
+  }
+
+  const deliveries = await runVortexConvex<readonly VortexDelivery[] & Json>({
+    deployment: input.vortexDeployment,
+    functionName: "outboundWebhooks:listDeliveries",
+    args: {
+      organizationId: context.organizationId,
+      environment: context.environment,
+      eventId: event.eventId,
+      limit: 100,
+    },
+  });
+  const pending = deliveries.find((delivery) => delivery.status === "pending");
+  const deliveryToDispatch = pending ?? deliveries.find((delivery) => delivery.status === "failed");
+  if (deliveryToDispatch === undefined) {
+    const succeeded = deliveries.find((delivery) => delivery.status === "succeeded");
+    return {
+      attempted: false,
+      reason: "already_succeeded",
+      eventId: event.eventId,
+      deliveryId: succeeded?.deliveryId,
+    };
+  }
+
+  const dispatchTarget = deliveryToDispatch.status === "failed"
+    ? await runVortexConvex<JsonObject>({
+      deployment: input.vortexDeployment,
+      functionName: "outboundWebhooks:resendEvent",
+      args: {
+        organizationId: context.organizationId,
+        environment: context.environment,
+        eventId: event.eventId,
+        endpointId: deliveryToDispatch.endpointId,
+      },
+    })
+    : null;
+  const resentDeliveries = dispatchTarget === null
+    ? []
+    : ((dispatchTarget.deliveries ?? []) as readonly VortexDelivery[]);
+  const targetDelivery =
+    deliveryToDispatch.status === "failed"
+      ? resentDeliveries.find((delivery) => delivery.status === "pending")
+      : deliveryToDispatch;
+  assert(targetDelivery !== undefined, "Vortex webhook resend did not create a pending delivery");
+
+  const dispatch = await runVortexConvex<VortexDispatchResult & JsonObject>({
+    deployment: input.vortexDeployment,
+    functionName: "outboundWebhooks:dispatchDeliveries",
+    args: {
+      organizationId: context.organizationId,
+      environment: context.environment,
+      deliveryId: targetDelivery.deliveryId,
+    },
+  });
+
+  return {
+    attempted: true,
+    eventId: event.eventId,
+    deliveryId: targetDelivery.deliveryId,
+    dispatch: {
+      attempted: dispatch.attempted,
+      succeeded: dispatch.succeeded,
+      failed: dispatch.failed,
+    },
+  };
 }
 
 function printFailureDiagnostic(input: {
@@ -260,6 +496,8 @@ function printFailureDiagnostic(input: {
 
 async function main(): Promise<void> {
   const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
+  const vortexDeployment = readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
+  const redriveDisabled = hasFlag("no-redrive-vortex-webhook");
   const vortexPayableId =
     parseArgValue("vortex-payable-id") ??
     readEnv("VORTEX_PAYABLE_ID") ??
@@ -279,6 +517,8 @@ async function main(): Promise<void> {
   const stateHostedInvoiceUrl =
     optionalStringField(state, "hostedInvoiceUrl") ?? optionalStringField(state, "invoiceHostedUrl");
 
+  let finalState = state;
+  let webhookRedrive: VortexRedriveResult | undefined;
   if (
     paymentStatus !== "paid" ||
     invoiceStatus !== "paid" ||
@@ -287,43 +527,81 @@ async function main(): Promise<void> {
     invoicePaidAt === undefined ||
     stateHostedInvoiceUrl !== hostedInvoiceUrl
   ) {
-    printFailureDiagnostic({
-      sealDeployment,
-      vortexPayableId,
-      hostedInvoiceUrl,
-      sealState: state,
-      vortexPayable,
-    });
     const vortexStatus =
       vortexPayable === null ? undefined : optionalStringField(vortexPayable, "status");
     const amountRemaining =
       vortexPayable === null ? undefined : optionalNumberField(vortexPayable, "amountRemaining");
     if (vortexStatus !== undefined && vortexStatus !== "paid") {
+      printFailureDiagnostic({
+        sealDeployment,
+        vortexPayableId,
+        hostedInvoiceUrl,
+        sealState: state,
+        vortexPayable,
+      });
       fail(
         `Vortex payable is ${vortexStatus} with amountRemaining ${amountRemaining ?? "unknown"}; pay the hosted checkout first.`,
       );
     }
     if (vortexStatus === "paid") {
-      fail(
-        `Vortex payable is paid but Seal is ${paymentStatus ?? "missing"}/${invoiceStatus ?? "missing"}; webhook delivery or projection is broken.`,
-      );
+      webhookRedrive = await attemptVortexWebhookRedrive({
+        sealDeployment,
+        vortexDeployment,
+        vortexPayableId,
+        disabled: redriveDisabled,
+      });
+      finalState = await readPaymentState({ deployment: sealDeployment, vortexPayableId });
+      const finalPaymentStatus = optionalStringField(finalState, "paymentStatus");
+      const finalInvoiceStatus = optionalStringField(finalState, "invoiceStatus");
+      const finalDocumentWorkflowStatus = optionalStringField(finalState, "documentWorkflowStatus");
+      const finalInvoicePaidAt = optionalNumberField(finalState, "invoicePaidAt");
+      const finalHostedInvoiceUrl =
+        optionalStringField(finalState, "hostedInvoiceUrl") ??
+        optionalStringField(finalState, "invoiceHostedUrl");
+      if (
+        finalPaymentStatus !== "paid" ||
+        finalInvoiceStatus !== "paid" ||
+        finalDocumentWorkflowStatus !== "completed" ||
+        finalInvoicePaidAt === undefined ||
+        finalHostedInvoiceUrl !== hostedInvoiceUrl
+      ) {
+        printFailureDiagnostic({
+          sealDeployment,
+          vortexPayableId,
+          hostedInvoiceUrl,
+          sealState: finalState,
+          vortexPayable,
+        });
+        fail(
+          `Vortex payable is paid but Seal is ${finalPaymentStatus ?? "missing"}/${finalInvoiceStatus ?? "missing"} after webhook redrive ${JSON.stringify(webhookRedrive)}.`,
+        );
+      }
     }
   }
 
-  assert(paymentStatus === "paid", `Expected paymentStatus paid, got ${paymentStatus ?? "missing"}`);
-  assert(invoiceStatus === "paid", `Expected invoiceStatus paid, got ${invoiceStatus ?? "missing"}`);
+  const finalPaymentStatus = optionalStringField(finalState, "paymentStatus");
+  const finalInvoiceStatus = optionalStringField(finalState, "invoiceStatus");
+  const finalInvoiceProvider = optionalStringField(finalState, "invoiceProvider");
+  const finalDocumentWorkflowStatus = optionalStringField(finalState, "documentWorkflowStatus");
+  const finalInvoicePaidAt = optionalNumberField(finalState, "invoicePaidAt");
+  const finalHostedInvoiceUrl =
+    optionalStringField(finalState, "hostedInvoiceUrl") ??
+    optionalStringField(finalState, "invoiceHostedUrl");
+
+  assert(finalPaymentStatus === "paid", `Expected paymentStatus paid, got ${finalPaymentStatus ?? "missing"}`);
+  assert(finalInvoiceStatus === "paid", `Expected invoiceStatus paid, got ${finalInvoiceStatus ?? "missing"}`);
   assert(
-    invoiceProvider === "vortex_billing",
-    `Expected invoiceProvider vortex_billing, got ${invoiceProvider ?? "missing"}`,
+    finalInvoiceProvider === "vortex_billing",
+    `Expected invoiceProvider vortex_billing, got ${finalInvoiceProvider ?? "missing"}`,
   );
   assert(
-    documentWorkflowStatus === "completed",
-    `Expected documentWorkflowStatus completed, got ${documentWorkflowStatus ?? "missing"}`,
+    finalDocumentWorkflowStatus === "completed",
+    `Expected documentWorkflowStatus completed, got ${finalDocumentWorkflowStatus ?? "missing"}`,
   );
-  assert(invoicePaidAt !== undefined, "Expected invoicePaidAt after paid webhook projection");
+  assert(finalInvoicePaidAt !== undefined, "Expected invoicePaidAt after paid webhook projection");
   assert(
-    stateHostedInvoiceUrl === hostedInvoiceUrl,
-    `Expected hosted invoice URL ${hostedInvoiceUrl}, got ${stateHostedInvoiceUrl ?? "missing"}`,
+    finalHostedInvoiceUrl === hostedInvoiceUrl,
+    `Expected hosted invoice URL ${hostedInvoiceUrl}, got ${finalHostedInvoiceUrl ?? "missing"}`,
   );
 
   console.log(
@@ -334,14 +612,16 @@ async function main(): Promise<void> {
         boundary:
           "Verifies Seal state after a real Vortex-hosted document payment is paid; settlement and payout reconciliation remain follow-up proof.",
         sealDeployment,
+        vortexDeployment,
         vortexPayableId,
         hostedInvoiceUrl,
+        webhookRedrive,
         state: {
-          paymentStatus,
-          invoiceStatus,
-          invoiceProvider,
-          documentWorkflowStatus,
-          invoicePaidAt,
+          paymentStatus: finalPaymentStatus,
+          invoiceStatus: finalInvoiceStatus,
+          invoiceProvider: finalInvoiceProvider,
+          documentWorkflowStatus: finalDocumentWorkflowStatus,
+          invoicePaidAt: finalInvoicePaidAt,
         },
       },
       null,
