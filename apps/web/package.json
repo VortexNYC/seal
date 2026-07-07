@@ -62,7 +62,7 @@
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "^1.154.13",
     "@vortex/payments": "workspace:*",
-    "@vortexnyc/auth": "0.5.3",
+    "@vortexnyc/auth": "0.5.2",
     "@vortexnyc/observability": "0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
