@@ -14,10 +14,15 @@ function RouteComponent() {
   const { resolvedTheme } = useTheme();
 
   return (
-    <SignIn
-      routing="virtual"
-      signUpUrl="/waitlist"
-      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
-    />
+    <>
+      <p className="text-muted-foreground text-center text-sm mb-4">
+        Access your document workspace
+      </p>
+      <SignIn
+        routing="virtual"
+        signUpUrl="/waitlist"
+        appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+      />
+    </>
   );
 }
