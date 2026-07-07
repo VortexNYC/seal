@@ -17,6 +17,9 @@ export * as audit from "./audit";
 // Contact directory
 export * as contacts from "./contacts";
 
+// Labels
+export * as labels from "./labels";
+
 // Documents API internal queries/mutations
 export * as documents from "./documents";
 

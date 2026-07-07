@@ -2597,6 +2597,196 @@ http.route({
 });
 
 // =============================================================================
+// LABELS API
+// =============================================================================
+
+/**
+ * List Labels
+ *
+ * @route GET /api/v1/labels
+ * @scope seal:labels:read
+ */
+http.route({
+  path: "/api/v1/labels",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const { limit, cursor } = parsePagination(query);
+      const result = await ctx.runQuery(internal.api.v1.labels.listLabels, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        limit,
+        cursor,
+        search: query.search,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.LABELS_READ },
+  ),
+});
+
+/**
+ * Get Label
+ *
+ * @route GET /api/v1/labels/get
+ * @scope seal:labels:read
+ */
+http.route({
+  path: "/api/v1/labels/get",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      let label = null;
+      try {
+        label = await ctx.runQuery(internal.api.v1.labels.getLabel, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          labelId: query.id as Id<"labels">,
+        });
+      } catch {
+        // Invalid ID format — treat as not found
+      }
+      if (!label) {
+        throw new ApiError(404, "Label not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, label);
+    },
+    { scope: API_SCOPES.LABELS_READ },
+  ),
+});
+
+/**
+ * Create Label
+ *
+ * @route POST /api/v1/labels
+ * @scope seal:labels:write
+ */
+http.route({
+  path: "/api/v1/labels",
+  method: "POST",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{
+        name?: string;
+        color?: string;
+        description?: string;
+      }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["name"]);
+
+      const result = await ctx.runMutation(internal.api.v1.labels.createLabel, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        name: body.name!,
+        color: body.color,
+        description: body.description,
+      });
+
+      // Fetch the created label
+      const label = await ctx.runQuery(internal.api.v1.labels.getLabel, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        labelId: result.id as Id<"labels">,
+      });
+
+      return apiResponse(201, label, {
+        Location: `/api/v1/labels/get?id=${result.id}`,
+      });
+    },
+    { scope: API_SCOPES.LABELS_WRITE },
+  ),
+});
+
+/**
+ * Update Label
+ *
+ * @route PUT /api/v1/labels/update
+ * @scope seal:labels:write
+ *
+ * @queryparam {string} id - Label ID (required)
+ * @bodyparam {string} [name] - New name
+ * @bodyparam {string} [color] - New color
+ * @bodyparam {string} [description] - New description
+ */
+http.route({
+  path: "/api/v1/labels/update",
+  method: "PUT",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query, request }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Label ID is required", "VALIDATION_ERROR");
+      }
+
+      const body = await parseJsonBody<{
+        name?: string;
+        color?: string;
+        description?: string;
+      }>(request);
+
+      const result = await ctx.runMutation(internal.api.v1.labels.updateLabel, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        labelId: query.id as Id<"labels">,
+        name: body.name,
+        color: body.color,
+        description: body.description,
+      });
+
+      if (!result.success) {
+        throw new ApiError(404, result.error ?? "Label not found", "LABEL_NOT_FOUND");
+      }
+
+      // Fetch the updated label
+      const label = await ctx.runQuery(internal.api.v1.labels.getLabel, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        labelId: query.id as Id<"labels">,
+      });
+
+      return apiResponse(200, label);
+    },
+    { scope: API_SCOPES.LABELS_WRITE },
+  ),
+});
+
+/**
+ * Delete Label
+ *
+ * @route DELETE /api/v1/labels/delete
+ * @scope seal:labels:write
+ *
+ * @queryparam {string} id - Label ID (required)
+ *
+ * @returns Success confirmation
+ */
+http.route({
+  path: "/api/v1/labels/delete",
+  method: "DELETE",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Label ID is required", "VALIDATION_ERROR");
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.labels.deleteLabel, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        labelId: query.id as Id<"labels">,
+      });
+
+      if (!result.success) {
+        throw new ApiError(404, "Label not found", "LABEL_NOT_FOUND");
+      }
+
+      return apiResponse(200, { deleted: true });
+    },
+    { scope: API_SCOPES.LABELS_WRITE },
+  ),
+});
+
+// =============================================================================
 // DOCUMENT ACCESS / SHARING MODE
 // =============================================================================
 

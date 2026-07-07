@@ -198,6 +198,8 @@ export const API_SCOPES = {
   AUDIT_READ: "seal:audit:read",
   CONTACTS_READ: "seal:contacts:read",
   CONTACTS_WRITE: "seal:contacts:write",
+  LABELS_READ: "seal:labels:read",
+  LABELS_WRITE: "seal:labels:write",
 } as const;
 
 export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];
@@ -223,6 +225,8 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
   [API_SCOPES.AUDIT_READ]: ["audit:view"],
   [API_SCOPES.CONTACTS_READ]: ["contacts:view"],
   [API_SCOPES.CONTACTS_WRITE]: ["contacts:create", "contacts:edit", "contacts:delete"],
+  [API_SCOPES.LABELS_READ]: ["labels:view"],
+  [API_SCOPES.LABELS_WRITE]: ["labels:create", "labels:edit", "labels:delete"],
 };
 
 /**
