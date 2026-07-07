@@ -135,3 +135,106 @@ Uncaught Error: billing account bacc_seal_document_payment_mrapd8pd_plvbr7 is no
 Cause: the document-payment live proof created the Vortex billing account with `collectionMode: "manual"` and `autoCollectionEnabled: false`, but hosted card payment collection requires `collectionMode: "automatic"` and `autoCollectionEnabled: true`.
 
 Fix: create future document-payment proof billing accounts with automatic collection enabled, then generate a fresh hosted payment link.
+
+## Current Active Settlement Proof
+
+Fresh proof run using the dedicated Seal Vortex merchant:
+
+```text
+merchantAccountId: ma_mray5jl6_54g5ghkm
+vortexPayableId: payable_mray9uu0_58xe8f37
+hostedInvoiceUrl: https://notable-leopard-969.convex.site/pay/pay_8j0wUAe2iDThLirDfGeN1IDCBkh2yauaJr0CKRuBCws
+paymentId: pay_mrayujpd_uha1hffh
+paymentIntentId: pi_mrayujoq_exfbt5de
+receiptId: rcpt_mrayujtq_3rtpfx4q
+```
+
+Paid-state proof passes for capture and Seal workflow projection:
+
+```bash
+cd /home/debian/Projects/Seal
+SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 \
+VORTEX_CONVEX_DEPLOYMENT=dev:notable-leopard-969 \
+bun run prove:seal-document-payment-vortex-paid-state -- \
+  --vortex-payable-id payable_mray9uu0_58xe8f37 \
+  --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_8j0wUAe2iDThLirDfGeN1IDCBkh2yauaJr0CKRuBCws
+```
+
+Observed proof state:
+
+```json
+{
+  "paymentStatus": "paid",
+  "invoiceStatus": "paid",
+  "invoiceProvider": "vortex_billing",
+  "documentWorkflowStatus": "completed",
+  "vortexPaymentStatus": "captured",
+  "settlement": {
+    "settlementCount": 0,
+    "settlementEntryCount": 0,
+    "unsettledPaymentCount": 1,
+    "fullySettled": false,
+    "nextAction": "sync_payment_settlement"
+  }
+}
+```
+
+Hard settled proof gate intentionally fails until settlement lineage exists:
+
+```bash
+cd /home/debian/Projects/Seal
+SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 \
+VORTEX_CONVEX_DEPLOYMENT=dev:notable-leopard-969 \
+bun run prove:seal-document-payment-vortex-paid-state -- \
+  --vortex-payable-id payable_mray9uu0_58xe8f37 \
+  --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_8j0wUAe2iDThLirDfGeN1IDCBkh2yauaJr0CKRuBCws \
+  --require-settled
+```
+
+Expected current failure:
+
+```json
+{
+  "ok": false,
+  "diagnosis": "vortex_payment_not_fully_settled",
+  "nextAction": "sync_payment_settlement"
+}
+```
+
+Vortex settlement readiness inspection shows the external provider time gate:
+
+```bash
+cd /home/debian/Projects/vortex-payments
+CONVEX_DEPLOYMENT=dev:notable-leopard-969 \
+bun run inspect:vortex-payment-settlement-readiness -- \
+  --environment sandbox \
+  --payment-id pay_mrayujpd_uha1hffh \
+  --expected-merchant-account-id ma_mray5jl6_54g5ghkm \
+  --reconcile-if-ready
+```
+
+Current readiness:
+
+```json
+{
+  "status": "waiting_for_provider_ready_to_settle",
+  "readyToSettleAt": "2026-07-08T18:12:06.10Z",
+  "reconciliation": {
+    "requested": true,
+    "ran": false,
+    "skippedReason": "wait_until_provider_ready_to_settle"
+  }
+}
+```
+
+## Go-Live Gate
+
+Do not call Seal document payments launch-ready until this exact sequence passes:
+
+1. After `2026-07-08T18:12:06.10Z`, run the Vortex readiness command above with `--reconcile-if-ready`.
+2. Re-run the Seal paid-state proof with `--require-settled`.
+3. Confirm `fullySettled: true` and at least one settlement id for `pay_mrayujpd_uha1hffh`.
+4. Only then promote this sandbox document-payment proof from captured to settled.
+5. Production go-live still requires production Vortex/Finix credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and Stripe webhook retirement.
+
+Current launch answer: captured and Seal projection are proven; settled document-payment money movement is not proven yet.
