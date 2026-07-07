@@ -317,8 +317,16 @@ async function main(): Promise<void> {
   const customerId = `vtx_cust_seal_document_payment_${proofRunId}`;
   const customerProfileId = `cust_profile_seal_document_payment_${proofRunId}`;
   const billingAccountId = `bacc_seal_document_payment_${proofRunId}`;
-  const merchantAccountId =
-    readEnv("SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID") ?? vortexOrganizationMerchantAccountId;
+  const merchantAccountId = readEnv("SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID");
+  assert(
+    merchantAccountId !== undefined,
+    [
+      "SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID is required for document-payment live proof.",
+      `Do not reuse the Vortex organization merchant (${vortexOrganizationMerchantAccountId});`,
+      "this proof must use a dedicated Seal merchant/provider account so settlement ownership is unambiguous.",
+      "Run prove:seal-vortex-onboarding-wiring first and pass its merchantAccountId.",
+    ].join(" "),
+  );
   const canonicalSeededAt = new Date().toISOString();
   const existingMerchants = await runVortexConvex<readonly Json[]>({
     deployment: vortexDeployment,
@@ -547,6 +555,7 @@ async function main(): Promise<void> {
         billingAccountId,
         customerId,
         merchantAccountId,
+        merchantAccountIdSource: "env:SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID",
         payment: {
           vortexPayableId,
           hostedInvoiceUrl,
