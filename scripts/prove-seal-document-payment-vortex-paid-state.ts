@@ -314,7 +314,7 @@ async function resolveVortexContext(input: {
   }
   const context = await runVortexConvex<JsonObject>({
     deployment: input.vortexDeployment,
-    functionName: "auth:resolveApiKeyContext",
+    functionName: "auth:resolveApiKey",
     args: { presentedKey: config.apiKey },
   });
   const organizationId = optionalStringField(context, "organizationId");
