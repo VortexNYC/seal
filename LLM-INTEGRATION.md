@@ -41,6 +41,10 @@ bun run auth:check
 bun run auth:preflight
 ```
 
+Production release proofs:
+
+No generated commands. Add `instructions.verificationCommands` to `vortex.project.json`.
+
 ## Vortex Core Integration
 
 - Auth package: `@vortexnyc/auth`

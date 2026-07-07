@@ -12,7 +12,19 @@ import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
 import { internalAction, internalMutation } from "../_generated/server";
+import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import { getOrCreateStripeCustomer } from "./helpers";
+
+type HandleNewOrgCreatedResult =
+  | {
+      readonly stripeCustomerId: string;
+      readonly enrolled: boolean;
+      readonly subscriptionId?: string;
+    }
+  | {
+      readonly enrolled: false;
+      readonly skippedReason: "vortex_billing";
+    };
 
 function initializeStripe(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -153,7 +165,12 @@ export const handleNewOrgCreated = internalAction({
   handler: async (
     ctx,
     { organizationId, orgName, adminEmail },
-  ): Promise<{ stripeCustomerId: string; enrolled: boolean; subscriptionId?: string }> => {
+  ): Promise<HandleNewOrgCreatedResult> => {
+    if (selectSaasBillingProvider(organizationId) === "vortex_billing") {
+      console.warn(`Skipping Stripe org provisioning for Vortex Billing org ${organizationId}`);
+      return { enrolled: false, skippedReason: "vortex_billing" };
+    }
+
     const stripe = initializeStripe();
 
     const stripeCustomerId = await getOrCreateStripeCustomer(
@@ -246,6 +263,11 @@ export const syncSeatCount = internalAction({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, { organizationId }) => {
+    if (selectSaasBillingProvider(organizationId) === "vortex_billing") {
+      console.warn(`Skipping Stripe seat sync for Vortex Billing org ${organizationId}`);
+      return;
+    }
+
     const stripe = initializeStripe();
 
     const org = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {

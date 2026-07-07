@@ -190,15 +190,35 @@ function selectCatalogPrice(catalog: JsonObject): {
   assert(products.length > 0, "Expected Vortex catalog to include at least one active product");
   assert(prices.length > 0, "Expected Vortex catalog to include at least one active price");
 
+  const vortexShaped = findLinkedCatalogPrice(products, prices, (productId, priceId) =>
+    productId.startsWith("vtx_") && priceId.startsWith("vtx_"),
+  );
+  if (vortexShaped !== null) {
+    return vortexShaped;
+  }
+
+  return findLinkedCatalogPrice(products, prices, () => true) ??
+    fail("Expected at least one Vortex catalog price to reference an active product");
+}
+
+function findLinkedCatalogPrice(
+  products: readonly JsonObject[],
+  prices: readonly JsonObject[],
+  predicate: (productId: string, priceId: string) => boolean,
+): { readonly product: JsonObject; readonly price: JsonObject } | null {
   for (const price of prices) {
     const productId = stringField(price, "productId");
+    const priceId = stringField(price, "priceId");
+    if (!predicate(productId, priceId)) {
+      continue;
+    }
     const product = products.find((candidate) => stringField(candidate, "productId") === productId);
     if (product !== undefined) {
       return { product, price };
     }
   }
 
-  fail("Expected at least one Vortex catalog price to reference an active product");
+  return null;
 }
 
 function assertPlanPro(state: JsonObject, context: string): void {

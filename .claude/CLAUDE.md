@@ -30,6 +30,7 @@ Seal is a Vortex company repo. Ship the active limiter, delete stale process, an
 - No AI attribution in commits, PRs, generated files, or release notes.
 - No worktrees. Branch from `staging` and PR back to `staging`.
 - Do not release or version-bump for refactors. Release only for a closed gate or named consumer need.
+- Browser E2E is release-only. Do not run Playwright, `test:e2e`, `agent-browser`, or `vb` from routine PR/push CI.
 
 ## Forbidden Touch Zones
 
@@ -84,6 +85,12 @@ bun run test
 bun run auth:check
 bun run auth:preflight
 ```
+
+## Production Release Proofs
+
+Run browser E2E only from the generated production release workflow:
+
+No generated commands. Add `instructions.verificationCommands` to `vortex.project.json`.
 
 ## Vortex Auth
 

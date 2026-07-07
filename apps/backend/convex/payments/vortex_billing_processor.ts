@@ -4,12 +4,10 @@ import { createClient, createCheckoutSession } from "@vortexnyc/payments-sdk";
 import { ConvexError } from "convex/values";
 
 import { requestVortexBillingJson } from "../vortex_billing/payable_actions";
+import type { Env } from "./saas_billing_provider";
 
-type Env = {
-  readonly [key: string]: string | undefined;
-};
-
-export type SaasBillingProvider = "stripe" | "vortex_billing";
+export { selectSaasBillingProvider } from "./saas_billing_provider";
+export type { SaasBillingProvider } from "./saas_billing_provider";
 
 export type VortexBillingCheckoutArgs = {
   readonly organizationId: string;
@@ -65,22 +63,12 @@ type VortexBillingPortalConfig = {
   readonly customerExternalId: string;
 };
 
-const SAAS_ALLOWLIST_ENV = "VORTEX_BILLING_SAAS_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
 const API_KEY_ENV = "VORTEX_BILLING_API_KEY";
 const ACCOUNT_ID_ENV = "VORTEX_BILLING_ACCOUNT_ID";
 const ACCOUNT_MAP_ENV = "VORTEX_BILLING_ACCOUNT_MAP";
 const CUSTOMER_MAP_ENV = "VORTEX_BILLING_CUSTOMER_MAP";
 const PRICE_MAP_ENV = "VORTEX_BILLING_SAAS_PRICE_MAP";
-
-export function selectSaasBillingProvider(
-  organizationId: string,
-  env: Env = process.env,
-): SaasBillingProvider {
-  return isOrganizationAllowlisted(organizationId, env[SAAS_ALLOWLIST_ENV])
-    ? "vortex_billing"
-    : "stripe";
-}
 
 export async function createVortexBillingCheckoutSession(
   args: VortexBillingCheckoutArgs,
@@ -300,35 +288,6 @@ function readVortexBillingCustomerExternalId(
   customerMap: Record<string, string>,
 ): string {
   return customerMap[organizationKey] ?? `vtx_cust_seal_org_${organizationKey}`;
-}
-
-function isOrganizationAllowlisted(
-  organizationId: string,
-  configured: string | undefined,
-): boolean {
-  if (configured === undefined || configured.trim() === "" || configured.trim() === "[]") {
-    return false;
-  }
-
-  const normalized = configured.trim();
-  if (normalized === "*") {
-    return true;
-  }
-
-  if (normalized.startsWith("[")) {
-    const parsed = parseJson(normalized, SAAS_ALLOWLIST_ENV);
-    if (!Array.isArray(parsed)) {
-      throw new ConvexError(`${SAAS_ALLOWLIST_ENV} must be a JSON string array, "*", or "[]"`);
-    }
-
-    return parsed.some((entry) => entry === organizationId);
-  }
-
-  return normalized
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
-    .includes(organizationId);
 }
 
 export async function resolveActiveVortexCoupon(
@@ -657,10 +616,9 @@ function readStringArray(value: unknown, label: string): readonly string[] {
   return value.map((entry) => readString(entry, label));
 }
 
-function createVortexBillingFetcher(fetchImpl: typeof fetch | undefined): (
-  input: string,
-  init: RequestInit,
-) => Promise<Response> {
+function createVortexBillingFetcher(
+  fetchImpl: typeof fetch | undefined,
+): (input: string, init: RequestInit) => Promise<Response> {
   const resolvedFetch = fetchImpl ?? fetch;
   return (input, init) => resolvedFetch(input, init);
 }

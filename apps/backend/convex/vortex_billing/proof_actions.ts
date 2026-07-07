@@ -54,6 +54,7 @@ type SeedVortexWebhookProofPaymentConfigResult = {
 
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
+  readonly organizationStripeCustomerId: string | null;
   readonly plan: {
     readonly isPro: boolean;
     readonly isEnterprise: boolean;
@@ -934,6 +935,7 @@ export const getVortexSaasBillingProofState = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args): Promise<VortexSaasBillingProofState> => {
+    const organization = await ctx.db.get(args.organizationId);
     const plan = await getSubscriptionPlan(ctx.db, args.organizationId);
     const subscription =
       (await ctx.db
@@ -961,6 +963,7 @@ export const getVortexSaasBillingProofState = internalQuery({
 
     return {
       organizationId: args.organizationId,
+      organizationStripeCustomerId: organization?.stripeCustomerId ?? null,
       plan,
       subscription: toProofSubscription(subscription),
       product: toProofProduct(product),

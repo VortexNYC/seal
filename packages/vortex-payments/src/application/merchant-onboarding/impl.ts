@@ -410,8 +410,8 @@ function mergeRequirementMetadata(
     return undefined;
   }
   return {
-    ...(existing ?? {}),
-    ...(incoming ?? {}),
+    ...existing,
+    ...incoming,
   };
 }
 
@@ -448,7 +448,7 @@ function closeRemovedRequirement(
         ? (requirement.satisfiedAt ?? refreshedAt)
         : requirement.satisfiedAt,
     metadata: {
-      ...(requirement.metadata ?? {}),
+      ...requirement.metadata,
       providerRefreshClosedAt: refreshedAt,
       providerRefreshClosedReason: "removed_from_provider_projection",
     },
@@ -460,7 +460,7 @@ function toSnapshot(
   requirements: readonly MerchantRequirement[],
   metadata?: Readonly<Record<string, string>>,
 ): MerchantOnboardingSnapshot {
-  const mergedMetadata = { ...(session.metadata ?? {}), ...(metadata ?? {}) };
+  const mergedMetadata = { ...session.metadata, ...metadata };
   return {
     merchantAccountId: session.merchantAccountId,
     onboardingSessionId: session.id,
@@ -505,7 +505,7 @@ function createRequirementSubmissionMetadata(input: {
   documentIds?: readonly string[];
 }): Readonly<Record<string, string>> {
   return {
-    ...(input.previous ?? {}),
+    ...input.previous,
     lastSubmittedAt: input.submittedAt,
     lastSubmittedByType: input.submittedByType,
     lastSubmittedByRef: input.submittedByRef,
@@ -1052,7 +1052,7 @@ export function createMerchantOnboardingService(
           ...merchant,
           status: providerValue.merchantStatus,
           metadata: providerValue.metadata
-            ? { ...(merchant.metadata ?? {}), ...providerValue.metadata }
+            ? { ...merchant.metadata, ...providerValue.metadata }
             : merchant.metadata,
           processorAccountRefs: dedupeProcessorRefs([
             ...merchant.processorAccountRefs,
@@ -1244,7 +1244,7 @@ export function createMerchantOnboardingService(
                 ? (snapshot.value.recordedAt ?? requirement.satisfiedAt ?? now())
                 : requirement.satisfiedAt,
             metadata: snapshot.value.metadata
-              ? { ...(requirement.metadata ?? {}), ...snapshot.value.metadata }
+              ? { ...requirement.metadata, ...snapshot.value.metadata }
               : requirement.metadata,
           };
           await uow.onboarding.saveRequirement(refreshedRequirement);
