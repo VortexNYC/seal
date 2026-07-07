@@ -14,7 +14,7 @@ import type { PaymentsProviderAdapter, ProviderContext } from "../../providers/t
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import {
   createMerchantOnboardingService,
-  MerchantOnboardingServiceError,
+  type MerchantOnboardingServiceError,
 } from "./impl";
 
 const consent = {

@@ -1,0 +1,80 @@
+{
+  "date": "2026-07-07",
+  "target": "Seal SaaS subscription billing via Vortex sandbox proof",
+  "boundary": "Seal SaaS subscription checkout and billing-state projection only; document payments and Connect-style money movement are out of scope.",
+  "sealDeployment": "dev:clever-goose-484",
+  "vortexDeployment": "dev:notable-leopard-969",
+  "vortexBaseUrl": "https://notable-leopard-969.convex.site",
+  "branch": "continue-vortex-saas-cutover",
+  "commits": [
+    {
+      "hash": "c1465743",
+      "message": "Complete Seal Vortex SaaS checkout proof"
+    }
+  ],
+  "actions": [
+    {
+      "step": "Deploy Seal backend to dev Convex",
+      "command": "cd /home/debian/Projects/Seal/apps/backend && CONVEX_DEPLOYMENT=dev:clever-goose-484 bunx convex dev --once --typecheck=disable --tail-logs=disable",
+      "result": "Convex functions ready on clever-goose-484."
+    },
+    {
+      "step": "SaaS checkout proof",
+      "command": "SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-checkout-vortex",
+      "result": {
+        "ok": true,
+        "check": "seal_saas_checkout_vortex",
+        "organizationId": "nh79c76xa4mcv18vd8t0652rsx8a0ewg",
+        "billingAccountId": "bacc_seal_saas_nh79c76xa4mcv18vd8t0652rsx8a0ewg",
+        "lookupKey": "pro:monthly:v2",
+        "priceId": "vtx_price_seal_pro_monthly_v2",
+        "checkoutUrl": "https://notable-leopard-969.convex.site/pay/pay_LRlpmJNRWQg9D-LdpPObr_kANnyiaLsziLCYvdFf3kw",
+        "amountTotal": 1900,
+        "amountRemaining": 1900
+      }
+    },
+    {
+      "step": "SaaS webhook billing-state proof",
+      "command": "SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-webhook-billing-state",
+      "result": {
+        "ok": true,
+        "check": "seal_saas_webhook_billing_state",
+        "proofRunId": "mra1q404_e8vecb",
+        "organizationId": "nh7dpx4c22cfh9p6ncjeydpchd8a27c2",
+        "subscriptionExternalId": "vtx_sub_seal_projection_mra1q404_e8vecb",
+        "customerExternalId": "vtx_cust_seal_projection_mra1q404_e8vecb",
+        "priceId": "vtx_price_seal_pro_monthly_v2",
+        "activeStripeIdPresent": false,
+        "billingSettingsState": {
+          "status": "active",
+          "tier": "pro",
+          "planName": "Seal Professional",
+          "unitAmount": 1900,
+          "currency": "usd"
+        }
+      }
+    },
+    {
+      "step": "Stripe lifecycle guard proof",
+      "command": "SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-stripe-lifecycle-guard",
+      "result": {
+        "ok": true,
+        "check": "seal_saas_stripe_lifecycle_guard",
+        "proofRunId": "mra1qmf5_lskpm0",
+        "organizationId": "nh7b9h22d65bjsqw2gm4e9xgyd8a201n",
+        "handleNewOrgCreatedSkippedReason": "vortex_billing",
+        "syncSeatCountSkipped": true,
+        "organizationStripeCustomerId": null,
+        "subscription": null
+      }
+    }
+  ],
+  "readiness": {
+    "sealSaasSubscriptionBillingViaVortex": "Sandbox proof complete.",
+    "fullStripeReplacement": "Not complete. Document payments and Connect-style money movement still require proof."
+  },
+  "knownBlockers": [
+    "Browser billing UI should be checked once on staging after branch push/PR.",
+    "Document payments remain outside this SaaS subscription billing proof."
+  ]
+}

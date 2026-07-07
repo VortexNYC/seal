@@ -8,7 +8,7 @@ import type { ProviderRegistry } from "../../providers/registry";
 import type { PaymentsProviderAdapter, ProviderContext } from "../../providers/types";
 import type { IdempotencyRecord } from "../../storage/repositories";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
-import { createPaymentsService, PaymentsServiceError } from "./impl";
+import { createPaymentsService, type PaymentsServiceError } from "./impl";
 
 function createMerchant(overrides: Partial<MerchantAccount> = {}): MerchantAccount {
   return {

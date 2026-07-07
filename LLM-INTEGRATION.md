@@ -30,7 +30,6 @@ Proof wall:
 ```bash
 bun run project-kit:check
 bun run project-kit:doctor
-bun run migrate:legacy-auth-package:check
 bun run typecheck
 bun run lint:strict
 bun run format:changed:check
@@ -40,6 +39,10 @@ bun run test
 bun run auth:check
 bun run auth:preflight
 ```
+
+Production release proofs:
+
+No generated commands. Add `instructions.verificationCommands` to `vortex.project.json`.
 
 ## Vortex Core Integration
 

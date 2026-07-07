@@ -1,5 +1,6 @@
 import type { PaymentIntent } from "../../domain/payments";
 import type { PaymentMethod } from "../../domain/payment-methods";
+import type { CustomerPaymentState } from "../../domain/state";
 import type { CanonicalDomainEvent } from "../../events/types";
 import { deriveCustomerPaymentState } from "../state/derive-customer-payment-state";
 import {
@@ -46,7 +47,7 @@ export interface PaymentMethodsServiceDependencies {
   ) => Promise<readonly PaymentMethod[]>;
   readonly savePaymentMethod: (record: PaymentMethod) => Promise<void>;
   readonly listPaymentIntents: (query: ListCustomerPaymentMethodsQuery) => Promise<readonly PaymentIntent[]>;
-  readonly saveCustomerPaymentState?: (state: import("../../domain/state").CustomerPaymentState) => Promise<void>;
+  readonly saveCustomerPaymentState?: (state: CustomerPaymentState) => Promise<void>;
   readonly saveCanonicalEvent?: (event: CanonicalDomainEvent) => Promise<void>;
   readonly now?: () => string;
 }

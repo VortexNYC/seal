@@ -582,7 +582,7 @@ export function createPaymentsService(dependencies: PaymentsServiceDependencies)
                 returnUrl: command.returnUrl,
                 fraudSessionId: command.fraudSessionId,
                 metadata: {
-                  ...(command.metadata ?? {}),
+                  ...command.metadata,
                   selectedPaymentMethodId,
                 },
                 nextActionType: undefined,
@@ -656,7 +656,7 @@ export function createPaymentsService(dependencies: PaymentsServiceDependencies)
               returnUrl: command.returnUrl,
               fraudSessionId: command.fraudSessionId,
               metadata: {
-                ...(command.metadata ?? {}),
+                ...command.metadata,
                 selectedPaymentMethodId,
               },
               nextActionType: providerResult.value.nextActionType,
@@ -922,7 +922,7 @@ export function createPaymentsService(dependencies: PaymentsServiceDependencies)
       const retrySourcePaymentMethodId = command.paymentMethodId
         ?? record.metadata?.selectedPaymentMethodId;
       const retryMetadata: Record<string, string> = {
-        ...(record.metadata ?? {}),
+        ...record.metadata,
         retriedFromPaymentIntentId: record.id,
       };
 

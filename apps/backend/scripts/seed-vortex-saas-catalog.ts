@@ -4,47 +4,63 @@
  * Run manually with Bun/Node and VORTEX_BILLING_API_BASE_URL +
  * VORTEX_BILLING_API_KEY set. Never run this in CI.
  *
- * Operators must edit the PLACEHOLDER catalog entries below before running:
- * - set real product/price ids
- * - set real unitAmount values in minor currency units
- * - mirror the printed lookupKey -> priceId map into VORTEX_BILLING_SAAS_PRICE_MAP
+ * Seeds the sandbox/prod Vortex Billing catalog entries Seal SaaS expects:
+ * - one Seal Professional product
+ * - monthly and yearly recurring prices
+ * - lookupKey metadata mirrored into VORTEX_BILLING_SAAS_PRICE_MAP
  */
 
 import { createClient, createProduct, createPrice } from "@vortexnyc/payments-sdk";
 
+type BillingCurrency = "USD" | "CAD";
 type BillingInterval = "day" | "week" | "month" | "year";
+
+type SeedProductDefinition = {
+  readonly productId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly metadata: Readonly<Record<string, string>>;
+};
 
 type SeedPlanDefinition = {
   readonly lookupKey: string;
-  readonly productId: string;
   readonly priceId: string;
   readonly name: string;
-  readonly currency: string;
+  readonly currency: BillingCurrency;
   readonly billingInterval: BillingInterval;
   readonly billingIntervalCount: number;
   readonly unitAmount: number;
 };
 
+const SEAL_SAAS_PRODUCT = {
+  productId: "vtx_prod_seal_professional",
+  name: "Seal Professional",
+  description: "Advanced workspace, API, and automation features.",
+  metadata: {
+    tier: "pro",
+    useType: "business",
+    features: "api_access,webhook_access",
+  },
+} as const satisfies SeedProductDefinition;
+
 const SEAL_SAAS_PLANS = [
   {
     lookupKey: "pro:monthly:v2",
-    productId: "prod_seal_pro",
-    priceId: "price_seal_pro_monthly_v2",
-    name: "Seal Pro (Monthly)",
-    currency: "usd",
+    priceId: "vtx_price_seal_pro_monthly_v2",
+    name: "Seal Professional Monthly",
+    currency: "USD",
     billingInterval: "month",
     billingIntervalCount: 1,
-    unitAmount: 0, // OPERATOR: set real amount in cents before running.
+    unitAmount: 1900,
   },
   {
     lookupKey: "pro:yearly:v2",
-    productId: "prod_seal_pro",
-    priceId: "price_seal_pro_yearly_v2",
-    name: "Seal Pro (Yearly)",
-    currency: "usd",
+    priceId: "vtx_price_seal_pro_yearly_v2",
+    name: "Seal Professional Yearly",
+    currency: "USD",
     billingInterval: "year",
     billingIntervalCount: 1,
-    unitAmount: 0, // OPERATOR: set real amount in cents before running.
+    unitAmount: 18000,
   },
 ] as const satisfies readonly SeedPlanDefinition[];
 
@@ -73,47 +89,52 @@ async function main(): Promise<void> {
 
   const seededPriceMap: Record<string, string> = {};
 
+  const productResult = await createProduct({
+    client,
+    headers: { "Idempotency-Key": `seal-saas-product:${SEAL_SAAS_PRODUCT.productId}` },
+    body: {
+      productId: SEAL_SAAS_PRODUCT.productId,
+      name: SEAL_SAAS_PRODUCT.name,
+      description: SEAL_SAAS_PRODUCT.description,
+      metadata: SEAL_SAAS_PRODUCT.metadata,
+    },
+  });
+
+  handleCatalogResult(productResult, `product ${SEAL_SAAS_PRODUCT.productId}`);
+
   for (const plan of SEAL_SAAS_PLANS) {
-    const productResult = await createProduct({
-      client,
-      headers: { "Idempotency-Key": `seal-saas-product:${plan.productId}` },
-      body: {
-        productId: plan.productId,
-        name: plan.name,
-      },
-    });
-
-    handleCatalogResult(productResult, `product ${plan.productId}`);
-
     const priceResult = await createPrice({
       client,
       headers: { "Idempotency-Key": `seal-saas-price:${plan.priceId}` },
       body: {
         priceId: plan.priceId,
-        productId: plan.productId,
+        productId: SEAL_SAAS_PRODUCT.productId,
         name: plan.name,
         priceType: "fixed_recurring",
         currency: plan.currency,
         billingInterval: plan.billingInterval,
         billingIntervalCount: plan.billingIntervalCount,
         unitAmount: plan.unitAmount,
+        metadata: {
+          lookupKey: plan.lookupKey,
+        },
       },
     });
 
     handleCatalogResult(priceResult, `price ${plan.priceId}`);
     seededPriceMap[plan.lookupKey] = plan.priceId;
-    console.log(`${plan.lookupKey}=${plan.priceId}`);
+    console.info(`${plan.lookupKey}=${plan.priceId}`);
   }
 
-  console.log("VORTEX_BILLING_SAAS_PRICE_MAP=");
-  console.log(JSON.stringify(seededPriceMap, null, 2));
+  console.info("VORTEX_BILLING_SAAS_PRICE_MAP=");
+  console.info(JSON.stringify(seededPriceMap, null, 2));
 }
 
 function handleCatalogResult(result: CatalogMutationResult, label: string): void {
   const { data, error, response } = result;
 
   if (response?.status === 409) {
-    console.log(`Skipping existing ${label} (HTTP 409)`);
+    console.info(`Skipping existing ${label} (HTTP 409)`);
     return;
   }
 

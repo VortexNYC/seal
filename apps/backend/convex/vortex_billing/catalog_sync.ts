@@ -146,6 +146,20 @@ function readProduct(value: unknown): VortexCatalogProduct {
   };
 }
 
+function readPriceLookupKey(price: UnknownRecord): string | undefined {
+  const directLookupKey = readOptionalString(price.lookupKey, "Vortex catalog price.lookupKey");
+  if (directLookupKey !== undefined) {
+    return directLookupKey;
+  }
+
+  if (price.metadata === undefined || price.metadata === null) {
+    return undefined;
+  }
+
+  const metadata = readObject(price.metadata, "Vortex catalog price metadata");
+  return readOptionalString(metadata.lookupKey, "Vortex catalog price metadata.lookupKey");
+}
+
 function readPrice(value: unknown): VortexCatalogPrice | null {
   const price = readObject(value, "Vortex catalog price");
   const type = readPriceType(price.priceType);
@@ -163,7 +177,7 @@ function readPrice(value: unknown): VortexCatalogPrice | null {
     ),
     unitAmount: readNumber(price.unitAmount, "Vortex catalog price.unitAmount"),
     status: hasArchivedAt(price) ? "archived" : "active",
-    lookupKey: readOptionalString(price.lookupKey, "Vortex catalog price.lookupKey"),
+    lookupKey: readPriceLookupKey(price),
   };
 }
 
@@ -260,7 +274,7 @@ export const syncCatalogFromVortex = internalAction({
         unitAmount: price.unitAmount,
         usageType: price.type === "recurring" ? "licensed" : undefined,
         status: price.status,
-        lookupKey: price.lookupKey,
+        lookupKey: price.lookupKey ?? price.priceId,
       });
       if (price.status === "archived") {
         archivedPrices++;

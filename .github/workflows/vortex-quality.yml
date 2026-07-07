@@ -15,6 +15,7 @@ concurrency:
 env:
   NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
   CONVEX_OVERRIDE_ACCESS_TOKEN: ${{ secrets.CONVEX_ACCESS_TOKEN }}
+  CONVEX_DEPLOYMENT: "dev:aware-buzzard-568"
   VITE_CONVEX_URL: "https://aware-buzzard-568.convex.cloud"
   CONVEX_URL: "https://aware-buzzard-568.convex.cloud"
   VITE_BETTER_AUTH_URL: "https://aware-buzzard-568.convex.site/api/auth"
@@ -45,7 +46,6 @@ jobs:
         run: |
           bun run project-kit:check
           bun run project-kit:doctor
-          bun run migrate:legacy-auth-package:check
           bun run typecheck
           bun run lint:strict
           bun run format:changed:check

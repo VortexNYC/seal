@@ -10,8 +10,10 @@ const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.
 const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
 const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
+const saasBillingProviderPath = "apps/backend/convex/payments/saas_billing_provider.ts";
 const vortexBillingProcessorPath = "apps/backend/convex/payments/vortex_billing_processor.ts";
 const providerSubscriptionProcessorPath = "apps/backend/convex/stripe/subscription_processor.ts";
+const providerSubscriptionActionsPath = "apps/backend/convex/stripe/subscription_actions.ts";
 const paymentsPaymentFieldActionsPath = "apps/backend/convex/payments/payment_field_actions.ts";
 const paymentsMerchantAccountActionsPath =
   "apps/backend/convex/payments/merchant_account_actions.ts";
@@ -31,10 +33,12 @@ const failures: string[] = [];
 for (const requiredPath of [
   paymentsQueriesPath,
   paymentsSubscriptionActionsPath,
+  saasBillingProviderPath,
   vortexBillingProcessorPath,
   vortexBillingWebhookProjectionPath,
   vortexBillingWebhookHandlersPath,
   vortexBillingWebhookSignaturePath,
+  providerSubscriptionActionsPath,
   providerSubscriptionProcessorPath,
   paymentsPaymentFieldActionsPath,
   paymentsMerchantAccountActionsPath,
@@ -73,6 +77,11 @@ const paymentsSubscriptionActions = readFileSync(
 );
 const paymentsPaymentFieldActions = readFileSync(
   join(repoRoot, paymentsPaymentFieldActionsPath),
+  "utf8",
+);
+const saasBillingProvider = readFileSync(join(repoRoot, saasBillingProviderPath), "utf8");
+const providerSubscriptionActions = readFileSync(
+  join(repoRoot, providerSubscriptionActionsPath),
   "utf8",
 );
 const providerSubscriptionProcessor = readFileSync(
@@ -191,11 +200,34 @@ for (const requiredFragment of [
 
 for (const requiredFragment of [
   "VORTEX_BILLING_SAAS_ORGANIZATION_IDS",
+  "export function selectSaasBillingProvider",
+]) {
+  if (!saasBillingProvider.includes(requiredFragment)) {
+    failures.push(
+      `${saasBillingProviderPath} missing SaaS billing provider fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  'readonly skippedReason: "vortex_billing"',
+  "selectSaasBillingProvider(organizationId)",
+  "Skipping Stripe org provisioning for Vortex Billing org",
+  "Skipping Stripe seat sync for Vortex Billing org",
+]) {
+  if (!providerSubscriptionActions.includes(requiredFragment)) {
+    failures.push(
+      `${providerSubscriptionActionsPath} missing SaaS Vortex Billing Stripe guard fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
   "VORTEX_BILLING_API_BASE_URL",
   "VORTEX_BILLING_API_KEY",
   "VORTEX_BILLING_ACCOUNT_MAP",
   "VORTEX_BILLING_SAAS_PRICE_MAP",
-  "export function selectSaasBillingProvider",
+  "export { selectSaasBillingProvider }",
   "export async function createVortexBillingCheckoutSession",
   "Vortex Billing account missing",
 ]) {

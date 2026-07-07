@@ -54,6 +54,7 @@ type SeedVortexWebhookProofPaymentConfigResult = {
 
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
+  readonly organizationStripeCustomerId: string | null;
   readonly plan: {
     readonly isPro: boolean;
     readonly isEnterprise: boolean;
@@ -416,7 +417,7 @@ export const seedStripeEntitlementSafetyProof = internalMutation({
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
       externalProductId,
       name: "Stripe Safety Control Pro",
-      status: "active",
+      status: "archived",
       metadata: {
         tier: "pro",
         useType: "business",
@@ -435,7 +436,7 @@ export const seedStripeEntitlementSafetyProof = internalMutation({
       recurring: { interval: "month", intervalCount: 1 },
       unitAmount: 2900,
       usageType: "licensed",
-      status: "active",
+      status: "archived",
       lookupKey: `catalog-safety:${args.proofRunId}`,
       createdAt: now,
       updatedAt: now,
@@ -458,6 +459,106 @@ export const seedStripeEntitlementSafetyProof = internalMutation({
       externalPriceId,
       externalSubscriptionId,
     };
+  },
+});
+
+async function archiveProductsByExternalProductIdRange(
+  ctx: Pick<MutationCtx, "db">,
+  args: { readonly lower: string; readonly upper: string; readonly now: number },
+): Promise<number> {
+  let archived = 0;
+  const products = await ctx.db
+    .query("subscription_products")
+    .withIndex("by_external_product_id", (q) =>
+      q.gte("externalProductId", args.lower).lt("externalProductId", args.upper),
+    )
+    .collect();
+
+  for (const product of products) {
+    if (product.status !== "archived") {
+      await ctx.db.patch(product._id, { status: "archived", updatedAt: args.now });
+      archived++;
+    }
+  }
+
+  return archived;
+}
+
+async function archivePricesByLookupKeyRange(
+  ctx: Pick<MutationCtx, "db">,
+  args: { readonly lower: string; readonly upper: string; readonly now: number },
+): Promise<number> {
+  let archived = 0;
+  const prices = await ctx.db
+    .query("subscription_prices")
+    .withIndex("by_lookup_key", (q) => q.gte("lookupKey", args.lower).lt("lookupKey", args.upper))
+    .collect();
+
+  for (const price of prices) {
+    if (price.status !== "archived") {
+      await ctx.db.patch(price._id, { status: "archived", updatedAt: args.now });
+      archived++;
+    }
+  }
+
+  return archived;
+}
+
+async function archivePricesByExternalPriceIdRange(
+  ctx: Pick<MutationCtx, "db">,
+  args: { readonly lower: string; readonly upper: string; readonly now: number },
+): Promise<number> {
+  let archived = 0;
+  const prices = await ctx.db
+    .query("subscription_prices")
+    .withIndex("by_external_price_id", (q) =>
+      q.gte("externalPriceId", args.lower).lt("externalPriceId", args.upper),
+    )
+    .collect();
+
+  for (const price of prices) {
+    if (price.status !== "archived") {
+      await ctx.db.patch(price._id, { status: "archived", updatedAt: args.now });
+      archived++;
+    }
+  }
+
+  return archived;
+}
+
+export const archiveCatalogSafetyProofRows = internalMutation({
+  args: {},
+  returns: v.object({
+    productsArchived: v.number(),
+    pricesArchived: v.number(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const productsArchived =
+      (await archiveProductsByExternalProductIdRange(ctx, {
+        lower: "prod_catalog_safety_",
+        upper: "prod_catalog_safety`",
+        now,
+      })) +
+      (await archiveProductsByExternalProductIdRange(ctx, {
+        lower: "vtx_prod_seal_coupon_proof_",
+        upper: "vtx_prod_seal_coupon_proof_~",
+        now,
+      }));
+
+    const pricesArchived =
+      (await archivePricesByLookupKeyRange(ctx, {
+        lower: "catalog-safety:",
+        upper: "catalog-safety;",
+        now,
+      })) +
+      (await archivePricesByExternalPriceIdRange(ctx, {
+        lower: "vtx_price_seal_coupon_proof_",
+        upper: "vtx_price_seal_coupon_proof_~",
+        now,
+      }));
+
+    return { productsArchived, pricesArchived };
   },
 });
 
@@ -934,6 +1035,7 @@ export const getVortexSaasBillingProofState = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args): Promise<VortexSaasBillingProofState> => {
+    const organization = await ctx.db.get(args.organizationId);
     const plan = await getSubscriptionPlan(ctx.db, args.organizationId);
     const subscription =
       (await ctx.db
@@ -961,6 +1063,7 @@ export const getVortexSaasBillingProofState = internalQuery({
 
     return {
       organizationId: args.organizationId,
+      organizationStripeCustomerId: organization?.stripeCustomerId ?? null,
       plan,
       subscription: toProofSubscription(subscription),
       product: toProofProduct(product),
@@ -977,6 +1080,10 @@ export const createVortexSaasCheckoutProofSession = internalAction({
     quantity: v.number(),
     promoCode: v.optional(v.string()),
     priceUnitAmount: v.optional(v.number()),
+    apiBaseUrl: v.optional(v.string()),
+    apiKey: v.optional(v.string()),
+    billingAccountId: v.optional(v.string()),
+    priceId: v.optional(v.string()),
   },
   returns: v.object({
     checkoutUrl: v.string(),
@@ -985,7 +1092,20 @@ export const createVortexSaasCheckoutProofSession = internalAction({
     invoiceNumbers: v.array(v.string()),
   }),
   handler: async (_ctx, args) => {
-    const checkoutSession = await createVortexBillingCheckoutSessionDetails(args);
+    const explicitEnv =
+      args.apiBaseUrl !== undefined &&
+      args.apiKey !== undefined &&
+      args.billingAccountId !== undefined &&
+      args.priceId !== undefined
+        ? {
+            ...process.env,
+            VORTEX_BILLING_API_BASE_URL: args.apiBaseUrl,
+            VORTEX_BILLING_API_KEY: args.apiKey,
+            VORTEX_BILLING_ACCOUNT_ID: args.billingAccountId,
+            VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ [args.lookupKey]: args.priceId }),
+          }
+        : process.env;
+    const checkoutSession = await createVortexBillingCheckoutSessionDetails(args, explicitEnv);
     return {
       checkoutUrl: checkoutSession.checkoutUrl,
       amountTotal: checkoutSession.amountTotal,

@@ -162,6 +162,7 @@ import type * as payments_merchant_account_queries from "../payments/merchant_ac
 import type * as payments_merchant_account_validators from "../payments/merchant_account_validators.js";
 import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_queries from "../payments/queries.js";
+import type * as payments_saas_billing_provider from "../payments/saas_billing_provider.js";
 import type * as payments_subscription_actions from "../payments/subscription_actions.js";
 import type * as payments_vortex_billing_processor from "../payments/vortex_billing_processor.js";
 import type * as payments_vortex_merchant_actions from "../payments/vortex_merchant_actions.js";
@@ -439,6 +440,7 @@ declare const fullApi: ApiFromModules<{
   "payments/merchant_account_validators": typeof payments_merchant_account_validators;
   "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/queries": typeof payments_queries;
+  "payments/saas_billing_provider": typeof payments_saas_billing_provider;
   "payments/subscription_actions": typeof payments_subscription_actions;
   "payments/vortex_billing_processor": typeof payments_vortex_billing_processor;
   "payments/vortex_merchant_actions": typeof payments_vortex_merchant_actions;

@@ -57,6 +57,29 @@ describe("Vortex Billing SaaS processor", () => {
     });
   });
 
+  test("uses a direct Vortex price id as the checkout key when no price map exists", () => {
+    const config = resolveVortexBillingConfig(
+      {
+        ...checkoutArgs,
+        lookupKey: "vtx_price_seal_pro_monthly",
+      },
+      {
+        VORTEX_BILLING_API_BASE_URL: "https://payments.vortex.test",
+        VORTEX_BILLING_API_KEY: "vb_test",
+        VORTEX_BILLING_ACCOUNT_MAP: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      },
+    );
+
+    expect(config).toEqual({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      billingAccountId: "bacc_seal_123",
+      priceId: "vtx_price_seal_pro_monthly",
+      customerExternalId: "vtx_cust_seal_org_org_seal_123",
+      subscriptionExternalId: "vtx_sub_seal_org_org_seal_123_vtx_price_seal_pro_monthly",
+    });
+  });
+
   test("resolves Vortex portal configuration without checkout-only price or account env", () => {
     expect(
       resolveVortexBillingPortalConfig(
