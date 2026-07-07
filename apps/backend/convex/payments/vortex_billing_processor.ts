@@ -97,12 +97,7 @@ export async function createVortexBillingCheckoutSessionDetails(
   const idempotencyKey = `seal-saas-checkout:${args.organizationId}:${normalizeExternalIdPart(args.lookupKey)}`;
   const promoCode = normalizePromoCode(args.promoCode);
   let appliedCoupon: AppliedVortexCoupon | undefined;
-
-  if (promoCode !== undefined && args.priceUnitAmount === undefined) {
-    throw new ConvexError(
-      `Seal subscription price missing unitAmount for Vortex coupon checkout priceId: ${config.priceId}`,
-    );
-  }
+  assertCouponCheckoutHasPrice(args, config, promoCode);
 
   if (promoCode !== undefined) {
     const coupon = await resolveActiveVortexCoupon(
@@ -228,14 +223,11 @@ export function resolveVortexBillingConfig(
   env: Env = process.env,
 ): VortexBillingConfig {
   const apiConfig = resolveVortexBillingApiConfig(env);
-  const priceMap = parseStringRecord(readRequiredEnv(env, PRICE_MAP_ENV), PRICE_MAP_ENV);
+  const priceMap = parseOptionalStringRecord(env[PRICE_MAP_ENV], PRICE_MAP_ENV);
   const accountMap = parseOptionalStringRecord(env[ACCOUNT_MAP_ENV], ACCOUNT_MAP_ENV);
   const customerMap = parseOptionalStringRecord(env[CUSTOMER_MAP_ENV], CUSTOMER_MAP_ENV);
 
-  const priceId = priceMap[args.lookupKey];
-  if (!priceId) {
-    throw new ConvexError(`Vortex Billing price missing for lookup key: ${args.lookupKey}`);
-  }
+  const priceId = resolveVortexBillingPriceId(args.lookupKey, priceMap);
 
   const organizationKey = String(args.organizationId);
   const billingAccountId = accountMap[organizationKey] ?? env[ACCOUNT_ID_ENV];
@@ -256,6 +248,29 @@ export function resolveVortexBillingConfig(
     customerExternalId,
     subscriptionExternalId,
   };
+}
+
+function assertCouponCheckoutHasPrice(
+  args: VortexBillingCheckoutArgs,
+  config: VortexBillingConfig,
+  promoCode: string | undefined,
+): void {
+  if (promoCode !== undefined && args.priceUnitAmount === undefined) {
+    throw new ConvexError(
+      `Seal subscription price missing unitAmount for Vortex coupon checkout priceId: ${config.priceId}`,
+    );
+  }
+}
+
+function resolveVortexBillingPriceId(lookupKey: string, priceMap: Record<string, string>): string {
+  const mappedPriceId = priceMap[lookupKey];
+  if (mappedPriceId !== undefined && mappedPriceId.length > 0) {
+    return mappedPriceId;
+  }
+  if (lookupKey.startsWith("vtx_price")) {
+    return lookupKey;
+  }
+  throw new ConvexError(`Vortex Billing price missing for lookup key: ${lookupKey}`);
 }
 
 export function resolveVortexBillingPortalConfig(

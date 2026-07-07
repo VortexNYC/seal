@@ -4,7 +4,7 @@ import type { PaymentMethod } from "../../domain/payment-methods";
 import type { CanonicalDomainEvent } from "../../events/types";
 import {
   createPaymentMethodsService,
-  PaymentMethodsServiceError,
+  type PaymentMethodsServiceError,
 } from "./impl";
 
 function createPaymentMethod(overrides: Partial<PaymentMethod> = {}): PaymentMethod {

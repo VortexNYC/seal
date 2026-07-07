@@ -14,7 +14,7 @@ import type { CanonicalEventsService } from "../events/service";
 import {
   createWebhooksService,
   type ProviderWebhookMapper,
-  WebhooksServiceError,
+  type WebhooksServiceError,
 } from "./impl";
 
 function createMemoryUnitOfWork(): PaymentsUnitOfWork {

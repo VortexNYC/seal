@@ -47,14 +47,42 @@ function booleanField(value: JsonObject, field: string): boolean {
 
 function nullableStringField(value: JsonObject, field: string): string | null {
   const child = value[field];
-  assert(child === null || typeof child === "string", `Expected ${field} to be a string or null`);
-  return child;
+  if (child === null || typeof child === "string") {
+    return child as string | null;
+  }
+  fail(`Expected ${field} to be a string or null`);
 }
 
 function nullableObjectField(value: JsonObject, field: string): JsonObject | null {
   const child = value[field];
-  assert(child === null || isJsonObject(child), `Expected ${field} to be an object or null`);
-  return child;
+  if (child === null || isJsonObject(child)) {
+    return child as JsonObject | null;
+  }
+  fail(`Expected ${field} to be an object or null`);
+}
+
+function parseJson(raw: string, label: string): Json {
+  const parsed = JSON.parse(raw) as unknown;
+  assert(isJson(parsed), `Expected ${label} to be valid JSON`);
+  return parsed;
+}
+
+function isJson(value: unknown): value is Json {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "string"
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  if (typeof value === "object") {
+    return Object.values(value).every(isJson);
+  }
+  return false;
 }
 
 async function runCommand(input: {
@@ -63,7 +91,7 @@ async function runCommand(input: {
   readonly label: string;
   readonly deployment: string;
 }): Promise<string> {
-  const child = Bun.spawn(input.command, {
+  const child = Bun.spawn([...input.command], {
     cwd: input.cwd,
     env: { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
     stdout: "pipe",
@@ -104,7 +132,8 @@ async function runConvex<T extends Json>(input: {
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
   assert(jsonStart >= 0, `No JSON returned from ${input.functionName}: ${trimmed}`);
-  return JSON.parse(trimmed.slice(jsonStart)) as T;
+  const parsed = parseJson(trimmed.slice(jsonStart), input.functionName);
+  return parsed as T;
 }
 
 async function getConvexEnv(input: {
@@ -143,8 +172,12 @@ function parsePriceMap(raw: string | undefined): string {
     raw !== undefined,
     "VORTEX_BILLING_SAAS_PRICE_MAP is missing; run prove:seal-coupons-vortex first",
   );
-  const parsed = JSON.parse(raw) as unknown;
+  const parsed = parseJson(raw, "VORTEX_BILLING_SAAS_PRICE_MAP");
   assert(isJsonObject(parsed), "Expected VORTEX_BILLING_SAAS_PRICE_MAP to be a JSON object");
+  const sealProMonthlyPriceId = parsed["pro:monthly:v2"];
+  if (typeof sealProMonthlyPriceId === "string" && sealProMonthlyPriceId.length > 0) {
+    return sealProMonthlyPriceId;
+  }
   const firstPriceId = Object.values(parsed).find(
     (value): value is string => typeof value === "string" && value.length > 0,
   );

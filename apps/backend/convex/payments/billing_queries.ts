@@ -71,6 +71,32 @@ async function buildAvailablePlan(ctx: BillingQueryDbCtx, product: Doc<"subscrip
   };
 }
 
+type AvailablePlanResult = NonNullable<Awaited<ReturnType<typeof buildAvailablePlan>>>;
+
+function availablePlanDedupeKey(plan: AvailablePlanResult): string {
+  const monthlyLookupKey = plan.pricing.monthly?.lookupKey ?? "";
+  const yearlyLookupKey = plan.pricing.yearly?.lookupKey ?? "";
+  return [plan.tier ?? plan.productId, monthlyLookupKey, yearlyLookupKey].join(":");
+}
+
+function shouldPreferAvailablePlan(candidate: AvailablePlanResult, current: AvailablePlanResult): boolean {
+  return candidate.productId.startsWith("vtx_") && !current.productId.startsWith("vtx_");
+}
+
+function dedupeAvailablePlans(plans: readonly AvailablePlanResult[]): AvailablePlanResult[] {
+  const byPlanKey = new Map<string, AvailablePlanResult>();
+
+  for (const plan of plans) {
+    const key = availablePlanDedupeKey(plan);
+    const current = byPlanKey.get(key);
+    if (current === undefined || shouldPreferAvailablePlan(plan, current)) {
+      byPlanKey.set(key, plan);
+    }
+  }
+
+  return [...byPlanKey.values()];
+}
+
 async function getCurrentSubscription(ctx: BillingQueryDbCtx, organizationId: Id<"organizations">) {
   return await ctx.db
     .query("subscriptions")
@@ -150,12 +176,14 @@ export const getAvailablePlans = query({
       plans.push(plan);
     }
 
-    plans.sort((a, b) => {
+    const dedupedPlans = dedupeAvailablePlans(plans);
+
+    dedupedPlans.sort((a, b) => {
       const aPrice = a.pricing.monthly?.amount ?? a.pricing.yearly?.amount ?? 0;
       const bPrice = b.pricing.monthly?.amount ?? b.pricing.yearly?.amount ?? 0;
       return aPrice - bPrice;
     });
 
-    return plans;
+    return dedupedPlans;
   },
 });

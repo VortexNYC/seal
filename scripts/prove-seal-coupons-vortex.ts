@@ -614,6 +614,10 @@ async function listAppliedCouponIds(input: {
 async function createCheckout(input: {
   readonly deployment: string;
   readonly organizationId: string;
+  readonly vortexBaseUrl: string;
+  readonly vortexApiKey: string;
+  readonly billingAccountId: string;
+  readonly priceId: string;
   readonly priceUnitAmount: number;
   readonly promoCode?: string;
 }): Promise<JsonObject> {
@@ -625,6 +629,10 @@ async function createCheckout(input: {
       lookupKey,
       quantity: 1,
       priceUnitAmount: input.priceUnitAmount,
+      apiBaseUrl: input.vortexBaseUrl,
+      apiKey: input.vortexApiKey,
+      billingAccountId: input.billingAccountId,
+      priceId: input.priceId,
       ...(input.promoCode === undefined ? {} : { promoCode: input.promoCode }),
     },
   });
@@ -710,12 +718,19 @@ async function prepareProofOrganizations(
 
 async function proveDiscountedCheckout(input: {
   readonly deployment: string;
+  readonly vortexBaseUrl: string;
+  readonly vortexApiKey: string;
+  readonly priceId: string;
   readonly organization: ProofOrganization;
   readonly unitAmount: number;
 }): Promise<JsonObject> {
   const checkout = await createCheckout({
     deployment: input.deployment,
     organizationId: input.organization.organizationId,
+    vortexBaseUrl: input.vortexBaseUrl,
+    vortexApiKey: input.vortexApiKey,
+    billingAccountId: input.organization.billingAccountId,
+    priceId: input.priceId,
     priceUnitAmount: input.unitAmount,
     promoCode,
   });
@@ -730,6 +745,7 @@ async function proveDiscountedCheckout(input: {
 async function proveInvalidCodeCreatesNoAppliedCoupon(
   input: LiveConfig & {
     readonly organization: ProofOrganization;
+    readonly priceId: string;
     readonly unitAmount: number;
   },
 ): Promise<number> {
@@ -749,6 +765,10 @@ async function proveInvalidCodeCreatesNoAppliedCoupon(
       quantity: 1,
       promoCode: invalidPromoCode,
       priceUnitAmount: input.unitAmount,
+      apiBaseUrl: input.vortexBaseUrl,
+      apiKey: input.vortexApiKey,
+      billingAccountId: input.organization.billingAccountId,
+      priceId: input.priceId,
     },
   });
   assert(
@@ -772,12 +792,19 @@ async function proveInvalidCodeCreatesNoAppliedCoupon(
 
 async function proveNormalCheckout(input: {
   readonly deployment: string;
+  readonly vortexBaseUrl: string;
+  readonly vortexApiKey: string;
+  readonly priceId: string;
   readonly organization: ProofOrganization;
   readonly unitAmount: number;
 }): Promise<JsonObject> {
   const checkout = await createCheckout({
     deployment: input.deployment,
     organizationId: input.organization.organizationId,
+    vortexBaseUrl: input.vortexBaseUrl,
+    vortexApiKey: input.vortexApiKey,
+    billingAccountId: input.organization.billingAccountId,
+    priceId: input.priceId,
     priceUnitAmount: input.unitAmount,
   });
   assert(stringField(checkout, "checkoutUrl").length > 0, "Expected normal checkout URL");
@@ -885,16 +912,23 @@ async function main(): Promise<void> {
   });
   const discounted = await proveDiscountedCheckout({
     deployment: config.sealDeployment,
+    vortexBaseUrl: config.vortexBaseUrl,
+    vortexApiKey: config.vortexApiKey,
+    priceId: recurringPriceId,
     organization: organizations.discountedOrganization,
     unitAmount,
   });
   const newInvalidAppliedCoupons = await proveInvalidCodeCreatesNoAppliedCoupon({
     ...config,
     organization: organizations.invalidOrganization,
+    priceId: recurringPriceId,
     unitAmount,
   });
   const normal = await proveNormalCheckout({
     deployment: config.sealDeployment,
+    vortexBaseUrl: config.vortexBaseUrl,
+    vortexApiKey: config.vortexApiKey,
+    priceId: recurringPriceId,
     organization: organizations.normalOrganization,
     unitAmount,
   });

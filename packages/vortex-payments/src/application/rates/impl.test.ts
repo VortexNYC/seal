@@ -6,7 +6,7 @@ import type {
   PaymentRatePlanRepository,
   PaymentRatesProviderPort,
 } from "./contracts";
-import { createPaymentRatesService, PaymentRatesServiceError } from "./impl";
+import { createPaymentRatesService, type PaymentRatesServiceError } from "./impl";
 
 const environment: Environment = "sandbox";
 const tenantId: PlatformTenantId = "tenant_1";
