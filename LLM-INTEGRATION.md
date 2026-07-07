@@ -30,7 +30,6 @@ Proof wall:
 ```bash
 bun run project-kit:check
 bun run project-kit:doctor
-bun run migrate:legacy-auth-package:check
 bun run typecheck
 bun run lint:strict
 bun run format:changed:check

@@ -11,7 +11,7 @@
         "@seal/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
-        "@vortexnyc/auth": "0.5.2",
+        "@vortexnyc/auth": "0.5.3",
         "@vortexnyc/tooling": "0.2.29",
         "baseline-browser-mapping": "^2.10.14",
         "browserslist": "^4.28.2",
@@ -43,7 +43,7 @@
         "@seal/transactional": "workspace:*",
         "@signpdf/placeholder-pdf-lib": "^3.3.0",
         "@signpdf/signpdf": "^3.3.0",
-        "@vortexnyc/auth": "0.5.2",
+        "@vortexnyc/auth": "0.5.3",
         "@vortexnyc/observability": "0.1.2",
         "@vortexnyc/payments-sdk": "^0.1.0",
         "ai": "^6.0.146",
@@ -163,7 +163,7 @@
         "@tanstack/react-virtual": "^3.13.18",
         "@tanstack/router-plugin": "^1.154.13",
         "@vortex/payments": "workspace:*",
-        "@vortexnyc/auth": "0.5.2",
+        "@vortexnyc/auth": "0.5.3",
         "@vortexnyc/observability": "0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -1950,7 +1950,7 @@
 
     "@vortex/payments": ["@vortex/payments@workspace:packages/vortex-payments"],
 
-    "@vortexnyc/auth": ["@vortexnyc/auth@0.5.2", "https://npm.pkg.github.com/download/@VortexNYC/auth/0.5.2/efd02e3f8b25810d07c6973c806f7e17be36685f", { "dependencies": { "@react-email/components": "^1.0.12", "@react-email/render": "^2.0.8", "jose": "^6.2.2" }, "peerDependencies": { "@better-auth/expo": ">=1.6.9", "@convex-dev/better-auth": ">=0.12.2", "better-auth": ">=1.6.9", "convex": ">=1.39.0", "expo-constants": ">=17.0.0", "expo-linking": ">=7.0.0", "expo-network": ">=8.0.7", "expo-secure-store": ">=14.0.0", "expo-web-browser": ">=14.0.0", "react": ">=19.0.0", "react-dom": ">=19.0.0", "react-native": ">=0.79.0", "react-native-css-interop": ">=0.2.0" }, "bin": { "vortex-auth": "scripts/cli.ts" } }, "sha512-7M1F4pm3BZad2MlHtBTyV5b1SHbkpow6N9tjDZvw++7wIpIHMf+UYZ1ckqgXId0gxMwEpw8zRiFWSYwh+gooWg=="],
+    "@vortexnyc/auth": ["@vortexnyc/auth@0.5.3", "https://npm.pkg.github.com/download/@VortexNYC/auth/0.5.3/cb07b4557530901f32af348e136fad300c0d21af", { "dependencies": { "@react-email/components": "^1.0.12", "@react-email/render": "^2.0.8", "jose": "^6.2.2" }, "peerDependencies": { "@better-auth/expo": ">=1.6.9", "@convex-dev/better-auth": ">=0.12.2", "better-auth": ">=1.6.9", "convex": ">=1.39.0", "expo-constants": ">=17.0.0", "expo-linking": ">=7.0.0", "expo-network": ">=8.0.7", "expo-secure-store": ">=14.0.0", "expo-web-browser": ">=14.0.0", "react": ">=19.0.0", "react-dom": ">=19.0.0", "react-native": ">=0.79.0", "react-native-css-interop": ">=0.2.0" }, "bin": { "vortex-auth": "scripts/cli.ts" } }, "sha512-jh3BJRmr7MMMEbftPwXoN5IJAHSiwbW9mDUa8DdSIMCp86CONDxfUEMtrXeJY3ziRfrgU7mB9u6otZtCedJqmA=="],
 
     "@vortexnyc/observability": ["@vortexnyc/observability@0.1.2", "https://npm.pkg.github.com/download/@VortexNYC/observability/0.1.2/c642511b5592f3af1f646c8b3bcce5c85abf2d2a", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-LUIv4CxvA5ululXmIaGIyvukK5qYodJYy7fkbRMlBCxBbidkxJx49GC8p9BXXkgy/eDG6M7X0TZycP+wFuKP7w=="],
 
