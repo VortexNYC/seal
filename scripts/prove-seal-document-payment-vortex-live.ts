@@ -388,6 +388,24 @@ async function main(): Promise<void> {
     stringField(state, "invoiceProvider") === "vortex_billing",
     "Expected Vortex invoice provider",
   );
+  const waitingState = await runSealConvex<JsonObject>({
+    deployment: sealDeployment,
+    functionName: "vortex_billing/proof_actions:markVortexDocumentPayableProofWaitingForPayment",
+    args: { documentId },
+  });
+  assert(
+    stringField(waitingState, "workflowStatus") === "waiting_for_payment",
+    "Expected proof document to wait for payment",
+  );
+  const postSignatureState = await runSealConvex<JsonObject>({
+    deployment: sealDeployment,
+    functionName: "vortex_billing/proof_actions:getVortexWebhookProofPaymentState",
+    args: { vortexPayableId },
+  });
+  assert(
+    stringField(postSignatureState, "documentWorkflowStatus") === "waiting_for_payment",
+    "Expected post-signature proof document to wait for payment",
+  );
 
   console.log(
     JSON.stringify(
@@ -414,9 +432,10 @@ async function main(): Promise<void> {
           currency: stringField(paymentLink, "currency"),
         },
         state: {
-          paymentStatus: stringField(state, "paymentStatus"),
-          invoiceStatus: stringField(state, "invoiceStatus"),
-          invoiceProvider: stringField(state, "invoiceProvider"),
+          paymentStatus: stringField(postSignatureState, "paymentStatus"),
+          invoiceStatus: stringField(postSignatureState, "invoiceStatus"),
+          invoiceProvider: stringField(postSignatureState, "invoiceProvider"),
+          documentWorkflowStatus: stringField(postSignatureState, "documentWorkflowStatus"),
         },
       },
       null,

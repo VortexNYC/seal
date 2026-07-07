@@ -99,6 +99,15 @@ The biggest limiter is one end-to-end document-payment money-path proof: pay the
 
 Current code now proves the Seal-side webhook state transition locally and one-time live Vortex payable creation. That is progress, but it is still not enough for launch because the card payment, platform-fee movement, and settlement/payout visibility are not tied together in one proof.
 
+The first paid-state check failed because both Seal and Vortex still showed the proof payable as unpaid:
+
+- Seal payment state: `awaiting`
+- Vortex payable state: `awaiting_payment`
+- Vortex amount paid: 0
+- Vortex amount remaining: 4200
+
+That is not a webhook bug yet. The checkout has to be paid first.
+
 ## Immediate Execution Plan
 
 1. Keep the document-payment proof scripts under `scripts/`.

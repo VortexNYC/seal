@@ -45,6 +45,13 @@ type SeedVortexDepositBalanceDocumentPayableProofDocumentResult =
 type SeedVortexOneTimeDocumentPayableProofDocumentResult =
   SeedVortexRecurringDocumentPayableProofDocumentResult;
 
+type MarkVortexDocumentPayableProofWaitingForPaymentResult = {
+  readonly documentId: Id<"documents">;
+  readonly recipientIds: Id<"document_recipients">[];
+  readonly paymentConfigIds: Id<"payment_field_configs">[];
+  readonly workflowStatus: "waiting_for_payment";
+};
+
 type SeedVortexWebhookProofPaymentConfigResult = {
   readonly organizationId: Id<"organizations">;
   readonly ownerId: Id<"users">;
@@ -683,6 +690,59 @@ export const seedVortexOneTimeDocumentPayableProofDocument = internalMutation({
       configId: paymentConfigId,
       recipientEmail: args.recipientEmail,
       lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const markVortexDocumentPayableProofWaitingForPayment = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  returns: v.object({
+    documentId: v.id("documents"),
+    recipientIds: v.array(v.id("document_recipients")),
+    paymentConfigIds: v.array(v.id("payment_field_configs")),
+    workflowStatus: v.literal("waiting_for_payment"),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new Error(`Document ${args.documentId} not found`);
+    }
+
+    const now = Date.now();
+    const recipients = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+    const paymentConfigs = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+
+    for (const recipient of recipients) {
+      if (recipient.status !== "signed") {
+        await ctx.db.patch(recipient._id, {
+          status: "signed",
+          signedAt: recipient.signedAt ?? now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.patch(args.documentId, {
+      workflowStatus: "waiting_for_payment",
+      updatedAt: now,
+    });
+
+    return {
+      documentId: args.documentId,
+      recipientIds: recipients.map((recipient) => recipient._id),
+      paymentConfigIds: paymentConfigs.map((config) => config._id),
+      workflowStatus: "waiting_for_payment",
     };
   },
 });
