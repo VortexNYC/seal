@@ -111,3 +111,12 @@ export function getErrorMessage(error: unknown): string {
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+/**
+ * Clamp a numeric value between a minimum and maximum bound.
+ *
+ * Alias for {@link clamp} with a more explicit name.
+ */
+export function clampNumber(n: number, min: number, max: number): number {
+  return Math.min(Math.max(n, min), max);
+}

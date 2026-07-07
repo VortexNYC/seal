@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp, clampNumber } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -283,5 +283,19 @@ describe("clamp", () => {
       expect(clamp(-0.1, 0, 1)).toBe(0);
       expect(clamp(1.1, 0, 1)).toBe(1);
     });
+  });
+});
+
+describe("clampNumber", () => {
+  test("returns value when within range", () => {
+    expect(clampNumber(5, 0, 10)).toBe(5);
+  });
+
+  test("returns min when value is below min", () => {
+    expect(clampNumber(-5, 0, 10)).toBe(0);
+  });
+
+  test("returns max when value is above max", () => {
+    expect(clampNumber(15, 0, 10)).toBe(10);
   });
 });
