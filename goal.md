@@ -64,11 +64,16 @@ The SaaS slice is through staging. The next shipping target is the document-paym
   - `bun run prove:seal-document-payment-vortex-local`
   - Boundary: local Seal-side document payment proof only; live sandbox card payment, platform-fee movement, settlements, and payouts still require live proof.
 
+- Live payable-creation harness now exists:
+  - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
+  - Boundary: creates a live Vortex-hosted document payment link and verifies Seal stores awaiting Vortex invoice state. It still does not pay the card or prove settlement/payout reconciliation.
+  - Status: not run by this thread.
+
 ## Not Proven Yet
 
 Do not call full Stripe replacement done until this exists:
 
-1. Seal creates document-payment Vortex payables for the real payment types:
+1. Seal creates document-payment Vortex payables for all real payment types:
    - one-time
    - recurring
    - installments
@@ -91,11 +96,14 @@ Current code now proves the Seal-side webhook state transition locally. That is 
 
 1. Add a document-payment proof script under `scripts/`.
 2. Reuse existing Convex proof helpers in `apps/backend/convex/vortex_billing/proof_actions.ts`.
-3. Cover one-time live creation first, then recurring/installments/deposit-balance.
-4. Assert Stripe absence explicitly where the state shape exposes it.
-5. Run local proof checks:
+3. Run one-time live creation first with:
+   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
+4. Extend the live harness to recurring/installments/deposit-balance after one-time passes.
+5. Pay the hosted checkout and assert the resulting webhook projection.
+6. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
+7. Assert Stripe absence explicitly where the state shape exposes it.
+8. Keep local proof green:
    - `bun run prove:seal-document-payment-vortex-local`
-6. Leave human-run live proof commands clear when sandbox credentials or real checkout payment are required.
 
 ## Guardrails
 

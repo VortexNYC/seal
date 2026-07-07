@@ -45,6 +45,7 @@
     "prove:seal-saas-stripe-lifecycle-guard": "bun run scripts/prove-seal-saas-stripe-lifecycle-guard.ts",
     "prove:seal-saas-webhook-billing-state": "bun run scripts/prove-seal-saas-webhook-billing-state.ts",
     "prove:seal-document-payment-vortex-local": "bun run scripts/prove-seal-document-payment-vortex-local.ts",
+    "prove:seal-document-payment-vortex-live": "bun run scripts/prove-seal-document-payment-vortex-live.ts",
     "prove:vortex-operational-payments-adoption": "bun run scripts/prove-vortex-operational-payments-adoption.ts",
     "prove:vortex-payments-backend-adapter-adoption": "bun run scripts/prove-vortex-payments-backend-adapter-adoption.ts",
     "prove:vortex-saas-webhook-projection": "bun run --cwd apps/backend test convex/vortex_billing/__tests__/webhook_signature.test.ts convex/vortex_billing/__tests__/webhook_handlers.test.ts convex/vortex_billing/__tests__/webhook_projection.test.ts",
