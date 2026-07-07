@@ -60,11 +60,9 @@ describe("getLabel", () => {
       });
     });
 
-    const result = await t
-      .withIdentity({ subject: clerkId })
-      .query(api.labels.queries.getLabel, {
-        labelId,
-      });
+    const result = await t.withIdentity({ subject: clerkId }).query(api.labels.queries.getLabel, {
+      labelId,
+    });
 
     expect(result).not.toBeNull();
     expect(result.name).toBe("Urgent");

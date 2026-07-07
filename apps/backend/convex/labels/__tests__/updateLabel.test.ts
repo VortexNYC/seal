@@ -144,12 +144,10 @@ describe("updateLabel", () => {
     });
 
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_admin" })
-        .mutation(api.labels.mutations.updateLabel, {
-          labelId,
-          name: "   ",
-        }),
+      t.withIdentity({ subject: "clerk_labels_admin" }).mutation(api.labels.mutations.updateLabel, {
+        labelId,
+        name: "   ",
+      }),
     ).rejects.toThrow("Label name cannot be empty");
   });
 
@@ -169,12 +167,10 @@ describe("updateLabel", () => {
     });
 
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_admin" })
-        .mutation(api.labels.mutations.updateLabel, {
-          labelId,
-          name: "New Name",
-        }),
+      t.withIdentity({ subject: "clerk_labels_admin" }).mutation(api.labels.mutations.updateLabel, {
+        labelId,
+        name: "New Name",
+      }),
     ).rejects.toThrow("Label not found");
   });
 
@@ -202,12 +198,10 @@ describe("updateLabel", () => {
     });
 
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_admin" })
-        .mutation(api.labels.mutations.updateLabel, {
-          labelId: otherLabelId,
-          name: "New Name",
-        }),
+      t.withIdentity({ subject: "clerk_labels_admin" }).mutation(api.labels.mutations.updateLabel, {
+        labelId: otherLabelId,
+        name: "New Name",
+      }),
     ).rejects.toThrow("Label not found");
   });
 });

@@ -91,11 +91,7 @@ describe("listLabels", () => {
       });
 
     expect(labels.length).toBe(3);
-    expect(labels.map((l: (typeof labels)[number]) => l.name)).toEqual([
-      "Apple",
-      "Mango",
-      "Zebra",
-    ]);
+    expect(labels.map((l: (typeof labels)[number]) => l.name)).toEqual(["Apple", "Mango", "Zebra"]);
   });
 
   test("only returns labels for the requested organization", async () => {
@@ -174,11 +170,9 @@ describe("listLabels", () => {
     });
 
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_stranger" })
-        .query(api.labels.queries.listLabels, {
-          organizationId,
-        }),
+      t.withIdentity({ subject: "clerk_labels_stranger" }).query(api.labels.queries.listLabels, {
+        organizationId,
+      }),
     ).rejects.toThrow("No access to this organization");
   });
 });

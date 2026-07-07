@@ -85,11 +85,9 @@ describe("createLabel", () => {
 
   test("rejects empty name (whitespace-only)", async () => {
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_admin" })
-        .mutation(api.labels.mutations.createLabel, {
-          name: "   ",
-        }),
+      t.withIdentity({ subject: "clerk_labels_admin" }).mutation(api.labels.mutations.createLabel, {
+        name: "   ",
+      }),
     ).rejects.toThrow("Label name cannot be empty");
   });
 

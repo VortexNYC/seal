@@ -88,11 +88,9 @@ describe("deleteLabel", () => {
     });
 
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_admin" })
-        .mutation(api.labels.mutations.deleteLabel, {
-          labelId,
-        }),
+      t.withIdentity({ subject: "clerk_labels_admin" }).mutation(api.labels.mutations.deleteLabel, {
+        labelId,
+      }),
     ).rejects.toThrow("Label not found");
   });
 
@@ -120,11 +118,9 @@ describe("deleteLabel", () => {
     });
 
     await expect(
-      t
-        .withIdentity({ subject: "clerk_labels_admin" })
-        .mutation(api.labels.mutations.deleteLabel, {
-          labelId,
-        }),
+      t.withIdentity({ subject: "clerk_labels_admin" }).mutation(api.labels.mutations.deleteLabel, {
+        labelId,
+      }),
     ).rejects.toThrow("Label not found");
   });
 });
