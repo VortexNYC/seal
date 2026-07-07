@@ -101,15 +101,19 @@ Current code now proves the Seal-side webhook state transition locally and one-t
 
 ## Immediate Execution Plan
 
-1. Add a document-payment proof script under `scripts/`.
+1. Keep the document-payment proof scripts under `scripts/`.
 2. Reuse existing Convex proof helpers in `apps/backend/convex/vortex_billing/proof_actions.ts`.
-3. Run one-time live creation first with:
+3. One-time live creation passed with:
    - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
 4. Extend the live harness to recurring/installments/deposit-balance.
-5. Pay the hosted checkout from proof run `mraopvye_ezz5bx` and assert the resulting webhook projection.
-6. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
-7. Assert Stripe absence explicitly where the state shape exposes it.
-8. Keep local proof green:
+5. Pay the hosted checkout from proof run `mraopvye_ezz5bx`.
+6. Assert the resulting webhook projection with:
+   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state`
+   - Or explicitly:
+   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state -- --vortex-payable-id payable_mraoq9vj_sv6qnc8z --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_nUIiDG0pBcFAnaKiuK50gF1y4m3YleHOydRv3y98MKQ`
+7. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
+8. Assert Stripe absence explicitly where the state shape exposes it.
+9. Keep local proof green:
    - `bun run prove:seal-document-payment-vortex-local`
 
 ## Guardrails
