@@ -14,6 +14,7 @@ export type VortexBillingCheckoutArgs = {
   readonly lookupKey: string;
   readonly quantity: number;
   readonly promoCode?: string;
+  readonly priceId?: string;
   readonly priceUnitAmount?: number;
 };
 
@@ -227,7 +228,7 @@ export function resolveVortexBillingConfig(
   const accountMap = parseOptionalStringRecord(env[ACCOUNT_MAP_ENV], ACCOUNT_MAP_ENV);
   const customerMap = parseOptionalStringRecord(env[CUSTOMER_MAP_ENV], CUSTOMER_MAP_ENV);
 
-  const priceId = resolveVortexBillingPriceId(args.lookupKey, priceMap);
+  const priceId = args.priceId ?? resolveVortexBillingPriceId(args.lookupKey, priceMap);
 
   const organizationKey = String(args.organizationId);
   const billingAccountId = accountMap[organizationKey] ?? env[ACCOUNT_ID_ENV];

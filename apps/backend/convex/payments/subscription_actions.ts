@@ -16,7 +16,6 @@ import {
 import {
   createVortexBillingCheckoutSession,
   createVortexBillingPortalSession,
-  resolveVortexBillingConfig,
   selectSaasBillingProvider,
 } from "./vortex_billing_processor";
 
@@ -106,18 +105,13 @@ export const createCheckoutSession = action({
     const memberCount = await getOrgMemberCount(ctx, organization._id);
 
     if (selectSaasBillingProvider(organization._id) === "vortex_billing") {
-      const vortexConfig = resolveVortexBillingConfig({
-        organizationId: organization._id,
-        lookupKey: args.lookupKey,
-        quantity: memberCount,
-      });
       const catalogPrice = await ctx.runQuery(
-        internal.vortex_billing.catalog_queries.getSubscriptionPriceByAnyId,
-        { id: vortexConfig.priceId },
+        internal.vortex_billing.catalog_queries.getActiveVortexSubscriptionPriceByLookupKey,
+        { lookupKey: args.lookupKey },
       );
-      if (catalogPrice === null) {
+      if (catalogPrice === null || catalogPrice.vortexPriceId === undefined) {
         throw new ConvexError(
-          `Seal subscription price not found for Vortex checkout priceId: ${vortexConfig.priceId}. Run Vortex catalog sync before creating checkout.`,
+          `Seal subscription price not found for Vortex checkout lookupKey: ${args.lookupKey}. Run Vortex catalog sync before creating checkout.`,
         );
       }
 
@@ -126,6 +120,7 @@ export const createCheckoutSession = action({
         lookupKey: args.lookupKey,
         quantity: memberCount,
         promoCode: args.promoCode,
+        priceId: catalogPrice.vortexPriceId,
         priceUnitAmount: catalogPrice.unitAmount,
       });
 
