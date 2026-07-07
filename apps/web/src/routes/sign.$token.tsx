@@ -1365,7 +1365,7 @@ function SigningPage() {
                   }
                   onClick={handleSignButtonClick}
                   disabled={isSigningActionDisabled}
-                  aria-label={signingButtonLabel}
+                  aria-label="Sign in"
                 >
                   {submitSignatureMutation.isPending ? (
                     "Submitting..."
