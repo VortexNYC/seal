@@ -78,6 +78,43 @@ function arrayField(value: JsonObject, field: string): readonly Json[] {
   return child;
 }
 
+function findMerchantProcessorRefs(input: {
+  readonly merchants: readonly Json[];
+  readonly merchantAccountId: string;
+}): readonly JsonObject[] {
+  for (const merchant of input.merchants) {
+    if (!isJsonObject(merchant) || merchant.id !== input.merchantAccountId) {
+      continue;
+    }
+    const refs = merchant.processorAccountRefs;
+    if (!Array.isArray(refs)) {
+      return [];
+    }
+    return refs.filter((ref): ref is JsonObject => isJsonObject(ref));
+  }
+  return [];
+}
+
+function buildMerchantProcessorRefs(input: {
+  readonly existingRefs: readonly JsonObject[];
+  readonly finixMerchantId: string | undefined;
+  readonly recordedAt: string;
+}): readonly JsonObject[] {
+  if (input.finixMerchantId !== undefined) {
+    return [
+      {
+        provider: "finix",
+        objectType: "merchant",
+        objectId: input.finixMerchantId,
+        relationship: "merchant_account",
+        recordedAt: input.recordedAt,
+      },
+    ];
+  }
+
+  return input.existingRefs;
+}
+
 async function runCommand(input: {
   readonly command: readonly string[];
   readonly cwd: string;
@@ -157,6 +194,30 @@ async function runVortexConvex<T extends Json>(input: {
     args: input.args,
     label: `vortex convex run ${input.functionName}`,
   });
+}
+
+async function runVortexConvexVoid(input: {
+  readonly deployment: string;
+  readonly functionName: string;
+  readonly args: JsonObject;
+}): Promise<void> {
+  const result = await runCommand({
+    command: [
+      "bunx",
+      "convex",
+      "run",
+      "--typecheck=disable",
+      "--codegen=disable",
+      input.functionName,
+      JSON.stringify(input.args),
+    ],
+    cwd: vortexConvexCwd,
+    deployment: input.deployment,
+    label: `vortex convex run ${input.functionName}`,
+  });
+  if (result.exitCode !== 0) {
+    fail(`vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`);
+  }
 }
 
 async function runConvex<T extends Json>(input: {
@@ -262,15 +323,98 @@ async function main(): Promise<void> {
     environment === "sandbox" || environment === "production",
     `Unexpected environment ${environment}`,
   );
+  const vortexOrganization = await runVortexConvex<JsonObject>({
+    deployment: vortexDeployment,
+    functionName: "billingEngine:getOrganization",
+    args: { organizationId: vortexOrganizationId },
+  });
+  const vortexOrganizationMerchantAccountId = stringField(vortexOrganization, "merchantAccountId");
 
   const recipientEmail = `seal-document-payment-proof+${proofRunId}@seal.test`;
   const lineItemId = `seal_document_payment_line_${proofRunId}`;
   const productId = `vtx_prod_seal_document_payment_${proofRunId}`;
   const priceId = `vtx_price_seal_document_payment_${proofRunId}`;
   const customerId = `vtx_cust_seal_document_payment_${proofRunId}`;
+  const customerProfileId = `cust_profile_seal_document_payment_${proofRunId}`;
   const billingAccountId = `bacc_seal_document_payment_${proofRunId}`;
   const merchantAccountId =
-    readEnv("SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID") ?? `ma_seal_document_payment_proof`;
+    readEnv("SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID") ?? vortexOrganizationMerchantAccountId;
+  const canonicalSeededAt = new Date().toISOString();
+  const existingMerchants = await runVortexConvex<readonly Json[]>({
+    deployment: vortexDeployment,
+    functionName: "_paymentsCanonical:listPaymentsMerchantsByTenant",
+    args: { environment, tenantId: vortexOrganizationId },
+  });
+  const processorAccountRefs = buildMerchantProcessorRefs({
+    existingRefs: findMerchantProcessorRefs({ merchants: existingMerchants, merchantAccountId }),
+    finixMerchantId: readEnv("SEAL_VORTEX_DOCUMENT_PROOF_FINIX_MERCHANT_ID"),
+    recordedAt: canonicalSeededAt,
+  });
+  assert(
+    processorAccountRefs.length > 0,
+    `No provider merchant reference found for ${merchantAccountId}; set SEAL_VORTEX_DOCUMENT_PROOF_FINIX_MERCHANT_ID before live card proof`,
+  );
+
+  await runVortexConvexVoid({
+    deployment: vortexDeployment,
+    functionName: "_paymentsCanonical:savePaymentsMerchant",
+    args: {
+      record: {
+        id: merchantAccountId,
+        environment,
+        tenantId: vortexOrganizationId,
+        externalMerchantRef: `seal-document-payment-${proofRunId}`,
+        displayName: "Seal document payment proof merchant",
+        legalEntityType: "company",
+        country: "US",
+        merchantMode: "processing",
+        defaultCurrency: "USD",
+        status: "active",
+        capabilityStatus: "active",
+        email: recipientEmail,
+        metadata: { proof: "seal-document-payment-vortex-live", proofRunId },
+        processorAccountRefs,
+        createdAt: canonicalSeededAt,
+        updatedAt: canonicalSeededAt,
+      },
+    },
+  });
+  await runVortexConvexVoid({
+    deployment: vortexDeployment,
+    functionName: "_paymentsCanonical:savePaymentsMerchantState",
+    args: {
+      record: {
+        merchantAccountId,
+        environment,
+        merchantStatus: "active",
+        openRequirementIds: [],
+        activeCapabilityKeys: ["payments", "refunds"],
+        restrictedCapabilityKeys: [],
+        canAcceptPayments: true,
+        payoutReadiness: "ready",
+        capabilitySnapshots: [],
+        generatedAt: canonicalSeededAt,
+      },
+    },
+  });
+  await runVortexConvexVoid({
+    deployment: vortexDeployment,
+    functionName: "_paymentsCanonical:savePaymentsCustomer",
+    args: {
+      record: {
+        id: customerProfileId,
+        environment,
+        merchantAccountId,
+        externalCustomerId: customerId,
+        name: "Seal document payment proof recipient",
+        email: recipientEmail,
+        metadata: { proof: "seal-document-payment-vortex-live", proofRunId },
+        processorCustomerRefs: [],
+        createdAt: canonicalSeededAt,
+        updatedAt: canonicalSeededAt,
+      },
+    },
+  });
 
   await runVortexConvex<JsonObject>({
     deployment: vortexDeployment,
@@ -300,13 +444,14 @@ async function main(): Promise<void> {
   });
   await runVortexConvex<JsonObject>({
     deployment: vortexDeployment,
-    functionName: "billingEngine:createCustomer",
+    functionName: "billingEngine:upsertPublicCustomer",
     args: {
       organizationId: vortexOrganizationId,
       environment,
       customerId,
       name: "Seal document payment proof recipient",
       email: recipientEmail,
+      customerProfileId,
       defaultCurrency: "USD",
       metadata: { proof: "seal-document-payment-vortex-live", proofRunId },
     },
@@ -320,6 +465,7 @@ async function main(): Promise<void> {
       billingAccountId,
       customerId,
       merchantAccountId,
+      customerProfileId,
       invoiceDeliveryMode: "api_only",
       collectionMode: "automatic",
       autoCollectionEnabled: true,
