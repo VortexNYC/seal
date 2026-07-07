@@ -15,9 +15,7 @@ function RouteComponent() {
 
   return (
     <div className="w-full space-y-6">
-      <h1 className="text-center text-2xl font-semibold tracking-tight">
-        Sign in to Seal
-      </h1>
+      <h1 className="text-center text-2xl font-semibold tracking-tight">Sign in to Seal</h1>
       <SignIn
         routing="virtual"
         signUpUrl="/waitlist"
