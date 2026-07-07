@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
 import { sealAgent } from "./agent";
+import { sanitizeUserInput } from "./sanitize";
 import type { SealAICtx } from "./types";
 
 /**
@@ -40,7 +41,7 @@ export const analyzeDocument = action({
       // Create agent thread (action overload — returns { threadId, thread })
       const result = await sealAgent.createThread(ctx as unknown as SealAICtx, {
         userId,
-        title: `Document: ${document.name ?? "Untitled"}`,
+        title: `Document: ${sanitizeUserInput(document.name ?? "Untitled")}`,
       });
       threadId = result.threadId;
 
@@ -54,7 +55,8 @@ export const analyzeDocument = action({
     }
 
     // Save the prompt and schedule generation
-    const prompt = `Analyze the document with ID "${args.documentId}" and detect all form fields that should be placed on it. The document is named "${document.name}".`;
+    const safeName = sanitizeUserInput(document.name ?? "Untitled");
+    const prompt = `Analyze the document with ID "${args.documentId}" and detect all form fields that should be placed on it. The document is named "${safeName}".`;
 
     const { messageId } = await sealAgent.saveMessage(ctx as unknown as SealAICtx, {
       threadId,

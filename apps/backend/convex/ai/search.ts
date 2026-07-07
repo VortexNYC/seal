@@ -17,6 +17,7 @@ import { v } from "convex/values";
 import { components, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import { sanitizeUserInput } from "./sanitize";
 
 // =============================================================================
 // RAG COMPONENT SETUP
@@ -145,10 +146,10 @@ export const indexDocumentForSearch = internalAction({
         namespace,
         key,
         text: chunk.text,
-        title: document.name,
+        title: sanitizeUserInput(document.name),
         metadata: {
           pageNumber: chunk.pageNumber,
-          documentName: document.name,
+          documentName: sanitizeUserInput(document.name),
         },
         filterValues: [
           { name: "status", value: document.status },

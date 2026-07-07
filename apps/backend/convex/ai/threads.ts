@@ -26,6 +26,7 @@ import {
   detectCascadeFailure,
 } from "./agent";
 import { aiRateLimiter } from "./rateLimiting";
+import { sanitizeUserInput } from "./sanitize";
 import type { SealAICtx } from "./types";
 
 /**
@@ -35,10 +36,12 @@ import type { SealAICtx } from "./types";
 function buildSystemPrompt(documentId?: string, documentName?: string): string {
   if (!documentId) return SYSTEM_INSTRUCTIONS;
 
+  const safeName = sanitizeUserInput(documentName ?? "Untitled");
+
   return `${SYSTEM_INSTRUCTIONS}
 
 ## Current Document Context
-You are currently viewing the document "${documentName ?? "Untitled"}" (ID: ${documentId}).
+You are currently viewing the document "${safeName}" (ID: ${documentId}).
 When using tools that require a documentId parameter, use "${documentId}" unless the user explicitly asks about a different document.`;
 }
 
@@ -307,7 +310,7 @@ export const getOrCreateThread = authMutation({
     // Create agent thread (mutation overload — returns { threadId } only)
     const { threadId } = await sealAgent.createThread(ctx, {
       userId: userId.toString(),
-      title: `Document: ${document.name ?? "Untitled"}`,
+      title: `Document: ${sanitizeUserInput(document.name ?? "Untitled")}`,
     });
 
     // Save our mapping
