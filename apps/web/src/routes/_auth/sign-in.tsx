@@ -15,7 +15,7 @@ function RouteComponent() {
 
   return (
     <>
-      <p className="text-muted-foreground text-center text-sm mb-4">
+      <p className="text-muted-foreground mb-4 text-center text-sm">
         Access your document workspace
       </p>
       <SignIn
