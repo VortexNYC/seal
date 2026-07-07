@@ -17,6 +17,7 @@ import Stripe from "stripe";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction, internalMutation } from "../_generated/server";
+import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import {
   type SubscriptionStatus,
   cancelOtherSubscriptions,
@@ -27,6 +28,12 @@ import {
   MAX_SUBSCRIPTION_RETRY_ATTEMPTS,
   resolveOrgForSubscription,
 } from "./handler_helpers";
+
+function isVortexBilledOrg(organizationId: Id<"organizations"> | undefined): boolean {
+  return (
+    organizationId !== undefined && selectSaasBillingProvider(organizationId) === "vortex_billing"
+  );
+}
 
 // Note: cancelOtherSubscriptions needs a scheduler callback since it can't import `internal` directly
 async function cancelOtherSubscriptionsForOrg(
@@ -118,6 +125,11 @@ export const handleSubscriptionCreated = internalMutation({
       );
     }
 
+    if (isVortexBilledOrg(resolvedOrgId)) {
+      console.warn(`Skipping Stripe subscription create for Vortex Billing org ${resolvedOrgId}`);
+      return;
+    }
+
     const now = Date.now();
 
     // Check if subscription already exists (prevent duplicates from webhook retries)
@@ -204,6 +216,13 @@ export const handleSubscriptionUpdated = internalMutation({
       throw new Error(
         `Subscription not found for update - stripeSubscriptionId: ${subscription.id}`,
       );
+    }
+
+    if (isVortexBilledOrg(existingSubscription.organizationId)) {
+      console.warn(
+        `Skipping Stripe subscription update ${subscription.id} for Vortex Billing org ${existingSubscription.organizationId}`,
+      );
+      return;
     }
 
     const planChanged = existingSubscription.externalPriceId !== subscription.priceId;
@@ -309,6 +328,13 @@ export const handleSubscriptionDeleted = internalMutation({
       );
     }
 
+    if (isVortexBilledOrg(existingSubscription.organizationId)) {
+      console.warn(
+        `Skipping Stripe subscription delete ${subscription.id} for Vortex Billing org ${existingSubscription.organizationId}`,
+      );
+      return;
+    }
+
     const now = Date.now();
     await ctx.db.patch(existingSubscription._id, {
       status: "canceled",
@@ -398,6 +424,13 @@ export const handlePaymentSucceeded = internalMutation({
         .first();
 
       if (subscription) {
+        if (isVortexBilledOrg(subscription.organizationId)) {
+          console.warn(
+            `Skipping Stripe payment success ${fullInvoice.id} for Vortex Billing org ${subscription.organizationId}`,
+          );
+          return;
+        }
+
         await ctx.db.patch(subscription._id, {
           latestInvoiceId: fullInvoice.id,
           latestInvoiceStatus: fullInvoice.status || undefined,
@@ -446,6 +479,13 @@ export const handlePaymentFailed = internalMutation({
         .first();
 
       if (subscription) {
+        if (isVortexBilledOrg(subscription.organizationId)) {
+          console.warn(
+            `Skipping Stripe payment failure ${fullInvoice.id} for Vortex Billing org ${subscription.organizationId}`,
+          );
+          return;
+        }
+
         await ctx.db.patch(subscription._id, {
           status: "past_due",
           latestInvoiceId: fullInvoice.id,

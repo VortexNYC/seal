@@ -80,7 +80,10 @@ function availablePlanDedupeKey(plan: AvailablePlanResult): string {
   return [plan.tier ?? plan.productId, monthlyLookupKey, yearlyLookupKey].join(":");
 }
 
-function shouldPreferAvailablePlan(candidate: AvailablePlanResult, current: AvailablePlanResult): boolean {
+function shouldPreferAvailablePlan(
+  candidate: AvailablePlanResult,
+  current: AvailablePlanResult,
+): boolean {
   return candidate.productId.startsWith("vtx_") && !current.productId.startsWith("vtx_");
 }
 

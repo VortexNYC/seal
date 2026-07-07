@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
@@ -14,6 +14,8 @@ describe("Vortex Billing subscription projection", () => {
   let organizationId: Id<"organizations">;
 
   beforeEach(async () => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
+
     t = createTestContext();
     organizationId = await t.run((ctx) =>
       ctx.db.insert("organizations", {
@@ -25,6 +27,11 @@ describe("Vortex Billing subscription projection", () => {
         updatedAt: now,
       }),
     );
+    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+  });
+
+  afterEach(() => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
   });
 
   async function seedProCatalog(priceId: string): Promise<void> {
