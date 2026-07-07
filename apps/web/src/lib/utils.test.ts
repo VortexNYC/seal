@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp, truncateText } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -283,5 +283,31 @@ describe("clamp", () => {
       expect(clamp(-0.1, 0, 1)).toBe(0);
       expect(clamp(1.1, 0, 1)).toBe(1);
     });
+  });
+});
+
+describe("truncateText", () => {
+  test("returns the original string when it fits within maxLen", () => {
+    expect(truncateText("hello", 10)).toBe("hello");
+  });
+
+  test("truncates and adds ellipsis when string exceeds maxLen", () => {
+    expect(truncateText("hello world", 5)).toBe("hello…");
+  });
+
+  test("returns empty string when input is empty", () => {
+    expect(truncateText("", 5)).toBe("");
+  });
+
+  test("returns ellipsis when maxLen is 0 and string is non-empty", () => {
+    expect(truncateText("hello", 0)).toBe("…");
+  });
+
+  test("handles exact boundary length", () => {
+    expect(truncateText("hello", 5)).toBe("hello");
+  });
+
+  test("handles unicode characters", () => {
+    expect(truncateText("日本語テキスト", 3)).toBe("日本語…");
   });
 });

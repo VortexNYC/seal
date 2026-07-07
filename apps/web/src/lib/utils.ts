@@ -111,3 +111,13 @@ export function getErrorMessage(error: unknown): string {
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+/**
+ * Truncate a string to a maximum length, adding an ellipsis when truncated.
+ */
+export function truncateText(s: string, maxLen: number): string {
+  if (s.length <= maxLen) {
+    return s;
+  }
+  return s.slice(0, maxLen) + "…";
+}
