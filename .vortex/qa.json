@@ -1,12 +1,12 @@
 {
   "$comment": "Vortex-agent QA manifest — declares how THIS repo is QA'd. Read by the reconciler; keeps the agent core repo-agnostic.",
   "web": {
-    "previewDeploy": "From apps/backend: `bunx convex deploy --preview-create \"$VORTEX_PREVIEW_NAME\" --cmd-url-env-var-name VITE_CONVEX_URL --cmd 'cd ../web && bun run build'` (deploys an isolated preview backend and builds apps/web pointed at it). Then from apps/web: `bunx wrangler versions upload` — this prints a public preview URL. Drive browserless at that URL.",
-    "frontend": "apps/web",
-    "backend": "apps/backend",
-    "requiredSecrets": ["CONVEX_DEPLOY_KEY", "CLOUDFLARE_API_TOKEN"]
+    "verify": "cd apps/web && bun run test:e2e --project=smoke-contract",
+    "requiresConvexBackend": true,
+    "requiredSecrets": ["CONVEX_DEPLOY_KEY"],
+    "notes": "Seal's native web QA is Playwright e2e (Seal has NO preview-deploy / wrangler-versions flow). Before running, set VITE_CONVEX_URL to a Convex preview you create from apps/backend (`bunx convex deploy --preview-create <name>` using CONVEX_DEPLOY_KEY) so the e2e hits an isolated backend. Optional: point Playwright at the shared browserless VPS ($BROWSERLESS_URL) via CDP instead of a local browser."
   },
   "backend": {
-    "test": "cd apps/backend && bun run test"
+    "test": "cd apps/backend && bun --bun run test"
   }
 }
