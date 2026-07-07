@@ -73,7 +73,10 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
 
     let captured: Request | undefined;
     const mockFetch: typeof fetch = Object.assign(
-      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+      async (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1],
+      ): Promise<Response> => {
         captured = input instanceof Request ? input : new Request(String(input), init);
         return new Response(
           JSON.stringify({
@@ -112,7 +115,9 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     });
     expect(ctx.runMutation).not.toHaveBeenCalled();
     expect(captured).toBeInstanceOf(Request);
-    const body = JSON.parse(await captured!.clone().text()) as { lineItems: readonly [{ priceId: string }] };
+    const body = JSON.parse(await captured!.clone().text()) as {
+      lineItems: readonly [{ priceId: string }];
+    };
     expect(body.lineItems[0].priceId).toBe("vtx_price_pro");
   });
 

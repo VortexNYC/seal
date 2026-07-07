@@ -208,7 +208,10 @@ describe("Vortex Billing SaaS processor", () => {
   test("applies and verifies a Vortex coupon before returning checkout", async () => {
     const capturedRequests: Request[] = [];
     const mockFetch: typeof fetch = Object.assign(
-      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+      async (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1],
+      ): Promise<Response> => {
         const request = input instanceof Request ? input : new Request(String(input), init);
         capturedRequests.push(request);
 
@@ -292,7 +295,10 @@ describe("Vortex Billing SaaS processor", () => {
   test("fails closed before checkout when a Vortex coupon code is invalid", async () => {
     const capturedRequests: Request[] = [];
     const mockFetch: typeof fetch = Object.assign(
-      async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+      async (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1],
+      ): Promise<Response> => {
         const request = input instanceof Request ? input : new Request(String(input), init);
         capturedRequests.push(request);
         return jsonResponse({
@@ -483,9 +489,7 @@ describe("Vortex Billing SaaS processor", () => {
     expect(capturedRequest.headers.get("authorization")).toBe("Bearer vb_test");
     expect(capturedRequest.headers.get("x-vortex-service")).toBe("billing");
     expect(capturedRequest.headers.get("content-type")).toBe("application/json");
-    expect(capturedRequest.headers.get("idempotency-key")).toBe(
-      "seal-saas-portal:org_seal_123",
-    );
+    expect(capturedRequest.headers.get("idempotency-key")).toBe("seal-saas-portal:org_seal_123");
 
     const sentBody = JSON.parse(await capturedRequest.clone().text()) as unknown;
     expect(sentBody).toEqual({
@@ -564,7 +568,10 @@ function createCouponCheckoutMock(
   },
 ): typeof fetch {
   return Object.assign(
-    async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
+    async (
+      input: Parameters<typeof fetch>[0],
+      init?: Parameters<typeof fetch>[1],
+    ): Promise<Response> => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       capturedRequests.push(request);
 

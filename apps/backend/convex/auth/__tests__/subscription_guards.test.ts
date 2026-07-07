@@ -1,5 +1,5 @@
 import { ConvexError } from "convex/values";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
@@ -17,6 +17,8 @@ describe("subscription_guards", () => {
   let organizationId: Id<"organizations">;
 
   beforeEach(async () => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
+
     t = createTestContext();
 
     organizationId = await t.run(async (ctx) => {
@@ -29,6 +31,10 @@ describe("subscription_guards", () => {
         updatedAt: Date.now(),
       });
     });
+  });
+
+  afterEach(() => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
   });
 
   /** Helper: seed a full pro subscription chain (product -> price -> subscription) */
@@ -219,10 +225,70 @@ describe("subscription_guards", () => {
         });
       });
 
+      process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
       expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
+    });
+
+    test("treats Vortex subscription rows as historical after rollback to Stripe", async () => {
+      const now = Date.now();
+      const productId = await t.run(async (ctx) => {
+        return await ctx.db.insert("subscription_products", {
+          externalProductId: "vtx_prod_rollback_guard",
+          vortexProductId: "vtx_prod_rollback_guard",
+          name: "Seal Vortex Pro",
+          status: "active",
+          metadata: { tier: "pro" },
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscription_prices", {
+          externalPriceId: "vtx_price_rollback_guard",
+          vortexPriceId: "vtx_price_rollback_guard",
+          externalProductId: "vtx_prod_rollback_guard",
+          subscriptionProductId: productId,
+          type: "recurring",
+          billingScheme: "per_unit",
+          currency: "usd",
+          unitAmount: 1500,
+          recurring: { interval: "month", intervalCount: 1 },
+          status: "active",
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("subscriptions", {
+          organizationId,
+          externalCustomerId: "vtx_cust_rollback_guard",
+          externalSubscriptionId: "vtx_sub_rollback_guard",
+          externalPriceId: "vtx_price_rollback_guard",
+          status: "active",
+          currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+          currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const rolledBackResult = await t.run(async (ctx) => {
+        return await getSubscriptionPlan(ctx.db, organizationId);
+      });
+      expect(rolledBackResult).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+
+      process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+      const allowlistedResult = await t.run(async (ctx) => {
+        return await getSubscriptionPlan(ctx.db, organizationId);
+      });
+      expect(allowlistedResult).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
     test("returns pro plan for trialing subscription", async () => {
