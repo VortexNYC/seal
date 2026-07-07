@@ -60,6 +60,22 @@ type VortexMoneyPathProof = {
     readonly paymentRefs: number;
     readonly paymentIntentRefs: number;
   };
+  readonly settlement: {
+    readonly paymentCount: number;
+    readonly settlementCount: number;
+    readonly settlementEntryCount: number;
+    readonly unsettledPaymentCount: number;
+    readonly fullySettled: boolean;
+    readonly nextAction: string;
+    readonly rows: readonly {
+      readonly paymentId: string;
+      readonly allocatedAmount: number;
+      readonly settlementEntryCount: number;
+      readonly settlementCount: number;
+      readonly settled: boolean;
+      readonly settlementIds: readonly string[];
+    }[];
+  };
 };
 
 type VortexRedriveResult =
@@ -182,6 +198,16 @@ function arrayField(value: JsonObject, field: string): readonly Json[] {
   const child = value[field];
   assert(Array.isArray(child), `Expected ${field} to be an array`);
   return child;
+}
+
+function stringArrayField(value: JsonObject, field: string): readonly string[] {
+  const child = arrayField(value, field);
+  const strings: string[] = [];
+  for (const entry of child) {
+    assert(typeof entry === "string", `Expected ${field} entries to be strings`);
+    strings.push(entry);
+  }
+  return strings;
 }
 
 function parseArgValue(name: string): string | undefined {
@@ -490,6 +516,28 @@ async function readVortexMoneyPath(input: {
   assert(numberField(paymentIntent, "amount") === payableTotal, "Expected Vortex payment intent amount to equal payable total");
   const paymentIntentRefs = assertProcessorLineage(paymentIntent, "processorIntentRefs");
 
+  const operatorInspection = await runVortexConvex<JsonObject | null>({
+    deployment: input.deployment,
+    functionName: "billingEngine:inspectInvoiceOperator",
+    args: {
+      organizationId: input.context.organizationId,
+      environment: input.context.environment,
+      invoiceId,
+    },
+  });
+  assert(operatorInspection !== null, `Expected Vortex operator inspection for ${invoiceId}`);
+  const settlementSummary = objectField(operatorInspection, "paymentSettlementSummary");
+  const settlementRows = arrayField(objectField(operatorInspection, "paymentSettlement"), "rows")
+    .filter(isJsonObject)
+    .map((row) => ({
+      paymentId: stringField(row, "paymentId"),
+      allocatedAmount: numberField(row, "allocatedAmount"),
+      settlementEntryCount: numberField(row, "settlementEntryCount"),
+      settlementCount: numberField(row, "settlementCount"),
+      settled: Boolean(row.settled),
+      settlementIds: stringArrayField(row, "settlementIds"),
+    }));
+
   return {
     invoiceId,
     paymentRequestId,
@@ -504,6 +552,15 @@ async function readVortexMoneyPath(input: {
     processorLineage: {
       paymentRefs: paymentRefs.length,
       paymentIntentRefs: paymentIntentRefs.length,
+    },
+    settlement: {
+      paymentCount: numberField(settlementSummary, "paymentCount"),
+      settlementCount: numberField(settlementSummary, "settlementCount"),
+      settlementEntryCount: numberField(settlementSummary, "settlementEntryCount"),
+      unsettledPaymentCount: numberField(settlementSummary, "unsettledPaymentCount"),
+      fullySettled: Boolean(settlementSummary.fullySettled),
+      nextAction: stringField(settlementSummary, "nextAction"),
+      rows: settlementRows,
     },
   };
 }
