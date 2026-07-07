@@ -72,8 +72,8 @@ console.log(
         "Local Seal-side document payment proof only; live sandbox card payment, platform-fee movement, settlements, and payouts still require live proof.",
       proven: [
         "document payment creation stores Vortex payable/payment request ids for one-time, recurring, installments, and deposit/balance without Stripe ids",
-        "payable_object.updated paid projection marks document payment paid and completes waiting document",
-        "payable_object.updated failed projection marks document payment failed and starts dunning",
+        "payable_object.updated paid projection marks document payment paid and completes waiting document without Stripe ids",
+        "payable_object.updated failed projection marks document payment failed and starts dunning without Stripe ids",
         "unknown payable ids are ignored without webhook dedupe rows",
         "document payment object creation uses Vortex-owned payment link naming",
         "operational payment surfaces use Vortex components instead of Stripe Connect embeds",

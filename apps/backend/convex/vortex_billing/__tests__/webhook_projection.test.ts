@@ -650,6 +650,13 @@ describe("Vortex Billing payable object projection", () => {
       invoiceVortexPaymentRequestId: "preq_paid_projection",
       invoiceHostedUrl: "https://vortex.test/pay/final-paid",
     });
+    expect(state).not.toHaveProperty("configStripeInvoiceId");
+    expect(state).not.toHaveProperty("configStripeSubscriptionId");
+    expect(state).not.toHaveProperty("configStripePaymentIntentId");
+    expect(state).not.toHaveProperty("invoiceStripeInvoiceId");
+    expect(state).not.toHaveProperty("invoiceStripeSubscriptionId");
+    expect(state).not.toHaveProperty("invoiceStripeCustomerId");
+    expect(state).not.toHaveProperty("invoiceStripeAccountId");
     expect(state.invoicePaidAt).toBeTypeOf("number");
 
     const duplicate = await t.mutation(
@@ -704,6 +711,13 @@ describe("Vortex Billing payable object projection", () => {
       invoiceDunningStatus: "active",
       invoiceDunningStep: 0,
     });
+    expect(state).not.toHaveProperty("configStripeInvoiceId");
+    expect(state).not.toHaveProperty("configStripeSubscriptionId");
+    expect(state).not.toHaveProperty("configStripePaymentIntentId");
+    expect(state).not.toHaveProperty("invoiceStripeInvoiceId");
+    expect(state).not.toHaveProperty("invoiceStripeSubscriptionId");
+    expect(state).not.toHaveProperty("invoiceStripeCustomerId");
+    expect(state).not.toHaveProperty("invoiceStripeAccountId");
     expect(state.invoiceDunningStartedAt).toBeTypeOf("number");
     expect(state.invoiceNextDunningAt).toBeTypeOf("number");
   });

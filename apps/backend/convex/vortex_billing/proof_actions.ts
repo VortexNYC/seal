@@ -101,12 +101,19 @@ type VortexWebhookProofPaymentState = {
   readonly configId: Id<"payment_field_configs"> | undefined;
   readonly documentId: Id<"documents"> | undefined;
   readonly paymentStatus: string | undefined;
+  readonly configStripeInvoiceId: string | undefined;
+  readonly configStripeSubscriptionId: string | undefined;
+  readonly configStripePaymentIntentId: string | undefined;
   readonly vortexPayableId: string | undefined;
   readonly vortexPaymentRequestId: string | undefined;
   readonly hostedInvoiceUrl: string | undefined;
   readonly documentWorkflowStatus: string | undefined;
   readonly invoiceStatus: string | undefined;
   readonly invoiceProvider: string | undefined;
+  readonly invoiceStripeInvoiceId: string | undefined;
+  readonly invoiceStripeSubscriptionId: string | undefined;
+  readonly invoiceStripeCustomerId: string | undefined;
+  readonly invoiceStripeAccountId: string | undefined;
   readonly invoiceVortexPayableId: string | undefined;
   readonly invoiceVortexPaymentRequestId: string | undefined;
   readonly invoiceHostedUrl: string | undefined;
@@ -1409,12 +1416,19 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       configId: config?._id,
       documentId,
       paymentStatus: config?.paymentStatus,
+      configStripeInvoiceId: config?.stripeInvoiceId,
+      configStripeSubscriptionId: config?.stripeSubscriptionId,
+      configStripePaymentIntentId: config?.stripePaymentIntentId,
       vortexPayableId: config?.vortexPayableId,
       vortexPaymentRequestId: config?.vortexPaymentRequestId,
       hostedInvoiceUrl: config?.hostedInvoiceUrl,
       documentWorkflowStatus: document?.workflowStatus,
       invoiceStatus: invoice?.status,
       invoiceProvider: invoice?.provider,
+      invoiceStripeInvoiceId: invoice?.stripeInvoiceId,
+      invoiceStripeSubscriptionId: invoice?.stripeSubscriptionId,
+      invoiceStripeCustomerId: invoice?.stripeCustomerId,
+      invoiceStripeAccountId: invoice?.stripeAccountId,
       invoiceVortexPayableId: invoice?.vortexPayableId,
       invoiceVortexPaymentRequestId: invoice?.vortexPaymentRequestId,
       invoiceHostedUrl: invoice?.hostedInvoiceUrl,
