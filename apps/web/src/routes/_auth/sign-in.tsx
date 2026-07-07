@@ -18,6 +18,7 @@ function RouteComponent() {
       routing="virtual"
       signUpUrl="/waitlist"
       appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+      localization={{ formButtonPrimary: "Continue" }}
     />
   );
 }
