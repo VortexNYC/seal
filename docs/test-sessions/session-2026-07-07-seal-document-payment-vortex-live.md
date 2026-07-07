@@ -238,3 +238,48 @@ Do not call Seal document payments launch-ready until this exact sequence passes
 5. Production go-live still requires production Vortex/Finix credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and Stripe webhook retirement.
 
 Current launch answer: captured and Seal projection are proven; settled document-payment money movement is not proven yet.
+
+## Production Gate Audit
+
+Presence-only audit run on Herdr. No secret values should be recorded here.
+
+Vortex production deployment: `prod:quixotic-snake-887`
+
+```text
+FINIX_PRODUCTION_USERNAME=empty
+FINIX_PRODUCTION_PASSWORD=empty
+FINIX_PRODUCTION_APPLICATION_ID=empty
+FINIX_PRODUCTION_WEBHOOK_SECRET=empty
+VORTEX_PAYMENTS_PROVIDER=set
+VORTEX_PAYMENTS_RUNTIME_MODE=empty
+```
+
+Meaning: Vortex production can select the provider, but it does not have Finix production credentials or production runtime mode configured. Real-money Vortex document payments cannot launch until these are set and proven.
+
+Seal production deployment: `prod:compassionate-robin-742`
+
+```text
+VORTEX_BILLING_API_BASE_URL=set
+VORTEX_BILLING_API_KEY=set
+VORTEX_BILLING_WEBHOOK_SECRET=set
+VORTEX_BILLING_PAYMENTS_ENVIRONMENT=empty
+VORTEX_BILLING_SAAS_ORGANIZATION_IDS=set
+VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS=empty
+VORTEX_BILLING_ACCOUNT_MAP=set
+VORTEX_BILLING_SAAS_PRICE_MAP=set
+VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP=empty
+VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP=empty
+VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP=empty
+```
+
+Meaning: Seal production has the SaaS Vortex config, but document-payment production routing is not configured. Before flipping document payments, production needs an explicit document-payment allowlist plus document billing account, customer, and merchant maps for the target organization.
+
+Production go-live work left after sandbox settlement proof:
+
+1. Configure Vortex production Finix credentials and runtime mode.
+2. Create/prove a production Seal document-payment merchant through Vortex.
+3. Configure Seal production document-payment allowlist and maps for exactly one internal target organization.
+4. Run one real small production document payment.
+5. Wait for real settlement/payout visibility.
+6. Run the paid-state proof with `--require-settled` against production ids.
+7. Only then widen the allowlist and retire Stripe webhooks.
