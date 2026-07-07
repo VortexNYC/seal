@@ -1,4 +1,4 @@
-import { Transaction } from "./types";
+import type { Transaction } from "./types";
 
 export function computeLedgerBalance(transactions: Transaction[]): number {
   if (transactions.length === 0) {

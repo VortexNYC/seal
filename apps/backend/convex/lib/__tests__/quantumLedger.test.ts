@@ -9,11 +9,7 @@ describe("computeLedgerBalance", () => {
   });
 
   test("sums transaction amounts correctly", () => {
-    const result = computeLedgerBalance([
-      { amount: 10 },
-      { amount: -3 },
-      { amount: 5 },
-    ]);
+    const result = computeLedgerBalance([{ amount: 10 }, { amount: -3 }, { amount: 5 }]);
     expect(result).toBe(12);
   });
 });
