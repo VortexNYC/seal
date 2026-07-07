@@ -711,10 +711,7 @@ export const markVortexDocumentPayableProofWaitingForPayment = internalMutation(
     paymentConfigIds: v.array(v.id("payment_field_configs")),
     workflowStatus: v.literal("waiting_for_payment"),
   }),
-  handler: async (
-    ctx,
-    args,
-  ): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
+  handler: async (ctx, args): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
     const document = await ctx.db.get(args.documentId);
     if (!document) {
       throw new Error(`Document ${args.documentId} not found`);

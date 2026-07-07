@@ -115,7 +115,10 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     });
     expect(ctx.runMutation).not.toHaveBeenCalled();
     expect(captured).toBeInstanceOf(Request);
-    const body = JSON.parse(await captured!.clone().text()) as {
+    if (captured === undefined) {
+      throw new Error("Expected Vortex checkout request to be captured");
+    }
+    const body = JSON.parse(await captured.clone().text()) as {
       lineItems: readonly [{ priceId: string }];
     };
     expect(body.lineItems[0].priceId).toBe("vtx_price_pro");
