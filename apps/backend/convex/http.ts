@@ -748,6 +748,7 @@ http.route({
         documents: "/api/v1/documents",
         templates: "/api/v1/templates",
         webhooks: "/api/v1/webhooks",
+        labels: "/api/v1/labels",
       },
     });
   }),

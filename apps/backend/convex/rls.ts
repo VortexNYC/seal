@@ -505,7 +505,7 @@ function getSignatureWorkflowRules(
 function getTemplateAndContactRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null,
-): Pick<StrictRules, "templates" | "template_fields" | "contacts"> {
+): Pick<StrictRules, "templates" | "template_fields" | "contacts" | "labels"> {
   return {
     templates: {
       read: async (_queryCtx, doc) => {
@@ -554,6 +554,21 @@ function getTemplateAndContactRules(
         if (rlsCtx.orgId !== doc.organizationId) return false;
         if (doc.createdBy === rlsCtx.userId) return true;
         return rlsCtx.hasPermission("contacts:edit");
+      },
+    },
+    labels: {
+      read: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (rlsCtx.orgId !== doc.organizationId) return false;
+        return rlsCtx.hasPermission("labels:view");
+      },
+      modify: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (rlsCtx.orgId !== doc.organizationId) return false;
+        if (doc.createdBy === rlsCtx.userId) return true;
+        return rlsCtx.hasPermission("labels:edit");
       },
     },
   };
