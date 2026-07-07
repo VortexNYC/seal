@@ -68,13 +68,13 @@ The SaaS slice is through staging. The next shipping target is the document-paym
   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
   - Boundary: creates a live Vortex-hosted document payment link and verifies Seal stores awaiting Vortex invoice state. It still does not pay the card or prove settlement/payout reconciliation.
   - Status: passed by Shlomo on 2026-07-07.
-  - Proof run: `mraopvye_ezz5bx`.
-  - Seal organization: `nh77n50weg647ywh9t3skjqdkn8a29pb`.
-  - Seal document: `m1739cvde9w1x0zpj48qeagbw58a3rt4`.
-  - Vortex payable: `payable_mraoq9vj_sv6qnc8z`.
-  - Hosted payment URL: `https://notable-leopard-969.convex.site/pay/pay_nUIiDG0pBcFAnaKiuK50gF1y4m3YleHOydRv3y98MKQ`.
+  - Current proof run: `mrapd8pd_plvbr7`.
+  - Seal organization: `nh786p4dd411z53axac9yvmzdd8a2x7e`.
+  - Seal document: `m17dg8d6ed374e579nqk0n59en8a3sky`.
+  - Vortex payable: `payable_mrapdlpe_1o2l1to3`.
+  - Hosted payment URL: `https://notable-leopard-969.convex.site/pay/pay_Ndq_9H6WHLF28px1beIF5LIbz9mHJCUAMFLz4LEPjXI`.
   - Amount: 4200 USD cents.
-  - Seal state after creation: payment `awaiting`, invoice `open`, provider `vortex_billing`.
+  - Seal state after creation: payment `awaiting`, invoice `open`, provider `vortex_billing`, document workflow `waiting_for_payment`.
 
 ## Not Proven Yet
 
@@ -99,7 +99,7 @@ The biggest limiter is one end-to-end document-payment money-path proof: pay the
 
 Current code now proves the Seal-side webhook state transition locally and one-time live Vortex payable creation. That is progress, but it is still not enough for launch because the card payment, platform-fee movement, and settlement/payout visibility are not tied together in one proof.
 
-The first paid-state check failed because both Seal and Vortex still showed the proof payable as unpaid:
+Paid-state checks failed because both Seal and Vortex still showed the proof payable as unpaid:
 
 - Seal payment state: `awaiting`
 - Vortex payable state: `awaiting_payment`
@@ -115,11 +115,11 @@ That is not a webhook bug yet. The checkout has to be paid first.
 3. One-time live creation passed with:
    - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
 4. Extend the live harness to recurring/installments/deposit-balance.
-5. Pay the hosted checkout from proof run `mraopvye_ezz5bx`.
+5. Pay the hosted checkout from proof run `mrapd8pd_plvbr7`.
 6. Assert the resulting webhook projection with:
    - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state`
    - Or explicitly:
-   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state -- --vortex-payable-id payable_mraoq9vj_sv6qnc8z --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_nUIiDG0pBcFAnaKiuK50gF1y4m3YleHOydRv3y98MKQ`
+   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state -- --vortex-payable-id payable_mrapdlpe_1o2l1to3 --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_Ndq_9H6WHLF28px1beIF5LIbz9mHJCUAMFLz4LEPjXI`
 7. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
 8. Assert Stripe absence explicitly where the state shape exposes it.
 9. Keep local proof green:
