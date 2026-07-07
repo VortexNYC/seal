@@ -227,17 +227,57 @@ Current readiness:
 }
 ```
 
+## Failed Payment Recovery Proof
+
+Command run on Herdr:
+
+```bash
+cd /home/debian/Projects/vortex-payments
+SEAL_REPO_ROOT=/home/debian/Projects/Seal \
+bun run prove:seal-vortex-failed-payment-recovery-cloud
+```
+
+Result: passed.
+
+```json
+{
+  "ok": true,
+  "proof": "seal-vortex-failed-payment-recovery-cloud",
+  "sealDeployment": "dev:clever-goose-484",
+  "vortexPayableId": "payable_failed_cloud_mrb0nwci_fph8e0",
+  "vortexPaymentRequestId": "preq_failed_cloud_mrb0nwci_fph8e0",
+  "duplicateFailedSkipped": true,
+  "staleFailedIgnoredAfterPaid": true,
+  "failedInvoiceStatus": "uncollectible",
+  "failedDunningStatus": "active",
+  "finalPaymentStatus": "paid",
+  "finalDocumentWorkflowStatus": "completed",
+  "finalInvoiceStatus": "paid",
+  "finalDunningStatus": "cancelled"
+}
+```
+
+This proves the Seal document-payment Vortex webhook path handles the failure side of the lifecycle:
+
+- A failed Vortex payable event marks the Seal invoice uncollectible.
+- Dunning starts once.
+- A duplicate failed event is ignored.
+- A later paid Vortex event completes the document and cancels dunning.
+- A stale failed event after paid is ignored.
+
 ## Go-Live Gate
 
-Do not call Seal document payments launch-ready until this exact sequence passes:
+For the current phase, "Seal works on Vortex Payments" means controlled sandbox launch-readiness. Production real-money proof is separate and intentionally later.
+
+Do not call Seal document payments sandbox launch-ready until this exact sequence passes:
 
 1. After `2026-07-08T18:12:06.10Z`, run the Vortex readiness command above with `--reconcile-if-ready`.
 2. Re-run the Seal paid-state proof with `--require-settled`.
 3. Confirm `fullySettled: true` and at least one settlement id for `pay_mrayujpd_uha1hffh`.
 4. Only then promote this sandbox document-payment proof from captured to settled.
-5. Production go-live still requires production Vortex/Finix credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and Stripe webhook retirement.
+5. Production real-money launch still requires production credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and Stripe webhook retirement.
 
-Current launch answer: captured and Seal projection are proven; settled document-payment money movement is not proven yet.
+Current sandbox launch answer: SaaS is green, document payable creation is green, real hosted document payment capture and Seal projection are green, failed-payment recovery is green, and settled document-payment money movement is still waiting on provider settlement readiness.
 
 ## Production Gate Audit
 
