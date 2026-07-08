@@ -32,11 +32,5 @@ function RouteComponent() {
     return <Navigate to="/app" replace />;
   }
 
-  return (
-    <SignIn
-      routing="virtual"
-      signUpUrl="/waitlist"
-      appearance={appearance}
-    />
-  );
+  return <SignIn routing="virtual" signUpUrl="/waitlist" appearance={appearance} />;
 }

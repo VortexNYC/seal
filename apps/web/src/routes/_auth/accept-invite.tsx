@@ -43,11 +43,5 @@ function AcceptInviteRoute() {
   // Render embedded SignIn so the invitation token present in the URL
   // is preserved and processed by Clerk. This avoids losing the token
   // via a redirect to a different path.
-  return (
-    <SignIn
-      routing="virtual"
-      signUpUrl="/sign-up"
-      appearance={appearance}
-    />
-  );
+  return <SignIn routing="virtual" signUpUrl="/sign-up" appearance={appearance} />;
 }
