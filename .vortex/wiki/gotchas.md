@@ -1,6 +1,6 @@
 ---
 generated_at_sha: 1ef5d477cd84622dc2d17ef306386775c92aaeff
-generated_at: 2026-07-08
+generated_at: 
 ---
 # Seal — Gotchas (read BEFORE coding)
 
@@ -16,3 +16,7 @@ Editing sign-in.tsx to change the heading is WRONG and will not render.
 Seal has no wrangler-versions preview-deploy. Web verification is Playwright e2e against a Convex
 deployment (see `.vortex/qa.json` web.verify). Do not invent a preview-deploy command.
 (.vortex/qa.json, apps/web/e2e/)
+
+## Learned truths
+
+- Seal has a separate marketing site at apps/landing (distinct from the apps/web app).  (apps/landing)
