@@ -1112,10 +1112,13 @@ interface DeliveryRowProps {
   isLast: boolean;
 }
 
-function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+type WebhookDelivery = Doc<"webhook_deliveries">;
 
-  const statusConfig = {
+function deliveryStatusConfig(status: WebhookDelivery["status"]): {
+  readonly bg: string;
+  readonly icon: React.ReactNode;
+} {
+  const config = {
     pending: {
       icon: <Clock className="text-info h-4 w-4" />,
       bg: "bg-info-surface",
@@ -1132,24 +1135,29 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
       icon: <XCircle className="text-muted-foreground h-4 w-4" />,
       bg: "bg-muted",
     },
-  };
+  } satisfies Record<
+    WebhookDelivery["status"],
+    { readonly bg: string; readonly icon: React.ReactNode }
+  >;
+  return config[status];
+}
 
-  const config = statusConfig[delivery.status];
+function responseCodeColor(responseCode: number | undefined): string {
+  if (responseCode && responseCode >= 200 && responseCode < 300) return "text-success";
+  return responseCode && responseCode >= 400 ? "text-destructive" : "text-warning";
+}
 
-  const responseCodeColor =
-    delivery.responseCode && delivery.responseCode >= 200 && delivery.responseCode < 300
-      ? "text-success"
-      : delivery.responseCode && delivery.responseCode >= 400
-        ? "text-destructive"
-        : "text-warning";
+function parsedDeliveryPayload(payload: string): string {
+  try {
+    return JSON.stringify(JSON.parse(payload), null, 2);
+  } catch {
+    return payload;
+  }
+}
 
-  const parsedPayload = (() => {
-    try {
-      return JSON.stringify(JSON.parse(delivery.payload), null, 2);
-    } catch {
-      return delivery.payload;
-    }
-  })();
+function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const config = deliveryStatusConfig(delivery.status);
 
   return (
     <div className="relative flex items-start gap-3">
@@ -1160,94 +1168,145 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
         {config.icon}
       </div>
       <div className="flex-1">
-        <button
-          type="button"
-          onClick={() => setIsDetailOpen(!isDetailOpen)}
-          className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
-              {delivery.eventType}
-            </code>
-          </div>
-          <div className="text-muted-foreground flex items-center gap-3 text-xs">
-            {delivery.responseCode && (
-              <span className={cn("font-mono font-medium", responseCodeColor)}>
-                {delivery.responseCode}
-              </span>
-            )}
-            {delivery.responseTimeMs && (
-              <span className="font-mono">{delivery.responseTimeMs}ms</span>
-            )}
-            <span>{formatRelativeTime(delivery.createdAt)}</span>
-            {isDetailOpen ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-          </div>
-        </button>
-
-        {isDetailOpen && (
-          <div className="mt-2 space-y-3 rounded-lg border p-3">
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <span className="text-muted-foreground">Status</span>
-                <div className="mt-0.5 font-medium capitalize">{delivery.status}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Attempts</span>
-                <div className="mt-0.5 font-mono font-medium">{delivery.attemptCount}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Event ID</span>
-                <div className="mt-0.5 truncate font-mono">{delivery.eventId}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Created</span>
-                <div className="mt-0.5">{formatDate(delivery.createdAt)}</div>
-              </div>
-              {delivery.deliveredAt && (
-                <div>
-                  <span className="text-muted-foreground">Delivered</span>
-                  <div className="mt-0.5">{formatDate(delivery.deliveredAt)}</div>
-                </div>
-              )}
-              {delivery.nextRetryAt && (
-                <div>
-                  <span className="text-muted-foreground">Next Retry</span>
-                  <div className="mt-0.5">{formatDate(delivery.nextRetryAt)}</div>
-                </div>
-              )}
-            </div>
-
-            {delivery.errorMessage && (
-              <div>
-                <span className="text-muted-foreground text-xs">Error</span>
-                <div className="bg-destructive/10 border-destructive/30 text-destructive mt-1 rounded border p-2 font-mono text-xs">
-                  {delivery.errorMessage}
-                </div>
-              </div>
-            )}
-
-            {delivery.responseBody && (
-              <div>
-                <span className="text-muted-foreground text-xs">Response Body</span>
-                <pre className="bg-muted mt-1 max-h-24 overflow-auto rounded border p-2 font-mono text-xs">
-                  {delivery.responseBody}
-                </pre>
-              </div>
-            )}
-
-            <div>
-              <span className="text-muted-foreground text-xs">Payload</span>
-              <pre className="bg-muted mt-1 max-h-48 overflow-auto rounded border p-2 font-mono text-xs">
-                {parsedPayload}
-              </pre>
-            </div>
-          </div>
-        )}
+        <DeliverySummaryButton
+          delivery={delivery}
+          isDetailOpen={isDetailOpen}
+          setIsDetailOpen={setIsDetailOpen}
+        />
+        {isDetailOpen && <DeliveryDetails delivery={delivery} />}
       </div>
+    </div>
+  );
+}
+
+function DeliverySummaryButton({
+  delivery,
+  isDetailOpen,
+  setIsDetailOpen,
+}: {
+  readonly delivery: WebhookDelivery;
+  readonly isDetailOpen: boolean;
+  readonly setIsDetailOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => setIsDetailOpen(!isDetailOpen)}
+      className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
+          {delivery.eventType}
+        </code>
+      </div>
+      <div className="text-muted-foreground flex items-center gap-3 text-xs">
+        {delivery.responseCode && (
+          <span className={cn("font-mono font-medium", responseCodeColor(delivery.responseCode))}>
+            {delivery.responseCode}
+          </span>
+        )}
+        {delivery.responseTimeMs && <span className="font-mono">{delivery.responseTimeMs}ms</span>}
+        <span>{formatRelativeTime(delivery.createdAt)}</span>
+        {isDetailOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </div>
+    </button>
+  );
+}
+
+function DeliveryDetails({ delivery }: { readonly delivery: WebhookDelivery }) {
+  return (
+    <div className="mt-2 space-y-3 rounded-lg border p-3">
+      <DeliveryMetadataGrid delivery={delivery} />
+      {delivery.errorMessage && (
+        <DeliveryCodeBlock label="Error" tone="error" value={delivery.errorMessage} />
+      )}
+      {delivery.responseBody && (
+        <DeliveryCodeBlock
+          label="Response Body"
+          maxHeightClassName="max-h-24"
+          value={delivery.responseBody}
+        />
+      )}
+      <DeliveryCodeBlock
+        label="Payload"
+        maxHeightClassName="max-h-48"
+        value={parsedDeliveryPayload(delivery.payload)}
+      />
+    </div>
+  );
+}
+
+function DeliveryMetadataGrid({ delivery }: { readonly delivery: WebhookDelivery }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 text-xs">
+      <DeliveryMetadata
+        label="Status"
+        value={delivery.status}
+        valueClassName="font-medium capitalize"
+      />
+      <DeliveryMetadata
+        label="Attempts"
+        value={delivery.attemptCount}
+        valueClassName="font-mono font-medium"
+      />
+      <DeliveryMetadata
+        label="Event ID"
+        value={delivery.eventId}
+        valueClassName="truncate font-mono"
+      />
+      <DeliveryMetadata label="Created" value={formatDate(delivery.createdAt)} />
+      {delivery.deliveredAt && (
+        <DeliveryMetadata label="Delivered" value={formatDate(delivery.deliveredAt)} />
+      )}
+      {delivery.nextRetryAt && (
+        <DeliveryMetadata label="Next Retry" value={formatDate(delivery.nextRetryAt)} />
+      )}
+    </div>
+  );
+}
+
+function DeliveryMetadata({
+  label,
+  value,
+  valueClassName,
+}: {
+  readonly label: string;
+  readonly value: number | string;
+  readonly valueClassName?: string;
+}) {
+  return (
+    <div>
+      <span className="text-muted-foreground">{label}</span>
+      <div className={cn("mt-0.5", valueClassName)}>{value}</div>
+    </div>
+  );
+}
+
+function DeliveryCodeBlock({
+  label,
+  maxHeightClassName = "",
+  tone = "default",
+  value,
+}: {
+  readonly label: string;
+  readonly maxHeightClassName?: string;
+  readonly tone?: "default" | "error";
+  readonly value: string;
+}) {
+  return (
+    <div>
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <pre
+        className={cn(
+          "mt-1 overflow-auto rounded border p-2 font-mono text-xs",
+          maxHeightClassName,
+          tone === "error"
+            ? "bg-destructive/10 border-destructive/30 text-destructive"
+            : "bg-muted",
+        )}
+      >
+        {value}
+      </pre>
     </div>
   );
 }
