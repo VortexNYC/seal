@@ -337,7 +337,7 @@ export function createBillingPaymentsService(
                 captureMode: "automatic",
                 externalPaymentRef: command.externalInvoiceRef,
                 metadata: {
-                  ...(command.metadata ?? {}),
+                  ...command.metadata,
                   billingAccountId: command.billingAccountId,
                   invoiceId: command.invoiceId,
                 },
