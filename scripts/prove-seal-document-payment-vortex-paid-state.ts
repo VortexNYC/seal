@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 
+import { resolve } from "node:path";
+
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
@@ -10,6 +12,10 @@ type CommandResult = {
 };
 
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
+const localVortexRepoRoot =
+  readEnv("VORTEX_PAYMENTS_REPO_ROOT") ??
+  new URL("../../vortex-payments", import.meta.url).pathname;
+const vortexConvexCwd = resolve(localVortexRepoRoot, "apps/backend");
 const defaultVortexPayableId = "payable_mraoq9vj_sv6qnc8z";
 const defaultHostedInvoiceUrl =
   "https://notable-leopard-969.convex.site/pay/pay_nUIiDG0pBcFAnaKiuK50gF1y4m3YleHOydRv3y98MKQ";
@@ -332,7 +338,7 @@ async function runVortexConvex<T extends Json>(input: {
       input.functionName,
       JSON.stringify(input.args),
     ],
-    cwd: new URL("../../vortex-payments/apps/backend", import.meta.url).pathname,
+    cwd: vortexConvexCwd,
     deployment: input.deployment,
     label: `vortex convex run ${input.functionName}`,
   });

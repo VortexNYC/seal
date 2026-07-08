@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 
+import { resolve } from "node:path";
+
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
@@ -10,7 +12,10 @@ type CommandResult = {
 };
 
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
-const vortexConvexCwd = new URL("../../vortex-payments/apps/backend", import.meta.url).pathname;
+const localVortexRepoRoot =
+  readEnv("VORTEX_PAYMENTS_REPO_ROOT") ??
+  new URL("../../vortex-payments", import.meta.url).pathname;
+const vortexConvexCwd = resolve(localVortexRepoRoot, "apps/backend");
 const proofRunId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const defaultVortexDeployment = "dev:notable-leopard-969";
 const defaultVortexBaseUrl = "https://notable-leopard-969.convex.site";

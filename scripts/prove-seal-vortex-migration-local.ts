@@ -1,7 +1,17 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 const retiredProviderToken = String.fromCharCode(115, 116, 114, 105, 112, 101);
+
+const portableVortexProofScripts = [
+  "scripts/prove-seal-saas-checkout-vortex.ts",
+  "scripts/prove-seal-document-payment-vortex-live.ts",
+  "scripts/prove-seal-document-payment-vortex-paid-state.ts",
+  "scripts/prove-seal-vortex-onboarding-wiring.ts",
+  "scripts/audit-seal-vortex-sandbox-settlement-boundary.ts",
+  "scripts/audit-seal-vortex-production-readiness.ts",
+] as const;
 
 type ProofCommand = {
   readonly label: string;
@@ -82,6 +92,16 @@ const proofCommands: readonly ProofCommand[] = [
   },
 ];
 
+console.log("\n[proof] Human-run Vortex proof scripts are checkout-path portable");
+for (const relativePath of portableVortexProofScripts) {
+  const contents = readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  if (!contents.includes("VORTEX_PAYMENTS_REPO_ROOT")) {
+    console.error(`[proof] ${relativePath} does not support VORTEX_PAYMENTS_REPO_ROOT`);
+    process.exit(1);
+  }
+}
+console.log("[proof] VORTEX_PAYMENTS_REPO_ROOT support is present on Vortex proof scripts.");
+
 for (const proofCommand of proofCommands) {
   console.log(`\n[proof] ${proofCommand.label}`);
   console.log(`$ ${proofCommand.command} ${proofCommand.args.join(" ")}`);
@@ -124,6 +144,7 @@ console.log(
         "SaaS checkout, catalog price resolution, coupon application, portal links, lifecycle guards, and webhook projection are Vortex-backed locally",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
+        "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
         "launch boundary is either green or blocked only by known human-run production configuration names",
       ],
