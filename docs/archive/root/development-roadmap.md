@@ -15,7 +15,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 | 2                              | Frontend App Running        | ✅ DONE    | Vite + React 19, TanStack Router, Tailwind v4, Shadcn                                                                                                                                                                                                   |
 | 3                              | Convex Database             | ✅ DONE    | 15+ tables, real-time queries, Zod on backend                                                                                                                                                                                                           |
 | 4                              | Clerk Authentication        | ✅ DONE    | OAuth, OTP, orgs, RBAC, team invitations                                                                                                                                                                                                                |
-| 5                              | Stripe Payments             | ✅ DONE    | Subscriptions, Connect (payment fields), webhooks                                                                                                                                                                                                       |
+| 5                              | retired provider Payments             | ✅ DONE    | Subscriptions, Connect (payment fields), webhooks                                                                                                                                                                                                       |
 | **Document Management Layer**  |                             |            |                                                                                                                                                                                                                                                         |
 | 6                              | File Upload System          | ✅ DONE    | PDF upload, drag-drop, validation, metadata                                                                                                                                                                                                             |
 | 7                              | Document Library & Search   | ✅ DONE    | List, sort, search, PDF viewer, templates                                                                                                                                                                                                               |
@@ -41,7 +41,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 
 | Feature                  | Status         | Notes                                                                                                                                                |
 | ------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Payment Field Builder    | ✅ DONE        | Stripe Connect invoicing: one-time, recurring, installments, deposit+balance. Payment completion enforced before signing                             |
+| Payment Field Builder    | ✅ DONE        | retired provider Connect invoicing: one-time, recurring, installments, deposit+balance. Payment completion enforced before signing                             |
 | Document Sharing System  | ✅ DONE (core) | Share dialog, access levels, Pro plan gates. See `IMPROVEMENT_PLAN_SHARED_DOCUMENTS.md` for 9 remaining items                                        |
 | Row-Level Security (RLS) | ✅ DONE        | Private/workspace/specific access modes                                                                                                              |
 | Advanced Field Types     | ✅ DONE        | Dropdown, radio, number, date, checkbox (multi-option), attachment (Convex Storage upload), payment                                                  |
@@ -176,9 +176,9 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 
 ---
 
-### 5. Stripe Payments
+### 5. retired provider Payments
 
-- Stripe account configured with products (Free plan, Pro plan)
+- retired provider account configured with products (Free plan, Pro plan)
 - Subscription creation working
 - Checkout flow complete
 - Webhooks processing subscription events
@@ -585,7 +585,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Vercel production deployment
 - Production environment variables configured
 - Production Clerk app configured
-- Production Stripe account configured
+- Production retired provider account configured
 - Custom domain + SSL
 - Production smoke tests passing
 

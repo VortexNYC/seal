@@ -17,21 +17,21 @@ Documenso is a well-funded, VC-backed open-source e-signing platform built on Ne
 
 ## Tech Stack Comparison
 
-| Dimension    | Documenso                       | Seal                              |
-| ------------ | ------------------------------- | --------------------------------- |
-| **Frontend** | Remix (migrated from Next.js)   | React 19 + TanStack Router + Vite |
-| **Backend**  | Next.js API / tRPC              | Convex (serverless BaaS)          |
-| **Database** | PostgreSQL + Prisma + Kysely    | Convex (built-in)                 |
-| **Auth**     | Custom (next-auth → Remix auth) | Clerk                             |
-| **Payments** | retired provider subscriptions            | retired provider (Connect + subscriptions)  |
-| **PDF**      | LibPDF (their own library!)     | pdf-lib + pdfjs-dist + @signpdf   |
-| **Email**    | React Email + custom SMTP       | Resend + React Email              |
-| **Webhooks** | Built-in with call logging      | Svix-based with HMAC-SHA256       |
-| **API**      | REST V1 (deprecated) + V2       | REST V1 with Clerk API keys       |
-| **Hosting**  | Self-hosted + Cloud             | Cloud only (Convex)               |
-| **License**  | AGPL-3.0                        | Proprietary                       |
-| **Language** | TypeScript                      | TypeScript                        |
-| **Stars**    | 12.4K                           | N/A (private)                     |
+| Dimension    | Documenso                       | Seal                                       |
+| ------------ | ------------------------------- | ------------------------------------------ |
+| **Frontend** | Remix (migrated from Next.js)   | React 19 + TanStack Router + Vite          |
+| **Backend**  | Next.js API / tRPC              | Convex (serverless BaaS)                   |
+| **Database** | PostgreSQL + Prisma + Kysely    | Convex (built-in)                          |
+| **Auth**     | Custom (next-auth → Remix auth) | Clerk                                      |
+| **Payments** | retired provider subscriptions  | retired provider (Connect + subscriptions) |
+| **PDF**      | LibPDF (their own library!)     | pdf-lib + pdfjs-dist + @signpdf            |
+| **Email**    | React Email + custom SMTP       | Resend + React Email                       |
+| **Webhooks** | Built-in with call logging      | Svix-based with HMAC-SHA256                |
+| **API**      | REST V1 (deprecated) + V2       | REST V1 with Clerk API keys                |
+| **Hosting**  | Self-hosted + Cloud             | Cloud only (Convex)                        |
+| **License**  | AGPL-3.0                        | Proprietary                                |
+| **Language** | TypeScript                      | TypeScript                                 |
+| **Stars**    | 12.4K                           | N/A (private)                              |
 
 ### Architecture Insight
 
@@ -165,12 +165,12 @@ They built **LibPDF** — their own TypeScript PDF library that replaces pdf-lib
 
 ### Payments & Monetization
 
-| Feature                                   | Documenso | Seal          | Gap Owner     |
-| ----------------------------------------- | --------- | ------------- | ------------- |
+| Feature                                             | Documenso | Seal          | Gap Owner     |
+| --------------------------------------------------- | --------- | ------------- | ------------- |
 | retired provider subscriptions                      | ✅        | ✅            | Parity        |
 | retired provider Connect (collect payments in docs) | ❌        | ✅            | **Seal wins** |
-| Payment fields in documents               | ❌        | ✅            | **Seal wins** |
-| Payments hub/dashboard                    | ❌        | 🔜 (designed) | **Seal wins** |
+| Payment fields in documents                         | ❌        | ✅            | **Seal wins** |
+| Payments hub/dashboard                              | ❌        | 🔜 (designed) | **Seal wins** |
 
 ### AI Features
 

@@ -15,16 +15,16 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 
 ## Workspace Overview
 
-| Path                     | Purpose                                     | Stack                                          |
-| ------------------------ | ------------------------------------------- | ---------------------------------------------- |
+| Path                     | Purpose                                     | Stack                                                |
+| ------------------------ | ------------------------------------------- | ---------------------------------------------------- |
 | `apps/web`               | Main product app                            | React 19, TanStack Router, Vite, Better-Auth, Convex |
-| `apps/landing`           | Marketing site and published developer docs | TanStack Start, Fumadocs, local content        |
-| `apps/backend`           | Convex backend, REST API, webhooks, jobs    | Convex, TypeScript                             |
-| `apps/mcp-server`        | MCP server for Seal tools/resources         | Bun, Express, MCP SDK                          |
-| `packages/transactional` | Transactional email templates               | React Email                                    |
-| `packages/react-sdk`     | Embeddable React SDK                        | TypeScript                                     |
-| `packages/tokens`        | Shared theme/font tokens                    | CSS, TypeScript                                |
-| `tooling/typescript`     | Shared TS config                            | TypeScript                                     |
+| `apps/landing`           | Marketing site and published developer docs | TanStack Start, Fumadocs, local content              |
+| `apps/backend`           | Convex backend, REST API, webhooks, jobs    | Convex, TypeScript                                   |
+| `apps/mcp-server`        | MCP server for Seal tools/resources         | Bun, Express, MCP SDK                                |
+| `packages/transactional` | Transactional email templates               | React Email                                          |
+| `packages/react-sdk`     | Embeddable React SDK                        | TypeScript                                           |
+| `packages/tokens`        | Shared theme/font tokens                    | CSS, TypeScript                                      |
+| `tooling/typescript`     | Shared TS config                            | TypeScript                                           |
 
 ## Prerequisites
 

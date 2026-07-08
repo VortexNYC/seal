@@ -14,7 +14,7 @@ Focus on the **essential 20%** of features that deliver **80%** of the value. We
 - [ ] **User Journey Mapping**: Document signing from sender and signer perspectives
 - [ ] **Technical Architecture Planning**: System design and data flow
 - [ ] **Legal Requirements Research**: Digital signature compliance (eSign Act, UETA)
-- [ ] **Integration Planning**: Clerk, Stripe, Convex setup strategies
+- [ ] **Integration Planning**: Clerk, retired provider, Convex setup strategies
 
 ### Validation & Feedback
 
@@ -90,7 +90,7 @@ Focus on the **essential 20%** of features that deliver **80%** of the value. We
 
 ### Payment Integration
 
-- [ ] **Stripe Setup**: Payment processing, subscription management
+- [ ] **retired provider Setup**: Payment processing, subscription management
 - [ ] **Pricing Tiers**: Free tier definition, paid plan structure
 - [ ] **Usage Tracking**: Document limits, feature restrictions
 - [ ] **Billing Dashboard**: Invoice management, payment history

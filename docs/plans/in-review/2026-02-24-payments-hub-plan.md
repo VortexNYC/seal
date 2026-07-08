@@ -1377,9 +1377,9 @@ Expected: All commits pushed successfully
 
 ## Summary of Changes
 
-| Area        | What Changed                                                                                                                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Area        | What Changed                                                                                                                                                                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Sidebar** | New "Payments" section with CreditCard icon between Workspace and Settings. 7 items: Overview, Subscriptions, History, Payouts, Balances, Disputes, Tax Documents. Existing "Payments" in Settings renamed to "retired provider Connect". |
-| **Routes**  | 8 new route files under `payments/`. 5 old settings routes deleted. 1 layout route.                                                                                                                                             |
-| **Backend** | 2 new query files: `revenue_queries.ts` (stats + transactions), `subscription_queries.ts` (active subscriptions). 1 new action file: `subscription_actions.ts` (pause/resume/cancel).                                           |
+| **Routes**  | 8 new route files under `payments/`. 5 old settings routes deleted. 1 layout route.                                                                                                                                                       |
+| **Backend** | 2 new query files: `revenue_queries.ts` (stats + transactions), `subscription_queries.ts` (active subscriptions). 1 new action file: `subscription_actions.ts` (pause/resume/cancel).                                                     |
 | **Pages**   | Payments Overview with 4 revenue cards + filterable transaction table. Subscriptions page with pause/resume/cancel. 5 moved retired provider Connect pages.                                                                               |

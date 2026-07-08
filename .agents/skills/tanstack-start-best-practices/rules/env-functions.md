@@ -189,12 +189,12 @@ declare namespace NodeJS {
 
 ## Environment Variable Checklist
 
-| Variable                 | Prefix  | Accessible On   |
-| ------------------------ | ------- | --------------- |
-| `DATABASE_URL`           | None    | Server only     |
-| `SESSION_SECRET`         | None    | Server only     |
+| Variable                           | Prefix  | Accessible On   |
+| ---------------------------------- | ------- | --------------- |
+| `DATABASE_URL`                     | None    | Server only     |
+| `SESSION_SECRET`                   | None    | Server only     |
 | `RETIRED_PROVIDER_SECRET_KEY`      | None    | Server only     |
-| `VITE_APP_URL`           | `VITE_` | Server + Client |
+| `VITE_APP_URL`                     | `VITE_` | Server + Client |
 | `VITE_RETIRED_PROVIDER_PUBLIC_KEY` | `VITE_` | Server + Client |
 
 ## Context

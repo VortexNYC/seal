@@ -6,7 +6,6 @@ import { join } from "node:path";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 const retiredProviderToken = String.fromCharCode(115, 116, 114, 105, 112, 101);
-const archivePrefix = "docs/archive/";
 
 const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
   cwd: repoRoot,
@@ -18,10 +17,6 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
 const failures: string[] = [];
 
 for (const relativePath of trackedFiles) {
-  if (relativePath.startsWith(archivePrefix)) {
-    continue;
-  }
-
   if (relativePath.toLowerCase().includes(retiredProviderToken)) {
     failures.push(`${relativePath}: path contains retired provider token`);
     continue;
@@ -47,5 +42,4 @@ if (failures.length > 0) {
 }
 
 console.log("Retired provider residue proof passed:");
-console.log("- No tracked active file paths or contents contain the retired provider token.");
-console.log("- Historical docs under docs/archive are the only allowed exception.");
+console.log("- No tracked file paths or contents contain the retired provider token.");

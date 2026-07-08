@@ -18,7 +18,7 @@ This plan outlines the implementation of a public API and outbound webhook syste
 | Permission system               | ✅ Implemented | `auth/permissions.ts`, `auth/wrappers.ts` |
 | Document access control         | ✅ Implemented | `auth/access_control.ts`                  |
 | HTTP routing                    | ✅ Basic       | `http.ts`                                 |
-| Inbound webhooks (Clerk/Stripe) | ✅ Implemented | `http.ts`, `webhooks.ts`                  |
+| Inbound webhooks (Clerk/retired provider) | ✅ Implemented | `http.ts`, `webhooks.ts`                  |
 | Custom API Keys schema          | ⚠️ Legacy      | `schemas/api_keys.ts` (to be deprecated)  |
 
 ### Missing Components (To Build)

@@ -391,7 +391,7 @@
 - **Deep Linking**: Direct links to specific workspace contexts
 - **State Persistence**: Remember last active workspace preference
 
-### Stripe Billing Integration
+### retired provider Billing Integration
 
 - **Per-Workspace Billing**: Independent billing status per workspace
 - **Feature Access**: Features based on current workspace subscription

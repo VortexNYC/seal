@@ -20,10 +20,10 @@ Add stronger recipient authentication methods beyond the current email-token-onl
 
 Three tiers, configurable per-recipient by the sender:
 
-| Method               | How It Works                                        | Cost                                  | Use Case                                 |
-| -------------------- | --------------------------------------------------- | ------------------------------------- | ---------------------------------------- |
-| **Email (default)**  | Token in signing link — current behavior            | Free                                  | Low-risk documents                       |
-| **SMS verification** | Recipient enters a 6-digit code sent to their phone | ~$0.01/SMS (Twilio)                   | Medium-risk: employment agreements, NDAs |
+| Method               | How It Works                                        | Cost                                            | Use Case                                 |
+| -------------------- | --------------------------------------------------- | ----------------------------------------------- | ---------------------------------------- |
+| **Email (default)**  | Token in signing link — current behavior            | Free                                            | Low-risk documents                       |
+| **SMS verification** | Recipient enters a 6-digit code sent to their phone | ~$0.01/SMS (Twilio)                             | Medium-risk: employment agreements, NDAs |
 | **ID verification**  | Recipient uploads government ID + selfie            | ~$1.50/verification (retired provider Identity) | High-risk: real estate, financial, legal |
 
 ### User Flow: Sender Side
@@ -187,18 +187,18 @@ SMS and ID verification costs are passed through to the organization (tracked in
 
 ### Key Files to Modify/Create
 
-| File                                                             | Action                                  |
-| ---------------------------------------------------------------- | --------------------------------------- |
-| `apps/backend/convex/schemas/recipients.ts`                      | Modify — add auth fields                |
-| `apps/backend/convex/schemas/sms_verifications.ts`               | Create                                  |
-| `apps/backend/convex/schema.ts`                                  | Modify — register new table             |
-| `apps/backend/convex/documents/sms_verification.ts`              | Create — send/verify actions            |
-| `apps/backend/convex/documents/id_verification.ts`               | Create — retired provider Identity actions        |
-| `apps/backend/convex/schemas/audit_logs.ts`                      | Modify — add new action types           |
-| `apps/backend/convex/documents/certificate_of_completion.ts`     | Modify — show auth method               |
-| `apps/web/src/routes/sign.$token.tsx`                            | Modify — add auth gates                 |
-| `apps/web/src/components/signing/sms-verification-gate.tsx`      | Create                                  |
-| `apps/web/src/components/signing/id-verification-gate.tsx`       | Create                                  |
-| `apps/web/src/components/documents/add-recipient-dialog.tsx`     | Modify — auth method selector           |
-| `apps/backend/convex/schemas/organizations.ts`                   | Modify — add securitySettings           |
-| `apps/web/src/routes/_authenticated/$slug/settings/security.tsx` | Create or modify — default auth setting |
+| File                                                             | Action                                     |
+| ---------------------------------------------------------------- | ------------------------------------------ |
+| `apps/backend/convex/schemas/recipients.ts`                      | Modify — add auth fields                   |
+| `apps/backend/convex/schemas/sms_verifications.ts`               | Create                                     |
+| `apps/backend/convex/schema.ts`                                  | Modify — register new table                |
+| `apps/backend/convex/documents/sms_verification.ts`              | Create — send/verify actions               |
+| `apps/backend/convex/documents/id_verification.ts`               | Create — retired provider Identity actions |
+| `apps/backend/convex/schemas/audit_logs.ts`                      | Modify — add new action types              |
+| `apps/backend/convex/documents/certificate_of_completion.ts`     | Modify — show auth method                  |
+| `apps/web/src/routes/sign.$token.tsx`                            | Modify — add auth gates                    |
+| `apps/web/src/components/signing/sms-verification-gate.tsx`      | Create                                     |
+| `apps/web/src/components/signing/id-verification-gate.tsx`       | Create                                     |
+| `apps/web/src/components/documents/add-recipient-dialog.tsx`     | Modify — auth method selector              |
+| `apps/backend/convex/schemas/organizations.ts`                   | Modify — add securitySettings              |
+| `apps/web/src/routes/_authenticated/$slug/settings/security.tsx` | Create or modify — default auth setting    |

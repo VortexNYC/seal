@@ -43,7 +43,7 @@ The system supports **multiple organizations per user** with fine-grained permis
 **Additional**:
 
 - `check_membership.ts` - User's organization list
-- `stripe/` - Subscription integration
+- `retired_provider/` - Subscription integration
 - `_generated/` - Auto-generated types and API exports
 
 ### Frontend (`/apps/web/src/`)
@@ -355,7 +355,7 @@ throw new ConvexError("User-friendly message");
 - Convex 1.28.0 - Serverless backend with real-time DB
 - convex-helpers 0.1.104 - Custom query/mutation utilities
 - Clerk (via auth.config.ts) - Authentication provider
-- Stripe 19.1.0 - Subscription processing
+- retired provider 19.1.0 - Subscription processing
 - Zod 3.25.76 - Schema validation
 - Svix 1.77.0 - Webhook handling
 

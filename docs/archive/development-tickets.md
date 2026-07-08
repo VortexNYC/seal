@@ -599,26 +599,26 @@
 
 ---
 
-### Parent #13: Stripe Billing & Subscription
+### Parent #13: retired provider Billing & Subscription
 
-**PR Goal:** Stripe integration complete with subscription management
+**PR Goal:** retired provider integration complete with subscription management
 
 **Child Tasks:**
 
-- 13.1: Setup Stripe account and configure products (Free, Pro plans), install Stripe SDK and create Convex integration
+- 13.1: Setup retired provider account and configure products (Free, Pro plans), install retired provider SDK and create Convex integration
 - 13.2: Build billing dashboard showing current plan, usage, payment method, and invoices
-- 13.3: Implement subscription checkout flow with Stripe Checkout, add upgrade/downgrade functionality, configure webhook handlers for subscription events
+- 13.3: Implement subscription checkout flow with retired provider Checkout, add upgrade/downgrade functionality, configure webhook handlers for subscription events
 - 13.4: Create customer portal integration for managing payment methods and viewing invoices
 
 **Acceptance Criteria:**
-**Stripe Configuration:**
+**retired provider Configuration:**
 
-- [ ] Stripe account created and verified
-- [ ] Stripe products configured (Free tier, Pro tier)
+- [ ] retired provider account created and verified
+- [ ] retired provider products configured (Free tier, Pro tier)
 - [ ] Product pricing set correctly
-- [ ] Stripe SDK installed in project
-- [ ] Stripe API keys configured (test and production)
-- [ ] Convex integration with Stripe working
+- [ ] retired provider SDK installed in project
+- [ ] retired provider API keys configured (test and production)
+- [ ] Convex integration with retired provider working
 
 **Billing Dashboard:**
 
@@ -634,8 +634,8 @@
 **Subscription Management:**
 
 - [ ] "Upgrade to Pro" button visible on free plan
-- [ ] Clicking upgrade opens Stripe Checkout
-- [ ] Stripe Checkout accepts test card payments
+- [ ] Clicking upgrade opens retired provider Checkout
+- [ ] retired provider Checkout accepts test card payments
 - [ ] Successful payment redirects back to app
 - [ ] Subscription status updates in database
 - [ ] User sees updated plan after upgrade
@@ -646,7 +646,7 @@
 
 **Webhook Integration:**
 
-- [ ] Stripe webhook endpoint created in Convex
+- [ ] retired provider webhook endpoint created in Convex
 - [ ] Webhook signature verification working
 - [ ] `customer.subscription.created` event handled
 - [ ] `customer.subscription.updated` event handled
@@ -658,7 +658,7 @@
 
 **Customer Portal:**
 
-- [ ] "Manage Billing" button opens Stripe Customer Portal
+- [ ] "Manage Billing" button opens retired provider Customer Portal
 - [ ] Can update payment method in portal
 - [ ] Can view invoice history in portal
 - [ ] Can download invoices as PDF
@@ -2032,7 +2032,7 @@
 
 **Child Tasks:**
 
-- 40.1: Setup production Convex deployment with environment variables, configure production Clerk app with OAuth providers, setup production Stripe account with real products
+- 40.1: Setup production Convex deployment with environment variables, configure production Clerk app with OAuth providers, setup production retired provider account with real products
 - 40.2: Deploy frontend to Vercel production, configure custom domain and SSL
 - 40.3: Run production smoke tests (auth flow, document upload, signing flow, payment flow, API endpoints, webhooks), configure production environment variables across all services
 
@@ -2059,8 +2059,8 @@
 - [ ] Clerk production app created
 - [ ] Clerk OAuth providers configured (Google, Microsoft, Apple)
 - [ ] OAuth flows tested in production
-- [ ] Stripe production account activated
-- [ ] Stripe products and prices configured
+- [ ] retired provider production account activated
+- [ ] retired provider products and prices configured
 - [ ] Payment flow tested in production
 - [ ] Resend production account configured
 - [ ] Email sending tested in production

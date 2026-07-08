@@ -119,9 +119,9 @@ Undo/redo for document field editor — Ctrl+Z/Ctrl+Shift+Z with timeline snapsh
 | Neutral Cost     | `@convex-dev/neutralcost`        | Our `ai/usage.ts` + aggregate handles this already           |
 | ProseMirror Sync | `@convex-dev/prosemirror-sync`   | Collaborative editing — not a current feature                |
 | Sharded Counter  | `@convex-dev/sharded-counter`    | Aggregate component already covers our counting needs        |
-| Autumn           | `@convex-dev/autumn`             | We use retired provider                                                |
-| Polar            | `@convex-dev/polar`              | We use retired provider                                                |
-| Dodo Payments    | `@convex-dev/dodopayments`       | We use retired provider                                                |
+| Autumn           | `@convex-dev/autumn`             | We use retired provider                                      |
+| Polar            | `@convex-dev/polar`              | We use retired provider                                      |
+| Dodo Payments    | `@convex-dev/dodopayments`       | We use retired provider                                      |
 
 ## Implementation History
 

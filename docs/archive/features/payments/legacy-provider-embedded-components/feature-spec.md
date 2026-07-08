@@ -1,4 +1,4 @@
-# Stripe Embedded Components — Research & Implementation Framework
+# retired provider Embedded Components — Research & Implementation Framework
 
 > **Status**: Decisions Finalized — Ready for Implementation
 > **Last Updated**: 2026-02-19
@@ -9,10 +9,10 @@
 1. [Executive Summary](#executive-summary)
 2. [Decisions](#decisions)
 3. [Competitor Analysis: PandaDoc](#competitor-analysis-pandadoc)
-4. [Current Seal Stripe Architecture](#current-seal-stripe-architecture)
-5. [Stripe Component Families](#stripe-component-families)
+4. [Current Seal retired provider Architecture](#current-seal-retired_provider-architecture)
+5. [retired provider Component Families](#retired_provider-component-families)
    - [Family 1: Connect Embedded Components](#family-1-connect-embedded-components)
-   - [Family 2: Stripe Elements](#family-2-stripe-elements)
+   - [Family 2: retired provider Elements](#family-2-retired_provider-elements)
    - [Family 3: Embedded Checkout](#family-3-embedded-checkout)
    - [Family 4: Pricing Table & Buy Button](#family-4-pricing-table--buy-button)
 6. [Codebase Mapping](#codebase-mapping)
@@ -27,17 +27,17 @@
 
 ## Executive Summary
 
-Seal's current Stripe integration is **entirely redirect-based** — every Stripe interaction (checkout, billing portal, Connect onboarding, payment collection) navigates users away from the app to Stripe-hosted pages and back. Stripe offers **four families of embeddable React components** that can replace these redirects with inline experiences, improving UX and reducing drop-off.
+Seal's current retired provider integration is **entirely redirect-based** — every retired provider interaction (checkout, billing portal, Connect onboarding, payment collection) navigates users away from the app to retired provider-hosted pages and back. retired provider offers **four families of embeddable React components** that can replace these redirects with inline experiences, improving UX and reducing drop-off.
 
-This document catalogs **every available Stripe embedded component**, maps each against Seal's current architecture, and provides a framework for prioritizing implementation.
+This document catalogs **every available retired provider embedded component**, maps each against Seal's current architecture, and provides a framework for prioritizing implementation.
 
 ### Key Numbers
 
 | Family                      | Package                       | Total Components     | Relevant to Seal |
 | --------------------------- | ----------------------------- | -------------------- | ---------------- |
-| Connect Embedded Components | `@stripe/react-connect-js`    | 35                   | ~8               |
-| Stripe Elements             | `@stripe/react-stripe-js`     | 7                    | ~3               |
-| Embedded Checkout           | `@stripe/react-stripe-js`     | 1 (provider pattern) | 1                |
+| Connect Embedded Components | `@retired_provider/react-connect-js`    | 35                   | ~8               |
+| retired provider Elements             | `@retired_provider/react-retired_provider-js`     | 7                    | ~3               |
+| Embedded Checkout           | `@retired_provider/react-retired_provider-js`     | 1 (provider pattern) | 1                |
 | Pricing Table / Buy Button  | Web components (no React pkg) | 2                    | 1                |
 
 ---
@@ -74,7 +74,7 @@ All open questions have been resolved. These are the finalized architectural dec
 
 - Invoice creation logic — all 4 payment types (one_time, recurring, installments, deposit_balance) stay exactly as-is
 - Line item creation — stays as-is
-- Recurring subscriptions via `stripe.subscriptions.create()` — stays as-is
+- Recurring subscriptions via `retired_provider.subscriptions.create()` — stays as-is
 - Installments via Subscription Schedules — stays as-is
 - Deposit + balance dual invoices — stays as-is
 - Webhook handling (`invoice.paid`, `invoice.payment_failed`) — stays as-is
@@ -83,19 +83,19 @@ All open questions have been resolved. These are the finalized architectural dec
 
 **What DOES change** (one small addition):
 
-When Stripe finalizes an invoice, it automatically creates a PaymentIntent under the hood. That PaymentIntent has a `client_secret`. We expose it:
+When retired provider finalizes an invoice, it automatically creates a PaymentIntent under the hood. That PaymentIntent has a `client_secret`. We expose it:
 
 ```typescript
 // CURRENT (payment_field_actions.ts, line ~194)
-const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id, ...);
+const finalizedInvoice = await retired_provider.invoices.finalizeInvoice(invoice.id, ...);
 return { hostedInvoiceUrl: finalizedInvoice.hosted_invoice_url };
-// ↑ Signer clicks URL → leaves Seal → pays on Stripe's hosted page
+// ↑ Signer clicks URL → leaves Seal → pays on retired provider's hosted page
 
 // NEW (add ~3 lines)
-const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id, ...);
-const paymentIntent = await stripe.paymentIntents.retrieve(
+const finalizedInvoice = await retired_provider.invoices.finalizeInvoice(invoice.id, ...);
+const paymentIntent = await retired_provider.paymentIntents.retrieve(
   finalizedInvoice.payment_intent as string,
-  { stripeAccount: stripeAccountId }
+  { retired_providerAccount: retired_providerAccountId }
 );
 return {
   hostedInvoiceUrl: finalizedInvoice.hosted_invoice_url, // ← KEEP for email links
@@ -105,17 +105,17 @@ return {
 
 The `hosted_invoice_url` stays — it's still used in notification emails ("Pay Now" link). But when the signer is ON the signing page, they see the inline `<PaymentElement />` instead.
 
-**Key insight**: We're not switching FROM invoices TO PaymentIntents. We're reaching INTO the invoice to grab the payment handle that Stripe already created, so we can render the payment form inline instead of redirecting.
+**Key insight**: We're not switching FROM invoices TO PaymentIntents. We're reaching INTO the invoice to grab the payment handle that retired provider already created, so we can render the payment form inline instead of redirecting.
 
-**Caveat for recurring/installments**: Only the first invoice can be embedded on the signing page. Subsequent invoices (month 2, 3, etc.) are collected via the saved payment method from the first payment, or via the hosted invoice URL in Stripe's email.
+**Caveat for recurring/installments**: Only the first invoice can be embedded on the signing page. Subsequent invoices (month 2, 3, etc.) are collected via the saved payment method from the first payment, or via the hosted invoice URL in retired provider's email.
 
 ### Decision 3: Keep Custom Pricing Cards + Embedded Checkout
 
-**Decision**: Keep the current custom pricing card design on the billing page. Only replace the Stripe Checkout redirect with an inline Embedded Checkout.
+**Decision**: Keep the current custom pricing card design on the billing page. Only replace the retired provider Checkout redirect with an inline Embedded Checkout.
 
 **What stays**: The two-column Free/Pro layout, feature lists, status badges, custom formatting.
 
-**What changes**: When user clicks "Upgrade to Pro", instead of `window.location.href = url` (redirect to Stripe), render `<CheckoutProvider>` inline. User sees the checkout form, pays, and gets returned — all without leaving the app.
+**What changes**: When user clicks "Upgrade to Pro", instead of `window.location.href = url` (redirect to retired provider), render `<CheckoutProvider>` inline. User sees the checkout form, pays, and gets returned — all without leaving the app.
 
 **Pricing Table rejected** because: can't style to match Seal's design system, no Connect support, loses the two-column comparison layout.
 
@@ -123,7 +123,7 @@ The `hosted_invoice_url` stays — it's still used in notification emails ("Pay 
 
 **Decision**: Keep the redirect-based Customer Portal for subscription management (cancel, change plan, update payment method).
 
-No embedded replacement exists from Stripe. Not worth building custom subscription management UI. The "Manage Billing" button stays as a redirect.
+No embedded replacement exists from retired provider. Not worth building custom subscription management UI. The "Manage Billing" button stays as a redirect.
 
 ### Decision 5: Add `waiting_for_payment` Workflow Status
 
@@ -170,18 +170,18 @@ A document enters `waiting_for_payment` when all signatures are collected but pa
 | Section               | What It Shows                                                                                                 |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **Payment Status**    | Current status badge: Unpaid / Waiting / Paid / Overdue / Partial                                             |
-| **Invoices**          | All Stripe invoices linked to this document (one-time, deposit, balance, recurring) with status, amount, date |
+| **Invoices**          | All retired provider invoices linked to this document (one-time, deposit, balance, recurring) with status, amount, date |
 | **Payment Timeline**  | Chronological feed: "Invoice created → Payment attempted → Payment succeeded"                                 |
 | **Upcoming Payments** | For recurring/installments: next invoice date, remaining installments                                         |
 
 This data comes from two sources:
 
-- **Convex** (`payment_field_configs` table) — stores Stripe invoice IDs, payment status, amounts
-- **Stripe** (via API or webhooks) — real-time invoice/payment status synced via existing webhook handlers
+- **Convex** (`payment_field_configs` table) — stores retired provider invoice IDs, payment status, amounts
+- **retired provider** (via API or webhooks) — real-time invoice/payment status synced via existing webhook handlers
 
-**For the sender**: The document detail page is the single place to see "is this contract paid?" without leaving Seal or checking Stripe Dashboard.
+**For the sender**: The document detail page is the single place to see "is this contract paid?" without leaving Seal or checking retired provider Dashboard.
 
-**For high-level overview**: The [Phase 4 stats pages](#phase-4-connect-account-dashboard-stripe-stats-section) (`settings/payment-history`, `settings/payouts`, etc.) show aggregate payment data across all documents.
+**For high-level overview**: The [Phase 4 stats pages](#phase-4-connect-account-dashboard-retired_provider-stats-section) (`settings/payment-history`, `settings/payouts`, etc.) show aggregate payment data across all documents.
 
 ### Decision Summary
 
@@ -218,10 +218,10 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 | ------------------- | -------------------------------------------------------------------------------------------------------------- |
 | **Payment timing**  | After ALL parties sign and finalize — payment gated behind signature completion                                |
 | **Payment UI**      | Embedded inline within the document viewer (no redirect for card/ACH; PayPal redirects to PayPal auth)         |
-| **Payment methods** | Credit card, ACH/bank transfer, PayPal, digital wallets, Klarna, SEPA (all methods enabled in Stripe settings) |
+| **Payment methods** | Credit card, ACH/bank transfer, PayPal, digital wallets, Klarna, SEPA (all methods enabled in retired provider settings) |
 | **Gating**          | All parties must sign before payment becomes available                                                         |
-| **Platform fee**    | $0 PandaDoc fee (Stripe processing fee still applies)                                                          |
-| **Limitations**     | Minimum charge $0.50; one Stripe account per workspace                                                         |
+| **Platform fee**    | $0 PandaDoc fee (retired provider processing fee still applies)                                                          |
+| **Limitations**     | Minimum charge $0.50; one retired provider account per workspace                                                         |
 | **NOT supported**   | Real-time payments, cash vouchers, bank transfers (push), BNPL                                                 |
 
 ### How Seal Will Differ from PandaDoc
@@ -229,42 +229,42 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 | Aspect               | PandaDoc                 | Seal                                                   |
 | -------------------- | ------------------------ | ------------------------------------------------------ |
 | Payment types        | One-time, recurring      | One-time, recurring, installments, deposit + balance   |
-| Payment architecture | Stripe Checkout (likely) | Invoice-based with PaymentElement (more control)       |
+| Payment architecture | retired provider Checkout (likely) | Invoice-based with PaymentElement (more control)       |
 | Platform fees        | $0                       | 1% free / 0.25% Pro (configurable absorb/pass-through) |
 | Fee handling         | Fixed                    | Sender chooses: absorb or pass to recipient            |
-| Multi-account        | One Stripe per workspace | One Stripe Connect account per org                     |
+| Multi-account        | One retired provider per workspace | One retired provider Connect account per org                     |
 
 ### Sources
 
 - [PandaDoc Payments - Recipient's Guide](https://support.pandadoc.com/en/articles/9714761-pandadoc-payments-recipient-s-guide)
-- [Stripe Checkout Payments in PandaDoc](https://support.pandadoc.com/en/articles/9714942-stripe-checkout-payments)
+- [retired provider Checkout Payments in PandaDoc](https://support.pandadoc.com/en/articles/9714942-retired_provider-checkout-payments)
 - [PandaDoc Payments Overview](https://www.pandadoc.com/payments/)
-- [PandaDoc Stripe Integration](https://www.pandadoc.com/integrations/payment/stripe/)
+- [PandaDoc retired provider Integration](https://www.pandadoc.com/integrations/payment/retired_provider/)
 
 ---
 
-## Current Seal Stripe Architecture
+## Current Seal retired provider Architecture
 
-### Backend Actions (`apps/backend/convex/stripe/`)
+### Backend Actions (`apps/backend/convex/retired_provider/`)
 
 | File                       | Action                        | What It Does                                                    | Redirect?                                |
 | -------------------------- | ----------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
-| `actions.ts`               | `createCheckoutSession`       | Creates `stripe.checkout.sessions.create()`, returns URL        | **Yes** — redirects to Stripe Checkout   |
-| `actions.ts`               | `createCustomerPortalSession` | Creates `stripe.billingPortal.sessions.create()`, returns URL   | **Yes** — redirects to Stripe Portal     |
-| `connect_actions.ts`       | `createConnectedAccount`      | Creates Standard Connect account via `stripe.accounts.create()` | No (API only)                            |
-| `connect_actions.ts`       | `createAccountLink`           | Creates `stripe.accountLinks.create()` for hosted onboarding    | **Yes** — redirects to Stripe onboarding |
-| `connect_actions.ts`       | `createConnectOAuthUrl`       | Generates OAuth authorize URL                                   | **Yes** — redirects to Stripe OAuth      |
+| `actions.ts`               | `createCheckoutSession`       | Creates `retired_provider.checkout.sessions.create()`, returns URL        | **Yes** — redirects to retired provider Checkout   |
+| `actions.ts`               | `createCustomerPortalSession` | Creates `retired_provider.billingPortal.sessions.create()`, returns URL   | **Yes** — redirects to retired provider Portal     |
+| `connect_actions.ts`       | `createConnectedAccount`      | Creates Standard Connect account via `retired_provider.accounts.create()` | No (API only)                            |
+| `connect_actions.ts`       | `createAccountLink`           | Creates `retired_provider.accountLinks.create()` for hosted onboarding    | **Yes** — redirects to retired provider onboarding |
+| `connect_actions.ts`       | `createConnectOAuthUrl`       | Generates OAuth authorize URL                                   | **Yes** — redirects to retired provider OAuth      |
 | `connect_actions.ts`       | `exchangeConnectOAuthCode`    | Handles OAuth code exchange                                     | No (API only)                            |
-| `connect_actions.ts`       | `refreshConnectedAccount`     | Refreshes account status from Stripe                            | No (API only)                            |
+| `connect_actions.ts`       | `refreshConnectedAccount`     | Refreshes account status from retired provider                            | No (API only)                            |
 | `payment_field_actions.ts` | Various                       | Creates invoices/subscriptions for payment fields               | **Yes** — hosted invoice URLs in email   |
 
 ### Frontend Pages
 
 | File                    | Page                      | Current UX                                                                                 |
 | ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
-| `settings/billing.tsx`  | Subscription billing      | Custom pricing cards → redirect to Stripe Checkout; "Manage" → redirect to Customer Portal |
-| `settings/payments.tsx` | Stripe Connect onboarding | Status display → redirect to Account Link for onboarding; OAuth flow for connection        |
-| Signing page            | Payment collection        | Recipient clicks hosted invoice URL in email → Stripe-hosted payment page                  |
+| `settings/billing.tsx`  | Subscription billing      | Custom pricing cards → redirect to retired provider Checkout; "Manage" → redirect to Customer Portal |
+| `settings/payments.tsx` | retired provider Connect onboarding | Status display → redirect to Account Link for onboarding; OAuth flow for connection        |
+| Signing page            | Payment collection        | Recipient clicks hosted invoice URL in email → retired provider-hosted payment page                  |
 
 ### Webhook Handlers
 
@@ -277,17 +277,17 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 
 ---
 
-## Stripe Component Families
+## retired provider Component Families
 
 ### Family 1: Connect Embedded Components
 
-**Packages**: `@stripe/connect-js` + `@stripe/react-connect-js`
+**Packages**: `@retired_provider/connect-js` + `@retired_provider/react-connect-js`
 
-**Architecture**: Server creates an `AccountSession` via `stripe.accountSessions.create()` → returns `client_secret` → client uses `ConnectComponentsProvider` to power all components.
+**Architecture**: Server creates an `AccountSession` via `retired_provider.accountSessions.create()` → returns `client_secret` → client uses `ConnectComponentsProvider` to power all components.
 
 ```typescript
 // Backend: New action needed
-const accountSession = await stripe.accountSessions.create({
+const accountSession = await retired_provider.accountSessions.create({
   account: connectedAccountId,
   components: {
     account_onboarding: { enabled: true },
@@ -298,10 +298,10 @@ const accountSession = await stripe.accountSessions.create({
 return accountSession.client_secret;
 
 // Frontend: Provider setup
-import { ConnectComponentsProvider } from "@stripe/react-connect-js";
-import { loadConnectAndInitialize } from "@stripe/connect-js";
+import { ConnectComponentsProvider } from "@retired_provider/react-connect-js";
+import { loadConnectAndInitialize } from "@retired_provider/connect-js";
 
-const stripeConnect = loadConnectAndInitialize({
+const retired_providerConnect = loadConnectAndInitialize({
   publishableKey: "pk_...",
   fetchClientSecret: async () => {
     // Call your backend to create AccountSession
@@ -309,7 +309,7 @@ const stripeConnect = loadConnectAndInitialize({
   },
 });
 
-<ConnectComponentsProvider connectInstance={stripeConnect}>
+<ConnectComponentsProvider connectInstance={retired_providerConnect}>
   <ConnectAccountOnboarding />
 </ConnectComponentsProvider>
 ```
@@ -348,7 +348,7 @@ const stripeConnect = loadConnectAndInitialize({
 
 | Component                         | React Element                            | Status  | Description                            |
 | --------------------------------- | ---------------------------------------- | ------- | -------------------------------------- |
-| **Capital Financing Application** | `<ConnectCapitalFinancingApplication />` | Preview | Apply for Stripe Capital financing.    |
+| **Capital Financing Application** | `<ConnectCapitalFinancingApplication />` | Preview | Apply for retired provider Capital financing.    |
 | **Capital Financing Promotion**   | `<ConnectCapitalFinancingPromotion />`   | Preview | Promotional banner for Capital offers. |
 | **Capital Financing**             | `<ConnectCapitalFinancing />`            | Preview | Overview of active Capital financing.  |
 
@@ -382,25 +382,25 @@ const stripeConnect = loadConnectAndInitialize({
 
 | Component        | React Element            | Status  | Description                                   |
 | ---------------- | ------------------------ | ------- | --------------------------------------------- |
-| **App Install**  | `<ConnectAppInstall />`  | Preview | Install Stripe Apps into a connected account. |
-| **App Viewport** | `<ConnectAppViewport />` | Preview | Render a Stripe App within your platform UI.  |
+| **App Install**  | `<ConnectAppInstall />`  | Preview | Install retired provider Apps into a connected account. |
+| **App Viewport** | `<ConnectAppViewport />` | Preview | Render a retired provider App within your platform UI.  |
 
 ---
 
-### Family 2: Stripe Elements
+### Family 2: retired provider Elements
 
-**Packages**: `@stripe/stripe-js` + `@stripe/react-stripe-js`
+**Packages**: `@retired_provider/retired_provider-js` + `@retired_provider/react-retired_provider-js`
 
 **Architecture**: Server creates a PaymentIntent or SetupIntent → returns `client_secret` → client uses `Elements` provider to render payment UI.
 
 ```typescript
 // Frontend setup
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@retired_provider/react-retired_provider-js";
+import { loadretired provider } from "@retired_provider/retired_provider-js";
 
-const stripePromise = loadStripe("pk_...");
+const retired_providerPromise = loadretired provider("pk_...");
 
-<Elements stripe={stripePromise} options={{ clientSecret }}>
+<Elements retired_provider={retired_providerPromise} options={{ clientSecret }}>
   <PaymentElement />
 </Elements>
 ```
@@ -411,7 +411,7 @@ const stripePromise = loadStripe("pk_...");
 | ------------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | **Payment Element**                  | `<PaymentElement />`                | Unified payment method selector — cards, wallets, bank transfers, BNPL. Auto-adapts to customer location. | **Primary** — replaces hosted invoice for payment collection |
 | **Express Checkout Element**         | `<ExpressCheckoutElement />`        | One-click checkout buttons — Apple Pay, Google Pay, Link.                                                 | Fast payment for returning users                             |
-| **Link Authentication Element**      | `<LinkAuthenticationElement />`     | Email input that auto-detects Stripe Link users for 1-click pay.                                          | Pre-auth for payment flows                                   |
+| **Link Authentication Element**      | `<LinkAuthenticationElement />`     | Email input that auto-detects retired provider Link users for 1-click pay.                                          | Pre-auth for payment flows                                   |
 | **Address Element**                  | `<AddressElement />`                | Smart address form with autocomplete, validation, formatting per country.                                 | Billing/shipping address collection                          |
 | **Payment Method Messaging Element** | `<PaymentMethodMessagingElement />` | "Pay in 4 with Afterpay" or "Pay with Klarna" messaging banners.                                          | BNPL promotion on pricing pages                              |
 | **Currency Selector Element**        | `<CurrencySelectorElement />`       | Currency picker for multi-currency payments.                                                              | International payment flows                                  |
@@ -421,13 +421,13 @@ const stripePromise = loadStripe("pk_...");
 
 ### Family 3: Embedded Checkout
 
-**Package**: `@stripe/react-stripe-js` (sub-path `@stripe/react-stripe-js/checkout`)
+**Package**: `@retired_provider/react-retired_provider-js` (sub-path `@retired_provider/react-retired_provider-js/checkout`)
 
 **Architecture**: Server creates a Checkout Session with `ui_mode: "embedded"` → returns `client_secret` → client renders full checkout inline.
 
 ```typescript
 // Backend: Modify existing createCheckoutSession
-const session = await stripe.checkout.sessions.create({
+const session = await retired_provider.checkout.sessions.create({
   ui_mode: "embedded", // KEY CHANGE — was "hosted"
   line_items: [...],
   return_url: "https://seal.app/settings/billing?session_id={CHECKOUT_SESSION_ID}",
@@ -436,9 +436,9 @@ const session = await stripe.checkout.sessions.create({
 return session.client_secret; // Return secret, not URL
 
 // Frontend
-import { CheckoutProvider, useCheckout } from "@stripe/react-stripe-js/checkout";
+import { CheckoutProvider, useCheckout } from "@retired_provider/react-retired_provider-js/checkout";
 
-<CheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
+<CheckoutProvider retired_provider={retired_providerPromise} options={{ clientSecret }}>
   <EmbeddedCheckout />
   {/* Or build custom UI with useCheckout() hook */}
 </CheckoutProvider>
@@ -450,23 +450,23 @@ import { CheckoutProvider, useCheckout } from "@stripe/react-stripe-js/checkout"
 
 ### Family 4: Pricing Table & Buy Button
 
-**No React package** — these are web components (`<stripe-pricing-table>`, `<stripe-buy-button>`) configured entirely in the Stripe Dashboard.
+**No React package** — these are web components (`<retired_provider-pricing-table>`, `<retired_provider-buy-button>`) configured entirely in the retired provider Dashboard.
 
 ```html
 <!-- Pricing Table -->
-<script async src="https://js.stripe.com/v3/pricing-table.js"></script>
-<stripe-pricing-table
+<script async src="https://js.retired_provider.com/v3/pricing-table.js"></script>
+<retired_provider-pricing-table
   pricing-table-id="prctbl_..."
   publishable-key="pk_..."
   customer-email="user@example.com"
 />
 
 <!-- Buy Button -->
-<script async src="https://js.stripe.com/v3/buy-button.js"></script>
-<stripe-buy-button buy-button-id="buy_btn_..." publishable-key="pk_..." />
+<script async src="https://js.retired_provider.com/v3/buy-button.js"></script>
+<retired_provider-buy-button buy-button-id="buy_btn_..." publishable-key="pk_..." />
 ```
 
-**Important limitation**: Pricing Table does **NOT** support Stripe Connect (cannot attribute to connected accounts). It only works for direct charges on the platform account.
+**Important limitation**: Pricing Table does **NOT** support retired provider Connect (cannot attribute to connected accounts). It only works for direct charges on the platform account.
 
 | Component         | Type          | Description                                    | Connect Support |
 | ----------------- | ------------- | ---------------------------------------------- | --------------- |
@@ -483,19 +483,19 @@ This section maps each current redirect-based flow to its embedded component rep
 
 | Current Flow                                               | Embedded Replacement                                              |
 | ---------------------------------------------------------- | ----------------------------------------------------------------- |
-| `createAccountLink` → redirect to Stripe-hosted onboarding | `<ConnectAccountOnboarding />` — inline onboarding                |
+| `createAccountLink` → redirect to retired provider-hosted onboarding | `<ConnectAccountOnboarding />` — inline onboarding                |
 | `createConnectOAuthUrl` → redirect to OAuth                | Can be replaced entirely by Account Onboarding component          |
 | Custom status display + "Continue Setup" button            | `<ConnectNotificationBanner />` — auto-shows pending requirements |
 | No post-onboarding account management                      | `<ConnectAccountManagement />` — inline account settings          |
 
 **Backend changes needed**:
 
-- New action: `createAccountSession` in `connect_actions.ts` — calls `stripe.accountSessions.create()` with enabled components
+- New action: `createAccountSession` in `connect_actions.ts` — calls `retired_provider.accountSessions.create()` with enabled components
 - Keep existing actions for fallback/migration
 
 **Frontend changes needed**:
 
-- Install `@stripe/connect-js` + `@stripe/react-connect-js`
+- Install `@retired_provider/connect-js` + `@retired_provider/react-connect-js`
 - Refactor `payments.tsx` to use `ConnectComponentsProvider`
 - Replace redirect flow with `<ConnectAccountOnboarding />`
 - Add `<ConnectNotificationBanner />` for ongoing requirements
@@ -503,9 +503,9 @@ This section maps each current redirect-based flow to its embedded component rep
 
 **Files affected**:
 
-- `apps/backend/convex/stripe/connect_actions.ts` — add `createAccountSession`
+- `apps/backend/convex/retired_provider/connect_actions.ts` — add `createAccountSession`
 - `apps/web/src/routes/_authenticated/$slug/settings/payments.tsx` — full refactor
-- `apps/web/package.json` — add `@stripe/connect-js`, `@stripe/react-connect-js`
+- `apps/web/package.json` — add `@retired_provider/connect-js`, `@retired_provider/react-connect-js`
 
 ### Map 2: Subscription Billing (settings/billing.tsx)
 
@@ -513,7 +513,7 @@ This section maps each current redirect-based flow to its embedded component rep
 
 | Current Flow                                                                 | Embedded Replacement                                                      |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Custom pricing cards → `createCheckoutSession` → redirect to Stripe Checkout | Keep custom cards → Embedded Checkout with `ui_mode: "embedded"` (inline) |
+| Custom pricing cards → `createCheckoutSession` → redirect to retired provider Checkout | Keep custom cards → Embedded Checkout with `ui_mode: "embedded"` (inline) |
 | "Manage Subscription" → `createCustomerPortalSession` → redirect to Portal   | **No change** — Customer Portal stays redirect-based                      |
 
 **Backend changes needed**:
@@ -523,16 +523,16 @@ This section maps each current redirect-based flow to its embedded component rep
 
 **Frontend changes needed**:
 
-- Install `@stripe/stripe-js` + `@stripe/react-stripe-js`
+- Install `@retired_provider/retired_provider-js` + `@retired_provider/react-retired_provider-js`
 - When user clicks "Upgrade to Pro", set `checkoutClientSecret` state instead of redirecting
 - Conditionally render `<CheckoutProvider>` with inline checkout (dialog or expanded section)
 - Handle return flow (session status check via `return_url`)
 
 **Files affected**:
 
-- `apps/backend/convex/stripe/actions.ts` — add `createEmbeddedCheckoutSession`
+- `apps/backend/convex/retired_provider/actions.ts` — add `createEmbeddedCheckoutSession`
 - `apps/web/src/routes/_authenticated/$slug/settings/billing.tsx` — replace redirect with inline checkout
-- `apps/web/package.json` — add `@stripe/stripe-js`, `@stripe/react-stripe-js`
+- `apps/web/package.json` — add `@retired_provider/retired_provider-js`, `@retired_provider/react-retired_provider-js`
 
 ### Map 3: Payment Collection on Signing Page (Sign-then-Pay)
 
@@ -540,28 +540,28 @@ This section maps each current redirect-based flow to its embedded component rep
 
 | Current Flow                                                                              | Embedded Replacement                                                                   |
 | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Backend creates Stripe invoice → `hosted_invoice_url` in email → recipient pays on Stripe | Invoice stays. Also return `client_secret` → `<PaymentElement />` inline after signing |
+| Backend creates retired provider invoice → `hosted_invoice_url` in email → recipient pays on retired provider | Invoice stays. Also return `client_secret` → `<PaymentElement />` inline after signing |
 | Recipient leaves Seal entirely to pay                                                     | Signer signs first → inline payment appears → pays without leaving                     |
 
 **This is the highest-impact change** — recipients currently leave Seal to pay. The sign-then-pay flow with inline PaymentElement:
 
-- Eliminates the redirect to Stripe's hosted invoice page
+- Eliminates the redirect to retired provider's hosted invoice page
 - Captures payment while intent is highest (immediately after signing)
 - Keeps the entire signing + payment experience in-app
 - Falls back to hosted invoice URL in email for signers who close before paying
 
 **Backend changes needed** (~3 lines per payment type function):
 
-- After `stripe.invoices.finalizeInvoice()`, retrieve the invoice's underlying PaymentIntent
+- After `retired_provider.invoices.finalizeInvoice()`, retrieve the invoice's underlying PaymentIntent
 - Return `paymentIntent.client_secret` alongside existing `hosted_invoice_url`
 - Store `client_secret` on `payment_field_configs` for the signing page to query
 - **Zero changes** to invoice creation, line items, subscriptions, webhooks, or fee logic
 
 ```typescript
 // Add after finalizeInvoice in each payment type function:
-const paymentIntent = await stripe.paymentIntents.retrieve(
+const paymentIntent = await retired_provider.paymentIntents.retrieve(
   finalizedInvoice.payment_intent as string,
-  { stripeAccount: stripeAccountId },
+  { retired_providerAccount: retired_providerAccountId },
 );
 // Return both: hosted URL for email fallback, client_secret for inline payment
 ```
@@ -575,15 +575,15 @@ const paymentIntent = await stripe.paymentIntents.retrieve(
 
 **Files affected**:
 
-- `apps/backend/convex/stripe/payment_field_actions.ts` — add `client_secret` retrieval (~3 lines per function)
+- `apps/backend/convex/retired_provider/payment_field_actions.ts` — add `client_secret` retrieval (~3 lines per function)
 - `apps/backend/convex/payment_fields/queries.ts` — new query to return `client_secret` for signing page
 - `apps/web/src/components/documents/field-inputs/payment-field-summary.tsx` — replace "Pay Now" link with inline `<PaymentElement />`
 - `apps/web/src/routes/sign.$token.tsx` — post-signature payment flow
-- `apps/web/package.json` — add `@stripe/stripe-js`, `@stripe/react-stripe-js` (shared with Phase 2)
+- `apps/web/package.json` — add `@retired_provider/retired_provider-js`, `@retired_provider/react-retired_provider-js` (shared with Phase 2)
 
 ### Map 4: Connect Account Stats Pages (Phase 4)
 
-No current equivalent in Seal. These are **net-new pages** using Connect embedded components to display Stripe-loaded account information. See [Data Loading Architecture](#data-loading-architecture) for the full rationale.
+No current equivalent in Seal. These are **net-new pages** using Connect embedded components to display retired provider-loaded account information. See [Data Loading Architecture](#data-loading-architecture) for the full rationale.
 
 | Route                      | Component                                                    | What It Shows                                   |
 | -------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
@@ -593,7 +593,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 | `settings/disputes`        | `<ConnectDisputesList />`                                    | Payment disputes and chargebacks                |
 | `settings/tax-documents`   | `<ConnectDocuments />`                                       | Tax forms (1099-K, etc.)                        |
 
-**Conditional visibility**: These pages and their sidebar links only appear when the org has a connected Stripe account. Organizations that don't use Stripe Connect for payments never see them.
+**Conditional visibility**: These pages and their sidebar links only appear when the org has a connected retired provider account. Organizations that don't use retired provider Connect for payments never see them.
 
 **Backend change needed**:
 
@@ -601,7 +601,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 
 **Frontend changes needed**:
 
-- Create `StripeConnectProvider` component (shared with Phase 1)
+- Create `retired providerConnectProvider` component (shared with Phase 1)
 - Create 5 new settings routes following the [Plasma portal pattern](#plasma-portal-pattern)
 - Add conditional sidebar section with Connect page links
 
@@ -616,26 +616,26 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 **Why first**:
 
 - Direct replacement of existing flow — no new business logic
-- Stripe confirms embedded components support all account types including Standard
+- retired provider confirms embedded components support all account types including Standard
 - Eliminates the most jarring redirect (leaving app during setup)
 - `<ConnectNotificationBanner />` replaces our custom requirements summary
 
 **Scope**:
 
-1. Install `@stripe/connect-js` + `@stripe/react-connect-js`
+1. Install `@retired_provider/connect-js` + `@retired_provider/react-connect-js`
 2. Create `createAccountSession` action in `connect_actions.ts`
-3. Create `StripeConnectProvider` component in `integrations/stripe/`
+3. Create `retired providerConnectProvider` component in `integrations/retired_provider/`
 4. Refactor `settings/payments.tsx`:
    - Replace `handleConnectNewAccount` (Account Links redirect) with `<ConnectAccountOnboarding />`
    - Remove OAuth flow entirely
    - Replace requirements summary with `<ConnectNotificationBanner />`
-   - Add `<ConnectAccountManagement />` for post-onboarding settings (replaces "Manage in Stripe" external link)
+   - Add `<ConnectAccountManagement />` for post-onboarding settings (replaces "Manage in retired provider" external link)
 
 **Estimated complexity**: Medium — one new backend action + frontend refactor.
 
 ### Phase 2: Embedded Checkout for Subscriptions
 
-**Goal**: Replace Stripe Checkout redirect with inline checkout on billing page.
+**Goal**: Replace retired provider Checkout redirect with inline checkout on billing page.
 
 **Why second**:
 
@@ -645,7 +645,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 
 **Scope**:
 
-1. Install `@stripe/stripe-js` + `@stripe/react-stripe-js`
+1. Install `@retired_provider/retired_provider-js` + `@retired_provider/react-retired_provider-js`
 2. Add `createEmbeddedCheckoutSession` action (same as current but `ui_mode: "embedded"`, returns `client_secret`)
 3. In `billing.tsx`: "Upgrade to Pro" sets `checkoutClientSecret` state → renders `<CheckoutProvider>` inline (dialog or expanded section)
 4. Handle `return_url` flow for post-payment redirect
@@ -677,9 +677,9 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 
 **Estimated complexity**: Medium — minimal backend changes, moderate frontend work for the post-signature payment flow.
 
-### Phase 4: Connect Account Dashboard (Stripe Stats Section)
+### Phase 4: Connect Account Dashboard (retired provider Stats Section)
 
-**Goal**: Provide connected accounts with dedicated pages for payment history, payouts, balances, disputes, and tax documents — all powered by Stripe Connect embedded components.
+**Goal**: Provide connected accounts with dedicated pages for payment history, payouts, balances, disputes, and tax documents — all powered by retired provider Connect embedded components.
 
 **Why last**:
 
@@ -687,11 +687,11 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 - Lower priority than core signing experience
 - Can be deferred based on user demand
 
-**Critical constraint**: Not all Seal organizations use Stripe Connect. These pages and their sidebar links must only appear when the org has a connected Stripe account.
+**Critical constraint**: Not all Seal organizations use retired provider Connect. These pages and their sidebar links must only appear when the org has a connected retired provider account.
 
 **Scope** (informed by [Plasma portal pattern](#plasma-portal-pattern)):
 
-1. Create reusable `StripeConnectProvider` component (`integrations/stripe/connect-provider.tsx`) with:
+1. Create reusable `retired providerConnectProvider` component (`integrations/retired_provider/connect-provider.tsx`) with:
    - AccountSession creation via `fetchClientSecret` callback
    - Skeleton loading, error states, theme sync
    - Session refresh for long-running pages
@@ -701,13 +701,13 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
    - `settings/balances` — `<ConnectBalances />` + `<ConnectInstantPayoutsPromotion />`
    - `settings/disputes` — `<ConnectDisputesList />`
    - `settings/tax-documents` — `<ConnectDocuments />`
-3. Each page follows the pattern: permission check → `StripeConnectProvider` → `ConnectNotificationBanner` + main component
-4. Conditional sidebar navigation — query `stripe_accounts` table, show links only when org has connected account
-5. "No Stripe Connect" empty state for direct URL access (user types URL but org has no Stripe)
+3. Each page follows the pattern: permission check → `retired providerConnectProvider` → `ConnectNotificationBanner` + main component
+4. Conditional sidebar navigation — query `retired_provider_accounts` table, show links only when org has connected account
+5. "No retired provider Connect" empty state for direct URL access (user types URL but org has no retired provider)
 
 **Files affected**:
 
-- `apps/web/src/integrations/stripe/connect-provider.tsx` — new (shared with Phase 1)
+- `apps/web/src/integrations/retired_provider/connect-provider.tsx` — new (shared with Phase 1)
 - `apps/web/src/routes/_authenticated/$slug/settings/payment-history.tsx` — new
 - `apps/web/src/routes/_authenticated/$slug/settings/payouts.tsx` — new
 - `apps/web/src/routes/_authenticated/$slug/settings/balances.tsx` — new
@@ -715,7 +715,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 - `apps/web/src/routes/_authenticated/$slug/settings/tax-documents.tsx` — new
 - Sidebar component — conditional Connect section
 
-**Estimated complexity**: Medium — repetitive pattern across 5 pages, but each is simple (provider + one Stripe component).
+**Estimated complexity**: Medium — repetitive pattern across 5 pages, but each is simple (provider + one retired provider component).
 
 ---
 
@@ -736,22 +736,22 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 
 ```bash
 # Connect Embedded Components (Phase 1)
-bun add @stripe/connect-js @stripe/react-connect-js
+bun add @retired_provider/connect-js @retired_provider/react-connect-js
 
-# Stripe Elements + Embedded Checkout (Phase 2 & 3)
-bun add @stripe/stripe-js @stripe/react-stripe-js
+# retired provider Elements + Embedded Checkout (Phase 2 & 3)
+bun add @retired_provider/retired_provider-js @retired_provider/react-retired_provider-js
 ```
 
 ### Backend: New AccountSession Action
 
 ```typescript
-// apps/backend/convex/stripe/connect_actions.ts
+// apps/backend/convex/retired_provider/connect_actions.ts
 export const createAccountSession = action({
-  args: { stripeAccountId: v.string() },
+  args: { retired_providerAccountId: v.string() },
   handler: async (ctx, args) => {
-    const stripe = initializeStripe();
-    const accountSession = await stripe.accountSessions.create({
-      account: args.stripeAccountId,
+    const retired_provider = initializeretired provider();
+    const accountSession = await retired_provider.accountSessions.create({
+      account: args.retired_providerAccountId,
       components: {
         account_onboarding: { enabled: true },
         account_management: { enabled: true },
@@ -766,14 +766,14 @@ export const createAccountSession = action({
 ### Frontend: ConnectComponentsProvider Setup
 
 ```typescript
-// apps/web/src/integrations/stripe/connect-provider.tsx
-import { ConnectComponentsProvider } from "@stripe/react-connect-js";
-import { loadConnectAndInitialize } from "@stripe/connect-js";
+// apps/web/src/integrations/retired_provider/connect-provider.tsx
+import { ConnectComponentsProvider } from "@retired_provider/react-connect-js";
+import { loadConnectAndInitialize } from "@retired_provider/connect-js";
 
-export function StripeConnectProvider({ children, fetchClientSecret }) {
+export function retired providerConnectProvider({ children, fetchClientSecret }) {
   const [connectInstance] = useState(() =>
     loadConnectAndInitialize({
-      publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+      publishableKey: import.meta.env.VITE_RETIRED_PROVIDER_PUBLISHABLE_KEY,
       fetchClientSecret,
       appearance: {
         overlays: "dialog",
@@ -796,12 +796,12 @@ export function StripeConnectProvider({ children, fetchClientSecret }) {
 
 ```bash
 # Already exists
-VITE_STRIPE_PUBLISHABLE_KEY=pk_...
+VITE_RETIRED_PROVIDER_PUBLISHABLE_KEY=pk_...
 
 # No new env vars needed — Connect components use the same publishable key
 ```
 
-### Stripe Dashboard Configuration
+### retired provider Dashboard Configuration
 
 For Connect Embedded Components:
 
@@ -818,24 +818,24 @@ For Embedded Checkout:
 
 ## Data Loading Architecture
 
-Stripe embedded components load data **from Stripe's servers**, not from Convex. This creates two distinct categories:
+retired provider embedded components load data **from retired provider's servers**, not from Convex. This creates two distinct categories:
 
-### Category 1: Process Components (Stripe-Loaded — Fine As-Is)
+### Category 1: Process Components (retired provider-Loaded — Fine As-Is)
 
-These components are part of an **active user flow** where Stripe handling its own data loading is natural and expected:
+These components are part of an **active user flow** where retired provider handling its own data loading is natural and expected:
 
-| Component                      | Context                              | Why Stripe-Loading Is Fine                                   |
+| Component                      | Context                              | Why retired provider-Loading Is Fine                                   |
 | ------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| `<PaymentElement />`           | Signing page — collecting payment    | User is actively paying. Stripe loads its own PaymentIntent. |
-| `<EmbeddedCheckout />`         | Billing page — subscription checkout | User is actively checking out. Stripe loads its own session. |
-| `<ConnectAccountOnboarding />` | Settings — Connect setup             | User is actively onboarding. Stripe manages the flow.        |
-| `<ConnectAccountManagement />` | Settings — account updates           | User is actively editing Stripe settings.                    |
+| `<PaymentElement />`           | Signing page — collecting payment    | User is actively paying. retired provider loads its own PaymentIntent. |
+| `<EmbeddedCheckout />`         | Billing page — subscription checkout | User is actively checking out. retired provider loads its own session. |
+| `<ConnectAccountOnboarding />` | Settings — Connect setup             | User is actively onboarding. retired provider manages the flow.        |
+| `<ConnectAccountManagement />` | Settings — account updates           | User is actively editing retired provider settings.                    |
 
-**No architectural concern** — these are transactional components where Stripe's data loading is the feature.
+**No architectural concern** — these are transactional components where retired provider's data loading is the feature.
 
-### Category 2: Stats Components (Stripe-Loaded — Needs Dedicated Section)
+### Category 2: Stats Components (retired provider-Loaded — Needs Dedicated Section)
 
-These components display **read-only account information** loaded entirely from Stripe. They feel like dashboard widgets but load data from a completely different system than the rest of Seal (Convex):
+These components display **read-only account information** loaded entirely from retired provider. They feel like dashboard widgets but load data from a completely different system than the rest of Seal (Convex):
 
 | Component                 | What It Shows             |
 | ------------------------- | ------------------------- |
@@ -849,12 +849,12 @@ These components display **read-only account information** loaded entirely from 
 
 1. **Dedicated routes, not embedded in existing pages** — Each stats component gets its own route under `settings/` (e.g., `settings/payment-history`, `settings/payouts`, `settings/balances`). This keeps them isolated from Convex-driven pages.
 
-2. **Conditional navigation** — Not all Seal organizations use Stripe Connect. These routes and their sidebar links **only appear when the org has a connected Stripe account** (`stripe_accounts` table has a record for this org). Organizations without Stripe Connect never see these pages.
+2. **Conditional navigation** — Not all Seal organizations use retired provider Connect. These routes and their sidebar links **only appear when the org has a connected retired provider account** (`retired_provider_accounts` table has a record for this org). Organizations without retired provider Connect never see these pages.
 
-3. **Shared `StripeConnectProvider`** — A reusable provider component (like Plasma's `ConnectProvider`) handles:
+3. **Shared `retired providerConnectProvider`** — A reusable provider component (like Plasma's `ConnectProvider`) handles:
    - AccountSession creation + `fetchClientSecret` callback
    - Skeleton loading during initialization
-   - Error states (Stripe unreachable, session expired)
+   - Error states (retired provider unreachable, session expired)
    - Dynamic theme sync (dark/light mode)
    - Session refresh for long-lived pages
 
@@ -872,24 +872,24 @@ The Plasma codebase (`apps/portal/`) implements this exact pattern and serves as
 | `/disputes`  | `<ConnectDisputesList />`                                    | `settings/disputes`        |
 | `/documents` | `<ConnectDocuments />`                                       | `settings/tax-documents`   |
 
-**Key difference**: In Plasma, Stripe Connect is **required** for all portal access (no Stripe account → redirect to onboarding). In Seal, Stripe Connect is **optional** — the sidebar conditionally shows these pages only when the org has connected a Stripe account.
+**Key difference**: In Plasma, retired provider Connect is **required** for all portal access (no retired provider account → redirect to onboarding). In Seal, retired provider Connect is **optional** — the sidebar conditionally shows these pages only when the org has connected a retired provider account.
 
 **Pattern per page**:
 
 ```tsx
 // Every stats page follows the same structure:
 function PaymentHistoryPage() {
-  const stripeAccount = useQuery(api.stripe.getStripeAccount, { orgId });
+  const retired_providerAccount = useQuery(api.retired_provider.getretired providerAccount, { orgId });
   const { hasPermission } = usePermissions();
 
-  if (!stripeAccount) return <NoStripeConnectMessage />;
+  if (!retired_providerAccount) return <Noretired providerConnectMessage />;
   if (!hasPermission("payments:view")) return <AccessDenied />;
 
   return (
-    <StripeConnectProvider orgId={orgId}>
+    <retired providerConnectProvider orgId={orgId}>
       <ConnectNotificationBanner />
       <ConnectPayments />
-    </StripeConnectProvider>
+    </retired providerConnectProvider>
   );
 }
 ```
@@ -906,7 +906,7 @@ Details that will be handled during implementation (not decisions — just notes
 
 ### AccountSession Refresh
 
-Connect embedded component sessions expire on long-running pages. The `StripeConnectProvider` must implement `fetchClientSecret` as a **callback** (not a one-time fetch) — Stripe calls it automatically when the session expires. Plasma's `ConnectProvider` implementation is the reference pattern for this.
+Connect embedded component sessions expire on long-running pages. The `retired providerConnectProvider` must implement `fetchClientSecret` as a **callback** (not a one-time fetch) — retired provider calls it automatically when the session expires. Plasma's `ConnectProvider` implementation is the reference pattern for this.
 
 ---
 
@@ -916,12 +916,12 @@ For completeness, these Connect components exist but are **not relevant** to Sea
 
 | Component                        | Why Not Relevant                                   |
 | -------------------------------- | -------------------------------------------------- |
-| Capital (3 components)           | Stripe Capital lending — not applicable            |
+| Capital (3 components)           | retired provider Capital lending — not applicable            |
 | Tax (5 components)               | Tax compliance tooling — Seal doesn't manage taxes |
 | Financial Account / Transactions | Treasury/banking — not applicable                  |
 | Issuing Card / Cards List        | Card issuing — not applicable                      |
 | Reporting Chart                  | Generic reporting — Seal has its own analytics     |
-| App Install / App Viewport       | Stripe Apps marketplace — not applicable           |
+| App Install / App Viewport       | retired provider Apps marketplace — not applicable           |
 | Currency Selector Element        | Multi-currency — not needed currently              |
 | Tax ID Element                   | B2B tax IDs — not core to signing flow             |
 
@@ -931,24 +931,24 @@ For completeness, these Connect components exist but are **not relevant** to Sea
 
 **Confirmed**: Connect embedded components support **all account types**, including Standard.
 
-Source: Stripe developer community via Stripe MCP documentation search:
+Source: retired provider developer community via retired provider MCP documentation search:
 
 > "Embedded Components now support all account types, including Standard and Express. This feature has been in development for the last couple of years."
 
-Seal currently creates Standard accounts via `stripe.accounts.create({ type: "standard" })` in `connect_actions.ts`. This is fully compatible with the AccountSession API and all Connect embedded components.
+Seal currently creates Standard accounts via `retired_provider.accounts.create({ type: "standard" })` in `connect_actions.ts`. This is fully compatible with the AccountSession API and all Connect embedded components.
 
 ### Future-proofing note
 
-Stripe is migrating platforms toward **controller properties** instead of legacy account types. From the [migration guide](https://docs.stripe.com/connect/configuration-migration-guide):
+retired provider is migrating platforms toward **controller properties** instead of legacy account types. From the [migration guide](https://docs.retired_provider.com/connect/configuration-migration-guide):
 
 > "If you're setting up a new Connect platform, see Configure the behavior of connected accounts to learn about connected account configurations."
 
 This doesn't block any phase — our Standard accounts work today. But when we eventually refactor, we should consider migrating to controller properties for new accounts. The embedded components work identically with either approach.
 
-### Stripe Documentation References
+### retired provider Documentation References
 
-- [Standard Accounts Guide](https://docs.stripe.com/connect/standard-accounts)
-- [Embedded Onboarding](https://docs.stripe.com/connect/embedded-onboarding)
-- [Supported Embedded Components](https://docs.stripe.com/connect/supported-embedded-components)
-- [Connect Embedded Components Quickstart](https://docs.stripe.com/connect/connect-embedded-components/quickstart)
-- [Configuration Migration Guide](https://docs.stripe.com/connect/configuration-migration-guide)
+- [Standard Accounts Guide](https://docs.retired_provider.com/connect/standard-accounts)
+- [Embedded Onboarding](https://docs.retired_provider.com/connect/embedded-onboarding)
+- [Supported Embedded Components](https://docs.retired_provider.com/connect/supported-embedded-components)
+- [Connect Embedded Components Quickstart](https://docs.retired_provider.com/connect/connect-embedded-components/quickstart)
+- [Configuration Migration Guide](https://docs.retired_provider.com/connect/configuration-migration-guide)

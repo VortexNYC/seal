@@ -45,15 +45,15 @@ brandingSettings: v.optional(
 
 ### Where Branding Applies
 
-| Surface                              | What Changes                                                                                            |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| **Signing page header**              | Org logo replaces Seal logo. Brand color applied to primary buttons and progress indicators.            |
-| **Signing page footer**              | Free plan: "Powered by Seal" shown. Pro plan with `hideSealbrand`: org's custom footer text or nothing. |
-| **Invitation emails**                | `emailFromName` in From header. Org logo in email header. Brand color for CTA button.                   |
-| **Reminder emails**                  | Same as invitation emails.                                                                              |
-| **Completion emails**                | Same branding.                                                                                          |
-| **Certificate of completion PDF**    | Org logo in header instead of Seal logo (if logo uploaded).                                             |
-| **Signing page retired provider payment form** | Brand color passed to retired provider `appearance.variables.colorPrimary`.                                       |
+| Surface                                        | What Changes                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Signing page header**                        | Org logo replaces Seal logo. Brand color applied to primary buttons and progress indicators.            |
+| **Signing page footer**                        | Free plan: "Powered by Seal" shown. Pro plan with `hideSealbrand`: org's custom footer text or nothing. |
+| **Invitation emails**                          | `emailFromName` in From header. Org logo in email header. Brand color for CTA button.                   |
+| **Reminder emails**                            | Same as invitation emails.                                                                              |
+| **Completion emails**                          | Same branding.                                                                                          |
+| **Certificate of completion PDF**              | Org logo in header instead of Seal logo (if logo uploaded).                                             |
+| **Signing page retired provider payment form** | Brand color passed to retired provider `appearance.variables.colorPrimary`.                             |
 
 ### What Branding Does NOT Affect (v1)
 

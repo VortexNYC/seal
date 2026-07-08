@@ -88,8 +88,8 @@ Reuse existing payment-related permissions. Overview and subscriptions pages req
 | `routes/_authenticated/$slug/payments/balances.tsx`      | Moved from settings                |
 | `routes/_authenticated/$slug/payments/disputes.tsx`      | Moved from settings                |
 | `routes/_authenticated/$slug/payments/tax.tsx`           | Moved from settings                |
-| `convex/retired_provider/revenue_queries.ts`                       | Revenue stats and transaction list |
-| `convex/retired_provider/subscription_queries.ts`                  | Recurring payment management       |
+| `convex/retired_provider/revenue_queries.ts`             | Revenue stats and transaction list |
+| `convex/retired_provider/subscription_queries.ts`        | Recurring payment management       |
 
 ## Files to Modify
 

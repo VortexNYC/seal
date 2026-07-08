@@ -38,7 +38,7 @@ This document contains all features, enhancements, and requirements that are not
 ### Payment Integration ⚡ **Important**
 
 - [ ] **Embedded Payment Gateways** in documents ⭐ Differentiator ⚡ Important 🎯 MVP Priority
-- [ ] **Multiple Payment Providers** (Stripe, PayPal, Authorize.net) ⚡ Important
+- [ ] **Multiple Payment Providers** (retired provider, PayPal, Authorize.net) ⚡ Important
 - [ ] **Pay-on-Sign** workflow (payment + signature) ⭐ Differentiator ⚡ Important 🎯 MVP Priority
 
 ### Developer Experience Enhancements ⚡ **Important**
@@ -258,7 +258,7 @@ This document contains all features, enhancements, and requirements that are not
   - Clear pricing display and upgrade prompts
 
 - [ ] **Payment Processing** ⚡ Important
-  - Stripe integration for subscription management
+  - retired provider integration for subscription management
   - Payment methods (credit card, bank transfer)
   - Invoice generation and history
   - Usage-based billing for overages
@@ -300,7 +300,7 @@ This document contains all features, enhancements, and requirements that are not
 
 ### Business Requirements
 
-- [ ] **Freemium model** operational with Stripe integration
+- [ ] **Freemium model** operational with retired provider integration
 - [ ] **User onboarding** flow completed in <5 minutes
 - [ ] **Community feedback** systems in place
 - [ ] **Documentation** comprehensive for users and developers

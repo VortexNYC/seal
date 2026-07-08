@@ -28,7 +28,7 @@ seal/
 │   │       │   ├── queries.ts            # Document read operations
 │   │       │   ├── mutations.ts          # Document write operations
 │   │       │   └── sharing.ts            # Document sharing logic
-│   │       ├── stripe/                   # Stripe subscription integration
+│   │       ├── retired_provider/                   # retired provider subscription integration
 │   │       └── _generated/               # Auto-generated types & API
 │   │
 │   └── web/              # React + Vite frontend
@@ -454,7 +454,7 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 
 - Convex (serverless backend, real-time database)
 - Clerk (authentication)
-- Stripe (subscriptions)
+- retired provider (subscriptions)
 - Zod (validation)
 - convex-helpers (utilities)
 

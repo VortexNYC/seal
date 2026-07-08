@@ -289,7 +289,7 @@ AI reads payment terms, line items, amounts, schedules, and fee structures from 
 
 ### Integration with Existing Payment Flow
 
-This feeds directly into the payment field builder we just built (Phase 1-4 of Stripe). The extracted config populates:
+This feeds directly into the payment field builder we just built (Phase 1-4 of retired provider). The extracted config populates:
 
 - Line items in the invoice builder
 - Amount and currency
@@ -370,7 +370,7 @@ Each phase is independently shippable and valuable.
 
 ### Resolved
 
-- **Gemini API key**: Seal-managed only. Single key stored in Convex env vars (same pattern as Stripe). Simpler for users, we control everything.
+- **Gemini API key**: Seal-managed only. Single key stored in Convex env vars (same pattern as retired provider). Simpler for users, we control everything.
 - **Recipient visibility**: Sender-only by default. AI features (field suggestions, redlines) only visible to document creator. May add per-document toggle later.
 - **Trigger model**: Manual default ("Analyze with AI" button). Auto-analyze available as a workspace setting.
 

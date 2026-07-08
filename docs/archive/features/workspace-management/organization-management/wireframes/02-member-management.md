@@ -453,7 +453,7 @@
 - **Batch Email Handling**: Efficient bulk invitation processing
 - **Delivery Tracking**: Monitor invitation email delivery status
 
-### Stripe Billing Integration
+### retired provider Billing Integration
 
 - **Seat Management**: Automatic billing updates for member changes
 - **Prorated Billing**: Handle mid-cycle member additions/removals
