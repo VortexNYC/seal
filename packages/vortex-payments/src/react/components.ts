@@ -2903,16 +2903,15 @@ export function VortexRecoverySummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveRecoverySummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const attempts = recovery.attempts ?? [];
-  const hasAttempts = attempts.length > 0;
-  const canOpenHostedRecovery =
-    recovery.hostedRecoveryToken !== undefined &&
-    recovery.status !== "healthy" &&
-    recovery.status !== "recovered";
-  const canRetryPayment =
-    recovery.paymentRequestId !== undefined &&
-    recovery.status !== "healthy" &&
-    recovery.status !== "recovered";
+  const state = createRecoverySummaryState(recovery);
+  const openHostedRecovery = createOpenHostedRecoveryHandler({
+    recovery,
+    runtime,
+    selectedNavigate,
+    state,
+    onHostedRecoveryLaunch,
+  });
+  const retryPayment = createRetryPaymentHandler({ recovery, state, onRetryPayment });
 
   useEffect(() => {
     onReady?.({
@@ -2931,8 +2930,59 @@ export function VortexRecoverySummary({
     }
   }, [error, onError]);
 
-  const openHostedRecovery = (): void => {
-    if (!canOpenHostedRecovery || recovery.hostedRecoveryToken === undefined) {
+  return createElement(
+    "section",
+    createRecoverySummarySectionProps({ appearance, className, classNames, recovery, state }),
+    createRecoverySummaryHeader({ classNames, recovery, resolvedCopy }),
+    createRecoverySummaryFeedback({ classNames, error, loading, recovery, resolvedCopy }),
+    createRecoverySummaryMetrics({ classNames, recovery, resolvedCopy, state }),
+    createRecoverySummaryAttempts({
+      classNames,
+      isDisabled,
+      onAttemptSelect,
+      recovery,
+      resolvedCopy,
+      state,
+    }),
+    createRecoverySummaryActions({
+      classNames,
+      isDisabled,
+      openHostedRecovery,
+      resolvedCopy,
+      retryPayment,
+      state,
+    }),
+  );
+}
+
+function createRecoverySummaryState(recovery: VortexRecoverySummaryState) {
+  const attempts = recovery.attempts ?? [];
+  const hasOpenRecoveryStatus = recovery.status !== "healthy" && recovery.status !== "recovered";
+  return {
+    attempts,
+    canOpenHostedRecovery: recovery.hostedRecoveryToken !== undefined && hasOpenRecoveryStatus,
+    canRetryPayment: recovery.paymentRequestId !== undefined && hasOpenRecoveryStatus,
+    hasAttempts: attempts.length > 0,
+  };
+}
+
+type RecoverySummaryState = ReturnType<typeof createRecoverySummaryState>;
+
+function createOpenHostedRecoveryHandler({
+  recovery,
+  runtime,
+  selectedNavigate,
+  state,
+  onHostedRecoveryLaunch,
+}: {
+  readonly recovery: VortexRecoverySummaryState;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: RecoverySummaryState;
+  readonly onHostedRecoveryLaunch: VortexRecoverySummaryProps["onHostedRecoveryLaunch"];
+}) {
+  return (): void => {
+    if (!state.canOpenHostedRecovery || recovery.hostedRecoveryToken === undefined) {
       return;
     }
     const launch = runtime.createHostedLink({
@@ -2943,49 +2993,92 @@ export function VortexRecoverySummary({
     onHostedRecoveryLaunch?.(launch);
     selectedNavigate(launch);
   };
+}
 
-  const retryPayment = (): void => {
-    if (!canRetryPayment) {
+function createRetryPaymentHandler({
+  recovery,
+  state,
+  onRetryPayment,
+}: {
+  readonly recovery: VortexRecoverySummaryState;
+  readonly state: RecoverySummaryState;
+  readonly onRetryPayment: VortexRecoverySummaryProps["onRetryPayment"];
+}) {
+  return (): void => {
+    if (!state.canRetryPayment) {
       return;
     }
     void onRetryPayment?.(recovery);
   };
+}
 
+function createRecoverySummarySectionProps({
+  appearance,
+  className,
+  classNames,
+  recovery,
+  state,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly recovery: VortexRecoverySummaryState;
+  readonly state: RecoverySummaryState;
+}) {
+  return {
+    className: cx("vortex-payments-recovery-summary", className, classNames?.root),
+    "data-vortex-surface": "recovery-summary",
+    "data-vortex-component": "VortexRecoverySummary",
+    "data-vortex-customer-id": recovery.customerId,
+    "data-vortex-billing-account-id": recovery.billingAccountId,
+    "data-vortex-recovery-status": recovery.status,
+    "data-vortex-recovery-reason": recovery.reason,
+    "data-vortex-payment-request-id": recovery.paymentRequestId,
+    "data-vortex-invoice-id": recovery.invoiceId,
+    "data-vortex-dunning-campaign-id": recovery.dunningCampaignId,
+    "data-vortex-hosted-recovery-ready": String(state.canOpenHostedRecovery),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createRecoverySummaryHeader({
+  classNames,
+  recovery,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly recovery: VortexRecoverySummaryState;
+  readonly resolvedCopy: Required<VortexRecoverySummaryCopy>;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-recovery-summary", className, classNames?.root),
-      "data-vortex-surface": "recovery-summary",
-      "data-vortex-component": "VortexRecoverySummary",
-      "data-vortex-customer-id": recovery.customerId,
-      "data-vortex-billing-account-id": recovery.billingAccountId,
-      "data-vortex-recovery-status": recovery.status,
-      "data-vortex-recovery-reason": recovery.reason,
-      "data-vortex-payment-request-id": recovery.paymentRequestId,
-      "data-vortex-invoice-id": recovery.invoiceId,
-      "data-vortex-dunning-campaign-id": recovery.dunningCampaignId,
-      "data-vortex-hosted-recovery-ready": String(canOpenHostedRecovery),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        recoverySummaryDescription(recovery, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      recoverySummaryDescription(recovery, resolvedCopy),
     ),
+  );
+}
+
+function createRecoverySummaryFeedback({
+  classNames,
+  error,
+  loading,
+  recovery,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly recovery: VortexRecoverySummaryState;
+  readonly resolvedCopy: Required<VortexRecoverySummaryCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -3004,64 +3097,112 @@ export function VortexRecoverySummary({
     recovery.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, recovery.message),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, recovery.status, classNames),
-      createMetric(resolvedCopy.reasonLabel, recovery.reason ?? "none", classNames),
-      createMetric(
-        resolvedCopy.amountDueLabel,
-        recovery.amountDue === undefined || recovery.currency === undefined
-          ? "none"
-          : formatMinorUnitAmount(recovery.amountDue, recovery.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.nextRetryLabel, recovery.nextRetryAt ?? "none", classNames),
-      createMetric(
-        resolvedCopy.invoiceLabel,
-        recovery.invoiceNumber ?? recovery.invoiceId ?? "none",
-        classNames,
-      ),
-      createMetric(resolvedCopy.attemptsLabel, String(attempts.length), classNames),
+  ];
+}
+
+function createRecoverySummaryMetrics({
+  classNames,
+  recovery,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly recovery: VortexRecoverySummaryState;
+  readonly resolvedCopy: Required<VortexRecoverySummaryCopy>;
+  readonly state: RecoverySummaryState;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, recovery.status, classNames),
+    createMetric(resolvedCopy.reasonLabel, recovery.reason ?? "none", classNames),
+    createMetric(
+      resolvedCopy.amountDueLabel,
+      recovery.amountDue === undefined || recovery.currency === undefined
+        ? "none"
+        : formatMinorUnitAmount(recovery.amountDue, recovery.currency),
+      classNames,
     ),
-    hasAttempts
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          attempts.map((attempt) =>
-            createRecoveryAttemptItem(attempt, recovery, classNames, isDisabled, onAttemptSelect),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyAttemptsTitle),
-        ),
-    createElement(
+    createMetric(resolvedCopy.nextRetryLabel, recovery.nextRetryAt ?? "none", classNames),
+    createMetric(
+      resolvedCopy.invoiceLabel,
+      recovery.invoiceNumber ?? recovery.invoiceId ?? "none",
+      classNames,
+    ),
+    createMetric(resolvedCopy.attemptsLabel, String(state.attempts.length), classNames),
+  );
+}
+
+function createRecoverySummaryAttempts({
+  classNames,
+  isDisabled,
+  onAttemptSelect,
+  recovery,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly onAttemptSelect: VortexRecoverySummaryProps["onAttemptSelect"];
+  readonly recovery: VortexRecoverySummaryState;
+  readonly resolvedCopy: Required<VortexRecoverySummaryCopy>;
+  readonly state: RecoverySummaryState;
+}): ReactNode {
+  if (!state.hasAttempts) {
+    return createElement(
       "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canOpenHostedRecovery,
-          onClick: openHostedRecovery,
-          type: "button",
-          "data-vortex-recovery-action": "open_hosted_recovery",
-        },
-        resolvedCopy.openHostedRecoveryLabel,
-      ),
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canRetryPayment,
-          onClick: retryPayment,
-          type: "button",
-          "data-vortex-recovery-action": "retry_payment",
-        },
-        resolvedCopy.retryPaymentLabel,
-      ),
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyAttemptsTitle),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    state.attempts.map((attempt) =>
+      createRecoveryAttemptItem(attempt, recovery, classNames, isDisabled, onAttemptSelect),
+    ),
+  );
+}
+
+function createRecoverySummaryActions({
+  classNames,
+  isDisabled,
+  openHostedRecovery,
+  resolvedCopy,
+  retryPayment,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly openHostedRecovery: () => void;
+  readonly resolvedCopy: Required<VortexRecoverySummaryCopy>;
+  readonly retryPayment: () => void;
+  readonly state: RecoverySummaryState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canOpenHostedRecovery,
+        onClick: openHostedRecovery,
+        type: "button",
+        "data-vortex-recovery-action": "open_hosted_recovery",
+      },
+      resolvedCopy.openHostedRecoveryLabel,
+    ),
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canRetryPayment,
+        onClick: retryPayment,
+        type: "button",
+        "data-vortex-recovery-action": "retry_payment",
+      },
+      resolvedCopy.retryPaymentLabel,
     ),
   );
 }
