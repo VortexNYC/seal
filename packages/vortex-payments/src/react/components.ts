@@ -3227,8 +3227,14 @@ export function VortexEntitlementSummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveEntitlementSummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const hasFeatures = access.features.length > 0;
-  const canOpenPortal = access.portalToken !== undefined;
+  const state = createEntitlementSummaryState(access);
+  const openPortal = createEntitlementPortalHandler({
+    access,
+    runtime,
+    selectedNavigate,
+    state,
+    onPortalLaunch,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -3247,8 +3253,48 @@ export function VortexEntitlementSummary({
     }
   }, [error, onError]);
 
-  const openPortal = (): void => {
-    if (!canOpenPortal || access.portalToken === undefined) {
+  return createElement(
+    "section",
+    createEntitlementSummarySectionProps({ access, appearance, className, classNames, state }),
+    createEntitlementSummaryHeader({ access, classNames, resolvedCopy }),
+    createEntitlementSummaryFeedback({ access, classNames, error, loading, resolvedCopy }),
+    createEntitlementSummaryMetrics({ access, classNames, resolvedCopy }),
+    createEntitlementSummaryFeatures({
+      access,
+      classNames,
+      isDisabled,
+      onFeatureSelect,
+      resolvedCopy,
+      state,
+    }),
+    createEntitlementSummaryActions({ classNames, isDisabled, openPortal, resolvedCopy, state }),
+  );
+}
+
+function createEntitlementSummaryState(access: VortexEntitlementSummaryState) {
+  return {
+    canOpenPortal: access.portalToken !== undefined,
+    hasFeatures: access.features.length > 0,
+  };
+}
+
+type EntitlementSummaryState = ReturnType<typeof createEntitlementSummaryState>;
+
+function createEntitlementPortalHandler({
+  access,
+  runtime,
+  selectedNavigate,
+  state,
+  onPortalLaunch,
+}: {
+  readonly access: VortexEntitlementSummaryState;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: EntitlementSummaryState;
+  readonly onPortalLaunch: VortexEntitlementSummaryProps["onPortalLaunch"];
+}) {
+  return (): void => {
+    if (!state.canOpenPortal || access.portalToken === undefined) {
       return;
     }
     const launch = runtime.createHostedLink({
@@ -3259,40 +3305,73 @@ export function VortexEntitlementSummary({
     onPortalLaunch?.(launch);
     selectedNavigate(launch);
   };
+}
 
+function createEntitlementSummarySectionProps({
+  access,
+  appearance,
+  className,
+  classNames,
+  state,
+}: {
+  readonly access: VortexEntitlementSummaryState;
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: EntitlementSummaryState;
+}) {
+  return {
+    className: cx("vortex-payments-entitlement-summary", className, classNames?.root),
+    "data-vortex-surface": "entitlement-summary",
+    "data-vortex-component": "VortexEntitlementSummary",
+    "data-vortex-customer-id": access.customerId,
+    "data-vortex-billing-account-id": access.billingAccountId,
+    "data-vortex-subscription-id": access.subscriptionId,
+    "data-vortex-access-status": access.status,
+    "data-vortex-feature-count": String(access.features.length),
+    "data-vortex-customer-portal-ready": String(state.canOpenPortal),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createEntitlementSummaryHeader({
+  access,
+  classNames,
+  resolvedCopy,
+}: {
+  readonly access: VortexEntitlementSummaryState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexEntitlementSummaryCopy>;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-entitlement-summary", className, classNames?.root),
-      "data-vortex-surface": "entitlement-summary",
-      "data-vortex-component": "VortexEntitlementSummary",
-      "data-vortex-customer-id": access.customerId,
-      "data-vortex-billing-account-id": access.billingAccountId,
-      "data-vortex-subscription-id": access.subscriptionId,
-      "data-vortex-access-status": access.status,
-      "data-vortex-feature-count": String(access.features.length),
-      "data-vortex-customer-portal-ready": String(canOpenPortal),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        entitlementSummaryDescription(access, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      entitlementSummaryDescription(access, resolvedCopy),
     ),
+  );
+}
+
+function createEntitlementSummaryFeedback({
+  access,
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly access: VortexEntitlementSummaryState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexEntitlementSummaryCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -3311,53 +3390,97 @@ export function VortexEntitlementSummary({
     access.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, access.message),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, access.status, classNames),
-      createMetric(resolvedCopy.planLabel, access.planLabel ?? "none", classNames),
-      createMetric(resolvedCopy.featureCountLabel, String(access.features.length), classNames),
-      createMetric(
-        resolvedCopy.renewalLabel,
-        access.renewsAt ?? access.activeUntil ?? "none",
-        classNames,
-      ),
-      createMetric(resolvedCopy.trialLabel, access.trialEndsAt ?? "none", classNames),
+  ];
+}
+
+function createEntitlementSummaryMetrics({
+  access,
+  classNames,
+  resolvedCopy,
+}: {
+  readonly access: VortexEntitlementSummaryState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexEntitlementSummaryCopy>;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, access.status, classNames),
+    createMetric(resolvedCopy.planLabel, access.planLabel ?? "none", classNames),
+    createMetric(resolvedCopy.featureCountLabel, String(access.features.length), classNames),
+    createMetric(
+      resolvedCopy.renewalLabel,
+      access.renewsAt ?? access.activeUntil ?? "none",
+      classNames,
     ),
-    hasFeatures
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          access.features.map((feature) =>
-            createEntitlementFeatureItem(
-              feature,
-              access,
-              resolvedCopy,
-              classNames,
-              isDisabled,
-              onFeatureSelect,
-            ),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyFeaturesTitle),
-        ),
-    createElement(
+    createMetric(resolvedCopy.trialLabel, access.trialEndsAt ?? "none", classNames),
+  );
+}
+
+function createEntitlementSummaryFeatures({
+  access,
+  classNames,
+  isDisabled,
+  onFeatureSelect,
+  resolvedCopy,
+  state,
+}: {
+  readonly access: VortexEntitlementSummaryState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly onFeatureSelect: VortexEntitlementSummaryProps["onFeatureSelect"];
+  readonly resolvedCopy: Required<VortexEntitlementSummaryCopy>;
+  readonly state: EntitlementSummaryState;
+}): ReactNode {
+  if (!state.hasFeatures) {
+    return createElement(
       "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canOpenPortal,
-          onClick: openPortal,
-          type: "button",
-          "data-vortex-entitlement-action": "open_customer_portal",
-        },
-        resolvedCopy.openPortalLabel,
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyFeaturesTitle),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    access.features.map((feature) =>
+      createEntitlementFeatureItem(
+        feature,
+        access,
+        resolvedCopy,
+        classNames,
+        isDisabled,
+        onFeatureSelect,
       ),
+    ),
+  );
+}
+
+function createEntitlementSummaryActions({
+  classNames,
+  isDisabled,
+  openPortal,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly openPortal: () => void;
+  readonly resolvedCopy: Required<VortexEntitlementSummaryCopy>;
+  readonly state: EntitlementSummaryState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canOpenPortal,
+        onClick: openPortal,
+        type: "button",
+        "data-vortex-entitlement-action": "open_customer_portal",
+      },
+      resolvedCopy.openPortalLabel,
     ),
   );
 }
