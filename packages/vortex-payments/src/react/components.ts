@@ -4384,8 +4384,13 @@ export function VortexUsageMeterSummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveUsageMeterSummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const hasMeters = usage.meters.length > 0;
-  const canOpenPortal = usage.portalToken !== undefined;
+  const state = createUsageMeterSummaryState(usage);
+  const openPortal = createUsageMeterSummaryPortalHandler({
+    onPortalLaunch,
+    runtime,
+    selectedNavigate,
+    usage,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -4404,8 +4409,46 @@ export function VortexUsageMeterSummary({
     }
   }, [error, onError]);
 
-  const openPortal = (): void => {
-    if (!canOpenPortal || usage.portalToken === undefined) {
+  return createElement(
+    "section",
+    createUsageMeterSummarySectionProps({ appearance, className, classNames, state, usage }),
+    createUsageMeterSummaryHeader({ classNames, resolvedCopy, usage }),
+    createUsageMeterSummaryFeedback({ classNames, error, loading, resolvedCopy, usage }),
+    createUsageMeterSummaryMetrics({ classNames, resolvedCopy, usage }),
+    createUsageMeterSummaryItems({
+      classNames,
+      isDisabled,
+      onMeterSelect,
+      resolvedCopy,
+      state,
+      usage,
+    }),
+    createUsageMeterSummaryActions({ classNames, isDisabled, openPortal, resolvedCopy, state }),
+  );
+}
+
+function createUsageMeterSummaryState(usage: VortexUsageMeterSummaryState) {
+  return {
+    canOpenPortal: usage.portalToken !== undefined,
+    hasMeters: usage.meters.length > 0,
+  };
+}
+
+type UsageMeterSummaryState = ReturnType<typeof createUsageMeterSummaryState>;
+
+function createUsageMeterSummaryPortalHandler({
+  onPortalLaunch,
+  runtime,
+  selectedNavigate,
+  usage,
+}: {
+  readonly onPortalLaunch: VortexUsageMeterSummaryProps["onPortalLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly usage: VortexUsageMeterSummaryState;
+}) {
+  return (): void => {
+    if (!createUsageMeterSummaryState(usage).canOpenPortal || usage.portalToken === undefined) {
       return;
     }
     const launch = runtime.createHostedLink({
@@ -4419,43 +4462,76 @@ export function VortexUsageMeterSummary({
     onPortalLaunch?.(launch);
     selectedNavigate(launch);
   };
+}
 
+function createUsageMeterSummarySectionProps({
+  appearance,
+  className,
+  classNames,
+  state,
+  usage,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: UsageMeterSummaryState;
+  readonly usage: VortexUsageMeterSummaryState;
+}) {
+  return {
+    className: cx("vortex-payments-usage-meter-summary", className, classNames?.root),
+    "data-vortex-surface": "usage-meter-summary",
+    "data-vortex-component": "VortexUsageMeterSummary",
+    "data-vortex-customer-id": usage.customerId,
+    "data-vortex-billing-account-id": usage.billingAccountId,
+    "data-vortex-subscription-id": usage.subscriptionId,
+    "data-vortex-usage-meter-summary-status": usage.status,
+    "data-vortex-meter-count": String(usage.meters.length),
+    "data-vortex-usage-period-start": usage.periodStart,
+    "data-vortex-usage-period-end": usage.periodEnd,
+    "data-vortex-usage-next-reset-at": usage.nextResetAt,
+    "data-vortex-customer-portal-ready": String(state.canOpenPortal),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createUsageMeterSummaryHeader({
+  classNames,
+  resolvedCopy,
+  usage,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexUsageMeterSummaryCopy>;
+  readonly usage: VortexUsageMeterSummaryState;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-usage-meter-summary", className, classNames?.root),
-      "data-vortex-surface": "usage-meter-summary",
-      "data-vortex-component": "VortexUsageMeterSummary",
-      "data-vortex-customer-id": usage.customerId,
-      "data-vortex-billing-account-id": usage.billingAccountId,
-      "data-vortex-subscription-id": usage.subscriptionId,
-      "data-vortex-usage-meter-summary-status": usage.status,
-      "data-vortex-meter-count": String(usage.meters.length),
-      "data-vortex-usage-period-start": usage.periodStart,
-      "data-vortex-usage-period-end": usage.periodEnd,
-      "data-vortex-usage-next-reset-at": usage.nextResetAt,
-      "data-vortex-customer-portal-ready": String(canOpenPortal),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        usageMeterSummaryDescription(usage, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      usageMeterSummaryDescription(usage, resolvedCopy),
     ),
+  );
+}
+
+function createUsageMeterSummaryFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+  usage,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexUsageMeterSummaryCopy>;
+  readonly usage: VortexUsageMeterSummaryState;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -4474,54 +4550,98 @@ export function VortexUsageMeterSummary({
     usage.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, usage.message),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, usage.status, classNames),
-      createMetric(resolvedCopy.planLabel, usage.planLabel ?? "none", classNames),
-      createMetric(
-        resolvedCopy.periodLabel,
-        formatDateRange(usage.periodStart, usage.periodEnd),
-        classNames,
-      ),
-      createMetric(resolvedCopy.nextResetLabel, usage.nextResetAt ?? "none", classNames),
-      createMetric(resolvedCopy.meterCountLabel, String(usage.meters.length), classNames),
+  ];
+}
+
+function createUsageMeterSummaryMetrics({
+  classNames,
+  resolvedCopy,
+  usage,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexUsageMeterSummaryCopy>;
+  readonly usage: VortexUsageMeterSummaryState;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, usage.status, classNames),
+    createMetric(resolvedCopy.planLabel, usage.planLabel ?? "none", classNames),
+    createMetric(
+      resolvedCopy.periodLabel,
+      formatDateRange(usage.periodStart, usage.periodEnd),
+      classNames,
     ),
-    hasMeters
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          usage.meters.map((meter) =>
-            createUsageMeterSummaryItem(
-              meter,
-              usage,
-              resolvedCopy,
-              classNames,
-              isDisabled,
-              onMeterSelect,
-            ),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyMetersTitle),
-          createElement("p", null, resolvedCopy.emptyMetersDescription),
-        ),
-    createElement(
+    createMetric(resolvedCopy.nextResetLabel, usage.nextResetAt ?? "none", classNames),
+    createMetric(resolvedCopy.meterCountLabel, String(usage.meters.length), classNames),
+  );
+}
+
+function createUsageMeterSummaryItems({
+  classNames,
+  isDisabled,
+  onMeterSelect,
+  resolvedCopy,
+  state,
+  usage,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly onMeterSelect: VortexUsageMeterSummaryProps["onMeterSelect"];
+  readonly resolvedCopy: Required<VortexUsageMeterSummaryCopy>;
+  readonly state: UsageMeterSummaryState;
+  readonly usage: VortexUsageMeterSummaryState;
+}): ReactNode {
+  if (!state.hasMeters) {
+    return createElement(
       "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canOpenPortal,
-          onClick: openPortal,
-          type: "button",
-          "data-vortex-usage-meter-summary-action": "open_customer_portal",
-        },
-        resolvedCopy.openPortalLabel,
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyMetersTitle),
+      createElement("p", null, resolvedCopy.emptyMetersDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    usage.meters.map((meter) =>
+      createUsageMeterSummaryItem(
+        meter,
+        usage,
+        resolvedCopy,
+        classNames,
+        isDisabled,
+        onMeterSelect,
       ),
+    ),
+  );
+}
+
+function createUsageMeterSummaryActions({
+  classNames,
+  isDisabled,
+  openPortal,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly openPortal: () => void;
+  readonly resolvedCopy: Required<VortexUsageMeterSummaryCopy>;
+  readonly state: UsageMeterSummaryState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canOpenPortal,
+        onClick: openPortal,
+        type: "button",
+        "data-vortex-usage-meter-summary-action": "open_customer_portal",
+      },
+      resolvedCopy.openPortalLabel,
     ),
   );
 }
@@ -7531,61 +7651,94 @@ function createUsageMeterSummaryItem(
       "data-vortex-meter-reset-at": meter.resetAt,
     },
     createElement("strong", { className: classNames?.itemTitle }, meter.title),
-    meter.description === undefined
-      ? null
-      : createElement("p", { className: classNames?.itemDescription }, meter.description),
+    createUsageMeterSummaryItemDescription(meter, classNames),
     createElement("span", { className: classNames?.status }, meter.status),
-    meter.limitLabel === undefined
-      ? null
-      : createElement(
-          "span",
-          { className: classNames?.status, "data-vortex-meter-limit-label": true },
-          meter.limitLabel,
-        ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(
-        copy.usedLabel,
-        formatUsageMeterAmount(meter.usedAmount, meter.unitLabel),
-        classNames,
-      ),
-      createMetric(
-        copy.includedLabel,
-        meter.includedAmount === undefined
-          ? "none"
-          : formatUsageMeterAmount(meter.includedAmount, meter.unitLabel),
-        classNames,
-      ),
-      createMetric(
-        copy.billableLabel,
-        meter.billableAmount === undefined
-          ? "none"
-          : formatUsageMeterAmount(meter.billableAmount, meter.unitLabel),
-        classNames,
-      ),
-      createMetric(copy.usagePercentLabel, formatUsageMeterPercent(meter.usagePercent), classNames),
-      createMetric(
-        copy.periodLabel,
-        formatDateRange(meter.periodStart, meter.periodEnd),
-        classNames,
-      ),
-      createMetric(copy.resetLabel, meter.resetAt ?? "none", classNames),
-      createMetric(copy.nextActionLabel, meter.nextAction ?? "none", classNames),
+    createUsageMeterSummaryItemLimitLabel(meter, classNames),
+    createUsageMeterSummaryItemMetrics(meter, copy, classNames),
+    createUsageMeterSummaryItemButton(meter, usage, copy, classNames, isDisabled, onMeterSelect),
+  );
+}
+
+function createUsageMeterSummaryItemDescription(
+  meter: VortexUsageMeterSummaryMeter,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (meter.description === undefined) {
+    return null;
+  }
+  return createElement("p", { className: classNames?.itemDescription }, meter.description);
+}
+
+function createUsageMeterSummaryItemLimitLabel(
+  meter: VortexUsageMeterSummaryMeter,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (meter.limitLabel === undefined) {
+    return null;
+  }
+  return createElement(
+    "span",
+    { className: classNames?.status, "data-vortex-meter-limit-label": true },
+    meter.limitLabel,
+  );
+}
+
+function createUsageMeterSummaryItemMetrics(
+  meter: VortexUsageMeterSummaryMeter,
+  copy: Required<VortexUsageMeterSummaryCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(
+      copy.usedLabel,
+      formatUsageMeterAmount(meter.usedAmount, meter.unitLabel),
+      classNames,
     ),
-    createElement(
-      "button",
-      {
-        className: classNames?.button,
-        disabled: isDisabled || onMeterSelect === undefined,
-        onClick: () => {
-          void onMeterSelect?.(meter, usage);
-        },
-        type: "button",
-        "data-vortex-meter-action": "select_meter",
+    createMetric(copy.includedLabel, formatUsageMeterIncludedAmount(meter), classNames),
+    createMetric(copy.billableLabel, formatUsageMeterBillableAmount(meter), classNames),
+    createMetric(copy.usagePercentLabel, formatUsageMeterPercent(meter.usagePercent), classNames),
+    createMetric(copy.periodLabel, formatDateRange(meter.periodStart, meter.periodEnd), classNames),
+    createMetric(copy.resetLabel, meter.resetAt ?? "none", classNames),
+    createMetric(copy.nextActionLabel, meter.nextAction ?? "none", classNames),
+  );
+}
+
+function formatUsageMeterIncludedAmount(meter: VortexUsageMeterSummaryMeter): string {
+  if (meter.includedAmount === undefined) {
+    return "none";
+  }
+  return formatUsageMeterAmount(meter.includedAmount, meter.unitLabel);
+}
+
+function formatUsageMeterBillableAmount(meter: VortexUsageMeterSummaryMeter): string {
+  if (meter.billableAmount === undefined) {
+    return "none";
+  }
+  return formatUsageMeterAmount(meter.billableAmount, meter.unitLabel);
+}
+
+function createUsageMeterSummaryItemButton(
+  meter: VortexUsageMeterSummaryMeter,
+  usage: VortexUsageMeterSummaryState,
+  copy: Required<VortexUsageMeterSummaryCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+  isDisabled: boolean,
+  onMeterSelect: VortexUsageMeterSummaryProps["onMeterSelect"],
+): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: isDisabled || onMeterSelect === undefined,
+      onClick: () => {
+        void onMeterSelect?.(meter, usage);
       },
-      copy.viewMeterLabel,
-    ),
+      type: "button",
+      "data-vortex-meter-action": "select_meter",
+    },
+    copy.viewMeterLabel,
   );
 }
 
