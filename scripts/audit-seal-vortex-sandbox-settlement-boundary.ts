@@ -113,6 +113,10 @@ if (Number.isNaN(readyToSettleDate.getTime())) {
 
 const now = new Date();
 const readinessWindow = now.getTime() >= readyToSettleDate.getTime() ? "elapsed" : "waiting";
+const nextAction =
+  readinessWindow === "elapsed"
+    ? "Human may inspect provider readiness now, run reconciliation only with --reconcile-if-ready if provider readiness is confirmed, then run the settled paid-state proof and record fullySettled evidence."
+    : `Human waits until ${captured.readyToSettleAt}, then inspects provider readiness before running reconciliation and the settled paid-state proof.`;
 
 const vortexDeployment = "dev:notable-leopard-969";
 const sealDeployment = "dev:clever-goose-484";
@@ -157,14 +161,16 @@ console.log(
       proofDoc: proofDocPath,
       captured,
       readinessWindow,
+      earliestHumanReconcileAt: captured.readyToSettleAt,
+      humanBoundary:
+        "Agents must not run reconciliation, settlement, payout, live card, or money-moving commands. The printed commands are for the human operator.",
       commands: {
         finalSandboxLaunchGate: finalSandboxLaunchGateCommand,
         inspectWithoutReconcile: inspectWithoutReconcileCommand,
         humanReconcileIfReady: humanReconcileCommand,
         settledPaidStateProof: settledPaidStateProofCommand,
       },
-      nextAction:
-        "Human runs the reconciliation command only after provider readiness, then runs the settled paid-state proof and records fullySettled evidence.",
+      nextAction,
     },
     null,
     2,

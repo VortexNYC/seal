@@ -51,6 +51,8 @@ type SandboxSettlementAudit = {
   readonly ok: boolean;
   readonly check: string;
   readonly readinessWindow: "elapsed" | "waiting";
+  readonly earliestHumanReconcileAt: string;
+  readonly humanBoundary: string;
   readonly captured: {
     readonly merchantAccountId: string;
     readonly vortexPayableId: string;
@@ -58,6 +60,7 @@ type SandboxSettlementAudit = {
     readonly paymentId: string;
     readonly readyToSettleAt: string;
   };
+  readonly nextAction: string;
 };
 
 const repoRoot = new URL("..", import.meta.url).pathname;
@@ -149,7 +152,10 @@ console.log(
       sandbox: {
         ok: sandbox.ok,
         readinessWindow: sandbox.readinessWindow,
+        earliestHumanReconcileAt: sandbox.earliestHumanReconcileAt,
+        humanBoundary: sandbox.humanBoundary,
         captured: sandbox.captured,
+        nextAction: sandbox.nextAction,
       },
       production: {
         ok: production.ok,
@@ -267,11 +273,14 @@ function isSandboxSettlementAudit(value: unknown): value is SandboxSettlementAud
     value.ok === true &&
     value.check === "seal_vortex_sandbox_settlement_boundary" &&
     (value.readinessWindow === "elapsed" || value.readinessWindow === "waiting") &&
+    typeof value.earliestHumanReconcileAt === "string" &&
+    typeof value.humanBoundary === "string" &&
     typeof value.captured.merchantAccountId === "string" &&
     typeof value.captured.vortexPayableId === "string" &&
     typeof value.captured.hostedInvoiceUrl === "string" &&
     typeof value.captured.paymentId === "string" &&
-    typeof value.captured.readyToSettleAt === "string"
+    typeof value.captured.readyToSettleAt === "string" &&
+    typeof value.nextAction === "string"
   );
 }
 
