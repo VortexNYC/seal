@@ -4897,11 +4897,13 @@ export function VortexMerchantAccountPanel({
   const selectedNavigate = navigate ?? contextNavigate;
   const isDisabled = disabled === true || readOnly === true;
   const resolvedCopy = resolveMerchantAccountPanelCopy(copy);
-  const canAcceptPayments = merchantState?.canAcceptPayments ?? false;
-  const payoutReadiness = merchantState?.payoutReadiness ?? "unknown";
-  const openRequirementCount = merchantState?.openRequirementIds.length ?? 0;
-  const activeCapabilities = merchantState?.activeCapabilityKeys ?? [];
-  const restrictedCapabilities = merchantState?.restrictedCapabilityKeys ?? [];
+  const state = createMerchantAccountPanelState(merchantAccount, merchantState);
+  const launchAction = createMerchantAccountPanelLauncher({
+    onAction,
+    onActionLaunch,
+    runtime,
+    selectedNavigate,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -4921,47 +4923,105 @@ export function VortexMerchantAccountPanel({
     }
   }, [error, onError]);
 
-  const launchAction = (
-    action: VortexMerchantAccountPanelAction,
-    request: VortexHostedSurfaceRequest,
-  ): void => {
-    const launch = runtime.createHostedLink(request);
-    onAction?.(action);
-    onActionLaunch?.(action, launch);
-    selectedNavigate(launch);
-  };
-
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-merchant-account-panel", className, classNames?.root),
-      "data-vortex-surface": "merchant-account-panel",
-      "data-vortex-component": "VortexMerchantAccountPanel",
-      "data-vortex-merchant-account-id": merchantAccount.id,
-      "data-vortex-merchant-status": merchantState?.merchantStatus ?? merchantAccount.status,
-      "data-vortex-can-accept-payments": String(canAcceptPayments),
-      "data-vortex-payout-readiness": payoutReadiness,
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    createMerchantAccountPanelSectionProps({
+      appearance,
+      className,
+      classNames,
+      merchantAccount,
+      state,
+    }),
+    createMerchantAccountPanelHeader(state, resolvedCopy, classNames),
+    createMerchantAccountPanelFeedback({ classNames, error, loading, resolvedCopy }),
+    createMerchantAccountPanelUnavailableState({ classNames, merchantState, resolvedCopy }),
+    createMerchantAccountPanelMetrics({ classNames, merchantAccount, resolvedCopy, state }),
+    createMerchantAccountPanelDetails({ classNames, merchantAccount, resolvedCopy, state }),
+    createMerchantAccountPanelActions({
+      classNames,
+      isDisabled,
+      launchAction,
+      merchantAccount,
+      resolvedCopy,
+      state,
+    }),
+  );
+}
+
+function createMerchantAccountPanelState(
+  merchantAccount: MerchantAccount,
+  merchantState: MerchantAccountStateSnapshot | undefined,
+) {
+  return {
+    activeCapabilities: merchantState?.activeCapabilityKeys ?? [],
+    canAcceptPayments: merchantState?.canAcceptPayments ?? false,
+    merchantStatus: merchantState?.merchantStatus ?? merchantAccount.status,
+    onboardingSessionId: merchantState?.onboardingSessionId,
+    openRequirementCount: merchantState?.openRequirementIds.length ?? 0,
+    payoutReadiness: merchantState?.payoutReadiness ?? "unknown",
+    restrictedCapabilities: merchantState?.restrictedCapabilityKeys ?? [],
+  };
+}
+
+type MerchantAccountPanelState = ReturnType<typeof createMerchantAccountPanelState>;
+
+function createMerchantAccountPanelSectionProps({
+  appearance,
+  className,
+  classNames,
+  merchantAccount,
+  state,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantAccount: MerchantAccount;
+  readonly state: MerchantAccountPanelState;
+}) {
+  return {
+    className: cx("vortex-payments-merchant-account-panel", className, classNames?.root),
+    "data-vortex-surface": "merchant-account-panel",
+    "data-vortex-component": "VortexMerchantAccountPanel",
+    "data-vortex-merchant-account-id": merchantAccount.id,
+    "data-vortex-merchant-status": state.merchantStatus,
+    "data-vortex-can-accept-payments": String(state.canAcceptPayments),
+    "data-vortex-payout-readiness": state.payoutReadiness,
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createMerchantAccountPanelHeader(
+  state: MerchantAccountPanelState,
+  copy: Required<VortexMerchantAccountPanelCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, copy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        canAcceptPayments ? resolvedCopy.readyDescription : resolvedCopy.blockedDescription,
-      ),
+      "p",
+      { className: classNames?.description },
+      state.canAcceptPayments ? copy.readyDescription : copy.blockedDescription,
     ),
+  );
+}
+
+function createMerchantAccountPanelFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexMerchantAccountPanelCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -4977,117 +5037,236 @@ export function VortexMerchantAccountPanel({
           resolvedCopy.errorTitle,
           error,
         ),
-    merchantState === undefined
-      ? createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.stateUnavailableTitle),
-          createElement("p", null, resolvedCopy.stateUnavailableDescription),
-        )
-      : null,
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.businessLabel, merchantAccount.displayName, classNames),
-      createMetric(resolvedCopy.merchantModeLabel, merchantAccount.merchantMode, classNames),
-      createMetric(
-        resolvedCopy.merchantStatusLabel,
-        merchantState?.merchantStatus ?? merchantAccount.status,
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.paymentCollectionLabel,
-        canAcceptPayments ? "ready" : "blocked",
-        classNames,
-      ),
-      createMetric(resolvedCopy.payoutReadinessLabel, payoutReadiness, classNames),
-      createMetric(resolvedCopy.defaultCurrencyLabel, merchantAccount.defaultCurrency, classNames),
-      createMetric(
-        resolvedCopy.activeCapabilitiesLabel,
-        String(activeCapabilities.length),
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.restrictedCapabilitiesLabel,
-        String(restrictedCapabilities.length),
-        classNames,
-      ),
-      createMetric(resolvedCopy.openRequirementsLabel, String(openRequirementCount), classNames),
+  ];
+}
+
+function createMerchantAccountPanelUnavailableState({
+  classNames,
+  merchantState,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantState: MerchantAccountStateSnapshot | undefined;
+  readonly resolvedCopy: Required<VortexMerchantAccountPanelCopy>;
+}): ReactNode {
+  if (merchantState !== undefined) {
+    return null;
+  }
+  return createElement(
+    "div",
+    { className: classNames?.empty, role: "status" },
+    createElement("p", null, resolvedCopy.stateUnavailableTitle),
+    createElement("p", null, resolvedCopy.stateUnavailableDescription),
+  );
+}
+
+function createMerchantAccountPanelMetrics({
+  classNames,
+  merchantAccount,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantAccount: MerchantAccount;
+  readonly resolvedCopy: Required<VortexMerchantAccountPanelCopy>;
+  readonly state: MerchantAccountPanelState;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.businessLabel, merchantAccount.displayName, classNames),
+    createMetric(resolvedCopy.merchantModeLabel, merchantAccount.merchantMode, classNames),
+    createMetric(resolvedCopy.merchantStatusLabel, state.merchantStatus, classNames),
+    createMetric(
+      resolvedCopy.paymentCollectionLabel,
+      state.canAcceptPayments ? "ready" : "blocked",
+      classNames,
     ),
-    createElement(
-      "ul",
-      { className: classNames?.list },
-      createMerchantAccountListItem(
-        resolvedCopy.activeCapabilitiesLabel,
-        activeCapabilities.length === 0 ? "none" : activeCapabilities.join(", "),
-        "active-capabilities",
-        classNames,
-      ),
-      createMerchantAccountListItem(
-        resolvedCopy.restrictedCapabilitiesLabel,
-        restrictedCapabilities.length === 0 ? "none" : restrictedCapabilities.join(", "),
-        "restricted-capabilities",
-        classNames,
-      ),
-      createMerchantAccountListItem(
-        "Account type",
-        `${merchantAccount.legalEntityType} / ${merchantAccount.country}`,
-        "account-type",
-        classNames,
-      ),
+    createMetric(resolvedCopy.payoutReadinessLabel, state.payoutReadiness, classNames),
+    createMetric(resolvedCopy.defaultCurrencyLabel, merchantAccount.defaultCurrency, classNames),
+    createMetric(
+      resolvedCopy.activeCapabilitiesLabel,
+      String(state.activeCapabilities.length),
+      classNames,
     ),
-    createElement(
-      "div",
-      { className: classNames?.actions },
-      merchantState?.onboardingSessionId === undefined
-        ? null
-        : createElement(
-            "button",
-            {
-              className: classNames?.button,
-              type: "button",
-              disabled: isDisabled,
-              onClick: () => {
-                launchAction("open_onboarding", {
-                  surface: "merchant_onboarding",
-                  token: merchantState.onboardingSessionId as string,
-                });
-              },
-            },
-            resolvedCopy.openOnboardingLabel,
-          ),
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          type: "button",
-          disabled: isDisabled,
-          onClick: () => {
-            launchAction("open_actions", {
-              surface: "merchant_action_queue",
-              id: merchantAccount.id,
-            });
-          },
-        },
-        resolvedCopy.openActionsLabel,
-      ),
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          type: "button",
-          disabled: isDisabled,
-          onClick: () => {
-            launchAction("open_payout_readiness", {
-              surface: "payout_readiness",
-              id: merchantAccount.id,
-            });
-          },
-        },
-        resolvedCopy.openPayoutReadinessLabel,
-      ),
+    createMetric(
+      resolvedCopy.restrictedCapabilitiesLabel,
+      String(state.restrictedCapabilities.length),
+      classNames,
+    ),
+    createMetric(
+      resolvedCopy.openRequirementsLabel,
+      String(state.openRequirementCount),
+      classNames,
     ),
   );
+}
+
+function createMerchantAccountPanelDetails({
+  classNames,
+  merchantAccount,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantAccount: MerchantAccount;
+  readonly resolvedCopy: Required<VortexMerchantAccountPanelCopy>;
+  readonly state: MerchantAccountPanelState;
+}): ReactNode {
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    createMerchantAccountListItem(
+      resolvedCopy.activeCapabilitiesLabel,
+      formatMerchantAccountCapabilities(state.activeCapabilities),
+      "active-capabilities",
+      classNames,
+    ),
+    createMerchantAccountListItem(
+      resolvedCopy.restrictedCapabilitiesLabel,
+      formatMerchantAccountCapabilities(state.restrictedCapabilities),
+      "restricted-capabilities",
+      classNames,
+    ),
+    createMerchantAccountListItem(
+      "Account type",
+      `${merchantAccount.legalEntityType} / ${merchantAccount.country}`,
+      "account-type",
+      classNames,
+    ),
+  );
+}
+
+function formatMerchantAccountCapabilities(capabilities: readonly string[]): string {
+  return capabilities.length === 0 ? "none" : capabilities.join(", ");
+}
+
+function createMerchantAccountPanelActions({
+  classNames,
+  isDisabled,
+  launchAction,
+  merchantAccount,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly launchAction: (
+    action: VortexMerchantAccountPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly merchantAccount: MerchantAccount;
+  readonly resolvedCopy: Required<VortexMerchantAccountPanelCopy>;
+  readonly state: MerchantAccountPanelState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createMerchantAccountPanelOnboardingButton({
+      classNames,
+      isDisabled,
+      label: resolvedCopy.openOnboardingLabel,
+      launchAction,
+      state,
+    }),
+    createMerchantAccountPanelButton({
+      action: "open_actions",
+      classNames,
+      isDisabled,
+      label: resolvedCopy.openActionsLabel,
+      launchAction,
+      request: { surface: "merchant_action_queue", id: merchantAccount.id },
+    }),
+    createMerchantAccountPanelButton({
+      action: "open_payout_readiness",
+      classNames,
+      isDisabled,
+      label: resolvedCopy.openPayoutReadinessLabel,
+      launchAction,
+      request: { surface: "payout_readiness", id: merchantAccount.id },
+    }),
+  );
+}
+
+function createMerchantAccountPanelOnboardingButton({
+  classNames,
+  isDisabled,
+  label,
+  launchAction,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly label: ReactNode;
+  readonly launchAction: (
+    action: VortexMerchantAccountPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly state: MerchantAccountPanelState;
+}): ReactNode {
+  const token = state.onboardingSessionId;
+  if (token === undefined) {
+    return null;
+  }
+  return createMerchantAccountPanelButton({
+    action: "open_onboarding",
+    classNames,
+    isDisabled,
+    label,
+    launchAction,
+    request: { surface: "merchant_onboarding", token },
+  });
+}
+
+function createMerchantAccountPanelButton({
+  action,
+  classNames,
+  isDisabled,
+  label,
+  launchAction,
+  request,
+}: {
+  readonly action: VortexMerchantAccountPanelAction;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly label: ReactNode;
+  readonly launchAction: (
+    action: VortexMerchantAccountPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly request: VortexHostedSurfaceRequest;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: isDisabled,
+      onClick: () => {
+        launchAction(action, request);
+      },
+      type: "button",
+    },
+    label,
+  );
+}
+
+function createMerchantAccountPanelLauncher({
+  onAction,
+  onActionLaunch,
+  runtime,
+  selectedNavigate,
+}: {
+  readonly onAction: VortexMerchantAccountPanelProps["onAction"];
+  readonly onActionLaunch: VortexMerchantAccountPanelProps["onActionLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+}) {
+  return (action: VortexMerchantAccountPanelAction, request: VortexHostedSurfaceRequest): void => {
+    const launch = runtime.createHostedLink(request);
+    onAction?.(action);
+    onActionLaunch?.(action, launch);
+    selectedNavigate(launch);
+  };
 }
 
 export function VortexPayoutReadinessPanel({
