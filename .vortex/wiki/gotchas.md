@@ -20,3 +20,4 @@ deployment (see `.vortex/qa.json` web.verify). Do not invent a preview-deploy co
 ## Learned truths
 
 - Seal has a separate marketing site at apps/landing (distinct from the apps/web app).  (apps/landing)
+- Seal e2e smoke tests run the smoke-contract Playwright project: cd apps/web && bun run test:e2e --project=smoke-contract.  (.vortex/qa.json)  (human follow-up (Linear))
