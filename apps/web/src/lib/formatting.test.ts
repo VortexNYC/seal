@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  capitalizeFirst,
   formatDate,
   formatFileSize,
   formatRelativeTime,
@@ -162,6 +163,32 @@ describe("getInitials", () => {
     expect(getInitials(undefined, undefined)).toBe("?");
     expect(getInitials("", undefined)).toBe("?");
     expect(getInitials("", "")).toBe("?");
+  });
+});
+
+describe("capitalizeFirst", () => {
+  test("capitalizes the first character", () => {
+    expect(capitalizeFirst("hello")).toBe("Hello");
+    expect(capitalizeFirst("Hello")).toBe("Hello");
+    expect(capitalizeFirst("world")).toBe("World");
+  });
+
+  test("handles single character strings", () => {
+    expect(capitalizeFirst("a")).toBe("A");
+    expect(capitalizeFirst("A")).toBe("A");
+  });
+
+  test("handles empty strings", () => {
+    expect(capitalizeFirst("")).toBe("");
+  });
+
+  test("does not lowercase existing uppercase letters", () => {
+    expect(capitalizeFirst("hELLO")).toBe("HELLO");
+    expect(capitalizeFirst("mIxEd")).toBe("MIxEd");
+  });
+
+  test("preserves leading spaces", () => {
+    expect(capitalizeFirst(" hello")).toBe(" hello");
   });
 });
 

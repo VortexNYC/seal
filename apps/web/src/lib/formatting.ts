@@ -46,6 +46,13 @@ export function formatDate(timestamp: number): string {
 }
 
 /**
+ * Capitalize the first character of a string
+ */
+export function capitalizeFirst(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
  * Get initials from a name or email
  */
 export function getInitials(name?: string, email?: string): string {
