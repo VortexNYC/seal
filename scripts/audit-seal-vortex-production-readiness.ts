@@ -50,12 +50,19 @@ type RemediationPlan = {
 
 const repoRoot = resolve(import.meta.dir, "..");
 const sealBackendRoot = resolve(repoRoot, "apps/backend");
-const vortexBackendRoot = resolve(repoRoot, "../vortex-payments/apps/backend");
+const localVortexRepoRoot =
+  readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? resolve(repoRoot, "../vortex-payments");
+const vortexBackendRoot = resolve(localVortexRepoRoot, "apps/backend");
 
 const sealProductionDeployment =
   process.env.SEAL_PRODUCTION_CONVEX_DEPLOYMENT ?? "compassionate-robin-742";
 const vortexProductionDeployment =
   process.env.VORTEX_PRODUCTION_CONVEX_DEPLOYMENT ?? "quixotic-snake-887";
+
+function readOptionalEnv(name: string): string | undefined {
+  const value = process.env[name];
+  return value !== undefined && value.length > 0 ? resolve(value) : undefined;
+}
 
 const sealGroups: readonly AuditGroup[] = [
   {

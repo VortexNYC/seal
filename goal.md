@@ -65,7 +65,7 @@ bun run audit:seal-vortex-production-readiness
 ```
 
 Current result: failing, as expected, without printing secret values.
-The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. Agents must not execute those commands against production.
+The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`. Agents must not execute those commands against production.
 
 Non-mutating launch-boundary wrapper:
 
