@@ -4,7 +4,8 @@ Date: 2026-07-08
 Repo: `/Users/shlomokabareti/Projects/Seal`
 Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
-Local head: inspect with `git rev-parse --short HEAD` before acting.
+Latest code cleanup commit: `f4940b4f` (`chore: neutralize Seal Vortex proof contract names`)
+Current head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
 
@@ -29,6 +30,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Non-archive retired-provider alias scan is intentionally down to the live top-down migration contract and the residue guard script.
 - Obsolete/completed provider-migration docs and tracked local skill examples that taught retired-provider patterns were archived or neutralized in `a282d9c2`.
 - The Vortex catalog live proof no longer seeds legacy-provider-shaped entitlement safety IDs; its safety organization now uses Vortex-shaped customer, subscription, product, and price ids, and the local migration gate statically blocks the old control from returning.
+- Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale legacy-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - Full root quality gates passed after the strict cleanup:
   - `bun run format:changed:check`
@@ -101,6 +103,11 @@ Missing Vortex production names:
 
 Latest non-mutating refresh results:
 
+- `bun run verify` passed after cleanup commit `f4940b4f`.
+- `bun run test` passed after cleanup commit `f4940b4f`.
+- `bun run build` passed after cleanup commit `f4940b4f`.
+- `git diff --check` passed after cleanup commit `f4940b4f`.
+- Raw working-tree retired-provider token scan returned no matches after cleanup commit `f4940b4f`.
 - `bun run prove:seal-vortex-migration-local` passed.
 - `bun run prove:seal-vortex-migration-local` now includes the Vortex-shaped catalog entitlement safety guard.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
