@@ -43,6 +43,7 @@
     "prove:seal-coupons-vortex": "bun run scripts/prove-seal-coupons-vortex.ts",
     "prove:seal-saas-checkout-vortex": "bun run scripts/prove-seal-saas-checkout-vortex.ts",
     "prove:seal-saas-webhook-billing-state": "bun run scripts/prove-seal-saas-webhook-billing-state.ts",
+    "prove:seal-vortex-migration-local": "bun run scripts/prove-seal-vortex-migration-local.ts",
     "prove:seal-document-payment-vortex-local": "bun run scripts/prove-seal-document-payment-vortex-local.ts",
     "prove:seal-document-payment-vortex-live": "bun run scripts/prove-seal-document-payment-vortex-live.ts",
     "prove:seal-document-payment-vortex-paid-state": "bun run scripts/prove-seal-document-payment-vortex-paid-state.ts",

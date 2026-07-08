@@ -39,8 +39,8 @@ const requiredFragments: readonly RequiredFragment[] = [
       "createCheckoutSession",
       'url: "/v1/customers/{customerExternalId}/portal-links"',
       'path: "/v1/coupons?status=active"',
-      'path: `/v1/coupons/${encodeURIComponent(input.couponId)}/apply`',
-      'path: `/v1/applied-coupons/${encodeURIComponent(input.appliedCouponId)}/terminate`',
+      "path: `/v1/coupons/${encodeURIComponent(input.couponId)}/apply`",
+      "path: `/v1/applied-coupons/${encodeURIComponent(input.appliedCouponId)}/terminate`",
     ],
   },
   {
@@ -75,7 +75,9 @@ const backendPackage = JSON.parse(readFileSync(backendPackagePath, "utf8")) as {
 for (const dependencyName of dependencyNames(backendPackage)) {
   const normalized = dependencyName.toLowerCase();
   if (forbiddenPackageNameFragments.some((fragment) => normalized.includes(fragment))) {
-    failures.push(`apps/backend/package.json must not depend on direct provider package ${dependencyName}`);
+    failures.push(
+      `apps/backend/package.json must not depend on direct provider package ${dependencyName}`,
+    );
   }
 }
 
@@ -97,13 +99,17 @@ for (const sourcePath of [
   if (relativePath.startsWith("apps/backend/convex/")) {
     for (const forbiddenFragment of forbiddenRuntimeFragments) {
       if (withoutComments.includes(forbiddenFragment)) {
-        failures.push(`${relativePath} contains direct provider runtime fragment ${forbiddenFragment}`);
+        failures.push(
+          `${relativePath} contains direct provider runtime fragment ${forbiddenFragment}`,
+        );
       }
     }
   }
 
   if (isVortexAdapterPath(relativePath) && /fetch\(\s*["']https?:\/\//.test(withoutComments)) {
-    failures.push(`${relativePath} must not call raw external URLs; use Vortex API helpers/SDK seams`);
+    failures.push(
+      `${relativePath} must not call raw external URLs; use Vortex API helpers/SDK seams`,
+    );
   }
 }
 
@@ -111,7 +117,9 @@ for (const required of requiredFragments) {
   const source = readFileSync(join(repoRoot, required.path), "utf8");
   for (const fragment of required.fragments) {
     if (!source.includes(fragment)) {
-      failures.push(`${required.path} missing required Vortex backend adapter fragment: ${fragment}`);
+      failures.push(
+        `${required.path} missing required Vortex backend adapter fragment: ${fragment}`,
+      );
     }
   }
 }
@@ -128,7 +136,9 @@ console.log("Vortex Payments backend adapter adoption proof passed:");
 console.log("- Seal backend has no direct provider package dependency or import.");
 console.log("- Seal Convex runtime has no direct provider credential or host fragment.");
 console.log("- SaaS checkout and SaaS catalog use Vortex SDK/public API surfaces.");
-console.log("- Merchant, payout, settlement, and document payable paths use Vortex public API helpers.");
+console.log(
+  "- Merchant, payout, settlement, and document payable paths use Vortex public API helpers.",
+);
 
 function dependencyNames(input: {
   readonly dependencies?: Record<string, string>;
@@ -165,9 +175,7 @@ function collectFiles(root: string, pattern: RegExp): readonly string[] {
 }
 
 function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 function readImportSpecifiers(source: string): readonly string[] {

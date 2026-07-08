@@ -153,6 +153,7 @@ Proof:
 
 - `bun run prove:seal-document-payment-vortex-local`
 - `bun run prove:vortex-saas-webhook-projection`
+- `bun run prove:seal-vortex-migration-local`
 - Human-run paid-state proof after a real sandbox card payment:
   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state`
 
@@ -203,14 +204,14 @@ Current launch baseline:
 - Production document-payment routing is not configured.
 - `bun run audit:seal-vortex-production-readiness` is the presence-only production gate. It currently fails without printing secret values because Seal production is missing document-payment routing names and Vortex production is missing runtime/Finix production names.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
+- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it intentionally excludes live card, settlement, payout, production credential, and remote git work.
 
 Do next:
 
 1. Keep `goal.md`, this plan, and Linear synchronized.
 2. Preserve the exact human-run settlement proof command from `docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md`.
 3. Run only non-mutating local gates as agent proof:
-   - `bun run prove:zero-retired-provider-residue`
-   - `bun run prove:seal-document-payment-vortex-local`
+   - `bun run prove:seal-vortex-migration-local`
    - `bun run audit:seal-vortex-production-readiness`
 4. When the provider settlement readiness window is open, a human runs the settlement command and the paid-state proof with `--require-settled`.
 5. Production launch remains blocked until production credentials, document-payment routing maps, one small real payment, and real settlement/payout visibility are proven.
