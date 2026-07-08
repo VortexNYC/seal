@@ -4,7 +4,7 @@ Date: 2026-07-08
 Repo: `/Users/shlomokabareti/Projects/Seal`
 Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
-Latest code cleanup commit: `f4940b4f` (`chore: neutralize Seal Vortex proof contract names`)
+Latest code cleanup commit: `a48c0018` (`chore: scan hidden Seal env for provider residue`)
 Current head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
@@ -23,22 +23,23 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 ## Current Truth
 
 - SEA-556 through SEA-561 are complete locally on `codex/sea-557-provider-neutral-data-contracts`.
-- The strict residue guard scans every tracked path/content for the raw legacy-provider token, including archive docs, and separately blocks retired-provider alias wording in active guidance/config.
+- The strict residue guard scans every tracked path/content for the raw legacy-provider token, including archive docs, scans owned hidden env/config content, and separately blocks retired-provider alias wording in active guidance/config.
 - `git ls-files | rg -i "<legacy-provider-token>"` returns no matches when the placeholder is replaced with the actual legacy provider word.
-- Raw working-tree scan excluding generated/ignored outputs returns no matches.
-- Active raw legacy-provider token scan outside `.git`, installs, and archives returns no matches; legacy-provider-named path scan returns no paths.
+- Raw owned working-tree scan, including hidden env/config and excluding generated/install/cache outputs, returns no matches.
+- Active raw legacy-provider token scan outside `.git`, installs, generated output, and caches returns no matches; legacy-provider-named path scan returns no paths.
 - Non-archive retired-provider alias scan is intentionally down to the live top-down migration contract and the residue guard script.
 - Obsolete/completed provider-migration docs and tracked local skill examples that taught retired-provider patterns were archived or neutralized in `a282d9c2`.
 - The Vortex catalog live proof no longer seeds legacy-provider-shaped entitlement safety IDs; its safety organization now uses Vortex-shaped customer, subscription, product, and price ids, and the local migration gate statically blocks the old control from returning.
 - Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale legacy-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
-- Full root quality gates passed after the strict cleanup:
-  - `bun run format:changed:check`
-  - `bun run lint:strict`
-  - `bun run typecheck`
+- Current root verification passed after the strict cleanup:
+  - `bun run prove:zero-retired-provider-residue`
+  - explicit hidden/no-ignore owned working-tree legacy-provider token scan
+  - package manifest and `bun.lock` legacy-provider token scan
+  - `bun run verify`
   - `bun run test`
   - `bun run build`
-  - `bun /Users/shlomokabareti/.codex/tools/convex-cost-guard.ts`
+  - `git diff --check`
 - No git push has been performed from this branch. Remote push still requires explicit human confirmation.
 
 ## Replacement Proof State
@@ -103,11 +104,13 @@ Missing Vortex production names:
 
 Latest non-mutating refresh results:
 
-- `bun run verify` passed after cleanup commit `f4940b4f`.
-- `bun run test` passed after cleanup commit `f4940b4f`.
-- `bun run build` passed after cleanup commit `f4940b4f`.
-- `git diff --check` passed after cleanup commit `f4940b4f`.
-- Raw working-tree retired-provider token scan returned no matches after cleanup commit `f4940b4f`.
+- `bun run prove:zero-retired-provider-residue` passed after cleanup commit `a48c0018` and now scans owned hidden env/config content.
+- Package manifests and `bun.lock` contain no legacy-provider token.
+- Explicit hidden/no-ignore owned working-tree legacy-provider token scan returned no matches after cleanup commit `a48c0018`.
+- `bun run verify` passed after cleanup commit `a48c0018`.
+- `bun run test` passed after cleanup commit `a48c0018`.
+- `bun run build` passed after cleanup commit `a48c0018`.
+- `git diff --check` passed after cleanup commit `a48c0018`.
 - `bun run prove:seal-vortex-migration-local` passed.
 - `bun run prove:seal-vortex-migration-local` now includes the Vortex-shaped catalog entitlement safety guard.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
