@@ -2,7 +2,7 @@ import { clerk } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 
 function getSignInPromptMatcher() {
-  return /sign in/i;
+  return /Sign in to continue/i;
 }
 
 test.describe("Authentication", () => {
