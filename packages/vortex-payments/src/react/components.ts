@@ -5211,29 +5211,69 @@ export function VortexFeePolicyPanel({
 
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-fee-policy-panel", className, classNames?.root),
-      "data-vortex-surface": "fee-policy-panel",
-      "data-vortex-component": "VortexFeePolicyPanel",
-      "data-vortex-merchant-account-id": feePolicy.merchantAccountId,
-      "data-vortex-fee-policy-owner-mode": feePolicy.ownerMode,
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
-    createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, resolvedCopy.description),
-    ),
+    createFeePolicyPanelSectionProps({ appearance, className, classNames, feePolicy }),
+    createFeePolicyPanelHeader(resolvedCopy, classNames),
+    createFeePolicyPanelFeedback({ classNames, error, loading, resolvedCopy }),
+    createFeePolicyPanelMetrics(feePolicy, resolvedCopy, classNames),
+    createFeePolicyPanelOptions({
+      changePolicy,
+      classNames,
+      feePolicy,
+      isDisabled,
+      resolvedCopy,
+    }),
+    createFeePolicyPanelNote(feePolicy, classNames),
+  );
+}
+
+function createFeePolicyPanelSectionProps({
+  appearance,
+  className,
+  classNames,
+  feePolicy,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly feePolicy: VortexFeePolicyState;
+}) {
+  return {
+    className: cx("vortex-payments-fee-policy-panel", className, classNames?.root),
+    "data-vortex-surface": "fee-policy-panel",
+    "data-vortex-component": "VortexFeePolicyPanel",
+    "data-vortex-merchant-account-id": feePolicy.merchantAccountId,
+    "data-vortex-fee-policy-owner-mode": feePolicy.ownerMode,
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createFeePolicyPanelHeader(
+  copy: Required<VortexFeePolicyPanelCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, copy.title),
+    createElement("p", { className: classNames?.description }, copy.description),
+  );
+}
+
+function createFeePolicyPanelFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexFeePolicyPanelCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -5249,53 +5289,96 @@ export function VortexFeePolicyPanel({
           resolvedCopy.errorTitle,
           error,
         ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.ownerModeLabel, feePolicy.ownerMode, classNames),
-      createMetric(resolvedCopy.platformFeeLabel, feePolicy.platformFeeLabel ?? "none", classNames),
-      createMetric(resolvedCopy.settlementLabel, feePolicy.settlementLabel ?? "none", classNames),
+  ];
+}
+
+function createFeePolicyPanelMetrics(
+  feePolicy: VortexFeePolicyState,
+  copy: Required<VortexFeePolicyPanelCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(copy.ownerModeLabel, feePolicy.ownerMode, classNames),
+    createMetric(copy.platformFeeLabel, feePolicy.platformFeeLabel ?? "none", classNames),
+    createMetric(copy.settlementLabel, feePolicy.settlementLabel ?? "none", classNames),
+  );
+}
+
+function createFeePolicyPanelOptions({
+  changePolicy,
+  classNames,
+  feePolicy,
+  isDisabled,
+  resolvedCopy,
+}: {
+  readonly changePolicy: (event: ChangeEvent<HTMLInputElement>) => void;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly feePolicy: VortexFeePolicyState;
+  readonly isDisabled: boolean;
+  readonly resolvedCopy: Required<VortexFeePolicyPanelCopy>;
+}): ReactNode {
+  return createElement(
+    "fieldset",
+    {
+      className: classNames?.list,
+      disabled: isDisabled,
+    },
+    createElement("legend", { className: classNames?.status }, resolvedCopy.policyOptionsLabel),
+    feePolicy.options.map((option) =>
+      createFeePolicyPanelOption({ changePolicy, classNames, feePolicy, isDisabled, option }),
     ),
-    createElement(
-      "fieldset",
-      {
-        className: classNames?.list,
-        disabled: isDisabled,
-      },
-      createElement("legend", { className: classNames?.status }, resolvedCopy.policyOptionsLabel),
-      feePolicy.options.map((option) =>
-        createElement(
-          "label",
-          {
-            key: option.ownerMode,
-            className: classNames?.item,
-            "data-vortex-fee-policy-option": option.ownerMode,
-            "data-vortex-fee-policy-option-selected": String(
-              option.ownerMode === feePolicy.ownerMode,
-            ),
-          },
-          createElement("input", {
-            checked: option.ownerMode === feePolicy.ownerMode,
-            disabled: isDisabled || option.disabled === true,
-            name: `vortex-fee-policy-${feePolicy.merchantAccountId}`,
-            onChange: changePolicy,
-            type: "radio",
-            value: option.ownerMode,
-          }),
-          createElement("strong", { className: classNames?.itemTitle }, option.title),
-          option.description === undefined
-            ? null
-            : createElement("p", { className: classNames?.itemDescription }, option.description),
-        ),
-      ),
-    ),
-    feePolicy.note === undefined
+  );
+}
+
+function createFeePolicyPanelOption({
+  changePolicy,
+  classNames,
+  feePolicy,
+  isDisabled,
+  option,
+}: {
+  readonly changePolicy: (event: ChangeEvent<HTMLInputElement>) => void;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly feePolicy: VortexFeePolicyState;
+  readonly isDisabled: boolean;
+  readonly option: VortexFeePolicyOption;
+}): ReactNode {
+  return createElement(
+    "label",
+    {
+      key: option.ownerMode,
+      className: classNames?.item,
+      "data-vortex-fee-policy-option": option.ownerMode,
+      "data-vortex-fee-policy-option-selected": String(option.ownerMode === feePolicy.ownerMode),
+    },
+    createElement("input", {
+      checked: option.ownerMode === feePolicy.ownerMode,
+      disabled: isDisabled || option.disabled === true,
+      name: `vortex-fee-policy-${feePolicy.merchantAccountId}`,
+      onChange: changePolicy,
+      type: "radio",
+      value: option.ownerMode,
+    }),
+    createElement("strong", { className: classNames?.itemTitle }, option.title),
+    option.description === undefined
       ? null
-      : createElement(
-          "p",
-          { className: classNames?.status, "data-vortex-fee-policy-note": true },
-          feePolicy.note,
-        ),
+      : createElement("p", { className: classNames?.itemDescription }, option.description),
+  );
+}
+
+function createFeePolicyPanelNote(
+  feePolicy: VortexFeePolicyState,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (feePolicy.note === undefined) {
+    return null;
+  }
+  return createElement(
+    "p",
+    { className: classNames?.status, "data-vortex-fee-policy-note": true },
+    feePolicy.note,
   );
 }
 
