@@ -41,6 +41,8 @@ The goal is not to rename every historical `retired_provider` field in one pass.
 - `bun run prove:vortex-payments-backend-adapter-adoption` is now an executable backend boundary proof, not just a planned command.
 - `bun run prove:seal-account-onboarding-vortex-local` is now the non-mutating local account/onboarding proof for account creation, Vortex Auth anchoring, retired merchant-surface blocking, charges-ready merchant resolution, and Vortex payable request mapping.
 - `bun run prove:seal-saas-vortex-local` is now the non-mutating local SaaS proof for Vortex checkout, catalog price resolution, coupon application/fail-closed cleanup, portal links, and lifecycle guards.
+- `bun run audit:seal-vortex-production-proof-boundary` keeps production live-money proof and post-proof external residue retirement as explicit launch blockers until a checked-in production proof artifact exists.
+- `bun run prove:seal-vortex-production-proof-boundary` proves missing, malformed, money-proof-only, and full go-live production proof artifact states, so a bad production proof note cannot silently satisfy launch readiness.
 
 ## Merge Order
 
@@ -207,7 +209,9 @@ Current launch baseline:
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` statically verifies the captured sandbox payment ids, the Vortex final sandbox launch gate, and the human-run settlement commands without touching Convex, Finix, reconciliation, payouts, or card payment. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
 - Production document-payment routing is not configured.
 - `bun run audit:seal-vortex-production-readiness` is the no-secret production config gate. The latest agent refresh still fails only on known missing production names without printing secret values: Seal is missing `VORTEX_BILLING_PAYMENTS_ENVIRONMENT` plus the five `VORTEX_BILLING_DOCUMENT_*` routing names; Vortex Payments is missing `VORTEX_PAYMENTS_RUNTIME_MODE` plus the four `FINIX_PRODUCTION_*` names. For values that are present, it validates safe shapes and runtime expectations. The audit prints human-run `convex env set` commands with placeholders for the missing values; agents must not execute those production mutations. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
-- `bun run audit:seal-vortex-launch-boundary` is the passing non-mutating wrapper for future agent sessions: it verifies hosted outcome projection, preserves the sandbox settlement handoff, reports `launchReady: false` while fully settled evidence or production config is missing, and accepts production readiness only when it is green or blocked by the exact known human-run production configuration names. Unexpected missing names or invalid present config fail the wrapper.
+- `bun run audit:seal-vortex-production-proof-boundary` is the static production proof gate. It reports `status: waiting_for_human_production_money_proof` until `docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md` records the human production money proof and post-proof external residue retirement evidence.
+- `bun run prove:seal-vortex-production-proof-boundary` is the local self-proof for that static gate. It proves missing, incomplete, money-proof-only, and full go-live proof artifact cases.
+- `bun run audit:seal-vortex-launch-boundary` is the passing non-mutating wrapper for future agent sessions: it verifies hosted outcome projection, preserves the sandbox settlement handoff, reports `launchReady: false` while fully settled evidence, production config, production money proof, or post-proof retirement evidence is missing, and accepts production readiness only when it is green or blocked by the exact known human-run production configuration names. Unexpected missing names, invalid present config, or malformed production proof artifacts fail the wrapper.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
 - `bun run prove:zero-retired-provider-residue` is the retired-provider residue gate. It keeps dependency-graph and whole-working-tree path checks strict for the raw retired-provider token, requires tracked file contents to contain zero raw retired-provider token, scans the whole working tree outside `.git` for provider-shaped residue, and fails active guidance/config if retired-provider alias wording returns. It intentionally does not fail on unrelated longer words from third-party generated output.
@@ -227,6 +231,8 @@ Do next:
    - `bun run audit:seal-vortex-hosted-outcomes-boundary`
    - `bun run audit:seal-vortex-sandbox-settlement-boundary`
    - `bun run audit:seal-vortex-production-readiness`
+   - `bun run audit:seal-vortex-production-proof-boundary`
+   - `bun run prove:seal-vortex-production-proof-boundary`
    - `bun run audit:seal-vortex-launch-boundary`
 4. When the provider settlement readiness window is open, a human runs the settlement command and the paid-state proof with `--require-settled`.
 5. Production launch remains blocked until production credentials, document-payment routing maps, one small real payment, and real settlement/payout visibility are proven.
