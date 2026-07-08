@@ -15,7 +15,12 @@ import type { IdempotencyRecord } from "../../storage/repositories";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import { createCanonicalEventsService } from "./impl";
 
-function createMemoryUnitOfWork(seed?: {
+interface SeedRecord {
+  readonly environment: string;
+  readonly id: string;
+}
+
+interface MemoryUnitOfWorkSeed {
   merchant?: MerchantAccount;
   session?: MerchantOnboardingSession;
   requirement?: MerchantRequirement;
@@ -25,7 +30,42 @@ function createMemoryUnitOfWork(seed?: {
   settlement?: Settlement;
   payout?: Payout;
   dispute?: Dispute;
-}): PaymentsUnitOfWork {
+}
+
+function seedById<TRecord extends SeedRecord>(
+  records: Map<string, TRecord>,
+  record: TRecord | undefined,
+): void {
+  if (!record) {
+    return;
+  }
+  records.set(`${record.environment}:${record.id}`, record);
+}
+
+function seedMemoryUnitOfWorkMaps(input: {
+  readonly seed: MemoryUnitOfWorkSeed | undefined;
+  readonly merchants: Map<string, MerchantAccount>;
+  readonly sessions: Map<string, MerchantOnboardingSession>;
+  readonly requirements: Map<string, MerchantRequirement>;
+  readonly paymentIntents: Map<string, PaymentIntent>;
+  readonly payments: Map<string, Payment>;
+  readonly refunds: Map<string, Refund>;
+  readonly settlements: Map<string, Settlement>;
+  readonly payouts: Map<string, Payout>;
+  readonly disputes: Map<string, Dispute>;
+}): void {
+  seedById(input.merchants, input.seed?.merchant);
+  seedById(input.sessions, input.seed?.session);
+  seedById(input.requirements, input.seed?.requirement);
+  seedById(input.paymentIntents, input.seed?.paymentIntent);
+  seedById(input.payments, input.seed?.payment);
+  seedById(input.refunds, input.seed?.refund);
+  seedById(input.settlements, input.seed?.settlement);
+  seedById(input.payouts, input.seed?.payout);
+  seedById(input.disputes, input.seed?.dispute);
+}
+
+function createMemoryUnitOfWork(seed?: MemoryUnitOfWorkSeed): PaymentsUnitOfWork {
   const merchants = new Map<string, MerchantAccount>();
   const sessions = new Map<string, MerchantOnboardingSession>();
   const requirements = new Map<string, MerchantRequirement>();
@@ -40,23 +80,18 @@ function createMemoryUnitOfWork(seed?: {
   const customerStates = new Map<string, CustomerPaymentState>();
   const idempotency = new Map<string, IdempotencyRecord>();
 
-  if (seed?.merchant)
-    merchants.set(`${seed.merchant.environment}:${seed.merchant.id}`, seed.merchant);
-  if (seed?.session) sessions.set(`${seed.session.environment}:${seed.session.id}`, seed.session);
-  if (seed?.requirement)
-    requirements.set(`${seed.requirement.environment}:${seed.requirement.id}`, seed.requirement);
-  if (seed?.paymentIntent) {
-    paymentIntents.set(
-      `${seed.paymentIntent.environment}:${seed.paymentIntent.id}`,
-      seed.paymentIntent,
-    );
-  }
-  if (seed?.payment) payments.set(`${seed.payment.environment}:${seed.payment.id}`, seed.payment);
-  if (seed?.refund) refunds.set(`${seed.refund.environment}:${seed.refund.id}`, seed.refund);
-  if (seed?.settlement)
-    settlements.set(`${seed.settlement.environment}:${seed.settlement.id}`, seed.settlement);
-  if (seed?.payout) payouts.set(`${seed.payout.environment}:${seed.payout.id}`, seed.payout);
-  if (seed?.dispute) disputes.set(`${seed.dispute.environment}:${seed.dispute.id}`, seed.dispute);
+  seedMemoryUnitOfWorkMaps({
+    seed,
+    merchants,
+    sessions,
+    requirements,
+    paymentIntents,
+    payments,
+    refunds,
+    settlements,
+    payouts,
+    disputes,
+  });
 
   return {
     merchants: {
