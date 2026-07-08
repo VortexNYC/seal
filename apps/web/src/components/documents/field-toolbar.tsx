@@ -47,6 +47,7 @@ interface FieldButtonProps {
   onDragStart: (fieldType: FieldType) => void;
   onDragEnd: () => void;
   disabled?: boolean;
+  disabledReason?: string;
 }
 
 /**
@@ -100,7 +101,15 @@ const FIELD_CONFIG: Record<
 /**
  * Draggable field button
  */
-function FieldButton({ type, icon, label, onDragStart, onDragEnd, disabled }: FieldButtonProps) {
+function FieldButton({
+  type,
+  icon,
+  label,
+  onDragStart,
+  onDragEnd,
+  disabled,
+  disabledReason,
+}: FieldButtonProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const config = FIELD_CONFIG[type];
@@ -161,6 +170,7 @@ function FieldButton({ type, icon, label, onDragStart, onDragEnd, disabled }: Fi
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       disabled={disabled}
+      title={disabled ? disabledReason : undefined}
       className={cn(
         "group bg-card border-border relative flex items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors",
         disabled
@@ -332,6 +342,11 @@ export function FieldToolbar({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           disabled={disabled || !merchantPaymentsReady}
+          disabledReason={
+            disabled
+              ? undefined
+              : "Connect Vortex merchant payments before placing payment fields."
+          }
         />
 
         <FieldButton
