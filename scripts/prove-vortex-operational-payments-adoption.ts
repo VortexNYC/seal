@@ -38,7 +38,7 @@ for (const sourcePath of collectSourceFiles(webSrcPath)) {
   for (const forbiddenFragment of forbiddenRouteFragments) {
     if (source.includes(forbiddenFragment)) {
       failures.push(
-        `${relativePath} still contains legacy provider Connect fragment: ${forbiddenFragment}`,
+        `${relativePath} still contains non-Vortex Connect fragment: ${forbiddenFragment}`,
       );
     }
   }
@@ -86,11 +86,11 @@ if (failures.length > 0) {
 }
 
 console.log("Vortex operational payments adoption proof passed:");
-console.log("- Legacy provider embeds are removed from Seal operational payment routes.");
+console.log("- Non-Vortex embeds are removed from Seal operational payment routes.");
 console.log("- Balances, payouts, and history render through @vortex/payments/react components.");
 console.log("- Disputes and tax documents render explicit Vortex-owned replacement states.");
 console.log(
-  "- Legacy provider Connect packages, theme helpers, and shared wrapper components stay deleted.",
+  "- Non-Vortex Connect packages, theme helpers, and shared wrapper components stay deleted.",
 );
 
 function collectSourceFiles(root: string): string[] {

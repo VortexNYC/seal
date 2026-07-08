@@ -55,7 +55,7 @@ for (const forbiddenFragment of [
 ]) {
   if (paymentsRoute.includes(forbiddenFragment)) {
     failures.push(
-      `payments route still contains legacy provider UI fragment: ${forbiddenFragment}`,
+      `payments route still contains non-Vortex provider UI fragment: ${forbiddenFragment}`,
     );
   }
 }
@@ -72,5 +72,5 @@ console.log("Vortex merchant settings adoption proof passed:");
 console.log(
   "- Seal payments settings renders Vortex Connect state through Vortex package components.",
 );
-console.log("- Legacy provider embedded account UI and theme helpers stay deleted.");
+console.log("- Non-Vortex embedded account UI and theme helpers stay deleted.");
 console.log("- Merchant account data reads through the Vortex Payments boundary.");

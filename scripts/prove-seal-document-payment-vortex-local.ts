@@ -76,7 +76,7 @@ console.log(
         "payable_object.updated failed projection marks document payment failed and starts dunning without non-Vortex provider ids",
         "unknown payable ids are ignored without webhook dedupe rows",
         "document payment object creation uses Vortex-owned payment link naming",
-        "operational payment surfaces use Vortex components instead of legacy provider Connect embeds",
+        "operational payment surfaces use Vortex components instead of non-Vortex Connect embeds",
         "backend payment adapters use Vortex public API/SDK seams without direct provider imports or credentials",
       ],
     },
