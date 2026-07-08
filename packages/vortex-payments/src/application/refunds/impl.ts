@@ -1,8 +1,8 @@
-import type { MerchantAccountId, PaymentId } from "../../domain/common";
+import type { MerchantAccountId, PaymentId, ProcessorRef } from "../../domain/common";
 import type { MerchantAccount } from "../../domain/merchant";
 import type { Payment, Refund, RefundStatus } from "../../domain/payments";
 import type { CanonicalDomainEvent } from "../../events/types";
-import type { ProviderContext, ProviderError } from "../../providers/types";
+import type { ProviderContext, ProviderError, ProviderRefundOutput } from "../../providers/types";
 import type { ProviderRegistry } from "../../providers/registry";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import type { CreateRefundCommand, GetRefundQuery, RefundSnapshot } from "./contracts";
@@ -41,6 +41,14 @@ export interface RefundsServiceDependencies {
   readonly resolveProviderContext: (merchant: MerchantAccount) => ProviderContext;
   readonly now?: () => string;
   readonly createId?: (prefix: "refund" | "idem") => string;
+}
+
+interface RefundsRuntime {
+  readonly uow: PaymentsUnitOfWork;
+  readonly providers: ProviderRegistry;
+  readonly resolveProviderContext: (merchant: MerchantAccount) => ProviderContext;
+  readonly now: () => string;
+  readonly createId: (prefix: "refund" | "idem") => string;
 }
 
 const DEFAULT_IDEMPOTENCY_TTL_MS = 1000 * 60 * 60 * 24;
@@ -255,156 +263,207 @@ async function withIdempotentResult<TResult>(
   return result;
 }
 
+function assertPaymentBelongsToMerchant(payment: Payment, command: CreateRefundCommand): void {
+  if (payment.merchantAccountId !== command.merchantAccountId) {
+    throw new RefundsServiceError("invalid_request", "payment does not belong to merchant", {
+      details: { paymentId: command.paymentId },
+    });
+  }
+}
+
+function assertRefundAmountWithinPayment(payment: Payment, command: CreateRefundCommand): void {
+  if (command.amount <= 0) {
+    throw new RefundsServiceError("invalid_request", "refund amount must be greater than zero", {
+      details: { paymentId: command.paymentId },
+    });
+  }
+  if (command.amount > payment.amount) {
+    throw new RefundsServiceError("invalid_request", "refund amount exceeds payment amount", {
+      details: { paymentId: command.paymentId },
+    });
+  }
+}
+
+function assertRefundCapacity(
+  payment: Payment,
+  existingRefunds: readonly Refund[],
+  command: CreateRefundCommand,
+): void {
+  const reservedAmount = sumPendingOrSucceededRefundAmount(existingRefunds);
+  if (reservedAmount + command.amount <= payment.amount) {
+    return;
+  }
+  throw new RefundsServiceError("conflict", "refund amount exceeds remaining refundable amount", {
+    details: {
+      paymentId: command.paymentId,
+      remainingRefundableAmount: String(Math.max(payment.amount - reservedAmount, 0)),
+    },
+  });
+}
+
+function getPaymentProviderRefOrThrow(
+  payment: Payment,
+  command: CreateRefundCommand,
+): ProcessorRef {
+  const paymentRef = payment.processorPaymentRefs[0];
+  if (!paymentRef) {
+    throw new RefundsServiceError("invalid_request", "payment is missing provider reference", {
+      details: { paymentId: command.paymentId },
+    });
+  }
+  return paymentRef;
+}
+
+async function createProviderRefund(
+  runtime: RefundsRuntime,
+  merchant: MerchantAccount,
+  paymentRef: ProcessorRef,
+  command: CreateRefundCommand,
+): Promise<ProviderRefundOutput> {
+  const providerContext = runtime.resolveProviderContext(merchant);
+  const providerKey = paymentRef.provider as ProviderContext["provider"];
+  const adapter = runtime.providers.getAdapter(providerKey || providerContext.provider);
+  const providerResult = await adapter.createRefund(providerContext, {
+    paymentRef,
+    amount: command.amount,
+    reason: command.reason,
+    idempotencyKey: command.idempotencyKey,
+  });
+  if (providerResult.ok && providerResult.value) {
+    return providerResult.value;
+  }
+  throw mapProviderError(
+    providerResult.error ?? {
+      provider: providerContext.provider,
+      category: "unknown",
+      code: "provider_result_missing",
+      message: "provider refund failed without error details",
+      retryable: false,
+    },
+  );
+}
+
+function buildRefundRecord(input: {
+  readonly command: CreateRefundCommand;
+  readonly payment: Payment;
+  readonly providerRefund: ProviderRefundOutput;
+  readonly refundId: string;
+  readonly recordedAt: string;
+}): Refund {
+  return {
+    id: input.refundId,
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+    paymentId: input.payment.id,
+    amount: input.command.amount,
+    currency: input.payment.currency,
+    status: mapProviderRefundStatus(input.providerRefund.status),
+    reason: input.command.reason,
+    requestedByType: input.command.requestedByType,
+    requestedByRef: input.command.requestedByRef,
+    processorRefundRefs: [input.providerRefund.refundRef],
+    terminalSessionId: input.payment.terminalSessionId,
+    terminalReaderId: input.payment.terminalReaderId,
+    createdAt: input.recordedAt,
+    updatedAt: input.recordedAt,
+  };
+}
+
+async function saveRefundAndPaymentState(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly payment: Payment;
+  readonly existingRefunds: readonly Refund[];
+  readonly refund: Refund;
+  readonly recordedAt: string;
+}): Promise<void> {
+  await input.uow.refunds.save(input.refund);
+  await input.uow.events.saveCanonicalEvent(
+    createRefundEvent({
+      id: `${input.refund.id}:refund.created:${input.recordedAt}`,
+      refund: input.refund,
+      occurredAt: input.recordedAt,
+    }),
+  );
+  if (input.refund.status !== "succeeded") {
+    return;
+  }
+  const succeededAmount = sumSucceededRefundAmount([...input.existingRefunds, input.refund]);
+  await input.uow.payments.save({
+    ...input.payment,
+    status: succeededAmount >= input.payment.amount ? "refunded_full" : "refunded_partial",
+    updatedAt: input.recordedAt,
+  });
+}
+
+async function createRefundInTransaction(
+  runtime: RefundsRuntime,
+  uow: PaymentsUnitOfWork,
+  command: CreateRefundCommand,
+): Promise<RefundSnapshot> {
+  const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
+  const payment = await getPaymentOrThrow(uow, command.environment, command.paymentId);
+  assertPaymentBelongsToMerchant(payment, command);
+  assertRefundAmountWithinPayment(payment, command);
+
+  const existingRefunds = await uow.refunds.listByPayment(command.environment, payment.id);
+  assertRefundCapacity(payment, existingRefunds, command);
+
+  const paymentRef = getPaymentProviderRefOrThrow(payment, command);
+  const providerRefund = await createProviderRefund(runtime, merchant, paymentRef, command);
+  const recordedAt = runtime.now();
+  const refund = buildRefundRecord({
+    command,
+    payment,
+    providerRefund,
+    refundId: runtime.createId("refund"),
+    recordedAt,
+  });
+  await saveRefundAndPaymentState({
+    uow,
+    payment,
+    existingRefunds,
+    refund,
+    recordedAt,
+  });
+  return toSnapshot(refund);
+}
+
+async function createRefundSnapshot(
+  runtime: RefundsRuntime,
+  command: CreateRefundCommand,
+): Promise<RefundSnapshot> {
+  return runtime.uow.runInTransaction((uow) => {
+    return withIdempotentResult(
+      uow,
+      {
+        environment: command.environment,
+        scope: `payments:createRefund:${command.paymentId}`,
+        idempotencyKey: command.idempotencyKey,
+        request: command,
+        createId: (prefix) => runtime.createId(prefix),
+        now: runtime.now(),
+      },
+      () => createRefundInTransaction(runtime, uow, command),
+    );
+  });
+}
+
 export function createRefundsService(dependencies: RefundsServiceDependencies): RefundsService {
-  const now = dependencies.now ?? (() => new Date().toISOString());
-  const createId = dependencies.createId ?? createDefaultId;
+  const runtime: RefundsRuntime = {
+    uow: dependencies.uow,
+    providers: dependencies.providers,
+    resolveProviderContext: dependencies.resolveProviderContext,
+    now: dependencies.now ?? (() => new Date().toISOString()),
+    createId: dependencies.createId ?? createDefaultId,
+  };
 
   return {
-    async createRefund(command: CreateRefundCommand): Promise<RefundSnapshot> {
-      return dependencies.uow.runInTransaction(async (uow) => {
-        return withIdempotentResult(
-          uow,
-          {
-            environment: command.environment,
-            scope: `payments:createRefund:${command.paymentId}`,
-            idempotencyKey: command.idempotencyKey,
-            request: command,
-            createId: (prefix) => createId(prefix),
-            now: now(),
-          },
-          async () => {
-            const merchant = await getMerchantOrThrow(
-              uow,
-              command.environment,
-              command.merchantAccountId,
-            );
-            const payment = await getPaymentOrThrow(uow, command.environment, command.paymentId);
-
-            if (payment.merchantAccountId !== command.merchantAccountId) {
-              throw new RefundsServiceError(
-                "invalid_request",
-                "payment does not belong to merchant",
-                {
-                  details: { paymentId: command.paymentId },
-                },
-              );
-            }
-            if (command.amount <= 0) {
-              throw new RefundsServiceError(
-                "invalid_request",
-                "refund amount must be greater than zero",
-                {
-                  details: { paymentId: command.paymentId },
-                },
-              );
-            }
-            if (command.amount > payment.amount) {
-              throw new RefundsServiceError(
-                "invalid_request",
-                "refund amount exceeds payment amount",
-                {
-                  details: { paymentId: command.paymentId },
-                },
-              );
-            }
-
-            const existingRefunds = await uow.refunds.listByPayment(
-              command.environment,
-              payment.id,
-            );
-            const reservedAmount = sumPendingOrSucceededRefundAmount(existingRefunds);
-            if (reservedAmount + command.amount > payment.amount) {
-              throw new RefundsServiceError(
-                "conflict",
-                "refund amount exceeds remaining refundable amount",
-                {
-                  details: {
-                    paymentId: command.paymentId,
-                    remainingRefundableAmount: String(Math.max(payment.amount - reservedAmount, 0)),
-                  },
-                },
-              );
-            }
-
-            const paymentRef = payment.processorPaymentRefs[0];
-            if (!paymentRef) {
-              throw new RefundsServiceError(
-                "invalid_request",
-                "payment is missing provider reference",
-                {
-                  details: { paymentId: command.paymentId },
-                },
-              );
-            }
-
-            const providerContext = dependencies.resolveProviderContext(merchant);
-            const providerKey = paymentRef.provider as ProviderContext["provider"];
-            const adapter = dependencies.providers.getAdapter(
-              providerKey || providerContext.provider,
-            );
-            const providerResult = await adapter.createRefund(providerContext, {
-              paymentRef,
-              amount: command.amount,
-              reason: command.reason,
-              idempotencyKey: command.idempotencyKey,
-            });
-
-            if (!providerResult.ok || !providerResult.value) {
-              throw mapProviderError(
-                providerResult.error ?? {
-                  provider: providerContext.provider,
-                  category: "unknown",
-                  code: "provider_result_missing",
-                  message: "provider refund failed without error details",
-                  retryable: false,
-                },
-              );
-            }
-
-            const recordedAt = now();
-            const refund: Refund = {
-              id: createId("refund"),
-              environment: command.environment,
-              merchantAccountId: command.merchantAccountId,
-              paymentId: payment.id,
-              amount: command.amount,
-              currency: payment.currency,
-              status: mapProviderRefundStatus(providerResult.value.status),
-              reason: command.reason,
-              requestedByType: command.requestedByType,
-              requestedByRef: command.requestedByRef,
-              processorRefundRefs: [providerResult.value.refundRef],
-              terminalSessionId: payment.terminalSessionId,
-              terminalReaderId: payment.terminalReaderId,
-              createdAt: recordedAt,
-              updatedAt: recordedAt,
-            };
-            await uow.refunds.save(refund);
-            await uow.events.saveCanonicalEvent(
-              createRefundEvent({
-                id: `${refund.id}:refund.created:${recordedAt}`,
-                refund,
-                occurredAt: recordedAt,
-              }),
-            );
-
-            if (refund.status === "succeeded") {
-              const succeededAmount = sumSucceededRefundAmount([...existingRefunds, refund]);
-              await uow.payments.save({
-                ...payment,
-                status: succeededAmount >= payment.amount ? "refunded_full" : "refunded_partial",
-                updatedAt: recordedAt,
-              });
-            }
-
-            return toSnapshot(refund);
-          },
-        );
-      });
+    async createRefund(command) {
+      return createRefundSnapshot(runtime, command);
     },
 
     async getRefund(query: GetRefundQuery): Promise<RefundSnapshot | null> {
-      const refund = await dependencies.uow.refunds.getById(query.refundId, {
+      const refund = await runtime.uow.refunds.getById(query.refundId, {
         environment: query.environment,
       });
       return refund ? toSnapshot(refund) : null;
