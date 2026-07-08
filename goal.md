@@ -42,7 +42,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run prove:seal-coupons-vortex` now merges its temporary proof price into `VORTEX_BILLING_SAAS_PRICE_MAP` instead of replacing the whole map; this preserves the `pro:monthly:v2` checkout mapping when coupon proofs run before SaaS checkout proofs.
 - The Seal dev `organizations` table was cleaned from stale retired-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
 - Non-production Convex data cleanup on 2026-07-08 emptied old retired-provider account/webhook tables in local dev (`dev:aware-buzzard-568`) and staging/dev (`dev:clever-goose-484`), and cleaned the same retired customer field from 6 local-dev organization rows while preserving ids and creation times. Backups were saved under `/tmp` on this machine.
-- Current local verification passed after cleanup commit `b7be17b1`:
+- Current local verification passed after proof-boundary commit `ab710aab`:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
   - `bun run verify`
