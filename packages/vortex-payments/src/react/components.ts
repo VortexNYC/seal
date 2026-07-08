@@ -3505,8 +3505,14 @@ export function VortexPaymentTimelineSummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolvePaymentTimelineSummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const hasEntries = timeline.entries.length > 0;
-  const canOpenPortal = timeline.portalToken !== undefined;
+  const state = createPaymentTimelineSummaryState(timeline);
+  const openPortal = createPaymentTimelinePortalHandler({
+    timeline,
+    runtime,
+    selectedNavigate,
+    state,
+    onPortalLaunch,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -3525,8 +3531,60 @@ export function VortexPaymentTimelineSummary({
     }
   }, [error, onError]);
 
-  const openPortal = (): void => {
-    if (!canOpenPortal || timeline.portalToken === undefined) {
+  return createElement(
+    "section",
+    createPaymentTimelineSummarySectionProps({
+      appearance,
+      className,
+      classNames,
+      state,
+      timeline,
+    }),
+    createPaymentTimelineSummaryHeader({ classNames, resolvedCopy, timeline }),
+    createPaymentTimelineSummaryFeedback({ classNames, error, loading, resolvedCopy, timeline }),
+    createPaymentTimelineSummaryMetrics({ classNames, resolvedCopy, timeline }),
+    createPaymentTimelineSummaryEntries({
+      classNames,
+      isDisabled,
+      onEntrySelect,
+      resolvedCopy,
+      state,
+      timeline,
+    }),
+    createPaymentTimelineSummaryActions({
+      classNames,
+      isDisabled,
+      openPortal,
+      resolvedCopy,
+      state,
+    }),
+  );
+}
+
+function createPaymentTimelineSummaryState(timeline: VortexPaymentTimelineState) {
+  return {
+    canOpenPortal: timeline.portalToken !== undefined,
+    hasEntries: timeline.entries.length > 0,
+  };
+}
+
+type PaymentTimelineSummaryState = ReturnType<typeof createPaymentTimelineSummaryState>;
+
+function createPaymentTimelinePortalHandler({
+  timeline,
+  runtime,
+  selectedNavigate,
+  state,
+  onPortalLaunch,
+}: {
+  readonly timeline: VortexPaymentTimelineState;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: PaymentTimelineSummaryState;
+  readonly onPortalLaunch: VortexPaymentTimelineSummaryProps["onPortalLaunch"];
+}) {
+  return (): void => {
+    if (!state.canOpenPortal || timeline.portalToken === undefined) {
       return;
     }
     const launch = runtime.createHostedLink({
@@ -3537,39 +3595,72 @@ export function VortexPaymentTimelineSummary({
     onPortalLaunch?.(launch);
     selectedNavigate(launch);
   };
+}
 
+function createPaymentTimelineSummarySectionProps({
+  appearance,
+  className,
+  classNames,
+  state,
+  timeline,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: PaymentTimelineSummaryState;
+  readonly timeline: VortexPaymentTimelineState;
+}) {
+  return {
+    className: cx("vortex-payments-payment-timeline-summary", className, classNames?.root),
+    "data-vortex-surface": "payment-timeline-summary",
+    "data-vortex-component": "VortexPaymentTimelineSummary",
+    "data-vortex-customer-id": timeline.customerId,
+    "data-vortex-billing-account-id": timeline.billingAccountId,
+    "data-vortex-timeline-status": timeline.status,
+    "data-vortex-timeline-entry-count": String(timeline.entries.length),
+    "data-vortex-customer-portal-ready": String(state.canOpenPortal),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createPaymentTimelineSummaryHeader({
+  classNames,
+  resolvedCopy,
+  timeline,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexPaymentTimelineSummaryCopy>;
+  readonly timeline: VortexPaymentTimelineState;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-payment-timeline-summary", className, classNames?.root),
-      "data-vortex-surface": "payment-timeline-summary",
-      "data-vortex-component": "VortexPaymentTimelineSummary",
-      "data-vortex-customer-id": timeline.customerId,
-      "data-vortex-billing-account-id": timeline.billingAccountId,
-      "data-vortex-timeline-status": timeline.status,
-      "data-vortex-timeline-entry-count": String(timeline.entries.length),
-      "data-vortex-customer-portal-ready": String(canOpenPortal),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        paymentTimelineDescription(timeline, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      paymentTimelineDescription(timeline, resolvedCopy),
     ),
+  );
+}
+
+function createPaymentTimelineSummaryFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+  timeline,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexPaymentTimelineSummaryCopy>;
+  readonly timeline: VortexPaymentTimelineState;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -3588,55 +3679,99 @@ export function VortexPaymentTimelineSummary({
     timeline.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, timeline.message),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, timeline.status, classNames),
-      createMetric(
-        resolvedCopy.amountDueLabel,
-        timeline.amountDue === undefined || timeline.currency === undefined
-          ? "none"
-          : formatMinorUnitAmount(timeline.amountDue, timeline.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.entryCountLabel, String(timeline.entries.length), classNames),
-      createMetric(resolvedCopy.nextActionLabel, timeline.nextAction ?? "none", classNames),
+  ];
+}
+
+function createPaymentTimelineSummaryMetrics({
+  classNames,
+  resolvedCopy,
+  timeline,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexPaymentTimelineSummaryCopy>;
+  readonly timeline: VortexPaymentTimelineState;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, timeline.status, classNames),
+    createMetric(
+      resolvedCopy.amountDueLabel,
+      timeline.amountDue === undefined || timeline.currency === undefined
+        ? "none"
+        : formatMinorUnitAmount(timeline.amountDue, timeline.currency),
+      classNames,
     ),
-    hasEntries
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          timeline.entries.map((entry) =>
-            createPaymentTimelineEntryItem(
-              entry,
-              timeline,
-              resolvedCopy,
-              classNames,
-              isDisabled,
-              onEntrySelect,
-            ),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyEntriesTitle),
-          createElement("p", null, resolvedCopy.emptyEntriesDescription),
-        ),
-    createElement(
+    createMetric(resolvedCopy.entryCountLabel, String(timeline.entries.length), classNames),
+    createMetric(resolvedCopy.nextActionLabel, timeline.nextAction ?? "none", classNames),
+  );
+}
+
+function createPaymentTimelineSummaryEntries({
+  classNames,
+  isDisabled,
+  onEntrySelect,
+  resolvedCopy,
+  state,
+  timeline,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly onEntrySelect: VortexPaymentTimelineSummaryProps["onEntrySelect"];
+  readonly resolvedCopy: Required<VortexPaymentTimelineSummaryCopy>;
+  readonly state: PaymentTimelineSummaryState;
+  readonly timeline: VortexPaymentTimelineState;
+}): ReactNode {
+  if (!state.hasEntries) {
+    return createElement(
       "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canOpenPortal,
-          onClick: openPortal,
-          type: "button",
-          "data-vortex-payment-timeline-action": "open_customer_portal",
-        },
-        resolvedCopy.openPortalLabel,
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyEntriesTitle),
+      createElement("p", null, resolvedCopy.emptyEntriesDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    timeline.entries.map((entry) =>
+      createPaymentTimelineEntryItem(
+        entry,
+        timeline,
+        resolvedCopy,
+        classNames,
+        isDisabled,
+        onEntrySelect,
       ),
+    ),
+  );
+}
+
+function createPaymentTimelineSummaryActions({
+  classNames,
+  isDisabled,
+  openPortal,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly openPortal: () => void;
+  readonly resolvedCopy: Required<VortexPaymentTimelineSummaryCopy>;
+  readonly state: PaymentTimelineSummaryState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canOpenPortal,
+        onClick: openPortal,
+        type: "button",
+        "data-vortex-payment-timeline-action": "open_customer_portal",
+      },
+      resolvedCopy.openPortalLabel,
     ),
   );
 }
