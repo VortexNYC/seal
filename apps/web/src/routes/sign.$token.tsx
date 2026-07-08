@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { toast } from "sonner";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
@@ -80,7 +81,7 @@ function sealAssertPresent<T>(
 }
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 // ─── Embedded Signing (iFrame SDK) ──────────────────────────────────
 type SealEventType = "seal:ready" | "seal:viewed" | "seal:signed" | "seal:declined" | "seal:error";
