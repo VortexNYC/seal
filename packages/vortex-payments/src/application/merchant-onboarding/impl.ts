@@ -19,6 +19,8 @@ import type {
   PaymentsProviderAdapter,
   ProviderContext,
   ProviderError,
+  ProviderMerchantOnboardingInput,
+  ProviderMerchantOnboardingOutput,
   ProviderMerchantOnboardingRefreshOutput,
   ProviderObjectSnapshot,
   ProviderOnboardingRequirementUploadLinkOutput,
@@ -714,6 +716,351 @@ async function withIdempotentResult<TResult>(
     expiresAt: new Date(Date.parse(options.now) + DEFAULT_IDEMPOTENCY_TTL_MS).toISOString(),
   });
   return result;
+}
+
+async function submitMerchantOnboardingSnapshot(
+  dependencies: MerchantOnboardingServiceDependencies,
+  command: SubmitMerchantOnboardingCommand,
+  now: () => string,
+  createId: (prefix: "onb" | "req" | "idem") => string,
+): Promise<MerchantOnboardingSnapshot> {
+  return dependencies.uow.runInTransaction((uow) =>
+    withIdempotentResult(
+      uow,
+      {
+        environment: command.environment,
+        scope: `payments:onboarding:submit:${command.merchantAccountId}`,
+        idempotencyKey: command.idempotencyKey,
+        request: command,
+        createId: (prefix) => createId(prefix),
+        now: now(),
+      },
+      () => submitMerchantOnboardingOnce({ dependencies, uow, command, now, createId }),
+    ),
+  );
+}
+
+async function submitMerchantOnboardingOnce(input: {
+  readonly dependencies: MerchantOnboardingServiceDependencies;
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: SubmitMerchantOnboardingCommand;
+  readonly now: () => string;
+  readonly createId: (prefix: "onb" | "req" | "idem") => string;
+}): Promise<MerchantOnboardingSnapshot> {
+  const merchant = await getMerchantOrThrow(
+    input.uow,
+    input.command.environment,
+    input.command.merchantAccountId,
+  );
+  const providerContext = input.dependencies.resolveProviderContext(merchant);
+  assertProviderOnboardingRequirements(providerContext, merchant, input.command);
+  const submittedAt = input.now();
+  const providerValue = await createProviderMerchantOnboarding({
+    dependencies: input.dependencies,
+    providerContext,
+    merchant,
+    command: input.command,
+  });
+  const state = createSubmittedOnboardingState({
+    command: input.command,
+    merchant,
+    providerValue,
+    submittedAt,
+    createId: input.createId,
+  });
+
+  await saveSubmittedOnboardingState({ uow: input.uow, ...state, submittedAt });
+  await saveSubmittedOnboardingEvent({
+    uow: input.uow,
+    command: input.command,
+    merchant,
+    providerContext,
+    session: state.session,
+    submittedAt,
+  });
+
+  return toSnapshot(state.session, state.requirements, {
+    provider: providerContext.provider,
+    submittedByType: input.command.submittedByType,
+    submittedByRef: input.command.submittedByRef,
+  });
+}
+
+function assertProviderOnboardingRequirements(
+  providerContext: ProviderContext,
+  merchant: MerchantAccount,
+  command: SubmitMerchantOnboardingCommand,
+): void {
+  if (providerContext.provider !== "finix") {
+    return;
+  }
+  if (command.consent.merchantAgreementAccepted !== true) {
+    throw new MerchantOnboardingServiceError(
+      "invalid_request",
+      "Finix onboarding requires merchant agreement consent attestation",
+    );
+  }
+  assertRequiredFinixUnderwriting(merchant);
+}
+
+async function createProviderMerchantOnboarding(input: {
+  readonly dependencies: MerchantOnboardingServiceDependencies;
+  readonly providerContext: ProviderContext;
+  readonly merchant: MerchantAccount;
+  readonly command: SubmitMerchantOnboardingCommand;
+}): Promise<ProviderMerchantOnboardingOutput> {
+  const adapter = input.dependencies.providers.getAdapter(input.providerContext.provider);
+  const providerResult = await adapter.createMerchantOnboarding(
+    input.providerContext,
+    toProviderMerchantOnboardingInput(input.merchant, input.command),
+  );
+  if (!providerResult.ok || !providerResult.value) {
+    throw mapProviderError(
+      providerResult.error ?? {
+        provider: input.providerContext.provider,
+        category: "unknown",
+        code: "provider_result_missing",
+        message: "provider onboarding failed without error details",
+        retryable: false,
+      },
+    );
+  }
+  return providerResult.value;
+}
+
+function toProviderMerchantOnboardingInput(
+  merchant: MerchantAccount,
+  command: SubmitMerchantOnboardingCommand,
+): ProviderMerchantOnboardingInput {
+  return {
+    merchantAccountId: merchant.id,
+    externalMerchantRef: merchant.externalMerchantRef,
+    displayName: merchant.displayName,
+    legalEntityType: merchant.legalEntityType,
+    country: merchant.country,
+    merchantMode: merchant.merchantMode,
+    businessAddress: toProviderAddress(merchant.businessAddress),
+    personalAddress: toProviderAddress(merchant.personalAddress),
+    doingBusinessAs: merchant.doingBusinessAs,
+    businessPhone: merchant.businessPhone,
+    businessTaxId: merchant.businessTaxId,
+    phone: merchant.phone,
+    taxId: merchant.taxId,
+    email: merchant.email,
+    firstName: merchant.firstName,
+    lastName: merchant.lastName,
+    dateOfBirth: merchant.dateOfBirth,
+    incorporationDate: merchant.incorporationDate,
+    maxTransactionAmount: merchant.maxTransactionAmount,
+    achMaxTransactionAmount: merchant.achMaxTransactionAmount,
+    annualCardVolume: merchant.annualCardVolume,
+    mcc: merchant.mcc,
+    url: merchant.url,
+    principalPercentageOwnership: merchant.principalPercentageOwnership,
+    hasAcceptedCreditCardsPreviously: merchant.hasAcceptedCreditCardsPreviously,
+    settlementBankAccount: merchant.settlementBankAccount,
+    underwriting: merchant.underwriting,
+    associatedIdentities: toProviderAssociatedIdentities(merchant.associatedIdentities),
+    merchantAgreementAccepted: command.consent.merchantAgreementAccepted,
+    merchantAgreementAcceptedAt: command.consent.merchantAgreementAcceptedAt,
+    merchantAgreementIpAddress: command.consent.merchantAgreementIpAddress,
+    merchantAgreementUserAgent: command.consent.merchantAgreementUserAgent,
+  };
+}
+
+function toProviderAddress(
+  address: MerchantAccount["businessAddress"],
+): ProviderMerchantOnboardingInput["businessAddress"] {
+  return address
+    ? {
+        line1: address.line1,
+        line2: address.line2,
+        city: address.city,
+        region: address.region,
+        postalCode: address.postalCode,
+        country: address.country,
+      }
+    : undefined;
+}
+
+function toProviderAssociatedIdentities(
+  identities: MerchantAccount["associatedIdentities"],
+): ProviderMerchantOnboardingInput["associatedIdentities"] {
+  return identities?.map((identity) => ({
+    identityRoles: identity.identityRoles,
+    relationType: identity.relationType,
+    firstName: identity.firstName,
+    lastName: identity.lastName,
+    email: identity.email,
+    phone: identity.phone,
+    title: identity.title,
+    taxId: identity.taxId,
+    dateOfBirth: identity.dateOfBirth,
+    personalAddress: toProviderAddress(identity.personalAddress),
+    principalPercentageOwnership: identity.principalPercentageOwnership,
+  }));
+}
+
+function createSubmittedOnboardingState(input: {
+  readonly command: SubmitMerchantOnboardingCommand;
+  readonly merchant: MerchantAccount;
+  readonly providerValue: ProviderMerchantOnboardingOutput;
+  readonly submittedAt: string;
+  readonly createId: (prefix: "onb" | "req" | "idem") => string;
+}): {
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly updatedMerchant: MerchantAccount;
+} {
+  const onboardingStatus = mapProviderOnboardingStatus(input.providerValue.status);
+  const onboardingSessionId = input.createId("onb");
+  const requirements = createSubmittedOnboardingRequirements({
+    command: input.command,
+    merchant: input.merchant,
+    providerValue: input.providerValue,
+    onboardingSessionId,
+    submittedAt: input.submittedAt,
+  });
+  const session = createSubmittedOnboardingSession({
+    command: input.command,
+    merchant: input.merchant,
+    providerValue: input.providerValue,
+    onboardingStatus,
+    onboardingSessionId,
+    requirements,
+    submittedAt: input.submittedAt,
+  });
+  return {
+    session,
+    requirements,
+    updatedMerchant: createSubmittedOnboardingMerchant({
+      merchant: input.merchant,
+      providerValue: input.providerValue,
+      onboardingStatus,
+      submittedAt: input.submittedAt,
+    }),
+  };
+}
+
+function createSubmittedOnboardingRequirements(input: {
+  readonly command: SubmitMerchantOnboardingCommand;
+  readonly merchant: MerchantAccount;
+  readonly providerValue: ProviderMerchantOnboardingOutput;
+  readonly onboardingSessionId: MerchantOnboardingSessionId;
+  readonly submittedAt: string;
+}): readonly MerchantRequirement[] {
+  return input.providerValue.requirementRefs.map((requirementRef) =>
+    createRequirementRecord({
+      environment: input.command.environment,
+      onboardingSessionId: input.onboardingSessionId,
+      merchantAccountId: input.merchant.id,
+      requirementId: createRequirementId(input.merchant.id, requirementRef),
+      providerRequirementRef: requirementRef,
+      requestedAt: input.submittedAt,
+    }),
+  );
+}
+
+function createSubmittedOnboardingSession(input: {
+  readonly command: SubmitMerchantOnboardingCommand;
+  readonly merchant: MerchantAccount;
+  readonly providerValue: ProviderMerchantOnboardingOutput;
+  readonly onboardingStatus: MerchantOnboardingSessionStatus;
+  readonly onboardingSessionId: MerchantOnboardingSessionId;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly submittedAt: string;
+}): MerchantOnboardingSession {
+  return {
+    id: input.onboardingSessionId,
+    environment: input.command.environment,
+    merchantAccountId: input.merchant.id,
+    status: input.onboardingStatus,
+    submittedAt: input.submittedAt,
+    approvedAt: input.onboardingStatus === "approved" ? input.submittedAt : undefined,
+    rejectedAt: input.onboardingStatus === "rejected" ? input.submittedAt : undefined,
+    externalOnboardingRef: input.providerValue.onboardingRef.objectId,
+    currentRequirementCount: input.requirements.length,
+    openRequirementCount: input.requirements.filter(
+      (requirement) => requirement.status === "pending",
+    ).length,
+    processorRefs: dedupeProcessorRefs([
+      input.providerValue.onboardingRef,
+      ...(input.providerValue.accountRef ? [input.providerValue.accountRef] : []),
+    ]),
+    metadata: consentMetadata(input.command.consent),
+    createdAt: input.submittedAt,
+    updatedAt: input.submittedAt,
+  };
+}
+
+function createSubmittedOnboardingMerchant(input: {
+  readonly merchant: MerchantAccount;
+  readonly providerValue: ProviderMerchantOnboardingOutput;
+  readonly onboardingStatus: MerchantOnboardingSessionStatus;
+  readonly submittedAt: string;
+}): MerchantAccount {
+  return {
+    ...input.merchant,
+    status: mapOnboardingToMerchantStatus(input.onboardingStatus),
+    processorAccountRefs: dedupeProcessorRefs([
+      ...input.merchant.processorAccountRefs,
+      ...(input.providerValue.accountRef ? [input.providerValue.accountRef] : []),
+    ]),
+    updatedAt: input.submittedAt,
+  };
+}
+
+async function saveSubmittedOnboardingState(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly updatedMerchant: MerchantAccount;
+  readonly submittedAt: string;
+}): Promise<void> {
+  await input.uow.merchants.save(input.updatedMerchant);
+  await input.uow.onboarding.saveSession(input.session);
+  for (const requirement of input.requirements) {
+    await input.uow.onboarding.saveRequirement(requirement);
+  }
+  await input.uow.merchantStates.save(
+    deriveMerchantAccountState({
+      merchant: input.updatedMerchant,
+      onboardingSession: input.session,
+      requirements: input.requirements,
+      generatedAt: input.submittedAt,
+    }),
+  );
+}
+
+async function saveSubmittedOnboardingEvent(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: SubmitMerchantOnboardingCommand;
+  readonly merchant: MerchantAccount;
+  readonly providerContext: ProviderContext;
+  readonly session: MerchantOnboardingSession;
+  readonly submittedAt: string;
+}): Promise<void> {
+  await input.uow.events.saveCanonicalEvent(
+    createMerchantOnboardingEvent({
+      id: `${input.merchant.id}:merchant_account.submitted:${input.submittedAt}`,
+      eventType: mapOnboardingStatusEventType(input.session.status),
+      aggregateType: "merchant_account",
+      aggregateId: input.merchant.id,
+      environment: input.command.environment,
+      sourceProvider: input.providerContext.provider,
+      occurredAt: input.submittedAt,
+      merchantAccountId: input.merchant.id,
+      payload: {
+        onboardingSessionId: input.session.id,
+        onboardingStatus: input.session.status,
+        submittedByType: input.command.submittedByType,
+        submittedByRef: input.command.submittedByRef,
+        merchantAgreementAccepted: input.command.consent.merchantAgreementAccepted,
+        merchantAgreementAcceptedAt: input.command.consent.merchantAgreementAcceptedAt,
+        openRequirementCount: input.session.openRequirementCount,
+      },
+    }),
+  );
 }
 
 async function getRequirementUploadStatusSnapshot(
@@ -1784,6 +2131,72 @@ async function saveRequirementSubmissionEvents(input: {
   }
 }
 
+async function getMerchantOnboardingSnapshotResult(
+  uow: PaymentsUnitOfWork,
+  query: GetMerchantOnboardingSnapshotQuery,
+): Promise<MerchantOnboardingSnapshot | null> {
+  const session = await getSessionForMerchant(uow, query);
+  if (!session) {
+    return null;
+  }
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: query.environment,
+  });
+  return toSnapshot(session, requirements);
+}
+
+async function listMerchantRequirementViews(
+  uow: PaymentsUnitOfWork,
+  query: ListMerchantRequirementsQuery,
+): Promise<readonly MerchantOnboardingRequirementView[]> {
+  const session = await getSessionForMerchant(uow, query);
+  if (!session) {
+    return [];
+  }
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: query.environment,
+  });
+  return requirements.map((requirement) => toRequirementView(requirement));
+}
+
+async function listMerchantRequirementDocumentViews(
+  uow: PaymentsUnitOfWork,
+  query: ListMerchantRequirementDocumentsQuery,
+): Promise<readonly MerchantRequirementDocumentView[]> {
+  const session = await getSessionForMerchant(uow, query);
+  if (!session) {
+    return [];
+  }
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: query.environment,
+  });
+  const requirement = requirements.find((entry) => entry.id === query.requirementId) ?? null;
+  if (!requirement) {
+    return [];
+  }
+
+  const documents = await uow.onboarding.listDocumentsForRequirement(requirement.id, {
+    environment: query.environment,
+  });
+  return [...documents]
+    .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt))
+    .map((document) => toRequirementDocumentView(document));
+}
+
+async function getSessionForMerchant(
+  uow: PaymentsUnitOfWork,
+  query: {
+    readonly environment: GetMerchantOnboardingSnapshotQuery["environment"];
+    readonly merchantAccountId: MerchantAccountId;
+    readonly onboardingSessionId: MerchantOnboardingSessionId;
+  },
+): Promise<MerchantOnboardingSession | null> {
+  const session = await uow.onboarding.getSessionById(query.onboardingSessionId, {
+    environment: query.environment,
+  });
+  return session && session.merchantAccountId === query.merchantAccountId ? session : null;
+}
+
 export function createMerchantOnboardingService(
   dependencies: MerchantOnboardingServiceDependencies,
 ): MerchantOnboardingService {
@@ -1794,235 +2207,13 @@ export function createMerchantOnboardingService(
     async submitMerchantOnboarding(
       command: SubmitMerchantOnboardingCommand,
     ): Promise<MerchantOnboardingSnapshot> {
-      return dependencies.uow.runInTransaction(async (uow) => {
-        return withIdempotentResult(
-          uow,
-          {
-            environment: command.environment,
-            scope: `payments:onboarding:submit:${command.merchantAccountId}`,
-            idempotencyKey: command.idempotencyKey,
-            request: command,
-            createId: (prefix) => createId(prefix),
-            now: now(),
-          },
-          async () => {
-            const merchant = await getMerchantOrThrow(
-              uow,
-              command.environment,
-              command.merchantAccountId,
-            );
-            const providerContext = dependencies.resolveProviderContext(merchant);
-            if (
-              providerContext.provider === "finix" &&
-              command.consent.merchantAgreementAccepted !== true
-            ) {
-              throw new MerchantOnboardingServiceError(
-                "invalid_request",
-                "Finix onboarding requires merchant agreement consent attestation",
-              );
-            }
-            if (providerContext.provider === "finix") {
-              assertRequiredFinixUnderwriting(merchant);
-            }
-            const adapter = dependencies.providers.getAdapter(providerContext.provider);
-            const submittedAt = now();
-            const providerResult = await adapter.createMerchantOnboarding(providerContext, {
-              merchantAccountId: merchant.id,
-              externalMerchantRef: merchant.externalMerchantRef,
-              displayName: merchant.displayName,
-              legalEntityType: merchant.legalEntityType,
-              country: merchant.country,
-              merchantMode: merchant.merchantMode,
-              businessAddress: merchant.businessAddress
-                ? {
-                    line1: merchant.businessAddress.line1,
-                    line2: merchant.businessAddress.line2,
-                    city: merchant.businessAddress.city,
-                    region: merchant.businessAddress.region,
-                    postalCode: merchant.businessAddress.postalCode,
-                    country: merchant.businessAddress.country,
-                  }
-                : undefined,
-              personalAddress: merchant.personalAddress
-                ? {
-                    line1: merchant.personalAddress.line1,
-                    line2: merchant.personalAddress.line2,
-                    city: merchant.personalAddress.city,
-                    region: merchant.personalAddress.region,
-                    postalCode: merchant.personalAddress.postalCode,
-                    country: merchant.personalAddress.country,
-                  }
-                : undefined,
-              doingBusinessAs: merchant.doingBusinessAs,
-              businessPhone: merchant.businessPhone,
-              businessTaxId: merchant.businessTaxId,
-              phone: merchant.phone,
-              taxId: merchant.taxId,
-              email: merchant.email,
-              firstName: merchant.firstName,
-              lastName: merchant.lastName,
-              dateOfBirth: merchant.dateOfBirth,
-              incorporationDate: merchant.incorporationDate,
-              maxTransactionAmount: merchant.maxTransactionAmount,
-              achMaxTransactionAmount: merchant.achMaxTransactionAmount,
-              annualCardVolume: merchant.annualCardVolume,
-              mcc: merchant.mcc,
-              url: merchant.url,
-              principalPercentageOwnership: merchant.principalPercentageOwnership,
-              hasAcceptedCreditCardsPreviously: merchant.hasAcceptedCreditCardsPreviously,
-              settlementBankAccount: merchant.settlementBankAccount,
-              underwriting: merchant.underwriting,
-              associatedIdentities: merchant.associatedIdentities?.map((identity) => ({
-                identityRoles: identity.identityRoles,
-                relationType: identity.relationType,
-                firstName: identity.firstName,
-                lastName: identity.lastName,
-                email: identity.email,
-                phone: identity.phone,
-                title: identity.title,
-                taxId: identity.taxId,
-                dateOfBirth: identity.dateOfBirth,
-                personalAddress: identity.personalAddress
-                  ? {
-                      line1: identity.personalAddress.line1,
-                      line2: identity.personalAddress.line2,
-                      city: identity.personalAddress.city,
-                      region: identity.personalAddress.region,
-                      postalCode: identity.personalAddress.postalCode,
-                      country: identity.personalAddress.country,
-                    }
-                  : undefined,
-                principalPercentageOwnership: identity.principalPercentageOwnership,
-              })),
-              merchantAgreementAccepted: command.consent.merchantAgreementAccepted,
-              merchantAgreementAcceptedAt: command.consent.merchantAgreementAcceptedAt,
-              merchantAgreementIpAddress: command.consent.merchantAgreementIpAddress,
-              merchantAgreementUserAgent: command.consent.merchantAgreementUserAgent,
-            });
-
-            if (!providerResult.ok || !providerResult.value) {
-              throw mapProviderError(
-                providerResult.error ?? {
-                  provider: providerContext.provider,
-                  category: "unknown",
-                  code: "provider_result_missing",
-                  message: "provider onboarding failed without error details",
-                  retryable: false,
-                },
-              );
-            }
-
-            const onboardingStatus = mapProviderOnboardingStatus(providerResult.value.status);
-            const onboardingSessionId = createId("onb");
-            const requirementIds = providerResult.value.requirementRefs.map((requirementRef) =>
-              createRequirementId(merchant.id, requirementRef),
-            );
-            const requirements = providerResult.value.requirementRefs.map((requirementRef, index) =>
-              createRequirementRecord({
-                environment: command.environment,
-                onboardingSessionId,
-                merchantAccountId: merchant.id,
-                requirementId: sealAssertPresent(requirementIds[index]),
-                providerRequirementRef: requirementRef,
-                requestedAt: submittedAt,
-              }),
-            );
-            const sessionProcessorRefs = dedupeProcessorRefs([
-              providerResult.value.onboardingRef,
-              ...(providerResult.value.accountRef ? [providerResult.value.accountRef] : []),
-            ]);
-
-            const session: MerchantOnboardingSession = {
-              id: onboardingSessionId,
-              environment: command.environment,
-              merchantAccountId: merchant.id,
-              status: onboardingStatus,
-              submittedAt,
-              approvedAt: onboardingStatus === "approved" ? submittedAt : undefined,
-              rejectedAt: onboardingStatus === "rejected" ? submittedAt : undefined,
-              externalOnboardingRef: providerResult.value.onboardingRef.objectId,
-              currentRequirementCount: requirementIds.length,
-              openRequirementCount: requirements.filter(
-                (requirement) => requirement.status === "pending",
-              ).length,
-              processorRefs: sessionProcessorRefs,
-              metadata: consentMetadata(command.consent),
-              createdAt: submittedAt,
-              updatedAt: submittedAt,
-            };
-
-            const updatedMerchant: MerchantAccount = {
-              ...merchant,
-              status: mapOnboardingToMerchantStatus(onboardingStatus),
-              processorAccountRefs: dedupeProcessorRefs([
-                ...merchant.processorAccountRefs,
-                ...(providerResult.value.accountRef ? [providerResult.value.accountRef] : []),
-              ]),
-              updatedAt: submittedAt,
-            };
-
-            await uow.merchants.save(updatedMerchant);
-            await uow.onboarding.saveSession(session);
-            for (const requirement of requirements) {
-              await uow.onboarding.saveRequirement(requirement);
-            }
-            await uow.merchantStates.save(
-              deriveMerchantAccountState({
-                merchant: updatedMerchant,
-                onboardingSession: session,
-                requirements,
-                generatedAt: submittedAt,
-              }),
-            );
-            await uow.events.saveCanonicalEvent(
-              createMerchantOnboardingEvent({
-                id: `${merchant.id}:merchant_account.submitted:${submittedAt}`,
-                eventType: mapOnboardingStatusEventType(onboardingStatus),
-                aggregateType: "merchant_account",
-                aggregateId: merchant.id,
-                environment: command.environment,
-                sourceProvider: providerContext.provider,
-                occurredAt: submittedAt,
-                merchantAccountId: merchant.id,
-                payload: {
-                  onboardingSessionId: session.id,
-                  onboardingStatus: session.status,
-                  submittedByType: command.submittedByType,
-                  submittedByRef: command.submittedByRef,
-                  merchantAgreementAccepted: command.consent.merchantAgreementAccepted,
-                  merchantAgreementAcceptedAt: command.consent.merchantAgreementAcceptedAt,
-                  openRequirementCount: session.openRequirementCount,
-                },
-              }),
-            );
-
-            return toSnapshot(session, requirements, {
-              provider: providerContext.provider,
-              submittedByType: command.submittedByType,
-              submittedByRef: command.submittedByRef,
-            });
-          },
-        );
-      });
+      return submitMerchantOnboardingSnapshot(dependencies, command, now, createId);
     },
 
     async getMerchantOnboardingSnapshot(
       query: GetMerchantOnboardingSnapshotQuery,
     ): Promise<MerchantOnboardingSnapshot | null> {
-      const session = await dependencies.uow.onboarding.getSessionById(query.onboardingSessionId, {
-        environment: query.environment,
-      });
-      if (!session || session.merchantAccountId !== query.merchantAccountId) {
-        return null;
-      }
-
-      const requirements = await dependencies.uow.onboarding.listRequirementsForSession(
-        session.id,
-        {
-          environment: query.environment,
-        },
-      );
-      return toSnapshot(session, requirements);
+      return getMerchantOnboardingSnapshotResult(dependencies.uow, query);
     },
 
     async refreshMerchantOnboardingSession(
@@ -2034,52 +2225,13 @@ export function createMerchantOnboardingService(
     async listMerchantRequirements(
       query: ListMerchantRequirementsQuery,
     ): Promise<readonly MerchantOnboardingRequirementView[]> {
-      const session = await dependencies.uow.onboarding.getSessionById(query.onboardingSessionId, {
-        environment: query.environment,
-      });
-      if (!session || session.merchantAccountId !== query.merchantAccountId) {
-        return [];
-      }
-
-      const requirements = await dependencies.uow.onboarding.listRequirementsForSession(
-        session.id,
-        {
-          environment: query.environment,
-        },
-      );
-      return requirements.map((requirement) => toRequirementView(requirement));
+      return listMerchantRequirementViews(dependencies.uow, query);
     },
 
     async listMerchantRequirementDocuments(
       query: ListMerchantRequirementDocumentsQuery,
     ): Promise<readonly MerchantRequirementDocumentView[]> {
-      const session = await dependencies.uow.onboarding.getSessionById(query.onboardingSessionId, {
-        environment: query.environment,
-      });
-      if (!session || session.merchantAccountId !== query.merchantAccountId) {
-        return [];
-      }
-
-      const requirements = await dependencies.uow.onboarding.listRequirementsForSession(
-        session.id,
-        {
-          environment: query.environment,
-        },
-      );
-      const requirement = requirements.find((entry) => entry.id === query.requirementId) ?? null;
-      if (!requirement) {
-        return [];
-      }
-
-      const documents = await dependencies.uow.onboarding.listDocumentsForRequirement(
-        requirement.id,
-        {
-          environment: query.environment,
-        },
-      );
-      return [...documents]
-        .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt))
-        .map((document) => toRequirementDocumentView(document));
+      return listMerchantRequirementDocumentViews(dependencies.uow, query);
     },
 
     async refreshMerchantRequirement(
