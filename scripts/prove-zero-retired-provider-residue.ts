@@ -8,6 +8,14 @@ const repoRoot = new URL("..", import.meta.url).pathname;
 const retiredProviderToken = String.fromCharCode(115, 116, 114, 105, 112, 101);
 const retiredProviderContentPattern = `\\b${retiredProviderToken}\\b|@${retiredProviderToken}/|${retiredProviderToken}[_-]`;
 const retiredProviderContentRegex = new RegExp(retiredProviderContentPattern, "i");
+const activeConfigExamplePaths = [
+  ".env.example",
+  ".test-env.example",
+  "apps/backend/.env.example",
+  "apps/web/.env.example",
+  "apps/landing/.env.example",
+] as const;
+const retiredProviderAliasRegex = /\bretired provider\b|retired_provider|RETIRED_PROVIDER/i;
 
 const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
   cwd: repoRoot,
@@ -71,6 +79,18 @@ for (const relativePath of trackedFiles) {
   }
 }
 
+for (const relativePath of activeConfigExamplePaths) {
+  const absolutePath = join(repoRoot, relativePath);
+  if (!existsSync(absolutePath)) {
+    continue;
+  }
+
+  const fileContents = readFileSync(absolutePath, "utf8");
+  if (retiredProviderAliasRegex.test(fileContents)) {
+    failures.push(`${relativePath}: active config example contains retired provider alias`);
+  }
+}
+
 function scanWorkingTreePathNames(absoluteDirectory: string, relativeDirectory: string): void {
   if (!existsSync(absoluteDirectory)) {
     return;
@@ -112,3 +132,4 @@ console.log(
 console.log(
   "- No working-tree content outside .git contains provider-shaped retired provider residue.",
 );
+console.log("- No active env example contains retired provider aliases.");
