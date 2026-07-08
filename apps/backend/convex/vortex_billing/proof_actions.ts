@@ -409,25 +409,25 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
   },
 });
 
-export const seedLegacyProviderEntitlementSafetyProof = internalMutation({
+export const seedVortexEntitlementSafetyProof = internalMutation({
   args: {
     proofRunId: v.string(),
   },
   returns: v.object({
     organizationId: v.id("organizations"),
-    externalPriceId: v.string(),
-    externalSubscriptionId: v.string(),
+    vortexPriceId: v.string(),
+    vortexSubscriptionId: v.string(),
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
-    const externalProductId = `prod_catalog_safety_${args.proofRunId}`;
-    const externalPriceId = `price_catalog_safety_${args.proofRunId}`;
-    const externalSubscriptionId = `sub_catalog_safety_${args.proofRunId}`;
+    const vortexProductId = `vtx_prod_catalog_safety_${args.proofRunId}`;
+    const vortexPriceId = `vtx_price_catalog_safety_${args.proofRunId}`;
+    const vortexSubscriptionId = `vtx_sub_catalog_safety_${args.proofRunId}`;
     const organizationId = await insertSaasProofOrganization(
       ctx,
       `catalog-safety-${args.proofRunId}`,
       now,
-      `cus_catalog_safety_${args.proofRunId}`,
+      `vtx_cust_catalog_safety_${args.proofRunId}`,
     );
     const ownerId = await insertSaasProofOwner(
       ctx,
@@ -442,8 +442,9 @@ export const seedLegacyProviderEntitlementSafetyProof = internalMutation({
     });
 
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
-      externalProductId,
-      name: "Legacy Provider Safety Control Pro",
+      externalProductId: vortexProductId,
+      vortexProductId,
+      name: "Vortex Entitlement Safety Control Pro",
       status: "archived",
       metadata: {
         tier: "pro",
@@ -454,8 +455,9 @@ export const seedLegacyProviderEntitlementSafetyProof = internalMutation({
       updatedAt: now,
     });
     await ctx.db.insert("subscription_prices", {
-      externalPriceId,
-      externalProductId,
+      externalPriceId: vortexPriceId,
+      vortexPriceId,
+      externalProductId: vortexProductId,
       subscriptionProductId,
       type: "recurring",
       billingScheme: "per_unit",
@@ -470,9 +472,9 @@ export const seedLegacyProviderEntitlementSafetyProof = internalMutation({
     });
     await ctx.db.insert("subscriptions", {
       organizationId,
-      externalCustomerId: `cus_catalog_safety_${args.proofRunId}`,
-      externalSubscriptionId,
-      externalPriceId,
+      externalCustomerId: `vtx_cust_catalog_safety_${args.proofRunId}`,
+      externalSubscriptionId: vortexSubscriptionId,
+      externalPriceId: vortexPriceId,
       status: "active",
       currentPeriodStart: now,
       currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
@@ -483,8 +485,8 @@ export const seedLegacyProviderEntitlementSafetyProof = internalMutation({
 
     return {
       organizationId,
-      externalPriceId,
-      externalSubscriptionId,
+      vortexPriceId,
+      vortexSubscriptionId,
     };
   },
 });
@@ -563,8 +565,8 @@ export const archiveCatalogSafetyProofRows = internalMutation({
     const now = Date.now();
     const productsArchived =
       (await archiveProductsByExternalProductIdRange(ctx, {
-        lower: "prod_catalog_safety_",
-        upper: "prod_catalog_safety`",
+        lower: "vtx_prod_catalog_safety_",
+        upper: "vtx_prod_catalog_safety_~",
         now,
       })) +
       (await archiveProductsByExternalProductIdRange(ctx, {

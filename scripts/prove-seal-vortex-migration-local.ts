@@ -21,6 +21,20 @@ const localGateForbiddenProofScripts = [
   "prove:seal-document-payment-vortex-paid-state",
 ] as const;
 
+const catalogProofForbiddenPatterns = [
+  "seedLegacyProviderEntitlementSafetyProof",
+  "legacyProviderEntitlementSafety",
+  "activeLegacyProviderIdPresent: true",
+  "`cus_catalog_safety_",
+  "`sub_catalog_safety_",
+  "`price_catalog_safety_",
+  "`prod_catalog_safety_",
+  '"cus_catalog_safety_',
+  '"sub_catalog_safety_',
+  '"price_catalog_safety_',
+  '"prod_catalog_safety_',
+] as const;
+
 type ProofCommand = {
   readonly label: string;
   readonly command: string;
@@ -106,6 +120,23 @@ for (const forbiddenScript of localGateForbiddenProofScripts) {
 }
 console.log("[proof] Live and env-mutating proof commands stay outside the local gate.");
 
+console.log("\n[proof] Catalog live proof uses Vortex-shaped entitlement safety controls");
+for (const relativePath of [
+  "scripts/prove-seal-catalog-from-vortex.ts",
+  "apps/backend/convex/vortex_billing/proof_actions.ts",
+] as const) {
+  const contents = readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  for (const forbiddenPattern of catalogProofForbiddenPatterns) {
+    if (contents.includes(forbiddenPattern)) {
+      console.error(
+        `[proof] ${relativePath} still contains catalog safety legacy-provider fragment: ${forbiddenPattern}`,
+      );
+      process.exit(1);
+    }
+  }
+}
+console.log("[proof] Catalog safety controls are Vortex-shaped.");
+
 for (const proofCommand of proofCommands) {
   console.log(`\n[proof] ${proofCommand.label}`);
   console.log(`$ ${proofCommand.command} ${proofCommand.args.join(" ")}`);
@@ -146,6 +177,7 @@ console.log(
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
         "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
         "live and env-mutating proof commands are excluded from the local non-mutating gate",
+        "catalog live proof seeds Vortex-shaped entitlement safety controls only",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
         "launch boundary reports launchReady false until human settlement proof and production configuration are complete",
       ],

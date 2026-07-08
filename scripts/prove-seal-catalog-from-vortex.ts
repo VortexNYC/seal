@@ -227,8 +227,8 @@ function findLinkedCatalogPrice(
 
 function assertPlanPro(state: JsonObject, context: string): void {
   const plan = objectField(state, "plan");
-  assert(plan.plan === "pro", `${context}: expected legacy provider control plan to remain pro`);
-  assert(plan.isPro === true, `${context}: expected legacy provider control isPro true`);
+  assert(plan.plan === "pro", `${context}: expected Vortex entitlement control plan to remain pro`);
+  assert(plan.isPro === true, `${context}: expected Vortex entitlement control isPro true`);
 }
 
 async function main(): Promise<void> {
@@ -254,13 +254,13 @@ async function main(): Promise<void> {
   const expectedUnitAmount = numberField(selected.price, "unitAmount");
   const expectedBillingInterval = optionalStringField(selected.price, "billingInterval");
 
-  const legacyProviderSafety = await runConvex<JsonObject>({
+  const vortexEntitlementSafety = await runConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:seedLegacyProviderEntitlementSafetyProof",
+    functionName: "vortex_billing/proof_actions:seedVortexEntitlementSafetyProof",
     args: { proofRunId },
   });
-  const safetyOrganizationId = stringField(legacyProviderSafety, "organizationId");
-  const safetyExternalPriceId = stringField(legacyProviderSafety, "externalPriceId");
+  const safetyOrganizationId = stringField(vortexEntitlementSafety, "organizationId");
+  const safetyVortexPriceId = stringField(vortexEntitlementSafety, "vortexPriceId");
 
   const beforeState = await runConvex<JsonObject>({
     deployment: sealDeployment,
@@ -323,14 +323,14 @@ async function main(): Promise<void> {
   });
   assertPlanPro(afterState, "after Vortex catalog sync");
   const safetyPrice = nullableObjectField(afterState, "price");
-  assert(safetyPrice !== null, "Expected legacy provider safety price after sync");
+  assert(safetyPrice !== null, "Expected Vortex entitlement safety price after sync");
   assert(
-    stringField(safetyPrice, "externalPriceId") === safetyExternalPriceId,
-    "Expected legacy provider safety subscription to stay on externalPriceId",
+    stringField(safetyPrice, "externalPriceId") === safetyVortexPriceId,
+    "Expected Vortex entitlement safety subscription to stay on its Vortex price id",
   );
   assert(
-    afterState.activeLegacyProviderIdPresent === true,
-    "Expected legacy-provider-shaped control IDs to remain active",
+    afterState.activeLegacyProviderIdPresent === false,
+    "Expected Vortex entitlement control to contain no legacy-provider-shaped IDs",
   );
 
   console.log(
@@ -354,11 +354,11 @@ async function main(): Promise<void> {
           unitAmount: expectedUnitAmount,
           billingInterval: expectedBillingInterval,
         },
-        legacyProviderEntitlementSafety: {
+        vortexEntitlementSafety: {
           organizationId: safetyOrganizationId,
-          externalPriceId: safetyExternalPriceId,
+          vortexPriceId: safetyVortexPriceId,
           plan: "pro",
-          activeLegacyProviderIdPresent: true,
+          activeLegacyProviderIdPresent: false,
         },
       },
       null,
