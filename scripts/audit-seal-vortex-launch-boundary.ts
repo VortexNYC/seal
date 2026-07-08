@@ -107,8 +107,9 @@ if (!production.ok && missingProductionNames.length === 0) {
   fail("Production readiness failed without reporting missing production names.");
 }
 
-const productionBoundary =
-  production.ok ? "ready_for_human_production_proof" : "waiting_for_known_production_config";
+const productionBoundary = production.ok
+  ? "ready_for_human_production_proof"
+  : "waiting_for_known_production_config";
 
 console.log(
   JSON.stringify(

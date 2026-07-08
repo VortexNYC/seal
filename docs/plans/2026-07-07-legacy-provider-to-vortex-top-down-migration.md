@@ -206,7 +206,7 @@ Current launch baseline:
 - `bun run audit:seal-vortex-production-readiness` is the no-secret production config gate. It currently fails without printing secret values because Seal production is missing document-payment routing names and Vortex production is missing runtime/Finix production names. For values that are present, it validates safe shapes and runtime expectations. The audit prints human-run `convex env set` commands with placeholders for the missing values; agents must not execute those production mutations.
 - `bun run audit:seal-vortex-launch-boundary` is the passing non-mutating wrapper for future agent sessions: it verifies the sandbox settlement handoff and then accepts production readiness only when it is green or blocked by the exact known human-run production configuration names. Unexpected missing names or invalid present config fail the wrapper.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
-- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it intentionally excludes live card, settlement, payout, production credential, and remote git work.
+- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it includes the launch-boundary wrapper and intentionally excludes live card, settlement, payout, production credential, and remote git work.
 
 Do next:
 

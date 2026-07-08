@@ -25,7 +25,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - The strict residue guard scans every tracked file with no archive exception.
 - `git ls-files | rg -i "<retired-provider-token>"` returns no matches when the placeholder is replaced with the actual retired provider word.
 - Raw working-tree scan excluding generated/ignored outputs returns no matches.
-- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, settings, webhook projection, backend adapter, operational surface, and document-payment local proofs.
+- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, settings, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - Full root quality gates passed after the strict cleanup:
   - `bun run format:changed:check`
   - `bun run lint:strict`
