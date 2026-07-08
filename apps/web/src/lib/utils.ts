@@ -111,3 +111,11 @@ export function getErrorMessage(error: unknown): string {
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+/**
+ * Returns true when the value is null, undefined, an empty string,
+ * or a string containing only whitespace characters.
+ */
+export function isBlank(s: string | null | undefined): boolean {
+  return s === null || s === undefined || s.trim().length === 0;
+}

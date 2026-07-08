@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp, isBlank } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -283,5 +283,32 @@ describe("clamp", () => {
       expect(clamp(-0.1, 0, 1)).toBe(0);
       expect(clamp(1.1, 0, 1)).toBe(1);
     });
+  });
+});
+
+describe("isBlank", () => {
+  test("returns true for null", () => {
+    expect(isBlank(null)).toBe(true);
+  });
+
+  test("returns true for undefined", () => {
+    expect(isBlank(undefined)).toBe(true);
+  });
+
+  test("returns true for empty string", () => {
+    expect(isBlank("")).toBe(true);
+  });
+
+  test("returns true for whitespace-only string", () => {
+    expect(isBlank("   ")).toBe(true);
+    expect(isBlank("\t")).toBe(true);
+    expect(isBlank("\n")).toBe(true);
+    expect(isBlank("\t \n \r")).toBe(true);
+  });
+
+  test("returns false for non-empty string", () => {
+    expect(isBlank("hello")).toBe(false);
+    expect(isBlank(" a ")).toBe(false);
+    expect(isBlank("0")).toBe(false);
   });
 });
