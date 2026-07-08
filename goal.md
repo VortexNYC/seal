@@ -45,6 +45,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Document payable creation through Vortex is proven locally and in sandbox for the current supported path.
 - Hosted Vortex payment capture has projected into Seal as paid and completed the waiting document.
 - Failed hosted payment recovery is proven: failed outcome marks the invoice uncollectible, starts dunning once, ignores duplicate failures, and cancels dunning after a later paid event.
+- `bun run audit:seal-vortex-hosted-outcomes-boundary` statically preserves the checked-in paid capture, failed recovery, dunning, idempotency, and settlement-boundary proof artifact without calling live systems.
 
 ## Not Done
 
@@ -114,6 +115,7 @@ Work SEA-562:
 2. Preserve the exact human-run sandbox settlement command from `docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md`.
 3. Run non-mutating local proof gates only:
    - `bun run prove:seal-vortex-migration-local`
+   - `bun run audit:seal-vortex-hosted-outcomes-boundary`
    - `bun run audit:seal-vortex-sandbox-settlement-boundary`
    - `bun run audit:seal-vortex-production-readiness`
    - `bun run audit:seal-vortex-launch-boundary`

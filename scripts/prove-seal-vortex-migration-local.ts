@@ -91,6 +91,11 @@ const proofCommands: readonly ProofCommand[] = [
     args: ["run", "prove:seal-document-payment-vortex-local"],
   },
   {
+    label: "Seal Vortex hosted outcomes boundary",
+    command: "bun",
+    args: ["run", "audit:seal-vortex-hosted-outcomes-boundary"],
+  },
+  {
     label: "Seal Vortex sandbox settlement boundary",
     command: "bun",
     args: ["run", "audit:seal-vortex-sandbox-settlement-boundary"],
@@ -164,6 +169,7 @@ console.log(
         "account creation, merchant onboarding guards, and billing/payments/merchant settings use Vortex naming and actions",
         "SaaS checkout, catalog price resolution, coupon application, portal links, lifecycle guards, and webhook projection are Vortex-backed locally",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
+        "checked-in hosted outcome proof preserves paid capture, failed recovery, dunning, and settlement-boundary evidence",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
         "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
         "live and env-mutating proof commands are excluded from the local non-mutating gate",
