@@ -61,8 +61,13 @@ for (const relativePath of trackedFiles) {
   }
 
   const fileBytes = readFileSync(absolutePath);
-  if (retiredProviderContentRegex.test(fileBytes.toString("utf8"))) {
-    failures.push(`${relativePath}: content contains retired provider residue`);
+  const fileContents = fileBytes.toString("utf8");
+  if (fileContents.toLowerCase().includes(retiredProviderToken)) {
+    failures.push(`${relativePath}: tracked content contains retired provider token`);
+    continue;
+  }
+  if (retiredProviderContentRegex.test(fileContents)) {
+    failures.push(`${relativePath}: tracked content contains retired provider residue`);
   }
 }
 
@@ -95,8 +100,10 @@ if (failures.length > 0) {
 
 console.log("Retired provider residue proof passed:");
 console.log("- No tracked file paths contain the retired provider token.");
-console.log("- No tracked file contents contain retired provider residue.");
+console.log("- No tracked file contents contain the retired provider token.");
 console.log(
   "- No dependency graph package or installed package path contains the retired provider token.",
 );
-console.log("- No working-tree content outside .git contains retired provider residue.");
+console.log(
+  "- No working-tree content outside .git contains provider-shaped retired provider residue.",
+);

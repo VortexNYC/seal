@@ -136,7 +136,8 @@ console.log(
       proven: [
         "tracked paths contain no retired-provider package or file names",
         "dependency graph and installed package paths contain no retired-provider package residue",
-        "tracked files and working-tree content outside .git contain no provider-shaped retired-provider residue",
+        "tracked file contents contain no retired-provider token",
+        "working-tree content outside .git contains no provider-shaped retired-provider residue",
         "account creation, merchant onboarding guards, and billing/payments/merchant settings use Vortex naming and actions",
         "SaaS checkout, catalog price resolution, coupon application, portal links, lifecycle guards, and webhook projection are Vortex-backed locally",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
