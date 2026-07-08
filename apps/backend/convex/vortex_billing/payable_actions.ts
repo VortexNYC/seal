@@ -639,9 +639,7 @@ function buildPayableTaxMode(config: PaymentFieldConfigInput): VortexTaxMode {
   return config.taxEnabled ? "taxable_requires_evidence" : "not_taxable";
 }
 
-function buildPayableTaxFields(
-  config: PaymentFieldConfigInput,
-):
+function buildPayableTaxFields(config: PaymentFieldConfigInput):
   | {
       readonly taxable: true;
       readonly taxBehavior: TaxBehavior;
@@ -768,7 +766,9 @@ function getInitialVortexChargeAmountCents(config: PaymentFieldConfigInput): num
   }
   if (config.paymentType === "deposit_balance") {
     if (config.depositBalanceConfig === undefined) {
-      throw new ConvexError("Deposit/balance payment field is missing deposit balance configuration");
+      throw new ConvexError(
+        "Deposit/balance payment field is missing deposit balance configuration",
+      );
     }
     return buildDepositBalanceAmounts(config.totalAmountCents, config.depositBalanceConfig)
       .depositAmountDue;

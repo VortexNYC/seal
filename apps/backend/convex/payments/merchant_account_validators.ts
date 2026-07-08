@@ -10,7 +10,7 @@ export const merchantConnectionStatusValidator = v.union(
 );
 
 export const merchantAccountValidator = v.object({
-  _id: v.id("stripe_accounts"),
+  _id: v.id("merchant_accounts"),
   processorAccountId: v.string(),
   accountType: v.union(v.literal("standard"), v.literal("express")),
   chargesEnabled: v.boolean(),

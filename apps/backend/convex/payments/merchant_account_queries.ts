@@ -12,10 +12,9 @@ const operationalMerchantAccountValidator = v.object({
   ),
   account: v.union(
     v.object({
-      _id: v.id("stripe_accounts"),
-      provider: v.union(v.literal("stripe"), v.literal("vortex")),
+      _id: v.id("merchant_accounts"),
+      provider: v.literal("vortex"),
       processorAccountId: v.string(),
-      vortexMerchantAccountId: v.optional(v.string()),
       accountType: v.union(v.literal("standard"), v.literal("express")),
       chargesEnabled: v.boolean(),
       payoutsEnabled: v.boolean(),
@@ -56,7 +55,7 @@ export const getMerchantAccount = memberQuery({
     }
 
     const account = await ctx.db
-      .query("stripe_accounts")
+      .query("merchant_accounts")
       .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organization._id))
       .first();
 
@@ -75,17 +74,11 @@ export const getMerchantAccount = memberQuery({
       requirements: account.requirements,
     });
 
-    const provider = account.provider ?? "stripe";
-
     return {
       status,
       account: {
         _id: account._id,
-        processorAccountId: resolveProcessorAccountId({
-          provider,
-          stripeAccountId: account.stripeAccountId,
-          vortexMerchantAccountId: account.vortexMerchantAccountId,
-        }),
+        processorAccountId: account.providerAccountId,
         accountType: account.accountType,
         chargesEnabled: account.chargesEnabled,
         payoutsEnabled: account.payoutsEnabled,
@@ -113,7 +106,7 @@ export const getOperationalMerchantAccount = memberQuery({
     }
 
     const account = await ctx.db
-      .query("stripe_accounts")
+      .query("merchant_accounts")
       .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organization._id))
       .first();
 
@@ -131,19 +124,12 @@ export const getOperationalMerchantAccount = memberQuery({
       detailsSubmitted: account.detailsSubmitted,
       requirements: account.requirements,
     });
-    const provider = account.provider ?? "stripe";
-
     return {
       status,
       account: {
         _id: account._id,
-        provider,
-        processorAccountId: resolveProcessorAccountId({
-          provider,
-          stripeAccountId: account.stripeAccountId,
-          vortexMerchantAccountId: account.vortexMerchantAccountId,
-        }),
-        vortexMerchantAccountId: account.vortexMerchantAccountId,
+        provider: account.provider,
+        processorAccountId: account.providerAccountId,
         accountType: account.accountType,
         chargesEnabled: account.chargesEnabled,
         payoutsEnabled: account.payoutsEnabled,
@@ -159,18 +145,6 @@ export const getOperationalMerchantAccount = memberQuery({
     };
   },
 });
-
-export function resolveProcessorAccountId(input: {
-  provider: "stripe" | "vortex";
-  stripeAccountId: string;
-  vortexMerchantAccountId: string | undefined;
-}): string {
-  if (input.provider === "vortex" && input.vortexMerchantAccountId !== undefined) {
-    return input.vortexMerchantAccountId;
-  }
-
-  return input.stripeAccountId;
-}
 
 function getConnectionStatus(account: {
   chargesEnabled: boolean;

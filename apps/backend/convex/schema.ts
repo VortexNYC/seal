@@ -66,6 +66,11 @@ import { type SignatureType, savedSignaturesTable } from "./schemas/saved_signat
 import { type FieldType, signatureFieldsTable } from "./schemas/signature_fields";
 import { signaturesTable } from "./schemas/signatures";
 import {
+  type MerchantAccountType,
+  type MerchantFeeHandling,
+  merchantAccountsTable,
+} from "./schemas/merchant_accounts";
+import {
   type StripeAccountType,
   type StripeFeeHandling,
   stripeAccountsTable,
@@ -145,6 +150,9 @@ export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 // Re-export Stripe Connect types
 export type { StripeAccountType, StripeFeeHandling };
 
+// Re-export merchant account types
+export type { MerchantAccountType, MerchantFeeHandling };
+
 // Re-export subscription coupon/promo types
 export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
 
@@ -189,6 +197,7 @@ export default defineSchema({
   subscription_prices: subscriptionPricesTable,
   subscription_coupons: subscriptionCouponsTable,
   subscription_promo_codes: subscriptionPromoCodesTable,
+  merchant_accounts: merchantAccountsTable,
   stripe_accounts: stripeAccountsTable,
   stripe_webhook_events: stripeWebhookEventsTable,
   vortex_billing_webhook_events: vortexBillingWebhookEventsTable,

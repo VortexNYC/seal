@@ -4,7 +4,7 @@ Date: 2026-07-08
 Host: local Mac plus Herdr as default remote execution host
 Repo: /Users/shlomokabareti/Projects/Seal
 Base: origin/staging
-Active branch: codex/sea-556-remove-stripe-fallbacks
+Active branch: codex/sea-557-provider-neutral-data-contracts
 
 ## What We Are Shipping
 
@@ -25,6 +25,10 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
 - SEA-556 local lane removed the executable Stripe provider fallbacks from active payments/Vortex billing paths.
 - Current Stripe residue after SEA-556 local edits: 149 files contain Stripe strings.
 - Remaining `internal.stripe.*` calls are concentrated in the legacy `apps/backend/convex/stripe` modules and tests, not in `apps/backend/convex/payments` or `apps/backend/convex/vortex_billing`.
+- SEA-557 first local cut moved active merchant account storage from `stripe_accounts` to provider-neutral `merchant_accounts`.
+- Current Stripe residue after SEA-557 local edits: 143 files contain Stripe strings.
+- Active `apps/backend/convex/payments` code is clean for `stripe_accounts`, `stripeAccountId`, `by_stripe_account`, `internal.stripe`, and `../stripe` references.
+- Remaining provider-neutral data-contract work includes organization billing customer ids, payment field invoice/subscription ids, document invoice provider ids, promo-code customer ids, legacy Stripe webhook tables, and the legacy `apps/backend/convex/stripe` module tree.
 
 ## Proven For SaaS Billing
 
@@ -102,8 +106,8 @@ Deleting Stripe before replacing the remaining provider fallbacks and data contr
 
 ## Immediate Execution Plan
 
-1. Commit and push SEA-556 after explicit push confirmation.
-2. Start SEA-557 provider-neutral data migration for Stripe-shaped merchant account tables, ids, validators, and queries.
+1. Commit SEA-557 provider-neutral merchant account storage cut locally.
+2. Continue SEA-557 provider-neutral data migration for the remaining Stripe-shaped billing/payment ids.
 3. Then continue SEA-558 through SEA-561: webhook/catalog/env deletion, package/lock removal, proof/test/doc cleanup, and final zero-Stripe scanner.
 4. Keep every lane proof-gated:
    - `bun run format:changed:check`

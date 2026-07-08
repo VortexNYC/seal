@@ -12,7 +12,9 @@ import {
 type BuildPayableInput = Parameters<typeof buildCreatePayableRequest>[0];
 type BuildRecurringPayableInput = Parameters<typeof buildCreateRecurringPayableRequest>[0];
 type BuildInstallmentPayableInput = Parameters<typeof buildCreateInstallmentPayableRequest>[0];
-type BuildDepositBalancePayableInput = Parameters<typeof buildCreateDepositBalancePayableRequest>[0];
+type BuildDepositBalancePayableInput = Parameters<
+  typeof buildCreateDepositBalancePayableRequest
+>[0];
 
 const baseConfig: BuildPayableInput["config"] = {
   _id: "seal_config_123",
@@ -75,7 +77,11 @@ describe("Vortex Billing document payable bridge", () => {
       }),
     ).toBe("vortex_billing");
     expect(
-      selectDocumentPaymentProvider("org_not_allowlisted", [{ ...baseConfig, taxEnabled: true }], {}),
+      selectDocumentPaymentProvider(
+        "org_not_allowlisted",
+        [{ ...baseConfig, taxEnabled: true }],
+        {},
+      ),
     ).toBe("vortex_billing");
   });
 

@@ -10,7 +10,7 @@ export const getAccountByOrganizationId = internalQuery({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("stripe_accounts")
+      .query("merchant_accounts")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
       .first();
   },
@@ -19,8 +19,7 @@ export const getAccountByOrganizationId = internalQuery({
 export const upsertMerchantAccount = internalMutation({
   args: {
     organizationId: v.id("organizations"),
-    merchantAccountId: v.string(),
-    vortexMerchantAccountId: v.optional(v.string()),
+    providerAccountId: v.string(),
     accountType: v.union(v.literal("standard"), v.literal("express")),
     chargesEnabled: v.boolean(),
     payoutsEnabled: v.boolean(),
@@ -45,16 +44,15 @@ export const upsertMerchantAccount = internalMutation({
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("stripe_accounts")
-      .withIndex("by_stripe_account", (q) => q.eq("stripeAccountId", args.merchantAccountId))
+      .query("merchant_accounts")
+      .withIndex("by_provider_account", (q) => q.eq("providerAccountId", args.providerAccountId))
       .first();
 
     const now = Date.now();
     const payload = {
       organizationId: args.organizationId,
       provider: "vortex" as const,
-      stripeAccountId: args.merchantAccountId,
-      vortexMerchantAccountId: args.vortexMerchantAccountId ?? existing?.vortexMerchantAccountId,
+      providerAccountId: args.providerAccountId,
       accountType: args.accountType,
       chargesEnabled: args.chargesEnabled,
       payoutsEnabled: args.payoutsEnabled,
@@ -71,7 +69,7 @@ export const upsertMerchantAccount = internalMutation({
       return existing._id;
     }
 
-    return await ctx.db.insert("stripe_accounts", {
+    return await ctx.db.insert("merchant_accounts", {
       ...payload,
       createdAt: now,
     });
@@ -87,7 +85,7 @@ export const updateFeeHandling = adminMutation({
   }),
   handler: async (ctx, args) => {
     const account = await ctx.db
-      .query("stripe_accounts")
+      .query("merchant_accounts")
       .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organization._id))
       .first();
 

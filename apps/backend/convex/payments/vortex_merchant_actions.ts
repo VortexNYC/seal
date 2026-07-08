@@ -668,10 +668,7 @@ function readVortexOnboardingLink(body: unknown): CreateVortexOnboardingLinkResu
   const data = readObject(root.data, "Vortex onboarding link response data");
   return {
     url: readString(data.url, "Vortex onboarding link url"),
-    onboardingSessionId: readString(
-      data.onboardingSessionId,
-      "Vortex onboarding session id",
-    ),
+    onboardingSessionId: readString(data.onboardingSessionId, "Vortex onboarding session id"),
     expiresAt: readString(data.expiresAt, "Vortex onboarding link expiration"),
   };
 }
@@ -856,8 +853,7 @@ async function persistVortexMerchantAccount(
 ): Promise<void> {
   await ctx.runMutation(internal.payments.merchant_account_mutations.upsertMerchantAccount, {
     organizationId,
-    merchantAccountId,
-    vortexMerchantAccountId: merchantAccountId,
+    providerAccountId: merchantAccountId,
     accountType: "standard",
     chargesEnabled: state.chargesEnabled,
     payoutsEnabled: state.payoutsEnabled,
@@ -880,9 +876,9 @@ async function createVortexMerchantAccountForOrganization(
       organizationId,
     },
   );
-  if (existing?.provider === "vortex" && existing.vortexMerchantAccountId !== undefined) {
+  if (existing !== null) {
     return {
-      merchantAccountId: existing.vortexMerchantAccountId,
+      merchantAccountId: existing.providerAccountId,
       state: {
         chargesEnabled: existing.chargesEnabled,
         payoutsEnabled: existing.payoutsEnabled,
@@ -977,15 +973,15 @@ async function refreshVortexMerchantAccountForOrganization(
       organizationId,
     },
   );
-  if (existing?.provider !== "vortex" || existing.vortexMerchantAccountId === undefined) {
+  if (existing === null) {
     return { status: "not_connected" };
   }
 
-  const state = await readRemoteVortexMerchantState(existing.vortexMerchantAccountId);
+  const state = await readRemoteVortexMerchantState(existing.providerAccountId);
   await persistVortexMerchantAccount(
     ctx,
     organizationId,
-    existing.vortexMerchantAccountId,
+    existing.providerAccountId,
     state,
     undefined,
   );
@@ -1002,7 +998,7 @@ async function createVortexOnboardingLinkForOrganization(
       organizationId,
     },
   );
-  if (existing?.provider !== "vortex" || existing.vortexMerchantAccountId === undefined) {
+  if (existing === null) {
     throw new ConvexError("Create a Vortex Connect account before starting verification");
   }
 
@@ -1016,7 +1012,7 @@ async function createVortexOnboardingLinkForOrganization(
       apiBaseUrl: env.apiBaseUrl,
       apiKey: env.apiKey,
       path: `/v1/merchant-accounts/${encodeURIComponent(
-        existing.vortexMerchantAccountId,
+        existing.providerAccountId,
       )}/onboarding-link`,
       body,
       failureLabel: "Vortex merchant onboarding link create",
@@ -1144,10 +1140,10 @@ export const getVortexMerchantPayoutData = action({
       },
     );
 
-    if (existing?.provider !== "vortex" || existing.vortexMerchantAccountId === undefined) {
+    if (existing === null) {
       return EMPTY_VORTEX_MERCHANT_PAYOUT_DATA;
     }
 
-    return await readRemoteVortexMerchantPayoutData(existing.vortexMerchantAccountId);
+    return await readRemoteVortexMerchantPayoutData(existing.providerAccountId);
   },
 });

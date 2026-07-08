@@ -1,6 +1,5 @@
 import { ConvexError, v } from "convex/values";
 
-import { internalQuery } from "../_generated/server";
 import { getAuthContext, memberQuery } from "../auth";
 
 type PaymentStatusFilter = "paid" | "open" | "void" | "all";
@@ -151,39 +150,5 @@ export const getActiveSubscriptions = memberQuery({
         };
       }),
     );
-  },
-});
-
-export const resolveSubscriptionProcessorContext = internalQuery({
-  args: {
-    slug: v.string(),
-    subscriptionId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const auth = await getAuthContext(ctx);
-    const organizationId = assertActiveOrganization(auth, args.slug);
-
-    const config = await ctx.db
-      .query("payment_field_configs")
-      .withIndex("by_stripe_subscription", (q) => q.eq("stripeSubscriptionId", args.subscriptionId))
-      .first();
-
-    if (config === null || config.organizationId !== organizationId) {
-      throw new ConvexError("Subscription not found");
-    }
-
-    const account = await ctx.db
-      .query("stripe_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .first();
-
-    if (account === null || !account.chargesEnabled) {
-      throw new ConvexError("Merchant account not ready");
-    }
-
-    return {
-      processorSubscriptionId: args.subscriptionId,
-      processorAccountId: account.stripeAccountId,
-    };
   },
 });
