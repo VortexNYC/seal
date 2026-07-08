@@ -14,10 +14,13 @@ function RouteComponent() {
   const { resolvedTheme } = useTheme();
 
   return (
-    <SignIn
-      routing="virtual"
-      signUpUrl="/waitlist"
-      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
-    />
+    <div className="flex flex-col items-center gap-6">
+      <h1 className="text-foreground text-2xl font-semibold tracking-tight">Welcome</h1>
+      <SignIn
+        routing="virtual"
+        signUpUrl="/waitlist"
+        appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+      />
+    </div>
   );
 }
