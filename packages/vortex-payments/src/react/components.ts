@@ -4132,7 +4132,14 @@ export function VortexPlanComparison({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolvePlanComparisonCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const hasPlans = comparison.plans.length > 0;
+  const state = createPlanComparisonState(comparison);
+  const launchPlan = createPlanComparisonLaunchHandler({
+    comparison,
+    runtime,
+    selectedNavigate,
+    onCheckoutLaunch,
+    onPlanSelect,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -4151,12 +4158,46 @@ export function VortexPlanComparison({
     }
   }, [error, onError]);
 
-  const launchPlan = (plan: VortexPlanComparisonPlan): void => {
-    if (
-      plan.status === "disabled" ||
-      plan.status === "current" ||
-      plan.disabledReason !== undefined
-    ) {
+  return createElement(
+    "section",
+    createPlanComparisonSectionProps({ appearance, className, classNames, comparison }),
+    createPlanComparisonHeader({ classNames, comparison, resolvedCopy }),
+    createPlanComparisonFeedback({ classNames, comparison, error, loading, resolvedCopy }),
+    createPlanComparisonMetrics({ classNames, comparison, resolvedCopy }),
+    createPlanComparisonItems({
+      classNames,
+      comparison,
+      isDisabled,
+      launchPlan,
+      resolvedCopy,
+      state,
+    }),
+  );
+}
+
+function createPlanComparisonState(comparison: VortexPlanComparisonState) {
+  return {
+    hasPlans: comparison.plans.length > 0,
+  };
+}
+
+type PlanComparisonState = ReturnType<typeof createPlanComparisonState>;
+
+function createPlanComparisonLaunchHandler({
+  comparison,
+  runtime,
+  selectedNavigate,
+  onCheckoutLaunch,
+  onPlanSelect,
+}: {
+  readonly comparison: VortexPlanComparisonState;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly onCheckoutLaunch: VortexPlanComparisonProps["onCheckoutLaunch"];
+  readonly onPlanSelect: VortexPlanComparisonProps["onPlanSelect"];
+}) {
+  return (plan: VortexPlanComparisonPlan): void => {
+    if (!canLaunchPlanComparisonPlan(plan)) {
       return;
     }
     if (plan.checkoutToken !== undefined) {
@@ -4174,41 +4215,78 @@ export function VortexPlanComparison({
     }
     void onPlanSelect?.(plan, comparison);
   };
+}
 
+function canLaunchPlanComparisonPlan(plan: VortexPlanComparisonPlan): boolean {
+  return (
+    plan.status !== "disabled" && plan.status !== "current" && plan.disabledReason === undefined
+  );
+}
+
+function createPlanComparisonSectionProps({
+  appearance,
+  className,
+  classNames,
+  comparison,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly comparison: VortexPlanComparisonState;
+}) {
+  return {
+    className: cx("vortex-payments-plan-comparison", className, classNames?.root),
+    "data-vortex-surface": "plan-comparison",
+    "data-vortex-component": "VortexPlanComparison",
+    "data-vortex-customer-id": comparison.customerId,
+    "data-vortex-billing-account-id": comparison.billingAccountId,
+    "data-vortex-plan-comparison-status": comparison.status,
+    "data-vortex-plan-count": String(comparison.plans.length),
+    "data-vortex-current-plan-id": comparison.currentPlanId,
+    "data-vortex-recommended-plan-id": comparison.recommendedPlanId,
+    "data-vortex-selected-plan-id": comparison.selectedPlanId,
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createPlanComparisonHeader({
+  classNames,
+  comparison,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly comparison: VortexPlanComparisonState;
+  readonly resolvedCopy: Required<VortexPlanComparisonCopy>;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-plan-comparison", className, classNames?.root),
-      "data-vortex-surface": "plan-comparison",
-      "data-vortex-component": "VortexPlanComparison",
-      "data-vortex-customer-id": comparison.customerId,
-      "data-vortex-billing-account-id": comparison.billingAccountId,
-      "data-vortex-plan-comparison-status": comparison.status,
-      "data-vortex-plan-count": String(comparison.plans.length),
-      "data-vortex-current-plan-id": comparison.currentPlanId,
-      "data-vortex-recommended-plan-id": comparison.recommendedPlanId,
-      "data-vortex-selected-plan-id": comparison.selectedPlanId,
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        planComparisonDescription(comparison, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      planComparisonDescription(comparison, resolvedCopy),
     ),
+  );
+}
+
+function createPlanComparisonFeedback({
+  classNames,
+  comparison,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly comparison: VortexPlanComparisonState;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexPlanComparisonCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -4227,40 +4305,62 @@ export function VortexPlanComparison({
     comparison.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, comparison.message),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, comparison.status, classNames),
-      createMetric(resolvedCopy.planCountLabel, String(comparison.plans.length), classNames),
-      createMetric(resolvedCopy.selectedPlanLabel, comparison.selectedPlanId ?? "none", classNames),
-      createMetric(resolvedCopy.currentPlanLabel, comparison.currentPlanId ?? "none", classNames),
-      createMetric(
-        resolvedCopy.recommendedPlanLabel,
-        comparison.recommendedPlanId ?? "none",
-        classNames,
-      ),
+  ];
+}
+
+function createPlanComparisonMetrics({
+  classNames,
+  comparison,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly comparison: VortexPlanComparisonState;
+  readonly resolvedCopy: Required<VortexPlanComparisonCopy>;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, comparison.status, classNames),
+    createMetric(resolvedCopy.planCountLabel, String(comparison.plans.length), classNames),
+    createMetric(resolvedCopy.selectedPlanLabel, comparison.selectedPlanId ?? "none", classNames),
+    createMetric(resolvedCopy.currentPlanLabel, comparison.currentPlanId ?? "none", classNames),
+    createMetric(
+      resolvedCopy.recommendedPlanLabel,
+      comparison.recommendedPlanId ?? "none",
+      classNames,
     ),
-    hasPlans
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          comparison.plans.map((plan) =>
-            createPlanComparisonItem(
-              plan,
-              comparison,
-              resolvedCopy,
-              classNames,
-              isDisabled,
-              launchPlan,
-            ),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyPlansTitle),
-          createElement("p", null, resolvedCopy.emptyPlansDescription),
-        ),
+  );
+}
+
+function createPlanComparisonItems({
+  classNames,
+  comparison,
+  isDisabled,
+  launchPlan,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly comparison: VortexPlanComparisonState;
+  readonly isDisabled: boolean;
+  readonly launchPlan: (plan: VortexPlanComparisonPlan) => void;
+  readonly resolvedCopy: Required<VortexPlanComparisonCopy>;
+  readonly state: PlanComparisonState;
+}): ReactNode {
+  if (!state.hasPlans) {
+    return createElement(
+      "div",
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyPlansTitle),
+      createElement("p", null, resolvedCopy.emptyPlansDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    comparison.plans.map((plan) =>
+      createPlanComparisonItem(plan, comparison, resolvedCopy, classNames, isDisabled, launchPlan),
+    ),
   );
 }
 
@@ -7250,9 +7350,7 @@ function createPlanComparisonItem(
   isDisabled: boolean,
   launchPlan: (plan: VortexPlanComparisonPlan) => void,
 ): ReactNode {
-  const isCurrent = plan.status === "current" || comparison.currentPlanId === plan.id;
-  const isRecommended = plan.status === "recommended" || comparison.recommendedPlanId === plan.id;
-  const actionDisabledReason = plan.disabledReason;
+  const state = createPlanComparisonItemState(plan, comparison, isDisabled);
   return createElement(
     "li",
     {
@@ -7261,33 +7359,19 @@ function createPlanComparisonItem(
       "data-vortex-plan-id": plan.id,
       "data-vortex-plan-lookup-key": plan.lookupKey,
       "data-vortex-plan-status": plan.status,
-      "data-vortex-plan-current": String(isCurrent),
-      "data-vortex-plan-recommended": String(isRecommended),
+      "data-vortex-plan-current": String(state.isCurrent),
+      "data-vortex-plan-recommended": String(state.isRecommended),
       "data-vortex-plan-cadence": plan.cadence,
     },
     createElement("strong", { className: classNames?.itemTitle }, plan.title),
-    plan.description === undefined
-      ? null
-      : createElement("p", { className: classNames?.itemDescription }, plan.description),
+    createPlanComparisonItemDescription(plan, classNames),
     createElement(
       "span",
       { className: classNames?.status },
-      isCurrent ? copy.currentPlanLabel : plan.status,
+      state.isCurrent ? copy.currentPlanLabel : plan.status,
     ),
-    isRecommended
-      ? createElement(
-          "span",
-          { className: classNames?.status, "data-vortex-plan-badge": "recommended" },
-          copy.recommendedPlanLabel,
-        )
-      : null,
-    actionDisabledReason === undefined
-      ? null
-      : createElement(
-          "p",
-          { className: classNames?.status, "data-vortex-plan-disabled-reason": true },
-          actionDisabledReason,
-        ),
+    createPlanComparisonRecommendedBadge(state, copy, classNames),
+    createPlanComparisonDisabledReason(state, classNames),
     createElement(
       "dl",
       { className: classNames?.metrics },
@@ -7299,43 +7383,120 @@ function createPlanComparisonItem(
       createMetric(copy.cadenceLabel, plan.cadenceLabel ?? plan.cadence, classNames),
       createMetric(copy.featureCountLabel, String(plan.featureHighlights.length), classNames),
     ),
-    plan.featureHighlights.length === 0
-      ? null
-      : createElement(
-          "ul",
-          { className: classNames?.list, "data-vortex-plan-feature-list": plan.id },
-          plan.featureHighlights.map((feature, index) =>
-            createElement(
-              "li",
-              {
-                key: `${plan.id}:feature:${index}`,
-                className: classNames?.itemDescription,
-                "data-vortex-plan-feature-index": String(index),
-              },
-              feature,
-            ),
-          ),
-        ),
-    createElement(
-      "button",
-      {
-        className: classNames?.button,
-        disabled:
-          isDisabled ||
-          isCurrent ||
-          actionDisabledReason !== undefined ||
-          plan.status === "disabled",
-        onClick: () => {
-          launchPlan(plan);
+    createPlanComparisonFeatureList(plan, classNames),
+    createPlanComparisonActionButton(plan, copy, classNames, state, launchPlan),
+  );
+}
+
+function createPlanComparisonItemDescription(
+  plan: VortexPlanComparisonPlan,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (plan.description === undefined) {
+    return null;
+  }
+  return createElement("p", { className: classNames?.itemDescription }, plan.description);
+}
+
+function createPlanComparisonRecommendedBadge(
+  state: PlanComparisonItemState,
+  copy: Required<VortexPlanComparisonCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (!state.isRecommended) {
+    return null;
+  }
+  return createElement(
+    "span",
+    { className: classNames?.status, "data-vortex-plan-badge": "recommended" },
+    copy.recommendedPlanLabel,
+  );
+}
+
+function createPlanComparisonDisabledReason(
+  state: PlanComparisonItemState,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (state.actionDisabledReason === undefined) {
+    return null;
+  }
+  return createElement(
+    "p",
+    { className: classNames?.status, "data-vortex-plan-disabled-reason": true },
+    state.actionDisabledReason,
+  );
+}
+
+function createPlanComparisonFeatureList(
+  plan: VortexPlanComparisonPlan,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (plan.featureHighlights.length === 0) {
+    return null;
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list, "data-vortex-plan-feature-list": plan.id },
+    plan.featureHighlights.map((feature, index) =>
+      createElement(
+        "li",
+        {
+          key: `${plan.id}:feature:${index}`,
+          className: classNames?.itemDescription,
+          "data-vortex-plan-feature-index": String(index),
         },
-        type: "button",
-        "data-vortex-plan-action":
-          plan.checkoutToken === undefined ? "select_plan" : "open_checkout",
-      },
-      planComparisonActionLabel(plan, copy),
+        feature,
+      ),
     ),
   );
 }
+
+function createPlanComparisonActionButton(
+  plan: VortexPlanComparisonPlan,
+  copy: Required<VortexPlanComparisonCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+  state: PlanComparisonItemState,
+  launchPlan: (plan: VortexPlanComparisonPlan) => void,
+): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: state.actionDisabled,
+      onClick: () => {
+        launchPlan(plan);
+      },
+      type: "button",
+      "data-vortex-plan-action": state.actionName,
+    },
+    planComparisonActionLabel(plan, copy),
+  );
+}
+
+function createPlanComparisonItemState(
+  plan: VortexPlanComparisonPlan,
+  comparison: VortexPlanComparisonState,
+  isDisabled: boolean,
+): PlanComparisonItemState {
+  const isCurrent = plan.status === "current" || comparison.currentPlanId === plan.id;
+  const actionDisabledReason = plan.disabledReason;
+  return {
+    actionDisabled:
+      isDisabled || isCurrent || actionDisabledReason !== undefined || plan.status === "disabled",
+    actionDisabledReason,
+    actionName: plan.checkoutToken === undefined ? "select_plan" : "open_checkout",
+    isCurrent,
+    isRecommended: plan.status === "recommended" || comparison.recommendedPlanId === plan.id,
+  };
+}
+
+type PlanComparisonItemState = {
+  readonly actionDisabled: boolean;
+  readonly actionDisabledReason: ReactNode | undefined;
+  readonly actionName: "select_plan" | "open_checkout";
+  readonly isCurrent: boolean;
+  readonly isRecommended: boolean;
+};
 
 function createUsageMeterSummaryItem(
   meter: VortexUsageMeterSummaryMeter,
