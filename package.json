@@ -72,7 +72,8 @@
     "auth:check": "vortex-auth check --convex-dir ./apps/backend/convex",
     "auth:preflight": "vortex-auth preflight --repo-root . --convex-dir ./apps/backend/convex --",
     "lint:strict": "vortex-lint --strict .",
-    "lint:advisory": "vortex-lint --strict --advisory ."
+    "lint:advisory": "vortex-lint --strict --advisory .",
+    "prove:convex-cost-guard": "bun $(bun pm bin)/../@vortexnyc/tooling/bin/vortex-convex-cost-guard.ts ."
   },
   "dependencies": {
     "@tanstack/router-core": "1.168.9"
@@ -82,7 +83,7 @@
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "@vortexnyc/auth": "0.5.3",
-    "@vortexnyc/tooling": "0.2.29",
+    "@vortexnyc/tooling": "0.2.30",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "knip": "^6.3.0",

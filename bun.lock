@@ -12,7 +12,7 @@
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "@vortexnyc/auth": "0.5.3",
-        "@vortexnyc/tooling": "0.2.29",
+        "@vortexnyc/tooling": "0.2.30",
         "baseline-browser-mapping": "^2.10.14",
         "browserslist": "^4.28.2",
         "knip": "^6.3.0",
@@ -206,7 +206,7 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@vitejs/plugin-react": "^5.1.2",
-        "@vortexnyc/tooling": "0.2.29",
+        "@vortexnyc/tooling": "0.2.30",
         "dotenv": "^17.4.0",
         "happy-dom": "^20.6.1",
         "jsdom": "29.0.1",
@@ -1956,7 +1956,7 @@
 
     "@vortexnyc/payments-sdk": ["@vortexnyc/payments-sdk@0.1.0", "https://npm.pkg.github.com/download/@vortexnyc/payments-sdk/0.1.0/cb9396cd1e076c19c99dfc29ab44848dbb075764", {}, "sha512-L6/78DMKD6syYbwxYFBKrvT58TZfVt8pEE4t70BpE32l7+ozqn2Ar6GD/LBAlY7Qz16ib8jCQq/LJW9tFzOXBQ=="],
 
-    "@vortexnyc/tooling": ["@vortexnyc/tooling@0.2.29", "https://npm.pkg.github.com/download/@VortexNYC/tooling/0.2.29/60099f0afe4c45e7ba23350fe75e714c12a0ebda", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-5EUcZTlaCIt5k2/yAFYXFwaU6Koyit4ObC9Y2Q/byD60nAhlZDjl9ULCwfl00M35rJUsIT4Ayk2ynqXnDYr6qw=="],
+    "@vortexnyc/tooling": ["@vortexnyc/tooling@0.2.30", "https://npm.pkg.github.com/download/@VortexNYC/tooling/0.2.30/45832a755de9bfa60e67db1dcaaf2f41f255ff79", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-content-push": "bin/vortex-content-push.ts", "vortex-convex-cost-guard": "bin/vortex-convex-cost-guard.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts" } }, "sha512-H9yq3oE8ZDOl1S/4F35AADYrFP9ieIWk8WXfS5Vcb4WvtybnsdkTIfsdRImNEsfd2fI+AFLngEbC+kH52cw1Nw=="],
 
     "@xmldom/xmldom": ["@xmldom/xmldom@0.8.12", "", {}, "sha512-9k/gHF6n/pAi/9tqr3m3aqkuiNosYTurLLUtc7xQ9sxB/wm7WPygCv8GYa6mS0fLJEHhqMC1ATYhz++U/lRHqg=="],
 
