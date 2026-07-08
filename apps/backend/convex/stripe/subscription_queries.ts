@@ -23,21 +23,21 @@ export const getActiveSubscriptions = memberQuery({
       .collect();
 
     const recurring = configs.filter(
-      (c) => c.paymentType === "recurring" && c.stripeSubscriptionId,
+      (c) => c.paymentType === "recurring" && c.providerSubscriptionId,
     );
 
     const subscriptions = await Promise.all(
       recurring.map(async (config) => {
         const document = await ctx.db.get(config.documentId);
 
-        const stripeInvoiceId = config.stripeInvoiceId;
-        const stripeSubscriptionId = config.stripeSubscriptionId;
-        if (!stripeSubscriptionId) return null;
+        const providerInvoiceId = config.providerInvoiceId;
+        const providerSubscriptionId = config.providerSubscriptionId;
+        if (!providerSubscriptionId) return null;
 
-        const invoice = stripeInvoiceId
+        const invoice = providerInvoiceId
           ? await ctx.db
               .query("document_invoices")
-              .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", stripeInvoiceId))
+              .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", providerInvoiceId))
               .first()
           : null;
 
@@ -53,7 +53,7 @@ export const getActiveSubscriptions = memberQuery({
           intervalCount: config.recurringConfig?.intervalCount ?? 1,
           endCondition: config.recurringConfig?.endCondition ?? "never",
           paymentStatus: config.paymentStatus ?? "pending",
-          stripeSubscriptionId,
+          providerSubscriptionId,
           createdAt: config.createdAt,
         };
       }),

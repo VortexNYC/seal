@@ -41,17 +41,17 @@ function requirePresent<T>(value: T | null | undefined, label: string): NonNulla
 }
 
 function expectNoStripeConfigIds(config: Doc<"payment_field_configs">): void {
-  expect(config.stripeInvoiceId).toBeUndefined();
-  expect(config.stripeSubscriptionId).toBeUndefined();
-  expect(config.stripePaymentIntentId).toBeUndefined();
+  expect(config.providerInvoiceId).toBeUndefined();
+  expect(config.providerSubscriptionId).toBeUndefined();
+  expect(config.providerPaymentIntentId).toBeUndefined();
 }
 
 function expectNoStripeInvoiceIds(invoice: Doc<"document_invoices">): void {
-  expect(invoice.stripeAccountId).toBeUndefined();
-  expect(invoice.stripeInvoiceId).toBeUndefined();
-  expect(invoice.stripeSubscriptionId).toBeUndefined();
-  expect(invoice.stripeCustomerId).toBeUndefined();
-  expect("stripePaymentIntentId" in invoice).toBe(false);
+  expect(invoice.providerAccountId).toBeUndefined();
+  expect(invoice.providerInvoiceId).toBeUndefined();
+  expect(invoice.providerSubscriptionId).toBeUndefined();
+  expect(invoice.providerCustomerId).toBeUndefined();
+  expect("providerPaymentIntentId" in invoice).toBe(false);
 }
 
 function parentMutationArgs(

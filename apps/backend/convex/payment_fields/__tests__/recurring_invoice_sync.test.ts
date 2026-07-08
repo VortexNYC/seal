@@ -77,7 +77,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       });
     });
 
-    // Create a recurring payment config with stripeSubscriptionId
+    // Create a recurring payment config with providerSubscriptionId
     await t.run(async (ctx) => {
       return await ctx.db.insert("payment_field_configs", {
         fieldId,
@@ -92,8 +92,8 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
         taxEnabled: false,
         totalAmountCents: 10000,
         paymentStatus: "awaiting",
-        stripeSubscriptionId: "sub_recurring_123",
-        stripeInvoiceId: "in_initial_123",
+        providerSubscriptionId: "sub_recurring_123",
+        providerInvoiceId: "in_initial_123",
         recurringConfig: {
           interval: "month",
           intervalCount: 1,
@@ -109,10 +109,10 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const { internal } = await import("../../_generated/api");
 
     const result = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_cycle2_456",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeCustomerId: "cus_test_789",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_cycle2_456",
+      providerSubscriptionId: "sub_recurring_123",
+      providerCustomerId: "cus_test_789",
+      providerAccountId: "acct_test_001",
       status: "draft",
       customerEmail: "customer@example.com",
       customerName: "Jane Doe",
@@ -126,15 +126,15 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_cycle2_456"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_cycle2_456"))
         .collect();
     });
 
     expect(invoices).toHaveLength(1);
     expect(sealAssertPresent(invoices[0]).documentId).toBe(documentId);
     expect(sealAssertPresent(invoices[0]).organizationId).toBe(organizationId);
-    expect(sealAssertPresent(invoices[0]).stripeSubscriptionId).toBe("sub_recurring_123");
-    expect(sealAssertPresent(invoices[0]).stripeCustomerId).toBe("cus_test_789");
+    expect(sealAssertPresent(invoices[0]).providerSubscriptionId).toBe("sub_recurring_123");
+    expect(sealAssertPresent(invoices[0]).providerCustomerId).toBe("cus_test_789");
     expect(sealAssertPresent(invoices[0]).customerEmail).toBe("customer@example.com");
     expect(sealAssertPresent(invoices[0]).amountDue).toBe(10000);
     expect(sealAssertPresent(invoices[0]).status).toBe("draft");
@@ -146,9 +146,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const { internal } = await import("../../_generated/api");
 
     const args = {
-      stripeInvoiceId: "in_idempotent_test",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_idempotent_test",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "draft" as const,
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -164,7 +164,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_idempotent_test"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_idempotent_test"))
         .collect();
     });
 
@@ -176,9 +176,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
 
     // First create as draft
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_finalize_test",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_finalize_test",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "draft",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -187,9 +187,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
 
     // Then finalize (invoice.finalized webhook)
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_finalize_test",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_finalize_test",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -201,7 +201,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_finalize_test"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_finalize_test"))
         .collect();
     });
 
@@ -220,9 +220,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const { internal } = await import("../../_generated/api");
 
     const result = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_unknown_sub",
-      stripeSubscriptionId: "sub_nonexistent_999",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_unknown_sub",
+      providerSubscriptionId: "sub_nonexistent_999",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "nobody@example.com",
       amountDue: 5000,
@@ -236,9 +236,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const { internal } = await import("../../_generated/api");
 
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_open_direct",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_open_direct",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -249,7 +249,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_open_direct"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_open_direct"))
         .collect();
     });
 
@@ -264,9 +264,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
 
     // Cycle 2
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_cycle2",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_cycle2",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -275,9 +275,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
 
     // Cycle 3
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_cycle3",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_cycle3",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -292,18 +292,18 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     expect(invoices).toHaveLength(2);
-    const invoiceIds = invoices.map((i) => i.stripeInvoiceId).sort();
+    const invoiceIds = invoices.map((i) => i.providerInvoiceId).sort();
     expect(invoiceIds).toEqual(["in_cycle2", "in_cycle3"]);
   });
 
-  test("P1: cycle 2+ invoices get paid via updatePaymentStatusFromWebhook", async () => {
+  test("P1: cycle 2+ invoices get paid via updatePaymentStatusFromProviderInvoice", async () => {
     const { internal } = await import("../../_generated/api");
 
     // Create cycle 2 invoice via upsertRecurringInvoice
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_cycle2_paid",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_cycle2_paid",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -313,9 +313,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     // Simulate invoice.paid webhook — config lookup won't match (config has in_initial_123)
     // but document_invoices lookup should match
     const result = await t.mutation(
-      internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
+      internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
       {
-        stripeInvoiceId: "in_cycle2_paid",
+        providerInvoiceId: "in_cycle2_paid",
         paymentStatus: "paid",
       },
     );
@@ -327,7 +327,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_cycle2_paid"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_cycle2_paid"))
         .collect();
     });
 
@@ -340,9 +340,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
 
     // Create invoice and mark it paid
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_regress_test",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_regress_test",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "open",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -350,16 +350,16 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     // Mark as paid via webhook
-    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromWebhook, {
-      stripeInvoiceId: "in_regress_test",
+    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice, {
+      providerInvoiceId: "in_regress_test",
       paymentStatus: "paid",
     });
 
     // Replay invoice.created or invoice.finalized (Stripe retried the event)
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      stripeInvoiceId: "in_regress_test",
-      stripeSubscriptionId: "sub_recurring_123",
-      stripeAccountId: "acct_test_001",
+      providerInvoiceId: "in_regress_test",
+      providerSubscriptionId: "sub_recurring_123",
+      providerAccountId: "acct_test_001",
       status: "draft",
       customerEmail: "customer@example.com",
       amountDue: 10000,
@@ -369,7 +369,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_regress_test"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_regress_test"))
         .collect();
     });
 

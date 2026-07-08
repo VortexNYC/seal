@@ -111,12 +111,12 @@ export const getActiveSubscriptions = memberQuery({
       .collect();
 
     const recurring = configs.filter(
-      (config) => config.paymentType === "recurring" && config.stripeSubscriptionId !== undefined,
+      (config) => config.paymentType === "recurring" && config.providerSubscriptionId !== undefined,
     );
 
     return await Promise.all(
       recurring.map(async (config) => {
-        const processorSubscriptionId = config.stripeSubscriptionId;
+        const processorSubscriptionId = config.providerSubscriptionId;
         if (processorSubscriptionId === undefined) {
           throw new ConvexError("Recurring payment is missing processor subscription id");
         }
@@ -124,12 +124,12 @@ export const getActiveSubscriptions = memberQuery({
         const document = await ctx.db.get(config.documentId);
 
         const invoice =
-          config.stripeInvoiceId === undefined
+          config.providerInvoiceId === undefined
             ? null
             : await ctx.db
                 .query("document_invoices")
-                .withIndex("by_stripe_invoice", (q) =>
-                  q.eq("stripeInvoiceId", config.stripeInvoiceId),
+                .withIndex("by_provider_invoice", (q) =>
+                  q.eq("providerInvoiceId", config.providerInvoiceId),
                 )
                 .first();
 

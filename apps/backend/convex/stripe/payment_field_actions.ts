@@ -111,8 +111,8 @@ interface PaymentFieldConfig {
     description: string;
     quantity: number;
     unitPrice: number;
-    stripeProductId?: string;
-    stripePriceId?: string;
+    providerProductId?: string;
+    providerPriceId?: string;
   }>;
   currency: string;
   dueDateTerms: string;
@@ -124,7 +124,7 @@ interface PaymentFieldConfig {
 }
 
 type PaymentInvoiceResult = {
-  stripeInvoiceId: string;
+  providerInvoiceId: string;
   hostedInvoiceUrl: string | null;
 };
 
@@ -263,7 +263,7 @@ async function cleanupDraftInvoices(
       await stripe.invoices.del(invoiceId, { stripeAccount: stripeAccountId });
     } catch (deleteError) {
       console.warn("Failed to clean up orphaned draft invoice", {
-        stripeInvoiceId: invoiceId,
+        providerInvoiceId: invoiceId,
         error: deleteError instanceof Error ? deleteError.message : String(deleteError),
       });
     }
@@ -405,18 +405,18 @@ async function createOneTimeInvoice(
     });
 
     const finalizedInvoice = await finalizeDraftInvoice(stripe, stripeAccountId, invoice.id);
-    await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+    await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId: config._id,
       paymentStatus: "awaiting",
-      stripeInvoiceId: finalizedInvoice.id,
+      providerInvoiceId: finalizedInvoice.id,
       hostedInvoiceUrl: finalizedInvoice.hosted_invoice_url ?? undefined,
-      stripeAccountId,
+      providerAccountId: stripeAccountId,
       customerEmail: recipientEmail,
       customerName: recipientName,
     });
 
     return {
-      stripeInvoiceId: finalizedInvoice.id,
+      providerInvoiceId: finalizedInvoice.id,
       hostedInvoiceUrl: finalizedInvoice.hosted_invoice_url ?? null,
     };
   } catch (error) {
@@ -514,19 +514,19 @@ async function createDepositBalanceInvoices(
     });
     await finalizeDraftInvoice(stripe, stripeAccountId, balanceInvoice.id);
 
-    await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+    await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId: config._id,
       paymentStatus: "awaiting",
-      stripeInvoiceId: finalizedDeposit.id,
-      stripePaymentIntentId: balanceInvoice.id,
+      providerInvoiceId: finalizedDeposit.id,
+      providerPaymentIntentId: balanceInvoice.id,
       hostedInvoiceUrl: finalizedDeposit.hosted_invoice_url ?? undefined,
-      stripeAccountId,
+      providerAccountId: stripeAccountId,
       customerEmail: recipientEmail,
       customerName: recipientName,
     });
 
     return {
-      stripeInvoiceId: finalizedDeposit.id,
+      providerInvoiceId: finalizedDeposit.id,
       hostedInvoiceUrl: finalizedDeposit.hosted_invoice_url ?? null,
     };
   } catch (error) {
@@ -617,19 +617,19 @@ async function storeSubscriptionIds(
   hostedInvoiceUrl: string | null,
   invoiceTracking?: { stripeAccountId: string; customerEmail: string; customerName?: string },
 ): Promise<PaymentInvoiceResult> {
-  await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+  await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
     configId,
     paymentStatus: "awaiting",
-    stripeSubscriptionId: subscriptionId,
-    stripeInvoiceId: firstInvoiceId,
+    providerSubscriptionId: subscriptionId,
+    providerInvoiceId: firstInvoiceId,
     hostedInvoiceUrl: hostedInvoiceUrl ?? undefined,
-    stripeAccountId: invoiceTracking?.stripeAccountId,
+    providerAccountId: invoiceTracking?.stripeAccountId,
     customerEmail: invoiceTracking?.customerEmail,
     customerName: invoiceTracking?.customerName,
   });
 
   return {
-    stripeInvoiceId: firstInvoiceId ?? subscriptionId,
+    providerInvoiceId: firstInvoiceId ?? subscriptionId,
     hostedInvoiceUrl,
   };
 }
@@ -722,19 +722,19 @@ async function createCustomFirstInstallment(
     productName: buildProductName(config.items, `Installments (${remainingCount} remaining)`),
   });
 
-  await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+  await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
     configId: config._id,
     paymentStatus: "awaiting",
-    stripeInvoiceId: firstInvoice.id,
-    stripeSubscriptionId: subscriptionId,
+    providerInvoiceId: firstInvoice.id,
+    providerSubscriptionId: subscriptionId,
     hostedInvoiceUrl: firstInvoice.hosted_invoice_url ?? undefined,
-    stripeAccountId,
+    providerAccountId: stripeAccountId,
     customerEmail,
     customerName,
   });
 
   return {
-    stripeInvoiceId: firstInvoice.id,
+    providerInvoiceId: firstInvoice.id,
     hostedInvoiceUrl: firstInvoice.hosted_invoice_url ?? null,
   };
 }
@@ -1165,7 +1165,7 @@ export const createProviderPaymentObjectsForDocumentFields = internalAction({
       paymentLinks.push({
         recipientEmail: recipient.email,
         hostedInvoiceUrl: result.hostedInvoiceUrl,
-        providerInvoiceId: result.stripeInvoiceId,
+        providerInvoiceId: result.providerInvoiceId,
         totalAmountCents: config.totalAmountCents,
         currency: config.currency,
       });

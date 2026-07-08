@@ -36,7 +36,7 @@ const MAX_DUNNING_STEP = DUNNING_DELAYS.length - 1;
 
 /**
  * Start dunning sequence for a failed invoice.
- * Called from updatePaymentStatusFromWebhook when status becomes "failed".
+ * Called from updatePaymentStatusFromProviderInvoice when status becomes "failed".
  * Idempotent — won't restart if already active.
  */
 export const startDunning = internalMutation({

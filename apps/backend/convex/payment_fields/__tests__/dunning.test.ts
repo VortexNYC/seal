@@ -65,8 +65,8 @@ describe("dunning (payment recovery)", () => {
       return await ctx.db.insert("document_invoices", {
         documentId,
         organizationId,
-        stripeAccountId: "acct_test_456",
-        stripeInvoiceId: "in_test_dunning",
+        providerAccountId: "acct_test_456",
+        providerInvoiceId: "in_test_dunning",
         status: "uncollectible",
         customerEmail: "customer@example.com",
         customerName: "Jane Doe",

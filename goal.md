@@ -28,7 +28,17 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
 - SEA-557 first local cut moved active merchant account storage from `stripe_accounts` to provider-neutral `merchant_accounts`.
 - Current Stripe residue after SEA-557 local edits: 143 files contain Stripe strings.
 - Active `apps/backend/convex/payments` code is clean for `stripe_accounts`, `stripeAccountId`, `by_stripe_account`, `internal.stripe`, and `../stripe` references.
-- Remaining provider-neutral data-contract work includes organization billing customer ids, payment field invoice/subscription ids, document invoice provider ids, promo-code customer ids, legacy Stripe webhook tables, and the legacy `apps/backend/convex/stripe` module tree.
+- SEA-557 second local cut moved payment field and document invoice ids to provider-neutral names:
+  - `providerInvoiceId`
+  - `providerSubscriptionId`
+  - `providerPaymentIntentId`
+  - `providerAccountId`
+  - `providerCustomerId`
+  - `providerProductId`
+  - `providerPriceId`
+- Current Stripe residue after the second SEA-557 local cut: 139 files contain Stripe strings.
+- Active payment field/document invoice shared contract is clean for `stripeInvoiceId`, `stripeSubscriptionId`, `stripePaymentIntentId`, `stripeAccountId`, `stripeCustomerId`, `stripeProductId`, `stripePriceId`, `by_stripe_invoice`, and `by_stripe_subscription`.
+- Remaining provider-neutral data-contract work includes organization billing customer ids, subscription promo/customer ids, legacy Stripe webhook tables, and the legacy `apps/backend/convex/stripe` module tree.
 
 ## Proven For SaaS Billing
 

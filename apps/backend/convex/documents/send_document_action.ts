@@ -45,9 +45,9 @@ type ProvePaymentInvoiceLinksResult = {
     vortexPayableId?: string;
     vortexPaymentRequestId?: string;
     hostedInvoiceUrl?: string;
-    stripeInvoiceId?: string;
-    stripePaymentIntentId?: string;
-    stripeSubscriptionId?: string;
+    providerInvoiceId?: string;
+    providerPaymentIntentId?: string;
+    providerSubscriptionId?: string;
   }[];
 };
 
@@ -331,9 +331,9 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         vortexPayableId: v.optional(v.string()),
         vortexPaymentRequestId: v.optional(v.string()),
         hostedInvoiceUrl: v.optional(v.string()),
-        stripeInvoiceId: v.optional(v.string()),
-        stripePaymentIntentId: v.optional(v.string()),
-        stripeSubscriptionId: v.optional(v.string()),
+        providerInvoiceId: v.optional(v.string()),
+        providerPaymentIntentId: v.optional(v.string()),
+        providerSubscriptionId: v.optional(v.string()),
       }),
     ),
   }),
@@ -373,14 +373,14 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         ...(config.hostedInvoiceUrl !== undefined
           ? { hostedInvoiceUrl: config.hostedInvoiceUrl }
           : {}),
-        ...(config.stripeInvoiceId !== undefined
-          ? { stripeInvoiceId: config.stripeInvoiceId }
+        ...(config.providerInvoiceId !== undefined
+          ? { providerInvoiceId: config.providerInvoiceId }
           : {}),
-        ...(config.stripePaymentIntentId !== undefined
-          ? { stripePaymentIntentId: config.stripePaymentIntentId }
+        ...(config.providerPaymentIntentId !== undefined
+          ? { providerPaymentIntentId: config.providerPaymentIntentId }
           : {}),
-        ...(config.stripeSubscriptionId !== undefined
-          ? { stripeSubscriptionId: config.stripeSubscriptionId }
+        ...(config.providerSubscriptionId !== undefined
+          ? { providerSubscriptionId: config.providerSubscriptionId }
           : {}),
       })),
     };

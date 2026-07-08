@@ -78,8 +78,8 @@ describe("revenue analytics queries", () => {
       return await ctx.db.insert("document_invoices", {
         documentId,
         organizationId,
-        stripeAccountId: "acct_test",
-        stripeInvoiceId: `in_${Math.random().toString(36).slice(2)}`,
+        providerAccountId: "acct_test",
+        providerInvoiceId: `in_${Math.random().toString(36).slice(2)}`,
         status: overrides.status,
         customerEmail: "customer@example.com",
         amountDue: overrides.amountDue,

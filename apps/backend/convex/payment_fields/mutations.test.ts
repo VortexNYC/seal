@@ -222,7 +222,7 @@ describe("Payment field mutations", () => {
         return await ctx.db.get(configId);
       })) as Doc<"payment_field_configs"> | null;
 
-      expect(config?.stripeInvoiceId).toBeUndefined();
+      expect(config?.providerInvoiceId).toBeUndefined();
       expect(config?.vortexPayableId).toBe("payable_test");
       expect(config?.vortexDepositBalancePayableId).toBe("installment_payable_test");
       expect(config?.vortexInstallmentPayableId).toBe("installment_payable_test");
@@ -366,7 +366,7 @@ describe("Payment field mutations", () => {
       await authed.mutation(api.payment_fields.mutations.updatePaymentStatus, {
         configId,
         paymentStatus: "created",
-        stripeInvoiceId: "in_test_123",
+        providerInvoiceId: "in_test_123",
       });
 
       const config = (await t.run(async (ctx) => {
@@ -374,7 +374,7 @@ describe("Payment field mutations", () => {
       })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("created");
-      expect(config?.stripeInvoiceId).toBe("in_test_123");
+      expect(config?.providerInvoiceId).toBe("in_test_123");
     });
 
     test("transitions through status lifecycle", async () => {
@@ -401,7 +401,7 @@ describe("Payment field mutations", () => {
     });
   });
 
-  describe("storeStripeIds (internal)", () => {
+  describe("storeProviderPaymentIds (internal)", () => {
     test("stores Stripe IDs on config", async () => {
       const configId = await t
         .withIdentity({ subject: "test_owner" })
@@ -411,11 +411,11 @@ describe("Payment field mutations", () => {
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
           configId,
           paymentStatus: "created",
-          stripeInvoiceId: "in_internal_123",
-          stripePaymentIntentId: "pi_internal_456",
+          providerInvoiceId: "in_internal_123",
+          providerPaymentIntentId: "pi_internal_456",
         });
       });
 
@@ -424,8 +424,8 @@ describe("Payment field mutations", () => {
       })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("created");
-      expect(config?.stripeInvoiceId).toBe("in_internal_123");
-      expect(config?.stripePaymentIntentId).toBe("pi_internal_456");
+      expect(config?.providerInvoiceId).toBe("in_internal_123");
+      expect(config?.providerPaymentIntentId).toBe("pi_internal_456");
     });
 
     test("stores hostedInvoiceUrl on config", async () => {
@@ -437,10 +437,10 @@ describe("Payment field mutations", () => {
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
           configId,
           paymentStatus: "awaiting",
-          stripeInvoiceId: "in_url_test_123",
+          providerInvoiceId: "in_url_test_123",
           hostedInvoiceUrl: "https://invoice.stripe.com/i/acct_123/test_456",
         });
       });
@@ -450,7 +450,7 @@ describe("Payment field mutations", () => {
       })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("awaiting");
-      expect(config?.stripeInvoiceId).toBe("in_url_test_123");
+      expect(config?.providerInvoiceId).toBe("in_url_test_123");
       expect(config?.hostedInvoiceUrl).toBe("https://invoice.stripe.com/i/acct_123/test_456");
     });
   });
@@ -523,7 +523,7 @@ describe("Payment field mutations", () => {
     });
   });
 
-  describe("updatePaymentStatusFromSubscriptionWebhook (internal)", () => {
+  describe("updatePaymentStatusFromProviderSubscription (internal)", () => {
     test("finds config by subscriptionId and updates status", async () => {
       const configId = await t
         .withIdentity({ subject: "test_owner" })
@@ -534,19 +534,19 @@ describe("Payment field mutations", () => {
 
       // Store a subscription ID on the config
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
           configId,
           paymentStatus: "awaiting",
-          stripeSubscriptionId: "sub_webhook_test_123",
+          providerSubscriptionId: "sub_webhook_test_123",
         });
       });
 
       // Call the webhook mutation
       const result = await t.run(async (ctx) => {
         return await ctx.runMutation(
-          internal.payment_fields.mutations.updatePaymentStatusFromSubscriptionWebhook,
+          internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
           {
-            stripeSubscriptionId: "sub_webhook_test_123",
+            providerSubscriptionId: "sub_webhook_test_123",
             paymentStatus: "paid",
           },
         );
@@ -564,9 +564,9 @@ describe("Payment field mutations", () => {
     test("returns null when no config matches", async () => {
       const result = await t.run(async (ctx) => {
         return await ctx.runMutation(
-          internal.payment_fields.mutations.updatePaymentStatusFromSubscriptionWebhook,
+          internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
           {
-            stripeSubscriptionId: "sub_nonexistent_999",
+            providerSubscriptionId: "sub_nonexistent_999",
             paymentStatus: "paid",
           },
         );
@@ -584,10 +584,10 @@ describe("Payment field mutations", () => {
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
           configId,
           paymentStatus: "awaiting",
-          stripeSubscriptionId: "sub_timestamp_test",
+          providerSubscriptionId: "sub_timestamp_test",
         });
       });
 
@@ -601,9 +601,9 @@ describe("Payment field mutations", () => {
 
       await t.run(async (ctx) => {
         await ctx.runMutation(
-          internal.payment_fields.mutations.updatePaymentStatusFromSubscriptionWebhook,
+          internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
           {
-            stripeSubscriptionId: "sub_timestamp_test",
+            providerSubscriptionId: "sub_timestamp_test",
             paymentStatus: "cancelled",
           },
         );

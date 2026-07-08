@@ -114,7 +114,7 @@ async function handleCapabilityUpdated(
 
 /**
  * Update payment_field_configs status from a Stripe invoice event.
- * Looks up the config by stripeInvoiceId. Returns the config ID if found, null otherwise.
+ * Looks up the config by providerInvoiceId. Returns the config ID if found, null otherwise.
  */
 async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
@@ -122,9 +122,9 @@ async function updatePaymentFieldFromInvoice(
   paymentStatus: PaymentStatus,
 ): Promise<{ configId?: string; documentId?: string; invoiceRecordId?: string } | null> {
   const result = await ctx.runMutation(
-    internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
+    internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
     {
-      stripeInvoiceId: invoice.id,
+      providerInvoiceId: invoice.id,
       paymentStatus,
     },
   );
@@ -132,7 +132,7 @@ async function updatePaymentFieldFromInvoice(
   if (result) {
     console.info("Payment field config status updated", {
       operation: "stripeConnect.paymentFieldUpdate",
-      stripeInvoiceId: invoice.id,
+      providerInvoiceId: invoice.id,
       paymentStatus,
       configId: result.configId,
       documentId: result.documentId,
@@ -145,7 +145,7 @@ async function updatePaymentFieldFromInvoice(
 /**
  * Upsert a document_invoices record for a subscription invoice.
  * Called on invoice.created and invoice.finalized for recurring billing.
- * Skips non-subscription invoices (one-time invoices are handled by storeStripeIds).
+ * Skips non-subscription invoices (one-time invoices are handled by storeProviderPaymentIds).
  */
 async function syncRecurringInvoice(
   ctx: HttpActionCtx,
@@ -161,10 +161,10 @@ async function syncRecurringInvoice(
   const status = getRecurringInvoiceStatus(invoice);
 
   await ctx.runMutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-    stripeInvoiceId: invoice.id,
-    stripeSubscriptionId: subscriptionId,
-    stripeCustomerId: getInvoiceCustomerId(invoice),
-    stripeAccountId,
+    providerInvoiceId: invoice.id,
+    providerSubscriptionId: subscriptionId,
+    providerCustomerId: getInvoiceCustomerId(invoice),
+    providerAccountId: stripeAccountId,
     status,
     customerEmail: invoice.customer_email ?? "",
     customerName: invoice.customer_name ?? undefined,
@@ -176,8 +176,8 @@ async function syncRecurringInvoice(
 
   console.info("Recurring invoice synced", {
     operation: "stripeConnect.recurringInvoiceSync",
-    stripeInvoiceId: invoice.id,
-    stripeSubscriptionId: subscriptionId,
+    providerInvoiceId: invoice.id,
+    providerSubscriptionId: subscriptionId,
     status,
   });
 }
@@ -201,7 +201,7 @@ async function handleInvoiceFinalized(
 async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   console.info("Processing invoice.paid webhook", {
     operation: "stripeConnect.invoicePaid",
-    stripeInvoiceId: invoice.id,
+    providerInvoiceId: invoice.id,
     status: invoice.status,
     amountPaid: invoice.amount_paid,
   });
@@ -230,7 +230,7 @@ async function handleInvoicePaymentFailed(
 ): Promise<void> {
   console.warn("Invoice payment failed", {
     operation: "stripeConnect.invoicePaymentFailed",
-    stripeInvoiceId: invoice.id,
+    providerInvoiceId: invoice.id,
   });
 
   // Update payment_field_configs (new system)
@@ -292,7 +292,7 @@ async function handleInvoiceDeleted(ctx: HttpActionCtx, invoice: Stripe.Invoice)
 
 /**
  * Update payment_field_configs status from a Stripe subscription event.
- * Looks up the config by stripeSubscriptionId.
+ * Looks up the config by providerSubscriptionId.
  */
 async function updatePaymentFieldFromSubscription(
   ctx: HttpActionCtx,
@@ -300,9 +300,9 @@ async function updatePaymentFieldFromSubscription(
   paymentStatus: PaymentStatus,
 ): Promise<string | null> {
   const result = await ctx.runMutation(
-    internal.payment_fields.mutations.updatePaymentStatusFromSubscriptionWebhook,
+    internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
     {
-      stripeSubscriptionId: subscription.id,
+      providerSubscriptionId: subscription.id,
       paymentStatus,
     },
   );
@@ -310,7 +310,7 @@ async function updatePaymentFieldFromSubscription(
   if (result) {
     console.info("Payment field config status updated from subscription event", {
       operation: "stripeConnect.subscriptionPaymentFieldUpdate",
-      stripeSubscriptionId: subscription.id,
+      providerSubscriptionId: subscription.id,
       paymentStatus,
       configId: result,
     });
@@ -325,7 +325,7 @@ async function handleSubscriptionUpdated(
 ): Promise<void> {
   console.info("Processing customer.subscription.updated webhook", {
     operation: "stripeConnect.subscriptionUpdated",
-    stripeSubscriptionId: subscription.id,
+    providerSubscriptionId: subscription.id,
     status: subscription.status,
   });
 
@@ -353,7 +353,7 @@ async function handleSubscriptionDeleted(
 ): Promise<void> {
   console.info("Processing customer.subscription.deleted webhook", {
     operation: "stripeConnect.subscriptionDeleted",
-    stripeSubscriptionId: subscription.id,
+    providerSubscriptionId: subscription.id,
   });
 
   // Check if subscription completed all iterations (ended naturally) vs. was cancelled

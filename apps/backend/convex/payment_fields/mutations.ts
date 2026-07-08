@@ -31,8 +31,8 @@ const lineItemArg = v.object({
   description: v.string(),
   quantity: v.number(),
   unitPrice: v.number(),
-  stripeProductId: v.optional(v.string()),
-  stripePriceId: v.optional(v.string()),
+  providerProductId: v.optional(v.string()),
+  providerPriceId: v.optional(v.string()),
 });
 
 const lateFeeArg = v.object({
@@ -213,9 +213,9 @@ export const updatePaymentStatus = mutation({
   args: {
     configId: v.id("payment_field_configs"),
     paymentStatus: paymentStatusTuple,
-    stripeInvoiceId: v.optional(v.string()),
-    stripeSubscriptionId: v.optional(v.string()),
-    stripePaymentIntentId: v.optional(v.string()),
+    providerInvoiceId: v.optional(v.string()),
+    providerSubscriptionId: v.optional(v.string()),
+    providerPaymentIntentId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config = await ctx.db.get(args.configId);
@@ -225,12 +225,12 @@ export const updatePaymentStatus = mutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
-      ...(args.stripeInvoiceId !== undefined && { stripeInvoiceId: args.stripeInvoiceId }),
-      ...(args.stripeSubscriptionId !== undefined && {
-        stripeSubscriptionId: args.stripeSubscriptionId,
+      ...(args.providerInvoiceId !== undefined && { providerInvoiceId: args.providerInvoiceId }),
+      ...(args.providerSubscriptionId !== undefined && {
+        providerSubscriptionId: args.providerSubscriptionId,
       }),
-      ...(args.stripePaymentIntentId !== undefined && {
-        stripePaymentIntentId: args.stripePaymentIntentId,
+      ...(args.providerPaymentIntentId !== undefined && {
+        providerPaymentIntentId: args.providerPaymentIntentId,
       }),
       updatedAt: Date.now(),
     });
@@ -241,12 +241,12 @@ export const updatePaymentStatus = mutation({
 
 /**
  * Internal mutation to update payment status from Stripe webhook handlers.
- * Looks up the config by stripeInvoiceId (set during the send flow).
+ * Looks up the config by providerInvoiceId (set during the send flow).
  * Returns the config ID and documentId if found, or null if not found.
  */
-export const updatePaymentStatusFromWebhook = internalMutation({
+export const updatePaymentStatusFromProviderInvoice = internalMutation({
   args: {
-    stripeInvoiceId: v.string(),
+    providerInvoiceId: v.string(),
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
@@ -261,14 +261,14 @@ export const updatePaymentStatusFromWebhook = internalMutation({
 
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
       .first();
 
     // Always look up document_invoices — cycle 2+ invoices may exist here
     // even when config doesn't match (config stores the initial invoice ID)
     const invoiceRecord = await ctx.db
       .query("document_invoices")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
       .first();
 
     if (config) {
@@ -373,7 +373,9 @@ export async function updateVortexPaymentStatusFromWebhookInDb(
     .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
     .collect();
   if (configMatches.length > 1) {
-    throw new Error(`ambiguous vortexPayableId across payment_field_configs: ${args.vortexPayableId}`);
+    throw new Error(
+      `ambiguous vortexPayableId across payment_field_configs: ${args.vortexPayableId}`,
+    );
   }
   const config = configMatches[0] ?? null;
 
@@ -459,19 +461,19 @@ export const updateVortexPaymentStatusFromWebhook = internalMutation({
 
 /**
  * Internal mutation to update payment status from Stripe subscription webhooks.
- * Looks up the config by stripeSubscriptionId.
+ * Looks up the config by providerSubscriptionId.
  * Returns the config ID if found and updated, or null if not found.
  */
-export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
+export const updatePaymentStatusFromProviderSubscription = internalMutation({
   args: {
-    stripeSubscriptionId: v.string(),
+    providerSubscriptionId: v.string(),
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_subscription", (q) =>
-        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      .withIndex("by_provider_subscription", (q) =>
+        q.eq("providerSubscriptionId", args.providerSubscriptionId),
       )
       .first();
 
@@ -493,16 +495,16 @@ export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
  * after Stripe objects are created during the send flow.
  * Also creates a document_invoices record for revenue tracking.
  */
-export const storeStripeIds = internalMutation({
+export const storeProviderPaymentIds = internalMutation({
   args: {
     configId: v.id("payment_field_configs"),
     paymentStatus: paymentStatusTuple,
-    stripeInvoiceId: v.optional(v.string()),
-    stripeSubscriptionId: v.optional(v.string()),
-    stripePaymentIntentId: v.optional(v.string()),
+    providerInvoiceId: v.optional(v.string()),
+    providerSubscriptionId: v.optional(v.string()),
+    providerPaymentIntentId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
     // Fields for document_invoices record
-    stripeAccountId: v.optional(v.string()),
+    providerAccountId: v.optional(v.string()),
     customerEmail: v.optional(v.string()),
     customerName: v.optional(v.string()),
   },
@@ -516,24 +518,24 @@ export const storeStripeIds = internalMutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
-      ...(args.stripeInvoiceId !== undefined && { stripeInvoiceId: args.stripeInvoiceId }),
-      ...(args.stripeSubscriptionId !== undefined && {
-        stripeSubscriptionId: args.stripeSubscriptionId,
+      ...(args.providerInvoiceId !== undefined && { providerInvoiceId: args.providerInvoiceId }),
+      ...(args.providerSubscriptionId !== undefined && {
+        providerSubscriptionId: args.providerSubscriptionId,
       }),
-      ...(args.stripePaymentIntentId !== undefined && {
-        stripePaymentIntentId: args.stripePaymentIntentId,
+      ...(args.providerPaymentIntentId !== undefined && {
+        providerPaymentIntentId: args.providerPaymentIntentId,
       }),
       ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
       updatedAt: now,
     });
 
     // Create document_invoices record for revenue tracking
-    if (args.stripeInvoiceId && args.stripeAccountId && args.customerEmail) {
+    if (args.providerInvoiceId && args.providerAccountId && args.customerEmail) {
       // Check if record already exists (idempotent)
       const existing = await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) =>
-          q.eq("stripeInvoiceId", sealAssertPresent(args.stripeInvoiceId)),
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", sealAssertPresent(args.providerInvoiceId)),
         )
         .first();
 
@@ -541,10 +543,10 @@ export const storeStripeIds = internalMutation({
         await ctx.db.insert("document_invoices", {
           documentId: config.documentId,
           organizationId: config.organizationId,
-          stripeAccountId: args.stripeAccountId,
-          stripeInvoiceId: args.stripeInvoiceId,
-          stripeSubscriptionId: args.stripeSubscriptionId,
-          stripeCustomerId: undefined,
+          providerAccountId: args.providerAccountId,
+          providerInvoiceId: args.providerInvoiceId,
+          providerSubscriptionId: args.providerSubscriptionId,
+          providerCustomerId: undefined,
           status: "open",
           customerEmail: args.customerEmail,
           customerName: args.customerName,
@@ -674,16 +676,16 @@ function documentInvoiceStatusForPaymentStatus(
  *
  * For recurring payments, Stripe generates new invoices each billing cycle.
  * This mutation links those subsequent invoices back to the original document
- * by looking up the payment_field_config via stripeSubscriptionId.
+ * by looking up the payment_field_config via providerSubscriptionId.
  *
- * Idempotent — won't create duplicates for the same stripeInvoiceId.
+ * Idempotent — won't create duplicates for the same providerInvoiceId.
  */
 export const upsertRecurringInvoice = internalMutation({
   args: {
-    stripeInvoiceId: v.string(),
-    stripeSubscriptionId: v.string(),
-    stripeCustomerId: v.optional(v.string()),
-    stripeAccountId: v.string(),
+    providerInvoiceId: v.string(),
+    providerSubscriptionId: v.string(),
+    providerCustomerId: v.optional(v.string()),
+    providerAccountId: v.string(),
     status: v.union(
       v.literal("draft"),
       v.literal("open"),
@@ -702,8 +704,8 @@ export const upsertRecurringInvoice = internalMutation({
     // Look up payment_field_config by subscription to get documentId/organizationId
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_subscription", (q) =>
-        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      .withIndex("by_provider_subscription", (q) =>
+        q.eq("providerSubscriptionId", args.providerSubscriptionId),
       )
       .first();
 
@@ -716,7 +718,7 @@ export const upsertRecurringInvoice = internalMutation({
     // Check if record already exists (idempotent)
     const existing = await ctx.db
       .query("document_invoices")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
       .first();
 
     if (existing) {
@@ -742,10 +744,10 @@ export const upsertRecurringInvoice = internalMutation({
     const invoiceId = await ctx.db.insert("document_invoices", {
       documentId: config.documentId,
       organizationId: config.organizationId,
-      stripeAccountId: args.stripeAccountId,
-      stripeInvoiceId: args.stripeInvoiceId,
-      stripeSubscriptionId: args.stripeSubscriptionId,
-      stripeCustomerId: args.stripeCustomerId,
+      providerAccountId: args.providerAccountId,
+      providerInvoiceId: args.providerInvoiceId,
+      providerSubscriptionId: args.providerSubscriptionId,
+      providerCustomerId: args.providerCustomerId,
       status: args.status,
       customerEmail: args.customerEmail,
       customerName: args.customerName,
