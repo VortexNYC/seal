@@ -34,6 +34,7 @@ import type {
   MerchantOnboardingRequirementView,
   MerchantOnboardingSnapshot,
   MerchantRequirementDocumentView,
+  MerchantRequirementSubmission,
   MerchantRequirementUploadLink,
   MerchantRequirementUploadStatus,
   RefreshMerchantOnboardingSessionCommand,
@@ -1507,6 +1508,282 @@ async function saveRequirementRefreshState(input: {
   );
 }
 
+async function satisfyMerchantRequirementsSnapshot(
+  dependencies: MerchantOnboardingServiceDependencies,
+  command: SatisfyMerchantRequirementsCommand,
+  now: () => string,
+): Promise<MerchantOnboardingSnapshot> {
+  return dependencies.uow.runInTransaction(async (uow) => {
+    const scope = await getEditableRequirementSubmissionScope(uow, command);
+    const submittedAt = now();
+    const requirementsById = await applyRequirementSubmissions({
+      uow,
+      command,
+      requirements: scope.requirements,
+      submittedAt,
+    });
+    const updatedRequirements = Array.from(requirementsById.values());
+    const updatedSession = createSubmittedRequirementsSession(
+      scope.session,
+      updatedRequirements,
+      submittedAt,
+    );
+    const updatedMerchant = createSubmittedRequirementsMerchant(
+      scope.merchant,
+      updatedSession.status,
+      submittedAt,
+    );
+
+    await saveSubmittedRequirementsState({
+      uow,
+      merchant: updatedMerchant,
+      session: updatedSession,
+      requirements: updatedRequirements,
+      submittedAt,
+    });
+    await saveRequirementSubmissionEvents({
+      uow,
+      command,
+      merchant: scope.merchant,
+      session: updatedSession,
+      requirementsById,
+      submittedAt,
+    });
+
+    return toSnapshot(updatedSession, updatedRequirements, {
+      submittedByType: command.submittedByType,
+      submittedByRef: command.submittedByRef,
+    });
+  });
+}
+
+async function getEditableRequirementSubmissionScope(
+  uow: PaymentsUnitOfWork,
+  command: SatisfyMerchantRequirementsCommand,
+): Promise<{
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+}> {
+  const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
+  const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
+    environment: command.environment,
+  });
+  assertEditableOnboardingSession(session, command);
+  assertRequirementSubmissionsPresent(command.submissions);
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: command.environment,
+  });
+  return { merchant, session, requirements };
+}
+
+function assertEditableOnboardingSession(
+  session: MerchantOnboardingSession | null,
+  command: SatisfyMerchantRequirementsCommand,
+): asserts session is MerchantOnboardingSession {
+  if (!session || session.merchantAccountId !== command.merchantAccountId) {
+    throw new MerchantOnboardingServiceError("not_found", "onboarding session not found", {
+      details: {
+        merchantAccountId: command.merchantAccountId,
+        onboardingSessionId: command.onboardingSessionId,
+      },
+    });
+  }
+  if (session.status === "approved" || session.status === "rejected") {
+    throw new MerchantOnboardingServiceError("conflict", "onboarding session is not editable", {
+      details: { onboardingSessionId: command.onboardingSessionId },
+    });
+  }
+}
+
+function assertRequirementSubmissionsPresent(
+  submissions: readonly MerchantRequirementSubmission[],
+): void {
+  if (submissions.length === 0) {
+    throw new MerchantOnboardingServiceError(
+      "invalid_request",
+      "at least one requirement submission is required",
+    );
+  }
+}
+
+async function applyRequirementSubmissions(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: SatisfyMerchantRequirementsCommand;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly submittedAt: string;
+}): Promise<ReadonlyMap<MerchantRequirementId, MerchantRequirement>> {
+  const requirementsById = new Map(
+    input.requirements.map((requirement) => [requirement.id, requirement]),
+  );
+
+  for (const submission of input.command.submissions) {
+    const requirement = getRequirementForSubmission(requirementsById, submission);
+    assertRequirementOpenForSubmission(requirement, submission);
+    const updatedRequirement = createSubmittedRequirement({
+      requirement,
+      command: input.command,
+      submission,
+      submittedAt: input.submittedAt,
+    });
+    requirementsById.set(updatedRequirement.id, updatedRequirement);
+    await input.uow.onboarding.saveRequirement(updatedRequirement);
+  }
+
+  return requirementsById;
+}
+
+function getRequirementForSubmission(
+  requirementsById: ReadonlyMap<MerchantRequirementId, MerchantRequirement>,
+  submission: MerchantRequirementSubmission,
+): MerchantRequirement {
+  const requirement = requirementsById.get(submission.requirementId);
+  if (!requirement) {
+    throw new MerchantOnboardingServiceError(
+      "invalid_request",
+      "requirement does not belong to onboarding session",
+      {
+        details: { requirementId: submission.requirementId },
+      },
+    );
+  }
+  return requirement;
+}
+
+function assertRequirementOpenForSubmission(
+  requirement: MerchantRequirement,
+  submission: MerchantRequirementSubmission,
+): void {
+  if (requirement.status === "satisfied" || requirement.status === "waived") {
+    throw new MerchantOnboardingServiceError("conflict", "requirement is already closed", {
+      details: { requirementId: submission.requirementId },
+    });
+  }
+  if (!hasRequirementSubmissionContent(submission)) {
+    throw new MerchantOnboardingServiceError(
+      "invalid_request",
+      "requirement submission must include payload or documentIds",
+      {
+        details: { requirementId: submission.requirementId },
+      },
+    );
+  }
+}
+
+function hasRequirementSubmissionContent(submission: MerchantRequirementSubmission): boolean {
+  const hasPayload = submission.payload !== undefined && Object.keys(submission.payload).length > 0;
+  const hasDocuments = submission.documentIds !== undefined && submission.documentIds.length > 0;
+  return hasPayload || hasDocuments;
+}
+
+function createSubmittedRequirement(input: {
+  readonly requirement: MerchantRequirement;
+  readonly command: SatisfyMerchantRequirementsCommand;
+  readonly submission: MerchantRequirementSubmission;
+  readonly submittedAt: string;
+}): MerchantRequirement {
+  return {
+    ...input.requirement,
+    status: "submitted",
+    metadata: createRequirementSubmissionMetadata({
+      previous: input.requirement.metadata,
+      submittedAt: input.submittedAt,
+      submittedByType: input.command.submittedByType,
+      submittedByRef: input.command.submittedByRef,
+      payload: input.submission.payload,
+      documentIds: input.submission.documentIds,
+    }),
+  };
+}
+
+function createSubmittedRequirementsSession(
+  session: MerchantOnboardingSession,
+  requirements: readonly MerchantRequirement[],
+  submittedAt: string,
+): MerchantOnboardingSession {
+  const openRequirementCount = requirements.filter(
+    (requirement) => requirement.status === "pending" || requirement.status === "submitted",
+  ).length;
+  const nextSessionStatus: MerchantOnboardingSessionStatus =
+    openRequirementCount > 0 ? "under_review" : "approved";
+  return {
+    ...session,
+    status: nextSessionStatus,
+    approvedAt: nextSessionStatus === "approved" ? submittedAt : session.approvedAt,
+    currentRequirementCount: requirements.length,
+    openRequirementCount,
+    updatedAt: submittedAt,
+  };
+}
+
+function createSubmittedRequirementsMerchant(
+  merchant: MerchantAccount,
+  sessionStatus: MerchantOnboardingSessionStatus,
+  submittedAt: string,
+): MerchantAccount {
+  return {
+    ...merchant,
+    status: mapOnboardingToMerchantStatus(sessionStatus),
+    updatedAt: submittedAt,
+  };
+}
+
+async function saveSubmittedRequirementsState(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly submittedAt: string;
+}): Promise<void> {
+  await input.uow.onboarding.saveSession(input.session);
+  await input.uow.merchants.save(input.merchant);
+  await input.uow.merchantStates.save(
+    deriveMerchantAccountState({
+      merchant: input.merchant,
+      onboardingSession: input.session,
+      requirements: input.requirements,
+      generatedAt: input.submittedAt,
+    }),
+  );
+}
+
+async function saveRequirementSubmissionEvents(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: SatisfyMerchantRequirementsCommand;
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirementsById: ReadonlyMap<MerchantRequirementId, MerchantRequirement>;
+  readonly submittedAt: string;
+}): Promise<void> {
+  for (const submission of input.command.submissions) {
+    const submittedRequirement = input.requirementsById.get(submission.requirementId);
+    if (!submittedRequirement) {
+      continue;
+    }
+    await input.uow.events.saveCanonicalEvent(
+      createMerchantOnboardingEvent({
+        id: `${submittedRequirement.id}:merchant_requirement.submitted:${input.submittedAt}`,
+        eventType: "merchant_requirement.submitted",
+        aggregateType: "merchant_requirement",
+        aggregateId: submittedRequirement.id,
+        environment: input.command.environment,
+        sourceProvider: "vortex",
+        occurredAt: input.submittedAt,
+        merchantAccountId: input.merchant.id,
+        payload: {
+          onboardingSessionId: input.session.id,
+          requirementId: submittedRequirement.id,
+          requirementStatus: submittedRequirement.status,
+          submittedByType: input.command.submittedByType,
+          submittedByRef: input.command.submittedByRef,
+          documentCount: submission.documentIds?.length ?? 0,
+          payloadFieldCount: submission.payload ? Object.keys(submission.payload).length : 0,
+        },
+      }),
+    );
+  }
+}
+
 export function createMerchantOnboardingService(
   dependencies: MerchantOnboardingServiceDependencies,
 ): MerchantOnboardingService {
@@ -1814,156 +2091,7 @@ export function createMerchantOnboardingService(
     async satisfyMerchantRequirements(
       command: SatisfyMerchantRequirementsCommand,
     ): Promise<MerchantOnboardingSnapshot> {
-      return dependencies.uow.runInTransaction(async (uow) => {
-        const merchant = await getMerchantOrThrow(
-          uow,
-          command.environment,
-          command.merchantAccountId,
-        );
-        const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
-          environment: command.environment,
-        });
-        if (!session || session.merchantAccountId !== command.merchantAccountId) {
-          throw new MerchantOnboardingServiceError("not_found", "onboarding session not found", {
-            details: {
-              merchantAccountId: command.merchantAccountId,
-              onboardingSessionId: command.onboardingSessionId,
-            },
-          });
-        }
-        if (session.status === "approved" || session.status === "rejected") {
-          throw new MerchantOnboardingServiceError(
-            "conflict",
-            "onboarding session is not editable",
-            {
-              details: { onboardingSessionId: command.onboardingSessionId },
-            },
-          );
-        }
-        if (command.submissions.length === 0) {
-          throw new MerchantOnboardingServiceError(
-            "invalid_request",
-            "at least one requirement submission is required",
-          );
-        }
-
-        const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
-          environment: command.environment,
-        });
-        const requirementsById = new Map(
-          requirements.map((requirement) => [requirement.id, requirement]),
-        );
-        const submittedAt = now();
-
-        for (const submission of command.submissions) {
-          const requirement = requirementsById.get(submission.requirementId);
-          if (!requirement) {
-            throw new MerchantOnboardingServiceError(
-              "invalid_request",
-              "requirement does not belong to onboarding session",
-              {
-                details: { requirementId: submission.requirementId },
-              },
-            );
-          }
-          if (requirement.status === "satisfied" || requirement.status === "waived") {
-            throw new MerchantOnboardingServiceError("conflict", "requirement is already closed", {
-              details: { requirementId: submission.requirementId },
-            });
-          }
-          const hasPayload =
-            submission.payload !== undefined && Object.keys(submission.payload).length > 0;
-          const hasDocuments =
-            submission.documentIds !== undefined && submission.documentIds.length > 0;
-          if (!hasPayload && !hasDocuments) {
-            throw new MerchantOnboardingServiceError(
-              "invalid_request",
-              "requirement submission must include payload or documentIds",
-              {
-                details: { requirementId: submission.requirementId },
-              },
-            );
-          }
-
-          const updatedRequirement: MerchantRequirement = {
-            ...requirement,
-            status: "submitted",
-            metadata: createRequirementSubmissionMetadata({
-              previous: requirement.metadata,
-              submittedAt,
-              submittedByType: command.submittedByType,
-              submittedByRef: command.submittedByRef,
-              payload: submission.payload,
-              documentIds: submission.documentIds,
-            }),
-          };
-          requirementsById.set(updatedRequirement.id, updatedRequirement);
-          await uow.onboarding.saveRequirement(updatedRequirement);
-        }
-
-        const updatedRequirements = Array.from(requirementsById.values());
-        const openRequirementCount = updatedRequirements.filter(
-          (requirement) => requirement.status === "pending" || requirement.status === "submitted",
-        ).length;
-        const nextSessionStatus: MerchantOnboardingSessionStatus =
-          openRequirementCount > 0 ? "under_review" : "approved";
-        const updatedSession: MerchantOnboardingSession = {
-          ...session,
-          status: nextSessionStatus,
-          approvedAt: nextSessionStatus === "approved" ? submittedAt : session.approvedAt,
-          currentRequirementCount: updatedRequirements.length,
-          openRequirementCount,
-          updatedAt: submittedAt,
-        };
-        const updatedMerchant: MerchantAccount = {
-          ...merchant,
-          status: mapOnboardingToMerchantStatus(nextSessionStatus),
-          updatedAt: submittedAt,
-        };
-
-        await uow.onboarding.saveSession(updatedSession);
-        await uow.merchants.save(updatedMerchant);
-        await uow.merchantStates.save(
-          deriveMerchantAccountState({
-            merchant: updatedMerchant,
-            onboardingSession: updatedSession,
-            requirements: updatedRequirements,
-            generatedAt: submittedAt,
-          }),
-        );
-        for (const submission of command.submissions) {
-          const submittedRequirement = requirementsById.get(submission.requirementId);
-          if (!submittedRequirement) {
-            continue;
-          }
-          await uow.events.saveCanonicalEvent(
-            createMerchantOnboardingEvent({
-              id: `${submittedRequirement.id}:merchant_requirement.submitted:${submittedAt}`,
-              eventType: "merchant_requirement.submitted",
-              aggregateType: "merchant_requirement",
-              aggregateId: submittedRequirement.id,
-              environment: command.environment,
-              sourceProvider: "vortex",
-              occurredAt: submittedAt,
-              merchantAccountId: merchant.id,
-              payload: {
-                onboardingSessionId: updatedSession.id,
-                requirementId: submittedRequirement.id,
-                requirementStatus: submittedRequirement.status,
-                submittedByType: command.submittedByType,
-                submittedByRef: command.submittedByRef,
-                documentCount: submission.documentIds?.length ?? 0,
-                payloadFieldCount: submission.payload ? Object.keys(submission.payload).length : 0,
-              },
-            }),
-          );
-        }
-
-        return toSnapshot(updatedSession, updatedRequirements, {
-          submittedByType: command.submittedByType,
-          submittedByRef: command.submittedByRef,
-        });
-      });
+      return satisfyMerchantRequirementsSnapshot(dependencies, command, now);
     },
 
     async createRequirementUploadLink(
