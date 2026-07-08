@@ -99,6 +99,18 @@ function toSnapshot(record: PaymentMethod): PaymentMethodSnapshot {
   };
 }
 
+function isCustomerPaymentMethodInScope(
+  paymentMethod: PaymentMethod,
+  query: ListCustomerPaymentMethodsQuery,
+): boolean {
+  return (
+    paymentMethod.ownerType === "customer" &&
+    paymentMethod.ownerId === query.customerProfileId &&
+    (paymentMethod.merchantAccountId === undefined ||
+      paymentMethod.merchantAccountId === query.merchantAccountId)
+  );
+}
+
 function assertCustomerOwnership(
   record: PaymentMethod,
   query: ListCustomerPaymentMethodsQuery,
@@ -134,12 +146,8 @@ async function deriveAndPersistCustomerState(
   });
   await dependencies.saveCustomerPaymentState?.(state);
 
-  const customerMethods = paymentMethods.filter(
-    (paymentMethod) =>
-      paymentMethod.ownerType === "customer" &&
-      paymentMethod.ownerId === query.customerProfileId &&
-      (paymentMethod.merchantAccountId === undefined ||
-        paymentMethod.merchantAccountId === query.merchantAccountId),
+  const customerMethods = paymentMethods.filter((paymentMethod) =>
+    isCustomerPaymentMethodInScope(paymentMethod, query),
   );
   const snapshots = customerMethods.map(toSnapshot);
 
@@ -194,13 +202,7 @@ async function saveLifecycleChange(
   await dependencies.savePaymentMethod(updatedSelected);
 
   const customerMethods = paymentMethods
-    .filter(
-      (paymentMethod) =>
-        paymentMethod.ownerType === "customer" &&
-        paymentMethod.ownerId === command.customerProfileId &&
-        (paymentMethod.merchantAccountId === undefined ||
-          paymentMethod.merchantAccountId === command.merchantAccountId),
-    )
+    .filter((paymentMethod) => isCustomerPaymentMethodInScope(paymentMethod, command))
     .map((paymentMethod) =>
       paymentMethod.id === updatedSelected.id ? updatedSelected : paymentMethod,
     );
@@ -254,13 +256,7 @@ export function createPaymentMethodsService(
     ): Promise<readonly PaymentMethodSnapshot[]> {
       const paymentMethods = await dependencies.listPaymentMethods(query);
       return paymentMethods
-        .filter(
-          (paymentMethod) =>
-            paymentMethod.ownerType === "customer" &&
-            paymentMethod.ownerId === query.customerProfileId &&
-            (paymentMethod.merchantAccountId === undefined ||
-              paymentMethod.merchantAccountId === query.merchantAccountId),
-        )
+        .filter((paymentMethod) => isCustomerPaymentMethodInScope(paymentMethod, query))
         .map(toSnapshot);
     },
 
@@ -268,11 +264,7 @@ export function createPaymentMethodsService(
       const paymentMethods = await dependencies.listPaymentMethods(query);
       const paymentMethod = paymentMethods.find(
         (record) =>
-          record.id === query.paymentMethodId &&
-          record.ownerType === "customer" &&
-          record.ownerId === query.customerProfileId &&
-          (record.merchantAccountId === undefined ||
-            record.merchantAccountId === query.merchantAccountId),
+          record.id === query.paymentMethodId && isCustomerPaymentMethodInScope(record, query),
       );
       return paymentMethod ? toSnapshot(paymentMethod) : null;
     },
@@ -281,12 +273,8 @@ export function createPaymentMethodsService(
       command: SetDefaultCustomerPaymentMethodCommand,
     ): Promise<readonly PaymentMethodSnapshot[]> {
       const paymentMethods = await dependencies.listPaymentMethods(command);
-      const customerMethods = paymentMethods.filter(
-        (paymentMethod) =>
-          paymentMethod.ownerType === "customer" &&
-          paymentMethod.ownerId === command.customerProfileId &&
-          (paymentMethod.merchantAccountId === undefined ||
-            paymentMethod.merchantAccountId === command.merchantAccountId),
+      const customerMethods = paymentMethods.filter((paymentMethod) =>
+        isCustomerPaymentMethodInScope(paymentMethod, command),
       );
       const selected = customerMethods.find(
         (paymentMethod) => paymentMethod.id === command.paymentMethodId,
