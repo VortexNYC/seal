@@ -6,7 +6,8 @@ Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
 Latest code cleanup commit: `b7be17b1` (`refactor: split webhook endpoint row`)
 Latest launch-boundary commit: `aa16ba92` (`chore: harden Seal Vortex production boundary audit`)
-Current head: `b7be17b1`
+Latest proof-state doc commit: `2ee81564` (`docs: refresh Seal Vortex migration proof state`)
+Current head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
 
@@ -37,6 +38,8 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Current local verification passed after cleanup commit `b7be17b1`:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
+  - `bun run verify`
+  - `bun run test`
   - `bun run typecheck`
   - `bun run lint -f json > /tmp/webhooks-endpoint-row-lint.json`
   - `bun run build`
@@ -110,6 +113,8 @@ Latest non-mutating refresh results from head `b7be17b1`:
 
 - `bun run prove:zero-retired-provider-residue` passed and scans owned hidden env/config content.
 - Explicit hidden/no-ignore owned working-tree legacy-provider token scan returned no matches.
+- `bun run verify` passed.
+- `bun run test` passed with 74 test files and 1370 tests.
 - `bun run typecheck` passed.
 - `bun run lint -f json > /tmp/webhooks-endpoint-row-lint.json` passed; parsed diagnostics total: `0`.
 - `bun run build` passed.
