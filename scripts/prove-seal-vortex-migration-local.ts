@@ -56,6 +56,11 @@ const proofCommands: readonly ProofCommand[] = [
     args: ["run", "prove:vortex-saas-webhook-projection"],
   },
   {
+    label: "Vortex SaaS checkout, catalog, coupon, and portal local proof",
+    command: "bun",
+    args: ["run", "prove:seal-saas-vortex-local"],
+  },
+  {
     label: "Seal document payment Vortex local proof",
     command: "bun",
     args: ["run", "prove:seal-document-payment-vortex-local"],
@@ -111,7 +116,7 @@ console.log(
         "tracked source contains no retired-provider residue",
         "working tree contains no retired-provider residue outside generated outputs",
         "billing, payments, and merchant settings use Vortex naming and actions",
-        "SaaS webhook projection is Vortex-backed",
+        "SaaS checkout, catalog price resolution, coupon application, portal links, and webhook projection are Vortex-backed locally",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",

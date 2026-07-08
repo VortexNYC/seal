@@ -38,6 +38,7 @@ The goal is not to rename every historical `retired_provider` field in one pass.
 - Physical deletion lanes G through L are complete locally through `800dbab9`.
 - The strict zero-residue scanner now checks all tracked paths and file contents, including archive docs.
 - `bun run prove:vortex-payments-backend-adapter-adoption` is now an executable backend boundary proof, not just a planned command.
+- `bun run prove:seal-saas-vortex-local` is now the non-mutating local SaaS proof for Vortex checkout, catalog price resolution, coupon application/fail-closed cleanup, and portal links.
 
 ## Merge Order
 
@@ -207,6 +208,7 @@ Current launch baseline:
 - `bun run audit:seal-vortex-launch-boundary` is the passing non-mutating wrapper for future agent sessions: it verifies the sandbox settlement handoff and then accepts production readiness only when it is green or blocked by the exact known human-run production configuration names. Unexpected missing names or invalid present config fail the wrapper.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it includes the launch-boundary wrapper and intentionally excludes live card, settlement, payout, production credential, and remote git work.
+- The local migration gate also includes `bun run prove:seal-saas-vortex-local`, so SaaS checkout/catalog/coupon/portal replacement cannot drift while document-payment launch proof is waiting on human-boundary settlement and production work.
 
 Do next:
 

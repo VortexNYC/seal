@@ -25,7 +25,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - The strict residue guard scans every tracked file with no archive exception.
 - `git ls-files | rg -i "<retired-provider-token>"` returns no matches when the placeholder is replaced with the actual retired provider word.
 - Raw working-tree scan excluding generated/ignored outputs returns no matches.
-- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, settings, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
+- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - Full root quality gates passed after the strict cleanup:
   - `bun run format:changed:check`
   - `bun run lint:strict`
@@ -40,6 +40,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Account and organization creation is anchored in Vortex Auth and does not create retired-provider state.
 - Merchant onboarding and settings paths route through Vortex-owned actions for Vortex document-payment organizations.
 - SaaS checkout, subscription webhook projection, catalog, and coupon paths are Vortex-backed.
+- `bun run prove:seal-saas-vortex-local` proves the non-mutating SaaS checkout, catalog-price resolver, coupon, and portal replacement paths.
 - Document payable creation through Vortex is proven locally and in sandbox for the current supported path.
 - Hosted Vortex payment capture has projected into Seal as paid and completed the waiting document.
 - Failed hosted payment recovery is proven: failed outcome marks the invoice uncollectible, starts dunning once, ignores duplicate failures, and cancels dunning after a later paid event.
