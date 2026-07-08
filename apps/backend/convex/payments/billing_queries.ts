@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import { query, type QueryCtx } from "../_generated/server";
+import { isSubscriptionVisibleForCurrentSaasProvider } from "../auth/subscription_guards";
 import { authQuery } from "../auth/wrappers";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { availablePlanValidator, billingSubscriptionValidator } from "./billing_query_validators";
@@ -79,7 +80,10 @@ function availablePlanDedupeKey(plan: AvailablePlanResult): string {
   return [plan.tier ?? plan.productId, monthlyLookupKey, yearlyLookupKey].join(":");
 }
 
-function shouldPreferAvailablePlan(candidate: AvailablePlanResult, current: AvailablePlanResult): boolean {
+function shouldPreferAvailablePlan(
+  candidate: AvailablePlanResult,
+  current: AvailablePlanResult,
+): boolean {
   return candidate.productId.startsWith("vtx_") && !current.productId.startsWith("vtx_");
 }
 
@@ -98,11 +102,16 @@ function dedupeAvailablePlans(plans: readonly AvailablePlanResult[]): AvailableP
 }
 
 async function getCurrentSubscription(ctx: BillingQueryDbCtx, organizationId: Id<"organizations">) {
-  return await ctx.db
+  const subscriptions = await ctx.db
     .query("subscriptions")
     .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .order("desc")
-    .first();
+    .take(20);
+  return (
+    subscriptions.find((subscription) =>
+      isSubscriptionVisibleForCurrentSaasProvider(organizationId, subscription),
+    ) ?? null
+  );
 }
 
 function buildSubscriptionDetails(

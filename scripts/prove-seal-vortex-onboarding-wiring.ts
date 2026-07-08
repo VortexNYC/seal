@@ -8,7 +8,10 @@ type JsonObject = { readonly [key: string]: Json };
 // Seal is a monorepo — the Convex app (and its `convex` dependency) lives in apps/backend,
 // so all Seal `convex run/env` commands must run from there, not the repo root.
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
-const defaultVortexRepoRoot = "/Users/shlomokabareti/Projects/vortex-payments";
+const defaultVortexRepoRootCandidates = [
+  "/home/debian/Projects/vortex-payments",
+  "/Users/shlomokabareti/Projects/vortex-payments",
+] as const;
 const proofIdentityIssuer = "seal-vortex-onboarding-proof";
 const environment = readEnv("VORTEX_BILLING_PAYMENTS_ENVIRONMENT") ?? "sandbox";
 const proofRunId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -25,6 +28,13 @@ function warnAndSkip(missing: readonly string[]): never {
     console.warn(`- ${name}`);
   }
   process.exit(0);
+}
+
+function defaultVortexRepoRoot(): string {
+  return (
+    defaultVortexRepoRootCandidates.find((candidate) => existsSync(candidate)) ??
+    defaultVortexRepoRootCandidates[0]
+  );
 }
 
 function fail(message: string): never {
@@ -55,7 +65,10 @@ function objectField(value: JsonObject, field: string): JsonObject {
 
 function nullableObjectField(value: JsonObject, field: string): JsonObject | null {
   const child = value[field];
-  assert(child === null || isJsonObject(child), `Expected ${field} to be an object or null`);
+  if (child === null) {
+    return null;
+  }
+  assert(isJsonObject(child), `Expected ${field} to be an object or null`);
   return child;
 }
 
@@ -100,7 +113,7 @@ async function runCommand(input: {
   readonly label: string;
   readonly deployment?: string;
 }): Promise<string> {
-  const child = Bun.spawn(input.command, {
+  const child = Bun.spawn([...input.command], {
     cwd: input.cwd,
     // Pin CONVEX_DEPLOYMENT per call: the parent process inherits a CONVEX_DEPLOYMENT that would
     // otherwise override each call's cwd/.env.local and send every call to the same project.
@@ -424,7 +437,7 @@ async function main(): Promise<void> {
     readEnv("VORTEX_BILLING_API_BASE_URL") ?? "https://notable-leopard-969.convex.site",
   );
   const vortexApiKey = readEnv("VORTEX_BILLING_API_KEY");
-  const vortexRepoRoot = readEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? defaultVortexRepoRoot;
+  const vortexRepoRoot = readEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? defaultVortexRepoRoot();
   const finixUsername = readEnv("FINIX_SANDBOX_USERNAME");
   const finixPassword = readEnv("FINIX_SANDBOX_PASSWORD");
   const missing = [

@@ -42,6 +42,16 @@ type SeedVortexInstallmentDocumentPayableProofDocumentResult =
 type SeedVortexDepositBalanceDocumentPayableProofDocumentResult =
   SeedVortexRecurringDocumentPayableProofDocumentResult;
 
+type SeedVortexOneTimeDocumentPayableProofDocumentResult =
+  SeedVortexRecurringDocumentPayableProofDocumentResult;
+
+type MarkVortexDocumentPayableProofWaitingForPaymentResult = {
+  readonly documentId: Id<"documents">;
+  readonly recipientIds: Id<"document_recipients">[];
+  readonly paymentConfigIds: Id<"payment_field_configs">[];
+  readonly workflowStatus: "waiting_for_payment";
+};
+
 type SeedVortexWebhookProofPaymentConfigResult = {
   readonly organizationId: Id<"organizations">;
   readonly ownerId: Id<"users">;
@@ -91,12 +101,19 @@ type VortexWebhookProofPaymentState = {
   readonly configId: Id<"payment_field_configs"> | undefined;
   readonly documentId: Id<"documents"> | undefined;
   readonly paymentStatus: string | undefined;
+  readonly configStripeInvoiceId: string | undefined;
+  readonly configStripeSubscriptionId: string | undefined;
+  readonly configStripePaymentIntentId: string | undefined;
   readonly vortexPayableId: string | undefined;
   readonly vortexPaymentRequestId: string | undefined;
   readonly hostedInvoiceUrl: string | undefined;
   readonly documentWorkflowStatus: string | undefined;
   readonly invoiceStatus: string | undefined;
   readonly invoiceProvider: string | undefined;
+  readonly invoiceStripeInvoiceId: string | undefined;
+  readonly invoiceStripeSubscriptionId: string | undefined;
+  readonly invoiceStripeCustomerId: string | undefined;
+  readonly invoiceStripeAccountId: string | undefined;
   readonly invoiceVortexPayableId: string | undefined;
   readonly invoiceVortexPaymentRequestId: string | undefined;
   readonly invoiceHostedUrl: string | undefined;
@@ -106,6 +123,16 @@ type VortexWebhookProofPaymentState = {
   readonly invoiceDunningStartedAt: number | undefined;
   readonly invoiceNextDunningAt: number | undefined;
   readonly invoiceDunningCompletedAt: number | undefined;
+};
+
+type CreateVortexDocumentPayableProofObjectsResult = {
+  readonly paymentLinks: {
+    readonly recipientEmail: string;
+    readonly hostedInvoiceUrl: string | null;
+    readonly providerInvoiceId: string;
+    readonly totalAmountCents: number;
+    readonly currency: string;
+  }[];
 };
 
 type VortexMerchantProofState = {
@@ -559,6 +586,168 @@ export const archiveCatalogSafetyProofRows = internalMutation({
       }));
 
     return { productsArchived, pricesArchived };
+  },
+});
+
+export const seedVortexOneTimeDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (ctx, args): Promise<SeedVortexOneTimeDocumentPayableProofDocumentResult> => {
+    const now = Date.now();
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      `one-time-document-${args.proofRunId}`,
+      now,
+    );
+    const ownerId = await insertSaasProofOwner(
+      ctx,
+      `one-time-document-${args.proofRunId}`,
+      organizationId,
+    );
+    const documentId = await ctx.db.insert("documents", {
+      organizationId,
+      ownerId,
+      name: `Vortex one-time document payable proof ${args.proofRunId}`,
+      fileSize: 1024,
+      fileType: "application/pdf",
+      storageId: `vortex-one-time-document-proof-${args.proofRunId}`,
+      sharingMode: "private",
+      status: "active",
+      workflowStatus: "draft",
+      signingMode: "parallel",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const recipientId = await ctx.db.insert("document_recipients", {
+      documentId,
+      email: args.recipientEmail,
+      name: "Vortex One-Time Proof Recipient",
+      role: "signer",
+      status: "pending",
+      order: 1,
+      signingToken: `vortex-one-time-proof-token-${args.proofRunId}`,
+      tokenExpiresAt: now + 30 * 24 * 60 * 60 * 1000,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const signatureFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      isRequired: true,
+      isMainSignature: true,
+      x: 10,
+      y: 10,
+      width: 25,
+      height: 8,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentFieldId = await ctx.db.insert("signature_fields", {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "One-time payment",
+      isRequired: true,
+      x: 10,
+      y: 24,
+      width: 35,
+      height: 10,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const paymentConfigId = await ctx.db.insert("payment_field_configs", {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      paymentType: "one_time",
+      items: [
+        {
+          id: args.lineItemId,
+          description: "Vortex one-time document payable proof",
+          quantity: 1,
+          unitPrice: 4200,
+        },
+      ],
+      currency: "usd",
+      dueDateTerms: "net_30",
+      allowedPaymentMethods: ["card"],
+      feeHandling: "absorb",
+      taxEnabled: false,
+      totalAmountCents: 4200,
+      paymentStatus: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      paymentConfigId,
+      configId: paymentConfigId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const markVortexDocumentPayableProofWaitingForPayment = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  returns: v.object({
+    documentId: v.id("documents"),
+    recipientIds: v.array(v.id("document_recipients")),
+    paymentConfigIds: v.array(v.id("payment_field_configs")),
+    workflowStatus: v.literal("waiting_for_payment"),
+  }),
+  handler: async (ctx, args): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new Error(`Document ${args.documentId} not found`);
+    }
+
+    const now = Date.now();
+    const recipients = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+    const paymentConfigs = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+
+    for (const recipient of recipients) {
+      if (recipient.status !== "signed") {
+        await ctx.db.patch(recipient._id, {
+          status: "signed",
+          signedAt: recipient.signedAt ?? now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.patch(args.documentId, {
+      workflowStatus: "waiting_for_payment",
+      updatedAt: now,
+    });
+
+    return {
+      documentId: args.documentId,
+      recipientIds: recipients.map((recipient) => recipient._id),
+      paymentConfigIds: paymentConfigs.map((config) => config._id),
+      workflowStatus: "waiting_for_payment",
+    };
   },
 });
 
@@ -1224,12 +1413,19 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       configId: config?._id,
       documentId,
       paymentStatus: config?.paymentStatus,
+      configStripeInvoiceId: config?.stripeInvoiceId,
+      configStripeSubscriptionId: config?.stripeSubscriptionId,
+      configStripePaymentIntentId: config?.stripePaymentIntentId,
       vortexPayableId: config?.vortexPayableId,
       vortexPaymentRequestId: config?.vortexPaymentRequestId,
       hostedInvoiceUrl: config?.hostedInvoiceUrl,
       documentWorkflowStatus: document?.workflowStatus,
       invoiceStatus: invoice?.status,
       invoiceProvider: invoice?.provider,
+      invoiceStripeInvoiceId: invoice?.stripeInvoiceId,
+      invoiceStripeSubscriptionId: invoice?.stripeSubscriptionId,
+      invoiceStripeCustomerId: invoice?.stripeCustomerId,
+      invoiceStripeAccountId: invoice?.stripeAccountId,
       invoiceVortexPayableId: invoice?.vortexPayableId,
       invoiceVortexPaymentRequestId: invoice?.vortexPaymentRequestId,
       invoiceHostedUrl: invoice?.hostedInvoiceUrl,
@@ -1240,6 +1436,31 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       invoiceNextDunningAt: invoice?.nextDunningAt,
       invoiceDunningCompletedAt: invoice?.dunningCompletedAt,
     };
+  },
+});
+
+export const createVortexDocumentPayableProofObjects = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+  },
+  returns: v.object({
+    paymentLinks: v.array(
+      v.object({
+        recipientEmail: v.string(),
+        hostedInvoiceUrl: v.union(v.string(), v.null()),
+        providerInvoiceId: v.string(),
+        totalAmountCents: v.number(),
+        currency: v.string(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args): Promise<CreateVortexDocumentPayableProofObjectsResult> => {
+    return await ctx.runAction(
+      internal.vortex_billing.payable_actions.createVortexPaymentObjectsForDocumentFields,
+      args,
+    );
   },
 });
 

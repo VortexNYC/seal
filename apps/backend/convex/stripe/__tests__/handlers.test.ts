@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import type Stripe from "stripe";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
@@ -25,6 +26,8 @@ describe("Stripe webhook handlers", () => {
   let organizationId: Id<"organizations">;
 
   beforeEach(async () => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
+
     t = createTestContext();
 
     organizationId = await t.run((ctx) =>
@@ -69,6 +72,14 @@ describe("Stripe webhook handlers", () => {
     );
   });
 
+  afterEach(() => {
+    delete process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
+  });
+
+  function allowlistOrgForVortexBilling(): void {
+    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+  }
+
   /**
    * Build a synthetic Stripe.Subscription payload shaped just enough for
    * `extractSubscriptionData` to pull out everything the handler needs.
@@ -102,6 +113,23 @@ describe("Stripe webhook handlers", () => {
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
+  }
+
+  function buildInvoice(subscriptionId: string, overrides?: Partial<{ id: string; status: string }>) {
+    return {
+      id: overrides?.id ?? "in_fake_test_001",
+      object: "invoice",
+      status: overrides?.status ?? "paid",
+      customer: "cus_fake_test_001",
+      amount_paid: 1500,
+      amount_due: 1500,
+      currency: "usd",
+      parent: {
+        subscription_details: {
+          subscription: subscriptionId,
+        },
+      },
+    } as unknown as Stripe.Invoice;
   }
 
   describe("handleSubscriptionCreated", () => {
@@ -149,6 +177,25 @@ describe("Stripe webhook handlers", () => {
       expect(stored).not.toBeNull();
       expect(stored?.organizationId).toBe(organizationId);
     });
+
+    test("skips creating Stripe subscription state for Vortex-billed orgs", async () => {
+      allowlistOrgForVortexBilling();
+
+      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_create" }),
+      });
+
+      const stored = await t.run(async (ctx) =>
+        ctx.db
+          .query("subscriptions")
+          .withIndex("by_external_subscription_id", (q) =>
+            q.eq("externalSubscriptionId", "sub_vortex_skip_create"),
+          )
+          .first(),
+      );
+
+      expect(stored).toBeNull();
+    });
   });
 
   describe("handleSubscriptionUpdated", () => {
@@ -173,6 +220,27 @@ describe("Stripe webhook handlers", () => {
       );
       expect(stored?.status).toBe("past_due");
     });
+
+    test("skips updating Stripe subscription state for Vortex-billed orgs", async () => {
+      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_update" }),
+      });
+      allowlistOrgForVortexBilling();
+
+      await t.mutation(internal.stripe.handlers.handleSubscriptionUpdated, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_update", status: "past_due" }),
+      });
+
+      const stored = await t.run(async (ctx) =>
+        ctx.db
+          .query("subscriptions")
+          .withIndex("by_external_subscription_id", (q) =>
+            q.eq("externalSubscriptionId", "sub_vortex_skip_update"),
+          )
+          .first(),
+      );
+      expect(stored?.status).toBe("active");
+    });
   });
 
   describe("handleSubscriptionDeleted", () => {
@@ -194,6 +262,78 @@ describe("Stripe webhook handlers", () => {
           .first(),
       );
       expect(stored?.status).toBe("canceled");
+    });
+
+    test("skips deleting Stripe subscription state for Vortex-billed orgs", async () => {
+      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_delete" }),
+      });
+      allowlistOrgForVortexBilling();
+
+      await t.mutation(internal.stripe.handlers.handleSubscriptionDeleted, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_delete", status: "canceled" }),
+      });
+
+      const stored = await t.run(async (ctx) =>
+        ctx.db
+          .query("subscriptions")
+          .withIndex("by_external_subscription_id", (q) =>
+            q.eq("externalSubscriptionId", "sub_vortex_skip_delete"),
+          )
+          .first(),
+      );
+      expect(stored?.status).toBe("active");
+    });
+  });
+
+  describe("invoice handlers", () => {
+    test("keeps Stripe invoice payment failure from mutating Vortex-billed org state", async () => {
+      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_invoice_failure" }),
+      });
+      allowlistOrgForVortexBilling();
+
+      await t.mutation(internal.stripe.handlers.handlePaymentFailed, {
+        invoice: buildInvoice("sub_vortex_skip_invoice_failure", {
+          id: "in_vortex_skip_invoice_failure",
+          status: "open",
+        }),
+      });
+
+      const stored = await t.run(async (ctx) =>
+        ctx.db
+          .query("subscriptions")
+          .withIndex("by_external_subscription_id", (q) =>
+            q.eq("externalSubscriptionId", "sub_vortex_skip_invoice_failure"),
+          )
+          .first(),
+      );
+      expect(stored?.status).toBe("active");
+      expect(stored?.latestInvoiceId).toBeUndefined();
+    });
+
+    test("keeps Stripe invoice payment success from mutating Vortex-billed org state", async () => {
+      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
+        subscription: buildSubscription({ id: "sub_vortex_skip_invoice_success" }),
+      });
+      allowlistOrgForVortexBilling();
+
+      await t.mutation(internal.stripe.handlers.handlePaymentSucceeded, {
+        invoice: buildInvoice("sub_vortex_skip_invoice_success", {
+          id: "in_vortex_skip_invoice_success",
+        }),
+      });
+
+      const stored = await t.run(async (ctx) =>
+        ctx.db
+          .query("subscriptions")
+          .withIndex("by_external_subscription_id", (q) =>
+            q.eq("externalSubscriptionId", "sub_vortex_skip_invoice_success"),
+          )
+          .first(),
+      );
+      expect(stored?.status).toBe("active");
+      expect(stored?.latestInvoiceId).toBeUndefined();
     });
   });
 });

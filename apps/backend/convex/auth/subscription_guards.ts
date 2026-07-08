@@ -13,6 +13,7 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
+import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 
@@ -26,6 +27,44 @@ type PlanSubscription = Pick<
   Doc<"subscriptions">,
   "_creationTime" | "externalPriceId" | "externalSubscriptionId" | "pastDueSince" | "status"
 >;
+
+export function isVortexSaasSubscription(
+  subscription: Pick<Doc<"subscriptions">, "externalPriceId" | "externalSubscriptionId">,
+): boolean {
+  return (
+    subscription.externalSubscriptionId.startsWith("vtx_") ||
+    subscription.externalPriceId.startsWith("vtx_")
+  );
+}
+
+export function isSubscriptionVisibleForCurrentSaasProvider(
+  organizationId: Id<"organizations">,
+  subscription: Pick<Doc<"subscriptions">, "externalPriceId" | "externalSubscriptionId">,
+): boolean {
+  if (selectSaasBillingProvider(organizationId) === "vortex_billing") {
+    return true;
+  }
+  return !isVortexSaasSubscription(subscription);
+}
+
+async function getLatestVisibleSubscriptionByStatus(
+  db: DatabaseReader,
+  organizationId: Id<"organizations">,
+  status: Doc<"subscriptions">["status"],
+): Promise<PlanSubscription | null> {
+  const subscriptions = await db
+    .query("subscriptions")
+    .withIndex("by_organization_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", status),
+    )
+    .order("desc")
+    .take(20);
+  return (
+    subscriptions.find((subscription) =>
+      isSubscriptionVisibleForCurrentSaasProvider(organizationId, subscription),
+    ) ?? null
+  );
+}
 
 async function resolvePlanForSubscription(
   db: DatabaseReader,
@@ -104,32 +143,18 @@ export async function getSubscriptionPlan(
   organizationId: Id<"organizations">,
 ): Promise<SubscriptionPlanResult> {
   const subscription =
-    (await db
-      .query("subscriptions")
-      .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
-      )
-      .order("desc")
-      .first()) ??
-    (await db
-      .query("subscriptions")
-      .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "trialing"),
-      )
-      .order("desc")
-      .first());
+    (await getLatestVisibleSubscriptionByStatus(db, organizationId, "active")) ??
+    (await getLatestVisibleSubscriptionByStatus(db, organizationId, "trialing"));
 
   if (subscription) {
     return await resolvePlanForSubscription(db, organizationId, subscription);
   }
 
-  const pastDueSubscription = await db
-    .query("subscriptions")
-    .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "past_due"),
-    )
-    .order("desc")
-    .first();
+  const pastDueSubscription = await getLatestVisibleSubscriptionByStatus(
+    db,
+    organizationId,
+    "past_due",
+  );
 
   if (pastDueSubscription) {
     const pastDueStartedAt = pastDueSubscription.pastDueSince ?? pastDueSubscription._creationTime;

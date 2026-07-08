@@ -65,18 +65,20 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     vi.restoreAllMocks();
   });
 
-  test("lets Vortex Billing checkout succeed without a local Stripe price row", async () => {
+  test("lets Vortex Billing checkout use the synced Vortex catalog without a local Stripe price row", async () => {
     process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
-    process.env.VORTEX_BILLING_SAAS_PRICE_MAP = JSON.stringify({
-      "pro:monthly:v2": "vtx_price_pro",
-    });
 
+    let captured: Request | undefined;
     const mockFetch: typeof fetch = Object.assign(
-      async (): Promise<Response> =>
-        new Response(
+      async (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1],
+      ): Promise<Response> => {
+        captured = input instanceof Request ? input : new Request(String(input), init);
+        return new Response(
           JSON.stringify({
             data: {
               checkoutSession: {
@@ -88,7 +90,8 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
             },
           }),
           { status: 201, headers: { "content-type": "application/json" } },
-        ),
+        );
+      },
       { preconnect: fetch.preconnect },
     );
     vi.stubGlobal("fetch", mockFetch);
@@ -103,6 +106,7 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
         externalProductId: "vtx_prod_pro",
         vortexProductId: "vtx_prod_pro",
         status: "active",
+        unitAmount: 2900,
       },
     });
 
@@ -110,6 +114,14 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
       checkoutUrl: "https://pay.vortex.test/checkout",
     });
     expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(captured).toBeInstanceOf(Request);
+    if (captured === undefined) {
+      throw new Error("Expected Vortex checkout request to be captured");
+    }
+    const body = JSON.parse(await captured.clone().text()) as {
+      lineItems: readonly [{ priceId: string }];
+    };
+    expect(body.lineItems[0].priceId).toBe("vtx_price_pro");
   });
 
   test("fails closed on Vortex Billing when the local catalog price is missing", async () => {
@@ -117,17 +129,13 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
-    process.env.VORTEX_BILLING_SAAS_PRICE_MAP = JSON.stringify({
-      "pro:monthly:v2": "vtx_price_pro",
-    });
-
     const ctx = createCheckoutActionCtx({
       priceLookupResult: null,
       catalogPriceLookupResult: null,
     });
 
     await expect(checkoutHandler(ctx, baseCheckoutArgs)).rejects.toThrow(
-      "Seal subscription price not found for Vortex checkout priceId: vtx_price_pro",
+      "Seal subscription price not found for Vortex checkout lookupKey: pro:monthly:v2",
     );
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
@@ -146,15 +154,16 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
-    process.env.VORTEX_BILLING_SAAS_PRICE_MAP = JSON.stringify({
-      "pro:monthly:v2": "vtx_price_pro",
+    const ctx = createCheckoutActionCtx({
+      priceLookupResult: null,
+      catalogPriceLookupResult: null,
     });
-
-    const ctx = createCheckoutActionCtx({ priceLookupResult: null });
 
     await expect(
       checkoutHandler(ctx, { ...baseCheckoutArgs, lookupKey: "unknown:monthly:v2" }),
-    ).rejects.toThrow("Vortex Billing price missing for lookup key: unknown:monthly:v2");
+    ).rejects.toThrow(
+      "Seal subscription price not found for Vortex checkout lookupKey: unknown:monthly:v2",
+    );
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
 });

@@ -46,6 +46,11 @@ The adapter boundary is currently in `apps/backend/convex/stripe/*`. The browser
 - Staging web proof is live at `https://staging-app.seal.nyc` through Cloudflare Worker `seal-web-staging`, built against `clever-goose-484`.
 - Staging browser proof passes for billing settings, Vortex Connect settings, and payments overview, balances, payouts, history, disputes, tax, and subscriptions.
 
+## Proof Command Rules
+
+- Run Vortex SaaS webhook projection tests through the root proof script: `bun run prove:vortex-saas-webhook-projection`.
+- Do not run `bun test apps/backend/convex/vortex_billing/__tests__/webhook_projection.test.ts` directly. That bypasses Vitest/Vite and fails before test execution because the Convex test harness depends on `import.meta.glob`; raw Bun reports `TypeError: import.meta.glob is not a function` from `@convex-dev/action-retrier/src/test.ts`.
+
 ## Remaining Blockers
 
 - Full provider independence still requires a later data-contract migration from persisted `stripe*` field names to provider-neutral names.
