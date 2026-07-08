@@ -316,7 +316,11 @@ function BillingSettingsPage() {
                       </ul>
                     )}
                     {proMonthlyLookupKey && (
-                      <Button className="w-full" onClick={() => handleUpgrade(proMonthlyLookupKey)}>
+                      <Button
+                        className="w-full"
+                        aria-label="Upgrade to Professional"
+                        onClick={() => handleUpgrade(proMonthlyLookupKey)}
+                      >
                         <Sparkles className="mr-2 h-4 w-4" />
                         Upgrade to Professional
                       </Button>
