@@ -56,9 +56,7 @@ if (Number.isNaN(readyToSettleDate.getTime())) {
 }
 
 const now = new Date();
-const readinessWindow = now.getTime() >= readyToSettleDate.getTime()
-  ? "elapsed"
-  : "waiting";
+const readinessWindow = now.getTime() >= readyToSettleDate.getTime() ? "elapsed" : "waiting";
 
 const vortexDeployment = "dev:notable-leopard-969";
 const sealDeployment = "dev:clever-goose-484";

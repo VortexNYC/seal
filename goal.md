@@ -63,7 +63,7 @@ bun run audit:seal-vortex-production-readiness
 ```
 
 Current result: failing, as expected, without printing secret values.
-The audit also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. Agents must not execute those commands against production.
+The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. Agents must not execute those commands against production.
 
 Missing Seal production names:
 

@@ -18,6 +18,7 @@ type GroupAudit = {
   readonly label: string;
   readonly present: readonly string[];
   readonly missing: readonly string[];
+  readonly invalid: readonly string[];
 };
 
 type DeploymentAudit =
@@ -117,11 +118,32 @@ const humanValuePlaceholders: Readonly<Record<string, string>> = {
     '\'{"<seal-production-org-id>":"<vortex-production-merchant-account-id>"}\'',
   VORTEX_BILLING_DOCUMENT_PRICE_MAP:
     '\'{"<seal-production-org-id>":"<vortex-production-document-price-id>"}\'',
-  VORTEX_PAYMENTS_RUNTIME_MODE: "production",
+  VORTEX_PAYMENTS_RUNTIME_MODE: "finix",
   FINIX_PRODUCTION_USERNAME: "'<1password-finix-production-username>'",
   FINIX_PRODUCTION_PASSWORD: "'<1password-finix-production-password>'",
   FINIX_PRODUCTION_APPLICATION_ID: "'<finix-production-application-id>'",
   FINIX_PRODUCTION_WEBHOOK_SECRET: "'<finix-production-webhook-secret>'",
+};
+
+type EnvAuditResult =
+  | { readonly present: true; readonly value: string }
+  | { readonly present: false; readonly error?: string };
+
+type EnvValidator = (value: string) => string | null;
+
+const envValidators: Readonly<Record<string, EnvValidator>> = {
+  VORTEX_BILLING_API_BASE_URL: validateHttpsUrl,
+  VORTEX_BILLING_PAYMENTS_ENVIRONMENT: mustEqual("production"),
+  VORTEX_BILLING_SAAS_ORGANIZATION_IDS: validateStringArrayOrWildcard,
+  VORTEX_BILLING_ACCOUNT_MAP: validateStringMap,
+  VORTEX_BILLING_SAAS_PRICE_MAP: validateStringMap,
+  VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: validateStringArray,
+  VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP: validateStringMap,
+  VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP: validateStringMap,
+  VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP: validateStringMap,
+  VORTEX_BILLING_DOCUMENT_PRICE_MAP: validateStringMap,
+  VORTEX_PAYMENTS_PROVIDER: mustEqual("finix"),
+  VORTEX_PAYMENTS_RUNTIME_MODE: mustEqual("finix"),
 };
 
 async function runCommand(cmd: readonly string[], cwd: string): Promise<CommandResult> {
@@ -151,11 +173,11 @@ function envValueWasMissing(result: CommandResult, name: string): boolean {
   );
 }
 
-async function getEnvPresence(input: {
+async function getEnvValue(input: {
   readonly repoRoot: string;
   readonly deployment: string;
   readonly name: string;
-}): Promise<{ readonly present: boolean } | { readonly present: false; readonly error: string }> {
+}): Promise<EnvAuditResult> {
   const result = await runCommand(
     ["bunx", "convex", "env", "get", input.name, "--prod", "--deployment", input.deployment],
     input.repoRoot,
@@ -169,7 +191,7 @@ async function getEnvPresence(input: {
       error: `convex env get failed for ${input.name}: ${result.stderr || result.stdout}`,
     };
   }
-  return { present: result.stdout.length > 0 };
+  return result.stdout.length > 0 ? { present: true, value: result.stdout } : { present: false };
 }
 
 async function auditGroups(input: {
@@ -183,15 +205,21 @@ async function auditGroups(input: {
   for (const group of input.groups) {
     const present: string[] = [];
     const missing: string[] = [];
+    const invalid: string[] = [];
 
     for (const name of group.requiredEnvNames) {
-      const result = await getEnvPresence({
+      const result = await getEnvValue({
         repoRoot: input.repoRoot,
         deployment: input.deployment,
         name,
       });
       if (result.present) {
         present.push(name);
+        const validationError = envValidators[name]?.(result.value) ?? null;
+        if (validationError !== null) {
+          invalid.push(name);
+          errors.push(`${name}: ${validationError}`);
+        }
       } else {
         missing.push(name);
       }
@@ -204,6 +232,7 @@ async function auditGroups(input: {
       label: group.label,
       present,
       missing,
+      invalid,
     });
   }
 
@@ -224,6 +253,7 @@ async function auditDeployment(input: {
         label: group.label,
         present: [],
         missing: group.requiredEnvNames,
+        invalid: [],
       })),
       errors: ["repo root missing"],
     };
@@ -234,7 +264,9 @@ async function auditDeployment(input: {
     deployment: input.deployment,
     groups: input.groups,
   });
-  const ok = audit.errors.length === 0 && audit.groups.every((group) => group.missing.length === 0);
+  const ok =
+    audit.errors.length === 0 &&
+    audit.groups.every((group) => group.missing.length === 0 && group.invalid.length === 0);
   return ok
     ? {
         ok: true,
@@ -329,15 +361,15 @@ console.log(
   JSON.stringify(
     {
       ok,
-      check: "seal_vortex_production_readiness_presence",
+      check: "seal_vortex_production_readiness_config",
       boundary:
-        "Presence-only audit. It lists required environment variable names but never prints secret values or mutates deployments.",
+        "Presence and shape audit. It lists required environment variable names and validation failures but never prints secret values or mutates deployments.",
       seal,
       vortex,
       remediation: buildRemediationPlan({ seal, vortex }),
       nextAction: ok
         ? "Run the human production proof sequence with explicit target ids."
-        : "Configure the missing production environment names, then rerun this presence audit.",
+        : "Configure the missing or invalid production environment names, then rerun this readiness audit.",
     },
     null,
     2,
@@ -346,4 +378,58 @@ console.log(
 
 if (!ok) {
   process.exit(1);
+}
+
+function mustEqual(expected: string): EnvValidator {
+  return (value) => (value === expected ? null : `expected ${expected}`);
+}
+
+function validateHttpsUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? null : "expected https URL";
+  } catch {
+    return "expected valid URL";
+  }
+}
+
+function validateStringArray(value: string): string | null {
+  const parsed = parseJson(value);
+  if (!Array.isArray(parsed)) {
+    return "expected JSON string array";
+  }
+  if (parsed.length === 0) {
+    return "expected at least one entry";
+  }
+  return parsed.every((entry) => typeof entry === "string" && entry.length > 0)
+    ? null
+    : "expected non-empty string entries";
+}
+
+function validateStringArrayOrWildcard(value: string): string | null {
+  return value === "*" ? null : validateStringArray(value);
+}
+
+function validateStringMap(value: string): string | null {
+  const parsed = parseJson(value);
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return "expected JSON object";
+  }
+  const entries = Object.entries(parsed);
+  if (entries.length === 0) {
+    return "expected at least one entry";
+  }
+  return entries.every(
+    ([key, entry]) => key.length > 0 && typeof entry === "string" && entry.length > 0,
+  )
+    ? null
+    : "expected non-empty string keys and values";
+}
+
+function parseJson(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return undefined;
+  }
 }
