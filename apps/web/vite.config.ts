@@ -90,7 +90,7 @@ export default defineConfig(() => {
     },
 
     build: {
-      sourcemap: "hidden" as const,
+      sourcemap: false,
       chunkSizeWarningLimit: 1600,
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {

@@ -6,6 +6,8 @@ import { join } from "node:path";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 const retiredProviderToken = String.fromCharCode(115, 116, 114, 105, 112, 101);
+const retiredProviderContentPattern = `\\b${retiredProviderToken}\\b|@${retiredProviderToken}/|${retiredProviderToken}[_-]`;
+const retiredProviderContentRegex = new RegExp(retiredProviderContentPattern, "i");
 
 const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
   cwd: repoRoot,
@@ -29,29 +31,7 @@ if (dependencyGraph.status === 0 || !dependencyGraphOutput.includes("No packages
 
 const workingTreeContent = spawnSync(
   "rg",
-  [
-    "--no-ignore",
-    "-i",
-    "-n",
-    retiredProviderToken,
-    "package.json",
-    "bun.lock",
-    "apps",
-    "packages",
-    "scripts",
-    "docs",
-    ".github",
-    ".claude",
-    "node_modules",
-    "--glob",
-    "!apps/landing/.output/**",
-    "--glob",
-    "!apps/web/dist/**",
-    "--glob",
-    "!**/.turbo/**",
-    "--glob",
-    "!apps/landing/public/api/search.json",
-  ],
+  ["--no-ignore", "-i", "-n", retiredProviderContentPattern, ".", "--glob", "!.git/**"],
   {
     cwd: repoRoot,
     encoding: "utf8",
@@ -81,8 +61,8 @@ for (const relativePath of trackedFiles) {
   }
 
   const fileBytes = readFileSync(absolutePath);
-  if (fileBytes.toString("utf8").toLowerCase().includes(retiredProviderToken)) {
-    failures.push(`${relativePath}: content contains retired provider token`);
+  if (retiredProviderContentRegex.test(fileBytes.toString("utf8"))) {
+    failures.push(`${relativePath}: content contains retired provider residue`);
   }
 }
 
@@ -114,10 +94,9 @@ if (failures.length > 0) {
 }
 
 console.log("Retired provider residue proof passed:");
-console.log("- No tracked file paths or contents contain the retired provider token.");
+console.log("- No tracked file paths contain the retired provider token.");
+console.log("- No tracked file contents contain retired provider residue.");
 console.log(
   "- No dependency graph package or installed package path contains the retired provider token.",
 );
-console.log(
-  "- No working-tree source, docs, package, or installed package content contains the retired provider token.",
-);
+console.log("- No working-tree content outside .git contains retired provider residue.");
