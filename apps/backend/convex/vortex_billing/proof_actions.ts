@@ -64,7 +64,7 @@ type SeedVortexWebhookProofPaymentConfigResult = {
 
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
-  readonly organizationStripeCustomerId: string | null;
+  readonly organizationBillingCustomerId: string | null;
   readonly plan: {
     readonly isPro: boolean;
     readonly isEnterprise: boolean;
@@ -182,7 +182,7 @@ async function insertSaasProofOrganization(
   ctx: MutationCtx,
   proofRunId: string,
   now: number,
-  stripeCustomerId?: string,
+  billingCustomerId?: string,
 ): Promise<Id<"organizations">> {
   return await ctx.db.insert("organizations", {
     name: `Vortex SaaS Billing Proof ${proofRunId}`,
@@ -190,7 +190,7 @@ async function insertSaasProofOrganization(
     type: "company",
     isActive: true,
     timezone: "UTC",
-    ...(stripeCustomerId !== undefined ? { stripeCustomerId } : {}),
+    ...(billingCustomerId !== undefined ? { billingCustomerId } : {}),
     updatedAt: now,
   });
 }
@@ -358,7 +358,7 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
     features: v.string(),
     unitAmount: v.number(),
     currency: v.string(),
-    stripeCustomerId: v.optional(v.string()),
+    billingCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SeedVortexSaasBillingCatalogProjectionResult> => {
     const now = Date.now();
@@ -366,7 +366,7 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
       ctx,
       args.proofRunId,
       now,
-      args.stripeCustomerId,
+      args.billingCustomerId,
     );
     const ownerId = await insertSaasProofOwner(ctx, args.proofRunId, organizationId);
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
@@ -1252,7 +1252,7 @@ export const getVortexSaasBillingProofState = internalQuery({
 
     return {
       organizationId: args.organizationId,
-      organizationStripeCustomerId: organization?.stripeCustomerId ?? null,
+      organizationBillingCustomerId: organization?.billingCustomerId ?? null,
       plan,
       subscription: toProofSubscription(subscription),
       product: toProofProduct(product),

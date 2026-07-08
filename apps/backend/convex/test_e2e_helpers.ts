@@ -678,7 +678,7 @@ export const getOrgForStripeSeeding = internalQuery({
     return {
       organizationId: org._id,
       organizationName: org.name,
-      stripeCustomerId: org.stripeCustomerId ?? null,
+      billingCustomerId: org.billingCustomerId ?? null,
       ownerEmail: owner?.email ?? null,
     };
   },
@@ -686,17 +686,17 @@ export const getOrgForStripeSeeding = internalQuery({
 
 /**
  * Persist a Stripe customer id on the org. Called from
- * `seedStripeCustomerForE2E` after the action has spoken to Stripe.
+ * `seedBillingCustomerForE2E` after the action has spoken to Stripe.
  */
-export const setOrgStripeCustomerId = internalMutation({
+export const setOrgBillingCustomerId = internalMutation({
   args: {
     organizationId: v.id("organizations"),
-    stripeCustomerId: v.string(),
+    billingCustomerId: v.string(),
   },
-  handler: async (ctx, { organizationId, stripeCustomerId }) => {
+  handler: async (ctx, { organizationId, billingCustomerId }) => {
     requireE2eDeployment();
     await ctx.db.patch(organizationId, {
-      stripeCustomerId,
+      billingCustomerId,
       updatedAt: Date.now(),
     });
     return { success: true };
@@ -705,7 +705,7 @@ export const setOrgStripeCustomerId = internalMutation({
 
 /**
  * Provision a real Stripe sandbox customer for the E2E workspace and pin its
- * id on `organizations.stripeCustomerId`. Idempotent — exits early if the org
+ * id on `organizations.billingCustomerId`. Idempotent — exits early if the org
  * already has a customer record.
  *
  * This unblocks any test that exercises Stripe actions which require a real
@@ -714,16 +714,16 @@ export const setOrgStripeCustomerId = internalMutation({
  * looks up the actual customer in Stripe's records, not Convex's.
  *
  * Mutations can't make external HTTP calls, so this lives as an action and
- * writes back via `setOrgStripeCustomerId`.
+ * writes back via `setOrgBillingCustomerId`.
  */
-export const seedStripeCustomerForE2E = action({
+export const seedBillingCustomerForE2E = action({
   args: {
     organizationSlug: v.string(),
   },
   handler: async (
     ctx,
     { organizationSlug },
-  ): Promise<{ seeded: boolean; stripeCustomerId: string; reason?: string }> => {
+  ): Promise<{ seeded: boolean; billingCustomerId: string; reason?: string }> => {
     requireE2eDeployment();
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -737,13 +737,13 @@ export const seedStripeCustomerForE2E = action({
       organizationSlug,
     });
     if (!orgInfo) {
-      return { seeded: false, stripeCustomerId: "", reason: "org_not_found" };
+      return { seeded: false, billingCustomerId: "", reason: "org_not_found" };
     }
 
-    if (orgInfo.stripeCustomerId) {
+    if (orgInfo.billingCustomerId) {
       return {
         seeded: false,
-        stripeCustomerId: orgInfo.stripeCustomerId,
+        billingCustomerId: orgInfo.billingCustomerId,
         reason: "already_seeded",
       };
     }
@@ -752,18 +752,18 @@ export const seedStripeCustomerForE2E = action({
       apiVersion: "2026-02-25.clover",
     });
 
-    const stripeCustomerId = await getOrCreateStripeCustomer(
+    const billingCustomerId = await getOrCreateStripeCustomer(
       stripe,
       orgInfo.organizationId,
       orgInfo.ownerEmail ?? `e2e-${orgInfo.organizationId}@example.com`,
       orgInfo.organizationName,
     );
 
-    await ctx.runMutation(internal.test_e2e_helpers.setOrgStripeCustomerId, {
+    await ctx.runMutation(internal.test_e2e_helpers.setOrgBillingCustomerId, {
       organizationId: orgInfo.organizationId,
-      stripeCustomerId,
+      billingCustomerId,
     });
 
-    return { seeded: true, stripeCustomerId };
+    return { seeded: true, billingCustomerId };
   },
 });

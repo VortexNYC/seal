@@ -17,7 +17,7 @@ import { getOrCreateStripeCustomer } from "./helpers";
 
 type HandleNewOrgCreatedResult =
   | {
-      readonly stripeCustomerId: string;
+      readonly billingCustomerId: string;
       readonly enrolled: boolean;
       readonly subscriptionId?: string;
     }
@@ -50,14 +50,14 @@ function getDefaultPlanLookupKey(): string | undefined {
 /**
  * Update organization's Stripe customer ID
  */
-export const updateOrgStripeCustomerId = internalMutation({
+export const updateOrgBillingCustomerId = internalMutation({
   args: {
     organizationId: v.id("organizations"),
-    stripeCustomerId: v.string(),
+    billingCustomerId: v.string(),
   },
-  handler: async (ctx, { organizationId, stripeCustomerId }) => {
+  handler: async (ctx, { organizationId, billingCustomerId }) => {
     await ctx.db.patch(organizationId, {
-      stripeCustomerId,
+      billingCustomerId,
       updatedAt: Date.now(),
     });
   },
@@ -97,7 +97,7 @@ export const getPriceByLookupKey = internalMutation({
 export const createSubscriptionRecord = internalMutation({
   args: {
     organizationId: v.id("organizations"),
-    stripeCustomerId: v.string(),
+    billingCustomerId: v.string(),
     stripeSubscriptionId: v.string(),
     stripePriceId: v.string(),
     status: v.string(),
@@ -121,7 +121,7 @@ export const createSubscriptionRecord = internalMutation({
 
     const subscriptionId = await ctx.db.insert("subscriptions", {
       organizationId: args.organizationId,
-      externalCustomerId: args.stripeCustomerId,
+      externalCustomerId: args.billingCustomerId,
       externalSubscriptionId: args.stripeSubscriptionId,
       externalPriceId: args.stripePriceId,
       status: args.status as
@@ -173,7 +173,7 @@ export const handleNewOrgCreated = internalAction({
 
     const stripe = initializeStripe();
 
-    const stripeCustomerId = await getOrCreateStripeCustomer(
+    const billingCustomerId = await getOrCreateStripeCustomer(
       stripe,
       organizationId,
       adminEmail,
@@ -181,17 +181,17 @@ export const handleNewOrgCreated = internalAction({
       undefined,
     );
 
-    await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
+    await ctx.runMutation(internal.stripe.subscription_actions.updateOrgBillingCustomerId, {
       organizationId,
-      stripeCustomerId,
+      billingCustomerId,
     });
 
-    console.warn(`Created Stripe customer ${stripeCustomerId} for org ${organizationId}`);
+    console.warn(`Created Stripe customer ${billingCustomerId} for org ${organizationId}`);
 
     const lookupKey = getDefaultPlanLookupKey();
     if (!lookupKey) {
       console.warn("DEFAULT_PLAN_LOOKUP_KEY not configured, skipping free plan enrollment");
-      return { stripeCustomerId, enrolled: false };
+      return { billingCustomerId, enrolled: false };
     }
 
     const existingSub = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
@@ -199,7 +199,7 @@ export const handleNewOrgCreated = internalAction({
     });
     if (existingSub.plan !== "free" || existingSub.isPro) {
       console.warn(`Org ${organizationId} already has a paid subscription, skipping enrollment`);
-      return { stripeCustomerId, enrolled: false };
+      return { billingCustomerId, enrolled: false };
     }
 
     const priceData = await ctx.runMutation(
@@ -211,12 +211,12 @@ export const handleNewOrgCreated = internalAction({
 
     if (!priceData?.price) {
       console.warn(`Price not found for lookup key ${lookupKey}, skipping enrollment`);
-      return { stripeCustomerId, enrolled: false };
+      return { billingCustomerId, enrolled: false };
     }
 
     try {
       const subscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
+        customer: billingCustomerId,
         items: [{ price: priceData.price.externalPriceId, quantity: 1 }],
         metadata: { organizationId, lookupKey },
         collection_method: "charge_automatically",
@@ -232,7 +232,7 @@ export const handleNewOrgCreated = internalAction({
 
       await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
         organizationId,
-        stripeCustomerId,
+        billingCustomerId,
         stripeSubscriptionId: subscription.id,
         stripePriceId: priceData.price.externalPriceId,
         status: subscription.status,
@@ -241,13 +241,13 @@ export const handleNewOrgCreated = internalAction({
       });
 
       console.warn(`Auto-enrolled org ${organizationId} to plan ${lookupKey}`);
-      return { stripeCustomerId, enrolled: true, subscriptionId: subscription.id };
+      return { billingCustomerId, enrolled: true, subscriptionId: subscription.id };
     } catch (err) {
       console.error("Failed to auto-enroll org to free plan", {
         organizationId,
         error: err instanceof Error ? err.message : String(err),
       });
-      return { stripeCustomerId, enrolled: false };
+      return { billingCustomerId, enrolled: false };
     }
   },
 });
@@ -273,7 +273,7 @@ export const syncSeatCount = internalAction({
     const org = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
       organizationId,
     });
-    if (!org?.stripeCustomerId) {
+    if (!org?.billingCustomerId) {
       console.warn(`Org ${organizationId} has no Stripe customer, skipping seat sync`);
       return;
     }
@@ -285,7 +285,7 @@ export const syncSeatCount = internalAction({
     const quantity = Math.max(memberCount, 1);
 
     const subscriptions = await stripe.subscriptions.list({
-      customer: org.stripeCustomerId,
+      customer: org.billingCustomerId,
       status: "active",
       limit: 1,
     });

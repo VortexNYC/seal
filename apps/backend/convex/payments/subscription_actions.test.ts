@@ -262,7 +262,7 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
 
     const ctx = createCheckoutActionCtx({
       priceLookupResult: null,
-      organizationOverrides: { stripeCustomerId: "cus_existing" },
+      organizationOverrides: { billingCustomerId: "cus_existing" },
     });
 
     await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({

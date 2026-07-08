@@ -99,13 +99,13 @@ export const organizationsTable = defineTable({
   delegateOwnership: v.optional(v.boolean()),
 
   // Stripe billing customer for this organization
-  stripeCustomerId: v.optional(v.string()),
+  billingCustomerId: v.optional(v.string()),
 
   updatedAt: v.number(),
 })
   .index("by_slug", ["slug"])
   .index("by_type", ["type"])
   .index("by_active", ["isActive"])
-  .index("by_stripe_customer_id", ["stripeCustomerId"])
+  .index("by_billing_customer", ["billingCustomerId"])
   .index("by_status", ["status"])
   .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"]);

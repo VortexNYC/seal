@@ -46,7 +46,7 @@ export const backfillOrganizationComponentAnchors = migrations.define({
  *
  * Before the org-scoped refactor, subscriptions had a userId field but no
  * organizationId. This migration looks up the organization by matching
- * externalCustomerId → organizations.stripeCustomerId.
+ * externalCustomerId → organizations.billingCustomerId.
  *
  * After running, narrow the schema back to v.id("organizations").
  */
@@ -57,7 +57,7 @@ export const backfillSubscriptionOrganizationId = migrations.define({
 
     const org = await ctx.db
       .query("organizations")
-      .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", doc.externalCustomerId))
+      .withIndex("by_billing_customer", (q) => q.eq("billingCustomerId", doc.externalCustomerId))
       .unique();
 
     if (!org) {

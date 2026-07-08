@@ -14,7 +14,7 @@ type HandleNewOrgCreatedHandler = (
 ) => Promise<{
   readonly enrolled: boolean;
   readonly skippedReason?: "vortex_billing";
-  readonly stripeCustomerId?: string;
+  readonly billingCustomerId?: string;
 }>;
 
 type SyncSeatCountHandler = (

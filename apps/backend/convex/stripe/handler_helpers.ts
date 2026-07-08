@@ -184,7 +184,7 @@ export function getRetryDelayMs(retryCount: number): number {
 export async function resolveOrgForSubscription(
   ctx: MutationCtx,
   metadataOrgId: Id<"organizations"> | undefined,
-  stripeCustomerId: string,
+  billingCustomerId: string,
 ): Promise<Id<"organizations"> | null> {
   if (metadataOrgId) {
     const org = await ctx.db.get(metadataOrgId);
@@ -196,22 +196,22 @@ export async function resolveOrgForSubscription(
 
   const matchedOrg = await ctx.db
     .query("organizations")
-    .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", stripeCustomerId))
+    .withIndex("by_billing_customer", (q) => q.eq("billingCustomerId", billingCustomerId))
     .first();
   if (matchedOrg) {
     console.warn(
-      `Resolved organizationId ${matchedOrg._id} from Stripe customer ${stripeCustomerId}`,
+      `Resolved organizationId ${matchedOrg._id} from Stripe customer ${billingCustomerId}`,
     );
     return matchedOrg._id;
   }
 
   const existingSub = await ctx.db
     .query("subscriptions")
-    .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", stripeCustomerId))
+    .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", billingCustomerId))
     .first();
   if (existingSub?.organizationId) {
     console.warn(
-      `Resolved organizationId ${existingSub.organizationId} from existing subscription for customer ${stripeCustomerId}`,
+      `Resolved organizationId ${existingSub.organizationId} from existing subscription for customer ${billingCustomerId}`,
     );
     return existingSub.organizationId;
   }

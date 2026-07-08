@@ -37,7 +37,7 @@ describe("Stripe webhook handlers", () => {
         type: "company",
         isActive: true,
         timezone: "UTC",
-        stripeCustomerId: "cus_fake_test_001",
+        billingCustomerId: "cus_fake_test_001",
         updatedAt: Date.now(),
       }),
     );
@@ -176,7 +176,7 @@ describe("Stripe webhook handlers", () => {
         subscription: buildSubscription({
           id: "sub_fake_test_002",
           // Empty metadata — the resolver should still find the org via
-          // `organizations.stripeCustomerId`, which we seeded above.
+          // `organizations.billingCustomerId`, which we seeded above.
           metadata: { organizationId: undefined as unknown as string },
         }),
       });
