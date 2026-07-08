@@ -667,10 +667,10 @@ async function configureSealBillingEnv(
     name: "VORTEX_BILLING_API_KEY",
     value: input.vortexApiKey,
   });
-  await setConvexEnv({
+  await mergeConvexStringRecordEnv({
     deployment: input.sealDeployment,
     name: "VORTEX_BILLING_SAAS_PRICE_MAP",
-    value: JSON.stringify({ [lookupKey]: input.priceId }),
+    updates: { [lookupKey]: input.priceId },
   });
 }
 
