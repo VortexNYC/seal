@@ -111,3 +111,15 @@ export function getErrorMessage(error: unknown): string {
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+/**
+ * Round a number to a specified number of decimal places.
+ *
+ * @param n - The number to round.
+ * @param decimals - The number of decimal places. Negative values round to tens, hundreds, etc.
+ * @returns The rounded number.
+ */
+export function roundTo(n: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(n * factor) / factor;
+}

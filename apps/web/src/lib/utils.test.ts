@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp, roundTo } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -282,6 +282,56 @@ describe("clamp", () => {
       expect(clamp(0.5, 0, 1)).toBe(0.5);
       expect(clamp(-0.1, 0, 1)).toBe(0);
       expect(clamp(1.1, 0, 1)).toBe(1);
+    });
+  });
+});
+
+describe("roundTo", () => {
+  describe("normal cases", () => {
+    test("rounds to 0 decimals", () => {
+      expect(roundTo(1.4, 0)).toBe(1);
+      expect(roundTo(1.5, 0)).toBe(2);
+    });
+
+    test("rounds to 2 decimals", () => {
+      expect(roundTo(1.234, 2)).toBe(1.23);
+      expect(roundTo(1.235, 2)).toBe(1.24);
+    });
+
+    test("rounds to 1 decimal", () => {
+      expect(roundTo(1.24, 1)).toBe(1.2);
+      expect(roundTo(1.25, 1)).toBe(1.3);
+    });
+  });
+
+  describe("negative decimals", () => {
+    test("rounds to tens", () => {
+      expect(roundTo(123, -1)).toBe(120);
+      expect(roundTo(125, -1)).toBe(130);
+    });
+
+    test("rounds to hundreds", () => {
+      expect(roundTo(1234, -2)).toBe(1200);
+      expect(roundTo(1250, -2)).toBe(1300);
+    });
+  });
+
+  describe("edge cases", () => {
+    test("returns original value when decimals is 0 and input is integer", () => {
+      expect(roundTo(42, 0)).toBe(42);
+    });
+
+    test("handles negative numbers", () => {
+      expect(roundTo(-1.234, 2)).toBe(-1.23);
+      expect(roundTo(-1.235, 2)).toBe(-1.24);
+    });
+
+    test("handles zero", () => {
+      expect(roundTo(0, 2)).toBe(0);
+    });
+
+    test("handles large decimal counts", () => {
+      expect(roundTo(1.123456789, 5)).toBe(1.12346);
     });
   });
 });
