@@ -26,7 +26,7 @@ await namedFrame.getByLabel("Card number").fill("4242424242424242");
 const titledFrame = page.frameLocator('iframe[title="Payment Form"]');
 
 // Access by src (partial match)
-const srcFrame = page.frameLocator('iframe[src*="retired_provider.com"]');
+const srcFrame = page.frameLocator('iframe[src*="payment-provider.example"]');
 ```
 
 ### Frame vs FrameLocator
@@ -82,16 +82,16 @@ await thirdPartyFrame.getByRole("button", { name: "Submit" }).click();
 await expect(thirdPartyFrame.locator("body")).toBeVisible();
 ```
 
-### Payment Provider iFrames (retired provider, PayPal)
+### Payment Provider iFrames
 
 ```typescript
-test("retired provider payment iframe", async ({ page }) => {
+test("payment provider iframe", async ({ page }) => {
   await page.goto("/checkout");
 
-  // retired provider uses multiple iframes for each field
-  const cardFrame = page.frameLocator('iframe[name*="__privateretired providerFrame"]').first();
+  // Some payment providers use multiple iframes for each field
+  const cardFrame = page.frameLocator('iframe[name*="payment-provider-card"]').first();
 
-  // Wait for retired provider to initialize
+  // Wait for the payment provider to initialize
   await expect(cardFrame.locator('[placeholder="Card number"]')).toBeVisible({
     timeout: 15000,
   });

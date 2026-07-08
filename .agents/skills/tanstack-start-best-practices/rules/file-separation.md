@@ -128,14 +128,14 @@ function PostList() {
 export const config = {
   databaseUrl: process.env.DATABASE_URL!,
   sessionSecret: process.env.SESSION_SECRET!,
-  retired_providerSecretKey: process.env.RETIRED_PROVIDER_SECRET_KEY!,
+  paymentProviderSecretKey: process.env.PAYMENT_PROVIDER_SECRET_KEY!,
 };
 
 // lib/config.ts - Public config (safe for client)
 export const publicConfig = {
   appName: "My App",
   apiUrl: process.env.NEXT_PUBLIC_API_URL,
-  retired_providerPublicKey: process.env.NEXT_PUBLIC_RETIRED_PROVIDER_KEY,
+  paymentProviderPublicKey: process.env.NEXT_PUBLIC_PAYMENT_PROVIDER_KEY,
 };
 
 // Never import config.server.ts on client
