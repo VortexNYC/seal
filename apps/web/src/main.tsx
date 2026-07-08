@@ -116,6 +116,7 @@ if (shouldInitSentry) {
       "Failed to fetch",
       "Load failed",
       "NetworkError",
+      "SignInSessionNullError",
     ],
   });
 }

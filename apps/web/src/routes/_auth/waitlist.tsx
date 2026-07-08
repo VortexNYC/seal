@@ -1,5 +1,6 @@
-import { Waitlist } from "@clerk/clerk-react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useAuth, Waitlist } from "@clerk/clerk-react";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 import { useTheme } from "@/components/theme-provider";
 import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
@@ -21,6 +22,24 @@ export const Route = createFileRoute("/_auth/waitlist")({
 
 function RouteComponent() {
   const { resolvedTheme } = useTheme();
+  const { isSignedIn, isLoaded } = useAuth();
+  const appearance = useMemo(
+    () => getClerkAuthAppearance(resolvedTheme === "dark"),
+    [resolvedTheme],
+  );
 
-  return <Waitlist appearance={getClerkAuthAppearance(resolvedTheme === "dark")} />;
+  if (!isLoaded) {
+    return (
+      <div className="flex h-dvh flex-col items-center justify-center gap-2 text-center">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  if (isSignedIn) {
+    return <Navigate to="/app" replace />;
+  }
+
+  return <Waitlist appearance={appearance} />;
 }

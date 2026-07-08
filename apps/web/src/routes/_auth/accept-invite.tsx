@@ -8,6 +8,7 @@
 
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 import { useTheme } from "@/components/theme-provider";
 import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
@@ -19,6 +20,10 @@ export const Route = createFileRoute("/_auth/accept-invite")({
 function AcceptInviteRoute() {
   const { isSignedIn, isLoaded } = useAuth();
   const { resolvedTheme } = useTheme();
+  const appearance = useMemo(
+    () => getClerkAuthAppearance(resolvedTheme === "dark"),
+    [resolvedTheme],
+  );
 
   // Wait for Clerk to load
   if (!isLoaded) {
@@ -42,7 +47,7 @@ function AcceptInviteRoute() {
     <SignIn
       routing="virtual"
       signUpUrl="/sign-up"
-      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+      appearance={appearance}
     />
   );
 }
