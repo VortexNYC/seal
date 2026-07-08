@@ -60,13 +60,18 @@ function toErrorResponse(error: unknown, requestId: string): HttpResponseEnvelop
     body: {
       code: "internal_error",
       category: "payment_method_setup_service",
-      message: error instanceof Error ? error.message : "unexpected payment method setup handler failure",
+      message:
+        error instanceof Error ? error.message : "unexpected payment method setup handler failure",
       requestId,
     },
   };
 }
 
-function toSuccessResponse<TBody>(data: TBody, requestId: string, status = 200): HttpResponseEnvelope<TBody> {
+function toSuccessResponse<TBody>(
+  data: TBody,
+  requestId: string,
+  status = 200,
+): HttpResponseEnvelope<TBody> {
   return {
     status,
     body: {

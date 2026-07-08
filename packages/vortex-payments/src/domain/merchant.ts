@@ -154,12 +154,7 @@ export interface MerchantOnboardingSession {
   readonly updatedAt: IsoTimestamp;
 }
 
-export type MerchantRequirementStatus =
-  | "pending"
-  | "submitted"
-  | "satisfied"
-  | "failed"
-  | "waived";
+export type MerchantRequirementStatus = "pending" | "submitted" | "satisfied" | "failed" | "waived";
 
 export interface MerchantRequirement {
   readonly id: MerchantRequirementId;

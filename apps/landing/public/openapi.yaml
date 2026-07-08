@@ -69,7 +69,7 @@ components:
         description:
           type: string
         status:
-          $ref: '#/components/schemas/DocumentStatus'
+          $ref: "#/components/schemas/DocumentStatus"
         created_at:
           type: string
           format: date-time
@@ -93,7 +93,7 @@ components:
         recipients:
           type: array
           items:
-            $ref: '#/components/schemas/Recipient'
+            $ref: "#/components/schemas/Recipient"
           description: Recipient list (only included when include_recipients=true)
 
     Recipient:
@@ -108,9 +108,9 @@ components:
         name:
           type: string
         role:
-          $ref: '#/components/schemas/RecipientRole'
+          $ref: "#/components/schemas/RecipientRole"
         status:
-          $ref: '#/components/schemas/RecipientStatus'
+          $ref: "#/components/schemas/RecipientStatus"
         order:
           type: integer
           description: Position in sequential signing order
@@ -137,7 +137,7 @@ components:
         description:
           type: string
         status:
-          $ref: '#/components/schemas/TemplateStatus'
+          $ref: "#/components/schemas/TemplateStatus"
         created_at:
           type: string
           format: date-time
@@ -157,7 +157,7 @@ components:
         id:
           type: string
         field_type:
-          $ref: '#/components/schemas/FieldType'
+          $ref: "#/components/schemas/FieldType"
         label:
           type: string
         is_required:
@@ -202,7 +202,7 @@ components:
         document_id:
           type: string
         signature_method:
-          $ref: '#/components/schemas/SignatureMethod'
+          $ref: "#/components/schemas/SignatureMethod"
         signed_at:
           type: string
           format: date-time
@@ -283,7 +283,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Document'
+            $ref: "#/components/schemas/Document"
         has_more:
           type: boolean
         next_cursor:
@@ -296,7 +296,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Template'
+            $ref: "#/components/schemas/Template"
         has_more:
           type: boolean
         next_cursor:
@@ -328,7 +328,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             type: AUTH_ERROR
             status: 401
@@ -338,7 +338,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             type: NOT_FOUND
             status: 404
@@ -348,7 +348,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             type: VALIDATION_ERROR
             status: 400
@@ -400,17 +400,17 @@ paths:
         - name: status
           in: query
           schema:
-            $ref: '#/components/schemas/DocumentStatus'
+            $ref: "#/components/schemas/DocumentStatus"
           description: Filter documents by status
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedDocuments'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/PaginatedDocuments"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Documents]
@@ -454,7 +454,7 @@ paths:
               file_size: 245760
               page_count: 3
       responses:
-        '200':
+        "200":
           description: Document created
           content:
             application/json:
@@ -466,10 +466,10 @@ paths:
                     type: string
               example:
                 id: j572a8b1c2d3e4f5a6b7
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /documents/get:
     get:
@@ -490,16 +490,16 @@ paths:
             default: false
           description: Include recipient list in response
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Document"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /documents/update:
     put:
@@ -528,7 +528,7 @@ paths:
                   type: string
                   format: date-time
       responses:
-        '200':
+        "200":
           description: Updated
           content:
             application/json:
@@ -537,10 +537,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /documents/delete:
     delete:
@@ -557,7 +557,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Deleted
           content:
             application/json:
@@ -566,10 +566,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /documents/send:
     post:
@@ -595,7 +595,7 @@ paths:
                   type: string
                   description: Custom message included in the invitation email
       responses:
-        '200':
+        "200":
           description: Sent
           content:
             application/json:
@@ -604,10 +604,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /documents/void:
     post:
@@ -635,7 +635,7 @@ paths:
                   type: string
                   description: Reason for voiding the document
       responses:
-        '200':
+        "200":
           description: Voided
           content:
             application/json:
@@ -644,10 +644,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /documents/download:
     get:
@@ -665,7 +665,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -676,10 +676,10 @@ paths:
                   url:
                     type: string
                     format: uri
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ──────────────────────────────────────────────────────────────────────────
   # Recipients
@@ -697,7 +697,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -707,11 +707,11 @@ paths:
                   recipients:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Recipient'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                      $ref: "#/components/schemas/Recipient"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
     post:
       tags: [Recipients]
@@ -738,7 +738,7 @@ paths:
                 name:
                   type: string
                 role:
-                  $ref: '#/components/schemas/RecipientRole'
+                  $ref: "#/components/schemas/RecipientRole"
                 order:
                   type: integer
                   description: Signing order position for sequential workflows
@@ -751,7 +751,7 @@ paths:
               role: signer
               order: 1
       responses:
-        '200':
+        "200":
           description: Recipient added
           content:
             application/json:
@@ -760,12 +760,12 @@ paths:
                 properties:
                   id:
                     type: string
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /recipients/get:
     get:
@@ -784,16 +784,16 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Recipient'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Recipient"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /recipients/update:
     put:
@@ -821,13 +821,13 @@ paths:
                 name:
                   type: string
                 role:
-                  $ref: '#/components/schemas/RecipientRole'
+                  $ref: "#/components/schemas/RecipientRole"
                 order:
                   type: integer
                 message:
                   type: string
       responses:
-        '200':
+        "200":
           description: Updated
           content:
             application/json:
@@ -836,10 +836,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /recipients/delete:
     delete:
@@ -859,7 +859,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Removed
           content:
             application/json:
@@ -868,10 +868,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /recipients/remind:
     post:
@@ -902,7 +902,7 @@ paths:
                   type: string
                   description: Custom reminder message
       responses:
-        '200':
+        "200":
           description: Reminder sent
           content:
             application/json:
@@ -911,10 +911,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ──────────────────────────────────────────────────────────────────────────
   # Templates
@@ -940,16 +940,16 @@ paths:
         - name: status
           in: query
           schema:
-            $ref: '#/components/schemas/TemplateStatus'
+            $ref: "#/components/schemas/TemplateStatus"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedTemplates'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/PaginatedTemplates"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Templates]
@@ -974,7 +974,7 @@ paths:
                 description:
                   type: string
       responses:
-        '200':
+        "200":
           description: Template created
           content:
             application/json:
@@ -983,8 +983,8 @@ paths:
                 properties:
                   id:
                     type: string
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /templates/get:
     get:
@@ -1004,16 +1004,16 @@ paths:
             default: false
           description: Include field definitions in response
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Template'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Template"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /templates/fields:
     get:
@@ -1031,7 +1031,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1041,11 +1041,11 @@ paths:
                   fields:
                     type: array
                     items:
-                      $ref: '#/components/schemas/TemplateField'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                      $ref: "#/components/schemas/TemplateField"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /templates/update:
     put:
@@ -1069,9 +1069,9 @@ paths:
                 description:
                   type: string
                 status:
-                  $ref: '#/components/schemas/TemplateStatus'
+                  $ref: "#/components/schemas/TemplateStatus"
       responses:
-        '200':
+        "200":
           description: Updated
           content:
             application/json:
@@ -1080,10 +1080,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /templates/delete:
     delete:
@@ -1097,7 +1097,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Deleted
           content:
             application/json:
@@ -1106,10 +1106,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /templates/use:
     post:
@@ -1137,7 +1137,7 @@ paths:
                 description:
                   type: string
       responses:
-        '200':
+        "200":
           description: Document created
           content:
             application/json:
@@ -1146,10 +1146,10 @@ paths:
                 properties:
                   id:
                     type: string
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ──────────────────────────────────────────────────────────────────────────
   # Signatures
@@ -1168,7 +1168,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1178,11 +1178,11 @@ paths:
                   signatures:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Signature'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                      $ref: "#/components/schemas/Signature"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /signatures/get:
     get:
@@ -1201,16 +1201,16 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Signature'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Signature"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /signatures/verify:
     get:
@@ -1227,16 +1227,16 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Verification result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerificationResult'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/VerificationResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /signatures/audit:
     get:
@@ -1259,7 +1259,7 @@ paths:
             minimum: 1
             maximum: 100
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1269,11 +1269,11 @@ paths:
                   entries:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AuditEntry'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                      $ref: "#/components/schemas/AuditEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ──────────────────────────────────────────────────────────────────────────
   # Uploads
@@ -1289,7 +1289,7 @@ paths:
         Upload the file with a `POST` request using `Content-Type: application/pdf`,
         then pass the returned `storage_id` to `POST /documents`.
       responses:
-        '200':
+        "200":
           description: Upload URL generated
           content:
             application/json:
@@ -1301,5 +1301,5 @@ paths:
                     type: string
                     format: uri
                     description: Pre-signed URL — expires in 60 seconds
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"

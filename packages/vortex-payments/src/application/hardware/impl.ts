@@ -1,5 +1,9 @@
 import type { MerchantAccountId, PaymentHardwareOrderId } from "../../domain/common";
-import type { PaymentHardwareOrder, PaymentHardwareReturn, PaymentHardwareSku } from "../../domain/hardware";
+import type {
+  PaymentHardwareOrder,
+  PaymentHardwareReturn,
+  PaymentHardwareSku,
+} from "../../domain/hardware";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import type {
   CreatePaymentHardwareOrderCommand,
@@ -16,7 +20,12 @@ import type {
 import type { PaymentHardwareService } from "./service";
 
 export class PaymentHardwareServiceError extends Error {
-  readonly code: "invalid_request" | "not_found" | "conflict" | "action_required" | "internal_error";
+  readonly code:
+    | "invalid_request"
+    | "not_found"
+    | "conflict"
+    | "action_required"
+    | "internal_error";
   readonly retryable: boolean;
   readonly details?: Readonly<Record<string, string>>;
 
@@ -50,7 +59,10 @@ function createDefaultId(prefix: "phsku" | "phord" | "phret" | "idem"): string {
 
 function requireHardwareRepositories(uow: PaymentsUnitOfWork) {
   if (!uow.paymentHardwareSkus || !uow.paymentHardwareOrders || !uow.paymentHardwareReturns) {
-    throw new PaymentHardwareServiceError("internal_error", "payment hardware persistence is not configured");
+    throw new PaymentHardwareServiceError(
+      "internal_error",
+      "payment hardware persistence is not configured",
+    );
   }
   return {
     skus: uow.paymentHardwareSkus,
@@ -74,7 +86,7 @@ function stableStringify(value: unknown): string {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
-      left.localeCompare(right)
+      left.localeCompare(right),
     );
     return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`).join(",")}}`;
   }
@@ -107,12 +119,20 @@ async function withIdempotentResult<TResult>(
     return work();
   }
   const requestHash = hashRequest(options.request);
-  const existing = await uow.idempotency.getByScopeAndKey(options.environment, options.scope, options.idempotencyKey);
+  const existing = await uow.idempotency.getByScopeAndKey(
+    options.environment,
+    options.scope,
+    options.idempotencyKey,
+  );
   if (existing) {
     if (existing.requestHash !== requestHash) {
-      throw new PaymentHardwareServiceError("conflict", "idempotency key reused with different request", {
-        details: { scope: options.scope },
-      });
+      throw new PaymentHardwareServiceError(
+        "conflict",
+        "idempotency key reused with different request",
+        {
+          details: { scope: options.scope },
+        },
+      );
     }
     return JSON.parse(existing.responseRef) as TResult;
   }
@@ -145,9 +165,13 @@ async function ensureMerchantExists(
 
 function assertPositiveQuantity(line: PaymentHardwareOrderLineCommand): void {
   if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
-    throw new PaymentHardwareServiceError("invalid_request", "hardware order line quantity must be a positive integer", {
-      details: { skuId: line.skuId },
-    });
+    throw new PaymentHardwareServiceError(
+      "invalid_request",
+      "hardware order line quantity must be a positive integer",
+      {
+        details: { skuId: line.skuId },
+      },
+    );
   }
 }
 
@@ -221,7 +245,10 @@ async function resolveOrderLines(
   lines: readonly PaymentHardwareOrderLineCommand[],
 ): Promise<readonly PaymentHardwareOrderLineSnapshot[]> {
   if (lines.length === 0) {
-    throw new PaymentHardwareServiceError("invalid_request", "hardware order requires at least one line");
+    throw new PaymentHardwareServiceError(
+      "invalid_request",
+      "hardware order requires at least one line",
+    );
   }
   const resolved: PaymentHardwareOrderLineSnapshot[] = [];
   for (const line of lines) {
@@ -233,9 +260,13 @@ async function resolveOrderLines(
       });
     }
     if (sku.status !== "active") {
-      throw new PaymentHardwareServiceError("action_required", "payment hardware SKU is not active", {
-        details: { skuId: line.skuId, nextAction: "select_active_sku" },
-      });
+      throw new PaymentHardwareServiceError(
+        "action_required",
+        "payment hardware SKU is not active",
+        {
+          details: { skuId: line.skuId, nextAction: "select_active_sku" },
+        },
+      );
     }
     resolved.push({
       skuId: sku.id,
@@ -247,8 +278,13 @@ async function resolveOrderLines(
   return resolved;
 }
 
-function computeSubtotal(lines: readonly PaymentHardwareOrderLineSnapshot[]): { readonly amount?: number; readonly currency?: "USD" | "CAD" } {
-  const pricedLines = lines.filter((line) => line.unitAmount !== undefined && line.currency !== undefined);
+function computeSubtotal(lines: readonly PaymentHardwareOrderLineSnapshot[]): {
+  readonly amount?: number;
+  readonly currency?: "USD" | "CAD";
+} {
+  const pricedLines = lines.filter(
+    (line) => line.unitAmount !== undefined && line.currency !== undefined,
+  );
   if (pricedLines.length !== lines.length || pricedLines.length === 0) {
     return {};
   }
@@ -277,7 +313,9 @@ async function getOrderInScope(
   return order;
 }
 
-export function createPaymentHardwareService(dependencies: PaymentHardwareServiceDependencies): PaymentHardwareService {
+export function createPaymentHardwareService(
+  dependencies: PaymentHardwareServiceDependencies,
+): PaymentHardwareService {
   const now = dependencies.now ?? (() => new Date().toISOString());
   const createId = dependencies.createId ?? createDefaultId;
   const { uow } = dependencies;
@@ -294,9 +332,10 @@ export function createPaymentHardwareService(dependencies: PaymentHardwareServic
         displayName: command.displayName,
         deviceType: command.deviceType,
         status: command.status ?? "active",
-        unitPrice: command.unitAmount !== undefined && command.currency !== undefined
-          ? { amount: command.unitAmount, currency: command.currency }
-          : undefined,
+        unitPrice:
+          command.unitAmount !== undefined && command.currency !== undefined
+            ? { amount: command.unitAmount, currency: command.currency }
+            : undefined,
         metadata: command.metadata,
         processorRefs: existing?.processorRefs ?? [],
         createdAt: existing?.createdAt ?? timestamp,
@@ -313,7 +352,9 @@ export function createPaymentHardwareService(dependencies: PaymentHardwareServic
         .map(toSkuSnapshot);
     },
 
-    async previewOrder(command: PreviewPaymentHardwareOrderCommand): Promise<PaymentHardwareOrderPreview> {
+    async previewOrder(
+      command: PreviewPaymentHardwareOrderCommand,
+    ): Promise<PaymentHardwareOrderPreview> {
       await ensureMerchantExists(uow, command.environment, command.merchantAccountId);
       const lines = await resolveOrderLines(uow, command.environment, command.lines);
       const subtotal = computeSubtotal(lines);
@@ -383,16 +424,27 @@ export function createPaymentHardwareService(dependencies: PaymentHardwareServic
         query.environment,
         query.merchantAccountId,
       );
-      return records.filter((record) => !query.status || record.status === query.status).map(toOrderSnapshot);
+      return records
+        .filter((record) => !query.status || record.status === query.status)
+        .map(toOrderSnapshot);
     },
 
     async cancelOrder(command) {
       const timestamp = now();
-      const order = await getOrderInScope(uow, command.environment, command.merchantAccountId, command.orderId);
+      const order = await getOrderInScope(
+        uow,
+        command.environment,
+        command.merchantAccountId,
+        command.orderId,
+      );
       if (order.status === "shipped" || order.status === "returned") {
-        throw new PaymentHardwareServiceError("conflict", "payment hardware order cannot be canceled after shipment or return", {
-          details: { orderId: order.id, status: order.status },
-        });
+        throw new PaymentHardwareServiceError(
+          "conflict",
+          "payment hardware order cannot be canceled after shipment or return",
+          {
+            details: { orderId: order.id, status: order.status },
+          },
+        );
       }
       if (order.status === "canceled") {
         return toOrderSnapshot(order);
@@ -407,7 +459,8 @@ export function createPaymentHardwareService(dependencies: PaymentHardwareServic
             : {
                 rail: "finix_device_store",
                 action: "cancel_order_in_provider_portal",
-                reason: "Provider rail cancellation is dashboard/support-managed for payment-device orders.",
+                reason:
+                  "Provider rail cancellation is dashboard/support-managed for payment-device orders.",
               },
         updatedAt: timestamp,
         canceledAt: timestamp,
@@ -429,11 +482,24 @@ export function createPaymentHardwareService(dependencies: PaymentHardwareServic
           now: timestamp,
         },
         async () => {
-          const order = await getOrderInScope(uow, command.environment, command.merchantAccountId, command.orderId);
-          if (order.status !== "shipped" && order.status !== "confirmed" && order.status !== "ordered") {
-            throw new PaymentHardwareServiceError("conflict", "payment hardware return requires an order in provider fulfillment", {
-              details: { orderId: order.id, status: order.status },
-            });
+          const order = await getOrderInScope(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+            command.orderId,
+          );
+          if (
+            order.status !== "shipped" &&
+            order.status !== "confirmed" &&
+            order.status !== "ordered"
+          ) {
+            throw new PaymentHardwareServiceError(
+              "conflict",
+              "payment hardware return requires an order in provider fulfillment",
+              {
+                details: { orderId: order.id, status: order.status },
+              },
+            );
           }
           const lines = await resolveOrderLines(uow, command.environment, command.lines);
           const hardwareReturn: PaymentHardwareReturn = {

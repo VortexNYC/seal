@@ -12,10 +12,7 @@ import type { IdempotencyRecord } from "../../storage/repositories";
 import type { ProviderRegistry } from "../../providers/registry";
 import type { PaymentsProviderAdapter, ProviderContext } from "../../providers/types";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
-import {
-  createMerchantOnboardingService,
-  type MerchantOnboardingServiceError,
-} from "./impl";
+import { createMerchantOnboardingService, type MerchantOnboardingServiceError } from "./impl";
 
 const consent = {
   merchantAgreementAccepted: true,
@@ -100,20 +97,27 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount }): Payments
         );
       },
       async getByProcessorRef(environment, provider, objectType, objectId) {
-        return Array.from(merchants.values()).find(
-          (merchant) =>
-            merchant.environment === environment &&
-            merchant.processorAccountRefs.some(
-              (ref) => ref.provider === provider && ref.objectType === objectType && ref.objectId === objectId,
-            ),
-        ) ?? null;
+        return (
+          Array.from(merchants.values()).find(
+            (merchant) =>
+              merchant.environment === environment &&
+              merchant.processorAccountRefs.some(
+                (ref) =>
+                  ref.provider === provider &&
+                  ref.objectType === objectType &&
+                  ref.objectId === objectId,
+              ),
+          ) ?? null
+        );
       },
       async save(record) {
         merchants.set(`${record.environment}:${record.id}`, record);
       },
     },
     customers: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     onboarding: {
@@ -122,9 +126,15 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount }): Payments
         return session ?? null;
       },
       async getLatestSessionByMerchantAccountId(merchantAccountId, options) {
-        return Array.from(sessions.values())
-          .filter((session) => session.environment === options.environment && session.merchantAccountId === merchantAccountId)
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+        return (
+          Array.from(sessions.values())
+            .filter(
+              (session) =>
+                session.environment === options.environment &&
+                session.merchantAccountId === merchantAccountId,
+            )
+            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
+        );
       },
       async listRequirementsForSession(onboardingSessionId, options) {
         return Array.from(requirements.values()).filter(
@@ -135,7 +145,9 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount }): Payments
       },
       async listDocumentsForRequirement(requirementId, options) {
         return Array.from(requirementDocuments.values()).filter(
-          (document) => document.environment === options.environment && document.requirementId === requirementId,
+          (document) =>
+            document.environment === options.environment &&
+            document.requirementId === requirementId,
         );
       },
       async saveSession(record) {
@@ -158,10 +170,15 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount }): Payments
     },
     customerStates: {
       async getByMerchantAndCustomer(environment, merchantAccountId, customerProfileId) {
-        return customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null;
+        return (
+          customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null
+        );
       },
       async save(record) {
-        customerStates.set(`${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`, record);
+        customerStates.set(
+          `${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`,
+          record,
+        );
       },
     },
     paymentMethods: {
@@ -172,14 +189,21 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount }): Payments
         return null;
       },
       async listByOwner(environment, ownerType, ownerId) {
-        return Array.from(paymentMethods.values()).filter((record) => record.environment === environment && record.ownerType === ownerType && record.ownerId === ownerId);
+        return Array.from(paymentMethods.values()).filter(
+          (record) =>
+            record.environment === environment &&
+            record.ownerType === ownerType &&
+            record.ownerId === ownerId,
+        );
       },
       async save(record) {
         paymentMethods.set(`${record.environment}:${record.id}`, record);
       },
     },
     paymentMethodSetupSessions: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     paymentIntents: {
@@ -322,11 +346,21 @@ function createUnusedOnboardingAdapter(): PaymentsProviderAdapter {
   return {
     key: "finix",
     supportedCapabilities: ["merchant_onboarding"],
-    async verifyWebhookSignature() { throw new Error("not used"); },
-    async createMerchantOnboarding() { throw new Error("provider should not be called"); },
-    async createPaymentIntent() { throw new Error("not used"); },
-    async createRefund() { throw new Error("not used"); },
-    async fetchObjectSnapshot() { throw new Error("not used"); },
+    async verifyWebhookSignature() {
+      throw new Error("not used");
+    },
+    async createMerchantOnboarding() {
+      throw new Error("provider should not be called");
+    },
+    async createPaymentIntent() {
+      throw new Error("not used");
+    },
+    async createRefund() {
+      throw new Error("not used");
+    },
+    async fetchObjectSnapshot() {
+      throw new Error("not used");
+    },
   };
 }
 
@@ -432,13 +466,15 @@ describe("createMerchantOnboardingService", () => {
   test("lists and submits onboarding requirement remediation", async () => {
     const merchant = createMerchant({
       status: "restricted",
-      processorAccountRefs: [{
-        provider: "finix",
-        objectType: "merchant",
-        objectId: "mu_123",
-        relationship: "onboarding_account",
-        recordedAt: "2026-04-23T12:00:00.000Z",
-      }],
+      processorAccountRefs: [
+        {
+          provider: "finix",
+          objectType: "merchant",
+          objectId: "mu_123",
+          relationship: "onboarding_account",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
     });
     const uow = createMemoryUnitOfWork({ merchant });
     await uow.onboarding.saveSession({
@@ -469,39 +505,51 @@ describe("createMerchantOnboardingService", () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["merchant_onboarding"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
       async refreshMerchantOnboarding() {
         return {
           ok: true,
           value: {
             merchantStatus: "restricted",
             onboardingStatus: "action_required",
-            processorRefs: [{
-              provider: "finix",
-              objectType: "merchant",
-              objectId: "mu_123",
-              relationship: "onboarding_account",
-              recordedAt: "2026-04-23T13:00:00.000Z",
-            }],
+            processorRefs: [
+              {
+                provider: "finix",
+                objectType: "merchant",
+                objectId: "mu_123",
+                relationship: "onboarding_account",
+                recordedAt: "2026-04-23T13:00:00.000Z",
+              },
+            ],
             metadata: { tier: "gold" },
-            requirements: [{
-              id: "merchant_123:verification:ver_1",
-              environment: "sandbox",
-              onboardingSessionId: "onb_existing",
-              merchantAccountId: "merchant_123",
-              requirementType: "merchant_verification",
-              status: "submitted",
-              reasonCode: "INCOMPLETE_APPLICATION",
-              title: "merchant_verification",
-              description: "Need more docs",
-              sourceProvider: "finix",
-              providerRequirementRef: "ver_1",
-              requestedAt: "2026-04-21T00:00:00.000Z",
-              metadata: { team: "risk" },
-            }],
+            requirements: [
+              {
+                id: "merchant_123:verification:ver_1",
+                environment: "sandbox",
+                onboardingSessionId: "onb_existing",
+                merchantAccountId: "merchant_123",
+                requirementType: "merchant_verification",
+                status: "submitted",
+                reasonCode: "INCOMPLETE_APPLICATION",
+                title: "merchant_verification",
+                description: "Need more docs",
+                sourceProvider: "finix",
+                providerRequirementRef: "ver_1",
+                requestedAt: "2026-04-21T00:00:00.000Z",
+                metadata: { team: "risk" },
+              },
+            ],
           },
         };
       },
@@ -549,41 +597,48 @@ describe("createMerchantOnboardingService", () => {
       now: () => "2026-04-23T13:00:00.000Z",
     });
 
-    expect(await service.listMerchantRequirements({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual([{
-      requirementId: "merchant_123:provider_requirement:cf_123",
-      requirementType: "compliance_form",
-      status: "pending",
-      title: "Upload owner document",
-      sourceProvider: "finix",
-      providerRequirementRef: "cf_123",
-      requestedAt: "2026-04-23T12:00:00.000Z",
-    }]);
+    expect(
+      await service.listMerchantRequirements({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual([
+      {
+        requirementId: "merchant_123:provider_requirement:cf_123",
+        requirementType: "compliance_form",
+        status: "pending",
+        title: "Upload owner document",
+        sourceProvider: "finix",
+        providerRequirementRef: "cf_123",
+        requestedAt: "2026-04-23T12:00:00.000Z",
+      },
+    ]);
 
-
-    expect(await service.createRequirementUploadLink({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-      requirementId: "merchant_123:provider_requirement:cf_123",
-      fileName: "owner-license.png",
-      contentType: "image/png",
-      uploadedByType: "merchant",
-      uploadedByRef: "user_123",
-    })).toEqual({
+    expect(
+      await service.createRequirementUploadLink({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+        requirementId: "merchant_123:provider_requirement:cf_123",
+        fileName: "owner-license.png",
+        contentType: "image/png",
+        uploadedByType: "merchant",
+        uploadedByRef: "user_123",
+      }),
+    ).toEqual({
       requirementId: "merchant_123:provider_requirement:cf_123",
       documentId: "file_123",
       uploadLinkId: "link_123",
       uploadUrl: "https://upload.finix.test/link_123",
       expiresAt: "2026-04-23T14:00:00.000Z",
     });
-    expect(await uow.events.getCanonicalEventById(
-      "merchant_123:provider_requirement:cf_123:merchant_requirement_document.upload_link_created:2026-04-23T13:00:00.000Z",
-      { environment: "sandbox" },
-    )).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "merchant_123:provider_requirement:cf_123:merchant_requirement_document.upload_link_created:2026-04-23T13:00:00.000Z",
+        { environment: "sandbox" },
+      ),
+    ).toMatchObject({
       eventType: "merchant_requirement_document.upload_link_created",
       aggregateId: "file_123",
       payload: {
@@ -593,29 +648,35 @@ describe("createMerchantOnboardingService", () => {
       },
     });
 
-    expect(await service.listMerchantRequirementDocuments({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-      requirementId: "merchant_123:provider_requirement:cf_123",
-    })).toEqual([{
-      requirementId: "merchant_123:provider_requirement:cf_123",
-      documentId: "file_123",
-      uploadLinkId: "link_123",
-      fileName: "owner-license.png",
-      contentType: "image/png",
-      requestedAt: "2026-04-23T13:00:00.000Z",
-      uploadedByType: "merchant",
-      uploadedByRef: "user_123",
-      provider: "finix",
-    }]);
+    expect(
+      await service.listMerchantRequirementDocuments({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+        requirementId: "merchant_123:provider_requirement:cf_123",
+      }),
+    ).toEqual([
+      {
+        requirementId: "merchant_123:provider_requirement:cf_123",
+        documentId: "file_123",
+        uploadLinkId: "link_123",
+        fileName: "owner-license.png",
+        contentType: "image/png",
+        requestedAt: "2026-04-23T13:00:00.000Z",
+        uploadedByType: "merchant",
+        uploadedByRef: "user_123",
+        provider: "finix",
+      },
+    ]);
 
-    expect(await service.getRequirementUploadStatus({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-      requirementId: "merchant_123:provider_requirement:cf_123",
-    })).toEqual({
+    expect(
+      await service.getRequirementUploadStatus({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+        requirementId: "merchant_123:provider_requirement:cf_123",
+      }),
+    ).toEqual({
       requirementId: "merchant_123:provider_requirement:cf_123",
       documentId: "file_123",
       uploadLinkId: "link_123",
@@ -627,12 +688,14 @@ describe("createMerchantOnboardingService", () => {
       recordedAt: "2026-04-23T13:00:00.000Z",
     });
 
-    expect(await service.refreshMerchantRequirement({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-      requirementId: "merchant_123:provider_requirement:cf_123",
-    })).toMatchObject({
+    expect(
+      await service.refreshMerchantRequirement({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+        requirementId: "merchant_123:provider_requirement:cf_123",
+      }),
+    ).toMatchObject({
       requirement: {
         requirementId: "merchant_123:provider_requirement:cf_123",
         requirementType: "compliance_form",
@@ -642,25 +705,29 @@ describe("createMerchantOnboardingService", () => {
         providerRequirementRef: "cf_123",
         requestedAt: "2026-04-23T12:00:00.000Z",
       },
-      documents: [{
-        requirementId: "merchant_123:provider_requirement:cf_123",
-        documentId: "file_123",
-        uploadLinkId: "link_123",
-        fileName: "owner-license.png",
-        contentType: "image/png",
-        requestedAt: "2026-04-23T13:00:00.000Z",
-        uploadedByType: "merchant",
-        uploadedByRef: "user_123",
-        provider: "finix",
-        status: "UPLOADED",
-        recordedAt: "2026-04-23T13:00:00.000Z",
-      }],
+      documents: [
+        {
+          requirementId: "merchant_123:provider_requirement:cf_123",
+          documentId: "file_123",
+          uploadLinkId: "link_123",
+          fileName: "owner-license.png",
+          contentType: "image/png",
+          requestedAt: "2026-04-23T13:00:00.000Z",
+          uploadedByType: "merchant",
+          uploadedByRef: "user_123",
+          provider: "finix",
+          status: "UPLOADED",
+          recordedAt: "2026-04-23T13:00:00.000Z",
+        },
+      ],
     });
 
-    expect(await uow.events.getCanonicalEventById(
-      "merchant_123:provider_requirement:cf_123:merchant_requirement.refreshed:2026-04-23T13:00:00.000Z",
-      { environment: "sandbox" },
-    )).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "merchant_123:provider_requirement:cf_123:merchant_requirement.refreshed:2026-04-23T13:00:00.000Z",
+        { environment: "sandbox" },
+      ),
+    ).toMatchObject({
       eventType: "merchant_requirement.refreshed",
       aggregateId: "merchant_123:provider_requirement:cf_123",
       payload: {
@@ -674,11 +741,13 @@ describe("createMerchantOnboardingService", () => {
       environment: "sandbox",
       merchantAccountId: merchant.id,
       onboardingSessionId: "onb_existing",
-      submissions: [{
-        requirementId: "merchant_123:provider_requirement:cf_123",
-        payload: { ownerFirstName: "Sam" },
-        documentIds: ["file_123"],
-      }],
+      submissions: [
+        {
+          requirementId: "merchant_123:provider_requirement:cf_123",
+          payload: { ownerFirstName: "Sam" },
+          documentIds: ["file_123"],
+        },
+      ],
       submittedByType: "merchant",
       submittedByRef: "user_123",
     });
@@ -687,22 +756,20 @@ describe("createMerchantOnboardingService", () => {
       merchantAccountId: merchant.id,
       onboardingSessionId: "onb_existing",
       status: "under_review",
-      openRequirementIds: [
-        "merchant_123:provider_requirement:cf_123",
-      ],
-      requirementIds: [
-        "merchant_123:provider_requirement:cf_123",
-      ],
+      openRequirementIds: ["merchant_123:provider_requirement:cf_123"],
+      requirementIds: ["merchant_123:provider_requirement:cf_123"],
       metadata: {
         submittedByType: "merchant",
         submittedByRef: "user_123",
       },
     });
 
-    expect(await uow.events.getCanonicalEventById(
-      "merchant_123:provider_requirement:cf_123:merchant_requirement.submitted:2026-04-23T13:00:00.000Z",
-      { environment: "sandbox" },
-    )).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "merchant_123:provider_requirement:cf_123:merchant_requirement.submitted:2026-04-23T13:00:00.000Z",
+        { environment: "sandbox" },
+      ),
+    ).toMatchObject({
       eventType: "merchant_requirement.submitted",
       aggregateId: "merchant_123:provider_requirement:cf_123",
       payload: {
@@ -712,7 +779,9 @@ describe("createMerchantOnboardingService", () => {
       },
     });
 
-    const [storedRequirement] = await uow.onboarding.listRequirementsForSession("onb_existing", { environment: "sandbox" });
+    const [storedRequirement] = await uow.onboarding.listRequirementsForSession("onb_existing", {
+      environment: "sandbox",
+    });
     expect(storedRequirement).toMatchObject({
       status: "submitted",
       metadata: {
@@ -724,7 +793,11 @@ describe("createMerchantOnboardingService", () => {
       },
     });
 
-    expect(await uow.onboarding.listDocumentsForRequirement("merchant_123:provider_requirement:cf_123", { environment: "sandbox" })).toEqual([
+    expect(
+      await uow.onboarding.listDocumentsForRequirement("merchant_123:provider_requirement:cf_123", {
+        environment: "sandbox",
+      }),
+    ).toEqual([
       {
         id: "merchant_123:provider_requirement:cf_123:file_123",
         environment: "sandbox",
@@ -744,11 +817,13 @@ describe("createMerchantOnboardingService", () => {
       },
     ]);
 
-    expect(await service.refreshMerchantOnboardingSession({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual({
+    expect(
+      await service.refreshMerchantOnboardingSession({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual({
       snapshot: {
         merchantAccountId: merchant.id,
         onboardingSessionId: "onb_existing",
@@ -756,25 +831,29 @@ describe("createMerchantOnboardingService", () => {
         requirementIds: ["merchant_123:verification:ver_1"],
         openRequirementIds: ["merchant_123:verification:ver_1"],
       },
-      requirements: [{
-        requirementId: "merchant_123:verification:ver_1",
-        requirementType: "merchant_verification",
-        status: "submitted",
-        reasonCode: "INCOMPLETE_APPLICATION",
-        title: "merchant_verification",
-        description: "Need more docs",
-        sourceProvider: "finix",
-        providerRequirementRef: "ver_1",
-        requestedAt: "2026-04-21T00:00:00.000Z",
-        metadata: { team: "risk" },
-      }],
+      requirements: [
+        {
+          requirementId: "merchant_123:verification:ver_1",
+          requirementType: "merchant_verification",
+          status: "submitted",
+          reasonCode: "INCOMPLETE_APPLICATION",
+          title: "merchant_verification",
+          description: "Need more docs",
+          sourceProvider: "finix",
+          providerRequirementRef: "ver_1",
+          requestedAt: "2026-04-21T00:00:00.000Z",
+          metadata: { team: "risk" },
+        },
+      ],
     });
 
-    expect(await service.listMerchantRequirements({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual([
+    expect(
+      await service.listMerchantRequirements({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual([
       {
         requirementId: "merchant_123:provider_requirement:cf_123",
         requirementType: "compliance_form",
@@ -807,17 +886,21 @@ describe("createMerchantOnboardingService", () => {
       },
     ]);
 
-    expect(await uow.onboarding.getSessionById("onb_existing", { environment: "sandbox" })).toMatchObject({
+    expect(
+      await uow.onboarding.getSessionById("onb_existing", { environment: "sandbox" }),
+    ).toMatchObject({
       status: "action_required",
       openRequirementCount: 1,
     });
     expect(await uow.merchants.getById(merchant.id, { environment: "sandbox" })).toMatchObject({
       status: "restricted",
     });
-    expect(await uow.events.getCanonicalEventById(
-      "merchant_123:action_required:2026-04-23T13:00:00.000Z",
-      { environment: "sandbox" },
-    )).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "merchant_123:action_required:2026-04-23T13:00:00.000Z",
+        { environment: "sandbox" },
+      ),
+    ).toMatchObject({
       eventType: "merchant_account.action_required",
       aggregateId: "merchant_123",
       payload: {
@@ -831,13 +914,15 @@ describe("createMerchantOnboardingService", () => {
   test("normalizes legacy provider requirement rows during refresh", async () => {
     const merchant = createMerchant({
       status: "restricted",
-      processorAccountRefs: [{
-        provider: "finix",
-        objectType: "merchant",
-        objectId: "mu_123",
-        relationship: "onboarding_account",
-        recordedAt: "2026-04-23T12:00:00.000Z",
-      }],
+      processorAccountRefs: [
+        {
+          provider: "finix",
+          objectType: "merchant",
+          objectId: "mu_123",
+          relationship: "onboarding_account",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
     });
     const uow = createMemoryUnitOfWork({ merchant });
     await uow.onboarding.saveSession({
@@ -872,10 +957,18 @@ describe("createMerchantOnboardingService", () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["merchant_onboarding"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
       async refreshMerchantOnboarding() {
         return {
           ok: true,
@@ -883,20 +976,22 @@ describe("createMerchantOnboardingService", () => {
             merchantStatus: "restricted",
             onboardingStatus: "action_required",
             processorRefs: [],
-            requirements: [{
-              id: "merchant_123:compliance_form:cf_123",
-              environment: "sandbox",
-              onboardingSessionId: "onb_existing",
-              merchantAccountId: "merchant_123",
-              requirementType: "compliance_form",
-              status: "pending",
-              title: "Owner document",
-              description: "Upload government ID",
-              sourceProvider: "finix",
-              providerRequirementRef: "cf_123",
-              requestedAt: "2026-04-23T12:00:00.000Z",
-              metadata: { finixCategory: "kyc" },
-            }],
+            requirements: [
+              {
+                id: "merchant_123:compliance_form:cf_123",
+                environment: "sandbox",
+                onboardingSessionId: "onb_existing",
+                merchantAccountId: "merchant_123",
+                requirementType: "compliance_form",
+                status: "pending",
+                title: "Owner document",
+                description: "Upload government ID",
+                sourceProvider: "finix",
+                providerRequirementRef: "cf_123",
+                requestedAt: "2026-04-23T12:00:00.000Z",
+                metadata: { finixCategory: "kyc" },
+              },
+            ],
           },
         };
       },
@@ -915,11 +1010,13 @@ describe("createMerchantOnboardingService", () => {
       now: () => "2026-04-23T13:00:00.000Z",
     });
 
-    expect(await service.refreshMerchantOnboardingSession({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual({
+    expect(
+      await service.refreshMerchantOnboardingSession({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual({
       snapshot: {
         merchantAccountId: merchant.id,
         onboardingSessionId: "onb_existing",
@@ -927,7 +1024,33 @@ describe("createMerchantOnboardingService", () => {
         requirementIds: ["merchant_123:provider_requirement:cf_123"],
         openRequirementIds: ["merchant_123:provider_requirement:cf_123"],
       },
-      requirements: [{
+      requirements: [
+        {
+          requirementId: "merchant_123:provider_requirement:cf_123",
+          requirementType: "compliance_form",
+          status: "pending",
+          title: "Owner document",
+          description: "Upload government ID",
+          sourceProvider: "finix",
+          providerRequirementRef: "cf_123",
+          requestedAt: "2026-04-23T12:00:00.000Z",
+          metadata: {
+            lastSubmittedAt: "2026-04-23T12:30:00.000Z",
+            submittedPayload: '{"ownerFirstName":"Sam"}',
+            finixCategory: "kyc",
+          },
+        },
+      ],
+    });
+
+    expect(
+      await service.listMerchantRequirements({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual([
+      {
         requirementId: "merchant_123:provider_requirement:cf_123",
         requirementType: "compliance_form",
         status: "pending",
@@ -941,40 +1064,22 @@ describe("createMerchantOnboardingService", () => {
           submittedPayload: '{"ownerFirstName":"Sam"}',
           finixCategory: "kyc",
         },
-      }],
-    });
-
-    expect(await service.listMerchantRequirements({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual([{
-      requirementId: "merchant_123:provider_requirement:cf_123",
-      requirementType: "compliance_form",
-      status: "pending",
-      title: "Owner document",
-      description: "Upload government ID",
-      sourceProvider: "finix",
-      providerRequirementRef: "cf_123",
-      requestedAt: "2026-04-23T12:00:00.000Z",
-      metadata: {
-        lastSubmittedAt: "2026-04-23T12:30:00.000Z",
-        submittedPayload: '{"ownerFirstName":"Sam"}',
-        finixCategory: "kyc",
       },
-    }]);
+    ]);
   });
 
   test("refresh marks onboarding approved and activates merchant state", async () => {
     const merchant = createMerchant({
       status: "pending_review",
-      processorAccountRefs: [{
-        provider: "finix",
-        objectType: "merchant",
-        objectId: "mu_123",
-        relationship: "onboarding_account",
-        recordedAt: "2026-04-23T12:00:00.000Z",
-      }],
+      processorAccountRefs: [
+        {
+          provider: "finix",
+          objectType: "merchant",
+          objectId: "mu_123",
+          relationship: "onboarding_account",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
     });
     const uow = createMemoryUnitOfWork({ merchant });
     await uow.onboarding.saveSession({
@@ -1005,10 +1110,18 @@ describe("createMerchantOnboardingService", () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["merchant_onboarding"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
       async refreshMerchantOnboarding() {
         return {
           ok: true,
@@ -1020,8 +1133,12 @@ describe("createMerchantOnboardingService", () => {
           },
         };
       },
-      async createOnboardingRequirementUploadLink() { throw new Error("not used"); },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async createOnboardingRequirementUploadLink() {
+        throw new Error("not used");
+      },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createMerchantOnboardingService({
@@ -1031,11 +1148,13 @@ describe("createMerchantOnboardingService", () => {
       now: () => "2026-04-23T13:00:00.000Z",
     });
 
-    expect(await service.refreshMerchantOnboardingSession({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual({
+    expect(
+      await service.refreshMerchantOnboardingSession({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual({
       snapshot: {
         merchantAccountId: merchant.id,
         onboardingSessionId: "onb_existing",
@@ -1046,7 +1165,9 @@ describe("createMerchantOnboardingService", () => {
       requirements: [],
     });
 
-    expect(await uow.onboarding.getSessionById("onb_existing", { environment: "sandbox" })).toMatchObject({
+    expect(
+      await uow.onboarding.getSessionById("onb_existing", { environment: "sandbox" }),
+    ).toMatchObject({
       status: "approved",
       approvedAt: "2026-04-23T13:00:00.000Z",
       rejectedAt: undefined,
@@ -1056,43 +1177,51 @@ describe("createMerchantOnboardingService", () => {
     expect(await uow.merchants.getById(merchant.id, { environment: "sandbox" })).toMatchObject({
       status: "active",
     });
-    expect(await uow.merchantStates.getByMerchantAccountId(merchant.id, { environment: "sandbox" })).toMatchObject({
+    expect(
+      await uow.merchantStates.getByMerchantAccountId(merchant.id, { environment: "sandbox" }),
+    ).toMatchObject({
       merchantStatus: "active",
       onboardingStatus: "approved",
       openRequirementIds: [],
       canAcceptPayments: true,
       payoutReadiness: "ready",
     });
-    expect(await service.listMerchantRequirements({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual([{
-      requirementId: "merchant_123:provider_requirement:ver_1",
-      requirementType: "provider_requirement",
-      status: "satisfied",
-      title: "Provider review",
-      sourceProvider: "finix",
-      providerRequirementRef: "ver_1",
-      requestedAt: "2026-04-23T12:00:00.000Z",
-      satisfiedAt: "2026-04-23T13:00:00.000Z",
-      metadata: {
-        providerRefreshClosedAt: "2026-04-23T13:00:00.000Z",
-        providerRefreshClosedReason: "removed_from_provider_projection",
+    expect(
+      await service.listMerchantRequirements({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual([
+      {
+        requirementId: "merchant_123:provider_requirement:ver_1",
+        requirementType: "provider_requirement",
+        status: "satisfied",
+        title: "Provider review",
+        sourceProvider: "finix",
+        providerRequirementRef: "ver_1",
+        requestedAt: "2026-04-23T12:00:00.000Z",
+        satisfiedAt: "2026-04-23T13:00:00.000Z",
+        metadata: {
+          providerRefreshClosedAt: "2026-04-23T13:00:00.000Z",
+          providerRefreshClosedReason: "removed_from_provider_projection",
+        },
       },
-    }]);
+    ]);
   });
 
   test("refresh marks onboarding rejected and blocks merchant state", async () => {
     const merchant = createMerchant({
       status: "pending_review",
-      processorAccountRefs: [{
-        provider: "finix",
-        objectType: "merchant",
-        objectId: "mu_123",
-        relationship: "onboarding_account",
-        recordedAt: "2026-04-23T12:00:00.000Z",
-      }],
+      processorAccountRefs: [
+        {
+          provider: "finix",
+          objectType: "merchant",
+          objectId: "mu_123",
+          relationship: "onboarding_account",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
     });
     const uow = createMemoryUnitOfWork({ merchant });
     await uow.onboarding.saveSession({
@@ -1111,10 +1240,18 @@ describe("createMerchantOnboardingService", () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["merchant_onboarding"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
       async refreshMerchantOnboarding() {
         return {
           ok: true,
@@ -1126,8 +1263,12 @@ describe("createMerchantOnboardingService", () => {
           },
         };
       },
-      async createOnboardingRequirementUploadLink() { throw new Error("not used"); },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async createOnboardingRequirementUploadLink() {
+        throw new Error("not used");
+      },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createMerchantOnboardingService({
@@ -1137,11 +1278,13 @@ describe("createMerchantOnboardingService", () => {
       now: () => "2026-04-23T13:00:00.000Z",
     });
 
-    expect(await service.refreshMerchantOnboardingSession({
-      environment: "sandbox",
-      merchantAccountId: merchant.id,
-      onboardingSessionId: "onb_existing",
-    })).toEqual({
+    expect(
+      await service.refreshMerchantOnboardingSession({
+        environment: "sandbox",
+        merchantAccountId: merchant.id,
+        onboardingSessionId: "onb_existing",
+      }),
+    ).toEqual({
       snapshot: {
         merchantAccountId: merchant.id,
         onboardingSessionId: "onb_existing",
@@ -1152,7 +1295,9 @@ describe("createMerchantOnboardingService", () => {
       requirements: [],
     });
 
-    expect(await uow.onboarding.getSessionById("onb_existing", { environment: "sandbox" })).toMatchObject({
+    expect(
+      await uow.onboarding.getSessionById("onb_existing", { environment: "sandbox" }),
+    ).toMatchObject({
       status: "rejected",
       rejectedAt: "2026-04-23T13:00:00.000Z",
       approvedAt: undefined,
@@ -1160,7 +1305,9 @@ describe("createMerchantOnboardingService", () => {
     expect(await uow.merchants.getById(merchant.id, { environment: "sandbox" })).toMatchObject({
       status: "rejected",
     });
-    expect(await uow.merchantStates.getByMerchantAccountId(merchant.id, { environment: "sandbox" })).toMatchObject({
+    expect(
+      await uow.merchantStates.getByMerchantAccountId(merchant.id, { environment: "sandbox" }),
+    ).toMatchObject({
       merchantStatus: "rejected",
       onboardingStatus: "rejected",
       canAcceptPayments: false,
@@ -1188,16 +1335,20 @@ describe("createMerchantOnboardingService", () => {
       resolveProviderContext: () => providerContext,
     });
 
-    await expect(service.submitMerchantOnboarding({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      submittedByType: "operator",
-      submittedByRef: "user_123",
-      consent,
-    })).rejects.toMatchObject({
+    await expect(
+      service.submitMerchantOnboarding({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        submittedByType: "operator",
+        submittedByRef: "user_123",
+        consent,
+      }),
+    ).rejects.toMatchObject({
       code: "invalid_request",
       details: {
-        invalidFields: expect.stringContaining("underwriting.cardVolumeDistribution must total 100"),
+        invalidFields: expect.stringContaining(
+          "underwriting.cardVolumeDistribution must total 100",
+        ),
       },
     } satisfies Partial<MerchantOnboardingServiceError>);
   });
@@ -1206,27 +1357,33 @@ describe("createMerchantOnboardingService", () => {
     const service = createMerchantOnboardingService({
       uow: createMemoryUnitOfWork({
         merchant: createMerchant({
-          associatedIdentities: [{
-            identityRoles: ["OWNER"],
-            relationType: "representative",
-            principalPercentageOwnership: 25,
-          }],
+          associatedIdentities: [
+            {
+              identityRoles: ["OWNER"],
+              relationType: "representative",
+              principalPercentageOwnership: 25,
+            },
+          ],
         }),
       }),
       providers: createRegistry(createUnusedOnboardingAdapter()),
       resolveProviderContext: () => providerContext,
     });
 
-    await expect(service.submitMerchantOnboarding({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      submittedByType: "operator",
-      submittedByRef: "user_123",
-      consent,
-    })).rejects.toMatchObject({
+    await expect(
+      service.submitMerchantOnboarding({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        submittedByType: "operator",
+        submittedByRef: "user_123",
+        consent,
+      }),
+    ).rejects.toMatchObject({
       code: "invalid_request",
       details: {
-        invalidFields: expect.stringContaining("associatedIdentities.0.relationType must be beneficial_owner"),
+        invalidFields: expect.stringContaining(
+          "associatedIdentities.0.relationType must be beneficial_owner",
+        ),
       },
     } satisfies Partial<MerchantOnboardingServiceError>);
   });
@@ -1329,7 +1486,9 @@ describe("createMerchantOnboardingService", () => {
       },
     });
 
-    const storedSession = await uow.onboarding.getSessionById("onb_fixed", { environment: "sandbox" });
+    const storedSession = await uow.onboarding.getSessionById("onb_fixed", {
+      environment: "sandbox",
+    });
     expect(storedSession).toMatchObject({
       merchantAccountId: "merchant_123",
       status: "under_review",
@@ -1376,10 +1535,12 @@ describe("createMerchantOnboardingService", () => {
         "merchant_123:provider_requirement:cf_123",
       ],
     });
-    expect(await uow.events.getCanonicalEventById(
-      "merchant_123:merchant_account.submitted:2026-04-23T12:05:00.000Z",
-      { environment: "sandbox" },
-    )).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "merchant_123:merchant_account.submitted:2026-04-23T12:05:00.000Z",
+        { environment: "sandbox" },
+      ),
+    ).toMatchObject({
       eventType: "merchant_account.submitted",
       aggregateId: "merchant_123",
       payload: {

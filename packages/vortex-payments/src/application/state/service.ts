@@ -6,9 +6,13 @@ import type {
 } from "./contracts";
 
 export interface PaymentsStateReader extends MerchantStateReader {
-  getMerchantAccountState(query: GetMerchantAccountStateQuery): ReturnType<MerchantStateReader["getMerchantAccountState"]>;
+  getMerchantAccountState(
+    query: GetMerchantAccountStateQuery,
+  ): ReturnType<MerchantStateReader["getMerchantAccountState"]>;
   getMerchantAccountCapabilities(
     query: GetMerchantAccountCapabilitiesQuery,
   ): ReturnType<MerchantStateReader["getMerchantAccountCapabilities"]>;
-  getCustomerPaymentState(query: GetCustomerPaymentStateQuery): ReturnType<MerchantStateReader["getCustomerPaymentState"]>;
+  getCustomerPaymentState(
+    query: GetCustomerPaymentStateQuery,
+  ): ReturnType<MerchantStateReader["getCustomerPaymentState"]>;
 }

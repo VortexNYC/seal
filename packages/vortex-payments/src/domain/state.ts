@@ -7,7 +7,11 @@ import type {
   PaymentMethodId,
   PayoutAccountId,
 } from "./common";
-import type { MerchantAccountStatus, MerchantCapability, MerchantOnboardingSessionStatus } from "./merchant";
+import type {
+  MerchantAccountStatus,
+  MerchantCapability,
+  MerchantOnboardingSessionStatus,
+} from "./merchant";
 import type { PayoutStatus, SettlementStatus } from "./funds";
 
 export type MerchantPayoutReadiness = "ready" | "paused" | "blocked" | "unknown";

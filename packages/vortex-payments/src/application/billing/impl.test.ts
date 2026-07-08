@@ -40,7 +40,9 @@ describe("createBillingPaymentsService", () => {
         },
         async save() {},
       },
-      async runInTransaction<T>(work: (transactionUow: PaymentsUnitOfWork) => Promise<T>): Promise<T> {
+      async runInTransaction<T>(
+        work: (transactionUow: PaymentsUnitOfWork) => Promise<T>,
+      ): Promise<T> {
         return work(uow as unknown as PaymentsUnitOfWork);
       },
     } as unknown as PaymentsUnitOfWork;

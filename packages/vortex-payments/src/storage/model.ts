@@ -68,7 +68,11 @@ export const aggregateDefinitions: readonly AggregateDefinition[] = [
   { name: aggregateNames.webhookEndpoint, category: "events", primaryKey: "id" },
   { name: aggregateNames.webhookDelivery, category: "events", primaryKey: "id" },
   { name: aggregateNames.eventSubscription, category: "events", primaryKey: "id" },
-  { name: aggregateNames.merchantAccountState, category: "canonical", primaryKey: "merchantAccountId" },
+  {
+    name: aggregateNames.merchantAccountState,
+    category: "canonical",
+    primaryKey: "merchantAccountId",
+  },
   { name: aggregateNames.auditEvent, category: "operations", primaryKey: "id" },
   { name: aggregateNames.operatorCase, category: "operations", primaryKey: "id" },
   { name: aggregateNames.caseActivity, category: "operations", primaryKey: "id" },
@@ -80,20 +84,32 @@ export const aggregateDefinitions: readonly AggregateDefinition[] = [
 
 export const baseIndexes: readonly IndexDefinition[] = [
   { aggregate: aggregateNames.merchantAccount, fields: ["environment", "tenantId"] },
-  { aggregate: aggregateNames.merchantAccountState, fields: ["environment", "merchantStatus", "payoutReadiness"] },
+  {
+    aggregate: aggregateNames.merchantAccountState,
+    fields: ["environment", "merchantStatus", "payoutReadiness"],
+  },
   {
     aggregate: aggregateNames.paymentMethodSetupSession,
     fields: ["environment", "merchantAccountId", "ownerType", "ownerId", "status"],
   },
-  { aggregate: aggregateNames.paymentIntent, fields: ["environment", "merchantAccountId", "status"] },
+  {
+    aggregate: aggregateNames.paymentIntent,
+    fields: ["environment", "merchantAccountId", "status"],
+  },
   { aggregate: aggregateNames.payment, fields: ["environment", "merchantAccountId", "status"] },
   { aggregate: aggregateNames.refund, fields: ["environment", "paymentId"] },
   { aggregate: aggregateNames.settlement, fields: ["environment", "merchantAccountId", "status"] },
   { aggregate: aggregateNames.payout, fields: ["environment", "merchantAccountId", "status"] },
   { aggregate: aggregateNames.dispute, fields: ["environment", "merchantAccountId", "deadlineAt"] },
   { aggregate: aggregateNames.operatorCase, fields: ["environment", "caseType", "status"] },
-  { aggregate: aggregateNames.operatorCase, fields: ["environment", "assignment.queueKey", "status"] },
-  { aggregate: aggregateNames.canonicalDomainEvent, fields: ["environment", "aggregateType", "aggregateId"] },
+  {
+    aggregate: aggregateNames.operatorCase,
+    fields: ["environment", "assignment.queueKey", "status"],
+  },
+  {
+    aggregate: aggregateNames.canonicalDomainEvent,
+    fields: ["environment", "aggregateType", "aggregateId"],
+  },
   {
     aggregate: aggregateNames.rawProcessorWebhook,
     fields: ["environment", "provider", "deliveryKey"],

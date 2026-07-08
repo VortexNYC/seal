@@ -70,7 +70,9 @@ function createRefundEvent(input: {
       amount: input.refund.amount,
       currency: input.refund.currency,
       reason: input.refund.reason,
-      ...(input.refund.terminalSessionId ? { terminalSessionId: input.refund.terminalSessionId } : {}),
+      ...(input.refund.terminalSessionId
+        ? { terminalSessionId: input.refund.terminalSessionId }
+        : {}),
       ...(input.refund.terminalReaderId ? { terminalReaderId: input.refund.terminalReaderId } : {}),
     },
     createdAt: input.occurredAt,
@@ -92,7 +94,7 @@ function stableStringify(value: unknown): string {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
-      left.localeCompare(right)
+      left.localeCompare(right),
     );
     return `{${entries
       .map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`)
@@ -271,26 +273,45 @@ export function createRefundsService(dependencies: RefundsServiceDependencies): 
             now: now(),
           },
           async () => {
-            const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
+            const merchant = await getMerchantOrThrow(
+              uow,
+              command.environment,
+              command.merchantAccountId,
+            );
             const payment = await getPaymentOrThrow(uow, command.environment, command.paymentId);
 
             if (payment.merchantAccountId !== command.merchantAccountId) {
-              throw new RefundsServiceError("invalid_request", "payment does not belong to merchant", {
-                details: { paymentId: command.paymentId },
-              });
+              throw new RefundsServiceError(
+                "invalid_request",
+                "payment does not belong to merchant",
+                {
+                  details: { paymentId: command.paymentId },
+                },
+              );
             }
             if (command.amount <= 0) {
-              throw new RefundsServiceError("invalid_request", "refund amount must be greater than zero", {
-                details: { paymentId: command.paymentId },
-              });
+              throw new RefundsServiceError(
+                "invalid_request",
+                "refund amount must be greater than zero",
+                {
+                  details: { paymentId: command.paymentId },
+                },
+              );
             }
             if (command.amount > payment.amount) {
-              throw new RefundsServiceError("invalid_request", "refund amount exceeds payment amount", {
-                details: { paymentId: command.paymentId },
-              });
+              throw new RefundsServiceError(
+                "invalid_request",
+                "refund amount exceeds payment amount",
+                {
+                  details: { paymentId: command.paymentId },
+                },
+              );
             }
 
-            const existingRefunds = await uow.refunds.listByPayment(command.environment, payment.id);
+            const existingRefunds = await uow.refunds.listByPayment(
+              command.environment,
+              payment.id,
+            );
             const reservedAmount = sumPendingOrSucceededRefundAmount(existingRefunds);
             if (reservedAmount + command.amount > payment.amount) {
               throw new RefundsServiceError(
@@ -307,14 +328,20 @@ export function createRefundsService(dependencies: RefundsServiceDependencies): 
 
             const paymentRef = payment.processorPaymentRefs[0];
             if (!paymentRef) {
-              throw new RefundsServiceError("invalid_request", "payment is missing provider reference", {
-                details: { paymentId: command.paymentId },
-              });
+              throw new RefundsServiceError(
+                "invalid_request",
+                "payment is missing provider reference",
+                {
+                  details: { paymentId: command.paymentId },
+                },
+              );
             }
 
             const providerContext = dependencies.resolveProviderContext(merchant);
             const providerKey = paymentRef.provider as ProviderContext["provider"];
-            const adapter = dependencies.providers.getAdapter(providerKey || providerContext.provider);
+            const adapter = dependencies.providers.getAdapter(
+              providerKey || providerContext.provider,
+            );
             const providerResult = await adapter.createRefund(providerContext, {
               paymentRef,
               amount: command.amount,
@@ -323,13 +350,15 @@ export function createRefundsService(dependencies: RefundsServiceDependencies): 
             });
 
             if (!providerResult.ok || !providerResult.value) {
-              throw mapProviderError(providerResult.error ?? {
-                provider: providerContext.provider,
-                category: "unknown",
-                code: "provider_result_missing",
-                message: "provider refund failed without error details",
-                retryable: false,
-              });
+              throw mapProviderError(
+                providerResult.error ?? {
+                  provider: providerContext.provider,
+                  category: "unknown",
+                  code: "provider_result_missing",
+                  message: "provider refund failed without error details",
+                  retryable: false,
+                },
+              );
             }
 
             const recordedAt = now();
@@ -351,11 +380,13 @@ export function createRefundsService(dependencies: RefundsServiceDependencies): 
               updatedAt: recordedAt,
             };
             await uow.refunds.save(refund);
-            await uow.events.saveCanonicalEvent(createRefundEvent({
-              id: `${refund.id}:refund.created:${recordedAt}`,
-              refund,
-              occurredAt: recordedAt,
-            }));
+            await uow.events.saveCanonicalEvent(
+              createRefundEvent({
+                id: `${refund.id}:refund.created:${recordedAt}`,
+                refund,
+                occurredAt: recordedAt,
+              }),
+            );
 
             if (refund.status === "succeeded") {
               const succeededAmount = sumSucceededRefundAmount([...existingRefunds, refund]);

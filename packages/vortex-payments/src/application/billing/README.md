@@ -5,6 +5,7 @@ This directory is canonical seam between monorepo `payments` and `billing` packa
 This seam is final.
 
 Rules:
+
 - expose workflow-shaped contracts only
 - use Vortex nouns only
 - no provider adapter types

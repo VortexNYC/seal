@@ -26,7 +26,12 @@ import type {
 import type { TerminalService } from "./service";
 
 export class TerminalServiceError extends Error {
-  readonly code: "invalid_request" | "not_found" | "conflict" | "action_required" | "internal_error";
+  readonly code:
+    | "invalid_request"
+    | "not_found"
+    | "conflict"
+    | "action_required"
+    | "internal_error";
   readonly retryable: boolean;
   readonly details?: Readonly<Record<string, string>>;
 
@@ -61,10 +66,17 @@ function createDefaultId(prefix: "tl" | "tr" | "tcs" | "cpi" | "pay" | "evt" | "
 function requireTerminalRepositories(uow: PaymentsUnitOfWork): {
   readonly terminalLocations: NonNullable<PaymentsUnitOfWork["terminalLocations"]>;
   readonly terminalReaders: NonNullable<PaymentsUnitOfWork["terminalReaders"]>;
-  readonly terminalConnectionSessions: NonNullable<PaymentsUnitOfWork["terminalConnectionSessions"]>;
+  readonly terminalConnectionSessions: NonNullable<
+    PaymentsUnitOfWork["terminalConnectionSessions"]
+  >;
   readonly cardPresentPaymentIntents: NonNullable<PaymentsUnitOfWork["cardPresentPaymentIntents"]>;
 } {
-  if (!uow.terminalLocations || !uow.terminalReaders || !uow.terminalConnectionSessions || !uow.cardPresentPaymentIntents) {
+  if (
+    !uow.terminalLocations ||
+    !uow.terminalReaders ||
+    !uow.terminalConnectionSessions ||
+    !uow.cardPresentPaymentIntents
+  ) {
     throw new TerminalServiceError("internal_error", "terminal persistence is not configured");
   }
   return {
@@ -90,7 +102,7 @@ function stableStringify(value: unknown): string {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
-      left.localeCompare(right)
+      left.localeCompare(right),
     );
     return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`).join(",")}}`;
   }
@@ -123,7 +135,11 @@ async function withIdempotentResult<TResult>(
     return work();
   }
   const requestHash = hashRequest(options.request);
-  const existing = await uow.idempotency.getByScopeAndKey(options.environment, options.scope, options.idempotencyKey);
+  const existing = await uow.idempotency.getByScopeAndKey(
+    options.environment,
+    options.scope,
+    options.idempotencyKey,
+  );
   if (existing) {
     if (existing.requestHash !== requestHash) {
       throw new TerminalServiceError("conflict", "idempotency key reused with different request", {
@@ -153,7 +169,9 @@ async function getMerchantOrThrow(
 ): Promise<MerchantAccount> {
   const merchant = await uow.merchants.getById(merchantAccountId, { environment });
   if (!merchant) {
-    throw new TerminalServiceError("not_found", "merchant account not found", { details: { merchantAccountId } });
+    throw new TerminalServiceError("not_found", "merchant account not found", {
+      details: { merchantAccountId },
+    });
   }
   return merchant;
 }
@@ -165,9 +183,13 @@ async function ensureMerchantCanAcceptPayments(
 ): Promise<void> {
   const state = await uow.merchantStates.getByMerchantAccountId(merchantAccountId, { environment });
   if (!state?.canAcceptPayments) {
-    throw new TerminalServiceError("action_required", "merchant cannot accept card-present payments", {
-      details: { merchantAccountId, nextAction: "resolve_merchant_readiness" },
-    });
+    throw new TerminalServiceError(
+      "action_required",
+      "merchant cannot accept card-present payments",
+      {
+        details: { merchantAccountId, nextAction: "resolve_merchant_readiness" },
+      },
+    );
   }
 }
 
@@ -175,7 +197,10 @@ function nextActionForLocation(location: TerminalLocation): TerminalNextAction {
   return location.status === "active" ? "none" : "enable_location";
 }
 
-function nextActionForReader(location: TerminalLocation, reader: TerminalReader): TerminalNextAction {
+function nextActionForReader(
+  location: TerminalLocation,
+  reader: TerminalReader,
+): TerminalNextAction {
   const locationAction = nextActionForLocation(location);
   if (locationAction !== "none") {
     return locationAction;
@@ -210,7 +235,9 @@ async function getLocationInScope(
   const repos = requireTerminalRepositories(uow);
   const location = await repos.terminalLocations.getById(locationId, { environment });
   if (!location || location.merchantAccountId !== merchantAccountId) {
-    throw new TerminalServiceError("not_found", "terminal location not found", { details: { locationId } });
+    throw new TerminalServiceError("not_found", "terminal location not found", {
+      details: { locationId },
+    });
   }
   return location;
 }
@@ -224,7 +251,9 @@ async function getReaderInScope(
   const repos = requireTerminalRepositories(uow);
   const reader = await repos.terminalReaders.getById(readerId, { environment });
   if (!reader || reader.merchantAccountId !== merchantAccountId) {
-    throw new TerminalServiceError("not_found", "terminal reader not found", { details: { readerId } });
+    throw new TerminalServiceError("not_found", "terminal reader not found", {
+      details: { readerId },
+    });
   }
   return reader;
 }
@@ -262,7 +291,10 @@ function toLocationSnapshot(location: TerminalLocation): TerminalLocationSnapsho
   };
 }
 
-function toReaderSnapshot(location: TerminalLocation, reader: TerminalReader): TerminalReaderSnapshot {
+function toReaderSnapshot(
+  location: TerminalLocation,
+  reader: TerminalReader,
+): TerminalReaderSnapshot {
   return {
     id: reader.id,
     merchantAccountId: reader.merchantAccountId,
@@ -303,7 +335,11 @@ function canCapture(intent: CardPresentPaymentIntent): boolean {
 }
 
 function canCancel(intent: CardPresentPaymentIntent): boolean {
-  return intent.status === "requires_reader" || intent.status === "processing" || intent.status === "authorized";
+  return (
+    intent.status === "requires_reader" ||
+    intent.status === "processing" ||
+    intent.status === "authorized"
+  );
 }
 
 function toIntentSnapshot(intent: CardPresentPaymentIntent): CardPresentPaymentIntentSnapshot {
@@ -402,7 +438,10 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
     },
 
     async listTerminalLocations(query) {
-      const records = await repos.terminalLocations.listByMerchant(query.environment, query.merchantAccountId);
+      const records = await repos.terminalLocations.listByMerchant(
+        query.environment,
+        query.merchantAccountId,
+      );
       return records
         .filter((record) => !query.status || record.status === query.status)
         .map(toLocationSnapshot);
@@ -422,7 +461,12 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
         },
         async () => {
           await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
-          const location = await getLocationInScope(uow, command.environment, command.merchantAccountId, command.locationId);
+          const location = await getLocationInScope(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+            command.locationId,
+          );
           const reader: TerminalReader = {
             id: createId("tr"),
             environment: command.environment,
@@ -447,11 +491,20 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
 
     async listTerminalReaders(query) {
       const readers = query.locationId
-        ? await repos.terminalReaders.listByLocation(query.environment, query.merchantAccountId, query.locationId)
+        ? await repos.terminalReaders.listByLocation(
+            query.environment,
+            query.merchantAccountId,
+            query.locationId,
+          )
         : await repos.terminalReaders.listByMerchant(query.environment, query.merchantAccountId);
       const snapshots = await Promise.all(
         readers.map(async (reader) => {
-          const location = await getLocationInScope(uow, query.environment, query.merchantAccountId, reader.locationId);
+          const location = await getLocationInScope(
+            uow,
+            query.environment,
+            query.merchantAccountId,
+            reader.locationId,
+          );
           return toReaderSnapshot(location, reader);
         }),
       );
@@ -472,11 +525,25 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
         },
         async () => {
           await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
-          await ensureMerchantCanAcceptPayments(uow, command.environment, command.merchantAccountId);
-          const location = await getLocationInScope(uow, command.environment, command.merchantAccountId, command.locationId);
+          await ensureMerchantCanAcceptPayments(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+          );
+          const location = await getLocationInScope(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+            command.locationId,
+          );
           let nextAction = nextActionForLocation(location);
           if (command.readerId) {
-            const reader = await getReaderInScope(uow, command.environment, command.merchantAccountId, command.readerId);
+            const reader = await getReaderInScope(
+              uow,
+              command.environment,
+              command.merchantAccountId,
+              command.readerId,
+            );
             nextAction = nextActionForReader(location, reader);
             assertReaderReady(location, reader);
           }
@@ -521,9 +588,23 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
         },
         async () => {
           await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
-          await ensureMerchantCanAcceptPayments(uow, command.environment, command.merchantAccountId);
-          const location = await getLocationInScope(uow, command.environment, command.merchantAccountId, command.locationId);
-          const reader = await getReaderInScope(uow, command.environment, command.merchantAccountId, command.readerId);
+          await ensureMerchantCanAcceptPayments(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+          );
+          const location = await getLocationInScope(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+            command.locationId,
+          );
+          const reader = await getReaderInScope(
+            uow,
+            command.environment,
+            command.merchantAccountId,
+            command.readerId,
+          );
           assertReaderReady(location, reader);
           if (command.amount <= 0) {
             throw new TerminalServiceError("invalid_request", "amount must be positive");
@@ -552,21 +633,26 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
             capturedAt: command.capturePolicy.captureMode === "automatic" ? timestamp : undefined,
           };
           await repos.cardPresentPaymentIntents.save(intent);
-          await uow.events.saveCanonicalEvent(createTerminalEvent({
-            id: createId("evt"),
-            eventType: "card_present_payment_intent.created",
-            intent,
-            occurredAt: timestamp,
-          }));
+          await uow.events.saveCanonicalEvent(
+            createTerminalEvent({
+              id: createId("evt"),
+              eventType: "card_present_payment_intent.created",
+              intent,
+              occurredAt: timestamp,
+            }),
+          );
           return toIntentSnapshot(intent);
         },
       );
     },
 
     async getCardPresentPaymentIntent(query) {
-      const intent = await repos.cardPresentPaymentIntents.getById(query.cardPresentPaymentIntentId, {
-        environment: query.environment,
-      });
+      const intent = await repos.cardPresentPaymentIntents.getById(
+        query.cardPresentPaymentIntentId,
+        {
+          environment: query.environment,
+        },
+      );
       if (!intent || intent.merchantAccountId !== query.merchantAccountId) {
         return null;
       }
@@ -574,8 +660,13 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
     },
 
     async listCardPresentPaymentIntents(query) {
-      const records = await repos.cardPresentPaymentIntents.listByMerchant(query.environment, query.merchantAccountId);
-      return records.filter((record) => !query.status || record.status === query.status).map(toIntentSnapshot);
+      const records = await repos.cardPresentPaymentIntents.listByMerchant(
+        query.environment,
+        query.merchantAccountId,
+      );
+      return records
+        .filter((record) => !query.status || record.status === query.status)
+        .map(toIntentSnapshot);
     },
 
     async captureCardPresentPaymentIntent(command) {
@@ -593,24 +684,38 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
         async () => {
           const intent = await getCardPresentIntentInScope(uow, command);
           if (!canCapture(intent)) {
-            throw new TerminalServiceError("conflict", "card-present payment intent cannot be captured", {
-              details: { cardPresentPaymentIntentId: intent.id, status: intent.status },
-            });
+            throw new TerminalServiceError(
+              "conflict",
+              "card-present payment intent cannot be captured",
+              {
+                details: { cardPresentPaymentIntentId: intent.id, status: intent.status },
+              },
+            );
           }
-          const finalAmount = command.amount ?? intent.amount + (command.tipAmount ?? intent.capturePolicy.tipAmount ?? 0);
+          const finalAmount =
+            command.amount ??
+            intent.amount + (command.tipAmount ?? intent.capturePolicy.tipAmount ?? 0);
           const tipAmount = command.tipAmount ?? intent.capturePolicy.tipAmount ?? 0;
           if (tipAmount > 0 && !intent.capturePolicy.allowTip) {
-            throw new TerminalServiceError("invalid_request", "tip capture is not allowed", { details: { cardPresentPaymentIntentId: intent.id } });
+            throw new TerminalServiceError("invalid_request", "tip capture is not allowed", {
+              details: { cardPresentPaymentIntentId: intent.id },
+            });
           }
           if (finalAmount > intent.amount) {
             if (!intent.capturePolicy.allowOvercapture) {
-              throw new TerminalServiceError("invalid_request", "overcapture is not allowed", { details: { cardPresentPaymentIntentId: intent.id } });
+              throw new TerminalServiceError("invalid_request", "overcapture is not allowed", {
+                details: { cardPresentPaymentIntentId: intent.id },
+              });
             }
             const max = intent.capturePolicy.maxOvercaptureAmount ?? intent.amount;
             if (finalAmount > max) {
-              throw new TerminalServiceError("invalid_request", "capture amount exceeds overcapture limit", {
-                details: { cardPresentPaymentIntentId: intent.id },
-              });
+              throw new TerminalServiceError(
+                "invalid_request",
+                "capture amount exceeds overcapture limit",
+                {
+                  details: { cardPresentPaymentIntentId: intent.id },
+                },
+              );
             }
           }
           const paymentId: PaymentId = createId("pay");
@@ -647,12 +752,14 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
           };
           await uow.payments.save(payment);
           await repos.cardPresentPaymentIntents.save(capturedIntent);
-          await uow.events.saveCanonicalEvent(createTerminalEvent({
-            id: createId("evt"),
-            eventType: "card_present_payment_intent.captured",
-            intent: capturedIntent,
-            occurredAt: timestamp,
-          }));
+          await uow.events.saveCanonicalEvent(
+            createTerminalEvent({
+              id: createId("evt"),
+              eventType: "card_present_payment_intent.captured",
+              intent: capturedIntent,
+              occurredAt: timestamp,
+            }),
+          );
           return toIntentSnapshot(capturedIntent);
         },
       );
@@ -662,9 +769,13 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
       const timestamp = now();
       const intent = await getCardPresentIntentInScope(uow, command);
       if (!canCancel(intent)) {
-        throw new TerminalServiceError("conflict", "card-present payment intent cannot be canceled", {
-          details: { cardPresentPaymentIntentId: intent.id, status: intent.status },
-        });
+        throw new TerminalServiceError(
+          "conflict",
+          "card-present payment intent cannot be canceled",
+          {
+            details: { cardPresentPaymentIntentId: intent.id, status: intent.status },
+          },
+        );
       }
       const canceled: CardPresentPaymentIntent = {
         ...intent,
@@ -673,12 +784,14 @@ export function createTerminalService(dependencies: TerminalServiceDependencies)
         canceledAt: timestamp,
       };
       await repos.cardPresentPaymentIntents.save(canceled);
-      await uow.events.saveCanonicalEvent(createTerminalEvent({
-        id: createId("evt"),
-        eventType: "card_present_payment_intent.canceled",
-        intent: canceled,
-        occurredAt: timestamp,
-      }));
+      await uow.events.saveCanonicalEvent(
+        createTerminalEvent({
+          id: createId("evt"),
+          eventType: "card_present_payment_intent.canceled",
+          intent: canceled,
+          occurredAt: timestamp,
+        }),
+      );
       return toIntentSnapshot(canceled);
     },
   };

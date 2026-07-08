@@ -33,38 +33,44 @@ function createService(): MerchantOnboardingService {
           requirementIds: ["req_123"],
           openRequirementIds: ["req_123"],
         },
-        requirements: [{
-          requirementId: "req_123",
-          requirementType: "compliance_form",
-          status: "pending",
-          title: "Upload document",
-          sourceProvider: "finix",
-        }],
+        requirements: [
+          {
+            requirementId: "req_123",
+            requirementType: "compliance_form",
+            status: "pending",
+            title: "Upload document",
+            sourceProvider: "finix",
+          },
+        ],
       };
     },
     async listMerchantRequirements() {
-      return [{
-        requirementId: "req_123",
-        requirementType: "provider_requirement",
-        status: "pending",
-        title: "Upload document",
-        sourceProvider: "finix",
-      }];
+      return [
+        {
+          requirementId: "req_123",
+          requirementType: "provider_requirement",
+          status: "pending",
+          title: "Upload document",
+          sourceProvider: "finix",
+        },
+      ];
     },
     async listMerchantRequirementDocuments() {
-      return [{
-        requirementId: "req_123",
-        documentId: "file_123",
-        uploadLinkId: "link_123",
-        fileName: "owner-license.png",
-        contentType: "image/png",
-        requestedAt: "2026-05-14T14:00:00.000Z",
-        uploadedByType: "merchant",
-        uploadedByRef: "merchant_user_123",
-        provider: "finix",
-        status: "UPLOADED",
-        recordedAt: "2026-05-14T14:30:00.000Z",
-      }];
+      return [
+        {
+          requirementId: "req_123",
+          documentId: "file_123",
+          uploadLinkId: "link_123",
+          fileName: "owner-license.png",
+          contentType: "image/png",
+          requestedAt: "2026-05-14T14:00:00.000Z",
+          uploadedByType: "merchant",
+          uploadedByRef: "merchant_user_123",
+          provider: "finix",
+          status: "UPLOADED",
+          recordedAt: "2026-05-14T14:30:00.000Z",
+        },
+      ];
     },
     async satisfyMerchantRequirements() {
       return {
@@ -84,19 +90,21 @@ function createService(): MerchantOnboardingService {
           title: "Upload document",
           sourceProvider: "finix",
         },
-        documents: [{
-          requirementId: "req_123",
-          documentId: "file_123",
-          uploadLinkId: "link_123",
-          fileName: "owner-license.png",
-          contentType: "image/png",
-          requestedAt: "2026-05-14T14:00:00.000Z",
-          uploadedByType: "merchant",
-          uploadedByRef: "merchant_user_123",
-          provider: "finix",
-          status: "UPLOADED",
-          recordedAt: "2026-05-14T14:30:00.000Z",
-        }],
+        documents: [
+          {
+            requirementId: "req_123",
+            documentId: "file_123",
+            uploadLinkId: "link_123",
+            fileName: "owner-license.png",
+            contentType: "image/png",
+            requestedAt: "2026-05-14T14:00:00.000Z",
+            uploadedByType: "merchant",
+            uploadedByRef: "merchant_user_123",
+            provider: "finix",
+            status: "UPLOADED",
+            recordedAt: "2026-05-14T14:30:00.000Z",
+          },
+        ],
       };
     },
     async createRequirementUploadLink() {
@@ -126,7 +134,7 @@ function expectNoProviderLeak(value: unknown): void {
   expect(serialized).not.toContain("finix");
   expect(serialized).not.toContain("sourceProvider");
   expect(serialized).not.toContain("providerRequirementRef");
-  expect(serialized).not.toContain("\"provider\"");
+  expect(serialized).not.toContain('"provider"');
 }
 
 describe("createOnboardingHttpHandlers", () => {
@@ -220,12 +228,14 @@ describe("createOnboardingHttpHandlers", () => {
             requirementIds: ["req_123"],
             openRequirementIds: ["req_123"],
           },
-          requirements: [{
-            requirementId: "req_123",
-            requirementType: "onboarding_requirement",
-            status: "pending",
-            title: "Onboarding requirement pending",
-          }],
+          requirements: [
+            {
+              requirementId: "req_123",
+              requirementType: "onboarding_requirement",
+              status: "pending",
+              title: "Onboarding requirement pending",
+            },
+          ],
         },
         requestId: "req_session_refresh",
       },
@@ -250,12 +260,14 @@ describe("createOnboardingHttpHandlers", () => {
     expect(response).toEqual({
       status: 200,
       body: {
-        data: [{
-          requirementId: "req_123",
-          requirementType: "onboarding_requirement",
-          status: "pending",
-          title: "Onboarding requirement pending",
-        }],
+        data: [
+          {
+            requirementId: "req_123",
+            requirementType: "onboarding_requirement",
+            status: "pending",
+            title: "Onboarding requirement pending",
+          },
+        ],
         requestId: "req_requirements",
       },
     });
@@ -280,18 +292,20 @@ describe("createOnboardingHttpHandlers", () => {
     expect(response).toEqual({
       status: 200,
       body: {
-        data: [{
-          requirementId: "req_123",
-          documentId: "file_123",
-          uploadLinkId: "link_123",
-          fileName: "owner-license.png",
-          contentType: "image/png",
-          requestedAt: "2026-05-14T14:00:00.000Z",
-          uploadedByType: "merchant",
-          uploadedByRef: "merchant_user_123",
-          status: "UPLOADED",
-          recordedAt: "2026-05-14T14:30:00.000Z",
-        }],
+        data: [
+          {
+            requirementId: "req_123",
+            documentId: "file_123",
+            uploadLinkId: "link_123",
+            fileName: "owner-license.png",
+            contentType: "image/png",
+            requestedAt: "2026-05-14T14:00:00.000Z",
+            uploadedByType: "merchant",
+            uploadedByRef: "merchant_user_123",
+            status: "UPLOADED",
+            recordedAt: "2026-05-14T14:30:00.000Z",
+          },
+        ],
         requestId: "req_docs",
       },
     });
@@ -323,18 +337,20 @@ describe("createOnboardingHttpHandlers", () => {
             status: "submitted",
             title: "Onboarding requirement pending",
           },
-          documents: [{
-            requirementId: "req_123",
-            documentId: "file_123",
-            uploadLinkId: "link_123",
-            fileName: "owner-license.png",
-            contentType: "image/png",
-            requestedAt: "2026-05-14T14:00:00.000Z",
-            uploadedByType: "merchant",
-            uploadedByRef: "merchant_user_123",
-            status: "UPLOADED",
-            recordedAt: "2026-05-14T14:30:00.000Z",
-          }],
+          documents: [
+            {
+              requirementId: "req_123",
+              documentId: "file_123",
+              uploadLinkId: "link_123",
+              fileName: "owner-license.png",
+              contentType: "image/png",
+              requestedAt: "2026-05-14T14:00:00.000Z",
+              uploadedByType: "merchant",
+              uploadedByRef: "merchant_user_123",
+              status: "UPLOADED",
+              recordedAt: "2026-05-14T14:30:00.000Z",
+            },
+          ],
         },
         requestId: "req_refresh",
       },

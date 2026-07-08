@@ -1,10 +1,7 @@
 import type { MerchantAccountId, PaymentMethodId, ProcessorRef } from "../../domain/common";
 import type { MerchantAccount } from "../../domain/merchant";
 import type { PaymentIntent } from "../../domain/payments";
-import type {
-  PaymentMethod,
-  PaymentMethodSetupSession,
-} from "../../domain/payment-methods";
+import type { PaymentMethod, PaymentMethodSetupSession } from "../../domain/payment-methods";
 import type { CanonicalDomainEvent } from "../../events/types";
 import type { ProviderContext, ProviderError } from "../../providers/types";
 import type { ProviderRegistry } from "../../providers/registry";
@@ -76,7 +73,7 @@ function stableStringify(value: unknown): string {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
-      left.localeCompare(right)
+      left.localeCompare(right),
     );
     return `{${entries
       .map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`)
@@ -276,7 +273,10 @@ export function createPaymentMethodSetupService(
       }
       const providerContext = dependencies.resolveProviderContext(merchant);
       const adapter = dependencies.providers.getAdapter(providerContext.provider);
-      if (!adapter.supportedCapabilities.includes("payment_methods") || !adapter.createPaymentMethod) {
+      if (
+        !adapter.supportedCapabilities.includes("payment_methods") ||
+        !adapter.createPaymentMethod
+      ) {
         throw new PaymentMethodSetupServiceError(
           "provider_unavailable",
           "provider does not support payment methods",
@@ -314,9 +314,13 @@ export function createPaymentMethodSetupService(
           { environment: command.environment },
         );
         if (!session) {
-          throw new PaymentMethodSetupServiceError("not_found", "payment method setup session not found", {
-            details: { paymentMethodSetupSessionId: command.paymentMethodSetupSessionId },
-          });
+          throw new PaymentMethodSetupServiceError(
+            "not_found",
+            "payment method setup session not found",
+            {
+              details: { paymentMethodSetupSessionId: command.paymentMethodSetupSessionId },
+            },
+          );
         }
         const idempotencyScope = `payment_method_setup:${session.id}`;
         const requestHash = hashRequest({
@@ -337,9 +341,12 @@ export function createPaymentMethodSetupService(
                 { details: { idempotencyKey: command.idempotencyKey } },
               );
             }
-            const replay = await uow.paymentMethods.getById(existing.responseRef as PaymentMethodId, {
-              environment: command.environment,
-            });
+            const replay = await uow.paymentMethods.getById(
+              existing.responseRef as PaymentMethodId,
+              {
+                environment: command.environment,
+              },
+            );
             if (!replay) {
               throw new PaymentMethodSetupServiceError(
                 "internal_error",
@@ -379,15 +386,19 @@ export function createPaymentMethodSetupService(
           );
         }
 
-        const merchant = await getMerchantOrThrow(uow, command.environment, session.merchantAccountId);
+        const merchant = await getMerchantOrThrow(
+          uow,
+          command.environment,
+          session.merchantAccountId,
+        );
         const customer =
           session.ownerType === "customer"
             ? await getCustomerProfileOrThrow(
-              uow,
-              command.environment,
-              session.merchantAccountId,
-              session.ownerId,
-            )
+                uow,
+                command.environment,
+                session.merchantAccountId,
+                session.ownerId,
+              )
             : null;
         const providerContext = dependencies.resolveProviderContext(merchant);
         if (providerContext.provider !== session.provider) {
@@ -417,7 +428,9 @@ export function createPaymentMethodSetupService(
           merchantAccountId: session.merchantAccountId,
           ownerType: session.ownerType,
           ownerId: session.ownerId,
-          ownerRef: customer?.processorCustomerRefs.find((ref) => ref.provider === providerContext.provider),
+          ownerRef: customer?.processorCustomerRefs.find(
+            (ref) => ref.provider === providerContext.provider,
+          ),
           methodType: session.methodType,
           setupToken: command.setupToken,
         });
@@ -427,13 +440,15 @@ export function createPaymentMethodSetupService(
             status: "failed",
             updatedAt: now(),
           });
-          throw mapProviderError(providerResult.error ?? {
-            provider: providerContext.provider,
-            category: "unknown",
-            code: "provider_result_missing",
-            message: "provider payment method creation failed without error details",
-            retryable: false,
-          });
+          throw mapProviderError(
+            providerResult.error ?? {
+              provider: providerContext.provider,
+              category: "unknown",
+              code: "provider_result_missing",
+              message: "provider payment method creation failed without error details",
+              retryable: false,
+            },
+          );
         }
 
         const createdAt = providerResult.value.recordedAt;
@@ -524,11 +539,13 @@ export function createPaymentMethodSetupService(
           );
         }
 
-        await uow.events.saveCanonicalEvent(createPaymentMethodCreatedEvent({
-          paymentMethod,
-          setupSessionId: session.id,
-          occurredAt: createdAt,
-        }));
+        await uow.events.saveCanonicalEvent(
+          createPaymentMethodCreatedEvent({
+            paymentMethod,
+            setupSessionId: session.id,
+            occurredAt: createdAt,
+          }),
+        );
 
         if (command.idempotencyKey) {
           await uow.idempotency.save({

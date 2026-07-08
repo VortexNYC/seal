@@ -19,7 +19,11 @@ export interface AcceptDisputeRequest {
   readonly note?: string;
 }
 
-export const DISPUTE_EVIDENCE_ALLOWED_CONTENT_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
+export const DISPUTE_EVIDENCE_ALLOWED_CONTENT_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+] as const;
 export const DISPUTE_EVIDENCE_MAX_FILE_COUNT = 8;
 export const DISPUTE_EVIDENCE_MAX_FILE_BYTES = 1_000_000;
 export const DISPUTE_EVIDENCE_MAX_TOTAL_BYTES = 10_000_000;

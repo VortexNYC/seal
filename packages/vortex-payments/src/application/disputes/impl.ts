@@ -58,19 +58,20 @@ export interface DisputesServiceDependencies {
 }
 
 function mapProviderError(error: ProviderError): DisputesServiceError {
-  const code = error.category === "authentication_failed"
-    ? "provider_unavailable"
-    : error.category === "rate_limited"
+  const code =
+    error.category === "authentication_failed"
       ? "provider_unavailable"
-      : error.category === "temporarily_unavailable"
+      : error.category === "rate_limited"
         ? "provider_unavailable"
-        : error.category === "invalid_request"
-          ? "invalid_request"
-          : error.category === "not_supported"
+        : error.category === "temporarily_unavailable"
+          ? "provider_unavailable"
+          : error.category === "invalid_request"
             ? "invalid_request"
-            : error.category === "action_required"
-              ? "action_required"
-              : "provider_unavailable";
+            : error.category === "not_supported"
+              ? "invalid_request"
+              : error.category === "action_required"
+                ? "action_required"
+                : "provider_unavailable";
   return new DisputesServiceError(code, error.message, {
     retryable: error.retryable,
     details: { provider: error.provider, providerCode: error.code },
@@ -111,9 +112,13 @@ function selectDisputeRef(dispute: Dispute, provider: ProviderContext["provider"
     (processorRef) => processorRef.provider === provider && processorRef.objectType === "dispute",
   );
   if (!disputeRef) {
-    throw new DisputesServiceError("invalid_request", "dispute is missing provider dispute reference", {
-      details: { disputeId: dispute.id, provider },
-    });
+    throw new DisputesServiceError(
+      "invalid_request",
+      "dispute is missing provider dispute reference",
+      {
+        details: { disputeId: dispute.id, provider },
+      },
+    );
   }
   return disputeRef;
 }
@@ -141,9 +146,10 @@ function toDisputeSnapshot(dispute: Dispute): DisputeSnapshot {
   };
 }
 
-function requireProviderDependencies(
-  dependencies: DisputesServiceDependencies,
-): { readonly providers: ProviderRegistry; readonly resolveProviderContext: (merchant: MerchantAccount) => ProviderContext } {
+function requireProviderDependencies(dependencies: DisputesServiceDependencies): {
+  readonly providers: ProviderRegistry;
+  readonly resolveProviderContext: (merchant: MerchantAccount) => ProviderContext;
+} {
   if (!dependencies.providers || !dependencies.resolveProviderContext) {
     throw new DisputesServiceError("internal_error", "dispute provider actions are not configured");
   }
@@ -166,7 +172,12 @@ async function resolveProviderActionContext(
 }> {
   const { resolveProviderContext } = requireProviderDependencies(dependencies);
   const merchant = await getMerchantOrThrow(dependencies.uow, environment, merchantAccountId);
-  const dispute = await getDisputeOrThrow(dependencies.uow, environment, merchantAccountId, disputeId);
+  const dispute = await getDisputeOrThrow(
+    dependencies.uow,
+    environment,
+    merchantAccountId,
+    disputeId,
+  );
   const providerContext = resolveProviderContext(merchant);
   return {
     merchant,
@@ -176,17 +187,17 @@ async function resolveProviderActionContext(
   };
 }
 
-export function createDisputesService(
-  dependencies: DisputesServiceDependencies,
-): DisputesService {
+export function createDisputesService(dependencies: DisputesServiceDependencies): DisputesService {
   const now = dependencies.now ?? (() => new Date().toISOString());
 
   return {
     async listMerchantDisputes(query: ListMerchantDisputesQuery): Promise<MerchantDisputeList> {
-      const items = [...(await dependencies.uow.disputes.listByMerchant(
-        query.environment,
-        query.merchantAccountId,
-      ))]
+      const items = [
+        ...(await dependencies.uow.disputes.listByMerchant(
+          query.environment,
+          query.merchantAccountId,
+        )),
+      ]
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .map(toDisputeSnapshot);
       return {
@@ -215,22 +226,28 @@ export function createDisputesService(
       );
       const adapter = providers.getAdapter(providerContext.provider);
       if (!adapter.acceptDispute) {
-        throw new DisputesServiceError("invalid_request", "provider does not support dispute accept action", {
-          details: { provider: providerContext.provider },
-        });
+        throw new DisputesServiceError(
+          "invalid_request",
+          "provider does not support dispute accept action",
+          {
+            details: { provider: providerContext.provider },
+          },
+        );
       }
       const providerResult = await adapter.acceptDispute(providerContext, {
         disputeRef,
         tags: command.tags,
       });
       if (!providerResult.ok || !providerResult.value) {
-        throw mapProviderError(providerResult.error ?? {
-          provider: providerContext.provider,
-          category: "unknown",
-          code: "provider_result_missing",
-          message: "provider dispute accept failed without error details",
-          retryable: false,
-        });
+        throw mapProviderError(
+          providerResult.error ?? {
+            provider: providerContext.provider,
+            category: "unknown",
+            code: "provider_result_missing",
+            message: "provider dispute accept failed without error details",
+            retryable: false,
+          },
+        );
       }
       const updatedDispute: Dispute = {
         ...dispute,
@@ -246,7 +263,9 @@ export function createDisputesService(
       };
     },
 
-    async createDisputeEvidence(command: CreateDisputeEvidenceCommand): Promise<DisputeEvidenceActionResult> {
+    async createDisputeEvidence(
+      command: CreateDisputeEvidenceCommand,
+    ): Promise<DisputeEvidenceActionResult> {
       const { providers } = requireProviderDependencies(dependencies);
       const { dispute, providerContext, disputeRef } = await resolveProviderActionContext(
         dependencies,
@@ -256,9 +275,13 @@ export function createDisputesService(
       );
       const adapter = providers.getAdapter(providerContext.provider);
       if (!adapter.createDisputeEvidence) {
-        throw new DisputesServiceError("invalid_request", "provider does not support dispute evidence creation", {
-          details: { provider: providerContext.provider },
-        });
+        throw new DisputesServiceError(
+          "invalid_request",
+          "provider does not support dispute evidence creation",
+          {
+            details: { provider: providerContext.provider },
+          },
+        );
       }
       const providerResult = await adapter.createDisputeEvidence(providerContext, {
         disputeRef,
@@ -267,13 +290,15 @@ export function createDisputesService(
         tags: command.tags,
       });
       if (!providerResult.ok || !providerResult.value) {
-        throw mapProviderError(providerResult.error ?? {
-          provider: providerContext.provider,
-          category: "unknown",
-          code: "provider_result_missing",
-          message: "provider dispute evidence creation failed without error details",
-          retryable: false,
-        });
+        throw mapProviderError(
+          providerResult.error ?? {
+            provider: providerContext.provider,
+            category: "unknown",
+            code: "provider_result_missing",
+            message: "provider dispute evidence creation failed without error details",
+            retryable: false,
+          },
+        );
       }
       return {
         dispute: toDisputeSnapshot(dispute),
@@ -294,22 +319,28 @@ export function createDisputesService(
       );
       const adapter = providers.getAdapter(providerContext.provider);
       if (!adapter.getDisputeEvidence) {
-        throw new DisputesServiceError("invalid_request", "provider does not support dispute evidence reads", {
-          details: { provider: providerContext.provider },
-        });
+        throw new DisputesServiceError(
+          "invalid_request",
+          "provider does not support dispute evidence reads",
+          {
+            details: { provider: providerContext.provider },
+          },
+        );
       }
       const providerResult = await adapter.getDisputeEvidence(providerContext, {
         disputeRef,
         evidenceRef: query.evidenceRef,
       });
       if (!providerResult.ok || !providerResult.value) {
-        throw mapProviderError(providerResult.error ?? {
-          provider: providerContext.provider,
-          category: "unknown",
-          code: "provider_result_missing",
-          message: "provider dispute evidence read failed without error details",
-          retryable: false,
-        });
+        throw mapProviderError(
+          providerResult.error ?? {
+            provider: providerContext.provider,
+            category: "unknown",
+            code: "provider_result_missing",
+            message: "provider dispute evidence read failed without error details",
+            retryable: false,
+          },
+        );
       }
       return {
         dispute: toDisputeSnapshot(dispute),
@@ -330,19 +361,25 @@ export function createDisputesService(
       );
       const adapter = providers.getAdapter(providerContext.provider);
       if (!adapter.listDisputeEvidence) {
-        throw new DisputesServiceError("invalid_request", "provider does not support dispute evidence listing", {
-          details: { provider: providerContext.provider },
-        });
+        throw new DisputesServiceError(
+          "invalid_request",
+          "provider does not support dispute evidence listing",
+          {
+            details: { provider: providerContext.provider },
+          },
+        );
       }
       const providerResult = await adapter.listDisputeEvidence(providerContext, { disputeRef });
       if (!providerResult.ok || !providerResult.value) {
-        throw mapProviderError(providerResult.error ?? {
-          provider: providerContext.provider,
-          category: "unknown",
-          code: "provider_result_missing",
-          message: "provider dispute evidence list failed without error details",
-          retryable: false,
-        });
+        throw mapProviderError(
+          providerResult.error ?? {
+            provider: providerContext.provider,
+            category: "unknown",
+            code: "provider_result_missing",
+            message: "provider dispute evidence list failed without error details",
+            retryable: false,
+          },
+        );
       }
       return {
         items: providerResult.value.items.map((item) => ({
@@ -355,7 +392,9 @@ export function createDisputesService(
       };
     },
 
-    async submitDisputeEvidence(command: SubmitDisputeEvidenceCommand): Promise<DisputeEvidenceActionResult> {
+    async submitDisputeEvidence(
+      command: SubmitDisputeEvidenceCommand,
+    ): Promise<DisputeEvidenceActionResult> {
       const { providers } = requireProviderDependencies(dependencies);
       const { dispute, providerContext, disputeRef } = await resolveProviderActionContext(
         dependencies,
@@ -365,12 +404,19 @@ export function createDisputesService(
       );
       const adapter = providers.getAdapter(providerContext.provider);
       if (!adapter.submitDisputeEvidence) {
-        throw new DisputesServiceError("invalid_request", "provider does not support dispute evidence submission", {
-          details: { provider: providerContext.provider },
-        });
+        throw new DisputesServiceError(
+          "invalid_request",
+          "provider does not support dispute evidence submission",
+          {
+            details: { provider: providerContext.provider },
+          },
+        );
       }
       if (command.note.trim().length === 0) {
-        throw new DisputesServiceError("invalid_request", "dispute evidence submit note is required");
+        throw new DisputesServiceError(
+          "invalid_request",
+          "dispute evidence submit note is required",
+        );
       }
       const providerResult = await adapter.submitDisputeEvidence(providerContext, {
         disputeRef,
@@ -380,13 +426,15 @@ export function createDisputesService(
         tags: command.tags,
       });
       if (!providerResult.ok || !providerResult.value) {
-        throw mapProviderError(providerResult.error ?? {
-          provider: providerContext.provider,
-          category: "unknown",
-          code: "provider_result_missing",
-          message: "provider dispute evidence submission failed without error details",
-          retryable: false,
-        });
+        throw mapProviderError(
+          providerResult.error ?? {
+            provider: providerContext.provider,
+            category: "unknown",
+            code: "provider_result_missing",
+            message: "provider dispute evidence submission failed without error details",
+            retryable: false,
+          },
+        );
       }
       const updatedDispute: Dispute = {
         ...dispute,
@@ -404,7 +452,9 @@ export function createDisputesService(
       };
     },
 
-    async listDisputeAdjustmentTransfers(query: ListDisputeAdjustmentTransfersQuery): Promise<DisputeAdjustmentTransferList> {
+    async listDisputeAdjustmentTransfers(
+      query: ListDisputeAdjustmentTransfersQuery,
+    ): Promise<DisputeAdjustmentTransferList> {
       const { providers } = requireProviderDependencies(dependencies);
       const { providerContext, disputeRef } = await resolveProviderActionContext(
         dependencies,
@@ -414,19 +464,25 @@ export function createDisputesService(
       );
       const adapter = providers.getAdapter(providerContext.provider);
       if (!adapter.listDisputeAdjustments) {
-        throw new DisputesServiceError("invalid_request", "provider does not support dispute adjustment transfer listing", {
-          details: { provider: providerContext.provider },
-        });
+        throw new DisputesServiceError(
+          "invalid_request",
+          "provider does not support dispute adjustment transfer listing",
+          {
+            details: { provider: providerContext.provider },
+          },
+        );
       }
       const providerResult = await adapter.listDisputeAdjustments(providerContext, { disputeRef });
       if (!providerResult.ok || !providerResult.value) {
-        throw mapProviderError(providerResult.error ?? {
-          provider: providerContext.provider,
-          category: "unknown",
-          code: "provider_result_missing",
-          message: "provider dispute adjustment transfer list failed without error details",
-          retryable: false,
-        });
+        throw mapProviderError(
+          providerResult.error ?? {
+            provider: providerContext.provider,
+            category: "unknown",
+            code: "provider_result_missing",
+            message: "provider dispute adjustment transfer list failed without error details",
+            retryable: false,
+          },
+        );
       }
       return {
         items: providerResult.value.items.map((item) => ({

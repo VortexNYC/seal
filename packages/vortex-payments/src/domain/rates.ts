@@ -1,11 +1,25 @@
-import type { Environment, IsoTimestamp, MerchantAccountId, Metadata, PlatformTenantId, ProcessorRef } from "./common";
+import type {
+  Environment,
+  IsoTimestamp,
+  MerchantAccountId,
+  Metadata,
+  PlatformTenantId,
+  ProcessorRef,
+} from "./common";
 
 export type PaymentRatePlanId = string;
 export type MerchantRateAssignmentId = string;
 
 export type PaymentRatePlanStatus = "draft" | "active" | "archived";
-export type PaymentRatePricingStrategy = "blended" | "interchange_plus" | "interchange_plus_dues_assessments";
-export type MerchantRateAssignmentStatus = "pending_provider_sync" | "active" | "failed" | "archived";
+export type PaymentRatePricingStrategy =
+  | "blended"
+  | "interchange_plus"
+  | "interchange_plus_dues_assessments";
+export type MerchantRateAssignmentStatus =
+  | "pending_provider_sync"
+  | "active"
+  | "failed"
+  | "archived";
 
 export interface PaymentRateAmounts {
   readonly achBasisPoints?: number;

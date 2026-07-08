@@ -15,12 +15,14 @@ describe("httpRoutes Finix alignment guardrails", () => {
   });
 
   test("publishes Finix-real dispute action routes instead of generic review", () => {
-    expect(httpRoutes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ method: "POST", operationId: "acceptDispute" }),
-      expect.objectContaining({ method: "POST", operationId: "createDisputeEvidence" }),
-      expect.objectContaining({ method: "GET", operationId: "listDisputeEvidence" }),
-      expect.objectContaining({ method: "POST", operationId: "submitDisputeEvidence" }),
-      expect.objectContaining({ method: "GET", operationId: "listDisputeAdjustmentTransfers" }),
-    ]));
+    expect(httpRoutes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ method: "POST", operationId: "acceptDispute" }),
+        expect.objectContaining({ method: "POST", operationId: "createDisputeEvidence" }),
+        expect.objectContaining({ method: "GET", operationId: "listDisputeEvidence" }),
+        expect.objectContaining({ method: "POST", operationId: "submitDisputeEvidence" }),
+        expect.objectContaining({ method: "GET", operationId: "listDisputeAdjustmentTransfers" }),
+      ]),
+    );
   });
 });

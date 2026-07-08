@@ -302,7 +302,10 @@ function RecipientsSection({
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
       <CollapsibleTrigger asChild>
-        <button type="button" className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <button
+          type="button"
+          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
               <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -316,7 +319,12 @@ function RecipientsSection({
               </span>
             )}
           </div>
-          <ChevronDownIcon className={cn("text-muted-foreground h-4 w-4 transition-transform", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
@@ -329,7 +337,11 @@ function RecipientsSection({
         {recipients.length > 0 ? (
           <div className="mt-4 flex flex-col gap-2.5 sm:gap-2">
             {recipients.map((recipient) => (
-              <RecipientRow key={recipient._id} recipient={recipient} onRecipientOptions={onRecipientOptions} />
+              <RecipientRow
+                key={recipient._id}
+                recipient={recipient}
+                onRecipientOptions={onRecipientOptions}
+              />
             ))}
           </div>
         ) : (
@@ -372,9 +384,16 @@ function DocumentSettingsSection({
   onSaveRedirectUrl: () => void;
 }) {
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
       <CollapsibleTrigger asChild>
-        <button type="button" className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <button
+          type="button"
+          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
               <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -383,7 +402,12 @@ function DocumentSettingsSection({
               Document Settings
             </span>
           </div>
-          <ChevronDownIcon className={cn("text-muted-foreground h-4 w-4 transition-transform", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
@@ -394,7 +418,8 @@ function DocumentSettingsSection({
               Redirect after signing
             </Label>
             <p className="text-muted-foreground text-xs">
-              Recipients are sent to this URL after signing. Leave empty for the default thank-you page.
+              Recipients are sent to this URL after signing. Leave empty for the default thank-you
+              page.
             </p>
             <div className="flex gap-2">
               <Input
@@ -406,7 +431,12 @@ function DocumentSettingsSection({
                 }}
                 className="text-sm"
               />
-              <Button size="sm" variant="outline" onClick={onSaveRedirectUrl} disabled={isSavingRedirect}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onSaveRedirectUrl}
+                disabled={isSavingRedirect}
+              >
                 {isSavingRedirect ? (
                   <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -477,9 +507,16 @@ function AIInsightsSection({
   if (!documentAnnotations.annotations) return null;
 
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
       <CollapsibleTrigger asChild>
-        <button type="button" className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <button
+          type="button"
+          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
               <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -491,7 +528,12 @@ function AIInsightsSection({
               {documentAnnotations.annotations.annotations.length}
             </span>
           </div>
-          <ChevronDownIcon className={cn("text-muted-foreground h-4 w-4 transition-transform duration-200", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform duration-200",
+              open && "rotate-180",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
@@ -543,9 +585,16 @@ function SignatureFieldsSection({
   if (signatureFields.length === 0 && !canEdit) return null;
 
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
       <CollapsibleTrigger asChild>
-        <button type="button" className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <button
+          type="button"
+          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
               <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -559,7 +608,12 @@ function SignatureFieldsSection({
               </span>
             )}
           </div>
-          <ChevronDownIcon className={cn("text-muted-foreground h-4 w-4 transition-transform duration-200", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform duration-200",
+              open && "rotate-180",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
@@ -629,9 +683,16 @@ function DocumentDetailsSection({
   description?: string | null;
 }) {
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
       <CollapsibleTrigger asChild>
-        <button type="button" className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <button
+          type="button"
+          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
               <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -640,7 +701,12 @@ function DocumentDetailsSection({
               Details
             </span>
           </div>
-          <ChevronDownIcon className={cn("text-muted-foreground h-4 w-4 transition-transform", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
@@ -696,9 +762,16 @@ function ActivitySection({
   activityEvents: ActivityEvent[];
 }) {
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
       <CollapsibleTrigger asChild>
-        <button type="button" className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <button
+          type="button"
+          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
+        >
           <div className="flex items-center gap-3">
             <div className="bg-warning-surface text-warning flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
               <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -712,14 +785,23 @@ function ActivitySection({
               </span>
             )}
           </div>
-          <ChevronDownIcon className={cn("text-muted-foreground h-4 w-4 transition-transform", open && "rotate-180")} />
+          <ChevronDownIcon
+            className={cn(
+              "text-muted-foreground h-4 w-4 transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         {activityEvents.length > 0 ? (
           <div className="before:bg-border relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:content-[''] sm:before:left-[13px]">
             {activityEvents.slice(0, 10).map((event, index) => (
-              <ActivityEventRow key={`${event.type}-${event.timestamp}`} event={event} index={index} />
+              <ActivityEventRow
+                key={`${event.type}-${event.timestamp}`}
+                event={event}
+                index={index}
+              />
             ))}
           </div>
         ) : (
@@ -742,8 +824,7 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
     props.currentUserRecipient !== null &&
     normalizedWorkflowStatus !== "draft" &&
     normalizedWorkflowStatus !== "completed" &&
-    (props.currentUserRecipient.role === "signer" ||
-      props.currentUserRecipient.role === "approver")
+    (props.currentUserRecipient.role === "signer" || props.currentUserRecipient.role === "approver")
       ? props.currentUserRecipient
       : null;
 

@@ -2,7 +2,13 @@ import type { Payout, PayoutStatus, Settlement, SettlementStatus } from "../../d
 import type { MerchantAccountStatus, MerchantOnboardingSession } from "../../domain/merchant";
 import type { Dispute } from "../../domain/disputes";
 import type { PaymentMethod } from "../../domain/payment-methods";
-import type { Payment, PaymentIntent, PaymentIntentStatus, Refund, RefundStatus } from "../../domain/payments";
+import type {
+  Payment,
+  PaymentIntent,
+  PaymentIntentStatus,
+  Refund,
+  RefundStatus,
+} from "../../domain/payments";
 import type { CanonicalDomainEvent } from "../../events/types";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import { rebuildAndSaveCustomerPaymentState } from "../state/rebuild-customer-payment-state";
@@ -13,7 +19,9 @@ export interface CanonicalEventsServiceDependencies {
   readonly uow: PaymentsUnitOfWork;
 }
 
-function mapMerchantStatus(eventType: CanonicalDomainEvent["eventType"]): MerchantAccountStatus | null {
+function mapMerchantStatus(
+  eventType: CanonicalDomainEvent["eventType"],
+): MerchantAccountStatus | null {
   switch (eventType) {
     case "merchant_account.approved":
       return "active";
@@ -29,7 +37,9 @@ function mapMerchantStatus(eventType: CanonicalDomainEvent["eventType"]): Mercha
   }
 }
 
-function mapOnboardingStatus(eventType: CanonicalDomainEvent["eventType"]): MerchantOnboardingSession["status"] | null {
+function mapOnboardingStatus(
+  eventType: CanonicalDomainEvent["eventType"],
+): MerchantOnboardingSession["status"] | null {
   switch (eventType) {
     case "merchant_account.approved":
       return "approved";
@@ -46,7 +56,9 @@ function mapOnboardingStatus(eventType: CanonicalDomainEvent["eventType"]): Merc
   }
 }
 
-function mapPaymentIntentStatus(eventType: CanonicalDomainEvent["eventType"]): PaymentIntentStatus | null {
+function mapPaymentIntentStatus(
+  eventType: CanonicalDomainEvent["eventType"],
+): PaymentIntentStatus | null {
   switch (eventType) {
     case "payment.authorized":
       return "authorized";
@@ -136,11 +148,17 @@ function eventObjectType(event: CanonicalDomainEvent, fallback: string): string 
   return payloadString(event.payload, ["objectType", "object_type"]) ?? fallback;
 }
 
-function settlementIdForProviderObject(event: CanonicalDomainEvent, providerObjectId: string): Settlement["id"] {
+function settlementIdForProviderObject(
+  event: CanonicalDomainEvent,
+  providerObjectId: string,
+): Settlement["id"] {
   return `settlement_${event.sourceProvider}_${providerObjectId}`;
 }
 
-function payoutIdForProviderObject(event: CanonicalDomainEvent, providerObjectId: string): Payout["id"] {
+function payoutIdForProviderObject(
+  event: CanonicalDomainEvent,
+  providerObjectId: string,
+): Payout["id"] {
   return `payout_${event.sourceProvider}_${providerObjectId}`;
 }
 
@@ -171,8 +189,18 @@ async function resolveFundsMerchantAccountId(
   }
 
   const merchant =
-    await uow.merchants.getByProcessorRef(event.environment, event.sourceProvider, "merchant", processorMerchantId) ??
-    await uow.merchants.getByProcessorRef(event.environment, event.sourceProvider, "identity", processorMerchantId);
+    (await uow.merchants.getByProcessorRef(
+      event.environment,
+      event.sourceProvider,
+      "merchant",
+      processorMerchantId,
+    )) ??
+    (await uow.merchants.getByProcessorRef(
+      event.environment,
+      event.sourceProvider,
+      "identity",
+      processorMerchantId,
+    ));
   return merchant?.id ?? null;
 }
 
@@ -182,7 +210,10 @@ function sumSucceededRefundAmount(refunds: readonly Refund[]): number {
   }, 0);
 }
 
-function derivePaymentStatusAfterRefunds(payment: Payment, refunds: readonly Refund[]): Payment["status"] {
+function derivePaymentStatusAfterRefunds(
+  payment: Payment,
+  refunds: readonly Refund[],
+): Payment["status"] {
   const refundedAmount = sumSucceededRefundAmount(refunds);
   if (refundedAmount >= payment.amount) {
     return "refunded_full";
@@ -193,7 +224,9 @@ function derivePaymentStatusAfterRefunds(payment: Payment, refunds: readonly Ref
   return payment.status;
 }
 
-function mapSettlementStatus(eventType: CanonicalDomainEvent["eventType"]): SettlementStatus | null {
+function mapSettlementStatus(
+  eventType: CanonicalDomainEvent["eventType"],
+): SettlementStatus | null {
   switch (eventType) {
     case "settlement.accruing_started":
       return "accruing";
@@ -219,7 +252,9 @@ function mapPayoutStatus(eventType: CanonicalDomainEvent["eventType"]): PayoutSt
   }
 }
 
-function mapDisputeState(eventType: CanonicalDomainEvent["eventType"]): Pick<Dispute, "stage" | "responseState"> | null {
+function mapDisputeState(
+  eventType: CanonicalDomainEvent["eventType"],
+): Pick<Dispute, "stage" | "responseState"> | null {
   switch (eventType) {
     case "dispute.opened":
       return { stage: "chargeback", responseState: "needs_response" };
@@ -258,19 +293,20 @@ async function applyMerchantEvent(
   });
   const requirements = latestSession
     ? await uow.onboarding.listRequirementsForSession(latestSession.id, {
-      environment: event.environment,
-    })
+        environment: event.environment,
+      })
     : [];
   const sessionStatus = mapOnboardingStatus(event.eventType);
-  const updatedSession = latestSession && sessionStatus
-    ? {
-      ...latestSession,
-      status: sessionStatus,
-      approvedAt: sessionStatus === "approved" ? event.occurredAt : latestSession.approvedAt,
-      rejectedAt: sessionStatus === "rejected" ? event.occurredAt : latestSession.rejectedAt,
-      updatedAt: event.occurredAt,
-    }
-    : latestSession;
+  const updatedSession =
+    latestSession && sessionStatus
+      ? {
+          ...latestSession,
+          status: sessionStatus,
+          approvedAt: sessionStatus === "approved" ? event.occurredAt : latestSession.approvedAt,
+          rejectedAt: sessionStatus === "rejected" ? event.occurredAt : latestSession.rejectedAt,
+          updatedAt: event.occurredAt,
+        }
+      : latestSession;
 
   const updatedMerchant = {
     ...merchant,
@@ -303,7 +339,9 @@ async function applyPaymentEvent(
   const paymentIntent = await uow.paymentIntents.getByProcessorRef(
     event.environment,
     event.sourceProvider,
-    event.payload.objectType && typeof event.payload.objectType === "string" ? event.payload.objectType : "transfer",
+    event.payload.objectType && typeof event.payload.objectType === "string"
+      ? event.payload.objectType
+      : "transfer",
     event.aggregateId,
   );
   if (!paymentIntent) {
@@ -319,7 +357,10 @@ async function applyPaymentEvent(
     status,
     nextActionType: status === "requires_action" ? paymentIntent.nextActionType : undefined,
     hostedActionUrl: status === "requires_action" ? paymentIntent.hostedActionUrl : undefined,
-    confirmedAt: status === "authorized" || status === "captured" ? event.occurredAt : paymentIntent.confirmedAt,
+    confirmedAt:
+      status === "authorized" || status === "captured"
+        ? event.occurredAt
+        : paymentIntent.confirmedAt,
     canceledAt: status === "canceled" ? event.occurredAt : paymentIntent.canceledAt,
     updatedAt: event.occurredAt,
   };
@@ -395,7 +436,9 @@ async function applyRefundEvent(
   const refund = await uow.refunds.getByProcessorRef(
     event.environment,
     event.sourceProvider,
-    event.payload.objectType && typeof event.payload.objectType === "string" ? event.payload.objectType : "transfer",
+    event.payload.objectType && typeof event.payload.objectType === "string"
+      ? event.payload.objectType
+      : "transfer",
     event.aggregateId,
   );
   if (!refund) {
@@ -460,18 +503,26 @@ async function applySettlementEvent(
       grossAmount: payloadNumber(event.payload, ["grossAmount", "gross_amount", "gross"]) ?? 0,
       feeAmount: payloadNumber(event.payload, ["feeAmount", "fee_amount", "fee", "fees"]) ?? 0,
       refundAmount: payloadNumber(event.payload, ["refundAmount", "refund_amount", "refunds"]) ?? 0,
-      adjustmentAmount: payloadNumber(event.payload, ["adjustmentAmount", "adjustment_amount", "adjustment", "adjustments"]) ?? 0,
+      adjustmentAmount:
+        payloadNumber(event.payload, [
+          "adjustmentAmount",
+          "adjustment_amount",
+          "adjustment",
+          "adjustments",
+        ]) ?? 0,
       netAmount: payloadNumber(event.payload, ["netAmount", "net_amount", "net"]) ?? 0,
       direction: payloadDirection(event.payload, "credit"),
       openedAt: status === "accruing" ? event.occurredAt : undefined,
       closedAt: status === "closed" ? event.occurredAt : undefined,
-      processorRefs: [{
-        provider: event.sourceProvider,
-        objectType: eventObjectType(event, "settlement"),
-        objectId: event.aggregateId,
-        relationship: "settlement",
-        recordedAt: event.occurredAt,
-      }],
+      processorRefs: [
+        {
+          provider: event.sourceProvider,
+          objectType: eventObjectType(event, "settlement"),
+          objectId: event.aggregateId,
+          relationship: "settlement",
+          recordedAt: event.occurredAt,
+        },
+      ],
       createdAt: event.occurredAt,
       updatedAt: event.occurredAt,
     };
@@ -486,11 +537,24 @@ async function applySettlementEvent(
   const updated: Settlement = {
     ...settlement,
     status,
-    grossAmount: payloadNumber(event.payload, ["grossAmount", "gross_amount", "gross"]) ?? settlement.grossAmount,
-    feeAmount: payloadNumber(event.payload, ["feeAmount", "fee_amount", "fee", "fees"]) ?? settlement.feeAmount,
-    refundAmount: payloadNumber(event.payload, ["refundAmount", "refund_amount", "refunds"]) ?? settlement.refundAmount,
-    adjustmentAmount: payloadNumber(event.payload, ["adjustmentAmount", "adjustment_amount", "adjustment", "adjustments"]) ?? settlement.adjustmentAmount,
-    netAmount: payloadNumber(event.payload, ["netAmount", "net_amount", "net"]) ?? settlement.netAmount,
+    grossAmount:
+      payloadNumber(event.payload, ["grossAmount", "gross_amount", "gross"]) ??
+      settlement.grossAmount,
+    feeAmount:
+      payloadNumber(event.payload, ["feeAmount", "fee_amount", "fee", "fees"]) ??
+      settlement.feeAmount,
+    refundAmount:
+      payloadNumber(event.payload, ["refundAmount", "refund_amount", "refunds"]) ??
+      settlement.refundAmount,
+    adjustmentAmount:
+      payloadNumber(event.payload, [
+        "adjustmentAmount",
+        "adjustment_amount",
+        "adjustment",
+        "adjustments",
+      ]) ?? settlement.adjustmentAmount,
+    netAmount:
+      payloadNumber(event.payload, ["netAmount", "net_amount", "net"]) ?? settlement.netAmount,
     direction: payloadDirection(event.payload, settlement.direction),
     openedAt: status === "accruing" ? event.occurredAt : settlement.openedAt,
     closedAt: status === "closed" ? event.occurredAt : settlement.closedAt,
@@ -522,35 +586,46 @@ async function applyPayoutEvent(
       return;
     }
 
-    const providerSettlementId = payloadString(event.payload, ["settlement", "processorSettlementId", "processor_settlement_id"]);
+    const providerSettlementId = payloadString(event.payload, [
+      "settlement",
+      "processorSettlementId",
+      "processor_settlement_id",
+    ]);
     const settlementId =
       payloadString(event.payload, ["settlementId", "settlement_id"]) ??
-      (providerSettlementId !== null ? settlementIdForProviderObject(event, providerSettlementId) : undefined);
+      (providerSettlementId !== null
+        ? settlementIdForProviderObject(event, providerSettlementId)
+        : undefined);
     const created: Payout = {
       id: payoutIdForProviderObject(event, event.aggregateId),
       environment: event.environment,
       merchantAccountId,
-      payoutAccountId: payloadString(event.payload, [
-        "payoutAccountId",
-        "payout_account_id",
-        "destination",
-        "destination_id",
-      ]) ?? undefined,
+      payoutAccountId:
+        payloadString(event.payload, [
+          "payoutAccountId",
+          "payout_account_id",
+          "destination",
+          "destination_id",
+        ]) ?? undefined,
       settlementId,
       amount,
       currency,
       direction: payloadDirection(event.payload, "debit"),
       status,
-      expectedArrivalAt: payloadString(event.payload, ["expectedArrivalAt", "expected_arrival_at"]) ?? undefined,
+      expectedArrivalAt:
+        payloadString(event.payload, ["expectedArrivalAt", "expected_arrival_at"]) ?? undefined,
       failureCode: payloadString(event.payload, ["failureCode", "failure_code"]) ?? undefined,
-      failureMessage: payloadString(event.payload, ["failureMessage", "failure_message"]) ?? undefined,
-      processorRefs: [{
-        provider: event.sourceProvider,
-        objectType: eventObjectType(event, "payout"),
-        objectId: event.aggregateId,
-        relationship: "payout",
-        recordedAt: event.occurredAt,
-      }],
+      failureMessage:
+        payloadString(event.payload, ["failureMessage", "failure_message"]) ?? undefined,
+      processorRefs: [
+        {
+          provider: event.sourceProvider,
+          objectType: eventObjectType(event, "payout"),
+          objectId: event.aggregateId,
+          relationship: "payout",
+          recordedAt: event.occurredAt,
+        },
+      ],
       createdAt: event.occurredAt,
       updatedAt: event.occurredAt,
     };
@@ -568,9 +643,13 @@ async function applyPayoutEvent(
     amount: payloadNumber(event.payload, ["amount"]) ?? payout.amount,
     currency: payloadCurrency(event.payload) ?? payout.currency,
     direction: payloadDirection(event.payload, payout.direction),
-    expectedArrivalAt: payloadString(event.payload, ["expectedArrivalAt", "expected_arrival_at"]) ?? payout.expectedArrivalAt,
-    failureCode: payloadString(event.payload, ["failureCode", "failure_code"]) ?? payout.failureCode,
-    failureMessage: payloadString(event.payload, ["failureMessage", "failure_message"]) ?? payout.failureMessage,
+    expectedArrivalAt:
+      payloadString(event.payload, ["expectedArrivalAt", "expected_arrival_at"]) ??
+      payout.expectedArrivalAt,
+    failureCode:
+      payloadString(event.payload, ["failureCode", "failure_code"]) ?? payout.failureCode,
+    failureMessage:
+      payloadString(event.payload, ["failureMessage", "failure_message"]) ?? payout.failureMessage,
     updatedAt: event.occurredAt,
   };
   await uow.payouts.save(updated);
@@ -588,7 +667,9 @@ async function applyDisputeEvent(
   const dispute = await uow.disputes.getByProcessorRef(
     event.environment,
     event.sourceProvider,
-    event.payload.objectType && typeof event.payload.objectType === "string" ? event.payload.objectType : "dispute",
+    event.payload.objectType && typeof event.payload.objectType === "string"
+      ? event.payload.objectType
+      : "dispute",
     event.aggregateId,
   );
   if (!dispute) {

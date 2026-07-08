@@ -24,26 +24,111 @@ function createSettlement(overrides: Partial<Settlement> = {}): Settlement {
 }
 
 function createUow(settlements: readonly Settlement[]): PaymentsUnitOfWork {
-  const records = new Map(settlements.map((settlement) => [`${settlement.environment}:${settlement.id}`, settlement]));
+  const records = new Map(
+    settlements.map((settlement) => [`${settlement.environment}:${settlement.id}`, settlement]),
+  );
   return {
-    merchants: { async getById() { return null; }, async listByTenant() { return []; }, async getByProcessorRef() { return null; }, async save() {} },
-    customers: { async getById() { return null; }, async save() {} },
+    merchants: {
+      async getById() {
+        return null;
+      },
+      async listByTenant() {
+        return [];
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async save() {},
+    },
+    customers: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
     onboarding: {
-      async getSessionById() { return null; },
-      async getLatestSessionByMerchantAccountId() { return null; },
-      async listRequirementsForSession() { return []; },
-      async listDocumentsForRequirement() { return []; },
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
       async saveSession() {},
       async saveRequirement() {},
       async saveRequirementDocument() {},
     },
-    merchantStates: { async getByMerchantAccountId() { return null; }, async save() {} },
-    customerStates: { async getByMerchantAndCustomer() { return null; }, async save() {} },
-    paymentMethods: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByOwner() { return []; }, async save() {} },
-    paymentMethodSetupSessions: { async getById() { return null; }, async save() {} },
-    paymentIntents: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async listByCustomerProfile() { return []; }, async save() {} },
-    payments: { async getById() { return null; }, async getByPaymentIntentId() { return null; }, async save() {} },
-    refunds: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByPayment() { return []; }, async save() {} },
+    merchantStates: {
+      async getByMerchantAccountId() {
+        return null;
+      },
+      async save() {},
+    },
+    customerStates: {
+      async getByMerchantAndCustomer() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentMethods: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return [];
+      },
+      async save() {},
+    },
+    paymentMethodSetupSessions: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentIntents: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return [];
+      },
+      async save() {},
+    },
+    payments: {
+      async getById() {
+        return null;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
+      async save() {},
+    },
+    refunds: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByPayment() {
+        return [];
+      },
+      async save() {},
+    },
     settlements: {
       async getById(id, options) {
         return records.get(`${options.environment}:${id}`) ?? null;
@@ -52,30 +137,79 @@ function createUow(settlements: readonly Settlement[]): PaymentsUnitOfWork {
         return null;
       },
       async listByMerchant(environment, merchantAccountId) {
-        return Array.from(records.values()).filter((record) => record.environment === environment && record.merchantAccountId === merchantAccountId);
+        return Array.from(records.values()).filter(
+          (record) =>
+            record.environment === environment && record.merchantAccountId === merchantAccountId,
+        );
       },
       async save(record) {
         records.set(`${record.environment}:${record.id}`, record);
       },
     },
-    payouts: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
-    disputes: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
+    payouts: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
+    disputes: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
     events: {
-      async getRawWebhookById() { return null; },
-      async getRawWebhookByDeliveryKey() { return null; },
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
       async saveRawWebhook() {},
-      async getProcessorEventById() { return null; },
+      async getProcessorEventById() {
+        return null;
+      },
       async saveProcessorEvent() {},
       async saveCanonicalEvent() {},
-      async getCanonicalEventById() { return null; },
-      async getWebhookEndpointById() { return null; },
+      async getCanonicalEventById() {
+        return null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
       async saveWebhookEndpoint() {},
       async saveWebhookDelivery() {},
       async saveEventSubscription() {},
     },
-    cases: { async getById() { return null; }, async save() {}, async saveActivity() {}, async saveNote() {} },
-    idempotency: { async getByScopeAndKey() { return null; }, async save() {} },
-    async runInTransaction(work) { return await work(this); },
+    cases: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+      async saveActivity() {},
+      async saveNote() {},
+    },
+    idempotency: {
+      async getByScopeAndKey() {
+        return null;
+      },
+      async save() {},
+    },
+    async runInTransaction(work) {
+      return await work(this);
+    },
   };
 }
 
@@ -122,10 +256,12 @@ describe("createSettlementsService", () => {
     });
     expect(settlement).not.toHaveProperty("processorRefs");
 
-    expect(await service.getMerchantSettlement({
-      environment: "sandbox",
-      merchantAccountId: "merchant_999",
-      settlementId: "st_123",
-    })).toBeNull();
+    expect(
+      await service.getMerchantSettlement({
+        environment: "sandbox",
+        merchantAccountId: "merchant_999",
+        settlementId: "st_123",
+      }),
+    ).toBeNull();
   });
 });

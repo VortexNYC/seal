@@ -89,7 +89,10 @@ interface FieldPropertiesPanelProps {
   onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
 }
 
-function resolvePatternToSave(validationPattern: string, customPattern: string): string | undefined {
+function resolvePatternToSave(
+  validationPattern: string,
+  customPattern: string,
+): string | undefined {
   if (validationPattern === "custom") return customPattern || undefined;
   if (!validationPattern || validationPattern === "none") return undefined;
   return VALIDATION_PATTERNS.find((pattern) => pattern.value === validationPattern)?.pattern;
@@ -270,7 +273,9 @@ function FieldPanelHeader({ field, onClose }: { field: FieldData; onClose: () =>
         </div>
         <div>
           <h3 className="text-sm font-medium">Field Properties</h3>
-          <p className="text-muted-foreground text-xs">{FIELD_TYPE_LABELS[field.fieldType]} Field</p>
+          <p className="text-muted-foreground text-xs">
+            {FIELD_TYPE_LABELS[field.fieldType]} Field
+          </p>
         </div>
       </div>
       <Button variant="ghost" size="icon" aria-label="Close field properties" onClick={onClose}>
@@ -296,7 +301,9 @@ function RecipientAssignmentSection({
         <Select value={selectedRecipientId} onValueChange={onRecipientChange}>
           <SelectTrigger
             id="field-recipient"
-            className={selectedRecipientId === "unassigned" ? "border-warning/50 text-warning" : undefined}
+            className={
+              selectedRecipientId === "unassigned" ? "border-warning/50 text-warning" : undefined
+            }
           >
             <SelectValue placeholder="Select a recipient" />
           </SelectTrigger>

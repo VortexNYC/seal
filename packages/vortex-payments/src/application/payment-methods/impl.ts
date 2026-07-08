@@ -46,7 +46,9 @@ export interface PaymentMethodsServiceDependencies {
     query: ListCustomerPaymentMethodsQuery,
   ) => Promise<readonly PaymentMethod[]>;
   readonly savePaymentMethod: (record: PaymentMethod) => Promise<void>;
-  readonly listPaymentIntents: (query: ListCustomerPaymentMethodsQuery) => Promise<readonly PaymentIntent[]>;
+  readonly listPaymentIntents: (
+    query: ListCustomerPaymentMethodsQuery,
+  ) => Promise<readonly PaymentIntent[]>;
   readonly saveCustomerPaymentState?: (state: CustomerPaymentState) => Promise<void>;
   readonly saveCanonicalEvent?: (event: CanonicalDomainEvent) => Promise<void>;
   readonly now?: () => string;
@@ -102,12 +104,16 @@ function assertCustomerOwnership(
   query: ListCustomerPaymentMethodsQuery,
 ): void {
   if (record.ownerType !== "customer" || record.ownerId !== query.customerProfileId) {
-    throw new PaymentMethodsServiceError("invalid_request", "payment method does not belong to customer", {
-      details: {
-        paymentMethodId: record.id,
-        customerProfileId: query.customerProfileId,
+    throw new PaymentMethodsServiceError(
+      "invalid_request",
+      "payment method does not belong to customer",
+      {
+        details: {
+          paymentMethodId: record.id,
+          customerProfileId: query.customerProfileId,
+        },
       },
-    });
+    );
   }
 }
 
@@ -132,7 +138,8 @@ async function deriveAndPersistCustomerState(
     (paymentMethod) =>
       paymentMethod.ownerType === "customer" &&
       paymentMethod.ownerId === query.customerProfileId &&
-      (paymentMethod.merchantAccountId === undefined || paymentMethod.merchantAccountId === query.merchantAccountId),
+      (paymentMethod.merchantAccountId === undefined ||
+        paymentMethod.merchantAccountId === query.merchantAccountId),
   );
   const snapshots = customerMethods.map(toSnapshot);
 
@@ -140,7 +147,9 @@ async function deriveAndPersistCustomerState(
     ...state,
     readinessReasons: getCustomerPaymentReadinessReasons(state, customerMethods),
     paymentMethods: snapshots,
-    defaultPaymentMethod: snapshots.find((paymentMethod) => paymentMethod.id === state.defaultPaymentMethodId),
+    defaultPaymentMethod: snapshots.find(
+      (paymentMethod) => paymentMethod.id === state.defaultPaymentMethodId,
+    ),
     requiresActionPaymentIntentCount: state.requiresActionPaymentIntentIds.length,
   };
 }
@@ -151,7 +160,9 @@ async function saveLifecycleChange(
   nextStatus: PaymentMethod["status"],
 ): Promise<PaymentMethodSnapshot> {
   const paymentMethods = await dependencies.listPaymentMethods(command);
-  const selected = paymentMethods.find((paymentMethod) => paymentMethod.id === command.paymentMethodId);
+  const selected = paymentMethods.find(
+    (paymentMethod) => paymentMethod.id === command.paymentMethodId,
+  );
 
   if (!selected) {
     throw new PaymentMethodsServiceError("not_found", "payment method not found", {
@@ -163,9 +174,13 @@ async function saveLifecycleChange(
     return toSnapshot(selected);
   }
   if (selected.status === "archived") {
-    throw new PaymentMethodsServiceError("conflict", "archived payment method cannot change lifecycle state", {
-      details: { paymentMethodId: command.paymentMethodId },
-    });
+    throw new PaymentMethodsServiceError(
+      "conflict",
+      "archived payment method cannot change lifecycle state",
+      {
+        details: { paymentMethodId: command.paymentMethodId },
+      },
+    );
   }
 
   const changedAt = dependencies.now?.() ?? new Date().toISOString();
@@ -183,9 +198,12 @@ async function saveLifecycleChange(
       (paymentMethod) =>
         paymentMethod.ownerType === "customer" &&
         paymentMethod.ownerId === command.customerProfileId &&
-        (paymentMethod.merchantAccountId === undefined || paymentMethod.merchantAccountId === command.merchantAccountId),
+        (paymentMethod.merchantAccountId === undefined ||
+          paymentMethod.merchantAccountId === command.merchantAccountId),
     )
-    .map((paymentMethod) => (paymentMethod.id === updatedSelected.id ? updatedSelected : paymentMethod));
+    .map((paymentMethod) =>
+      paymentMethod.id === updatedSelected.id ? updatedSelected : paymentMethod,
+    );
 
   const hasDefault = customerMethods.some(
     (paymentMethod) => paymentMethod.status === "active" && paymentMethod.isDefault,
@@ -194,15 +212,17 @@ async function saveLifecycleChange(
     ? customerMethods.find((paymentMethod) => paymentMethod.status === "active")
     : undefined;
 
-  await dependencies.saveCanonicalEvent?.(createPaymentMethodEvent({
-    id: `${updatedSelected.id}:payment_method.updated:${changedAt}`,
-    paymentMethod: updatedSelected,
-    customerProfileId: command.customerProfileId,
-    merchantAccountId: command.merchantAccountId,
-    occurredAt: changedAt,
-    action: nextStatus === "archived" ? "archived" : "disabled",
-    reason: command.reason,
-  }));
+  await dependencies.saveCanonicalEvent?.(
+    createPaymentMethodEvent({
+      id: `${updatedSelected.id}:payment_method.updated:${changedAt}`,
+      paymentMethod: updatedSelected,
+      customerProfileId: command.customerProfileId,
+      merchantAccountId: command.merchantAccountId,
+      occurredAt: changedAt,
+      action: nextStatus === "archived" ? "archived" : "disabled",
+      reason: command.reason,
+    }),
+  );
 
   if (fallback) {
     const updatedFallback: PaymentMethod = {
@@ -215,7 +235,7 @@ async function saveLifecycleChange(
       dependencies,
       command,
       customerMethods.map((paymentMethod) =>
-        paymentMethod.id === updatedFallback.id ? updatedFallback : paymentMethod
+        paymentMethod.id === updatedFallback.id ? updatedFallback : paymentMethod,
       ),
     );
   } else {
@@ -238,21 +258,21 @@ export function createPaymentMethodsService(
           (paymentMethod) =>
             paymentMethod.ownerType === "customer" &&
             paymentMethod.ownerId === query.customerProfileId &&
-            (paymentMethod.merchantAccountId === undefined || paymentMethod.merchantAccountId === query.merchantAccountId),
+            (paymentMethod.merchantAccountId === undefined ||
+              paymentMethod.merchantAccountId === query.merchantAccountId),
         )
         .map(toSnapshot);
     },
 
-    async getCustomerPaymentMethod(
-      query,
-    ) {
+    async getCustomerPaymentMethod(query) {
       const paymentMethods = await dependencies.listPaymentMethods(query);
       const paymentMethod = paymentMethods.find(
         (record) =>
           record.id === query.paymentMethodId &&
           record.ownerType === "customer" &&
           record.ownerId === query.customerProfileId &&
-          (record.merchantAccountId === undefined || record.merchantAccountId === query.merchantAccountId),
+          (record.merchantAccountId === undefined ||
+            record.merchantAccountId === query.merchantAccountId),
       );
       return paymentMethod ? toSnapshot(paymentMethod) : null;
     },
@@ -265,9 +285,12 @@ export function createPaymentMethodsService(
         (paymentMethod) =>
           paymentMethod.ownerType === "customer" &&
           paymentMethod.ownerId === command.customerProfileId &&
-          (paymentMethod.merchantAccountId === undefined || paymentMethod.merchantAccountId === command.merchantAccountId),
+          (paymentMethod.merchantAccountId === undefined ||
+            paymentMethod.merchantAccountId === command.merchantAccountId),
       );
-      const selected = customerMethods.find((paymentMethod) => paymentMethod.id === command.paymentMethodId);
+      const selected = customerMethods.find(
+        (paymentMethod) => paymentMethod.id === command.paymentMethodId,
+      );
 
       if (!selected) {
         throw new PaymentMethodsServiceError("not_found", "payment method not found", {
@@ -275,9 +298,13 @@ export function createPaymentMethodsService(
         });
       }
       if (selected.status !== "active") {
-        throw new PaymentMethodsServiceError("invalid_request", "payment method must be active to become default", {
-          details: { paymentMethodId: command.paymentMethodId },
-        });
+        throw new PaymentMethodsServiceError(
+          "invalid_request",
+          "payment method must be active to become default",
+          {
+            details: { paymentMethodId: command.paymentMethodId },
+          },
+        );
       }
 
       const updates = customerMethods.map((paymentMethod) => ({
@@ -289,16 +316,20 @@ export function createPaymentMethodsService(
       for (const record of updates) {
         await dependencies.savePaymentMethod(record);
       }
-      const selectedUpdated = updates.find((paymentMethod) => paymentMethod.id === command.paymentMethodId);
+      const selectedUpdated = updates.find(
+        (paymentMethod) => paymentMethod.id === command.paymentMethodId,
+      );
       if (selectedUpdated) {
-        await dependencies.saveCanonicalEvent?.(createPaymentMethodEvent({
-          id: `${selectedUpdated.id}:payment_method.updated:${selectedUpdated.updatedAt}`,
-          paymentMethod: selectedUpdated,
-          customerProfileId: command.customerProfileId,
-          merchantAccountId: command.merchantAccountId,
-          occurredAt: selectedUpdated.updatedAt,
-          action: "default_changed",
-        }));
+        await dependencies.saveCanonicalEvent?.(
+          createPaymentMethodEvent({
+            id: `${selectedUpdated.id}:payment_method.updated:${selectedUpdated.updatedAt}`,
+            paymentMethod: selectedUpdated,
+            customerProfileId: command.customerProfileId,
+            merchantAccountId: command.merchantAccountId,
+            occurredAt: selectedUpdated.updatedAt,
+            action: "default_changed",
+          }),
+        );
       }
       await deriveAndPersistCustomerState(dependencies, command, updates);
       return updates.map(toSnapshot);

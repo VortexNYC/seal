@@ -36,9 +36,11 @@
 ## Task 1: Add the SDK dependency (Seal can install + resolve it)
 
 **Files:**
+
 - Modify: `apps/backend/package.json`
 
 **Interfaces:**
+
 - Produces: `@vortexnyc/payments-sdk@^0.1.0` resolvable in `apps/backend`, importable in a `"use node"` Convex action.
 
 - [ ] **Step 1: Confirm auth + resolve.** From Seal root: `cd apps/backend && bun add @vortexnyc/payments-sdk@^0.1.0`. This uses Seal's existing `@vortexnyc:registry`/`NODE_AUTH_TOKEN` contract (same one that installs `@vortexnyc/auth`). If it 401s, the deploy/CI `NODE_AUTH_TOKEN` env isn't present in this shell — STOP and report (do not hand-edit the lockfile).
@@ -50,15 +52,18 @@
 ## Task 2: Migrate checkout transport to the SDK (behavior-preserving, TDD)
 
 **Files:**
+
 - Modify: `apps/backend/convex/payments/vortex_billing_processor.ts`
 - Modify: `apps/backend/convex/payments/vortex_billing_processor.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createClient`, `createCheckoutSession` from `@vortexnyc/payments-sdk`; `CreateCheckoutSessionRequest` body fields (`mode`, `customerExternalId`, `billingAccountId`, `subscriptionExternalId`, `collectionMode`, `lineItems`, `createdByRef`, `metadata`) — all confirmed present in the SDK types.
 - Produces: `createVortexBillingCheckoutSession(args, env?, fetchImpl?)` where `fetchImpl?: typeof fetch` is the new injectable seam — the function ALWAYS builds the SDK client (env-derived auth + `x-vortex-service` headers) and only the `fetch` is overridable, so the test proves the real production headers. Same return `Promise<string>` (checkoutUrl). `readCheckoutUrl` unchanged (parses `data.data.checkoutSession.checkoutUrl` from the returned `ApiWriteEnvelope`).
 
 - [ ] **Step 1: Read the SDK client config shape.** Inspect `@vortexnyc/payments-sdk` exported `Config`/`CreateClientConfig` (re-exported from the root barrel at L0) to confirm how to set `baseUrl`, default `headers` (need custom `x-vortex-service` + `authorization: Bearer`), and a `fetch` override (for tests). Confirm `createCheckoutSession` returns `{ data, error, response }` when `throwOnError` is unset.
 - [ ] **Step 2: Update the test to the client seam (write it first — it should fail to compile).** In `vortex_billing_processor.test.ts`, replace the mock `fetcher` (`:70-93`) with a mock `fetch` passed into a real SDK client. **CRITICAL (Codex P0#3): `@hey-api` calls `fetch(request)` with a constructed `Request` object — NOT `fetch(url, init)`.** Capture and assert off the `Request`:
+
 ```ts
 import { createVortexBillingCheckoutSession } from "./vortex_billing_processor";
 
@@ -67,7 +72,10 @@ const mockFetch: typeof fetch = async (input) => {
   // hey-api always passes a Request here
   captured = input instanceof Request ? input : new Request(String(input));
   return new Response(
-    JSON.stringify({ data: { checkoutSession: { checkoutUrl: "https://pay.vortex.test/abc" } }, requestId: "req_1" }),
+    JSON.stringify({
+      data: { checkoutSession: { checkoutUrl: "https://pay.vortex.test/abc" } },
+      requestId: "req_1",
+    }),
     { status: 201, headers: { "content-type": "application/json" } },
   );
 };
@@ -75,7 +83,9 @@ const mockFetch: typeof fetch = async (input) => {
 // so this test proves Seal constructs the real production headers.
 const checkoutUrl = await createVortexBillingCheckoutSession(
   { organizationId: "org_1", lookupKey: "pro_monthly", quantity: 1 },
-  { /* same VORTEX_BILLING_* env stub as the existing test (apiBaseUrl=https://billing.vortex.test, apiKey=..., price/account/customer maps) */ },
+  {
+    /* same VORTEX_BILLING_* env stub as the existing test (apiBaseUrl=https://billing.vortex.test, apiKey=..., price/account/customer maps) */
+  },
   mockFetch,
 );
 expect(checkoutUrl).toBe("https://pay.vortex.test/abc");
@@ -86,14 +96,19 @@ expect(captured?.headers.get("authorization")).toBe("Bearer <apiKey-from-env-stu
 expect(captured?.headers.get("x-vortex-service")).toBe("billing");
 expect(captured?.headers.get("idempotency-key")).toBe("seal-saas-checkout:org_1:pro_monthly");
 const sentBody = JSON.parse(await captured!.clone().text());
-expect(sentBody).toEqual({ /* same payload asserted today: mode/customerExternalId/billingAccountId/subscriptionExternalId/collectionMode/lineItems/createdByRef/metadata */ });
+expect(sentBody).toEqual({
+  /* same payload asserted today: mode/customerExternalId/billingAccountId/subscriptionExternalId/collectionMode/lineItems/createdByRef/metadata */
+});
 ```
+
 The env stub's `apiBaseUrl` MUST be `https://billing.vortex.test` so the asserted URL matches. Use `headers.get()` (case-insensitive, Codex P2#6) — never index raw header objects. Also keep one non-2xx test: mock `fetch` returns `status: 422` (JSON error body) → expect the same `ConvexError` shape Seal throws today.
+
 - [ ] **Step 3: Run the test → confirm it FAILS** (the `fetchImpl` arg + the new import don't exist yet). **Targeted command (root `bun run test <file>` routes through turbo — Codex r2 note):** `cd /Users/shlomokabareti/projects/Seal && bun --cwd apps/backend run test convex/payments/vortex_billing_processor.test.ts` → FAIL.
 - [ ] **Step 4: Implement the transport swap.** In `vortex_billing_processor.ts`:
   - Add imports: `import { createClient, createCheckoutSession } from "@vortexnyc/payments-sdk";` (NO `Client` import — it is not a root export, Codex P0#1).
   - **The injectable seam is `fetch`, NOT the client (Codex r2 P0).** The function ALWAYS builds the client with env-derived headers, so the test exercises the REAL production-header construction. Signature: `export async function createVortexBillingCheckoutSession(args: VortexBillingCheckoutArgs, env: Env = process.env, fetchImpl?: typeof fetch): Promise<string>`.
   - Build the client from config (always — auth/service headers are part of the function's behavior under test), with an optional `fetch` override, and call with `parseAs: "json"` (Codex P1#5 — the bespoke always parses JSON; default `"auto"` would drift on a missing/odd Content-Type):
+
 ```ts
 const config = resolveVortexBillingConfig(args, env);
 const billingClient = createClient({
@@ -117,18 +132,25 @@ const { data, error, response } = await createCheckoutSession({
     collectionMode: "automatic",
     lineItems: [{ priceId: config.priceId, quantity: args.quantity }],
     createdByRef: "seal-saas-billing-settings",
-    metadata: { sourceSystem: "seal", sealOrganizationId: args.organizationId, lookupKey: args.lookupKey },
+    metadata: {
+      sourceSystem: "seal",
+      sealOrganizationId: args.organizationId,
+      lookupKey: args.lookupKey,
+    },
   },
 });
 // Codex P1#4: response can be undefined on network/build/parse failure — guard it before .ok / .status.
 if (error !== undefined || response === undefined || !response.ok) {
   const status = response?.status ?? "no-response";
-  throw new ConvexError(`Vortex Billing checkout failed (${status}): ${summarizeJson(error ?? data)}`);
+  throw new ConvexError(
+    `Vortex Billing checkout failed (${status}): ${summarizeJson(error ?? data)}`,
+  );
 }
 return readCheckoutUrl(data);
 ```
-  - **`readCheckoutUrl` is UNCHANGED** (Codex P0#2): the SDK's returned `data` IS the parsed `ApiWriteEnvelope` (`{ data: { checkoutSession: { checkoutUrl } }, requestId }`), identical to today's response body — so `readCheckoutUrl(data)` reads `data.data.checkoutSession.checkoutUrl` exactly as before. Do NOT wrap as `{ data }` (would double-nest), and do NOT change the parser's guards/`ConvexError("...did not include checkoutUrl")`.
-  - Delete `requestVortexBillingJson` and the `Fetcher` type once unused. Keep `summarizeJson`, `readObject`, `parseJson`, env/config helpers.
+
+- **`readCheckoutUrl` is UNCHANGED** (Codex P0#2): the SDK's returned `data` IS the parsed `ApiWriteEnvelope` (`{ data: { checkoutSession: { checkoutUrl } }, requestId }`), identical to today's response body — so `readCheckoutUrl(data)` reads `data.data.checkoutSession.checkoutUrl` exactly as before. Do NOT wrap as `{ data }` (would double-nest), and do NOT change the parser's guards/`ConvexError("...did not include checkoutUrl")`.
+- Delete `requestVortexBillingJson` and the `Fetcher` type once unused. Keep `summarizeJson`, `readObject`, `parseJson`, env/config helpers.
 - [ ] **Step 5: Run the test → PASS.** `bun --cwd apps/backend run test convex/payments/vortex_billing_processor.test.ts` → PASS. Confirm the asserted URL/method/headers/body and returned `checkoutUrl` all match.
 - [ ] **Step 6: Full gate.** Seal root: `bun run typecheck && bun run lint && bun run test` (the full-suite root commands; turbo fans out to workspaces). (Run `bun run build` if Seal defines it.) All green. Grep to confirm no remaining `fetch(` transport in this file and no dead `Fetcher`/`requestVortexBillingJson`.
 - [ ] **Step 7: Commit.** Claude: `git add apps/backend/convex/payments/vortex_billing_processor.ts apps/backend/convex/payments/vortex_billing_processor.test.ts && git commit -m "refactor(billing): route Vortex SaaS checkout through @vortexnyc/payments-sdk (transport swap, behavior-preserving)"`.

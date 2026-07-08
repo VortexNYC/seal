@@ -7,16 +7,18 @@ describe("createMerchantTimelineHttpHandlers", () => {
     const service: MerchantTimelineService = {
       async listMerchantTimeline() {
         return {
-          items: [{
-            id: "evt_123",
-            eventType: "merchant_account.approved",
-            aggregateType: "merchant_account",
-            aggregateId: "finix_merchant_123",
-            occurredAt: "2026-05-14T20:00:00.000Z",
-            sourceProvider: "finix",
-            description: "Merchant account can accept payments.",
-            payload: { merchantAccountId: "merchant_123" },
-          }],
+          items: [
+            {
+              id: "evt_123",
+              eventType: "merchant_account.approved",
+              aggregateType: "merchant_account",
+              aggregateId: "finix_merchant_123",
+              occurredAt: "2026-05-14T20:00:00.000Z",
+              sourceProvider: "finix",
+              description: "Merchant account can accept payments.",
+              payload: { merchantAccountId: "merchant_123" },
+            },
+          ],
           hasMore: false,
         };
       },
@@ -39,16 +41,18 @@ describe("createMerchantTimelineHttpHandlers", () => {
       status: 200,
       body: {
         data: {
-          items: [{
-            id: "evt_123",
-            eventType: "merchant_account.approved",
-            aggregateType: "merchant_account",
-            aggregateId: "finix_merchant_123",
-            occurredAt: "2026-05-14T20:00:00.000Z",
-            sourceProvider: "finix",
-            description: "Merchant account can accept payments.",
-            payload: { merchantAccountId: "merchant_123" },
-          }],
+          items: [
+            {
+              id: "evt_123",
+              eventType: "merchant_account.approved",
+              aggregateType: "merchant_account",
+              aggregateId: "finix_merchant_123",
+              occurredAt: "2026-05-14T20:00:00.000Z",
+              sourceProvider: "finix",
+              description: "Merchant account can accept payments.",
+              payload: { merchantAccountId: "merchant_123" },
+            },
+          ],
           hasMore: false,
         },
         requestId: "req_timeline_123",

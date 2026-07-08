@@ -6,17 +6,19 @@ function createService(): PayoutsService {
   return {
     async listMerchantPayouts() {
       return {
-        items: [{
-          id: "po_123",
-          environment: "sandbox",
-          merchantAccountId: "merchant_123",
-          amount: 900,
-          currency: "USD",
-          direction: "credit",
-          status: "succeeded",
-          createdAt: "2026-05-14T13:00:00.000Z",
-          updatedAt: "2026-05-14T14:00:00.000Z",
-        }],
+        items: [
+          {
+            id: "po_123",
+            environment: "sandbox",
+            merchantAccountId: "merchant_123",
+            amount: 900,
+            currency: "USD",
+            direction: "credit",
+            status: "succeeded",
+            createdAt: "2026-05-14T13:00:00.000Z",
+            updatedAt: "2026-05-14T14:00:00.000Z",
+          },
+        ],
         hasMore: false,
       };
     },
@@ -63,17 +65,19 @@ describe("createPayoutsHttpHandlers", () => {
       status: 200,
       body: {
         data: {
-          items: [{
-            id: "po_123",
-            environment: "sandbox",
-            merchantAccountId: "merchant_123",
-            amount: 900,
-	            currency: "USD",
-	            direction: "credit",
-	            status: "succeeded",
-	            createdAt: "2026-05-14T13:00:00.000Z",
-            updatedAt: "2026-05-14T14:00:00.000Z",
-          }],
+          items: [
+            {
+              id: "po_123",
+              environment: "sandbox",
+              merchantAccountId: "merchant_123",
+              amount: 900,
+              currency: "USD",
+              direction: "credit",
+              status: "succeeded",
+              createdAt: "2026-05-14T13:00:00.000Z",
+              updatedAt: "2026-05-14T14:00:00.000Z",
+            },
+          ],
           hasMore: false,
         },
         requestId: "req_payouts",
@@ -103,10 +107,10 @@ describe("createPayoutsHttpHandlers", () => {
           environment: "sandbox",
           merchantAccountId: "merchant_123",
           amount: 900,
-	          currency: "USD",
-	          direction: "credit",
-	          status: "succeeded",
-	          createdAt: "2026-05-14T13:00:00.000Z",
+          currency: "USD",
+          direction: "credit",
+          status: "succeeded",
+          createdAt: "2026-05-14T13:00:00.000Z",
           updatedAt: "2026-05-14T14:00:00.000Z",
         },
         requestId: "req_payout",

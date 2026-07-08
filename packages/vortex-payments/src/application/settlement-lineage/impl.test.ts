@@ -1,6 +1,13 @@
 import { describe, expect, test } from "vitest";
 
-import type { MerchantAccount, Payment, PaymentsUnitOfWork, Refund, Settlement, SettlementLineageEntry } from "../..";
+import type {
+  MerchantAccount,
+  Payment,
+  PaymentsUnitOfWork,
+  Refund,
+  Settlement,
+  SettlementLineageEntry,
+} from "../..";
 import { createSettlementLineageService } from "./impl";
 
 function createMerchant(): MerchantAccount {
@@ -17,7 +24,15 @@ function createMerchant(): MerchantAccount {
     capabilityStatus: "active",
     createdAt: "2026-05-18T10:00:00.000Z",
     updatedAt: "2026-05-18T10:00:00.000Z",
-    processorAccountRefs: [{ provider: "finix", objectType: "merchant", objectId: "MU123", relationship: "merchant_account", recordedAt: "2026-05-18T10:00:00.000Z" }],
+    processorAccountRefs: [
+      {
+        provider: "finix",
+        objectType: "merchant",
+        objectId: "MU123",
+        relationship: "merchant_account",
+        recordedAt: "2026-05-18T10:00:00.000Z",
+      },
+    ],
   };
 }
 
@@ -35,7 +50,15 @@ function createSettlement(): Settlement {
     netAmount: 870,
     direction: "credit",
     closedAt: "2026-05-18T10:10:00.000Z",
-    processorRefs: [{ provider: "finix", objectType: "settlement", objectId: "ST123", relationship: "settlement", recordedAt: "2026-05-18T10:10:00.000Z" }],
+    processorRefs: [
+      {
+        provider: "finix",
+        objectType: "settlement",
+        objectId: "ST123",
+        relationship: "settlement",
+        recordedAt: "2026-05-18T10:10:00.000Z",
+      },
+    ],
     createdAt: "2026-05-18T10:00:00.000Z",
     updatedAt: "2026-05-18T10:10:00.000Z",
   };
@@ -50,7 +73,15 @@ function createPayment(): Payment {
     currency: "USD",
     status: "captured",
     direction: "debit",
-    processorPaymentRefs: [{ provider: "finix", objectType: "transfer", objectId: "TR_PAYMENT", relationship: "payment", recordedAt: "2026-05-18T10:01:00.000Z" }],
+    processorPaymentRefs: [
+      {
+        provider: "finix",
+        objectType: "transfer",
+        objectId: "TR_PAYMENT",
+        relationship: "payment",
+        recordedAt: "2026-05-18T10:01:00.000Z",
+      },
+    ],
     createdAt: "2026-05-18T10:01:00.000Z",
     updatedAt: "2026-05-18T10:01:00.000Z",
   };
@@ -69,7 +100,15 @@ function createRefund(): Refund {
     requestedByType: "operator",
     requestedByRef: "test",
     settlementImpactAmount: 100,
-    processorRefundRefs: [{ provider: "finix", objectType: "transfer", objectId: "TR_REFUND", relationship: "refund", recordedAt: "2026-05-18T10:02:00.000Z" }],
+    processorRefundRefs: [
+      {
+        provider: "finix",
+        objectType: "transfer",
+        objectId: "TR_REFUND",
+        relationship: "refund",
+        recordedAt: "2026-05-18T10:02:00.000Z",
+      },
+    ],
     createdAt: "2026-05-18T10:02:00.000Z",
     updatedAt: "2026-05-18T10:02:00.000Z",
   };
@@ -83,48 +122,197 @@ function createUnitOfWork(): PaymentsUnitOfWork {
   const entries = new Map<string, SettlementLineageEntry>();
   return {
     merchants: {
-      async getById() { return merchant; },
-      async listByTenant() { return [merchant]; },
-      async getByProcessorRef() { return merchant; },
+      async getById() {
+        return merchant;
+      },
+      async listByTenant() {
+        return [merchant];
+      },
+      async getByProcessorRef() {
+        return merchant;
+      },
       async save() {},
     },
-    customers: { async getById() { return null; }, async save() {} },
-    onboarding: { async getSessionById() { return null; }, async getLatestSessionByMerchantAccountId() { return null; }, async listRequirementsForSession() { return []; }, async listDocumentsForRequirement() { return []; }, async saveSession() {}, async saveRequirement() {}, async saveRequirementDocument() {} },
-    merchantStates: { async getByMerchantAccountId() { return null; }, async save() {} },
-    customerStates: { async getByMerchantAndCustomer() { return null; }, async save() {} },
-    paymentMethods: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByOwner() { return []; }, async save() {} },
-    paymentMethodSetupSessions: { async getById() { return null; }, async save() {} },
-    paymentIntents: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async listByCustomerProfile() { return []; }, async save() {} },
+    customers: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
+    onboarding: {
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
+      async saveSession() {},
+      async saveRequirement() {},
+      async saveRequirementDocument() {},
+    },
+    merchantStates: {
+      async getByMerchantAccountId() {
+        return null;
+      },
+      async save() {},
+    },
+    customerStates: {
+      async getByMerchantAndCustomer() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentMethods: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return [];
+      },
+      async save() {},
+    },
+    paymentMethodSetupSessions: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentIntents: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return [];
+      },
+      async save() {},
+    },
     payments: {
-      async getById() { return payment; },
-      async getByPaymentIntentId() { return null; },
-      async getByProcessorRef(_environment, _provider, _objectType, objectId) { return objectId === "TR_PAYMENT" ? payment : null; },
+      async getById() {
+        return payment;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
+      async getByProcessorRef(_environment, _provider, _objectType, objectId) {
+        return objectId === "TR_PAYMENT" ? payment : null;
+      },
       async save() {},
     } as PaymentsUnitOfWork["payments"],
     refunds: {
-      async getById() { return refund; },
-      async getByProcessorRef(_environment, _provider, _objectType, objectId) { return objectId === "TR_REFUND" ? refund : null; },
-      async listByPayment() { return [refund]; },
+      async getById() {
+        return refund;
+      },
+      async getByProcessorRef(_environment, _provider, _objectType, objectId) {
+        return objectId === "TR_REFUND" ? refund : null;
+      },
+      async listByPayment() {
+        return [refund];
+      },
       async save() {},
     },
     settlements: {
-      async getById() { return settlement; },
-      async getByProcessorRef() { return settlement; },
-      async listByMerchant() { return [settlement]; },
+      async getById() {
+        return settlement;
+      },
+      async getByProcessorRef() {
+        return settlement;
+      },
+      async listByMerchant() {
+        return [settlement];
+      },
       async save() {},
     },
-    payouts: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
+    payouts: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
     settlementLineageEntries: {
-      async getByProviderRowRef(_environment, _provider, _objectType, objectId) { return entries.get(objectId) ?? null; },
-      async listBySettlement() { return [...entries.values()]; },
-      async save(record) { entries.set(record.providerRowRef.objectId, record); },
+      async getByProviderRowRef(_environment, _provider, _objectType, objectId) {
+        return entries.get(objectId) ?? null;
+      },
+      async listBySettlement() {
+        return [...entries.values()];
+      },
+      async save(record) {
+        entries.set(record.providerRowRef.objectId, record);
+      },
     },
     sellerPayoutProfileSnapshots: undefined,
-    disputes: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
-    events: { async getRawWebhookById() { return null; }, async getRawWebhookByDeliveryKey() { return null; }, async saveRawWebhook() {}, async getProcessorEventById() { return null; }, async saveProcessorEvent() {}, async saveCanonicalEvent() {}, async getCanonicalEventById() { return null; }, async getWebhookEndpointById() { return null; }, async saveWebhookEndpoint() {}, async saveWebhookDelivery() {}, async saveEventSubscription() {} },
-    cases: { async getById() { return null; }, async save() {}, async saveActivity() {}, async saveNote() {} },
-    idempotency: { async getByScopeAndKey() { return null; }, async save() {} },
-    async runInTransaction(work) { return work(this); },
+    disputes: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
+    events: {
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
+      async saveRawWebhook() {},
+      async getProcessorEventById() {
+        return null;
+      },
+      async saveProcessorEvent() {},
+      async saveCanonicalEvent() {},
+      async getCanonicalEventById() {
+        return null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
+      async saveWebhookEndpoint() {},
+      async saveWebhookDelivery() {},
+      async saveEventSubscription() {},
+    },
+    cases: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+      async saveActivity() {},
+      async saveNote() {},
+    },
+    idempotency: {
+      async getByScopeAndKey() {
+        return null;
+      },
+      async save() {},
+    },
+    async runInTransaction(work) {
+      return work(this);
+    },
   };
 }
 
@@ -138,18 +326,34 @@ describe("createSettlementLineageService", () => {
           return {
             key: "finix",
             supportedCapabilities: [],
-            async verifyWebhookSignature() { throw new Error("unused"); },
-            async createMerchantOnboarding() { throw new Error("unused"); },
-            async createPaymentIntent() { throw new Error("unused"); },
-            async createRefund() { throw new Error("unused"); },
-            async fetchObjectSnapshot() { throw new Error("unused"); },
+            async verifyWebhookSignature() {
+              throw new Error("unused");
+            },
+            async createMerchantOnboarding() {
+              throw new Error("unused");
+            },
+            async createPaymentIntent() {
+              throw new Error("unused");
+            },
+            async createRefund() {
+              throw new Error("unused");
+            },
+            async fetchObjectSnapshot() {
+              throw new Error("unused");
+            },
             async listSettlementLineage() {
               return {
                 ok: true,
                 value: {
                   items: [
                     {
-                      rowRef: { provider: "finix", objectType: "transfer", objectId: "TR_PAYMENT", relationship: "settlement_transfer", recordedAt: "2026-05-18T10:10:00.000Z" },
+                      rowRef: {
+                        provider: "finix",
+                        objectType: "transfer",
+                        objectId: "TR_PAYMENT",
+                        relationship: "settlement_transfer",
+                        recordedAt: "2026-05-18T10:10:00.000Z",
+                      },
                       sourceKind: "payment",
                       amount: 1000,
                       currency: "USD",
@@ -157,7 +361,13 @@ describe("createSettlementLineageService", () => {
                       evidenceSource: "provider_settlement_transfer",
                     },
                     {
-                      rowRef: { provider: "finix", objectType: "transfer", objectId: "TR_REFUND", relationship: "settlement_transfer", recordedAt: "2026-05-18T10:10:00.000Z" },
+                      rowRef: {
+                        provider: "finix",
+                        objectType: "transfer",
+                        objectId: "TR_REFUND",
+                        relationship: "settlement_transfer",
+                        recordedAt: "2026-05-18T10:10:00.000Z",
+                      },
                       sourceKind: "refund",
                       amount: 100,
                       currency: "USD",
@@ -165,7 +375,13 @@ describe("createSettlementLineageService", () => {
                       evidenceSource: "provider_settlement_transfer",
                     },
                     {
-                      rowRef: { provider: "finix", objectType: "settlement_entry", objectId: "ENTRY_FEE", relationship: "settlement_entry", recordedAt: "2026-05-18T10:10:00.000Z" },
+                      rowRef: {
+                        provider: "finix",
+                        objectType: "settlement_entry",
+                        objectId: "ENTRY_FEE",
+                        relationship: "settlement_entry",
+                        recordedAt: "2026-05-18T10:10:00.000Z",
+                      },
                       sourceKind: "fee",
                       amount: 30,
                       currency: "USD",
@@ -178,7 +394,9 @@ describe("createSettlementLineageService", () => {
             },
           };
         },
-        listAdapters() { return []; },
+        listAdapters() {
+          return [];
+        },
       },
       resolveProviderContext: () => ({ provider: "finix", environment: "sandbox" }),
       now: () => "2026-05-18T10:11:00.000Z",

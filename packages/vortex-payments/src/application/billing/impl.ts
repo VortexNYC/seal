@@ -132,9 +132,7 @@ function resolveReconciliationProviderContext(
   };
 }
 
-function mapPaymentSnapshotStatus(
-  snapshot: ProviderObjectSnapshot,
-): PaymentIntent["status"] {
+function mapPaymentSnapshotStatus(snapshot: ProviderObjectSnapshot): PaymentIntent["status"] {
   if (snapshot.objectType === "authorization") {
     switch (snapshot.status) {
       case "SUCCEEDED":
@@ -241,7 +239,8 @@ async function getMerchantReadinessSnapshot(
     merchantStatus: merchant.status,
     canAcceptPayments: merchant.status === "active",
     payoutReadiness: merchant.status === "active" ? "unknown" : "blocked",
-    payoutBlockReason: merchant.status === "active" ? undefined : `merchant_status:${merchant.status}`,
+    payoutBlockReason:
+      merchant.status === "active" ? undefined : `merchant_status:${merchant.status}`,
   };
 }
 
@@ -300,7 +299,9 @@ export function createBillingPaymentsService(
   const createId = dependencies.createId ?? createDefaultId;
 
   return {
-    async collectInvoicePayment(command: CollectInvoicePaymentCommand): Promise<CollectInvoicePaymentResult> {
+    async collectInvoicePayment(
+      command: CollectInvoicePaymentCommand,
+    ): Promise<CollectInvoicePaymentResult> {
       return dependencies.uow.runInTransaction(async (uow) => {
         return withIdempotentResult(
           uow,
@@ -343,9 +344,13 @@ export function createBillingPaymentsService(
               });
 
               if (!paymentIntent.paymentId) {
-                throw new BillingServiceError("internal_error", "payment intent is missing canonical payment id", {
-                  details: { paymentIntentId: paymentIntent.id },
-                });
+                throw new BillingServiceError(
+                  "internal_error",
+                  "payment intent is missing canonical payment id",
+                  {
+                    details: { paymentIntentId: paymentIntent.id },
+                  },
+                );
               }
 
               return mapCollectInvoiceExecutionResult(command, {
@@ -389,7 +394,9 @@ export function createBillingPaymentsService(
       });
     },
 
-    async refundInvoicePayment(command: RefundInvoicePaymentCommand): Promise<RefundInvoicePaymentResult> {
+    async refundInvoicePayment(
+      command: RefundInvoicePaymentCommand,
+    ): Promise<RefundInvoicePaymentResult> {
       return dependencies.uow.runInTransaction(async (uow) => {
         return withIdempotentResult(
           uow,
@@ -464,13 +471,18 @@ export function createBillingPaymentsService(
           return null;
         }
 
-        const paymentRef = payment.processorPaymentRefs.find((ref) => ref.relationship === "payment")
-          ?? payment.processorPaymentRefs[0]
-          ?? null;
+        const paymentRef =
+          payment.processorPaymentRefs.find((ref) => ref.relationship === "payment") ??
+          payment.processorPaymentRefs[0] ??
+          null;
         if (!paymentRef) {
-          throw new BillingServiceError("invalid_request", "payment is missing provider payment reference", {
-            details: { paymentId: query.paymentId },
-          });
+          throw new BillingServiceError(
+            "invalid_request",
+            "payment is missing provider payment reference",
+            {
+              details: { paymentId: query.paymentId },
+            },
+          );
         }
         if (!isProviderKey(paymentRef.provider)) {
           throw new BillingServiceError("invalid_request", "payment provider is not registered", {
@@ -495,7 +507,9 @@ export function createBillingPaymentsService(
         );
         if (!snapshot.ok || !snapshot.value) {
           throw new BillingServiceError(
-            snapshot.error?.category === "temporarily_unavailable" ? "provider_unavailable" : "invalid_request",
+            snapshot.error?.category === "temporarily_unavailable"
+              ? "provider_unavailable"
+              : "invalid_request",
             snapshot.error?.message ?? "provider payment snapshot unavailable",
             {
               retryable: snapshot.error?.retryable ?? false,
@@ -508,32 +522,44 @@ export function createBillingPaymentsService(
         const updatedPayment: Payment = {
           ...payment,
           status: preserveRefundedPaymentStatus(payment.status, nextStatus),
-          authorizedAt: nextStatus === "authorized" ? (payment.authorizedAt ?? snapshot.value.recordedAt) : payment.authorizedAt,
-          capturedAt: nextStatus === "captured" ? (payment.capturedAt ?? snapshot.value.recordedAt) : payment.capturedAt,
+          authorizedAt:
+            nextStatus === "authorized"
+              ? (payment.authorizedAt ?? snapshot.value.recordedAt)
+              : payment.authorizedAt,
+          capturedAt:
+            nextStatus === "captured"
+              ? (payment.capturedAt ?? snapshot.value.recordedAt)
+              : payment.capturedAt,
           updatedAt: snapshot.value.recordedAt,
         };
         await uow.payments.save(updatedPayment);
 
         const paymentIntent = payment.paymentIntentId
           ? await uow.paymentIntents.getById(payment.paymentIntentId, {
-            environment: query.environment,
-          })
+              environment: query.environment,
+            })
           : null;
         if (!paymentIntent) {
-          throw new BillingServiceError("invalid_request", "payment is missing canonical payment intent", {
-            details: { paymentId: query.paymentId },
-          });
+          throw new BillingServiceError(
+            "invalid_request",
+            "payment is missing canonical payment intent",
+            {
+              details: { paymentId: query.paymentId },
+            },
+          );
         }
 
         await uow.paymentIntents.save({
           ...paymentIntent,
           status: nextStatus,
-          confirmedAt: nextStatus === "authorized" || nextStatus === "captured"
-            ? (paymentIntent.confirmedAt ?? snapshot.value.recordedAt)
-            : paymentIntent.confirmedAt,
-          canceledAt: nextStatus === "canceled"
-            ? (paymentIntent.canceledAt ?? snapshot.value.recordedAt)
-            : paymentIntent.canceledAt,
+          confirmedAt:
+            nextStatus === "authorized" || nextStatus === "captured"
+              ? (paymentIntent.confirmedAt ?? snapshot.value.recordedAt)
+              : paymentIntent.confirmedAt,
+          canceledAt:
+            nextStatus === "canceled"
+              ? (paymentIntent.canceledAt ?? snapshot.value.recordedAt)
+              : paymentIntent.canceledAt,
           updatedAt: snapshot.value.recordedAt,
         });
 
@@ -559,13 +585,18 @@ export function createBillingPaymentsService(
           return null;
         }
 
-        const refundRef = refund.processorRefundRefs.find((ref) => ref.relationship === "refund")
-          ?? refund.processorRefundRefs[0]
-          ?? null;
+        const refundRef =
+          refund.processorRefundRefs.find((ref) => ref.relationship === "refund") ??
+          refund.processorRefundRefs[0] ??
+          null;
         if (!refundRef) {
-          throw new BillingServiceError("invalid_request", "refund is missing provider refund reference", {
-            details: { refundId: query.refundId },
-          });
+          throw new BillingServiceError(
+            "invalid_request",
+            "refund is missing provider refund reference",
+            {
+              details: { refundId: query.refundId },
+            },
+          );
         }
         if (!isProviderKey(refundRef.provider)) {
           throw new BillingServiceError("invalid_request", "refund provider is not registered", {
@@ -573,11 +604,7 @@ export function createBillingPaymentsService(
           });
         }
 
-        const merchant = await getMerchantOrThrow(
-          uow,
-          query.environment,
-          refund.merchantAccountId,
-        );
+        const merchant = await getMerchantOrThrow(uow, query.environment, refund.merchantAccountId);
         const provider = dependencies.providers.getAdapter(refundRef.provider);
         const snapshot = await provider.fetchObjectSnapshot(
           resolveReconciliationProviderContext(
@@ -590,7 +617,9 @@ export function createBillingPaymentsService(
         );
         if (!snapshot.ok || !snapshot.value) {
           throw new BillingServiceError(
-            snapshot.error?.category === "temporarily_unavailable" ? "provider_unavailable" : "invalid_request",
+            snapshot.error?.category === "temporarily_unavailable"
+              ? "provider_unavailable"
+              : "invalid_request",
             snapshot.error?.message ?? "provider refund snapshot unavailable",
             {
               retryable: snapshot.error?.retryable ?? false,
@@ -632,7 +661,9 @@ export function createBillingPaymentsService(
       });
     },
 
-    async getMerchantReadiness(query: GetMerchantReadinessQuery): Promise<MerchantReadinessSnapshot | null> {
+    async getMerchantReadiness(
+      query: GetMerchantReadinessQuery,
+    ): Promise<MerchantReadinessSnapshot | null> {
       return getMerchantReadinessSnapshot(dependencies.uow, query);
     },
 

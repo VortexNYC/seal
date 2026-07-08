@@ -61,7 +61,11 @@ function createPayment(overrides: Partial<Payment> = {}): Payment {
   };
 }
 
-function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; payment?: Payment; refund?: Refund }): PaymentsUnitOfWork {
+function createMemoryUnitOfWork(seed?: {
+  merchant?: MerchantAccount;
+  payment?: Payment;
+  refund?: Refund;
+}): PaymentsUnitOfWork {
   const merchants = new Map<string, MerchantAccount>();
   const payments = new Map<string, Payment>();
   const refunds = new Map<string, Refund>();
@@ -92,20 +96,27 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; payment?: P
         );
       },
       async getByProcessorRef(environment, provider, objectType, objectId) {
-        return Array.from(merchants.values()).find(
-          (merchant) =>
-            merchant.environment === environment &&
-            merchant.processorAccountRefs.some(
-              (ref) => ref.provider === provider && ref.objectType === objectType && ref.objectId === objectId,
-            ),
-        ) ?? null;
+        return (
+          Array.from(merchants.values()).find(
+            (merchant) =>
+              merchant.environment === environment &&
+              merchant.processorAccountRefs.some(
+                (ref) =>
+                  ref.provider === provider &&
+                  ref.objectType === objectType &&
+                  ref.objectId === objectId,
+              ),
+          ) ?? null
+        );
       },
       async save(record) {
         merchants.set(`${record.environment}:${record.id}`, record);
       },
     },
     customers: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     onboarding: {
@@ -135,10 +146,15 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; payment?: P
     },
     customerStates: {
       async getByMerchantAndCustomer(environment, merchantAccountId, customerProfileId) {
-        return customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null;
+        return (
+          customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null
+        );
       },
       async save(record) {
-        customerStates.set(`${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`, record);
+        customerStates.set(
+          `${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`,
+          record,
+        );
       },
     },
     paymentMethods: {
@@ -149,14 +165,21 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; payment?: P
         return null;
       },
       async listByOwner(environment, ownerType, ownerId) {
-        return Array.from(paymentMethodsStore.values()).filter((record) => record.environment === environment && record.ownerType === ownerType && record.ownerId === ownerId);
+        return Array.from(paymentMethodsStore.values()).filter(
+          (record) =>
+            record.environment === environment &&
+            record.ownerType === ownerType &&
+            record.ownerId === ownerId,
+        );
       },
       async save(record) {
         paymentMethodsStore.set(`${record.environment}:${record.id}`, record);
       },
     },
     paymentMethodSetupSessions: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     paymentIntents: {
@@ -179,9 +202,12 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; payment?: P
         return payments.get(`${options.environment}:${id}`) ?? null;
       },
       async getByPaymentIntentId(environment, paymentIntentId) {
-        return Array.from(payments.values()).find(
-          (record) => record.environment === environment && record.paymentIntentId === paymentIntentId,
-        ) ?? null;
+        return (
+          Array.from(payments.values()).find(
+            (record) =>
+              record.environment === environment && record.paymentIntentId === paymentIntentId,
+          ) ?? null
+        );
       },
       async save(record) {
         payments.set(`${record.environment}:${record.id}`, record);
@@ -192,13 +218,18 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; payment?: P
         return refunds.get(`${options.environment}:${id}`) ?? null;
       },
       async getByProcessorRef(environment, provider, objectType, objectId) {
-        return Array.from(refunds.values()).find(
-          (record) =>
-            record.environment === environment &&
-            record.processorRefundRefs.some(
-              (ref) => ref.provider === provider && ref.objectType === objectType && ref.objectId === objectId,
-            ),
-        ) ?? null;
+        return (
+          Array.from(refunds.values()).find(
+            (record) =>
+              record.environment === environment &&
+              record.processorRefundRefs.some(
+                (ref) =>
+                  ref.provider === provider &&
+                  ref.objectType === objectType &&
+                  ref.objectId === objectId,
+              ),
+          ) ?? null
+        );
       },
       async listByPayment(environment, paymentId) {
         return Array.from(refunds.values()).filter(
@@ -314,11 +345,21 @@ describe("createRefundsService", () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["refunds"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createRefundsService({
@@ -327,24 +368,35 @@ describe("createRefundsService", () => {
       resolveProviderContext: () => providerContext,
     });
 
-    await expect(service.createRefund({
-      environment: "sandbox",
-      merchantAccountId: "missing_merchant",
-      paymentId: "payment_123",
-      amount: 100,
-      reason: "customer_request",
-      requestedByType: "operator",
-      requestedByRef: "user_123",
-    })).rejects.toMatchObject({ name: "RefundsServiceError", code: "not_found" } satisfies Partial<RefundsServiceError>);
+    await expect(
+      service.createRefund({
+        environment: "sandbox",
+        merchantAccountId: "missing_merchant",
+        paymentId: "payment_123",
+        amount: 100,
+        reason: "customer_request",
+        requestedByType: "operator",
+        requestedByRef: "user_123",
+      }),
+    ).rejects.toMatchObject({
+      name: "RefundsServiceError",
+      code: "not_found",
+    } satisfies Partial<RefundsServiceError>);
   });
 
   test("maps provider failure into service error", async () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["refunds"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
       async createRefund() {
         return {
           ok: false,
@@ -357,7 +409,9 @@ describe("createRefundsService", () => {
           },
         };
       },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createRefundsService({
@@ -366,15 +420,21 @@ describe("createRefundsService", () => {
       resolveProviderContext: () => providerContext,
     });
 
-    await expect(service.createRefund({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      paymentId: "payment_123",
-      amount: 100,
-      reason: "customer_request",
-      requestedByType: "operator",
-      requestedByRef: "user_123",
-    })).rejects.toMatchObject({ name: "RefundsServiceError", code: "provider_unavailable", retryable: true } satisfies Partial<RefundsServiceError>);
+    await expect(
+      service.createRefund({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        paymentId: "payment_123",
+        amount: 100,
+        reason: "customer_request",
+        requestedByType: "operator",
+        requestedByRef: "user_123",
+      }),
+    ).rejects.toMatchObject({
+      name: "RefundsServiceError",
+      code: "provider_unavailable",
+      retryable: true,
+    } satisfies Partial<RefundsServiceError>);
   });
 
   test("creates refund and supports idempotent replay", async () => {
@@ -383,9 +443,15 @@ describe("createRefundsService", () => {
     const adapter: PaymentsProviderAdapter = {
       key: "finix",
       supportedCapabilities: ["refunds"],
-      async verifyWebhookSignature() { throw new Error("not used"); },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
+      async verifyWebhookSignature() {
+        throw new Error("not used");
+      },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
       async createRefund() {
         providerCalls += 1;
         return {
@@ -402,7 +468,9 @@ describe("createRefundsService", () => {
           },
         };
       },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createRefundsService({
@@ -454,9 +522,14 @@ describe("createRefundsService", () => {
         },
       ],
     });
-    expect(await uow.events.getCanonicalEventById("refund_fixed:refund.created:2026-04-23T12:05:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "refund_fixed:refund.created:2026-04-23T12:05:00.000Z",
+        {
+          environment: "sandbox",
+        },
+      ),
+    ).toMatchObject({
       eventType: "refund.created",
       aggregateId: "refund_fixed",
       payload: {
@@ -496,9 +569,15 @@ describe("createRefundsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["refunds"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
         async createRefund() {
           return {
             ok: true,
@@ -514,7 +593,9 @@ describe("createRefundsService", () => {
             },
           };
         },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       resolveProviderContext: () => providerContext,
       now: () => "2026-04-23T12:05:00.000Z",
@@ -542,11 +623,18 @@ describe("createRefundsService", () => {
     expect(stored).toMatchObject({
       terminalSessionId: "tcs_terminal_123",
       terminalReaderId: "tr_terminal_123",
-      processorRefundRefs: [expect.objectContaining({ provider: "finix", objectId: "rf_terminal_123" })],
+      processorRefundRefs: [
+        expect.objectContaining({ provider: "finix", objectId: "rf_terminal_123" }),
+      ],
     });
-    expect(await uow.events.getCanonicalEventById("refund_terminal:refund.created:2026-04-23T12:05:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById(
+        "refund_terminal:refund.created:2026-04-23T12:05:00.000Z",
+        {
+          environment: "sandbox",
+        },
+      ),
+    ).toMatchObject({
       eventType: "refund.created",
       payload: {
         paymentId: "payment_123",
@@ -581,39 +669,60 @@ describe("createRefundsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["refunds"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       resolveProviderContext: () => providerContext,
     });
 
-    await expect(service.createRefund({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      paymentId: "payment_123",
-      amount: 250,
-      reason: "customer_request",
-      requestedByType: "operator",
-      requestedByRef: "user_123",
-    })).rejects.toMatchObject({
+    await expect(
+      service.createRefund({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        paymentId: "payment_123",
+        amount: 250,
+        reason: "customer_request",
+        requestedByType: "operator",
+        requestedByRef: "user_123",
+      }),
+    ).rejects.toMatchObject({
       name: "RefundsServiceError",
       code: "conflict",
     } satisfies Partial<RefundsServiceError>);
   });
 
   test("marks payment refunded_full when refund succeeds for full amount", async () => {
-    const uow = createMemoryUnitOfWork({ merchant: createMerchant(), payment: createPayment({ amount: 500 }) });
+    const uow = createMemoryUnitOfWork({
+      merchant: createMerchant(),
+      payment: createPayment({ amount: 500 }),
+    });
     const service = createRefundsService({
       uow,
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["refunds"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
         async createRefund() {
           return {
             ok: true,
@@ -629,7 +738,9 @@ describe("createRefundsService", () => {
             },
           };
         },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       resolveProviderContext: () => providerContext,
       now: () => "2026-04-23T12:05:00.000Z",
@@ -674,11 +785,21 @@ describe("createRefundsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["refunds"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       resolveProviderContext: () => providerContext,
     });

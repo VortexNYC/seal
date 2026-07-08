@@ -1,10 +1,5 @@
-import type {
-  IngestProviderWebhookCommand,
-  WebhookIngestionResult,
-} from "./contracts";
+import type { IngestProviderWebhookCommand, WebhookIngestionResult } from "./contracts";
 
 export interface WebhooksService {
-  ingestProviderWebhook(
-    command: IngestProviderWebhookCommand,
-  ): Promise<WebhookIngestionResult>;
+  ingestProviderWebhook(command: IngestProviderWebhookCommand): Promise<WebhookIngestionResult>;
 }

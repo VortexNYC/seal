@@ -19,10 +19,16 @@ import type {
  * Concrete implementation can live behind HTTP handlers, workers, or in-process adapters.
  */
 export interface BillingPaymentsService extends BillingPaymentsPort {
-  collectInvoicePayment(command: CollectInvoicePaymentCommand): Promise<CollectInvoicePaymentResult>;
+  collectInvoicePayment(
+    command: CollectInvoicePaymentCommand,
+  ): Promise<CollectInvoicePaymentResult>;
   refundInvoicePayment(command: RefundInvoicePaymentCommand): Promise<RefundInvoicePaymentResult>;
-  reconcileInvoicePayment(query: ReconcileInvoicePaymentQuery): Promise<ReconcileInvoicePaymentResult | null>;
-  reconcileInvoiceRefund(query: ReconcileInvoiceRefundQuery): Promise<ReconcileInvoiceRefundResult | null>;
+  reconcileInvoicePayment(
+    query: ReconcileInvoicePaymentQuery,
+  ): Promise<ReconcileInvoicePaymentResult | null>;
+  reconcileInvoiceRefund(
+    query: ReconcileInvoiceRefundQuery,
+  ): Promise<ReconcileInvoiceRefundResult | null>;
   getMerchantReadiness(query: GetMerchantReadinessQuery): Promise<MerchantReadinessSnapshot | null>;
   listCustomerPaymentMethods(
     query: GetCustomerPaymentMethodsQuery,

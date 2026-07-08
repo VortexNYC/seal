@@ -60,7 +60,10 @@ export interface PaymentHardwareShipment {
 
 export interface PaymentHardwareProviderAction {
   readonly rail: PaymentHardwareFulfillmentRail;
-  readonly action: "place_order_in_provider_portal" | "cancel_order_in_provider_portal" | "contact_provider";
+  readonly action:
+    | "place_order_in_provider_portal"
+    | "cancel_order_in_provider_portal"
+    | "contact_provider";
   readonly reason: string;
 }
 

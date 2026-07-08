@@ -68,13 +68,18 @@ function toErrorResponse(error: unknown, requestId: string): HttpResponseEnvelop
     body: {
       code: "internal_error",
       category: "merchant_accounts_service",
-      message: error instanceof Error ? error.message : "unexpected merchant accounts handler failure",
+      message:
+        error instanceof Error ? error.message : "unexpected merchant accounts handler failure",
       requestId,
     },
   };
 }
 
-function toSuccessResponse<TBody>(data: TBody, requestId: string, status = 200): HttpResponseEnvelope<TBody> {
+function toSuccessResponse<TBody>(
+  data: TBody,
+  requestId: string,
+  status = 200,
+): HttpResponseEnvelope<TBody> {
   return {
     status,
     body: {

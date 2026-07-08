@@ -37,9 +37,12 @@ export function deriveCustomerPaymentState(
     (paymentMethod) =>
       paymentMethod.ownerType === "customer" &&
       paymentMethod.ownerId === input.customerProfileId &&
-      (paymentMethod.merchantAccountId === undefined || paymentMethod.merchantAccountId === input.merchantAccountId),
+      (paymentMethod.merchantAccountId === undefined ||
+        paymentMethod.merchantAccountId === input.merchantAccountId),
   );
-  const activePaymentMethods = paymentMethods.filter((paymentMethod) => paymentMethod.status === "active");
+  const activePaymentMethods = paymentMethods.filter(
+    (paymentMethod) => paymentMethod.status === "active",
+  );
   const customerPaymentIntents = (input.paymentIntents ?? []).filter(
     (paymentIntent) =>
       paymentIntent.customerProfileId === input.customerProfileId &&
@@ -53,7 +56,8 @@ export function deriveCustomerPaymentState(
     customerProfileId: input.customerProfileId,
     merchantAccountId: input.merchantAccountId,
     environment: input.environment,
-    defaultPaymentMethodId: activePaymentMethods.find((paymentMethod) => paymentMethod.isDefault)?.id,
+    defaultPaymentMethodId: activePaymentMethods.find((paymentMethod) => paymentMethod.isDefault)
+      ?.id,
     activePaymentMethodIds: activePaymentMethods.map((paymentMethod) => paymentMethod.id),
     requiresActionPaymentIntentIds: customerPaymentIntents
       .filter((paymentIntent) => paymentIntent.status === "requires_action")

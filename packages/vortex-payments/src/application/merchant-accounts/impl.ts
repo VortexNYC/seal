@@ -119,9 +119,15 @@ function toSnapshot(record: MerchantAccount): MerchantAccountSnapshot {
       businessTaxIdMasked: maskLast4(record.businessTaxId),
       personalTaxIdMasked: maskLast4(record.taxId),
       associatedIdentityCount: associatedIdentities.length,
-      beneficialOwnerCount: associatedIdentities.filter((identity) => identity.relationType === "beneficial_owner").length,
-      controlPersonCount: associatedIdentities.filter((identity) => identity.relationType === "control_person").length,
-      representativeCount: associatedIdentities.filter((identity) => identity.relationType === "representative").length,
+      beneficialOwnerCount: associatedIdentities.filter(
+        (identity) => identity.relationType === "beneficial_owner",
+      ).length,
+      controlPersonCount: associatedIdentities.filter(
+        (identity) => identity.relationType === "control_person",
+      ).length,
+      representativeCount: associatedIdentities.filter(
+        (identity) => identity.relationType === "representative",
+      ).length,
     },
     settlementAccount: {
       present: record.settlementBankAccount !== undefined,
@@ -238,23 +244,26 @@ export function createMerchantAccountsService(
       await dependencies.uow.merchantStates.save(
         createInitialMerchantState(merchant.id, merchant.environment, merchant.status, createdAt),
       );
-      await dependencies.uow.events.saveCanonicalEvent(createMerchantLocalEvent({
-        id: `${merchant.id}:merchant_account.created:${createdAt}`,
-        eventType: "merchant_account.created",
-        merchant,
-        occurredAt: createdAt,
-        payload: {
-          displayName: merchant.displayName,
-          merchantMode: merchant.merchantMode,
-        },
-      }));
+      await dependencies.uow.events.saveCanonicalEvent(
+        createMerchantLocalEvent({
+          id: `${merchant.id}:merchant_account.created:${createdAt}`,
+          eventType: "merchant_account.created",
+          merchant,
+          occurredAt: createdAt,
+          payload: {
+            displayName: merchant.displayName,
+            merchantMode: merchant.merchantMode,
+          },
+        }),
+      );
       return toSnapshot(merchant);
     },
 
-    async listMerchantAccounts(
-      query: ListMerchantAccountsQuery,
-    ): Promise<MerchantAccountList> {
-      const merchants = await dependencies.uow.merchants.listByTenant(query.environment, query.tenantId);
+    async listMerchantAccounts(query: ListMerchantAccountsQuery): Promise<MerchantAccountList> {
+      const merchants = await dependencies.uow.merchants.listByTenant(
+        query.environment,
+        query.tenantId,
+      );
       return [...merchants]
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .map(toSnapshot);
@@ -292,34 +301,54 @@ export function createMerchantAccountsService(
         firstName: applyOptionalUpdate(existing.firstName, command.firstName),
         lastName: applyOptionalUpdate(existing.lastName, command.lastName),
         dateOfBirth: applyOptionalUpdate(existing.dateOfBirth, command.dateOfBirth),
-        incorporationDate: applyOptionalUpdate(existing.incorporationDate, command.incorporationDate),
-        maxTransactionAmount: applyOptionalUpdate(existing.maxTransactionAmount, command.maxTransactionAmount),
-        achMaxTransactionAmount: applyOptionalUpdate(existing.achMaxTransactionAmount, command.achMaxTransactionAmount),
+        incorporationDate: applyOptionalUpdate(
+          existing.incorporationDate,
+          command.incorporationDate,
+        ),
+        maxTransactionAmount: applyOptionalUpdate(
+          existing.maxTransactionAmount,
+          command.maxTransactionAmount,
+        ),
+        achMaxTransactionAmount: applyOptionalUpdate(
+          existing.achMaxTransactionAmount,
+          command.achMaxTransactionAmount,
+        ),
         annualCardVolume: applyOptionalUpdate(existing.annualCardVolume, command.annualCardVolume),
         mcc: applyOptionalUpdate(existing.mcc, command.mcc),
         url: applyOptionalUpdate(existing.url, command.url),
-        principalPercentageOwnership: applyOptionalUpdate(existing.principalPercentageOwnership, command.principalPercentageOwnership),
+        principalPercentageOwnership: applyOptionalUpdate(
+          existing.principalPercentageOwnership,
+          command.principalPercentageOwnership,
+        ),
         hasAcceptedCreditCardsPreviously: applyOptionalUpdate(
           existing.hasAcceptedCreditCardsPreviously,
           command.hasAcceptedCreditCardsPreviously,
         ),
-        settlementBankAccount: applyOptionalUpdate(existing.settlementBankAccount, command.settlementBankAccount),
-        associatedIdentities: applyOptionalUpdate(existing.associatedIdentities, command.associatedIdentities),
+        settlementBankAccount: applyOptionalUpdate(
+          existing.settlementBankAccount,
+          command.settlementBankAccount,
+        ),
+        associatedIdentities: applyOptionalUpdate(
+          existing.associatedIdentities,
+          command.associatedIdentities,
+        ),
         underwriting: applyOptionalUpdate(existing.underwriting, command.underwriting),
         metadata: applyOptionalUpdate(existing.metadata, command.metadata),
         updatedAt: now(),
       };
       await dependencies.uow.merchants.save(updated);
-      await dependencies.uow.events.saveCanonicalEvent(createMerchantLocalEvent({
-        id: `${updated.id}:merchant_account.updated:${updated.updatedAt}`,
-        eventType: "merchant_account.updated",
-        merchant: updated,
-        occurredAt: updated.updatedAt,
-        payload: {
-          displayName: updated.displayName,
-          merchantMode: updated.merchantMode,
-        },
-      }));
+      await dependencies.uow.events.saveCanonicalEvent(
+        createMerchantLocalEvent({
+          id: `${updated.id}:merchant_account.updated:${updated.updatedAt}`,
+          eventType: "merchant_account.updated",
+          merchant: updated,
+          occurredAt: updated.updatedAt,
+          payload: {
+            displayName: updated.displayName,
+            merchantMode: updated.merchantMode,
+          },
+        }),
+      );
       return toSnapshot(updated);
     },
   };

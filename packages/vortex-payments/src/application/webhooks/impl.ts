@@ -1,15 +1,8 @@
-import type {
-  CanonicalDomainEvent,
-  ProcessorEvent,
-  RawProcessorWebhook,
-} from "../../events/types";
+import type { CanonicalDomainEvent, ProcessorEvent, RawProcessorWebhook } from "../../events/types";
 import type { PaymentsProviderAdapter, ProviderKey } from "../../providers/types";
 import type { ProviderRegistry } from "../../providers/registry";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
-import type {
-  IngestProviderWebhookCommand,
-  WebhookIngestionResult,
-} from "./contracts";
+import type { IngestProviderWebhookCommand, WebhookIngestionResult } from "./contracts";
 import type { CanonicalEventsService } from "../events/service";
 import type { WebhooksService } from "./service";
 
@@ -97,9 +90,7 @@ function getAdapterOrThrow(
   }
 }
 
-export function createWebhooksService(
-  dependencies: WebhooksServiceDependencies,
-): WebhooksService {
+export function createWebhooksService(dependencies: WebhooksServiceDependencies): WebhooksService {
   const createId = dependencies.createId ?? createDefaultId;
 
   return {
@@ -195,7 +186,9 @@ export function createWebhooksService(
           id: processorEvent.id || createId("evt"),
           normalizationStatus,
           normalizationError:
-            canonicalEvents.length > 0 ? undefined : "no canonical events mapped from processor event",
+            canonicalEvents.length > 0
+              ? undefined
+              : "no canonical events mapped from processor event",
         });
         for (const event of canonicalEvents) {
           await uow.events.saveCanonicalEvent(event);

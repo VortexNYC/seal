@@ -17,7 +17,10 @@ function defaultNow(): string {
   return new Date().toISOString();
 }
 
-function createLineageEntryId(settlementId: string, rowRef: SettlementLineageEntry["providerRowRef"]): string {
+function createLineageEntryId(
+  settlementId: string,
+  rowRef: SettlementLineageEntry["providerRowRef"],
+): string {
   return `${settlementId}:${rowRef.objectType}:${rowRef.objectId}`;
 }
 
@@ -27,7 +30,9 @@ export function createSettlementLineageService(
   const now = dependencies.now ?? defaultNow;
 
   return {
-    async syncSettlementLineage(query: SyncSettlementLineageQuery): Promise<SyncSettlementLineageResult | null> {
+    async syncSettlementLineage(
+      query: SyncSettlementLineageQuery,
+    ): Promise<SyncSettlementLineageResult | null> {
       const settlementLineageEntries = dependencies.uow.settlementLineageEntries;
       if (!settlementLineageEntries) {
         throw new Error("settlement lineage repository is not configured");
@@ -47,9 +52,14 @@ export function createSettlementLineageService(
         return null;
       }
 
-      const settlementRef = settlement.processorRefs.find((ref) => ref.relationship === "settlement") ?? settlement.processorRefs[0] ?? null;
+      const settlementRef =
+        settlement.processorRefs.find((ref) => ref.relationship === "settlement") ??
+        settlement.processorRefs[0] ??
+        null;
       if (!settlementRef) {
-        throw new Error(`settlement ${query.settlementId} is missing processor settlement reference`);
+        throw new Error(
+          `settlement ${query.settlementId} is missing processor settlement reference`,
+        );
       }
 
       const providerContext = dependencies.resolveProviderContext(merchant);
@@ -111,7 +121,9 @@ export function createSettlementLineageService(
         considered: entries.length,
         resolvedPayments: entries.filter((entry) => entry.paymentId !== undefined).length,
         resolvedRefunds: entries.filter((entry) => entry.refundId !== undefined).length,
-        unresolved: entries.filter((entry) => entry.paymentId === undefined && entry.refundId === undefined).length,
+        unresolved: entries.filter(
+          (entry) => entry.paymentId === undefined && entry.refundId === undefined,
+        ).length,
         entries,
       };
     },

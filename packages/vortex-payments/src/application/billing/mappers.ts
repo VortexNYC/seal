@@ -57,7 +57,8 @@ export function mapPaymentMethodsToBillingSummaries(
 ): readonly BillingCustomerPaymentMethodSummary[] {
   return paymentMethods
     .filter(
-      (paymentMethod) => paymentMethod.ownerType === "customer" && paymentMethod.status === "active",
+      (paymentMethod) =>
+        paymentMethod.ownerType === "customer" && paymentMethod.status === "active",
     )
     .map((paymentMethod) => ({
       paymentMethodId: paymentMethod.id,

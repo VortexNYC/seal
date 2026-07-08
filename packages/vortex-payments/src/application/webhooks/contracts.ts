@@ -1,7 +1,4 @@
-import type {
-  Environment,
-  RawProcessorWebhookId,
-} from "../../domain/common";
+import type { Environment, RawProcessorWebhookId } from "../../domain/common";
 import type { ProviderKey } from "../../providers/types";
 
 export interface IngestProviderWebhookCommand {

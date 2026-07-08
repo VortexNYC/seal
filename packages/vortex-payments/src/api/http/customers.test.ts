@@ -16,7 +16,9 @@ describe("createCustomersHttpHandlers", () => {
           phone: "5551112222",
         };
       },
-      async getCustomerProfile() { return null; },
+      async getCustomerProfile() {
+        return null;
+      },
       async updateCustomerProfile() {
         throw new Error("unused");
       },
@@ -50,7 +52,9 @@ describe("createCustomersHttpHandlers", () => {
       async createCustomerProfile() {
         throw new CustomersServiceError("not_found", "merchant account not found");
       },
-      async getCustomerProfile() { return null; },
+      async getCustomerProfile() {
+        return null;
+      },
       async updateCustomerProfile() {
         throw new Error("unused");
       },

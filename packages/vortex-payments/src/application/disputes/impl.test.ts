@@ -58,34 +58,141 @@ function createMerchant(overrides: Partial<MerchantAccount> = {}): MerchantAccou
   };
 }
 
-function createUow(disputes: readonly Dispute[], merchant: MerchantAccount | null = null): PaymentsUnitOfWork {
-  const records = new Map(disputes.map((dispute) => [`${dispute.environment}:${dispute.id}`, dispute]));
+function createUow(
+  disputes: readonly Dispute[],
+  merchant: MerchantAccount | null = null,
+): PaymentsUnitOfWork {
+  const records = new Map(
+    disputes.map((dispute) => [`${dispute.environment}:${dispute.id}`, dispute]),
+  );
   return {
     merchants: {
-      async getById(id, options) { return merchant && merchant.id === id && merchant.environment === options.environment ? merchant : null; },
-      async listByTenant() { return merchant ? [merchant] : []; },
-      async getByProcessorRef() { return null; },
+      async getById(id, options) {
+        return merchant && merchant.id === id && merchant.environment === options.environment
+          ? merchant
+          : null;
+      },
+      async listByTenant() {
+        return merchant ? [merchant] : [];
+      },
+      async getByProcessorRef() {
+        return null;
+      },
       async save() {},
     },
-    customers: { async getById() { return null; }, async save() {} },
+    customers: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
     onboarding: {
-      async getSessionById() { return null; },
-      async getLatestSessionByMerchantAccountId() { return null; },
-      async listRequirementsForSession() { return []; },
-      async listDocumentsForRequirement() { return []; },
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
       async saveSession() {},
       async saveRequirement() {},
       async saveRequirementDocument() {},
     },
-    merchantStates: { async getByMerchantAccountId() { return null; }, async save() {} },
-    customerStates: { async getByMerchantAndCustomer() { return null; }, async save() {} },
-    paymentMethods: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByOwner() { return []; }, async save() {} },
-    paymentMethodSetupSessions: { async getById() { return null; }, async save() {} },
-    paymentIntents: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async listByCustomerProfile() { return []; }, async save() {} },
-    payments: { async getById() { return null; }, async getByPaymentIntentId() { return null; }, async save() {} },
-    refunds: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByPayment() { return []; }, async save() {} },
-    settlements: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
-    payouts: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
+    merchantStates: {
+      async getByMerchantAccountId() {
+        return null;
+      },
+      async save() {},
+    },
+    customerStates: {
+      async getByMerchantAndCustomer() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentMethods: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return [];
+      },
+      async save() {},
+    },
+    paymentMethodSetupSessions: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentIntents: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return [];
+      },
+      async save() {},
+    },
+    payments: {
+      async getById() {
+        return null;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
+      async save() {},
+    },
+    refunds: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByPayment() {
+        return [];
+      },
+      async save() {},
+    },
+    settlements: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
+    payouts: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
     disputes: {
       async getById(id, options) {
         return records.get(`${options.environment}:${id}`) ?? null;
@@ -94,28 +201,55 @@ function createUow(disputes: readonly Dispute[], merchant: MerchantAccount | nul
         return null;
       },
       async listByMerchant(environment, merchantAccountId) {
-        return Array.from(records.values()).filter((record) => record.environment === environment && record.merchantAccountId === merchantAccountId);
+        return Array.from(records.values()).filter(
+          (record) =>
+            record.environment === environment && record.merchantAccountId === merchantAccountId,
+        );
       },
       async save(record) {
         records.set(`${record.environment}:${record.id}`, record);
       },
     },
     events: {
-      async getRawWebhookById() { return null; },
-      async getRawWebhookByDeliveryKey() { return null; },
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
       async saveRawWebhook() {},
-      async getProcessorEventById() { return null; },
+      async getProcessorEventById() {
+        return null;
+      },
       async saveProcessorEvent() {},
       async saveCanonicalEvent() {},
-      async getCanonicalEventById() { return null; },
-      async getWebhookEndpointById() { return null; },
+      async getCanonicalEventById() {
+        return null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
       async saveWebhookEndpoint() {},
       async saveWebhookDelivery() {},
       async saveEventSubscription() {},
     },
-    cases: { async getById() { return null; }, async save() {}, async saveActivity() {}, async saveNote() {} },
-    idempotency: { async getByScopeAndKey() { return null; }, async save() {} },
-    async runInTransaction(work) { return await work(this); },
+    cases: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+      async saveActivity() {},
+      async saveNote() {},
+    },
+    idempotency: {
+      async getByScopeAndKey() {
+        return null;
+      },
+      async save() {},
+    },
+    async runInTransaction(work) {
+      return await work(this);
+    },
   };
 }
 
@@ -134,11 +268,57 @@ function createAdapter(overrides: Partial<PaymentsProviderAdapter> = {}): Paymen
   return {
     key: "finix",
     supportedCapabilities: [],
-    async verifyWebhookSignature() { return { valid: true, deliveryKey: "delivery_123", receivedAt: "2026-05-14T13:00:00.000Z" }; },
-    async createMerchantOnboarding() { return { ok: false, error: { provider: "finix", category: "not_supported", code: "not_supported", message: "not supported", retryable: false } }; },
-    async createPaymentIntent() { return { ok: false, error: { provider: "finix", category: "not_supported", code: "not_supported", message: "not supported", retryable: false } }; },
-    async createRefund() { return { ok: false, error: { provider: "finix", category: "not_supported", code: "not_supported", message: "not supported", retryable: false } }; },
-    async fetchObjectSnapshot() { return { ok: false, error: { provider: "finix", category: "not_supported", code: "not_supported", message: "not supported", retryable: false } }; },
+    async verifyWebhookSignature() {
+      return { valid: true, deliveryKey: "delivery_123", receivedAt: "2026-05-14T13:00:00.000Z" };
+    },
+    async createMerchantOnboarding() {
+      return {
+        ok: false,
+        error: {
+          provider: "finix",
+          category: "not_supported",
+          code: "not_supported",
+          message: "not supported",
+          retryable: false,
+        },
+      };
+    },
+    async createPaymentIntent() {
+      return {
+        ok: false,
+        error: {
+          provider: "finix",
+          category: "not_supported",
+          code: "not_supported",
+          message: "not supported",
+          retryable: false,
+        },
+      };
+    },
+    async createRefund() {
+      return {
+        ok: false,
+        error: {
+          provider: "finix",
+          category: "not_supported",
+          code: "not_supported",
+          message: "not supported",
+          retryable: false,
+        },
+      };
+    },
+    async fetchObjectSnapshot() {
+      return {
+        ok: false,
+        error: {
+          provider: "finix",
+          category: "not_supported",
+          code: "not_supported",
+          message: "not supported",
+          retryable: false,
+        },
+      };
+    },
     ...overrides,
   };
 }
@@ -187,11 +367,13 @@ describe("createDisputesService", () => {
     });
     expect(dispute).not.toHaveProperty("processorRefs");
 
-    expect(await service.getMerchantDispute({
-      environment: "sandbox",
-      merchantAccountId: "merchant_999",
-      disputeId: "dp_123",
-    })).toBeNull();
+    expect(
+      await service.getMerchantDispute({
+        environment: "sandbox",
+        merchantAccountId: "merchant_999",
+        disputeId: "dp_123",
+      }),
+    ).toBeNull();
   });
 
   test("projects card-present terminal lineage without provider refs", async () => {
@@ -221,24 +403,31 @@ describe("createDisputesService", () => {
 
   test("accepts dispute with provider primitive and updates canonical response state", async () => {
     const service = createDisputesService({
-      uow: createUow([createDispute({
-        terminalSessionId: "tcs_terminal_123",
-        terminalReaderId: "tr_terminal_123",
-      })], createMerchant()),
-      providers: createProviderRegistry(createAdapter({
-        async acceptDispute(_context, input) {
-          expect(input.disputeRef.objectId).toBe("DI_123");
-          return {
-            ok: true,
-            value: {
-              disputeRef: input.disputeRef,
-              state: "ACCEPTED",
-              openedAt: "2026-05-14T13:00:00.000Z",
-              updatedAt: "2026-05-14T16:00:00.000Z",
-            },
-          };
-        },
-      })),
+      uow: createUow(
+        [
+          createDispute({
+            terminalSessionId: "tcs_terminal_123",
+            terminalReaderId: "tr_terminal_123",
+          }),
+        ],
+        createMerchant(),
+      ),
+      providers: createProviderRegistry(
+        createAdapter({
+          async acceptDispute(_context, input) {
+            expect(input.disputeRef.objectId).toBe("DI_123");
+            return {
+              ok: true,
+              value: {
+                disputeRef: input.disputeRef,
+                state: "ACCEPTED",
+                openedAt: "2026-05-14T13:00:00.000Z",
+                updatedAt: "2026-05-14T16:00:00.000Z",
+              },
+            };
+          },
+        }),
+      ),
       resolveProviderContext: () => ({ provider: "finix", environment: "sandbox" }),
       now: () => "2026-05-14T16:00:00.000Z",
     });
@@ -274,63 +463,73 @@ describe("createDisputesService", () => {
     } as const;
     const service = createDisputesService({
       uow: createUow([createDispute()], createMerchant()),
-      providers: createProviderRegistry(createAdapter({
-        async createDisputeEvidence(_context, input) {
-          expect(input.fileRef.objectId).toBe("FILE_123");
-          return {
-            ok: true,
-            value: {
-              evidenceRef,
-              disputeRef: input.disputeRef,
-              fileRef: input.fileRef,
-              state: "PENDING",
-              createdAt: "2026-05-14T16:00:00.000Z",
-              updatedAt: "2026-05-14T16:00:00.000Z",
-            },
-          };
-        },
-        async listDisputeEvidence(_context, input) {
-          expect(input.disputeRef.objectId).toBe("DI_123");
-          return {
-            ok: true,
-            value: {
-              items: [{ evidenceRef, createdAt: "2026-05-14T16:00:00.000Z", updatedAt: "2026-05-14T16:00:00.000Z" }],
-            },
-          };
-        },
-        async submitDisputeEvidence(_context, input) {
-          expect(input.note).toBe("Receipt and fulfillment evidence attached.");
-          return {
-            ok: true,
-            value: {
-              evidenceRef,
-              disputeRef: input.disputeRef,
-              state: "SUBMITTED",
-              createdAt: "2026-05-14T16:00:00.000Z",
-              updatedAt: "2026-05-14T16:05:00.000Z",
-            },
-          };
-        },
-        async listDisputeAdjustments(_context, input) {
-          expect(input.disputeRef.objectId).toBe("DI_123");
-          return {
-            ok: true,
-            value: {
-              items: [{
-                adjustmentRef: {
-                  provider: "finix",
-                  objectType: "dispute_adjustment",
-                  objectId: "TR_ADJ_123",
-                  relationship: "dispute_adjustment",
-                  recordedAt: "2026-05-14T16:10:00.000Z",
-                },
-                amount: 900,
-                currency: "USD",
-              }],
-            },
-          };
-        },
-      })),
+      providers: createProviderRegistry(
+        createAdapter({
+          async createDisputeEvidence(_context, input) {
+            expect(input.fileRef.objectId).toBe("FILE_123");
+            return {
+              ok: true,
+              value: {
+                evidenceRef,
+                disputeRef: input.disputeRef,
+                fileRef: input.fileRef,
+                state: "PENDING",
+                createdAt: "2026-05-14T16:00:00.000Z",
+                updatedAt: "2026-05-14T16:00:00.000Z",
+              },
+            };
+          },
+          async listDisputeEvidence(_context, input) {
+            expect(input.disputeRef.objectId).toBe("DI_123");
+            return {
+              ok: true,
+              value: {
+                items: [
+                  {
+                    evidenceRef,
+                    createdAt: "2026-05-14T16:00:00.000Z",
+                    updatedAt: "2026-05-14T16:00:00.000Z",
+                  },
+                ],
+              },
+            };
+          },
+          async submitDisputeEvidence(_context, input) {
+            expect(input.note).toBe("Receipt and fulfillment evidence attached.");
+            return {
+              ok: true,
+              value: {
+                evidenceRef,
+                disputeRef: input.disputeRef,
+                state: "SUBMITTED",
+                createdAt: "2026-05-14T16:00:00.000Z",
+                updatedAt: "2026-05-14T16:05:00.000Z",
+              },
+            };
+          },
+          async listDisputeAdjustments(_context, input) {
+            expect(input.disputeRef.objectId).toBe("DI_123");
+            return {
+              ok: true,
+              value: {
+                items: [
+                  {
+                    adjustmentRef: {
+                      provider: "finix",
+                      objectType: "dispute_adjustment",
+                      objectId: "TR_ADJ_123",
+                      relationship: "dispute_adjustment",
+                      recordedAt: "2026-05-14T16:10:00.000Z",
+                    },
+                    amount: 900,
+                    currency: "USD",
+                  },
+                ],
+              },
+            };
+          },
+        }),
+      ),
       resolveProviderContext: () => ({ provider: "finix", environment: "sandbox" }),
       now: () => "2026-05-14T16:05:00.000Z",
     });

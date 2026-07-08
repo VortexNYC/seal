@@ -2,10 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { PaymentIntent } from "../../domain/payments";
 import type { PaymentMethod } from "../../domain/payment-methods";
 import type { CanonicalDomainEvent } from "../../events/types";
-import {
-  createPaymentMethodsService,
-  type PaymentMethodsServiceError,
-} from "./impl";
+import { createPaymentMethodsService, type PaymentMethodsServiceError } from "./impl";
 
 function createPaymentMethod(overrides: Partial<PaymentMethod> = {}): PaymentMethod {
   return {
@@ -80,19 +77,23 @@ describe("createPaymentMethodsService", () => {
       listPaymentIntents: async () => [],
     });
 
-    await expect(service.getCustomerPaymentMethod({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      customerProfileId: "customer_123",
-      paymentMethodId: "pm_123",
-    })).resolves.toMatchObject({ id: "pm_123" });
+    await expect(
+      service.getCustomerPaymentMethod({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        customerProfileId: "customer_123",
+        paymentMethodId: "pm_123",
+      }),
+    ).resolves.toMatchObject({ id: "pm_123" });
 
-    await expect(service.getCustomerPaymentMethod({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      customerProfileId: "customer_123",
-      paymentMethodId: "pm_other",
-    })).resolves.toBeNull();
+    await expect(
+      service.getCustomerPaymentMethod({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        customerProfileId: "customer_123",
+        paymentMethodId: "pm_other",
+      }),
+    ).resolves.toBeNull();
   });
 
   test("sets default customer payment method", async () => {
@@ -102,7 +103,19 @@ describe("createPaymentMethodsService", () => {
     const service = createPaymentMethodsService({
       listPaymentMethods: async () => [
         createPaymentMethod({ id: "pm_123", isDefault: true }),
-        createPaymentMethod({ id: "pm_456", isDefault: false, processorInstrumentRefs: [{ provider: "finix", objectType: "payment_instrument", objectId: "pi_456", relationship: "payment_method", recordedAt: "2026-04-23T12:00:00.000Z" }] }),
+        createPaymentMethod({
+          id: "pm_456",
+          isDefault: false,
+          processorInstrumentRefs: [
+            {
+              provider: "finix",
+              objectType: "payment_instrument",
+              objectId: "pi_456",
+              relationship: "payment_method",
+              recordedAt: "2026-04-23T12:00:00.000Z",
+            },
+          ],
+        }),
       ],
       savePaymentMethod: async (record) => {
         saved.push(record);
@@ -127,17 +140,19 @@ describe("createPaymentMethodsService", () => {
     expect(result.find((method) => method.id === "pm_456")?.isDefault).toBe(true);
     expect(saved).toHaveLength(2);
     expect(states).toEqual(["pm_456"]);
-    expect(events).toContainEqual(expect.objectContaining({
-      eventType: "payment_method.updated",
-      aggregateId: "pm_456",
-      payload: expect.objectContaining({
-        merchantAccountId: "merchant_123",
-        customerProfileId: "customer_123",
-        paymentMethodStatus: "active",
-        isDefault: true,
-        action: "default_changed",
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        eventType: "payment_method.updated",
+        aggregateId: "pm_456",
+        payload: expect.objectContaining({
+          merchantAccountId: "merchant_123",
+          customerProfileId: "customer_123",
+          paymentMethodStatus: "active",
+          isDefault: true,
+          action: "default_changed",
+        }),
       }),
-    }));
+    );
   });
 
   test("archives payment method and promotes fallback default", async () => {
@@ -146,7 +161,19 @@ describe("createPaymentMethodsService", () => {
     const service = createPaymentMethodsService({
       listPaymentMethods: async () => [
         createPaymentMethod({ id: "pm_123", isDefault: true }),
-        createPaymentMethod({ id: "pm_456", isDefault: false, processorInstrumentRefs: [{ provider: "finix", objectType: "payment_instrument", objectId: "pi_456", relationship: "payment_method", recordedAt: "2026-04-23T12:00:00.000Z" }] }),
+        createPaymentMethod({
+          id: "pm_456",
+          isDefault: false,
+          processorInstrumentRefs: [
+            {
+              provider: "finix",
+              objectType: "payment_instrument",
+              objectId: "pi_456",
+              relationship: "payment_method",
+              recordedAt: "2026-04-23T12:00:00.000Z",
+            },
+          ],
+        }),
       ],
       savePaymentMethod: async (record) => {
         saved.push(record);
@@ -168,14 +195,16 @@ describe("createPaymentMethodsService", () => {
     expect(result).toMatchObject({ id: "pm_123", status: "archived", isDefault: false });
     expect(saved).toHaveLength(2);
     expect(saved.find((record) => record.id === "pm_456")?.isDefault).toBe(true);
-    expect(events).toContainEqual(expect.objectContaining({
-      eventType: "payment_method.updated",
-      aggregateId: "pm_123",
-      payload: expect.objectContaining({
-        paymentMethodStatus: "archived",
-        action: "archived",
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        eventType: "payment_method.updated",
+        aggregateId: "pm_123",
+        payload: expect.objectContaining({
+          paymentMethodStatus: "archived",
+          action: "archived",
+        }),
       }),
-    }));
+    );
   });
 
   test("disables payment method and promotes fallback default", async () => {
@@ -207,36 +236,52 @@ describe("createPaymentMethodsService", () => {
     expect(result).toMatchObject({ id: "pm_123", status: "disabled", isDefault: false });
     expect(saved).toHaveLength(2);
     expect(saved.find((record) => record.id === "pm_456")?.isDefault).toBe(true);
-    expect(events).toContainEqual(expect.objectContaining({
-      eventType: "payment_method.updated",
-      aggregateId: "pm_123",
-      payload: expect.objectContaining({
-        paymentMethodStatus: "disabled",
-        action: "disabled",
-        reason: "issuer_declined_reuse",
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        eventType: "payment_method.updated",
+        aggregateId: "pm_123",
+        payload: expect.objectContaining({
+          paymentMethodStatus: "disabled",
+          action: "disabled",
+          reason: "issuer_declined_reuse",
+        }),
       }),
-    }));
+    );
   });
 
   test("rejects disabling archived payment method", async () => {
     const service = createPaymentMethodsService({
-      listPaymentMethods: async () => [createPaymentMethod({ id: "pm_123", status: "archived", isDefault: false, archivedAt: "2026-04-23T12:00:00.000Z" })],
+      listPaymentMethods: async () => [
+        createPaymentMethod({
+          id: "pm_123",
+          status: "archived",
+          isDefault: false,
+          archivedAt: "2026-04-23T12:00:00.000Z",
+        }),
+      ],
       savePaymentMethod: async () => {},
       listPaymentIntents: async () => [],
     });
 
-    await expect(service.disablePaymentMethod({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      customerProfileId: "customer_123",
-      paymentMethodId: "pm_123",
-    })).rejects.toMatchObject({ name: "PaymentMethodsServiceError", code: "conflict" } satisfies Partial<PaymentMethodsServiceError>);
+    await expect(
+      service.disablePaymentMethod({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        customerProfileId: "customer_123",
+        paymentMethodId: "pm_123",
+      }),
+    ).rejects.toMatchObject({
+      name: "PaymentMethodsServiceError",
+      code: "conflict",
+    } satisfies Partial<PaymentMethodsServiceError>);
   });
 
   test("derives customer payment state from methods and payment intents", async () => {
     let capturedDefault: string | undefined;
     const service = createPaymentMethodsService({
-      listPaymentMethods: async () => [createPaymentMethod({ id: "pm_123", isDefault: true, brandSummary: "visa", last4: "4242" })],
+      listPaymentMethods: async () => [
+        createPaymentMethod({ id: "pm_123", isDefault: true, brandSummary: "visa", last4: "4242" }),
+      ],
       savePaymentMethod: async () => {},
       listPaymentIntents: async () => [createPaymentIntent({ status: "requires_action" })],
       saveCustomerPaymentState: async (state) => {
@@ -259,11 +304,13 @@ describe("createPaymentMethodsService", () => {
         brandSummary: "visa",
         last4: "4242",
       },
-      paymentMethods: [{
-        id: "pm_123",
-        brandSummary: "visa",
-        last4: "4242",
-      }],
+      paymentMethods: [
+        {
+          id: "pm_123",
+          brandSummary: "visa",
+          last4: "4242",
+        },
+      ],
       requiresActionPaymentIntentIds: ["pi_123"],
       requiresActionPaymentIntentCount: 1,
     });
@@ -308,6 +355,9 @@ describe("createPaymentMethodsService", () => {
         customerProfileId: "customer_123",
         paymentMethodId: "pm_123",
       }),
-    ).rejects.toMatchObject({ name: "PaymentMethodsServiceError", code: "invalid_request" } satisfies Partial<PaymentMethodsServiceError>);
+    ).rejects.toMatchObject({
+      name: "PaymentMethodsServiceError",
+      code: "invalid_request",
+    } satisfies Partial<PaymentMethodsServiceError>);
   });
 });

@@ -27,7 +27,9 @@ function createMemoryUnitOfWork(seed?: {
         return merchant && merchant.environment === options.environment ? merchant : null;
       },
       async listByTenant(environment, tenantId) {
-        return [...merchants.values()].filter((merchant) => merchant.environment === environment && merchant.tenantId === tenantId);
+        return [...merchants.values()].filter(
+          (merchant) => merchant.environment === environment && merchant.tenantId === tenantId,
+        );
       },
       async getByProcessorRef() {
         return null;
@@ -37,63 +39,141 @@ function createMemoryUnitOfWork(seed?: {
       },
     },
     customers: {
-      async getById() { return null; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     onboarding: {
-      async getSessionById() { return null; },
-      async getLatestSessionByMerchantAccountId() { return null; },
-      async listRequirementsForSession() { return []; },
-      async listDocumentsForRequirement() { return []; },
-      async saveSession() { throw new Error("unused"); },
-      async saveRequirement() { throw new Error("unused"); },
-      async saveRequirementDocument() { throw new Error("unused"); },
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
+      async saveSession() {
+        throw new Error("unused");
+      },
+      async saveRequirement() {
+        throw new Error("unused");
+      },
+      async saveRequirementDocument() {
+        throw new Error("unused");
+      },
     },
     paymentMethods: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByOwner() { return []; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return [];
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     paymentMethodSetupSessions: {
-      async getById() { return null; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     paymentIntents: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
-      async listByCustomerProfile() { return []; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return [];
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     payments: {
-      async getById() { return null; },
-      async getByPaymentIntentId() { return null; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     refunds: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByPayment() { return []; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByPayment() {
+        return [];
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     settlements: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     payouts: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     disputes: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
-      async save() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     merchantStates: {
       async getByMerchantAccountId(merchantAccountId, options) {
@@ -105,31 +185,69 @@ function createMemoryUnitOfWork(seed?: {
       },
     },
     customerStates: {
-      async getByMerchantAndCustomer() { return null; },
-      async save() { throw new Error("unused"); },
+      async getByMerchantAndCustomer() {
+        return null;
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     events: {
-      async getRawWebhookById() { return null; },
-      async getRawWebhookByDeliveryKey() { return null; },
-      async saveRawWebhook() { throw new Error("unused"); },
-      async getProcessorEventById() { return null; },
-      async saveProcessorEvent() { throw new Error("unused"); },
-      async saveCanonicalEvent(record) { canonicalEvents.set(`${record.environment}:${record.id}`, record); },
-      async getCanonicalEventById(id, options) { return canonicalEvents.get(`${options.environment}:${id}`) ?? null; },
-      async getWebhookEndpointById() { return null; },
-      async saveWebhookEndpoint() { throw new Error("unused"); },
-      async saveWebhookDelivery() { throw new Error("unused"); },
-      async saveEventSubscription() { throw new Error("unused"); },
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
+      async saveRawWebhook() {
+        throw new Error("unused");
+      },
+      async getProcessorEventById() {
+        return null;
+      },
+      async saveProcessorEvent() {
+        throw new Error("unused");
+      },
+      async saveCanonicalEvent(record) {
+        canonicalEvents.set(`${record.environment}:${record.id}`, record);
+      },
+      async getCanonicalEventById(id, options) {
+        return canonicalEvents.get(`${options.environment}:${id}`) ?? null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
+      async saveWebhookEndpoint() {
+        throw new Error("unused");
+      },
+      async saveWebhookDelivery() {
+        throw new Error("unused");
+      },
+      async saveEventSubscription() {
+        throw new Error("unused");
+      },
     },
     cases: {
-      async getById() { return null; },
-      async save() { throw new Error("unused"); },
-      async saveActivity() { throw new Error("unused"); },
-      async saveNote() { throw new Error("unused"); },
+      async getById() {
+        return null;
+      },
+      async save() {
+        throw new Error("unused");
+      },
+      async saveActivity() {
+        throw new Error("unused");
+      },
+      async saveNote() {
+        throw new Error("unused");
+      },
     },
     idempotency: {
-      async getByScopeAndKey() { return null; },
-      async save() { throw new Error("unused"); },
+      async getByScopeAndKey() {
+        return null;
+      },
+      async save() {
+        throw new Error("unused");
+      },
     },
     async runInTransaction(work) {
       return work(this);
@@ -167,10 +285,10 @@ describe("createMerchantAccountsService", () => {
       metadata: { source: "test" },
     });
 
-	    expect(merchant).toMatchObject({
-	      id: "ma_123",
-	      tenantId: "tenant_123",
-	      displayName: "Acme",
+    expect(merchant).toMatchObject({
+      id: "ma_123",
+      tenantId: "tenant_123",
+      displayName: "Acme",
       status: "draft",
       capabilityStatus: "unknown",
       defaultCurrency: "USD",
@@ -180,21 +298,21 @@ describe("createMerchantAccountsService", () => {
         postalCode: "10001",
         country: "US",
       },
-	      doingBusinessAs: "Acme DBA",
-	      email: "owner@acme.test",
-	      taxIdentity: {
-	        associatedIdentityCount: 1,
-	        beneficialOwnerCount: 0,
-	        controlPersonCount: 0,
-	        representativeCount: 0,
-	      },
-	      settlementAccount: {
-	        present: false,
-	      },
-	      metadata: { source: "test" },
-	    });
-	    expect(merchant).not.toHaveProperty("associatedIdentities");
-	    expect(merchant).not.toHaveProperty("processorAccountRefs");
+      doingBusinessAs: "Acme DBA",
+      email: "owner@acme.test",
+      taxIdentity: {
+        associatedIdentityCount: 1,
+        beneficialOwnerCount: 0,
+        controlPersonCount: 0,
+        representativeCount: 0,
+      },
+      settlementAccount: {
+        present: false,
+      },
+      metadata: { source: "test" },
+    });
+    expect(merchant).not.toHaveProperty("associatedIdentities");
+    expect(merchant).not.toHaveProperty("processorAccountRefs");
 
     const state = await uow.merchantStates.getByMerchantAccountId("ma_123", {
       environment: "sandbox",
@@ -205,9 +323,12 @@ describe("createMerchantAccountsService", () => {
       canAcceptPayments: false,
       payoutReadiness: "unknown",
     });
-    const createdEvent = await uow.events.getCanonicalEventById("ma_123:merchant_account.created:2026-05-14T18:00:00.000Z", {
-      environment: "sandbox",
-    });
+    const createdEvent = await uow.events.getCanonicalEventById(
+      "ma_123:merchant_account.created:2026-05-14T18:00:00.000Z",
+      {
+        environment: "sandbox",
+      },
+    );
     expect(createdEvent).toMatchObject({
       eventType: "merchant_account.created",
       aggregateId: "ma_123",
@@ -367,26 +488,29 @@ describe("createMerchantAccountsService", () => {
       metadata: { stage: "updated" },
     });
 
-	    expect(updated).toMatchObject({
-	      id: "ma_123",
-	      displayName: "Acme 2",
-	      merchantMode: "hybrid",
-	      mcc: "5734",
-	      settlementAccount: {
-	        accountNumberMasked: "****1234",
-	        accountType: "checking",
-	        bankCode: "021000021",
-	        name: "Acme",
-	        present: true,
-	      },
-	      metadata: { stage: "updated" },
-	      updatedAt: "2026-05-14T19:00:00.000Z",
-	    });
-	    expect(updated).not.toHaveProperty("settlementBankAccount");
-	    expect(updated).not.toHaveProperty("processorAccountRefs");
-    const updatedEvent = await uow.events.getCanonicalEventById("ma_123:merchant_account.updated:2026-05-14T19:00:00.000Z", {
-      environment: "sandbox",
+    expect(updated).toMatchObject({
+      id: "ma_123",
+      displayName: "Acme 2",
+      merchantMode: "hybrid",
+      mcc: "5734",
+      settlementAccount: {
+        accountNumberMasked: "****1234",
+        accountType: "checking",
+        bankCode: "021000021",
+        name: "Acme",
+        present: true,
+      },
+      metadata: { stage: "updated" },
+      updatedAt: "2026-05-14T19:00:00.000Z",
     });
+    expect(updated).not.toHaveProperty("settlementBankAccount");
+    expect(updated).not.toHaveProperty("processorAccountRefs");
+    const updatedEvent = await uow.events.getCanonicalEventById(
+      "ma_123:merchant_account.updated:2026-05-14T19:00:00.000Z",
+      {
+        environment: "sandbox",
+      },
+    );
     expect(updatedEvent).toMatchObject({
       eventType: "merchant_account.updated",
       aggregateId: "ma_123",
@@ -446,23 +570,23 @@ describe("createMerchantAccountsService", () => {
       metadata: null,
     });
 
-	    expect(updated).toMatchObject({
-	      id: "ma_123",
-	      displayName: "Acme",
-	      doingBusinessAs: undefined,
+    expect(updated).toMatchObject({
+      id: "ma_123",
+      displayName: "Acme",
+      doingBusinessAs: undefined,
       email: undefined,
       businessAddress: undefined,
-	      settlementAccount: {
-	        present: false,
-	      },
-	      taxIdentity: {
-	        associatedIdentityCount: 0,
-	      },
-	      metadata: undefined,
-	      updatedAt: "2026-05-14T19:30:00.000Z",
-	    });
-	    expect(updated).not.toHaveProperty("settlementBankAccount");
-	    expect(updated).not.toHaveProperty("associatedIdentities");
+      settlementAccount: {
+        present: false,
+      },
+      taxIdentity: {
+        associatedIdentityCount: 0,
+      },
+      metadata: undefined,
+      updatedAt: "2026-05-14T19:30:00.000Z",
+    });
+    expect(updated).not.toHaveProperty("settlementBankAccount");
+    expect(updated).not.toHaveProperty("associatedIdentities");
   });
 
   test("throws not_found when updating missing merchant", async () => {

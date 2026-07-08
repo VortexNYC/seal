@@ -62,7 +62,10 @@ function createPaymentMethod(overrides: Partial<PaymentMethod> = {}): PaymentMet
   };
 }
 
-function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentIntent?: PaymentIntent }): PaymentsUnitOfWork {
+function createMemoryUnitOfWork(seed?: {
+  merchant?: MerchantAccount;
+  paymentIntent?: PaymentIntent;
+}): PaymentsUnitOfWork {
   const merchants = new Map<string, MerchantAccount>();
   const paymentIntents = new Map<string, PaymentIntent>();
   const payments = new Map<string, Payment>();
@@ -76,7 +79,10 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentInte
     merchants.set(`${seed.merchant.environment}:${seed.merchant.id}`, seed.merchant);
   }
   if (seed?.paymentIntent) {
-    paymentIntents.set(`${seed.paymentIntent.environment}:${seed.paymentIntent.id}`, seed.paymentIntent);
+    paymentIntents.set(
+      `${seed.paymentIntent.environment}:${seed.paymentIntent.id}`,
+      seed.paymentIntent,
+    );
   }
 
   return {
@@ -90,20 +96,27 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentInte
         );
       },
       async getByProcessorRef(environment, provider, objectType, objectId) {
-        return Array.from(merchants.values()).find(
-          (merchant) =>
-            merchant.environment === environment &&
-            merchant.processorAccountRefs.some(
-              (ref) => ref.provider === provider && ref.objectType === objectType && ref.objectId === objectId,
-            ),
-        ) ?? null;
+        return (
+          Array.from(merchants.values()).find(
+            (merchant) =>
+              merchant.environment === environment &&
+              merchant.processorAccountRefs.some(
+                (ref) =>
+                  ref.provider === provider &&
+                  ref.objectType === objectType &&
+                  ref.objectId === objectId,
+              ),
+          ) ?? null
+        );
       },
       async save(record) {
         merchants.set(`${record.environment}:${record.id}`, record);
       },
     },
     customers: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     onboarding: {
@@ -133,10 +146,15 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentInte
     },
     customerStates: {
       async getByMerchantAndCustomer(environment, merchantAccountId, customerProfileId) {
-        return customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null;
+        return (
+          customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null
+        );
       },
       async save(record) {
-        customerStates.set(`${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`, record);
+        customerStates.set(
+          `${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`,
+          record,
+        );
       },
     },
     paymentMethods: {
@@ -147,14 +165,21 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentInte
         return null;
       },
       async listByOwner(environment, ownerType, ownerId) {
-        return Array.from(paymentMethodsStore.values()).filter((record) => record.environment === environment && record.ownerType === ownerType && record.ownerId === ownerId);
+        return Array.from(paymentMethodsStore.values()).filter(
+          (record) =>
+            record.environment === environment &&
+            record.ownerType === ownerType &&
+            record.ownerId === ownerId,
+        );
       },
       async save(record) {
         paymentMethodsStore.set(`${record.environment}:${record.id}`, record);
       },
     },
     paymentMethodSetupSessions: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     paymentIntents: {
@@ -162,21 +187,32 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentInte
         return paymentIntents.get(`${options.environment}:${id}`) ?? null;
       },
       async getByProcessorRef(environment, provider, objectType, objectId) {
-        return Array.from(paymentIntents.values()).find(
-          (record) =>
-            record.environment === environment &&
-            record.processorIntentRefs.some(
-              (ref) => ref.provider === provider && ref.objectType === objectType && ref.objectId === objectId,
-            ),
-        ) ?? null;
+        return (
+          Array.from(paymentIntents.values()).find(
+            (record) =>
+              record.environment === environment &&
+              record.processorIntentRefs.some(
+                (ref) =>
+                  ref.provider === provider &&
+                  ref.objectType === objectType &&
+                  ref.objectId === objectId,
+              ),
+          ) ?? null
+        );
       },
       async listByMerchant(environment, merchantAccountId) {
         return Array.from(paymentIntents.values()).filter(
-          (record) => record.environment === environment && record.merchantAccountId === merchantAccountId,
+          (record) =>
+            record.environment === environment && record.merchantAccountId === merchantAccountId,
         );
       },
       async listByCustomerProfile(environment, merchantAccountId, customerProfileId) {
-        return Array.from(paymentIntents.values()).filter((record) => record.environment === environment && record.merchantAccountId === merchantAccountId && record.customerProfileId === customerProfileId);
+        return Array.from(paymentIntents.values()).filter(
+          (record) =>
+            record.environment === environment &&
+            record.merchantAccountId === merchantAccountId &&
+            record.customerProfileId === customerProfileId,
+        );
       },
       async save(record) {
         paymentIntents.set(`${record.environment}:${record.id}`, record);
@@ -187,9 +223,12 @@ function createMemoryUnitOfWork(seed?: { merchant?: MerchantAccount; paymentInte
         return payments.get(`${options.environment}:${id}`) ?? null;
       },
       async getByPaymentIntentId(environment, paymentIntentId) {
-        return Array.from(payments.values()).find(
-          (record) => record.environment === environment && record.paymentIntentId === paymentIntentId,
-        ) ?? null;
+        return (
+          Array.from(payments.values()).find(
+            (record) =>
+              record.environment === environment && record.paymentIntentId === paymentIntentId,
+          ) ?? null
+        );
       },
       async save(record) {
         payments.set(`${record.environment}:${record.id}`, record);
@@ -345,9 +384,10 @@ describe("createPaymentsService", () => {
         currency: "USD",
         captureMode: "automatic",
       }),
-    ).rejects.toMatchObject({ name: "PaymentsServiceError", code: "not_found" } satisfies Partial<
-      PaymentsServiceError
-    >);
+    ).rejects.toMatchObject({
+      name: "PaymentsServiceError",
+      code: "not_found",
+    } satisfies Partial<PaymentsServiceError>);
   });
 
   test("maps provider failure into service error", async () => {
@@ -476,13 +516,15 @@ describe("createPaymentsService", () => {
     const storedIntent = await uow.paymentIntents.getById("pi_failed", { environment: "sandbox" });
     expect(storedIntent).toMatchObject({
       status: "failed",
-      processorIntentRefs: [{
-        provider: "finix",
-        objectType: "authorization",
-        objectId: "AU_declined_123",
-        relationship: "payment_intent",
-        recordedAt: "2026-04-23T12:05:00.000Z",
-      }],
+      processorIntentRefs: [
+        {
+          provider: "finix",
+          objectType: "authorization",
+          objectId: "AU_declined_123",
+          relationship: "payment_intent",
+          recordedAt: "2026-04-23T12:05:00.000Z",
+        },
+      ],
     });
 
     const storedPayment = await uow.payments.getById("pay_failed", { environment: "sandbox" });
@@ -490,17 +532,21 @@ describe("createPaymentsService", () => {
       status: "failed",
       failureCode: "DECLINED",
       failureMessage: "Authorization AU_declined_123 was declined.",
-      processorPaymentRefs: [{
-        provider: "finix",
-        objectType: "authorization",
-        objectId: "AU_declined_123",
-        relationship: "payment",
-        recordedAt: "2026-04-23T12:05:00.000Z",
-      }],
+      processorPaymentRefs: [
+        {
+          provider: "finix",
+          objectType: "authorization",
+          objectId: "AU_declined_123",
+          relationship: "payment",
+          recordedAt: "2026-04-23T12:05:00.000Z",
+        },
+      ],
     });
-    expect(await uow.events.getCanonicalEventById("pay_failed:payment.failed:2026-04-23T12:05:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById("pay_failed:payment.failed:2026-04-23T12:05:00.000Z", {
+        environment: "sandbox",
+      }),
+    ).toMatchObject({
       eventType: "payment.failed",
       aggregateId: "pay_failed",
       payload: {
@@ -630,9 +676,11 @@ describe("createPaymentsService", () => {
       latestPaymentIntentStatus: "captured",
       readiness: "ready",
     });
-    expect(await uow.events.getCanonicalEventById("pay_fixed:payment.created:2026-04-23T12:05:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById("pay_fixed:payment.created:2026-04-23T12:05:00.000Z", {
+        environment: "sandbox",
+      }),
+    ).toMatchObject({
       eventType: "payment.created",
       aggregateId: "pay_fixed",
       payload: {
@@ -681,11 +729,21 @@ describe("createPaymentsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["payments"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       listPaymentMethods: async () => [createPaymentMethod()],
       resolveProviderContext: () => providerContext,
@@ -698,23 +756,25 @@ describe("createPaymentsService", () => {
       status: "authorized",
     });
 
-    expect(snapshots).toEqual([{
-      id: "pi_123",
-      merchantAccountId: "merchant_123",
-      customerProfileId: "customer_123",
-      paymentId: undefined,
-      paymentMethodId: "pm_123",
-      status: "authorized",
-      amount: 500,
-      currency: "USD",
-      requiresAction: false,
-      canCapture: true,
-      canCancel: true,
-      canRetry: false,
-      nextStep: "capture",
-      nextActionType: undefined,
-      hostedActionUrl: undefined,
-    }]);
+    expect(snapshots).toEqual([
+      {
+        id: "pi_123",
+        merchantAccountId: "merchant_123",
+        customerProfileId: "customer_123",
+        paymentId: undefined,
+        paymentMethodId: "pm_123",
+        status: "authorized",
+        amount: 500,
+        currency: "USD",
+        requiresAction: false,
+        canCapture: true,
+        canCancel: true,
+        canRetry: false,
+        nextStep: "capture",
+        nextActionType: undefined,
+        hostedActionUrl: undefined,
+      },
+    ]);
   });
 
   test("captures manual authorization payment intent", async () => {
@@ -730,7 +790,15 @@ describe("createPaymentsService", () => {
         captureMode: "manual",
         status: "authorized",
         metadata: { selectedPaymentMethodId: "pm_123" },
-        processorIntentRefs: [{ provider: "finix", objectType: "authorization", objectId: "auth_123", relationship: "payment_intent", recordedAt: "2026-04-23T12:00:00.000Z" }],
+        processorIntentRefs: [
+          {
+            provider: "finix",
+            objectType: "authorization",
+            objectId: "auth_123",
+            relationship: "payment_intent",
+            recordedAt: "2026-04-23T12:00:00.000Z",
+          },
+        ],
         createdAt: "2026-04-23T12:00:00.000Z",
         updatedAt: "2026-04-23T12:00:00.000Z",
       },
@@ -747,7 +815,15 @@ describe("createPaymentsService", () => {
       status: "authorized",
       direction: "debit",
       authorizedAt: "2026-04-23T12:00:00.000Z",
-      processorPaymentRefs: [{ provider: "finix", objectType: "authorization", objectId: "auth_123", relationship: "payment", recordedAt: "2026-04-23T12:00:00.000Z" }],
+      processorPaymentRefs: [
+        {
+          provider: "finix",
+          objectType: "authorization",
+          objectId: "auth_123",
+          relationship: "payment",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
       createdAt: "2026-04-23T12:00:00.000Z",
       updatedAt: "2026-04-23T12:00:00.000Z",
     });
@@ -757,22 +833,44 @@ describe("createPaymentsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["payments"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
         async capturePaymentIntent() {
           return {
             ok: true,
             value: {
-              intentRef: { provider: "finix", objectType: "authorization", objectId: "auth_123", relationship: "payment_intent", recordedAt: "2026-04-23T12:05:00.000Z" },
-              paymentRef: { provider: "finix", objectType: "transfer", objectId: "tr_123", relationship: "payment", recordedAt: "2026-04-23T12:05:00.000Z" },
+              intentRef: {
+                provider: "finix",
+                objectType: "authorization",
+                objectId: "auth_123",
+                relationship: "payment_intent",
+                recordedAt: "2026-04-23T12:05:00.000Z",
+              },
+              paymentRef: {
+                provider: "finix",
+                objectType: "transfer",
+                objectId: "tr_123",
+                relationship: "payment",
+                recordedAt: "2026-04-23T12:05:00.000Z",
+              },
               status: "captured",
               recordedAt: "2026-04-23T12:05:00.000Z",
             },
           };
         },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       listPaymentMethods: async () => [createPaymentMethod()],
       resolveProviderContext: () => providerContext,
@@ -801,9 +899,11 @@ describe("createPaymentsService", () => {
       nextActionType: undefined,
       hostedActionUrl: undefined,
     });
-    expect(await uow.events.getCanonicalEventById("pay_123:payment.captured:2026-04-23T12:05:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById("pay_123:payment.captured:2026-04-23T12:05:00.000Z", {
+        environment: "sandbox",
+      }),
+    ).toMatchObject({
       eventType: "payment.captured",
       aggregateId: "pay_123",
       payload: {
@@ -827,7 +927,15 @@ describe("createPaymentsService", () => {
         captureMode: "manual",
         status: "authorized",
         metadata: { selectedPaymentMethodId: "pm_123" },
-        processorIntentRefs: [{ provider: "finix", objectType: "authorization", objectId: "auth_123", relationship: "payment_intent", recordedAt: "2026-04-23T12:00:00.000Z" }],
+        processorIntentRefs: [
+          {
+            provider: "finix",
+            objectType: "authorization",
+            objectId: "auth_123",
+            relationship: "payment_intent",
+            recordedAt: "2026-04-23T12:00:00.000Z",
+          },
+        ],
         createdAt: "2026-04-23T12:00:00.000Z",
         updatedAt: "2026-04-23T12:00:00.000Z",
       },
@@ -844,7 +952,15 @@ describe("createPaymentsService", () => {
       status: "authorized",
       direction: "debit",
       authorizedAt: "2026-04-23T12:00:00.000Z",
-      processorPaymentRefs: [{ provider: "finix", objectType: "authorization", objectId: "auth_123", relationship: "payment", recordedAt: "2026-04-23T12:00:00.000Z" }],
+      processorPaymentRefs: [
+        {
+          provider: "finix",
+          objectType: "authorization",
+          objectId: "auth_123",
+          relationship: "payment",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
       createdAt: "2026-04-23T12:00:00.000Z",
       updatedAt: "2026-04-23T12:00:00.000Z",
     });
@@ -854,21 +970,37 @@ describe("createPaymentsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["payments"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
         async cancelPaymentIntent() {
           return {
             ok: true,
             value: {
-              intentRef: { provider: "finix", objectType: "authorization", objectId: "auth_123", relationship: "payment_intent", recordedAt: "2026-04-23T12:05:00.000Z" },
+              intentRef: {
+                provider: "finix",
+                objectType: "authorization",
+                objectId: "auth_123",
+                relationship: "payment_intent",
+                recordedAt: "2026-04-23T12:05:00.000Z",
+              },
               status: "canceled",
               recordedAt: "2026-04-23T12:05:00.000Z",
             },
           };
         },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       listPaymentMethods: async () => [createPaymentMethod()],
       resolveProviderContext: () => providerContext,
@@ -897,9 +1029,11 @@ describe("createPaymentsService", () => {
       nextActionType: undefined,
       hostedActionUrl: undefined,
     });
-    expect(await uow.events.getCanonicalEventById("pay_123:payment.canceled:2026-04-23T12:05:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById("pay_123:payment.canceled:2026-04-23T12:05:00.000Z", {
+        environment: "sandbox",
+      }),
+    ).toMatchObject({
       eventType: "payment.canceled",
       aggregateId: "pay_123",
       payload: {
@@ -929,13 +1063,15 @@ describe("createPaymentsService", () => {
           invoiceId: "inv_123",
           selectedPaymentMethodId: "pm_123",
         },
-        processorIntentRefs: [{
-          provider: "finix",
-          objectType: "authorization",
-          objectId: "auth_failed_123",
-          relationship: "payment_intent",
-          recordedAt: "2026-04-23T12:00:00.000Z",
-        }],
+        processorIntentRefs: [
+          {
+            provider: "finix",
+            objectType: "authorization",
+            objectId: "auth_failed_123",
+            relationship: "payment_intent",
+            recordedAt: "2026-04-23T12:00:00.000Z",
+          },
+        ],
         createdAt: "2026-04-23T12:00:00.000Z",
         updatedAt: "2026-04-23T12:00:00.000Z",
       },
@@ -953,13 +1089,15 @@ describe("createPaymentsService", () => {
       direction: "debit",
       failureCode: "DECLINED",
       failureMessage: "declined",
-      processorPaymentRefs: [{
-        provider: "finix",
-        objectType: "authorization",
-        objectId: "auth_failed_123",
-        relationship: "payment",
-        recordedAt: "2026-04-23T12:00:00.000Z",
-      }],
+      processorPaymentRefs: [
+        {
+          provider: "finix",
+          objectType: "authorization",
+          objectId: "auth_failed_123",
+          relationship: "payment",
+          recordedAt: "2026-04-23T12:00:00.000Z",
+        },
+      ],
       createdAt: "2026-04-23T12:00:00.000Z",
       updatedAt: "2026-04-23T12:00:00.000Z",
     });
@@ -969,8 +1107,12 @@ describe("createPaymentsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["payments"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
         async createPaymentIntent() {
           return {
             ok: true,
@@ -988,8 +1130,12 @@ describe("createPaymentsService", () => {
             },
           };
         },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       listPaymentMethods: async () => [createPaymentMethod()],
       resolveProviderContext: () => providerContext,
@@ -1052,21 +1198,33 @@ describe("createPaymentsService", () => {
       providers: createRegistry({
         key: "finix",
         supportedCapabilities: ["payments"],
-        async verifyWebhookSignature() { throw new Error("not used"); },
-        async createMerchantOnboarding() { throw new Error("not used"); },
-        async createPaymentIntent() { throw new Error("not used"); },
-        async createRefund() { throw new Error("not used"); },
-        async fetchObjectSnapshot() { throw new Error("not used"); },
+        async verifyWebhookSignature() {
+          throw new Error("not used");
+        },
+        async createMerchantOnboarding() {
+          throw new Error("not used");
+        },
+        async createPaymentIntent() {
+          throw new Error("not used");
+        },
+        async createRefund() {
+          throw new Error("not used");
+        },
+        async fetchObjectSnapshot() {
+          throw new Error("not used");
+        },
       }),
       listPaymentMethods: async () => [createPaymentMethod()],
       resolveProviderContext: () => providerContext,
     });
 
-    await expect(service.retryPaymentIntent({
-      environment: "sandbox",
-      merchantAccountId: "merchant_123",
-      paymentIntentId: "pi_not_retryable",
-    })).rejects.toMatchObject({
+    await expect(
+      service.retryPaymentIntent({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        paymentIntentId: "pi_not_retryable",
+      }),
+    ).rejects.toMatchObject({
       code: "conflict",
       message: "payment intent is not retryable",
     });

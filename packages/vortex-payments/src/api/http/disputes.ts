@@ -94,7 +94,11 @@ function toErrorResponse(error: unknown, requestId: string): HttpResponseEnvelop
   };
 }
 
-function toSuccessResponse<TBody>(data: TBody, requestId: string, status = 200): HttpResponseEnvelope<TBody> {
+function toSuccessResponse<TBody>(
+  data: TBody,
+  requestId: string,
+  status = 200,
+): HttpResponseEnvelope<TBody> {
   return {
     status,
     body: {

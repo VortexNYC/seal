@@ -49,105 +49,187 @@ function createUnitOfWork(options?: {
   let customer = options?.customer ?? null;
   const uow: PaymentsUnitOfWork = {
     merchants: {
-      async getById() { return options?.merchant === undefined ? createMerchant() : options.merchant; },
-      async listByTenant() { return []; },
-      async getByProcessorRef() { return null; },
+      async getById() {
+        return options?.merchant === undefined ? createMerchant() : options.merchant;
+      },
+      async listByTenant() {
+        return [];
+      },
+      async getByProcessorRef() {
+        return null;
+      },
       async save() {},
     },
     customers: {
-      async getById() { return customer; },
+      async getById() {
+        return customer;
+      },
       async save(record) {
         savedCustomers.push(record);
         customer = record;
       },
     },
     onboarding: {
-      async getSessionById() { return null; },
-      async getLatestSessionByMerchantAccountId() { return null; },
-      async listRequirementsForSession() { return []; },
-      async listDocumentsForRequirement() { return []; },
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
       async saveSession() {},
       async saveRequirement() {},
       async saveRequirementDocument() {},
     },
     merchantStates: {
-      async getByMerchantAccountId() { return null; },
+      async getByMerchantAccountId() {
+        return null;
+      },
       async save() {},
     },
     customerStates: {
-      async getByMerchantAndCustomer() { return null; },
+      async getByMerchantAndCustomer() {
+        return null;
+      },
       async save() {},
     },
     paymentMethods: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByOwner() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return [];
+      },
       async save() {},
     },
     paymentMethodSetupSessions: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     paymentIntents: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
-      async listByCustomerProfile() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return [];
+      },
       async save() {},
     },
     payments: {
-      async getById() { return null; },
-      async getByPaymentIntentId() { return null; },
+      async getById() {
+        return null;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
       async save() {},
     },
     refunds: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByPayment() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByPayment() {
+        return [];
+      },
       async save() {},
     },
     settlements: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
       async save() {},
     },
     payouts: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
       async save() {},
     },
     disputes: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
       async save() {},
     },
     events: {
-      async getRawWebhookById() { return null; },
-      async getRawWebhookByDeliveryKey() { return null; },
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
       async saveRawWebhook() {},
-      async getProcessorEventById() { return null; },
+      async getProcessorEventById() {
+        return null;
+      },
       async saveProcessorEvent() {},
-      async saveCanonicalEvent(record) { canonicalEvents.set(`${record.environment}:${record.id}`, record); },
-      async getCanonicalEventById(id, options) { return canonicalEvents.get(`${options.environment}:${id}`) ?? null; },
-      async getWebhookEndpointById() { return null; },
+      async saveCanonicalEvent(record) {
+        canonicalEvents.set(`${record.environment}:${record.id}`, record);
+      },
+      async getCanonicalEventById(id, options) {
+        return canonicalEvents.get(`${options.environment}:${id}`) ?? null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
       async saveWebhookEndpoint() {},
       async saveWebhookDelivery() {},
       async saveEventSubscription() {},
     },
     cases: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
       async saveActivity() {},
       async saveNote() {},
     },
     idempotency: {
-      async getByScopeAndKey() { return null; },
+      async getByScopeAndKey() {
+        return null;
+      },
       async save() {},
     },
-    async runInTransaction(work) { return work(uow); },
+    async runInTransaction(work) {
+      return work(uow);
+    },
   };
 
   return { uow, savedCustomers };
@@ -171,9 +253,11 @@ describe("createCustomersService", () => {
 
     expect(customer.id).toBe("cust_123");
     expect(savedCustomers).toHaveLength(1);
-    expect(await uow.events.getCanonicalEventById("cust_123:customer.created:2026-04-23T12:00:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById("cust_123:customer.created:2026-04-23T12:00:00.000Z", {
+        environment: "sandbox",
+      }),
+    ).toMatchObject({
       eventType: "customer.created",
       aggregateId: "cust_123",
       payload: {
@@ -215,9 +299,11 @@ describe("createCustomersService", () => {
 
     expect(customer.email).toBe("updated@example.com");
     expect(savedCustomers.at(-1)?.updatedAt).toBe("2026-04-23T13:00:00.000Z");
-    expect(await uow.events.getCanonicalEventById("cust_123:customer.updated:2026-04-23T13:00:00.000Z", {
-      environment: "sandbox",
-    })).toMatchObject({
+    expect(
+      await uow.events.getCanonicalEventById("cust_123:customer.updated:2026-04-23T13:00:00.000Z", {
+        environment: "sandbox",
+      }),
+    ).toMatchObject({
       eventType: "customer.updated",
       aggregateId: "cust_123",
       payload: {

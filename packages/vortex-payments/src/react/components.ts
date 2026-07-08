@@ -20,12 +20,17 @@ import {
   type VortexSurfaceProviderRuntime,
 } from "../surfaces";
 import type { MerchantAccount } from "../domain/merchant";
-import type { MerchantSellerPayoutProfileSnapshot, SettlementPayoutReadinessDetail } from "../application/payouts/contracts";
+import type {
+  MerchantSellerPayoutProfileSnapshot,
+  SettlementPayoutReadinessDetail,
+} from "../application/payouts/contracts";
 
 export type VortexPaymentsNavigationTarget = "_self" | "_blank";
 
 function cx(...values: Array<string | false | null | undefined>): string {
-  return values.filter((value): value is string => typeof value === "string" && value.length > 0).join(" ");
+  return values
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join(" ");
 }
 
 export type VortexPaymentsProviderProps = {
@@ -63,17 +68,11 @@ export type VortexCheckoutButtonProps = Omit<
   readonly onError?: (error: unknown) => void;
 };
 
-export type VortexCustomerPortalButtonProps = Omit<
-  VortexHostedSurfaceButtonProps,
-  "request"
-> & {
+export type VortexCustomerPortalButtonProps = Omit<VortexHostedSurfaceButtonProps, "request"> & {
   readonly token: string;
 };
 
-export type VortexPaymentMethodsButtonProps = Omit<
-  VortexHostedSurfaceButtonProps,
-  "request"
-> & {
+export type VortexPaymentMethodsButtonProps = Omit<VortexHostedSurfaceButtonProps, "request"> & {
   readonly token: string;
 };
 
@@ -190,16 +189,17 @@ export type VortexMerchantAccountPanelProps = {
   readonly disabled?: boolean;
   readonly readOnly?: boolean;
   readonly navigate?: (launch: VortexSurfaceLaunch) => void;
-  readonly onActionLaunch?: (action: VortexMerchantAccountPanelAction, launch: VortexSurfaceLaunch) => void;
+  readonly onActionLaunch?: (
+    action: VortexMerchantAccountPanelAction,
+    launch: VortexSurfaceLaunch,
+  ) => void;
   readonly onAction?: (action: VortexMerchantAccountPanelAction) => void;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
   readonly className?: string;
 };
 
-export type VortexPayoutReadinessPanelAction =
-  | "open_merchant_account"
-  | "open_actions";
+export type VortexPayoutReadinessPanelAction = "open_merchant_account" | "open_actions";
 
 export type VortexPayoutReadinessPanelCopy = {
   readonly title?: ReactNode;
@@ -236,7 +236,10 @@ export type VortexPayoutReadinessPanelProps = {
   readonly disabled?: boolean;
   readonly readOnly?: boolean;
   readonly navigate?: (launch: VortexSurfaceLaunch) => void;
-  readonly onActionLaunch?: (action: VortexPayoutReadinessPanelAction, launch: VortexSurfaceLaunch) => void;
+  readonly onActionLaunch?: (
+    action: VortexPayoutReadinessPanelAction,
+    launch: VortexSurfaceLaunch,
+  ) => void;
   readonly onAction?: (action: VortexPayoutReadinessPanelAction) => void;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
@@ -285,7 +288,10 @@ export type VortexFeePolicyPanelProps = {
   readonly error?: ReactNode;
   readonly disabled?: boolean;
   readonly readOnly?: boolean;
-  readonly onPolicyChange?: (ownerMode: VortexFeePolicyOwnerMode, policy: VortexFeePolicyState) => void | Promise<void>;
+  readonly onPolicyChange?: (
+    ownerMode: VortexFeePolicyOwnerMode,
+    policy: VortexFeePolicyState,
+  ) => void | Promise<void>;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
   readonly className?: string;
@@ -347,8 +353,12 @@ export type VortexEmbeddedCheckoutProps = {
   readonly readOnly?: boolean;
   readonly tokenizedPaymentMethodReady?: boolean;
   readonly navigate?: (launch: VortexSurfaceLaunch) => void;
-  readonly onStartPaymentMethodSetup?: (checkout: VortexEmbeddedCheckoutState) => void | Promise<void>;
-  readonly onSubmitTokenizedPaymentMethod?: (checkout: VortexEmbeddedCheckoutState) => void | Promise<void>;
+  readonly onStartPaymentMethodSetup?: (
+    checkout: VortexEmbeddedCheckoutState,
+  ) => void | Promise<void>;
+  readonly onSubmitTokenizedPaymentMethod?: (
+    checkout: VortexEmbeddedCheckoutState,
+  ) => void | Promise<void>;
   readonly onHostedCheckoutLaunch?: (launch: VortexSurfaceLaunch) => void;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
@@ -400,7 +410,10 @@ export type VortexPromoCodeControlProps = {
   readonly disabled?: boolean;
   readonly readOnly?: boolean;
   readonly initialCode?: string;
-  readonly onApplyPromoCode?: (code: string, state: VortexPromoCodeControlState) => void | Promise<void>;
+  readonly onApplyPromoCode?: (
+    code: string,
+    state: VortexPromoCodeControlState,
+  ) => void | Promise<void>;
   readonly onRemovePromoCode?: (state: VortexPromoCodeControlState) => void | Promise<void>;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
@@ -485,7 +498,10 @@ export type VortexBalanceWalletPanelProps = {
   readonly disabled?: boolean;
   readonly readOnly?: boolean;
   readonly onAddFunds?: (balance: VortexBalanceWalletState) => void | Promise<void>;
-  readonly onEntrySelect?: (entry: VortexBalanceWalletEntry, balance: VortexBalanceWalletState) => void | Promise<void>;
+  readonly onEntrySelect?: (
+    entry: VortexBalanceWalletEntry,
+    balance: VortexBalanceWalletState,
+  ) => void | Promise<void>;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
   readonly className?: string;
@@ -510,7 +526,13 @@ export type VortexRecoverySummaryAttempt = {
 export type VortexRecoverySummaryState = {
   readonly customerId: string;
   readonly billingAccountId?: string;
-  readonly status: "healthy" | "needs_payment_method" | "retry_scheduled" | "past_due" | "blocked" | "recovered";
+  readonly status:
+    | "healthy"
+    | "needs_payment_method"
+    | "retry_scheduled"
+    | "past_due"
+    | "blocked"
+    | "recovered";
   readonly reason?: VortexRecoverySummaryReason;
   readonly amountDue?: number;
   readonly currency?: string;
@@ -554,7 +576,10 @@ export type VortexRecoverySummaryProps = {
   readonly navigate?: (launch: VortexSurfaceLaunch) => void;
   readonly onHostedRecoveryLaunch?: (launch: VortexSurfaceLaunch) => void;
   readonly onRetryPayment?: (recovery: VortexRecoverySummaryState) => void | Promise<void>;
-  readonly onAttemptSelect?: (attempt: VortexRecoverySummaryAttempt, recovery: VortexRecoverySummaryState) => void | Promise<void>;
+  readonly onAttemptSelect?: (
+    attempt: VortexRecoverySummaryAttempt,
+    recovery: VortexRecoverySummaryState,
+  ) => void | Promise<void>;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
   readonly className?: string;
@@ -817,7 +842,12 @@ export type VortexPlanComparisonStatus = "ready" | "empty" | "blocked";
 
 export type VortexPlanComparisonPlanStatus = "available" | "current" | "recommended" | "disabled";
 
-export type VortexPlanComparisonCadence = "one_time" | "monthly" | "quarterly" | "yearly" | "custom";
+export type VortexPlanComparisonCadence =
+  | "one_time"
+  | "monthly"
+  | "quarterly"
+  | "yearly"
+  | "custom";
 
 export type VortexPlanComparisonPlan = {
   readonly id: string;
@@ -1268,7 +1298,10 @@ export type VortexMerchantActionQueueProps = {
   readonly disabled?: boolean;
   readonly readOnly?: boolean;
   readonly navigate?: (launch: VortexSurfaceLaunch) => void;
-  readonly onActionLaunch?: (action: VortexMerchantActionQueueItem, launch: VortexSurfaceLaunch) => void;
+  readonly onActionLaunch?: (
+    action: VortexMerchantActionQueueItem,
+    launch: VortexSurfaceLaunch,
+  ) => void;
   readonly onAction?: (action: VortexMerchantActionQueueItem) => void;
   readonly onReady?: (event: VortexEmbeddedComponentReadyEvent) => void;
   readonly onError?: (event: VortexEmbeddedComponentErrorEvent) => void;
@@ -1320,22 +1353,19 @@ export function VortexHostedSurfaceButton({
 }: VortexHostedSurfaceButtonProps): ReactNode {
   const { runtime, navigate: contextNavigate } = useVortexPayments();
   const [isLaunching, setIsLaunching] = useState(false);
-  const handleClick = useCallback(
-    () => {
-      try {
-        setIsLaunching(true);
-        const launch = runtime.createHostedLink(request);
-        onLaunch?.(launch);
-        const selectedNavigate =
-          navigate ?? (navigationTarget === "_blank" ? openInNewTab : contextNavigate);
-        selectedNavigate(launch);
-      } catch (error) {
-        setIsLaunching(false);
-        onError?.(error);
-      }
-    },
-    [contextNavigate, navigate, navigationTarget, onError, onLaunch, request, runtime],
-  );
+  const handleClick = useCallback(() => {
+    try {
+      setIsLaunching(true);
+      const launch = runtime.createHostedLink(request);
+      onLaunch?.(launch);
+      const selectedNavigate =
+        navigate ?? (navigationTarget === "_blank" ? openInNewTab : contextNavigate);
+      selectedNavigate(launch);
+    } catch (error) {
+      setIsLaunching(false);
+      onError?.(error);
+    }
+  }, [contextNavigate, navigate, navigationTarget, onError, onLaunch, request, runtime]);
 
   return createElement(
     "button",
@@ -1462,13 +1492,14 @@ export function VortexEmbeddedCheckout({
     checkout.hostedCheckoutUrl === undefined || checkout.hostedCheckoutUrl.trim().length === 0
       ? undefined
       : checkout.hostedCheckoutUrl;
-  const hostedRecoveryRequest: VortexHostedSurfaceRequest | null = checkout.hostedRecoveryToken === undefined
-    ? null
-    : {
-        surface: "payment_recovery",
-        token: checkout.hostedRecoveryToken,
-        query: { view: "payment_recovery" },
-      };
+  const hostedRecoveryRequest: VortexHostedSurfaceRequest | null =
+    checkout.hostedRecoveryToken === undefined
+      ? null
+      : {
+          surface: "payment_recovery",
+          token: checkout.hostedRecoveryToken,
+          query: { view: "payment_recovery" },
+        };
 
   useEffect(() => {
     onReady?.({
@@ -1494,15 +1525,16 @@ export function VortexEmbeddedCheckout({
     void onSubmitTokenizedPaymentMethod?.(checkout);
   };
   const openHostedCheckout = (): void => {
-    const launch = hostedCheckoutUrl === undefined
-      ? hostedRecoveryRequest === null
-        ? null
-        : runtime.createHostedLink(hostedRecoveryRequest)
-      : {
-          surface: "pay_link" as const,
-          url: hostedCheckoutUrl,
-          mode: "hosted_redirect" as const,
-        };
+    const launch =
+      hostedCheckoutUrl === undefined
+        ? hostedRecoveryRequest === null
+          ? null
+          : runtime.createHostedLink(hostedRecoveryRequest)
+        : {
+            surface: "pay_link" as const,
+            url: hostedCheckoutUrl,
+            mode: "hosted_redirect" as const,
+          };
     if (launch === null) return;
     onHostedCheckoutLaunch?.(launch);
     selectedNavigate(launch);
@@ -1523,9 +1555,13 @@ export function VortexEmbeddedCheckout({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
@@ -1537,23 +1573,40 @@ export function VortexEmbeddedCheckout({
         checkout.status === "paid"
           ? resolvedCopy.paidDescription
           : canCollect
-          ? resolvedCopy.readyDescription
-          : resolvedCopy.blockedDescription,
+            ? resolvedCopy.readyDescription
+            : resolvedCopy.blockedDescription,
       ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     hasFailedAttempt && checkout.lastAttemptError !== undefined
-      ? createElement("div", { className: classNames?.error, role: "alert" }, checkout.lastAttemptError)
+      ? createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          checkout.lastAttemptError,
+        )
       : null,
     createElement(
       "dl",
       { className: classNames?.metrics },
-      createMetric(resolvedCopy.amountDueLabel, formatMinorUnitAmount(checkout.amountRemaining, checkout.currency), classNames),
+      createMetric(
+        resolvedCopy.amountDueLabel,
+        formatMinorUnitAmount(checkout.amountRemaining, checkout.currency),
+        classNames,
+      ),
       createMetric(resolvedCopy.statusLabel, checkout.status, classNames),
       createMetric(resolvedCopy.customerLabel, checkout.customerLabel ?? "customer", classNames),
       createMetric(resolvedCopy.merchantLabel, checkout.merchantLabel ?? "merchant", classNames),
@@ -1705,22 +1758,39 @@ export function VortexPromoCodeControl({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, promoCodeDescription(promoCode, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        promoCodeDescription(promoCode, resolvedCopy),
+      ),
     ),
     isValidating
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     promoCode.status === "rejected" && promoCode.message !== undefined
       ? createElement("div", { className: classNames?.error, role: "alert" }, promoCode.message)
       : null,
@@ -1803,7 +1873,11 @@ export function VortexPromoCodeControl({
           createElement("strong", { className: classNames?.itemTitle }, promoCode.discount.label),
           promoCode.discount.description === undefined
             ? null
-            : createElement("p", { className: classNames?.itemDescription }, promoCode.discount.description),
+            : createElement(
+                "p",
+                { className: classNames?.itemDescription },
+                promoCode.discount.description,
+              ),
           createElement(
             "span",
             { className: classNames?.status },
@@ -1871,30 +1945,55 @@ export function VortexBalanceWalletPanel({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, balanceWalletDescription(balance, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        balanceWalletDescription(balance, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     blocked && balance.message !== undefined
       ? createElement("div", { className: classNames?.error, role: "alert" }, balance.message)
       : null,
     createElement(
       "dl",
       { className: classNames?.metrics },
-      createMetric(resolvedCopy.availableBalanceLabel, formatMinorUnitAmount(balance.availableAmount, balance.currency), classNames),
-      createMetric(resolvedCopy.pendingBalanceLabel, formatMinorUnitAmount(balance.pendingAmount ?? 0, balance.currency), classNames),
+      createMetric(
+        resolvedCopy.availableBalanceLabel,
+        formatMinorUnitAmount(balance.availableAmount, balance.currency),
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.pendingBalanceLabel,
+        formatMinorUnitAmount(balance.pendingAmount ?? 0, balance.currency),
+        classNames,
+      ),
       createMetric(resolvedCopy.entryCountLabel, String(balance.entries.length), classNames),
       createMetric(resolvedCopy.nextActionLabel, balance.nextAction ?? "none", classNames),
     ),
@@ -1903,7 +2002,14 @@ export function VortexBalanceWalletPanel({
           "ul",
           { className: classNames?.list },
           balance.entries.map((entry) =>
-            createBalanceWalletEntryItem(entry, balance, resolvedCopy, classNames, isDisabled, onEntrySelect),
+            createBalanceWalletEntryItem(
+              entry,
+              balance,
+              resolvedCopy,
+              classNames,
+              isDisabled,
+              onEntrySelect,
+            ),
           ),
         )
       : createElement(
@@ -1953,8 +2059,14 @@ export function VortexRecoverySummary({
   const isDisabled = disabled === true || readOnly === true || loading === true;
   const attempts = recovery.attempts ?? [];
   const hasAttempts = attempts.length > 0;
-  const canOpenHostedRecovery = recovery.hostedRecoveryToken !== undefined && recovery.status !== "healthy" && recovery.status !== "recovered";
-  const canRetryPayment = recovery.paymentRequestId !== undefined && recovery.status !== "healthy" && recovery.status !== "recovered";
+  const canOpenHostedRecovery =
+    recovery.hostedRecoveryToken !== undefined &&
+    recovery.status !== "healthy" &&
+    recovery.status !== "recovered";
+  const canRetryPayment =
+    recovery.paymentRequestId !== undefined &&
+    recovery.status !== "healthy" &&
+    recovery.status !== "recovered";
 
   useEffect(() => {
     onReady?.({
@@ -2010,22 +2122,39 @@ export function VortexRecoverySummary({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, recoverySummaryDescription(recovery, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        recoverySummaryDescription(recovery, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     recovery.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, recovery.message),
@@ -2042,7 +2171,11 @@ export function VortexRecoverySummary({
         classNames,
       ),
       createMetric(resolvedCopy.nextRetryLabel, recovery.nextRetryAt ?? "none", classNames),
-      createMetric(resolvedCopy.invoiceLabel, recovery.invoiceNumber ?? recovery.invoiceId ?? "none", classNames),
+      createMetric(
+        resolvedCopy.invoiceLabel,
+        recovery.invoiceNumber ?? recovery.invoiceId ?? "none",
+        classNames,
+      ),
       createMetric(resolvedCopy.attemptsLabel, String(attempts.length), classNames),
     ),
     hasAttempts
@@ -2155,22 +2288,39 @@ export function VortexEntitlementSummary({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, entitlementSummaryDescription(access, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        entitlementSummaryDescription(access, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     access.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, access.message),
@@ -2180,7 +2330,11 @@ export function VortexEntitlementSummary({
       createMetric(resolvedCopy.statusLabel, access.status, classNames),
       createMetric(resolvedCopy.planLabel, access.planLabel ?? "none", classNames),
       createMetric(resolvedCopy.featureCountLabel, String(access.features.length), classNames),
-      createMetric(resolvedCopy.renewalLabel, access.renewsAt ?? access.activeUntil ?? "none", classNames),
+      createMetric(
+        resolvedCopy.renewalLabel,
+        access.renewsAt ?? access.activeUntil ?? "none",
+        classNames,
+      ),
       createMetric(resolvedCopy.trialLabel, access.trialEndsAt ?? "none", classNames),
     ),
     hasFeatures
@@ -2188,7 +2342,14 @@ export function VortexEntitlementSummary({
           "ul",
           { className: classNames?.list },
           access.features.map((feature) =>
-            createEntitlementFeatureItem(feature, access, resolvedCopy, classNames, isDisabled, onFeatureSelect),
+            createEntitlementFeatureItem(
+              feature,
+              access,
+              resolvedCopy,
+              classNames,
+              isDisabled,
+              onFeatureSelect,
+            ),
           ),
         )
       : createElement(
@@ -2281,22 +2442,39 @@ export function VortexPaymentTimelineSummary({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, paymentTimelineDescription(timeline, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        paymentTimelineDescription(timeline, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     timeline.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, timeline.message),
@@ -2319,7 +2497,14 @@ export function VortexPaymentTimelineSummary({
           "ul",
           { className: classNames?.list },
           timeline.entries.map((entry) =>
-            createPaymentTimelineEntryItem(entry, timeline, resolvedCopy, classNames, isDisabled, onEntrySelect),
+            createPaymentTimelineEntryItem(
+              entry,
+              timeline,
+              resolvedCopy,
+              classNames,
+              isDisabled,
+              onEntrySelect,
+            ),
           ),
         )
       : createElement(
@@ -2417,22 +2602,39 @@ export function VortexInvoiceList({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, invoiceListDescription(invoiceList, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        invoiceListDescription(invoiceList, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     invoiceList.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, invoiceList.message),
@@ -2448,9 +2650,21 @@ export function VortexInvoiceList({
         classNames,
       ),
       createMetric(resolvedCopy.invoiceCountLabel, String(invoiceList.invoices.length), classNames),
-      createMetric(resolvedCopy.overdueCountLabel, String(invoiceList.overdueCount ?? 0), classNames),
-      createMetric(resolvedCopy.actionRequiredCountLabel, String(invoiceList.actionRequiredCount ?? 0), classNames),
-      createMetric(resolvedCopy.rowLimitLabel, String(invoiceList.rowLimit ?? invoiceList.invoices.length), classNames),
+      createMetric(
+        resolvedCopy.overdueCountLabel,
+        String(invoiceList.overdueCount ?? 0),
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.actionRequiredCountLabel,
+        String(invoiceList.actionRequiredCount ?? 0),
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.rowLimitLabel,
+        String(invoiceList.rowLimit ?? invoiceList.invoices.length),
+        classNames,
+      ),
       createMetric(resolvedCopy.nextActionLabel, invoiceList.nextAction ?? "none", classNames),
     ),
     hasInvoices
@@ -2458,7 +2672,14 @@ export function VortexInvoiceList({
           "ul",
           { className: classNames?.list },
           invoiceList.invoices.map((invoice) =>
-            createInvoiceListRowItem(invoice, invoiceList, resolvedCopy, classNames, isDisabled, onInvoiceSelect),
+            createInvoiceListRowItem(
+              invoice,
+              invoiceList,
+              resolvedCopy,
+              classNames,
+              isDisabled,
+              onInvoiceSelect,
+            ),
           ),
         )
       : createElement(
@@ -2539,7 +2760,11 @@ export function VortexPlanComparison({
   }, [error, onError]);
 
   const launchPlan = (plan: VortexPlanComparisonPlan): void => {
-    if (plan.status === "disabled" || plan.status === "current" || plan.disabledReason !== undefined) {
+    if (
+      plan.status === "disabled" ||
+      plan.status === "current" ||
+      plan.disabledReason !== undefined
+    ) {
       return;
     }
     if (plan.checkoutToken !== undefined) {
@@ -2574,22 +2799,39 @@ export function VortexPlanComparison({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, planComparisonDescription(comparison, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        planComparisonDescription(comparison, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     comparison.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, comparison.message),
@@ -2600,14 +2842,25 @@ export function VortexPlanComparison({
       createMetric(resolvedCopy.planCountLabel, String(comparison.plans.length), classNames),
       createMetric(resolvedCopy.selectedPlanLabel, comparison.selectedPlanId ?? "none", classNames),
       createMetric(resolvedCopy.currentPlanLabel, comparison.currentPlanId ?? "none", classNames),
-      createMetric(resolvedCopy.recommendedPlanLabel, comparison.recommendedPlanId ?? "none", classNames),
+      createMetric(
+        resolvedCopy.recommendedPlanLabel,
+        comparison.recommendedPlanId ?? "none",
+        classNames,
+      ),
     ),
     hasPlans
       ? createElement(
           "ul",
           { className: classNames?.list },
           comparison.plans.map((plan) =>
-            createPlanComparisonItem(plan, comparison, resolvedCopy, classNames, isDisabled, launchPlan),
+            createPlanComparisonItem(
+              plan,
+              comparison,
+              resolvedCopy,
+              classNames,
+              isDisabled,
+              launchPlan,
+            ),
           ),
         )
       : createElement(
@@ -2693,22 +2946,39 @@ export function VortexUsageMeterSummary({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
       createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement("p", { className: classNames?.description }, usageMeterSummaryDescription(usage, resolvedCopy)),
+      createElement(
+        "p",
+        { className: classNames?.description },
+        usageMeterSummaryDescription(usage, resolvedCopy),
+      ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     usage.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, usage.message),
@@ -2717,7 +2987,11 @@ export function VortexUsageMeterSummary({
       { className: classNames?.metrics },
       createMetric(resolvedCopy.statusLabel, usage.status, classNames),
       createMetric(resolvedCopy.planLabel, usage.planLabel ?? "none", classNames),
-      createMetric(resolvedCopy.periodLabel, formatDateRange(usage.periodStart, usage.periodEnd), classNames),
+      createMetric(
+        resolvedCopy.periodLabel,
+        formatDateRange(usage.periodStart, usage.periodEnd),
+        classNames,
+      ),
       createMetric(resolvedCopy.nextResetLabel, usage.nextResetAt ?? "none", classNames),
       createMetric(resolvedCopy.meterCountLabel, String(usage.meters.length), classNames),
     ),
@@ -2726,7 +3000,14 @@ export function VortexUsageMeterSummary({
           "ul",
           { className: classNames?.list },
           usage.meters.map((meter) =>
-            createUsageMeterSummaryItem(meter, usage, resolvedCopy, classNames, isDisabled, onMeterSelect),
+            createUsageMeterSummaryItem(
+              meter,
+              usage,
+              resolvedCopy,
+              classNames,
+              isDisabled,
+              onMeterSelect,
+            ),
           ),
         )
       : createElement(
@@ -2833,35 +3114,58 @@ export function VortexReceiptDownloadButton({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     artifact.title === undefined && artifact.description === undefined
       ? null
       : createElement(
           "header",
           { className: classNames?.header },
-          artifact.title === undefined ? null : createElement("h2", { className: classNames?.title }, artifact.title),
+          artifact.title === undefined
+            ? null
+            : createElement("h2", { className: classNames?.title }, artifact.title),
           artifact.description === undefined
             ? null
             : createElement("p", { className: classNames?.description }, artifact.description),
         ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingLabel)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingLabel,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     artifact.disabledReason === undefined
       ? null
-      : createElement("p", { className: classNames?.status, "data-vortex-artifact-disabled-reason": true }, artifact.disabledReason),
+      : createElement(
+          "p",
+          { className: classNames?.status, "data-vortex-artifact-disabled-reason": true },
+          artifact.disabledReason,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
       createMetric(resolvedCopy.statusLabel, artifact.status, classNames),
       createMetric(resolvedCopy.artifactLabel, artifact.kind, classNames),
-      createMetric(resolvedCopy.invoiceLabel, artifact.invoiceNumber ?? artifact.invoiceId ?? "none", classNames),
+      createMetric(
+        resolvedCopy.invoiceLabel,
+        artifact.invoiceNumber ?? artifact.invoiceId ?? "none",
+        classNames,
+      ),
       createMetric(
         resolvedCopy.amountLabel,
         artifact.amount === undefined || artifact.currency === undefined
@@ -2877,10 +3181,14 @@ export function VortexReceiptDownloadButton({
       "button",
       {
         className: classNames?.button,
-        disabled: isDisabled || !canDownload || (artifact.portalToken === undefined && onDownload === undefined),
+        disabled:
+          isDisabled ||
+          !canDownload ||
+          (artifact.portalToken === undefined && onDownload === undefined),
         onClick: launchDownload,
         type: "button",
-        "data-vortex-receipt-download-action": artifact.portalToken === undefined ? "download_artifact" : "open_invoice_receipt_center",
+        "data-vortex-receipt-download-action":
+          artifact.portalToken === undefined ? "download_artifact" : "open_invoice_receipt_center",
       },
       receiptDownloadButtonLabel(artifact, resolvedCopy),
     ),
@@ -2908,8 +3216,10 @@ export function VortexBillingStatusBanner({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveBillingStatusBannerCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canOpenPortal = billingStatus.action === "open_portal" && billingStatus.portalToken !== undefined;
-  const canOpenRecovery = billingStatus.action === "open_recovery" && billingStatus.recoveryToken !== undefined;
+  const canOpenPortal =
+    billingStatus.action === "open_portal" && billingStatus.portalToken !== undefined;
+  const canOpenRecovery =
+    billingStatus.action === "open_recovery" && billingStatus.recoveryToken !== undefined;
   const canRunCustomAction = billingStatus.action === "custom";
 
   useEffect(() => {
@@ -2972,9 +3282,13 @@ export function VortexBillingStatusBanner({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
@@ -2985,11 +3299,20 @@ export function VortexBillingStatusBanner({
         : createElement("p", { className: classNames?.description }, billingStatus.description),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
@@ -3094,27 +3417,55 @@ export function VortexSubscriptionActionSummary({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, subscription.title ?? resolvedCopy.title),
+      createElement(
+        "h2",
+        { className: classNames?.title },
+        subscription.title ?? resolvedCopy.title,
+      ),
       subscription.description === undefined
-        ? createElement("p", { className: classNames?.description }, subscriptionActionDescription(subscription, resolvedCopy))
+        ? createElement(
+            "p",
+            { className: classNames?.description },
+            subscriptionActionDescription(subscription, resolvedCopy),
+          )
         : createElement("p", { className: classNames?.description }, subscription.description),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     actionDisabledReason === undefined
       ? null
-      : createElement("p", { className: classNames?.status, "data-vortex-subscription-action-disabled-reason": true }, actionDisabledReason),
+      : createElement(
+          "p",
+          {
+            className: classNames?.status,
+            "data-vortex-subscription-action-disabled-reason": true,
+          },
+          actionDisabledReason,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
@@ -3123,7 +3474,11 @@ export function VortexSubscriptionActionSummary({
       createMetric(resolvedCopy.cadenceLabel, subscription.cadenceLabel ?? "none", classNames),
       createMetric(resolvedCopy.renewalLabel, subscription.renewalAt ?? "none", classNames),
       createMetric(resolvedCopy.trialLabel, subscription.trialEndsAt ?? "none", classNames),
-      createMetric(resolvedCopy.scheduledCancelLabel, subscription.scheduledCancelAt ?? "none", classNames),
+      createMetric(
+        resolvedCopy.scheduledCancelLabel,
+        subscription.scheduledCancelAt ?? "none",
+        classNames,
+      ),
       createMetric(resolvedCopy.pausedUntilLabel, subscription.pausedUntil ?? "none", classNames),
       createMetric(
         resolvedCopy.amountDueLabel,
@@ -3141,7 +3496,10 @@ export function VortexSubscriptionActionSummary({
         "button",
         {
           className: classNames?.button,
-          disabled: isDisabled || actionDisabledReason !== undefined || (!canOpenPortal && !canRunCustomAction),
+          disabled:
+            isDisabled ||
+            actionDisabledReason !== undefined ||
+            (!canOpenPortal && !canRunCustomAction),
           onClick: runPrimaryAction,
           type: "button",
           "data-vortex-subscription-action-summary-action": subscription.action,
@@ -3172,7 +3530,8 @@ export function VortexPaymentMethodSummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolvePaymentMethodSummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canOpenPaymentMethods = paymentMethod.action !== "custom" && paymentMethod.portalToken !== undefined;
+  const canOpenPaymentMethods =
+    paymentMethod.action !== "custom" && paymentMethod.portalToken !== undefined;
   const canRunCustomAction = paymentMethod.action === "custom";
   const actionDisabledReason = paymentMethod.actionDisabledReason;
 
@@ -3225,27 +3584,55 @@ export function VortexPaymentMethodSummary({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
       { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, paymentMethod.title ?? resolvedCopy.title),
+      createElement(
+        "h2",
+        { className: classNames?.title },
+        paymentMethod.title ?? resolvedCopy.title,
+      ),
       paymentMethod.description === undefined
-        ? createElement("p", { className: classNames?.description }, paymentMethodSummaryDescription(paymentMethod, resolvedCopy))
+        ? createElement(
+            "p",
+            { className: classNames?.description },
+            paymentMethodSummaryDescription(paymentMethod, resolvedCopy),
+          )
         : createElement("p", { className: classNames?.description }, paymentMethod.description),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     actionDisabledReason === undefined
       ? null
-      : createElement("p", { className: classNames?.status, "data-vortex-payment-method-action-disabled-reason": true }, actionDisabledReason),
+      : createElement(
+          "p",
+          {
+            className: classNames?.status,
+            "data-vortex-payment-method-action-disabled-reason": true,
+          },
+          actionDisabledReason,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
@@ -3254,7 +3641,11 @@ export function VortexPaymentMethodSummary({
       createMetric(resolvedCopy.methodLabel, paymentMethodLabel(paymentMethod), classNames),
       createMetric(resolvedCopy.expiryLabel, paymentMethod.expiryLabel ?? "none", classNames),
       createMetric(resolvedCopy.bankLabel, paymentMethod.bankLabel ?? "none", classNames),
-      createMetric(resolvedCopy.accountTypeLabel, paymentMethod.accountTypeLabel ?? "none", classNames),
+      createMetric(
+        resolvedCopy.accountTypeLabel,
+        paymentMethod.accountTypeLabel ?? "none",
+        classNames,
+      ),
       createMetric(resolvedCopy.readinessLabel, paymentMethod.readinessLabel ?? "none", classNames),
       createMetric(resolvedCopy.nextActionLabel, paymentMethod.nextAction ?? "none", classNames),
     ),
@@ -3265,7 +3656,10 @@ export function VortexPaymentMethodSummary({
         "button",
         {
           className: classNames?.button,
-          disabled: isDisabled || actionDisabledReason !== undefined || (!canOpenPaymentMethods && !canRunCustomAction),
+          disabled:
+            isDisabled ||
+            actionDisabledReason !== undefined ||
+            (!canOpenPaymentMethods && !canRunCustomAction),
           onClick: runPrimaryAction,
           type: "button",
           "data-vortex-payment-method-summary-action": paymentMethod.action,
@@ -3328,9 +3722,13 @@ export function VortexMerchantActionQueue({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
@@ -3345,85 +3743,112 @@ export function VortexMerchantActionQueue({
       ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
       createMetric(resolvedCopy.statusLabel, merchantState.merchantStatus, classNames),
-      createMetric(resolvedCopy.onboardingLabel, merchantState.onboardingStatus ?? "not_started", classNames),
-      createMetric(resolvedCopy.paymentCollectionLabel, merchantState.canAcceptPayments ? "ready" : "blocked", classNames),
+      createMetric(
+        resolvedCopy.onboardingLabel,
+        merchantState.onboardingStatus ?? "not_started",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.paymentCollectionLabel,
+        merchantState.canAcceptPayments ? "ready" : "blocked",
+        classNames,
+      ),
       createMetric(resolvedCopy.payoutsLabel, merchantState.payoutReadiness, classNames),
     ),
     loading === true || error !== undefined
       ? null
       : resolvedActions.length === 0
-      ? createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyTitle),
-          createElement("p", null, resolvedCopy.emptyDescription),
-        )
-      : createElement(
-          "ul",
-          { className: classNames?.list },
-          resolvedActions.map((action) =>
-            createElement(
-              "li",
-              {
-                key: action.id,
-                className: classNames?.item,
-                "data-vortex-action-kind": action.kind,
-                "data-vortex-action-severity": action.severity,
-                "data-vortex-action-status": action.status,
-              },
-              createElement("strong", { className: classNames?.itemTitle }, action.title),
-              action.description === undefined ? null : createElement("p", { className: classNames?.itemDescription }, action.description),
-              createElement("span", { className: classNames?.status }, action.status),
+        ? createElement(
+            "div",
+            { className: classNames?.empty, role: "status" },
+            createElement("p", null, resolvedCopy.emptyTitle),
+            createElement("p", null, resolvedCopy.emptyDescription),
+          )
+        : createElement(
+            "ul",
+            { className: classNames?.list },
+            resolvedActions.map((action) =>
               createElement(
-                "div",
-                { className: classNames?.actions },
-                action.primaryAction === undefined
+                "li",
+                {
+                  key: action.id,
+                  className: classNames?.item,
+                  "data-vortex-action-kind": action.kind,
+                  "data-vortex-action-severity": action.severity,
+                  "data-vortex-action-status": action.status,
+                },
+                createElement("strong", { className: classNames?.itemTitle }, action.title),
+                action.description === undefined
                   ? null
                   : createElement(
-                      "button",
-                      {
-                        className: classNames?.button,
-                        type: "button",
-                        disabled: isDisabled,
-                        onClick: () => {
-                          const launch = runtime.createHostedLink(action.primaryAction as VortexHostedSurfaceRequest);
-                          onAction?.(action);
-                          onActionLaunch?.(action, launch);
-                          selectedNavigate(launch);
-                        },
-                      },
-                      action.primaryActionLabel ?? "Open action",
+                      "p",
+                      { className: classNames?.itemDescription },
+                      action.description,
                     ),
-                action.secondaryAction === undefined
-                  ? null
-                  : createElement(
-                      "button",
-                      {
-                        className: classNames?.button,
-                        type: "button",
-                        disabled: isDisabled,
-                        onClick: () => {
-                          const launch = runtime.createHostedLink(action.secondaryAction as VortexHostedSurfaceRequest);
-                          onAction?.(action);
-                          onActionLaunch?.(action, launch);
-                          selectedNavigate(launch);
+                createElement("span", { className: classNames?.status }, action.status),
+                createElement(
+                  "div",
+                  { className: classNames?.actions },
+                  action.primaryAction === undefined
+                    ? null
+                    : createElement(
+                        "button",
+                        {
+                          className: classNames?.button,
+                          type: "button",
+                          disabled: isDisabled,
+                          onClick: () => {
+                            const launch = runtime.createHostedLink(
+                              action.primaryAction as VortexHostedSurfaceRequest,
+                            );
+                            onAction?.(action);
+                            onActionLaunch?.(action, launch);
+                            selectedNavigate(launch);
+                          },
                         },
-                      },
-                      action.secondaryActionLabel ?? "View details",
-                    ),
+                        action.primaryActionLabel ?? "Open action",
+                      ),
+                  action.secondaryAction === undefined
+                    ? null
+                    : createElement(
+                        "button",
+                        {
+                          className: classNames?.button,
+                          type: "button",
+                          disabled: isDisabled,
+                          onClick: () => {
+                            const launch = runtime.createHostedLink(
+                              action.secondaryAction as VortexHostedSurfaceRequest,
+                            );
+                            onAction?.(action);
+                            onActionLaunch?.(action, launch);
+                            selectedNavigate(launch);
+                          },
+                        },
+                        action.secondaryActionLabel ?? "View details",
+                      ),
+                ),
               ),
             ),
           ),
-        ),
   );
 }
 
@@ -3472,7 +3897,10 @@ export function VortexMerchantAccountPanel({
     }
   }, [error, onError]);
 
-  const launchAction = (action: VortexMerchantAccountPanelAction, request: VortexHostedSurfaceRequest): void => {
+  const launchAction = (
+    action: VortexMerchantAccountPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ): void => {
     const launch = runtime.createHostedLink(request);
     onAction?.(action);
     onActionLaunch?.(action, launch);
@@ -3492,9 +3920,13 @@ export function VortexMerchantAccountPanel({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
@@ -3507,11 +3939,20 @@ export function VortexMerchantAccountPanel({
       ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     merchantState === undefined
       ? createElement(
           "div",
@@ -3525,12 +3966,28 @@ export function VortexMerchantAccountPanel({
       { className: classNames?.metrics },
       createMetric(resolvedCopy.businessLabel, merchantAccount.displayName, classNames),
       createMetric(resolvedCopy.merchantModeLabel, merchantAccount.merchantMode, classNames),
-      createMetric(resolvedCopy.merchantStatusLabel, merchantState?.merchantStatus ?? merchantAccount.status, classNames),
-      createMetric(resolvedCopy.paymentCollectionLabel, canAcceptPayments ? "ready" : "blocked", classNames),
+      createMetric(
+        resolvedCopy.merchantStatusLabel,
+        merchantState?.merchantStatus ?? merchantAccount.status,
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.paymentCollectionLabel,
+        canAcceptPayments ? "ready" : "blocked",
+        classNames,
+      ),
       createMetric(resolvedCopy.payoutReadinessLabel, payoutReadiness, classNames),
       createMetric(resolvedCopy.defaultCurrencyLabel, merchantAccount.defaultCurrency, classNames),
-      createMetric(resolvedCopy.activeCapabilitiesLabel, String(activeCapabilities.length), classNames),
-      createMetric(resolvedCopy.restrictedCapabilitiesLabel, String(restrictedCapabilities.length), classNames),
+      createMetric(
+        resolvedCopy.activeCapabilitiesLabel,
+        String(activeCapabilities.length),
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.restrictedCapabilitiesLabel,
+        String(restrictedCapabilities.length),
+        classNames,
+      ),
       createMetric(resolvedCopy.openRequirementsLabel, String(openRequirementCount), classNames),
     ),
     createElement(
@@ -3633,7 +4090,8 @@ export function VortexPayoutReadinessPanel({
   const resolvedCopy = resolvePayoutReadinessPanelCopy(copy);
   const payoutReadiness = merchantState.payoutReadiness;
   const capabilityCount = payoutProfile?.capabilities.length ?? 0;
-  const enabledCapabilityCount = payoutProfile?.capabilities.filter((capability) => capability.status === "enabled").length ?? 0;
+  const enabledCapabilityCount =
+    payoutProfile?.capabilities.filter((capability) => capability.status === "enabled").length ?? 0;
   const blocked = payoutReadiness === "blocked" || payoutReadiness === "paused";
 
   useEffect(() => {
@@ -3654,7 +4112,10 @@ export function VortexPayoutReadinessPanel({
     }
   }, [error, onError]);
 
-  const launchAction = (action: VortexPayoutReadinessPanelAction, request: VortexHostedSurfaceRequest): void => {
+  const launchAction = (
+    action: VortexPayoutReadinessPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ): void => {
     const launch = runtime.createHostedLink(request);
     onAction?.(action);
     onActionLaunch?.(action, launch);
@@ -3674,9 +4135,13 @@ export function VortexPayoutReadinessPanel({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
@@ -3689,11 +4154,20 @@ export function VortexPayoutReadinessPanel({
       ),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     payoutProfile === undefined
       ? createElement(
           "div",
@@ -3707,15 +4181,47 @@ export function VortexPayoutReadinessPanel({
       { className: classNames?.metrics },
       createMetric(resolvedCopy.payoutReadinessLabel, payoutReadiness, classNames),
       createMetric(resolvedCopy.payoutModeLabel, payoutProfile?.mode ?? "unknown", classNames),
-      createMetric(resolvedCopy.payoutRailLabel, payoutProfile?.payoutRail ?? "unknown", classNames),
-      createMetric(resolvedCopy.payoutScheduleLabel, payoutProfile?.payoutSchedule ?? "unknown", classNames),
+      createMetric(
+        resolvedCopy.payoutRailLabel,
+        payoutProfile?.payoutRail ?? "unknown",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.payoutScheduleLabel,
+        payoutProfile?.payoutSchedule ?? "unknown",
+        classNames,
+      ),
       createMetric(resolvedCopy.currencyLabel, payoutProfile?.currency ?? "unknown", classNames),
-      createMetric(resolvedCopy.fundingRequirementLabel, payoutProfile?.fundingRequirement ?? "standard", classNames),
-      createMetric(resolvedCopy.latestSettlementLabel, merchantState.latestSettlementStatus ?? "unknown", classNames),
-      createMetric(resolvedCopy.latestPayoutLabel, merchantState.latestPayoutStatus ?? "unknown", classNames),
-      createMetric(resolvedCopy.settlementReadinessLabel, settlementReadiness?.status ?? "unknown", classNames),
-      createMetric(resolvedCopy.nextActionLabel, settlementReadiness?.nextAction ?? merchantState.payoutBlockReason ?? "monitor", classNames),
-      createMetric(resolvedCopy.capabilitiesLabel, `${enabledCapabilityCount}/${capabilityCount} enabled`, classNames),
+      createMetric(
+        resolvedCopy.fundingRequirementLabel,
+        payoutProfile?.fundingRequirement ?? "standard",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.latestSettlementLabel,
+        merchantState.latestSettlementStatus ?? "unknown",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.latestPayoutLabel,
+        merchantState.latestPayoutStatus ?? "unknown",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.settlementReadinessLabel,
+        settlementReadiness?.status ?? "unknown",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.nextActionLabel,
+        settlementReadiness?.nextAction ?? merchantState.payoutBlockReason ?? "monitor",
+        classNames,
+      ),
+      createMetric(
+        resolvedCopy.capabilitiesLabel,
+        `${enabledCapabilityCount}/${capabilityCount} enabled`,
+        classNames,
+      ),
     ),
     createElement(
       "ul",
@@ -3732,7 +4238,8 @@ export function VortexPayoutReadinessPanel({
         ? null
         : createPayoutCapabilityItem(
             "settlement_blockers",
-            settlementReadiness?.blockers.join(", ") ?? "No settlement readiness snapshot was provided.",
+            settlementReadiness?.blockers.join(", ") ??
+              "No settlement readiness snapshot was provided.",
             settlementReadiness === undefined ? "unknown" : "disabled",
             classNames,
           ),
@@ -3825,9 +4332,13 @@ export function VortexFeePolicyPanel({
       "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
       "data-vortex-appearance-density": appearance?.density ?? "comfortable",
       "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style: appearance?.accentColor === undefined
-        ? undefined
-        : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<string, string>),
+      style:
+        appearance?.accentColor === undefined
+          ? undefined
+          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
+              string,
+              string
+            >),
     },
     createElement(
       "header",
@@ -3836,11 +4347,20 @@ export function VortexFeePolicyPanel({
       createElement("p", { className: classNames?.description }, resolvedCopy.description),
     ),
     loading === true
-      ? createElement("div", { className: classNames?.loading, role: "status" }, resolvedCopy.loadingTitle)
+      ? createElement(
+          "div",
+          { className: classNames?.loading, role: "status" },
+          resolvedCopy.loadingTitle,
+        )
       : null,
     error === undefined
       ? null
-      : createElement("div", { className: classNames?.error, role: "alert" }, resolvedCopy.errorTitle, error),
+      : createElement(
+          "div",
+          { className: classNames?.error, role: "alert" },
+          resolvedCopy.errorTitle,
+          error,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
@@ -3862,7 +4382,9 @@ export function VortexFeePolicyPanel({
             key: option.ownerMode,
             className: classNames?.item,
             "data-vortex-fee-policy-option": option.ownerMode,
-            "data-vortex-fee-policy-option-selected": String(option.ownerMode === feePolicy.ownerMode),
+            "data-vortex-fee-policy-option-selected": String(
+              option.ownerMode === feePolicy.ownerMode,
+            ),
           },
           createElement("input", {
             checked: option.ownerMode === feePolicy.ownerMode,
@@ -3881,7 +4403,11 @@ export function VortexFeePolicyPanel({
     ),
     feePolicy.note === undefined
       ? null
-      : createElement("p", { className: classNames?.status, "data-vortex-fee-policy-note": true }, feePolicy.note),
+      : createElement(
+          "p",
+          { className: classNames?.status, "data-vortex-fee-policy-note": true },
+          feePolicy.note,
+        ),
   );
 }
 
@@ -3905,8 +4431,16 @@ function createMetric(
   classNames: VortexEmbeddedComponentClassNames | undefined,
 ): ReactNode {
   return [
-    createElement("dt", { key: `${String(label)}:label`, className: classNames?.metricLabel }, label),
-    createElement("dd", { key: `${String(label)}:value`, className: classNames?.metricValue }, value),
+    createElement(
+      "dt",
+      { key: `${String(label)}:label`, className: classNames?.metricLabel },
+      label,
+    ),
+    createElement(
+      "dd",
+      { key: `${String(label)}:value`, className: classNames?.metricValue },
+      value,
+    ),
   ];
 }
 
@@ -3919,21 +4453,25 @@ function resolveEmbeddedCheckoutCopy(
 ): Required<VortexEmbeddedCheckoutCopy> {
   return {
     title: copy?.title ?? "Checkout",
-    readyDescription: copy?.readyDescription ?? "Complete payment with a Vortex-secured payment method.",
+    readyDescription:
+      copy?.readyDescription ?? "Complete payment with a Vortex-secured payment method.",
     paidDescription: copy?.paidDescription ?? "This payment request is paid.",
     blockedDescription: copy?.blockedDescription ?? "This checkout is not currently collectible.",
     loadingTitle: copy?.loadingTitle ?? "Loading checkout...",
     errorTitle: copy?.errorTitle ?? "Unable to complete checkout.",
     emptyTitle: copy?.emptyTitle ?? "No line items were provided.",
-    emptyDescription: copy?.emptyDescription ?? "Checkout can still continue from the payment request total.",
+    emptyDescription:
+      copy?.emptyDescription ?? "Checkout can still continue from the payment request total.",
     amountDueLabel: copy?.amountDueLabel ?? "Amount due",
     statusLabel: copy?.statusLabel ?? "Status",
     customerLabel: copy?.customerLabel ?? "Customer",
     merchantLabel: copy?.merchantLabel ?? "Merchant",
     dueAtLabel: copy?.dueAtLabel ?? "Due",
     expiresAtLabel: copy?.expiresAtLabel ?? "Expires",
-    startPaymentMethodSetupLabel: copy?.startPaymentMethodSetupLabel ?? "Start secure payment entry",
-    submitTokenizedPaymentMethodLabel: copy?.submitTokenizedPaymentMethodLabel ?? "Complete payment",
+    startPaymentMethodSetupLabel:
+      copy?.startPaymentMethodSetupLabel ?? "Start secure payment entry",
+    submitTokenizedPaymentMethodLabel:
+      copy?.submitTokenizedPaymentMethodLabel ?? "Complete payment",
     openHostedCheckoutLabel: copy?.openHostedCheckoutLabel ?? "Open hosted checkout",
     secureEntryReadyLabel: copy?.secureEntryReadyLabel ?? "Waiting for secure entry",
   };
@@ -3966,9 +4504,11 @@ function resolveBalanceWalletPanelCopy(
 ): Required<VortexBalanceWalletPanelCopy> {
   return {
     title: copy?.title ?? "Balance and credits",
-    readyDescription: copy?.readyDescription ?? "Review available credits and wallet ledger activity.",
+    readyDescription:
+      copy?.readyDescription ?? "Review available credits and wallet ledger activity.",
     emptyDescription: copy?.emptyDescription ?? "No prepaid balance is currently available.",
-    blockedDescription: copy?.blockedDescription ?? "This balance needs attention before it can be used.",
+    blockedDescription:
+      copy?.blockedDescription ?? "This balance needs attention before it can be used.",
     loadingTitle: copy?.loadingTitle ?? "Loading balance...",
     errorTitle: copy?.errorTitle ?? "Unable to load balance.",
     availableBalanceLabel: copy?.availableBalanceLabel ?? "Available",
@@ -3976,7 +4516,8 @@ function resolveBalanceWalletPanelCopy(
     entryCountLabel: copy?.entryCountLabel ?? "Ledger rows",
     nextActionLabel: copy?.nextActionLabel ?? "Next action",
     emptyTitle: copy?.emptyTitle ?? "No balance activity",
-    emptyStateDescription: copy?.emptyStateDescription ?? "Add credits to create the first wallet ledger row.",
+    emptyStateDescription:
+      copy?.emptyStateDescription ?? "Add credits to create the first wallet ledger row.",
     addFundsLabel: copy?.addFundsLabel ?? "Add credits",
     viewEntryLabel: copy?.viewEntryLabel ?? "View row",
     settlementLabel: copy?.settlementLabel ?? "Funding settlement",
@@ -3989,8 +4530,11 @@ function resolveRecoverySummaryCopy(
 ): Required<VortexRecoverySummaryCopy> {
   return {
     title: copy?.title ?? "Payment recovery",
-    healthyDescription: copy?.healthyDescription ?? "No payment recovery action is currently required.",
-    actionRequiredDescription: copy?.actionRequiredDescription ?? "Review the payment issue and recover collection through Vortex.",
+    healthyDescription:
+      copy?.healthyDescription ?? "No payment recovery action is currently required.",
+    actionRequiredDescription:
+      copy?.actionRequiredDescription ??
+      "Review the payment issue and recover collection through Vortex.",
     recoveredDescription: copy?.recoveredDescription ?? "The payment issue has been recovered.",
     loadingTitle: copy?.loadingTitle ?? "Loading recovery state...",
     errorTitle: copy?.errorTitle ?? "Unable to load recovery state.",
@@ -4012,8 +4556,11 @@ function resolveEntitlementSummaryCopy(
   return {
     title: copy?.title ?? "Access",
     activeDescription: copy?.activeDescription ?? "This customer has active access through Vortex.",
-    limitedDescription: copy?.limitedDescription ?? "This customer has limited access and may need billing attention.",
-    blockedDescription: copy?.blockedDescription ?? "This customer does not currently have full access.",
+    limitedDescription:
+      copy?.limitedDescription ??
+      "This customer has limited access and may need billing attention.",
+    blockedDescription:
+      copy?.blockedDescription ?? "This customer does not currently have full access.",
     emptyDescription: copy?.emptyDescription ?? "No customer access is currently enabled.",
     loadingTitle: copy?.loadingTitle ?? "Loading access...",
     errorTitle: copy?.errorTitle ?? "Unable to load access.",
@@ -4033,8 +4580,12 @@ function resolvePaymentTimelineSummaryCopy(
 ): Required<VortexPaymentTimelineSummaryCopy> {
   return {
     title: copy?.title ?? "Payments",
-    currentDescription: copy?.currentDescription ?? "Recent invoice, payment, refund, and receipt activity is current.",
-    attentionRequiredDescription: copy?.attentionRequiredDescription ?? "Review billing activity that needs customer attention.",
+    currentDescription:
+      copy?.currentDescription ??
+      "Recent invoice, payment, refund, and receipt activity is current.",
+    attentionRequiredDescription:
+      copy?.attentionRequiredDescription ??
+      "Review billing activity that needs customer attention.",
     emptyDescription: copy?.emptyDescription ?? "No billing activity is available yet.",
     loadingTitle: copy?.loadingTitle ?? "Loading payment timeline...",
     errorTitle: copy?.errorTitle ?? "Unable to load payment timeline.",
@@ -4043,7 +4594,9 @@ function resolvePaymentTimelineSummaryCopy(
     entryCountLabel: copy?.entryCountLabel ?? "Rows",
     nextActionLabel: copy?.nextActionLabel ?? "Next action",
     emptyEntriesTitle: copy?.emptyEntriesTitle ?? "No payment activity",
-    emptyEntriesDescription: copy?.emptyEntriesDescription ?? "Invoices, payments, refunds, credits, and receipts will appear here.",
+    emptyEntriesDescription:
+      copy?.emptyEntriesDescription ??
+      "Invoices, payments, refunds, credits, and receipts will appear here.",
     openPortalLabel: copy?.openPortalLabel ?? "View billing history",
     viewEntryLabel: copy?.viewEntryLabel ?? "View row",
   };
@@ -4055,7 +4608,8 @@ function resolveInvoiceListCopy(
   return {
     title: copy?.title ?? "Invoices",
     currentDescription: copy?.currentDescription ?? "Invoice history is current.",
-    attentionRequiredDescription: copy?.attentionRequiredDescription ?? "Review invoices that need customer action.",
+    attentionRequiredDescription:
+      copy?.attentionRequiredDescription ?? "Review invoices that need customer action.",
     emptyDescription: copy?.emptyDescription ?? "No invoices are available yet.",
     loadingTitle: copy?.loadingTitle ?? "Loading invoices...",
     errorTitle: copy?.errorTitle ?? "Unable to load invoices.",
@@ -4067,7 +4621,9 @@ function resolveInvoiceListCopy(
     rowLimitLabel: copy?.rowLimitLabel ?? "Rows shown",
     nextActionLabel: copy?.nextActionLabel ?? "Next action",
     emptyInvoicesTitle: copy?.emptyInvoicesTitle ?? "No invoices",
-    emptyInvoicesDescription: copy?.emptyInvoicesDescription ?? "Invoices and receipts will appear here when billing starts.",
+    emptyInvoicesDescription:
+      copy?.emptyInvoicesDescription ??
+      "Invoices and receipts will appear here when billing starts.",
     openPortalLabel: copy?.openPortalLabel ?? "View invoice center",
     viewInvoiceLabel: copy?.viewInvoiceLabel ?? "View invoice",
     viewReceiptLabel: copy?.viewReceiptLabel ?? "View receipt",
@@ -4082,7 +4638,8 @@ function resolvePlanComparisonCopy(
 ): Required<VortexPlanComparisonCopy> {
   return {
     title: copy?.title ?? "Plans",
-    readyDescription: copy?.readyDescription ?? "Compare available plans and continue to Vortex checkout.",
+    readyDescription:
+      copy?.readyDescription ?? "Compare available plans and continue to Vortex checkout.",
     emptyDescription: copy?.emptyDescription ?? "No plans are currently available.",
     blockedDescription: copy?.blockedDescription ?? "Plan changes are not currently available.",
     loadingTitle: copy?.loadingTitle ?? "Loading plans...",
@@ -4096,7 +4653,8 @@ function resolvePlanComparisonCopy(
     cadenceLabel: copy?.cadenceLabel ?? "Cadence",
     featureCountLabel: copy?.featureCountLabel ?? "Features",
     emptyPlansTitle: copy?.emptyPlansTitle ?? "No plans",
-    emptyPlansDescription: copy?.emptyPlansDescription ?? "Plans will appear here when product pricing is available.",
+    emptyPlansDescription:
+      copy?.emptyPlansDescription ?? "Plans will appear here when product pricing is available.",
     openCheckoutLabel: copy?.openCheckoutLabel ?? "Continue to checkout",
     currentButtonLabel: copy?.currentButtonLabel ?? "Current plan",
     disabledButtonLabel: copy?.disabledButtonLabel ?? "Unavailable",
@@ -4110,7 +4668,8 @@ function resolveUsageMeterSummaryCopy(
   return {
     title: copy?.title ?? "Usage",
     currentDescription: copy?.currentDescription ?? "Usage is current for this billing period.",
-    attentionRequiredDescription: copy?.attentionRequiredDescription ?? "Review usage that may affect the next invoice.",
+    attentionRequiredDescription:
+      copy?.attentionRequiredDescription ?? "Review usage that may affect the next invoice.",
     emptyDescription: copy?.emptyDescription ?? "No usage meters are active for this customer.",
     blockedDescription: copy?.blockedDescription ?? "Usage is not currently available.",
     loadingTitle: copy?.loadingTitle ?? "Loading usage...",
@@ -4127,7 +4686,9 @@ function resolveUsageMeterSummaryCopy(
     resetLabel: copy?.resetLabel ?? "Resets",
     nextActionLabel: copy?.nextActionLabel ?? "Next action",
     emptyMetersTitle: copy?.emptyMetersTitle ?? "No usage meters",
-    emptyMetersDescription: copy?.emptyMetersDescription ?? "Metered usage will appear here when this plan records usage.",
+    emptyMetersDescription:
+      copy?.emptyMetersDescription ??
+      "Metered usage will appear here when this plan records usage.",
     openPortalLabel: copy?.openPortalLabel ?? "View billing usage",
     viewMeterLabel: copy?.viewMeterLabel ?? "View meter",
   };
@@ -4175,11 +4736,18 @@ function resolveSubscriptionActionSummaryCopy(
 ): Required<VortexSubscriptionActionSummaryCopy> {
   return {
     title: copy?.title ?? "Subscription",
-    activeDescription: copy?.activeDescription ?? "This subscription is active and ready for customer self-service.",
-    trialingDescription: copy?.trialingDescription ?? "This subscription is in trial and can be managed through Vortex.",
-    scheduledCancellationDescription: copy?.scheduledCancellationDescription ?? "This subscription is scheduled to cancel.",
-    pausedDescription: copy?.pausedDescription ?? "This subscription is paused and can be resumed through Vortex.",
-    pastDueDescription: copy?.pastDueDescription ?? "This subscription needs billing attention before it is fully current.",
+    activeDescription:
+      copy?.activeDescription ?? "This subscription is active and ready for customer self-service.",
+    trialingDescription:
+      copy?.trialingDescription ??
+      "This subscription is in trial and can be managed through Vortex.",
+    scheduledCancellationDescription:
+      copy?.scheduledCancellationDescription ?? "This subscription is scheduled to cancel.",
+    pausedDescription:
+      copy?.pausedDescription ?? "This subscription is paused and can be resumed through Vortex.",
+    pastDueDescription:
+      copy?.pastDueDescription ??
+      "This subscription needs billing attention before it is fully current.",
     canceledDescription: copy?.canceledDescription ?? "This subscription is canceled.",
     emptyDescription: copy?.emptyDescription ?? "No active subscription action is available.",
     loadingTitle: copy?.loadingTitle ?? "Loading subscription...",
@@ -4208,11 +4776,17 @@ function resolvePaymentMethodSummaryCopy(
   return {
     title: copy?.title ?? "Payment method",
     readyDescription: copy?.readyDescription ?? "A default payment method is ready for collection.",
-    missingDescription: copy?.missingDescription ?? "Add a payment method before automatic collection can continue.",
-    expiredDescription: copy?.expiredDescription ?? "The default payment method needs to be updated.",
+    missingDescription:
+      copy?.missingDescription ?? "Add a payment method before automatic collection can continue.",
+    expiredDescription:
+      copy?.expiredDescription ?? "The default payment method needs to be updated.",
     disabledDescription: copy?.disabledDescription ?? "The default payment method is disabled.",
-    actionRequiredDescription: copy?.actionRequiredDescription ?? "Review the payment method before the next collection attempt.",
-    blockedDescription: copy?.blockedDescription ?? "Payment collection is blocked until this payment method is fixed.",
+    actionRequiredDescription:
+      copy?.actionRequiredDescription ??
+      "Review the payment method before the next collection attempt.",
+    blockedDescription:
+      copy?.blockedDescription ??
+      "Payment collection is blocked until this payment method is fixed.",
     loadingTitle: copy?.loadingTitle ?? "Loading payment method...",
     errorTitle: copy?.errorTitle ?? "Unable to load payment method.",
     statusLabel: copy?.statusLabel ?? "Status",
@@ -4569,13 +5143,16 @@ function createBalanceWalletEntryItem(
   copy: Required<VortexBalanceWalletPanelCopy>,
   classNames: VortexEmbeddedComponentClassNames | undefined,
   isDisabled: boolean,
-  onEntrySelect: ((entry: VortexBalanceWalletEntry, balance: VortexBalanceWalletState) => void | Promise<void>) | undefined,
+  onEntrySelect:
+    | ((entry: VortexBalanceWalletEntry, balance: VortexBalanceWalletState) => void | Promise<void>)
+    | undefined,
 ): ReactNode {
-  const settlement = entry.fundingSettlement === undefined
-    ? "not_funded"
-    : entry.fundingSettlement.settled
-    ? "settled"
-    : entry.fundingSettlement.nextAction;
+  const settlement =
+    entry.fundingSettlement === undefined
+      ? "not_funded"
+      : entry.fundingSettlement.settled
+        ? "settled"
+        : entry.fundingSettlement.nextAction;
   const targets = formatBalanceWalletTargets(entry.targets);
   return createElement(
     "li",
@@ -4587,7 +5164,11 @@ function createBalanceWalletEntryItem(
       "data-vortex-wallet-entry-amount": String(entry.amount),
       "data-vortex-wallet-entry-remaining": String(entry.remainingAmount ?? 0),
     },
-    createElement("strong", { className: classNames?.itemTitle }, `${entry.entryType} ${formatMinorUnitAmount(entry.amount, entry.currency)}`),
+    createElement(
+      "strong",
+      { className: classNames?.itemTitle },
+      `${entry.entryType} ${formatMinorUnitAmount(entry.amount, entry.currency)}`,
+    ),
     entry.description === undefined
       ? null
       : createElement("p", { className: classNames?.itemDescription }, entry.description),
@@ -4595,7 +5176,11 @@ function createBalanceWalletEntryItem(
     createElement(
       "dl",
       { className: classNames?.metrics },
-      createMetric("Remaining", formatMinorUnitAmount(entry.remainingAmount ?? 0, entry.currency), classNames),
+      createMetric(
+        "Remaining",
+        formatMinorUnitAmount(entry.remainingAmount ?? 0, entry.currency),
+        classNames,
+      ),
       createMetric("Invoice", entry.invoiceNumber ?? "none", classNames),
       createMetric("Payment", entry.paymentId ?? "none", classNames),
       createMetric(copy.settlementLabel, settlement, classNames),
@@ -4622,11 +5207,17 @@ function createRecoveryAttemptItem(
   recovery: VortexRecoverySummaryState,
   classNames: VortexEmbeddedComponentClassNames | undefined,
   isDisabled: boolean,
-  onAttemptSelect: ((attempt: VortexRecoverySummaryAttempt, recovery: VortexRecoverySummaryState) => void | Promise<void>) | undefined,
+  onAttemptSelect:
+    | ((
+        attempt: VortexRecoverySummaryAttempt,
+        recovery: VortexRecoverySummaryState,
+      ) => void | Promise<void>)
+    | undefined,
 ): ReactNode {
-  const amount = attempt.amount === undefined || attempt.currency === undefined
-    ? "none"
-    : formatMinorUnitAmount(attempt.amount, attempt.currency);
+  const amount =
+    attempt.amount === undefined || attempt.currency === undefined
+      ? "none"
+      : formatMinorUnitAmount(attempt.amount, attempt.currency);
   return createElement(
     "li",
     {
@@ -4668,10 +5259,12 @@ function createEntitlementFeatureItem(
   copy: Required<VortexEntitlementSummaryCopy>,
   classNames: VortexEmbeddedComponentClassNames | undefined,
   isDisabled: boolean,
-  onFeatureSelect: ((
-    feature: VortexEntitlementSummaryFeature,
-    access: VortexEntitlementSummaryState,
-  ) => void | Promise<void>) | undefined,
+  onFeatureSelect:
+    | ((
+        feature: VortexEntitlementSummaryFeature,
+        access: VortexEntitlementSummaryState,
+      ) => void | Promise<void>)
+    | undefined,
 ): ReactNode {
   return createElement(
     "li",
@@ -4716,14 +5309,17 @@ function createPaymentTimelineEntryItem(
   copy: Required<VortexPaymentTimelineSummaryCopy>,
   classNames: VortexEmbeddedComponentClassNames | undefined,
   isDisabled: boolean,
-  onEntrySelect: ((
-    entry: VortexPaymentTimelineEntry,
-    timeline: VortexPaymentTimelineState,
-  ) => void | Promise<void>) | undefined,
+  onEntrySelect:
+    | ((
+        entry: VortexPaymentTimelineEntry,
+        timeline: VortexPaymentTimelineState,
+      ) => void | Promise<void>)
+    | undefined,
 ): ReactNode {
-  const amount = entry.amount === undefined || entry.currency === undefined
-    ? "none"
-    : formatMinorUnitAmount(entry.amount, entry.currency);
+  const amount =
+    entry.amount === undefined || entry.currency === undefined
+      ? "none"
+      : formatMinorUnitAmount(entry.amount, entry.currency);
   return createElement(
     "li",
     {
@@ -4771,10 +5367,9 @@ function createInvoiceListRowItem(
   copy: Required<VortexInvoiceListCopy>,
   classNames: VortexEmbeddedComponentClassNames | undefined,
   isDisabled: boolean,
-  onInvoiceSelect: ((
-    invoice: VortexInvoiceListRow,
-    invoiceList: VortexInvoiceListState,
-  ) => void | Promise<void>) | undefined,
+  onInvoiceSelect:
+    | ((invoice: VortexInvoiceListRow, invoiceList: VortexInvoiceListState) => void | Promise<void>)
+    | undefined,
 ): ReactNode {
   const actionDisabledReason = invoice.actionDisabledReason;
   return createElement(
@@ -4796,7 +5391,11 @@ function createInvoiceListRowItem(
     createElement("span", { className: classNames?.status }, invoice.status),
     actionDisabledReason === undefined
       ? null
-      : createElement("p", { className: classNames?.status, "data-vortex-invoice-action-disabled-reason": true }, actionDisabledReason),
+      : createElement(
+          "p",
+          { className: classNames?.status, "data-vortex-invoice-action-disabled-reason": true },
+          actionDisabledReason,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
@@ -4849,17 +5448,33 @@ function createPlanComparisonItem(
     plan.description === undefined
       ? null
       : createElement("p", { className: classNames?.itemDescription }, plan.description),
-    createElement("span", { className: classNames?.status }, isCurrent ? copy.currentPlanLabel : plan.status),
+    createElement(
+      "span",
+      { className: classNames?.status },
+      isCurrent ? copy.currentPlanLabel : plan.status,
+    ),
     isRecommended
-      ? createElement("span", { className: classNames?.status, "data-vortex-plan-badge": "recommended" }, copy.recommendedPlanLabel)
+      ? createElement(
+          "span",
+          { className: classNames?.status, "data-vortex-plan-badge": "recommended" },
+          copy.recommendedPlanLabel,
+        )
       : null,
     actionDisabledReason === undefined
       ? null
-      : createElement("p", { className: classNames?.status, "data-vortex-plan-disabled-reason": true }, actionDisabledReason),
+      : createElement(
+          "p",
+          { className: classNames?.status, "data-vortex-plan-disabled-reason": true },
+          actionDisabledReason,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
-      createMetric(copy.priceLabel, formatMinorUnitAmount(plan.priceAmount, plan.currency), classNames),
+      createMetric(
+        copy.priceLabel,
+        formatMinorUnitAmount(plan.priceAmount, plan.currency),
+        classNames,
+      ),
       createMetric(copy.cadenceLabel, plan.cadenceLabel ?? plan.cadence, classNames),
       createMetric(copy.featureCountLabel, String(plan.featureHighlights.length), classNames),
     ),
@@ -4884,12 +5499,17 @@ function createPlanComparisonItem(
       "button",
       {
         className: classNames?.button,
-        disabled: isDisabled || isCurrent || actionDisabledReason !== undefined || plan.status === "disabled",
+        disabled:
+          isDisabled ||
+          isCurrent ||
+          actionDisabledReason !== undefined ||
+          plan.status === "disabled",
         onClick: () => {
           launchPlan(plan);
         },
         type: "button",
-        "data-vortex-plan-action": plan.checkoutToken === undefined ? "select_plan" : "open_checkout",
+        "data-vortex-plan-action":
+          plan.checkoutToken === undefined ? "select_plan" : "open_checkout",
       },
       planComparisonActionLabel(plan, copy),
     ),
@@ -4903,7 +5523,10 @@ function createUsageMeterSummaryItem(
   classNames: VortexEmbeddedComponentClassNames | undefined,
   isDisabled: boolean,
   onMeterSelect:
-    | ((meter: VortexUsageMeterSummaryMeter, usage: VortexUsageMeterSummaryState) => void | Promise<void>)
+    | ((
+        meter: VortexUsageMeterSummaryMeter,
+        usage: VortexUsageMeterSummaryState,
+      ) => void | Promise<void>)
     | undefined,
 ): ReactNode {
   return createElement(
@@ -4915,9 +5538,12 @@ function createUsageMeterSummaryItem(
       "data-vortex-meter-usage-key": meter.usageKey,
       "data-vortex-meter-status": meter.status,
       "data-vortex-meter-used-amount": String(meter.usedAmount),
-      "data-vortex-meter-included-amount": meter.includedAmount === undefined ? undefined : String(meter.includedAmount),
-      "data-vortex-meter-billable-amount": meter.billableAmount === undefined ? undefined : String(meter.billableAmount),
-      "data-vortex-meter-usage-percent": meter.usagePercent === undefined ? undefined : String(meter.usagePercent),
+      "data-vortex-meter-included-amount":
+        meter.includedAmount === undefined ? undefined : String(meter.includedAmount),
+      "data-vortex-meter-billable-amount":
+        meter.billableAmount === undefined ? undefined : String(meter.billableAmount),
+      "data-vortex-meter-usage-percent":
+        meter.usagePercent === undefined ? undefined : String(meter.usagePercent),
       "data-vortex-meter-period-start": meter.periodStart,
       "data-vortex-meter-period-end": meter.periodEnd,
       "data-vortex-meter-reset-at": meter.resetAt,
@@ -4929,23 +5555,39 @@ function createUsageMeterSummaryItem(
     createElement("span", { className: classNames?.status }, meter.status),
     meter.limitLabel === undefined
       ? null
-      : createElement("span", { className: classNames?.status, "data-vortex-meter-limit-label": true }, meter.limitLabel),
+      : createElement(
+          "span",
+          { className: classNames?.status, "data-vortex-meter-limit-label": true },
+          meter.limitLabel,
+        ),
     createElement(
       "dl",
       { className: classNames?.metrics },
-      createMetric(copy.usedLabel, formatUsageMeterAmount(meter.usedAmount, meter.unitLabel), classNames),
+      createMetric(
+        copy.usedLabel,
+        formatUsageMeterAmount(meter.usedAmount, meter.unitLabel),
+        classNames,
+      ),
       createMetric(
         copy.includedLabel,
-        meter.includedAmount === undefined ? "none" : formatUsageMeterAmount(meter.includedAmount, meter.unitLabel),
+        meter.includedAmount === undefined
+          ? "none"
+          : formatUsageMeterAmount(meter.includedAmount, meter.unitLabel),
         classNames,
       ),
       createMetric(
         copy.billableLabel,
-        meter.billableAmount === undefined ? "none" : formatUsageMeterAmount(meter.billableAmount, meter.unitLabel),
+        meter.billableAmount === undefined
+          ? "none"
+          : formatUsageMeterAmount(meter.billableAmount, meter.unitLabel),
         classNames,
       ),
       createMetric(copy.usagePercentLabel, formatUsageMeterPercent(meter.usagePercent), classNames),
-      createMetric(copy.periodLabel, formatDateRange(meter.periodStart, meter.periodEnd), classNames),
+      createMetric(
+        copy.periodLabel,
+        formatDateRange(meter.periodStart, meter.periodEnd),
+        classNames,
+      ),
       createMetric(copy.resetLabel, meter.resetAt ?? "none", classNames),
       createMetric(copy.nextActionLabel, meter.nextAction ?? "none", classNames),
     ),
@@ -4992,7 +5634,11 @@ function createEmbeddedCheckoutLineItem(
     lineItem.description === undefined
       ? null
       : createElement("p", { className: classNames?.itemDescription }, lineItem.description),
-    createElement("span", { className: classNames?.status }, formatMinorUnitAmount(lineItem.amount, lineItem.currency)),
+    createElement(
+      "span",
+      { className: classNames?.status },
+      formatMinorUnitAmount(lineItem.amount, lineItem.currency),
+    ),
   );
 }
 
@@ -5002,11 +5648,15 @@ function resolveMerchantActionQueueCopy(
   return {
     title: copy?.title ?? "Vortex Connect actions",
     readyDescription: copy?.readyDescription ?? "Vortex Connect is ready for this merchant.",
-    blockedDescription: copy?.blockedDescription ?? "Resolve the open Vortex Connect actions before this merchant can accept payments.",
+    blockedDescription:
+      copy?.blockedDescription ??
+      "Resolve the open Vortex Connect actions before this merchant can accept payments.",
     loadingTitle: copy?.loadingTitle ?? "Loading Vortex Connect actions...",
     errorTitle: copy?.errorTitle ?? "Unable to load Vortex Connect actions.",
     emptyTitle: copy?.emptyTitle ?? "No merchant actions are open.",
-    emptyDescription: copy?.emptyDescription ?? "This merchant has no current Vortex Connect payment, onboarding, or payout blockers.",
+    emptyDescription:
+      copy?.emptyDescription ??
+      "This merchant has no current Vortex Connect payment, onboarding, or payout blockers.",
     statusLabel: copy?.statusLabel ?? "Status",
     onboardingLabel: copy?.onboardingLabel ?? "Onboarding",
     paymentCollectionLabel: copy?.paymentCollectionLabel ?? "Payment collection",
@@ -5019,12 +5669,17 @@ function resolveMerchantAccountPanelCopy(
 ): Required<VortexMerchantAccountPanelCopy> {
   return {
     title: copy?.title ?? "Vortex Connect",
-    readyDescription: copy?.readyDescription ?? "This merchant can accept payments through Vortex Connect.",
-    blockedDescription: copy?.blockedDescription ?? "This merchant needs Vortex Connect review before all payment flows are ready.",
+    readyDescription:
+      copy?.readyDescription ?? "This merchant can accept payments through Vortex Connect.",
+    blockedDescription:
+      copy?.blockedDescription ??
+      "This merchant needs Vortex Connect review before all payment flows are ready.",
     loadingTitle: copy?.loadingTitle ?? "Loading Vortex Connect...",
     errorTitle: copy?.errorTitle ?? "Unable to load Vortex Connect.",
     stateUnavailableTitle: copy?.stateUnavailableTitle ?? "Readiness state is unavailable.",
-    stateUnavailableDescription: copy?.stateUnavailableDescription ?? "Profile data is loaded, but live readiness has not been provided.",
+    stateUnavailableDescription:
+      copy?.stateUnavailableDescription ??
+      "Profile data is loaded, but live readiness has not been provided.",
     businessLabel: copy?.businessLabel ?? "Business",
     merchantModeLabel: copy?.merchantModeLabel ?? "Mode",
     merchantStatusLabel: copy?.merchantStatusLabel ?? "Status",
@@ -5063,12 +5718,17 @@ function resolvePayoutReadinessPanelCopy(
 ): Required<VortexPayoutReadinessPanelCopy> {
   return {
     title: copy?.title ?? "Payout readiness",
-    readyDescription: copy?.readyDescription ?? "Payout configuration is readable and currently not blocking this merchant.",
-    blockedDescription: copy?.blockedDescription ?? "Payouts need review before funds can move normally.",
+    readyDescription:
+      copy?.readyDescription ??
+      "Payout configuration is readable and currently not blocking this merchant.",
+    blockedDescription:
+      copy?.blockedDescription ?? "Payouts need review before funds can move normally.",
     loadingTitle: copy?.loadingTitle ?? "Loading payout readiness...",
     errorTitle: copy?.errorTitle ?? "Unable to load payout readiness.",
     profileUnavailableTitle: copy?.profileUnavailableTitle ?? "Payout profile is unavailable.",
-    profileUnavailableDescription: copy?.profileUnavailableDescription ?? "Merchant readiness is loaded, but payout profile details were not provided.",
+    profileUnavailableDescription:
+      copy?.profileUnavailableDescription ??
+      "Merchant readiness is loaded, but payout profile details were not provided.",
     payoutReadinessLabel: copy?.payoutReadinessLabel ?? "Readiness",
     payoutModeLabel: copy?.payoutModeLabel ?? "Mode",
     payoutRailLabel: copy?.payoutRailLabel ?? "Rail",
@@ -5090,7 +5750,9 @@ function resolveFeePolicyPanelCopy(
 ): Required<VortexFeePolicyPanelCopy> {
   return {
     title: copy?.title ?? "Fee policy",
-    description: copy?.description ?? "Control how platform fees are assigned for merchant payment collection.",
+    description:
+      copy?.description ??
+      "Control how platform fees are assigned for merchant payment collection.",
     loadingTitle: copy?.loadingTitle ?? "Loading fee policy...",
     errorTitle: copy?.errorTitle ?? "Unable to load fee policy.",
     ownerModeLabel: copy?.ownerModeLabel ?? "Fee owner",
@@ -5147,9 +5809,10 @@ function deriveMerchantActions(
       severity: "critical",
       status: "open",
       primaryActionLabel: "Open onboarding",
-      primaryAction: merchantState.onboardingSessionId === undefined
-        ? { surface: "merchant_action_queue", id: merchantState.merchantAccountId }
-        : { surface: "merchant_onboarding", token: merchantState.onboardingSessionId },
+      primaryAction:
+        merchantState.onboardingSessionId === undefined
+          ? { surface: "merchant_action_queue", id: merchantState.merchantAccountId }
+          : { surface: "merchant_onboarding", token: merchantState.onboardingSessionId },
     });
   }
 
@@ -5171,7 +5834,8 @@ function deriveMerchantActions(
       id: "payout-readiness",
       kind: "payout_readiness",
       title: "Payout readiness needs review",
-      description: merchantState.payoutBlockReason ?? `Payout readiness is ${merchantState.payoutReadiness}.`,
+      description:
+        merchantState.payoutBlockReason ?? `Payout readiness is ${merchantState.payoutReadiness}.`,
       severity: merchantState.payoutReadiness === "blocked" ? "critical" : "warning",
       status: "open",
       primaryActionLabel: "Open payout readiness",

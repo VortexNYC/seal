@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
 import type { MerchantAccount } from "../../domain/merchant";
 import type { PaymentIntent } from "../../domain/payments";
-import type { CustomerProfile, PaymentMethod, PaymentMethodSetupSession } from "../../domain/payment-methods";
+import type {
+  CustomerProfile,
+  PaymentMethod,
+  PaymentMethodSetupSession,
+} from "../../domain/payment-methods";
 import type { CanonicalDomainEvent } from "../../events/types";
 import type { ProviderRegistry } from "../../providers/registry";
 import type {
@@ -71,102 +75,182 @@ function createUnitOfWork(options?: {
   let paymentMethods = options?.paymentMethods ?? [];
   const uow: PaymentsUnitOfWork = {
     merchants: {
-      async getById() { return options?.merchant ?? createMerchant(); },
-      async listByTenant() { return []; },
-      async getByProcessorRef() { return null; },
+      async getById() {
+        return options?.merchant ?? createMerchant();
+      },
+      async listByTenant() {
+        return [];
+      },
+      async getByProcessorRef() {
+        return null;
+      },
       async save() {},
     },
     customers: {
-      async getById() { return customer; },
+      async getById() {
+        return customer;
+      },
       async save(record) {
         savedCustomers.push(record);
         customer = record;
       },
     },
     onboarding: {
-      async getSessionById() { return null; },
-      async getLatestSessionByMerchantAccountId() { return null; },
-      async listRequirementsForSession() { return []; },
-      async listDocumentsForRequirement() { return []; },
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
       async saveSession() {},
       async saveRequirement() {},
       async saveRequirementDocument() {},
     },
     merchantStates: {
-      async getByMerchantAccountId() { return null; },
+      async getByMerchantAccountId() {
+        return null;
+      },
       async save() {},
     },
     customerStates: {
-      async getByMerchantAndCustomer() { return null; },
-      async save(record) { savedCustomerStates.push(record); },
+      async getByMerchantAndCustomer() {
+        return null;
+      },
+      async save(record) {
+        savedCustomerStates.push(record);
+      },
     },
     paymentMethods: {
-      async getById(id) { return paymentMethods.find((method) => method.id === id) ?? null; },
-      async getByProcessorRef() { return null; },
-      async listByOwner() { return paymentMethods; },
+      async getById(id) {
+        return paymentMethods.find((method) => method.id === id) ?? null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return paymentMethods;
+      },
       async save(record) {
         savedPaymentMethods.push(record);
         paymentMethods = [...paymentMethods.filter((method) => method.id !== record.id), record];
       },
     },
     paymentMethodSetupSessions: {
-      async getById() { return setupSession; },
+      async getById() {
+        return setupSession;
+      },
       async save(record) {
         savedSetupSessions.push(record);
         setupSession = record;
       },
     },
     paymentIntents: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
-      async listByCustomerProfile() { return options?.paymentIntents ?? []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return options?.paymentIntents ?? [];
+      },
       async save() {},
     },
     payments: {
-      async getById() { return null; },
-      async getByPaymentIntentId() { return null; },
+      async getById() {
+        return null;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
       async save() {},
     },
     refunds: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByPayment() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByPayment() {
+        return [];
+      },
       async save() {},
     },
     settlements: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
       async save() {},
     },
     payouts: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
       async save() {},
     },
     disputes: {
-      async getById() { return null; },
-      async getByProcessorRef() { return null; },
-      async listByMerchant() { return []; },
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
       async save() {},
     },
     events: {
-      async getRawWebhookById() { return null; },
-      async getRawWebhookByDeliveryKey() { return null; },
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
       async saveRawWebhook() {},
-      async getProcessorEventById() { return null; },
+      async getProcessorEventById() {
+        return null;
+      },
       async saveProcessorEvent() {},
-      async saveCanonicalEvent(record) { savedCanonicalEvents.push(record); },
-      async getCanonicalEventById() { return null; },
-      async getWebhookEndpointById() { return null; },
+      async saveCanonicalEvent(record) {
+        savedCanonicalEvents.push(record);
+      },
+      async getCanonicalEventById() {
+        return null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
       async saveWebhookEndpoint() {},
       async saveWebhookDelivery() {},
       async saveEventSubscription() {},
     },
     cases: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
       async saveActivity() {},
       async saveNote() {},
@@ -192,9 +276,13 @@ function createUnitOfWork(options?: {
         }
         return null;
       },
-      async save(record) { savedIdempotency.push(record); },
+      async save(record) {
+        savedIdempotency.push(record);
+      },
     },
-    async runInTransaction(work) { return work(uow); },
+    async runInTransaction(work) {
+      return work(uow);
+    },
   };
 
   return {
@@ -217,43 +305,59 @@ function createRegistry(options?: {
     supportedCapabilities: ["payment_methods"] as const,
     async createPaymentMethod(_context: ProviderContext, input: ProviderPaymentMethodInput) {
       options?.onCreatePaymentMethodInput?.(input);
-      return options?.providerResult ?? {
-        ok: true as const,
-        value: {
-          paymentMethodRef: {
-            provider: "finix",
-            objectType: "payment_instrument",
-            objectId: "PI_123",
-            relationship: "payment_method",
+      return (
+        options?.providerResult ?? {
+          ok: true as const,
+          value: {
+            paymentMethodRef: {
+              provider: "finix",
+              objectType: "payment_instrument",
+              objectId: "PI_123",
+              relationship: "payment_method",
+              recordedAt: "2026-04-23T12:00:00.000Z",
+            },
+            ownerRef: {
+              provider: "finix",
+              objectType: "identity",
+              objectId: "ID_123",
+              relationship: "buyer",
+              recordedAt: "2026-04-23T12:00:00.000Z",
+            },
+            status: "active",
+            methodType: "card",
+            brandSummary: "VISA",
+            last4: "4242",
+            expiryMonth: 1,
+            expiryYear: 2030,
+            fingerprint: "fp_123",
             recordedAt: "2026-04-23T12:00:00.000Z",
           },
-          ownerRef: {
-            provider: "finix",
-            objectType: "identity",
-            objectId: "ID_123",
-            relationship: "buyer",
-            recordedAt: "2026-04-23T12:00:00.000Z",
-          },
-          status: "active",
-          methodType: "card",
-          brandSummary: "VISA",
-          last4: "4242",
-          expiryMonth: 1,
-          expiryYear: 2030,
-          fingerprint: "fp_123",
-          recordedAt: "2026-04-23T12:00:00.000Z",
-        },
-      };
+        }
+      );
     },
-    async verifyWebhookSignature() { throw new Error("unused"); },
-    async createMerchantOnboarding() { throw new Error("unused"); },
-    async createPaymentIntent() { throw new Error("unused"); },
-    async createRefund() { throw new Error("unused"); },
-    async fetchObjectSnapshot() { throw new Error("unused"); },
+    async verifyWebhookSignature() {
+      throw new Error("unused");
+    },
+    async createMerchantOnboarding() {
+      throw new Error("unused");
+    },
+    async createPaymentIntent() {
+      throw new Error("unused");
+    },
+    async createRefund() {
+      throw new Error("unused");
+    },
+    async fetchObjectSnapshot() {
+      throw new Error("unused");
+    },
   };
   return {
-    getAdapter() { return adapter; },
-    listAdapters() { return [adapter]; },
+    getAdapter() {
+      return adapter;
+    },
+    listAdapters() {
+      return [adapter];
+    },
   };
 }
 
@@ -358,18 +462,20 @@ describe("createPaymentMethodSetupService", () => {
     expect(createPaymentMethodInput?.ownerRef).toEqual(existingOwnerRef);
     expect(savedSetupSessions.map((session) => session.status)).toEqual(["consuming", "consumed"]);
     expect(savedSetupSessions.at(-1)?.attachedPaymentMethodId).toBe("pm_123");
-    expect(savedCanonicalEvents).toContainEqual(expect.objectContaining({
-      eventType: "payment_method.created",
-      aggregateId: "pm_123",
-      payload: expect.objectContaining({
-        merchantAccountId: "merchant_123",
-        ownerType: "customer",
-        ownerId: "customer_123",
-        paymentMethodStatus: "active",
-        isDefault: true,
-        setupSessionId: "pmset_123",
+    expect(savedCanonicalEvents).toContainEqual(
+      expect.objectContaining({
+        eventType: "payment_method.created",
+        aggregateId: "pm_123",
+        payload: expect.objectContaining({
+          merchantAccountId: "merchant_123",
+          ownerType: "customer",
+          ownerId: "customer_123",
+          paymentMethodStatus: "active",
+          isDefault: true,
+          setupSessionId: "pmset_123",
+        }),
       }),
-    }));
+    );
   });
 
   test("rejects expired setup session", async () => {

@@ -1,5 +1,9 @@
 import type { ProcessorRef } from "../../domain/common";
-import type { MerchantRateAssignment, PaymentRateAmounts, PaymentRatePlan } from "../../domain/rates";
+import type {
+  MerchantRateAssignment,
+  PaymentRateAmounts,
+  PaymentRatePlan,
+} from "../../domain/rates";
 import type {
   ActivatePaymentRatePlanInput,
   AssignMerchantRatePlanInput,
@@ -48,13 +52,19 @@ function assertNonNegativeInteger(value: number | null | undefined, field: strin
     return;
   }
   if (!Number.isInteger(value) || value < 0) {
-    throw new PaymentRatesServiceError("invalid_request", `${field} must be a non-negative integer`);
+    throw new PaymentRatesServiceError(
+      "invalid_request",
+      `${field} must be a non-negative integer`,
+    );
   }
 }
 
 function requireNonNegativeInteger(value: number | null | undefined, field: string): void {
   if (value === null || value === undefined) {
-    throw new PaymentRatesServiceError("invalid_request", `${field} is required for Finix fee profile sync; use 0 when the rail should be priced at zero`);
+    throw new PaymentRatesServiceError(
+      "invalid_request",
+      `${field} is required for Finix fee profile sync; use 0 when the rail should be priced at zero`,
+    );
   }
   assertNonNegativeInteger(value, field);
 }
@@ -78,16 +88,25 @@ function providerFeeProfileRef(plan: PaymentRatePlan): ProcessorRef | undefined 
   return plan.providerFeeProfileRef;
 }
 
-export function createPaymentRatesService(args: CreatePaymentRatesServiceArgs): PaymentRatesService {
+export function createPaymentRatesService(
+  args: CreatePaymentRatesServiceArgs,
+): PaymentRatesService {
   const now = args.now ?? defaultNow;
   const createId = args.createId ?? defaultCreateId;
 
   return {
     async createDraftRatePlan(input: CreatePaymentRatePlanInput): Promise<PaymentRatePlan> {
       validateRates(input.rates);
-      const latest = await args.ratePlans.getLatestByCode(input.environment, input.tenantId, input.code);
+      const latest = await args.ratePlans.getLatestByCode(
+        input.environment,
+        input.tenantId,
+        input.code,
+      );
       if (latest !== null && latest.status !== "archived") {
-        throw new PaymentRatesServiceError("conflict", "rate plan code already has an unarchived version");
+        throw new PaymentRatesServiceError(
+          "conflict",
+          "rate plan code already has an unarchived version",
+        );
       }
       const timestamp = now();
       const record: PaymentRatePlan = {
@@ -117,8 +136,14 @@ export function createPaymentRatesService(args: CreatePaymentRatesServiceArgs): 
       if (existing.status !== "draft") {
         throw new PaymentRatesServiceError("conflict", "only draft rate plans can be activated");
       }
-      if (providerFeeProfileRef(existing) === undefined || existing.providerSyncStatus !== "synced") {
-        throw new PaymentRatesServiceError("conflict", "rate plan must be synced to provider before activation");
+      if (
+        providerFeeProfileRef(existing) === undefined ||
+        existing.providerSyncStatus !== "synced"
+      ) {
+        throw new PaymentRatesServiceError(
+          "conflict",
+          "rate plan must be synced to provider before activation",
+        );
       }
       const activated: PaymentRatePlan = {
         ...existing,
@@ -130,7 +155,9 @@ export function createPaymentRatesService(args: CreatePaymentRatesServiceArgs): 
       return activated;
     },
 
-    async syncRatePlanToProvider(input: SyncPaymentRatePlanProviderInput): Promise<PaymentRatePlan> {
+    async syncRatePlanToProvider(
+      input: SyncPaymentRatePlanProviderInput,
+    ): Promise<PaymentRatePlan> {
       const existing = await args.ratePlans.getById(input.ratePlanId, input.environment);
       if (existing === null) {
         throw new PaymentRatesServiceError("not_found", "rate plan not found");
@@ -157,11 +184,16 @@ export function createPaymentRatesService(args: CreatePaymentRatesServiceArgs): 
           updatedAt: now(),
         };
         await args.ratePlans.save(failed);
-        throw new PaymentRatesServiceError("provider_error", failed.providerSyncError ?? "provider sync failed");
+        throw new PaymentRatesServiceError(
+          "provider_error",
+          failed.providerSyncError ?? "provider sync failed",
+        );
       }
     },
 
-    async assignMerchantRatePlan(input: AssignMerchantRatePlanInput): Promise<MerchantRateAssignment> {
+    async assignMerchantRatePlan(
+      input: AssignMerchantRatePlanInput,
+    ): Promise<MerchantRateAssignment> {
       const plan = await args.ratePlans.getById(input.ratePlanId, input.environment);
       if (plan === null) {
         throw new PaymentRatesServiceError("not_found", "rate plan not found");
@@ -170,13 +202,25 @@ export function createPaymentRatesService(args: CreatePaymentRatesServiceArgs): 
         throw new PaymentRatesServiceError("conflict", "only active rate plans can be assigned");
       }
       if (plan.providerFeeProfileRef === undefined || plan.providerSyncStatus !== "synced") {
-        throw new PaymentRatesServiceError("conflict", "rate plan must have synced provider fee profile");
+        throw new PaymentRatesServiceError(
+          "conflict",
+          "rate plan must have synced provider fee profile",
+        );
       }
-      if (input.providerMerchantRef.provider !== "finix" || input.providerMerchantRef.objectType !== "merchant") {
-        throw new PaymentRatesServiceError("invalid_request", "merchant rate assignment requires a Finix merchant processor ref");
+      if (
+        input.providerMerchantRef.provider !== "finix" ||
+        input.providerMerchantRef.objectType !== "merchant"
+      ) {
+        throw new PaymentRatesServiceError(
+          "invalid_request",
+          "merchant rate assignment requires a Finix merchant processor ref",
+        );
       }
       const timestamp = now();
-      const previous = await args.assignments.getActiveByMerchant(input.environment, input.merchantAccountId);
+      const previous = await args.assignments.getActiveByMerchant(
+        input.environment,
+        input.merchantAccountId,
+      );
       if (previous !== null) {
         await args.assignments.save({
           ...previous,
@@ -226,7 +270,10 @@ export function createPaymentRatesService(args: CreatePaymentRatesServiceArgs): 
           updatedAt: now(),
         };
         await args.assignments.save(failed);
-        throw new PaymentRatesServiceError("provider_error", failed.failureReason ?? "provider assignment failed");
+        throw new PaymentRatesServiceError(
+          "provider_error",
+          failed.failureReason ?? "provider assignment failed",
+        );
       }
     },
   };

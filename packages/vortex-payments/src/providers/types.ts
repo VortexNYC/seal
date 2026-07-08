@@ -1,11 +1,22 @@
-import type { CurrencyCode, Environment, IsoTimestamp, Metadata, ProcessorRef } from "../domain/common";
+import type {
+  CurrencyCode,
+  Environment,
+  IsoTimestamp,
+  Metadata,
+  ProcessorRef,
+} from "../domain/common";
 import type {
   MerchantAccountStatus,
   MerchantOnboardingSessionStatus,
   MerchantRequirement,
 } from "../domain/merchant";
 import type { MerchantAccountState } from "../domain/state";
-import type { SellerPayoutCapability, SellerPayoutMode, SellerPayoutRail, SellerPayoutSchedule } from "../domain/funds";
+import type {
+  SellerPayoutCapability,
+  SellerPayoutMode,
+  SellerPayoutRail,
+  SellerPayoutSchedule,
+} from "../domain/funds";
 
 export type ProviderKey = "finix" | "payrix";
 
@@ -472,7 +483,12 @@ export interface PaymentsProviderAdapter {
   ): Promise<ProviderResult<ProviderDisputeSummary>>;
   createDisputeEvidence?(
     context: ProviderContext,
-    input: { readonly disputeRef: ProcessorRef; readonly fileRef: ProcessorRef; readonly type?: string; readonly tags?: Metadata },
+    input: {
+      readonly disputeRef: ProcessorRef;
+      readonly fileRef: ProcessorRef;
+      readonly type?: string;
+      readonly tags?: Metadata;
+    },
   ): Promise<ProviderResult<ProviderDisputeEvidenceSummary>>;
   getDisputeEvidence?(
     context: ProviderContext,
@@ -484,7 +500,13 @@ export interface PaymentsProviderAdapter {
   ): Promise<ProviderResult<ProviderListResult<ProviderDisputeEvidenceSummary>>>;
   submitDisputeEvidence?(
     context: ProviderContext,
-    input: { readonly disputeRef: ProcessorRef; readonly note: string; readonly amount?: number; readonly refund?: string; readonly tags?: Metadata },
+    input: {
+      readonly disputeRef: ProcessorRef;
+      readonly note: string;
+      readonly amount?: number;
+      readonly refund?: string;
+      readonly tags?: Metadata;
+    },
   ): Promise<ProviderResult<ProviderDisputeEvidenceSummary>>;
   listDisputeAdjustments?(
     context: ProviderContext,

@@ -9,10 +9,14 @@ import type { HttpRequestEnvelope, HttpResponseEnvelope } from "./billing";
 export interface MerchantStateHttpHandlers {
   getMerchantAccountState(
     request: HttpRequestEnvelope<GetMerchantAccountStateQuery>,
-  ): Promise<HttpResponseEnvelope<Awaited<ReturnType<PaymentsStateReader["getMerchantAccountState"]>>>>;
+  ): Promise<
+    HttpResponseEnvelope<Awaited<ReturnType<PaymentsStateReader["getMerchantAccountState"]>>>
+  >;
   getMerchantAccountCapabilities(
     request: HttpRequestEnvelope<GetMerchantAccountCapabilitiesQuery>,
-  ): Promise<HttpResponseEnvelope<Awaited<ReturnType<PaymentsStateReader["getMerchantAccountCapabilities"]>>>>;
+  ): Promise<
+    HttpResponseEnvelope<Awaited<ReturnType<PaymentsStateReader["getMerchantAccountCapabilities"]>>>
+  >;
 }
 
 export interface MerchantStateHttpHandlerDependencies {
@@ -24,7 +28,11 @@ function createDefaultRequestId(): string {
   return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function toSuccessResponse<TBody>(data: TBody, requestId: string, status = 200): HttpResponseEnvelope<TBody> {
+function toSuccessResponse<TBody>(
+  data: TBody,
+  requestId: string,
+  status = 200,
+): HttpResponseEnvelope<TBody> {
   return {
     status,
     body: {

@@ -80,7 +80,10 @@ export interface FundingTransferTimelineItemSnapshot {
   readonly expectedArrivalAt?: string;
 }
 
-export interface SettlementFundingTimelineSnapshot extends Omit<SettlementFundingTimeline, "items"> {
+export interface SettlementFundingTimelineSnapshot extends Omit<
+  SettlementFundingTimeline,
+  "items"
+> {
   readonly items: readonly FundingTransferTimelineItemSnapshot[];
 }
 
