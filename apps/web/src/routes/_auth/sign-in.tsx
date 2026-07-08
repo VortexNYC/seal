@@ -18,6 +18,13 @@ function RouteComponent() {
       routing="virtual"
       signUpUrl="/waitlist"
       appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+      localization={{
+        signIn: {
+          start: {
+            title: "Log in to Seal",
+          },
+        },
+      }}
     />
   );
 }
