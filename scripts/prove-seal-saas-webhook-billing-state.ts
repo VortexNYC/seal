@@ -119,6 +119,7 @@ async function runConvex<T extends Json>(input: {
       "bunx",
       "convex",
       "run",
+      "--push",
       "--typecheck=disable",
       "--codegen=disable",
       ...(input.identity === undefined ? [] : ["--identity", JSON.stringify(input.identity)]),

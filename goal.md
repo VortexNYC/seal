@@ -35,6 +35,8 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale legacy-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - `bun run audit:seal-vortex-launch-boundary` now surfaces the sandbox human reconciliation boundary and the production human-only boundary, and fails if production remediation commands do not exactly match the missing production env names.
+- `bun run prove:seal-saas-webhook-billing-state` now pushes the current checkout to the Seal dev deployment before running, so the live/dev SaaS billing-state proof cannot pass against stale deployed functions.
+- The Seal dev `organizations` table was cleaned from stale retired-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
 - Current local verification passed after cleanup commit `b7be17b1`:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
@@ -119,6 +121,17 @@ Latest non-mutating refresh results from head `b7be17b1`:
 - `bun run lint -f json > /tmp/webhooks-endpoint-row-lint.json` passed; parsed diagnostics total: `0`.
 - `bun run build` passed.
 - `git diff --check` passed.
+- `bun run prove:seal-account-onboarding-vortex-local` passed with 4 files and 13 tests.
+- `bun run prove:seal-vortex-onboarding-wiring` skipped live wiring as expected because sandbox live-proof credentials were absent.
+- `bun run prove:vortex-billing-settings-adoption` passed.
+- `bun run prove:vortex-payments-settings-adoption` passed.
+- `bun run prove:vortex-merchant-settings-adoption` passed.
+- `bun run prove:seal-saas-vortex-local` passed with 2 files and 23 tests.
+- `bun run prove:vortex-saas-webhook-projection` passed with 3 files and 22 tests.
+- `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-webhook-billing-state` passed after syncing current Convex code; result projected Vortex-shaped customer/subscription/price ids and reported `activeNonVortexProviderIdPresent: false`.
+- `bun run prove:seal-document-payment-vortex-local` passed.
+- `bun run prove:vortex-operational-payments-adoption` passed.
+- `bun run prove:vortex-payments-backend-adapter-adoption` passed.
 - `bun run prove:seal-vortex-migration-local` passed.
 - `bun run prove:seal-vortex-migration-local` now includes the Vortex-shaped catalog entitlement safety guard.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
