@@ -535,7 +535,6 @@ export declare const components: {
   actionCache: import("@convex-dev/action-cache/_generated/component.js").ComponentApi<"actionCache">;
   actionRetrier: import("@convex-dev/action-retrier/_generated/component.js").ComponentApi<"actionRetrier">;
   rag: import("@convex-dev/rag/_generated/component.js").ComponentApi<"rag">;
-  resend: import("@convex-dev/resend/_generated/component.js").ComponentApi<"resend">;
   migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
   aiUsageAggregate: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"aiUsageAggregate">;
   presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;

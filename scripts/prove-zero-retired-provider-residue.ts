@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
@@ -15,6 +15,59 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
   .filter((path) => path.length > 0);
 
 const failures: string[] = [];
+
+const dependencyGraph = spawnSync("bun", ["pm", "why", retiredProviderToken], {
+  cwd: repoRoot,
+  encoding: "utf8",
+  stdio: ["ignore", "pipe", "pipe"],
+});
+
+const dependencyGraphOutput = `${dependencyGraph.stdout}${dependencyGraph.stderr}`;
+if (dependencyGraph.status === 0 || !dependencyGraphOutput.includes("No packages matching")) {
+  failures.push("bun.lock: dependency graph contains retired provider package");
+}
+
+const workingTreeContent = spawnSync(
+  "rg",
+  [
+    "--no-ignore",
+    "-i",
+    "-n",
+    retiredProviderToken,
+    "package.json",
+    "bun.lock",
+    "apps",
+    "packages",
+    "scripts",
+    "docs",
+    ".github",
+    ".claude",
+    "node_modules",
+    "--glob",
+    "!apps/landing/.output/**",
+    "--glob",
+    "!apps/web/dist/**",
+    "--glob",
+    "!**/.turbo/**",
+    "--glob",
+    "!apps/landing/public/api/search.json",
+  ],
+  {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  },
+);
+
+if (workingTreeContent.status === 0) {
+  failures.push(
+    `working tree content contains retired provider token:\n${workingTreeContent.stdout}`,
+  );
+} else if (workingTreeContent.status !== 1) {
+  failures.push(
+    `working tree content scan failed: ${workingTreeContent.stderr || workingTreeContent.stdout}`,
+  );
+}
 
 for (const relativePath of trackedFiles) {
   if (relativePath.toLowerCase().includes(retiredProviderToken)) {
@@ -33,6 +86,25 @@ for (const relativePath of trackedFiles) {
   }
 }
 
+function scanInstalledPathNames(absoluteDirectory: string, relativeDirectory: string): void {
+  if (!existsSync(absoluteDirectory)) {
+    return;
+  }
+
+  for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true })) {
+    const relativePath = `${relativeDirectory}/${entry.name}`;
+    if (relativePath.toLowerCase().includes(retiredProviderToken)) {
+      failures.push(`${relativePath}: installed package path contains retired provider token`);
+    }
+
+    if (entry.isDirectory()) {
+      scanInstalledPathNames(join(absoluteDirectory, entry.name), relativePath);
+    }
+  }
+}
+
+scanInstalledPathNames(join(repoRoot, "node_modules"), "node_modules");
+
 if (failures.length > 0) {
   console.error("Retired provider residue proof failed:");
   for (const failure of failures) {
@@ -43,3 +115,9 @@ if (failures.length > 0) {
 
 console.log("Retired provider residue proof passed:");
 console.log("- No tracked file paths or contents contain the retired provider token.");
+console.log(
+  "- No dependency graph package or installed package path contains the retired provider token.",
+);
+console.log(
+  "- No working-tree source, docs, package, or installed package content contains the retired provider token.",
+);

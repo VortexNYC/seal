@@ -154,7 +154,7 @@ test.describe("Recipient Signing", () => {
     // queued a confirmation email through Resend; we observe that via the
     // `email.queued` audit entry written from sendSigningComplete on success.
     // Real Resend delivery (delivered/opened/bounced) is captured separately
-    // by the resend component's webhook handler — out of scope here.
+    // by the direct Resend transport's webhook handler — out of scope here.
     expect(completed?.auditActions).toContain("email.queued");
   });
 

@@ -6,7 +6,7 @@ import { createTestContext } from "../../test.setup";
 
 /**
  * Integration tests for the post-signature workflow steps that actually
- * send email through @convex-dev/resend.
+ * send email through Seal's direct Resend transport.
  *
  * Real Resend SDK calls won't fly in test (no network mock, no sandbox key),
  * so each email helper inside `documents/email.ts` is wrapped in a try/catch

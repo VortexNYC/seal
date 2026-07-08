@@ -1,9 +1,9 @@
 # Convex Components Adoption Plan
 
-> Last updated: 2026-03-01
+> Last updated: 2026-07-08
 > Source: Full catalog from [convex.dev/components](https://convex.dev/components)
 
-## Already Using (11 components)
+## Already Using (10 components)
 
 | Component      | Package                      | Status                                                                                                                  |
 | -------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -14,7 +14,6 @@
 | Action Retrier | `@convex-dev/action-retrier` | Fully adopted — `retrier.run()` for hashDocument + extractDocumentText                                                  |
 | Aggregate      | `@convex-dev/aggregate`      | Fully adopted — `aiUsageAggregate` for token usage count/sum                                                            |
 | Workpool       | `@convex-dev/workpool`       | Fully adopted — `aiPoolPro`/`aiPoolFree` for AI pipeline dispatch                                                       |
-| Resend         | `@convex-dev/resend`         | Fully adopted — all 10+ email types via `sendEmailManually()`                                                           |
 | Presence       | `@convex-dev/presence`       | Fully adopted — document detail page "who's viewing" avatars                                                            |
 | Timeline       | `convex-timeline`            | Fully adopted — undo/redo for field editor with Ctrl+Z/Ctrl+Shift+Z                                                     |
 | Migrations     | `@convex-dev/migrations`     | Registered but unused — `Migrations` instance exists, 0 `define()` calls                                                |
@@ -125,14 +124,15 @@ Undo/redo for document field editor — Ctrl+Z/Ctrl+Shift+Z with timeline snapsh
 
 ## Implementation History
 
-| Date       | Component                    | Commit             |
-| ---------- | ---------------------------- | ------------------ |
-| 2026-02-28 | `@convex-dev/resend`         | `8f443c4`          |
-| 2026-02-28 | `@convex-dev/rate-limiter`   | `076144e`          |
-| 2026-03-01 | `@convex-dev/action-retrier` | `2f982b1`          |
-| 2026-03-01 | `@convex-dev/workflow`       | _(pending commit)_ |
-| 2026-03-01 | `@convex-dev/presence`       | _(pending commit)_ |
-| 2026-03-01 | `convex-timeline`            | _(pending commit)_ |
+| Date       | Component                    | Commit              |
+| ---------- | ---------------------------- | ------------------- |
+| 2026-07-08 | `@convex-dev/resend` retired | direct HTTP adapter |
+| 2026-02-28 | `@convex-dev/resend`         | `8f443c4`           |
+| 2026-02-28 | `@convex-dev/rate-limiter`   | `076144e`           |
+| 2026-03-01 | `@convex-dev/action-retrier` | `2f982b1`           |
+| 2026-03-01 | `@convex-dev/workflow`       | _(pending commit)_  |
+| 2026-03-01 | `@convex-dev/presence`       | _(pending commit)_  |
+| 2026-03-01 | `convex-timeline`            | _(pending commit)_  |
 
 ## Recommended Implementation Order
 

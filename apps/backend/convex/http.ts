@@ -2432,9 +2432,8 @@ http.route({
 /**
  * @route POST /resend-webhooks
  * Resend email delivery webhook handler.
- * Delegates to @convex-dev/resend component for signature verification,
- * event parsing, and delivery tracking. The component calls our
- * `onEmailEvent` mutation for ESIGN audit logging.
+ * Verifies the Standard Webhooks signature, parses the event, and records
+ * ESIGN audit logging through Seal's direct Resend transport.
  */
 http.route({
   path: "/resend-webhooks",

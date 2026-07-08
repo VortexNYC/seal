@@ -93,7 +93,7 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
       };
     });
 
-    // Email engagement is now tracked by the @convex-dev/resend component.
+    // Email engagement is tracked by Seal's direct Resend transport.
     // Per-recipient engagement data is no longer available from the email_logs table.
     const emailEngagement = recipients.map((r) => ({
       recipientId: r._id,
@@ -115,7 +115,7 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
 
 // ─── Email Engagement Stats (Org-wide) ──────────
 
-// Email engagement stats are now tracked by the @convex-dev/resend component.
+// Email engagement stats are tracked by Seal's direct Resend transport.
 // This query returns empty stats to preserve the API contract.
 export const getEmailEngagementStats = permissionQuery("documents:view")({
   args: {
@@ -383,7 +383,7 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
         }
       }
 
-      // Bounced emails are now tracked by the @convex-dev/resend component.
+      // Bounced emails are tracked by Seal's direct Resend transport.
       // Bounce detection from email_logs is no longer available.
     }
 
