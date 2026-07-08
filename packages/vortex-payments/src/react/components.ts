@@ -5273,9 +5273,15 @@ export function VortexSubscriptionActionSummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveSubscriptionActionSummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canOpenPortal = subscription.action !== "custom" && subscription.portalToken !== undefined;
-  const canRunCustomAction = subscription.action === "custom";
-  const actionDisabledReason = subscription.actionDisabledReason;
+  const state = createSubscriptionActionSummaryState(subscription);
+  const runPrimaryAction = createSubscriptionActionSummaryActionHandler({
+    onAction,
+    onPortalLaunch,
+    runtime,
+    selectedNavigate,
+    state,
+    subscription,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -5294,61 +5300,142 @@ export function VortexSubscriptionActionSummary({
     }
   }, [error, onError]);
 
-  const runPrimaryAction = (): void => {
-    if (canOpenPortal && subscription.portalToken !== undefined) {
-      const launch = runtime.createHostedLink({
-        surface: "customer_portal",
-        token: subscription.portalToken,
-        query: subscriptionActionPortalQuery(subscription.action),
-      });
+  return createElement(
+    "section",
+    createSubscriptionActionSummarySectionProps({
+      appearance,
+      className,
+      classNames,
+      state,
+      subscription,
+    }),
+    createSubscriptionActionSummaryHeader({ classNames, resolvedCopy, subscription }),
+    createSubscriptionActionSummaryFeedback({ classNames, error, loading, resolvedCopy }),
+    createSubscriptionActionDisabledReason({ classNames, state }),
+    createSubscriptionActionSummaryMetrics({ classNames, resolvedCopy, subscription }),
+    createSubscriptionActionSummaryActions({
+      classNames,
+      isDisabled,
+      resolvedCopy,
+      runPrimaryAction,
+      state,
+      subscription,
+    }),
+  );
+}
+
+function createSubscriptionActionSummaryState(subscription: VortexSubscriptionActionSummaryState) {
+  return {
+    actionDisabledReason: subscription.actionDisabledReason,
+    canOpenPortal: subscription.action !== "custom" && subscription.portalToken !== undefined,
+    canRunCustomAction: subscription.action === "custom",
+  };
+}
+
+type SubscriptionActionSummaryState = ReturnType<typeof createSubscriptionActionSummaryState>;
+
+function createSubscriptionActionSummaryActionHandler({
+  onAction,
+  onPortalLaunch,
+  runtime,
+  selectedNavigate,
+  state,
+  subscription,
+}: {
+  readonly onAction: VortexSubscriptionActionSummaryProps["onAction"];
+  readonly onPortalLaunch: VortexSubscriptionActionSummaryProps["onPortalLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: SubscriptionActionSummaryState;
+  readonly subscription: VortexSubscriptionActionSummaryState;
+}) {
+  return (): void => {
+    if (state.canOpenPortal && subscription.portalToken !== undefined) {
+      const launch = createSubscriptionActionPortalLaunch(runtime, subscription);
       onPortalLaunch?.(launch);
       selectedNavigate(launch);
       return;
     }
-    if (canRunCustomAction) {
+    if (state.canRunCustomAction) {
       void onAction?.(subscription);
     }
   };
+}
 
+function createSubscriptionActionPortalLaunch(
+  runtime: VortexSurfaceProviderRuntime,
+  subscription: VortexSubscriptionActionSummaryState,
+): VortexSurfaceLaunch {
+  return runtime.createHostedLink({
+    surface: "customer_portal",
+    token: subscription.portalToken ?? "",
+    query: subscriptionActionPortalQuery(subscription.action),
+  });
+}
+
+function createSubscriptionActionSummarySectionProps({
+  appearance,
+  className,
+  classNames,
+  state,
+  subscription,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: SubscriptionActionSummaryState;
+  readonly subscription: VortexSubscriptionActionSummaryState;
+}) {
+  return {
+    className: cx("vortex-payments-subscription-action-summary", className, classNames?.root),
+    "data-vortex-surface": "subscription-action-summary",
+    "data-vortex-component": "VortexSubscriptionActionSummary",
+    "data-vortex-customer-id": subscription.customerId,
+    "data-vortex-billing-account-id": subscription.billingAccountId,
+    "data-vortex-subscription-id": subscription.subscriptionId,
+    "data-vortex-subscription-status": subscription.status,
+    "data-vortex-subscription-action": subscription.action,
+    "data-vortex-customer-portal-ready": String(state.canOpenPortal),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createSubscriptionActionSummaryHeader({
+  classNames,
+  resolvedCopy,
+  subscription,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexSubscriptionActionSummaryCopy>;
+  readonly subscription: VortexSubscriptionActionSummaryState;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-subscription-action-summary", className, classNames?.root),
-      "data-vortex-surface": "subscription-action-summary",
-      "data-vortex-component": "VortexSubscriptionActionSummary",
-      "data-vortex-customer-id": subscription.customerId,
-      "data-vortex-billing-account-id": subscription.billingAccountId,
-      "data-vortex-subscription-id": subscription.subscriptionId,
-      "data-vortex-subscription-status": subscription.status,
-      "data-vortex-subscription-action": subscription.action,
-      "data-vortex-customer-portal-ready": String(canOpenPortal),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, subscription.title ?? resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement(
-        "h2",
-        { className: classNames?.title },
-        subscription.title ?? resolvedCopy.title,
-      ),
-      subscription.description === undefined
-        ? createElement(
-            "p",
-            { className: classNames?.description },
-            subscriptionActionDescription(subscription, resolvedCopy),
-          )
-        : createElement("p", { className: classNames?.description }, subscription.description),
+      "p",
+      { className: classNames?.description },
+      subscription.description ?? subscriptionActionDescription(subscription, resolvedCopy),
     ),
+  );
+}
+
+function createSubscriptionActionSummaryFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexSubscriptionActionSummaryCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -5364,57 +5451,105 @@ export function VortexSubscriptionActionSummary({
           resolvedCopy.errorTitle,
           error,
         ),
-    actionDisabledReason === undefined
-      ? null
-      : createElement(
-          "p",
-          {
-            className: classNames?.status,
-            "data-vortex-subscription-action-disabled-reason": true,
-          },
-          actionDisabledReason,
-        ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, subscription.status, classNames),
-      createMetric(resolvedCopy.planLabel, subscription.planLabel ?? "none", classNames),
-      createMetric(resolvedCopy.cadenceLabel, subscription.cadenceLabel ?? "none", classNames),
-      createMetric(resolvedCopy.renewalLabel, subscription.renewalAt ?? "none", classNames),
-      createMetric(resolvedCopy.trialLabel, subscription.trialEndsAt ?? "none", classNames),
-      createMetric(
-        resolvedCopy.scheduledCancelLabel,
-        subscription.scheduledCancelAt ?? "none",
-        classNames,
-      ),
-      createMetric(resolvedCopy.pausedUntilLabel, subscription.pausedUntil ?? "none", classNames),
-      createMetric(
-        resolvedCopy.amountDueLabel,
-        subscription.amountDue === undefined || subscription.currency === undefined
-          ? "none"
-          : formatMinorUnitAmount(subscription.amountDue, subscription.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.nextActionLabel, subscription.nextAction ?? "none", classNames),
+  ];
+}
+
+function createSubscriptionActionDisabledReason({
+  classNames,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: SubscriptionActionSummaryState;
+}): ReactNode {
+  if (state.actionDisabledReason === undefined) {
+    return null;
+  }
+  return createElement(
+    "p",
+    {
+      className: classNames?.status,
+      "data-vortex-subscription-action-disabled-reason": true,
+    },
+    state.actionDisabledReason,
+  );
+}
+
+function createSubscriptionActionSummaryMetrics({
+  classNames,
+  resolvedCopy,
+  subscription,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexSubscriptionActionSummaryCopy>;
+  readonly subscription: VortexSubscriptionActionSummaryState;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, subscription.status, classNames),
+    createMetric(resolvedCopy.planLabel, subscription.planLabel ?? "none", classNames),
+    createMetric(resolvedCopy.cadenceLabel, subscription.cadenceLabel ?? "none", classNames),
+    createMetric(resolvedCopy.renewalLabel, subscription.renewalAt ?? "none", classNames),
+    createMetric(resolvedCopy.trialLabel, subscription.trialEndsAt ?? "none", classNames),
+    createMetric(
+      resolvedCopy.scheduledCancelLabel,
+      subscription.scheduledCancelAt ?? "none",
+      classNames,
     ),
-    createElement(
-      "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled:
-            isDisabled ||
-            actionDisabledReason !== undefined ||
-            (!canOpenPortal && !canRunCustomAction),
-          onClick: runPrimaryAction,
-          type: "button",
-          "data-vortex-subscription-action-summary-action": subscription.action,
-        },
-        subscriptionActionLabel(subscription.action, resolvedCopy),
-      ),
+    createMetric(resolvedCopy.pausedUntilLabel, subscription.pausedUntil ?? "none", classNames),
+    createMetric(
+      resolvedCopy.amountDueLabel,
+      formatSubscriptionActionAmountDue(subscription),
+      classNames,
     ),
+    createMetric(resolvedCopy.nextActionLabel, subscription.nextAction ?? "none", classNames),
+  );
+}
+
+function formatSubscriptionActionAmountDue(
+  subscription: VortexSubscriptionActionSummaryState,
+): string {
+  if (subscription.amountDue === undefined || subscription.currency === undefined) {
+    return "none";
+  }
+  return formatMinorUnitAmount(subscription.amountDue, subscription.currency);
+}
+
+function createSubscriptionActionSummaryActions({
+  classNames,
+  isDisabled,
+  resolvedCopy,
+  runPrimaryAction,
+  state,
+  subscription,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly resolvedCopy: Required<VortexSubscriptionActionSummaryCopy>;
+  readonly runPrimaryAction: () => void;
+  readonly state: SubscriptionActionSummaryState;
+  readonly subscription: VortexSubscriptionActionSummaryState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !canRunSubscriptionActionSummaryAction(state),
+        onClick: runPrimaryAction,
+        type: "button",
+        "data-vortex-subscription-action-summary-action": subscription.action,
+      },
+      subscriptionActionLabel(subscription.action, resolvedCopy),
+    ),
+  );
+}
+
+function canRunSubscriptionActionSummaryAction(state: SubscriptionActionSummaryState): boolean {
+  return (
+    state.actionDisabledReason === undefined && (state.canOpenPortal || state.canRunCustomAction)
   );
 }
 
