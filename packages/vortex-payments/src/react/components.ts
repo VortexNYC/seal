@@ -400,6 +400,32 @@ export type VortexPromoCodeControlCopy = {
   readonly discountLabel?: ReactNode;
 };
 
+type PromoCodeControlViewState = {
+  readonly hasAppliedCode: boolean;
+  readonly isDisabled: boolean;
+  readonly isValidating: boolean;
+  readonly resolvedCopy: Required<VortexPromoCodeControlCopy>;
+  readonly trimmedCode: string;
+};
+
+const DEFAULT_PROMO_CODE_CONTROL_COPY: Required<VortexPromoCodeControlCopy> = {
+  title: "Promo code",
+  readyDescription: "Apply a Vortex promo code to this checkout.",
+  appliedDescription: "This checkout has an active promo code.",
+  rejectedDescription: "The promo code could not be applied.",
+  loadingTitle: "Checking promo code...",
+  errorTitle: "Unable to apply promo code.",
+  emptyTitle: "No promo code applied",
+  emptyDescription: "Enter a code to preview and apply a discount.",
+  codeLabel: "Code",
+  codePlaceholder: "Enter code",
+  applyLabel: "Apply",
+  applyingLabel: "Checking...",
+  removeLabel: "Remove",
+  appliedCodeLabel: "Applied code",
+  discountLabel: "Discount",
+};
+
 export type VortexPromoCodeControlProps = {
   readonly promoCode: VortexPromoCodeControlState;
   readonly appearance?: VortexEmbeddedComponentAppearance;
@@ -1728,12 +1754,15 @@ export function VortexPromoCodeControl({
   onError,
   className,
 }: VortexPromoCodeControlProps): ReactNode {
-  const resolvedCopy = resolvePromoCodeControlCopy(copy);
   const [code, setCode] = useState(initialCode ?? promoCode.code ?? "");
-  const isValidating = loading === true || promoCode.status === "validating";
-  const isDisabled = disabled === true || readOnly === true || isValidating;
-  const trimmedCode = code.trim();
-  const hasAppliedCode = promoCode.status === "applied" && promoCode.code !== undefined;
+  const viewState = createPromoCodeControlViewState({
+    code,
+    copy,
+    disabled,
+    loading,
+    promoCode,
+    readOnly,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -1754,13 +1783,13 @@ export function VortexPromoCodeControl({
 
   const applyPromoCode = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (trimmedCode.length === 0 || isDisabled) {
+    if (viewState.trimmedCode.length === 0 || viewState.isDisabled) {
       return;
     }
-    void onApplyPromoCode?.(trimmedCode, promoCode);
+    void onApplyPromoCode?.(viewState.trimmedCode, promoCode);
   };
   const removePromoCode = (): void => {
-    if (isDisabled) {
+    if (viewState.isDisabled) {
       return;
     }
     void onRemovePromoCode?.(promoCode);
@@ -1771,40 +1800,108 @@ export function VortexPromoCodeControl({
 
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-promo-code-control", className, classNames?.root),
-      "data-vortex-surface": "promo-code-control",
-      "data-vortex-component": "VortexPromoCodeControl",
-      "data-vortex-promo-status": promoCode.status,
-      "data-vortex-checkout-id": promoCode.checkoutId,
-      "data-vortex-customer-id": promoCode.customerId,
-      "data-vortex-applied-coupon-id": promoCode.appliedCouponId,
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    createPromoCodeSectionProps({ appearance, className, classNames, promoCode }),
+    createPromoCodeHeader(promoCode, viewState.resolvedCopy, classNames),
+    createPromoCodeFeedback({ classNames, error, promoCode, viewState }),
+    createPromoCodeForm({
+      applyPromoCode,
+      classNames,
+      code,
+      readOnly,
+      removePromoCode,
+      updateCode,
+      viewState,
+    }),
+    createPromoCodeSummary(promoCode, viewState, classNames),
+    createPromoCodeDiscountDetails(promoCode, classNames),
+  );
+}
+
+function createPromoCodeControlViewState({
+  code,
+  copy,
+  disabled,
+  loading,
+  promoCode,
+  readOnly,
+}: {
+  readonly code: string;
+  readonly copy: VortexPromoCodeControlCopy | undefined;
+  readonly disabled: boolean | undefined;
+  readonly loading: boolean | undefined;
+  readonly promoCode: VortexPromoCodeControlState;
+  readonly readOnly: boolean | undefined;
+}): PromoCodeControlViewState {
+  const isValidating = loading === true || promoCode.status === "validating";
+  return {
+    hasAppliedCode: promoCode.status === "applied" && promoCode.code !== undefined,
+    isDisabled: disabled === true || readOnly === true || isValidating,
+    isValidating,
+    resolvedCopy: resolvePromoCodeControlCopy(copy),
+    trimmedCode: code.trim(),
+  };
+}
+
+function createPromoCodeSectionProps({
+  appearance,
+  className,
+  classNames,
+  promoCode,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly promoCode: VortexPromoCodeControlState;
+}) {
+  return {
+    className: cx("vortex-payments-promo-code-control", className, classNames?.root),
+    "data-vortex-surface": "promo-code-control",
+    "data-vortex-component": "VortexPromoCodeControl",
+    "data-vortex-promo-status": promoCode.status,
+    "data-vortex-checkout-id": promoCode.checkoutId,
+    "data-vortex-customer-id": promoCode.customerId,
+    "data-vortex-applied-coupon-id": promoCode.appliedCouponId,
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createPromoCodeHeader(
+  promoCode: VortexPromoCodeControlState,
+  copy: Required<VortexPromoCodeControlCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, copy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        promoCodeDescription(promoCode, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      promoCodeDescription(promoCode, copy),
     ),
-    isValidating
+  );
+}
+
+function createPromoCodeFeedback({
+  classNames,
+  error,
+  promoCode,
+  viewState,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly promoCode: VortexPromoCodeControlState;
+  readonly viewState: PromoCodeControlViewState;
+}): ReactNode {
+  return [
+    viewState.isValidating
       ? createElement(
           "div",
           { className: classNames?.loading, role: "status" },
-          resolvedCopy.loadingTitle,
+          viewState.resolvedCopy.loadingTitle,
         )
       : null,
     error === undefined
@@ -1812,102 +1909,180 @@ export function VortexPromoCodeControl({
       : createElement(
           "div",
           { className: classNames?.error, role: "alert" },
-          resolvedCopy.errorTitle,
+          viewState.resolvedCopy.errorTitle,
           error,
         ),
     promoCode.status === "rejected" && promoCode.message !== undefined
       ? createElement("div", { className: classNames?.error, role: "alert" }, promoCode.message)
       : null,
-    createElement(
-      "form",
-      {
-        className: classNames?.actions,
-        onSubmit: applyPromoCode,
-        "data-vortex-promo-code-form": "true",
-      },
-      createElement(
-        "label",
-        { className: classNames?.itemTitle },
-        resolvedCopy.codeLabel,
-        createElement("input", {
-          "aria-label": stringFromReactNode(resolvedCopy.codeLabel, "Promo code"),
-          autoComplete: "off",
-          className: classNames?.item,
-          disabled: isDisabled || hasAppliedCode,
-          name: "vortex-promo-code",
-          onChange: updateCode,
-          placeholder: resolvedCopy.codePlaceholder,
-          readOnly: readOnly === true || hasAppliedCode,
-          type: "text",
-          value: code,
-          "data-vortex-promo-code-input": "true",
-        }),
-      ),
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || hasAppliedCode || trimmedCode.length === 0,
-          type: "submit",
-          "data-vortex-promo-code-action": "apply",
-        },
-        isValidating ? resolvedCopy.applyingLabel : resolvedCopy.applyLabel,
-      ),
-      hasAppliedCode
-        ? createElement(
-            "button",
-            {
-              className: classNames?.button,
-              disabled: isDisabled,
-              onClick: removePromoCode,
-              type: "button",
-              "data-vortex-promo-code-action": "remove",
-            },
-            resolvedCopy.removeLabel,
-          )
-        : null,
+  ];
+}
+
+function createPromoCodeForm({
+  applyPromoCode,
+  classNames,
+  code,
+  readOnly,
+  removePromoCode,
+  updateCode,
+  viewState,
+}: {
+  readonly applyPromoCode: (event: FormEvent<HTMLFormElement>) => void;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly code: string;
+  readonly readOnly: boolean | undefined;
+  readonly removePromoCode: () => void;
+  readonly updateCode: (event: ChangeEvent<HTMLInputElement>) => void;
+  readonly viewState: PromoCodeControlViewState;
+}): ReactNode {
+  return createElement(
+    "form",
+    {
+      className: classNames?.actions,
+      onSubmit: applyPromoCode,
+      "data-vortex-promo-code-form": "true",
+    },
+    createPromoCodeInput({ classNames, code, readOnly, updateCode, viewState }),
+    createPromoCodeApplyButton(classNames, viewState),
+    viewState.hasAppliedCode
+      ? createPromoCodeRemoveButton({ classNames, removePromoCode, viewState })
+      : null,
+  );
+}
+
+function createPromoCodeInput({
+  classNames,
+  code,
+  readOnly,
+  updateCode,
+  viewState,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly code: string;
+  readonly readOnly: boolean | undefined;
+  readonly updateCode: (event: ChangeEvent<HTMLInputElement>) => void;
+  readonly viewState: PromoCodeControlViewState;
+}): ReactNode {
+  const { resolvedCopy } = viewState;
+  return createElement(
+    "label",
+    { className: classNames?.itemTitle },
+    resolvedCopy.codeLabel,
+    createElement("input", {
+      "aria-label": stringFromReactNode(resolvedCopy.codeLabel, "Promo code"),
+      autoComplete: "off",
+      className: classNames?.item,
+      disabled: viewState.isDisabled || viewState.hasAppliedCode,
+      name: "vortex-promo-code",
+      onChange: updateCode,
+      placeholder: resolvedCopy.codePlaceholder,
+      readOnly: readOnly === true || viewState.hasAppliedCode,
+      type: "text",
+      value: code,
+      "data-vortex-promo-code-input": "true",
+    }),
+  );
+}
+
+function createPromoCodeApplyButton(
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+  viewState: PromoCodeControlViewState,
+): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled:
+        viewState.isDisabled || viewState.hasAppliedCode || viewState.trimmedCode.length === 0,
+      type: "submit",
+      "data-vortex-promo-code-action": "apply",
+    },
+    viewState.isValidating
+      ? viewState.resolvedCopy.applyingLabel
+      : viewState.resolvedCopy.applyLabel,
+  );
+}
+
+function createPromoCodeRemoveButton({
+  classNames,
+  removePromoCode,
+  viewState,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly removePromoCode: () => void;
+  readonly viewState: PromoCodeControlViewState;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: viewState.isDisabled,
+      onClick: removePromoCode,
+      type: "button",
+      "data-vortex-promo-code-action": "remove",
+    },
+    viewState.resolvedCopy.removeLabel,
+  );
+}
+
+function createPromoCodeSummary(
+  promoCode: VortexPromoCodeControlState,
+  viewState: PromoCodeControlViewState,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (!viewState.hasAppliedCode) {
+    return createElement(
+      "div",
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, viewState.resolvedCopy.emptyTitle),
+      createElement("p", null, viewState.resolvedCopy.emptyDescription),
+    );
+  }
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(viewState.resolvedCopy.appliedCodeLabel, promoCode.code, classNames),
+    createMetric(
+      viewState.resolvedCopy.discountLabel,
+      promoCodeDiscountValue(promoCode, viewState),
+      classNames,
     ),
-    hasAppliedCode
-      ? createElement(
-          "dl",
-          { className: classNames?.metrics },
-          createMetric(resolvedCopy.appliedCodeLabel, promoCode.code, classNames),
-          promoCode.discount === undefined
-            ? createMetric(resolvedCopy.discountLabel, resolvedCopy.emptyTitle, classNames)
-            : createMetric(
-                resolvedCopy.discountLabel,
-                formatMinorUnitAmount(promoCode.discount.amount, promoCode.discount.currency),
-                classNames,
-              ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyTitle),
-          createElement("p", null, resolvedCopy.emptyDescription),
-        ),
-    promoCode.discount === undefined
+  );
+}
+
+function promoCodeDiscountValue(
+  promoCode: VortexPromoCodeControlState,
+  viewState: PromoCodeControlViewState,
+): ReactNode {
+  if (promoCode.discount === undefined) {
+    return viewState.resolvedCopy.emptyTitle;
+  }
+  return formatMinorUnitAmount(promoCode.discount.amount, promoCode.discount.currency);
+}
+
+function createPromoCodeDiscountDetails(
+  promoCode: VortexPromoCodeControlState,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (promoCode.discount === undefined) {
+    return null;
+  }
+  return createElement(
+    "div",
+    { className: classNames?.item, "data-vortex-promo-code-discount": "true" },
+    createElement("strong", { className: classNames?.itemTitle }, promoCode.discount.label),
+    promoCode.discount.description === undefined
       ? null
       : createElement(
-          "div",
-          {
-            className: classNames?.item,
-            "data-vortex-promo-code-discount": "true",
-          },
-          createElement("strong", { className: classNames?.itemTitle }, promoCode.discount.label),
-          promoCode.discount.description === undefined
-            ? null
-            : createElement(
-                "p",
-                { className: classNames?.itemDescription },
-                promoCode.discount.description,
-              ),
-          createElement(
-            "span",
-            { className: classNames?.status },
-            formatMinorUnitAmount(promoCode.discount.amount, promoCode.discount.currency),
-          ),
+          "p",
+          { className: classNames?.itemDescription },
+          promoCode.discount.description,
         ),
+    createElement(
+      "span",
+      { className: classNames?.status },
+      formatMinorUnitAmount(promoCode.discount.amount, promoCode.discount.currency),
+    ),
   );
 }
 
@@ -4655,23 +4830,7 @@ function resolveEmbeddedCheckoutCopy(
 function resolvePromoCodeControlCopy(
   copy: VortexPromoCodeControlCopy | undefined,
 ): Required<VortexPromoCodeControlCopy> {
-  return {
-    title: copy?.title ?? "Promo code",
-    readyDescription: copy?.readyDescription ?? "Apply a Vortex promo code to this checkout.",
-    appliedDescription: copy?.appliedDescription ?? "This checkout has an active promo code.",
-    rejectedDescription: copy?.rejectedDescription ?? "The promo code could not be applied.",
-    loadingTitle: copy?.loadingTitle ?? "Checking promo code...",
-    errorTitle: copy?.errorTitle ?? "Unable to apply promo code.",
-    emptyTitle: copy?.emptyTitle ?? "No promo code applied",
-    emptyDescription: copy?.emptyDescription ?? "Enter a code to preview and apply a discount.",
-    codeLabel: copy?.codeLabel ?? "Code",
-    codePlaceholder: copy?.codePlaceholder ?? "Enter code",
-    applyLabel: copy?.applyLabel ?? "Apply",
-    applyingLabel: copy?.applyingLabel ?? "Checking...",
-    removeLabel: copy?.removeLabel ?? "Remove",
-    appliedCodeLabel: copy?.appliedCodeLabel ?? "Applied code",
-    discountLabel: copy?.discountLabel ?? "Discount",
-  };
+  return { ...DEFAULT_PROMO_CODE_CONTROL_COPY, ...copy };
 }
 
 function resolveBalanceWalletPanelCopy(
