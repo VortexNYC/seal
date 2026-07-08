@@ -5291,11 +5291,13 @@ export function VortexPayoutReadinessPanel({
   const selectedNavigate = navigate ?? contextNavigate;
   const isDisabled = disabled === true || readOnly === true;
   const resolvedCopy = resolvePayoutReadinessPanelCopy(copy);
-  const payoutReadiness = merchantState.payoutReadiness;
-  const capabilityCount = payoutProfile?.capabilities.length ?? 0;
-  const enabledCapabilityCount =
-    payoutProfile?.capabilities.filter((capability) => capability.status === "enabled").length ?? 0;
-  const blocked = payoutReadiness === "blocked" || payoutReadiness === "paused";
+  const state = createPayoutReadinessPanelState(merchantState, payoutProfile);
+  const launchAction = createPayoutReadinessPanelLauncher({
+    onAction,
+    onActionLaunch,
+    runtime,
+    selectedNavigate,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -5315,47 +5317,114 @@ export function VortexPayoutReadinessPanel({
     }
   }, [error, onError]);
 
-  const launchAction = (
-    action: VortexPayoutReadinessPanelAction,
-    request: VortexHostedSurfaceRequest,
-  ): void => {
-    const launch = runtime.createHostedLink(request);
-    onAction?.(action);
-    onActionLaunch?.(action, launch);
-    selectedNavigate(launch);
-  };
-
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-payout-readiness-panel", className, classNames?.root),
-      "data-vortex-surface": "payout-readiness",
-      "data-vortex-component": "VortexPayoutReadinessPanel",
-      "data-vortex-merchant-account-id": merchantState.merchantAccountId,
-      "data-vortex-payout-readiness": payoutReadiness,
-      "data-vortex-payout-rail": payoutProfile?.payoutRail ?? "unknown",
-      "data-vortex-payout-schedule": payoutProfile?.payoutSchedule ?? "unknown",
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    createPayoutReadinessPanelSectionProps({
+      appearance,
+      className,
+      classNames,
+      merchantState,
+      state,
+    }),
+    createPayoutReadinessPanelHeader(state, resolvedCopy, classNames),
+    createPayoutReadinessPanelFeedback({ classNames, error, loading, resolvedCopy }),
+    createPayoutReadinessPanelUnavailableProfile({ classNames, payoutProfile, resolvedCopy }),
+    createPayoutReadinessPanelMetrics({
+      classNames,
+      merchantState,
+      payoutProfile,
+      resolvedCopy,
+      settlementReadiness,
+      state,
+    }),
+    createPayoutReadinessPanelList({ classNames, payoutProfile, settlementReadiness }),
+    createPayoutReadinessPanelActions({
+      classNames,
+      isDisabled,
+      launchAction,
+      merchantAccountId: merchantState.merchantAccountId,
+      resolvedCopy,
+    }),
+  );
+}
+
+function createPayoutReadinessPanelState(
+  merchantState: MerchantAccountStateSnapshot,
+  payoutProfile: MerchantSellerPayoutProfileSnapshot | undefined,
+) {
+  const payoutReadiness = merchantState.payoutReadiness;
+  const capabilityCount = payoutProfile?.capabilities.length ?? 0;
+  const enabledCapabilityCount =
+    payoutProfile?.capabilities.filter((capability) => capability.status === "enabled").length ?? 0;
+  return {
+    blocked: payoutReadiness === "blocked" || payoutReadiness === "paused",
+    capabilityCount,
+    enabledCapabilityCount,
+    payoutReadiness,
+    payoutRail: payoutProfile?.payoutRail ?? "unknown",
+    payoutSchedule: payoutProfile?.payoutSchedule ?? "unknown",
+  };
+}
+
+type PayoutReadinessPanelState = ReturnType<typeof createPayoutReadinessPanelState>;
+
+function createPayoutReadinessPanelSectionProps({
+  appearance,
+  className,
+  classNames,
+  merchantState,
+  state,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantState: MerchantAccountStateSnapshot;
+  readonly state: PayoutReadinessPanelState;
+}) {
+  return {
+    className: cx("vortex-payments-payout-readiness-panel", className, classNames?.root),
+    "data-vortex-surface": "payout-readiness",
+    "data-vortex-component": "VortexPayoutReadinessPanel",
+    "data-vortex-merchant-account-id": merchantState.merchantAccountId,
+    "data-vortex-payout-readiness": state.payoutReadiness,
+    "data-vortex-payout-rail": state.payoutRail,
+    "data-vortex-payout-schedule": state.payoutSchedule,
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createPayoutReadinessPanelHeader(
+  state: PayoutReadinessPanelState,
+  copy: Required<VortexPayoutReadinessPanelCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, copy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        blocked ? resolvedCopy.blockedDescription : resolvedCopy.readyDescription,
-      ),
+      "p",
+      { className: classNames?.description },
+      state.blocked ? copy.blockedDescription : copy.readyDescription,
     ),
+  );
+}
+
+function createPayoutReadinessPanelFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexPayoutReadinessPanelCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -5371,117 +5440,206 @@ export function VortexPayoutReadinessPanel({
           resolvedCopy.errorTitle,
           error,
         ),
-    payoutProfile === undefined
-      ? createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.profileUnavailableTitle),
-          createElement("p", null, resolvedCopy.profileUnavailableDescription),
-        )
-      : null,
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.payoutReadinessLabel, payoutReadiness, classNames),
-      createMetric(resolvedCopy.payoutModeLabel, payoutProfile?.mode ?? "unknown", classNames),
-      createMetric(
-        resolvedCopy.payoutRailLabel,
-        payoutProfile?.payoutRail ?? "unknown",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.payoutScheduleLabel,
-        payoutProfile?.payoutSchedule ?? "unknown",
-        classNames,
-      ),
-      createMetric(resolvedCopy.currencyLabel, payoutProfile?.currency ?? "unknown", classNames),
-      createMetric(
-        resolvedCopy.fundingRequirementLabel,
-        payoutProfile?.fundingRequirement ?? "standard",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.latestSettlementLabel,
-        merchantState.latestSettlementStatus ?? "unknown",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.latestPayoutLabel,
-        merchantState.latestPayoutStatus ?? "unknown",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.settlementReadinessLabel,
-        settlementReadiness?.status ?? "unknown",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.nextActionLabel,
-        settlementReadiness?.nextAction ?? merchantState.payoutBlockReason ?? "monitor",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.capabilitiesLabel,
-        `${enabledCapabilityCount}/${capabilityCount} enabled`,
-        classNames,
-      ),
+  ];
+}
+
+function createPayoutReadinessPanelUnavailableProfile({
+  classNames,
+  payoutProfile,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly payoutProfile: MerchantSellerPayoutProfileSnapshot | undefined;
+  readonly resolvedCopy: Required<VortexPayoutReadinessPanelCopy>;
+}): ReactNode {
+  if (payoutProfile !== undefined) {
+    return null;
+  }
+  return createElement(
+    "div",
+    { className: classNames?.empty, role: "status" },
+    createElement("p", null, resolvedCopy.profileUnavailableTitle),
+    createElement("p", null, resolvedCopy.profileUnavailableDescription),
+  );
+}
+
+function createPayoutReadinessPanelMetrics({
+  classNames,
+  merchantState,
+  payoutProfile,
+  resolvedCopy,
+  settlementReadiness,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantState: MerchantAccountStateSnapshot;
+  readonly payoutProfile: MerchantSellerPayoutProfileSnapshot | undefined;
+  readonly resolvedCopy: Required<VortexPayoutReadinessPanelCopy>;
+  readonly settlementReadiness: SettlementPayoutReadinessDetail | null | undefined;
+  readonly state: PayoutReadinessPanelState;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.payoutReadinessLabel, state.payoutReadiness, classNames),
+    createMetric(resolvedCopy.payoutModeLabel, payoutProfile?.mode ?? "unknown", classNames),
+    createMetric(resolvedCopy.payoutRailLabel, state.payoutRail, classNames),
+    createMetric(resolvedCopy.payoutScheduleLabel, state.payoutSchedule, classNames),
+    createMetric(resolvedCopy.currencyLabel, payoutProfile?.currency ?? "unknown", classNames),
+    createMetric(
+      resolvedCopy.fundingRequirementLabel,
+      payoutProfile?.fundingRequirement ?? "standard",
+      classNames,
     ),
-    createElement(
-      "ul",
-      { className: classNames?.list },
-      (payoutProfile?.capabilities ?? []).map((capability) =>
-        createPayoutCapabilityItem(
-          capability.key,
-          capability.reason,
-          capability.status,
-          classNames,
-        ),
-      ),
-      settlementReadiness === null || settlementReadiness?.blockers.length === 0
-        ? null
-        : createPayoutCapabilityItem(
-            "settlement_blockers",
-            settlementReadiness?.blockers.join(", ") ??
-              "No settlement readiness snapshot was provided.",
-            settlementReadiness === undefined ? "unknown" : "disabled",
-            classNames,
-          ),
+    createMetric(
+      resolvedCopy.latestSettlementLabel,
+      merchantState.latestSettlementStatus ?? "unknown",
+      classNames,
     ),
-    createElement(
-      "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          type: "button",
-          disabled: isDisabled,
-          onClick: () => {
-            launchAction("open_merchant_account", {
-              surface: "merchant_account_panel",
-              id: merchantState.merchantAccountId,
-            });
-          },
-        },
-        resolvedCopy.openMerchantAccountLabel,
-      ),
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          type: "button",
-          disabled: isDisabled,
-          onClick: () => {
-            launchAction("open_actions", {
-              surface: "merchant_action_queue",
-              id: merchantState.merchantAccountId,
-            });
-          },
-        },
-        resolvedCopy.openActionsLabel,
-      ),
+    createMetric(
+      resolvedCopy.latestPayoutLabel,
+      merchantState.latestPayoutStatus ?? "unknown",
+      classNames,
+    ),
+    createMetric(
+      resolvedCopy.settlementReadinessLabel,
+      settlementReadiness?.status ?? "unknown",
+      classNames,
+    ),
+    createMetric(
+      resolvedCopy.nextActionLabel,
+      settlementReadiness?.nextAction ?? merchantState.payoutBlockReason ?? "monitor",
+      classNames,
+    ),
+    createMetric(
+      resolvedCopy.capabilitiesLabel,
+      `${state.enabledCapabilityCount}/${state.capabilityCount} enabled`,
+      classNames,
     ),
   );
+}
+
+function createPayoutReadinessPanelList({
+  classNames,
+  payoutProfile,
+  settlementReadiness,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly payoutProfile: MerchantSellerPayoutProfileSnapshot | undefined;
+  readonly settlementReadiness: SettlementPayoutReadinessDetail | null | undefined;
+}): ReactNode {
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    (payoutProfile?.capabilities ?? []).map((capability) =>
+      createPayoutCapabilityItem(capability.key, capability.reason, capability.status, classNames),
+    ),
+    createPayoutSettlementBlockersItem(settlementReadiness, classNames),
+  );
+}
+
+function createPayoutSettlementBlockersItem(
+  settlementReadiness: SettlementPayoutReadinessDetail | null | undefined,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (settlementReadiness === null || settlementReadiness?.blockers.length === 0) {
+    return null;
+  }
+  return createPayoutCapabilityItem(
+    "settlement_blockers",
+    settlementReadiness?.blockers.join(", ") ?? "No settlement readiness snapshot was provided.",
+    settlementReadiness === undefined ? "unknown" : "disabled",
+    classNames,
+  );
+}
+
+function createPayoutReadinessPanelActions({
+  classNames,
+  isDisabled,
+  launchAction,
+  merchantAccountId,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly launchAction: (
+    action: VortexPayoutReadinessPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly merchantAccountId: string;
+  readonly resolvedCopy: Required<VortexPayoutReadinessPanelCopy>;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createPayoutReadinessPanelButton({
+      action: "open_merchant_account",
+      classNames,
+      isDisabled,
+      label: resolvedCopy.openMerchantAccountLabel,
+      launchAction,
+      request: { surface: "merchant_account_panel", id: merchantAccountId },
+    }),
+    createPayoutReadinessPanelButton({
+      action: "open_actions",
+      classNames,
+      isDisabled,
+      label: resolvedCopy.openActionsLabel,
+      launchAction,
+      request: { surface: "merchant_action_queue", id: merchantAccountId },
+    }),
+  );
+}
+
+function createPayoutReadinessPanelButton({
+  action,
+  classNames,
+  isDisabled,
+  label,
+  launchAction,
+  request,
+}: {
+  readonly action: VortexPayoutReadinessPanelAction;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly label: ReactNode;
+  readonly launchAction: (
+    action: VortexPayoutReadinessPanelAction,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly request: VortexHostedSurfaceRequest;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: isDisabled,
+      onClick: () => {
+        launchAction(action, request);
+      },
+      type: "button",
+    },
+    label,
+  );
+}
+
+function createPayoutReadinessPanelLauncher({
+  onAction,
+  onActionLaunch,
+  runtime,
+  selectedNavigate,
+}: {
+  readonly onAction: VortexPayoutReadinessPanelProps["onAction"];
+  readonly onActionLaunch: VortexPayoutReadinessPanelProps["onActionLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+}) {
+  return (action: VortexPayoutReadinessPanelAction, request: VortexHostedSurfaceRequest): void => {
+    const launch = runtime.createHostedLink(request);
+    onAction?.(action);
+    onActionLaunch?.(action, launch);
+    selectedNavigate(launch);
+  };
 }
 
 export function VortexFeePolicyPanel({
