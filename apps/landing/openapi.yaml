@@ -369,8 +369,34 @@ tags:
     description: Upload PDF files for use with the Documents API
   - name: Webhooks
     description: Receive real-time events when document state changes
+  - name: Signal
+    description: Operational signal endpoints for latency probing and monitoring
 
 paths:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Signal
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /signal/latency-probe:
+    get:
+      tags: [Signal]
+      operationId: signalLatencyProbe
+      summary: Signal latency probe
+      description: >
+        No-op public endpoint for measuring round-trip latency.
+        Returns immediately with a minimal `{"status":"ok"}` payload.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
   # ──────────────────────────────────────────────────────────────────────────
   # Documents
   # ──────────────────────────────────────────────────────────────────────────

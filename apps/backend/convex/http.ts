@@ -707,6 +707,22 @@ http.route({
 });
 
 /**
+ * Signal Latency Probe
+ *
+ * @route GET /api/v1/signal/latency-probe
+ * @public
+ *
+ * No-op endpoint for measuring round-trip latency. Returns instantly.
+ */
+http.route({
+  path: "/api/v1/signal/latency-probe",
+  method: "GET",
+  handler: publicApiHttpAction(async () => {
+    return apiResponse(200, { status: "ok" });
+  }),
+});
+
+/**
  * Client IP endpoint - Returns the caller's IP address
  * Used by the signing page to capture IP for audit trail compliance
  *
