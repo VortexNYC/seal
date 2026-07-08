@@ -1066,6 +1066,30 @@ export type VortexReceiptDownloadButtonProps = {
   readonly className?: string;
 };
 
+type ReceiptDownloadButtonViewState = {
+  readonly canDownload: boolean;
+  readonly canOpenHostedArtifact: boolean;
+  readonly isDisabled: boolean;
+  readonly resolvedCopy: Required<VortexReceiptDownloadButtonCopy>;
+};
+
+const DEFAULT_RECEIPT_DOWNLOAD_BUTTON_COPY: Required<VortexReceiptDownloadButtonCopy> = {
+  readyLabel: "Download receipt",
+  generatingLabel: "Receipt generating",
+  missingLabel: "Receipt unavailable",
+  blockedLabel: "Download blocked",
+  loadingLabel: "Loading receipt...",
+  errorTitle: "Unable to load receipt.",
+  statusLabel: "Status",
+  artifactLabel: "Artifact",
+  invoiceLabel: "Invoice",
+  amountLabel: "Amount",
+  issuedLabel: "Issued",
+  paidLabel: "Paid",
+  generatedLabel: "Generated",
+  openCenterLabel: "Open receipt",
+};
+
 export type VortexBillingStatusBannerStatus =
   | "active"
   | "trialing"
@@ -3052,10 +3076,13 @@ export function VortexReceiptDownloadButton({
 }: VortexReceiptDownloadButtonProps): ReactNode {
   const { runtime, navigate: contextNavigate } = useVortexPayments();
   const selectedNavigate = navigate ?? contextNavigate;
-  const resolvedCopy = resolveReceiptDownloadButtonCopy(copy);
-  const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canOpenHostedArtifact = artifact.portalToken !== undefined;
-  const canDownload = artifact.status === "ready" && artifact.disabledReason === undefined;
+  const viewState = createReceiptDownloadButtonViewState({
+    artifact,
+    copy,
+    disabled,
+    loading,
+    readOnly,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -3074,71 +3101,138 @@ export function VortexReceiptDownloadButton({
     }
   }, [error, onError]);
 
-  const launchDownload = (): void => {
-    if (!canDownload) {
-      return;
-    }
-    if (artifact.portalToken !== undefined) {
-      const launch = runtime.createHostedLink({
-        surface: "invoice_receipt_center",
-        token: artifact.portalToken,
-        query: {
-          view: artifact.kind === "receipt" ? "receipts" : "invoices",
-          artifact_id: artifact.id,
-          receipt_id: artifact.receiptId,
-          invoice_id: artifact.invoiceId,
-          download: true,
-          return_to: artifact.portalReturnPath,
-        },
-      });
-      onDownloadLaunch?.(artifact, launch);
-      selectedNavigate(launch);
-      return;
-    }
-    void onDownload?.(artifact);
-  };
+  const launchDownload = createReceiptDownloadLauncher({
+    artifact,
+    canDownload: viewState.canDownload,
+    onDownload,
+    onDownloadLaunch,
+    runtime,
+    selectedNavigate,
+  });
 
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-receipt-download-button", className, classNames?.root),
-      "data-vortex-surface": "receipt-download-button",
-      "data-vortex-component": "VortexReceiptDownloadButton",
-      "data-vortex-artifact-id": artifact.id,
-      "data-vortex-artifact-kind": artifact.kind,
-      "data-vortex-artifact-status": artifact.status,
-      "data-vortex-receipt-id": artifact.receiptId,
-      "data-vortex-invoice-id": artifact.invoiceId,
-      "data-vortex-invoice-number": artifact.invoiceNumber,
-      "data-vortex-invoice-receipt-center-ready": String(canOpenHostedArtifact),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
-    artifact.title === undefined && artifact.description === undefined
+    createReceiptDownloadButtonSectionProps({
+      appearance,
+      artifact,
+      canOpenHostedArtifact: viewState.canOpenHostedArtifact,
+      className,
+      classNames,
+    }),
+    createReceiptDownloadHeader(artifact, classNames),
+    createReceiptDownloadFeedback({ artifact, classNames, error, loading, viewState }),
+    createReceiptDownloadMetrics(artifact, viewState.resolvedCopy, classNames),
+    createReceiptDownloadAction({
+      artifact,
+      canDownload: viewState.canDownload,
+      classNames,
+      isDisabled: viewState.isDisabled,
+      launchDownload,
+      onDownload,
+      resolvedCopy: viewState.resolvedCopy,
+    }),
+  );
+}
+
+function createReceiptDownloadButtonViewState({
+  artifact,
+  copy,
+  disabled,
+  loading,
+  readOnly,
+}: {
+  readonly artifact: VortexReceiptDownloadButtonArtifact;
+  readonly copy: VortexReceiptDownloadButtonCopy | undefined;
+  readonly disabled: boolean | undefined;
+  readonly loading: boolean | undefined;
+  readonly readOnly: boolean | undefined;
+}): ReceiptDownloadButtonViewState {
+  return {
+    canDownload: artifact.status === "ready" && artifact.disabledReason === undefined,
+    canOpenHostedArtifact: artifact.portalToken !== undefined,
+    isDisabled: disabled === true || readOnly === true || loading === true,
+    resolvedCopy: resolveReceiptDownloadButtonCopy(copy),
+  };
+}
+
+function createReceiptDownloadButtonSectionProps({
+  appearance,
+  artifact,
+  canOpenHostedArtifact,
+  className,
+  classNames,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly artifact: VortexReceiptDownloadButtonArtifact;
+  readonly canOpenHostedArtifact: boolean;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+}) {
+  return {
+    className: cx("vortex-payments-receipt-download-button", className, classNames?.root),
+    "data-vortex-surface": "receipt-download-button",
+    "data-vortex-component": "VortexReceiptDownloadButton",
+    "data-vortex-artifact-id": artifact.id,
+    "data-vortex-artifact-kind": artifact.kind,
+    "data-vortex-artifact-status": artifact.status,
+    "data-vortex-receipt-id": artifact.receiptId,
+    "data-vortex-invoice-id": artifact.invoiceId,
+    "data-vortex-invoice-number": artifact.invoiceNumber,
+    "data-vortex-invoice-receipt-center-ready": String(canOpenHostedArtifact),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createAppearanceAccentStyle(
+  appearance: VortexEmbeddedComponentAppearance | undefined,
+): Record<string, string> | undefined {
+  if (appearance?.accentColor === undefined) {
+    return undefined;
+  }
+  return { "--vortex-payments-accent-color": appearance.accentColor };
+}
+
+function createReceiptDownloadHeader(
+  artifact: VortexReceiptDownloadButtonArtifact,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (artifact.title === undefined && artifact.description === undefined) {
+    return null;
+  }
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    artifact.title === undefined
       ? null
-      : createElement(
-          "header",
-          { className: classNames?.header },
-          artifact.title === undefined
-            ? null
-            : createElement("h2", { className: classNames?.title }, artifact.title),
-          artifact.description === undefined
-            ? null
-            : createElement("p", { className: classNames?.description }, artifact.description),
-        ),
+      : createElement("h2", { className: classNames?.title }, artifact.title),
+    artifact.description === undefined
+      ? null
+      : createElement("p", { className: classNames?.description }, artifact.description),
+  );
+}
+
+function createReceiptDownloadFeedback({
+  artifact,
+  classNames,
+  error,
+  loading,
+  viewState,
+}: {
+  readonly artifact: VortexReceiptDownloadButtonArtifact;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly viewState: ReceiptDownloadButtonViewState;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
           { className: classNames?.loading, role: "status" },
-          resolvedCopy.loadingLabel,
+          viewState.resolvedCopy.loadingLabel,
         )
       : null,
     error === undefined
@@ -3146,7 +3240,7 @@ export function VortexReceiptDownloadButton({
       : createElement(
           "div",
           { className: classNames?.error, role: "alert" },
-          resolvedCopy.errorTitle,
+          viewState.resolvedCopy.errorTitle,
           error,
         ),
     artifact.disabledReason === undefined
@@ -3156,43 +3250,124 @@ export function VortexReceiptDownloadButton({
           { className: classNames?.status, "data-vortex-artifact-disabled-reason": true },
           artifact.disabledReason,
         ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, artifact.status, classNames),
-      createMetric(resolvedCopy.artifactLabel, artifact.kind, classNames),
-      createMetric(
-        resolvedCopy.invoiceLabel,
-        artifact.invoiceNumber ?? artifact.invoiceId ?? "none",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.amountLabel,
-        artifact.amount === undefined || artifact.currency === undefined
-          ? "none"
-          : formatMinorUnitAmount(artifact.amount, artifact.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.issuedLabel, artifact.issuedAt ?? "none", classNames),
-      createMetric(resolvedCopy.paidLabel, artifact.paidAt ?? "none", classNames),
-      createMetric(resolvedCopy.generatedLabel, artifact.generatedAt ?? "none", classNames),
+  ];
+}
+
+function createReceiptDownloadMetrics(
+  artifact: VortexReceiptDownloadButtonArtifact,
+  copy: Required<VortexReceiptDownloadButtonCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(copy.statusLabel, artifact.status, classNames),
+    createMetric(copy.artifactLabel, artifact.kind, classNames),
+    createMetric(
+      copy.invoiceLabel,
+      artifact.invoiceNumber ?? artifact.invoiceId ?? "none",
+      classNames,
     ),
-    createElement(
-      "button",
-      {
-        className: classNames?.button,
-        disabled:
-          isDisabled ||
-          !canDownload ||
-          (artifact.portalToken === undefined && onDownload === undefined),
-        onClick: launchDownload,
-        type: "button",
-        "data-vortex-receipt-download-action":
-          artifact.portalToken === undefined ? "download_artifact" : "open_invoice_receipt_center",
-      },
-      receiptDownloadButtonLabel(artifact, resolvedCopy),
-    ),
+    createMetric(copy.amountLabel, receiptDownloadAmountValue(artifact), classNames),
+    createMetric(copy.issuedLabel, artifact.issuedAt ?? "none", classNames),
+    createMetric(copy.paidLabel, artifact.paidAt ?? "none", classNames),
+    createMetric(copy.generatedLabel, artifact.generatedAt ?? "none", classNames),
   );
+}
+
+function receiptDownloadAmountValue(artifact: VortexReceiptDownloadButtonArtifact): ReactNode {
+  if (artifact.amount === undefined || artifact.currency === undefined) {
+    return "none";
+  }
+  return formatMinorUnitAmount(artifact.amount, artifact.currency);
+}
+
+function createReceiptDownloadAction({
+  artifact,
+  canDownload,
+  classNames,
+  isDisabled,
+  launchDownload,
+  onDownload,
+  resolvedCopy,
+}: {
+  readonly artifact: VortexReceiptDownloadButtonArtifact;
+  readonly canDownload: boolean;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly launchDownload: () => void;
+  readonly onDownload: VortexReceiptDownloadButtonProps["onDownload"] | undefined;
+  readonly resolvedCopy: Required<VortexReceiptDownloadButtonCopy>;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: isDisabled || !canDownload || !hasReceiptDownloadHandler(artifact, onDownload),
+      onClick: launchDownload,
+      type: "button",
+      "data-vortex-receipt-download-action": receiptDownloadActionName(artifact),
+    },
+    receiptDownloadButtonLabel(artifact, resolvedCopy),
+  );
+}
+
+function hasReceiptDownloadHandler(
+  artifact: VortexReceiptDownloadButtonArtifact,
+  onDownload: VortexReceiptDownloadButtonProps["onDownload"] | undefined,
+): boolean {
+  return artifact.portalToken !== undefined || onDownload !== undefined;
+}
+
+function receiptDownloadActionName(artifact: VortexReceiptDownloadButtonArtifact) {
+  return artifact.portalToken === undefined ? "download_artifact" : "open_invoice_receipt_center";
+}
+
+function createReceiptDownloadLauncher({
+  artifact,
+  canDownload,
+  onDownload,
+  onDownloadLaunch,
+  runtime,
+  selectedNavigate,
+}: {
+  readonly artifact: VortexReceiptDownloadButtonArtifact;
+  readonly canDownload: boolean;
+  readonly onDownload: VortexReceiptDownloadButtonProps["onDownload"] | undefined;
+  readonly onDownloadLaunch: VortexReceiptDownloadButtonProps["onDownloadLaunch"] | undefined;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+}) {
+  return (): void => {
+    if (!canDownload) {
+      return;
+    }
+    if (artifact.portalToken === undefined) {
+      void onDownload?.(artifact);
+      return;
+    }
+    const launch = createReceiptHostedLaunch(runtime, artifact);
+    onDownloadLaunch?.(artifact, launch);
+    selectedNavigate(launch);
+  };
+}
+
+function createReceiptHostedLaunch(
+  runtime: VortexSurfaceProviderRuntime,
+  artifact: VortexReceiptDownloadButtonArtifact,
+) {
+  return runtime.createHostedLink({
+    surface: "invoice_receipt_center",
+    token: artifact.portalToken ?? "",
+    query: {
+      view: artifact.kind === "receipt" ? "receipts" : "invoices",
+      artifact_id: artifact.id,
+      receipt_id: artifact.receiptId,
+      invoice_id: artifact.invoiceId,
+      download: true,
+      return_to: artifact.portalReturnPath,
+    },
+  });
 }
 
 export function VortexBillingStatusBanner({
@@ -4697,22 +4872,7 @@ function resolveUsageMeterSummaryCopy(
 function resolveReceiptDownloadButtonCopy(
   copy: VortexReceiptDownloadButtonCopy | undefined,
 ): Required<VortexReceiptDownloadButtonCopy> {
-  return {
-    readyLabel: copy?.readyLabel ?? "Download receipt",
-    generatingLabel: copy?.generatingLabel ?? "Receipt generating",
-    missingLabel: copy?.missingLabel ?? "Receipt unavailable",
-    blockedLabel: copy?.blockedLabel ?? "Download blocked",
-    loadingLabel: copy?.loadingLabel ?? "Loading receipt...",
-    errorTitle: copy?.errorTitle ?? "Unable to load receipt.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    artifactLabel: copy?.artifactLabel ?? "Artifact",
-    invoiceLabel: copy?.invoiceLabel ?? "Invoice",
-    amountLabel: copy?.amountLabel ?? "Amount",
-    issuedLabel: copy?.issuedLabel ?? "Issued",
-    paidLabel: copy?.paidLabel ?? "Paid",
-    generatedLabel: copy?.generatedLabel ?? "Generated",
-    openCenterLabel: copy?.openCenterLabel ?? "Open receipt",
-  };
+  return { ...DEFAULT_RECEIPT_DOWNLOAD_BUTTON_COPY, ...copy };
 }
 
 function resolveBillingStatusBannerCopy(

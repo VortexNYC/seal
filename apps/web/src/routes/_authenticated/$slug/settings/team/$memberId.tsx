@@ -216,8 +216,17 @@ function MemberBasicInfoCard({ member }: { member: TeamMemberDetails }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <MemberInfoItem icon={Calendar} label="Joined" value={formatMemberDate(member.joinedAt)} />
-          <MemberInfoItem icon={Shield} label="Role" value={member.role} valueClassName="capitalize" />
+          <MemberInfoItem
+            icon={Calendar}
+            label="Joined"
+            value={formatMemberDate(member.joinedAt)}
+          />
+          <MemberInfoItem
+            icon={Shield}
+            label="Role"
+            value={member.role}
+            valueClassName="capitalize"
+          />
           {member.timezone ? <MemberInfoItem label="Timezone" value={member.timezone} /> : null}
           <MemberInfoItem label="Status" value={member.status} valueClassName="capitalize" />
         </div>
