@@ -185,6 +185,13 @@ function ThemedClerkProvider({ children }: { children: React.ReactNode }) {
       signInFallbackRedirectUrl="/app"
       signUpFallbackRedirectUrl="/app"
       appearance={appearance}
+      localization={{
+        signIn: {
+          start: {
+            title: "Sign in to continue",
+          },
+        },
+      }}
     >
       {children}
     </ClerkProvider>
