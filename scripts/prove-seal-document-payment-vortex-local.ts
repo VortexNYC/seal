@@ -36,6 +36,11 @@ const proofCommands: readonly ProofCommand[] = [
     command: "bun",
     args: ["run", "prove:vortex-operational-payments-adoption"],
   },
+  {
+    label: "Vortex Payments backend adapter adoption guard",
+    command: "bun",
+    args: ["run", "prove:vortex-payments-backend-adapter-adoption"],
+  },
 ];
 
 for (const proofCommand of proofCommands) {
@@ -72,6 +77,7 @@ console.log(
         "unknown payable ids are ignored without webhook dedupe rows",
         "document payment object creation uses Vortex-owned payment link naming",
         "operational payment surfaces use Vortex components instead of legacy provider Connect embeds",
+        "backend payment adapters use Vortex public API/SDK seams without direct provider imports or credentials",
       ],
     },
     null,

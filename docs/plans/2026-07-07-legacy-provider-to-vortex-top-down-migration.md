@@ -37,6 +37,7 @@ The goal is not to rename every historical `retired_provider` field in one pass.
 - Top-down replacement lanes A through F were completed before the physical deletion phase.
 - Physical deletion lanes G through L are complete locally through `800dbab9`.
 - The strict zero-residue scanner now checks all tracked paths and file contents, including archive docs.
+- `bun run prove:vortex-payments-backend-adapter-adoption` is now an executable backend boundary proof, not just a planned command.
 
 ## Merge Order
 

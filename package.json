@@ -47,6 +47,7 @@
     "prove:seal-document-payment-vortex-live": "bun run scripts/prove-seal-document-payment-vortex-live.ts",
     "prove:seal-document-payment-vortex-paid-state": "bun run scripts/prove-seal-document-payment-vortex-paid-state.ts",
     "prove:vortex-operational-payments-adoption": "bun run scripts/prove-vortex-operational-payments-adoption.ts",
+    "prove:vortex-payments-backend-adapter-adoption": "bun run scripts/prove-vortex-payments-backend-adapter-adoption.ts",
     "prove:vortex-saas-webhook-projection": "bun run --cwd apps/backend test convex/vortex_billing/__tests__/webhook_signature.test.ts convex/vortex_billing/__tests__/webhook_handlers.test.ts convex/vortex_billing/__tests__/webhook_projection.test.ts",
     "prove:zero-retired-provider-residue": "bun run scripts/prove-zero-retired-provider-residue.ts",
     "audit:seal-vortex-production-readiness": "bun run scripts/audit-seal-vortex-production-readiness.ts",
