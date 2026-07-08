@@ -8,7 +8,7 @@ import type { PaymentType } from "../schemas/payment_field_configs";
  * Validation and computation utilities for payment field configurations.
  */
 
-/** Minimum payment amount: $0.50 (Stripe minimum) */
+/** Minimum payment amount: $0.50 (provider minimum) */
 const MIN_AMOUNT_CENTS = 50;
 /** Maximum payment amount: $999,999.99 */
 const MAX_AMOUNT_CENTS = 99_999_999;

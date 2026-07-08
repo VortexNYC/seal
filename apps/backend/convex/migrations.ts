@@ -71,20 +71,3 @@ export const backfillSubscriptionOrganizationId = migrations.define({
     console.info(`[migration] Backfilled subscription ${doc._id} → org ${org._id} (${org.name})`);
   },
 });
-
-/**
- * Remove legacy stripeCustomerId from user documents.
- *
- * Stripe customer IDs were moved to the organizations table during the
- * org-scoped refactor. This clears the leftover field from users.
- *
- * After running, remove stripeCustomerId from the users schema.
- */
-export const removeUserStripeCustomerId = migrations.define({
-  table: "users",
-  migrateOne: async (ctx, doc) => {
-    if (!doc.stripeCustomerId) return;
-    await ctx.db.patch(doc._id, { stripeCustomerId: undefined });
-    console.info(`[migration] Cleared stripeCustomerId from user ${doc._id}`);
-  },
-});

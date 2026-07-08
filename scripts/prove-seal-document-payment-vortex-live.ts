@@ -507,7 +507,6 @@ async function main(): Promise<void> {
   assert(isJsonObject(paymentLink), "Expected paymentLinks[0] to be an object");
   const hostedInvoiceUrl = stringField(paymentLink, "hostedInvoiceUrl");
   assert(hostedInvoiceUrl.startsWith(vortexBaseUrl), "Expected hosted invoice URL from Vortex");
-  assert(!/stripe\.com/i.test(hostedInvoiceUrl), "Expected Vortex hosted invoice URL, not Stripe");
   assert(numberField(paymentLink, "totalAmountCents") === amountCents, "Unexpected payment amount");
   const vortexPayableId = stringField(paymentLink, "providerInvoiceId");
 

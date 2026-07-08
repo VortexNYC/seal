@@ -233,7 +233,7 @@ describe("subscription_guards", () => {
       expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
-    test("treats Vortex subscription rows as historical after rollback to Stripe", async () => {
+    test("treats Vortex subscription rows as historical after provider rollback", async () => {
       const now = Date.now();
       const productId = await t.run(async (ctx) => {
         return await ctx.db.insert("subscription_products", {

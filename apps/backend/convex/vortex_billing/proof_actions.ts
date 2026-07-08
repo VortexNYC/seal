@@ -94,7 +94,7 @@ type VortexSaasBillingProofState = {
     readonly currency: string;
     readonly unitAmount: number | undefined;
   } | null;
-  readonly activeStripeIdPresent: boolean;
+  readonly activeLegacyProviderIdPresent: boolean;
 };
 
 type VortexWebhookProofPaymentState = {
@@ -281,7 +281,7 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
   },
 });
 
-function hasStripePrefix(value: string | undefined): boolean {
+function hasLegacyProviderPrefix(value: string | undefined): boolean {
   return value !== undefined && /^(cus|sub|price|prod)_/u.test(value);
 }
 
@@ -336,15 +336,15 @@ function toProofPrice(
   };
 }
 
-function hasActiveStripeId(
+function hasActiveLegacyProviderId(
   subscription: Doc<"subscriptions"> | null,
   product: Doc<"subscription_products"> | null,
 ): boolean {
   return (
-    hasStripePrefix(subscription?.externalCustomerId) ||
-    hasStripePrefix(subscription?.externalSubscriptionId) ||
-    hasStripePrefix(subscription?.externalPriceId) ||
-    hasStripePrefix(product?.externalProductId)
+    hasLegacyProviderPrefix(subscription?.externalCustomerId) ||
+    hasLegacyProviderPrefix(subscription?.externalSubscriptionId) ||
+    hasLegacyProviderPrefix(subscription?.externalPriceId) ||
+    hasLegacyProviderPrefix(product?.externalProductId)
   );
 }
 
@@ -409,7 +409,7 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
   },
 });
 
-export const seedStripeEntitlementSafetyProof = internalMutation({
+export const seedLegacyProviderEntitlementSafetyProof = internalMutation({
   args: {
     proofRunId: v.string(),
   },
@@ -443,7 +443,7 @@ export const seedStripeEntitlementSafetyProof = internalMutation({
 
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
       externalProductId,
-      name: "Stripe Safety Control Pro",
+      name: "Legacy Provider Safety Control Pro",
       status: "archived",
       metadata: {
         tier: "pro",
@@ -1257,7 +1257,7 @@ export const getVortexSaasBillingProofState = internalQuery({
       subscription: toProofSubscription(subscription),
       product: toProofProduct(product),
       price: toProofPrice(price),
-      activeStripeIdPresent: hasActiveStripeId(subscription, product),
+      activeLegacyProviderIdPresent: hasActiveLegacyProviderId(subscription, product),
     };
   },
 });

@@ -5,12 +5,12 @@ export async function resolveSubscriptionPriceByAnyId(
   db: DatabaseReader,
   id: string,
 ): Promise<Doc<"subscription_prices"> | null> {
-  const stripeKeyedPrice = await db
+  const externallyKeyedPrice = await db
     .query("subscription_prices")
     .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", id))
     .first();
-  if (stripeKeyedPrice !== null) {
-    return stripeKeyedPrice;
+  if (externallyKeyedPrice !== null) {
+    return externallyKeyedPrice;
   }
 
   return await db

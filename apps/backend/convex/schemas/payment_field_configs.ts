@@ -118,7 +118,7 @@ export const paymentFieldConfigsTable = defineTable({
   // Denormalized total for display
   totalAmountCents: v.number(),
 
-  // Stripe references (populated when document is sent)
+  // Provider references (populated when document is sent)
   providerInvoiceId: v.optional(v.string()),
   providerSubscriptionId: v.optional(v.string()),
   providerPaymentIntentId: v.optional(v.string()),

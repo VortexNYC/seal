@@ -262,7 +262,7 @@ export function DraggableField({
           dashEnabled={!isSelected}
         />
 
-        {/* Accent stripe */}
+        {/* Accent rail */}
         <Rect
           x={0}
           y={0}

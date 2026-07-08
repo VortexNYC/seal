@@ -500,7 +500,7 @@ async function main(): Promise<void> {
 
   const checkoutUrl = stringField(checkout, "checkoutUrl");
   assert(checkoutUrl.startsWith("https://"), "Expected hosted checkout URL");
-  assert(!/stripe\.com/i.test(checkoutUrl), "Expected Vortex checkout URL, got Stripe");
+  assert(checkoutUrl.startsWith(config.vortexBaseUrl), "Expected checkout URL from Vortex");
   assert(
     numberField(checkout, "amountTotal") === expectedUnitAmount,
     "Expected checkout amountTotal to match Seal Professional monthly price",

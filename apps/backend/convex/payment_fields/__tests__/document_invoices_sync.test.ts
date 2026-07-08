@@ -105,7 +105,7 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
       configId,
       paymentStatus: "awaiting",
       providerInvoiceId: "in_test_123",
-      hostedInvoiceUrl: "https://invoice.stripe.com/test",
+      hostedInvoiceUrl: "https://billing.vortex.test/test",
       providerAccountId: "acct_test_456",
       customerEmail: "customer@example.com",
       customerName: "Jane Doe",
@@ -126,10 +126,10 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
     expect(sealAssertPresent(invoices[0]).amountDue).toBe(50000);
     expect(sealAssertPresent(invoices[0]).currency).toBe("usd");
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
-    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://invoice.stripe.com/test");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://billing.vortex.test/test");
   });
 
-  test("document_invoices accepts Vortex Billing invoice records without Stripe IDs", async () => {
+  test("document_invoices accepts Vortex Billing invoice records without provider IDs", async () => {
     const now = Date.now();
 
     const invoiceId = await t.run(async (ctx) => {
@@ -215,7 +215,7 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
       customerEmail: "payer@example.com",
     });
 
-    // Now simulate Stripe webhook updating to paid
+    // Now simulate Vortex Billing webhook updating to paid
     const result = await t.mutation(
       internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
       {

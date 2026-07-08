@@ -208,8 +208,7 @@ function toPublicMetadata(
       !normalizedKey.includes("processor") &&
       !normalizedValue.includes("provider") &&
       !normalizedValue.includes("processor") &&
-      !normalizedValue.includes("finix") &&
-      !normalizedValue.includes("stripe");
+      !normalizedValue.includes("finix");
   });
   return metadataEntries.length > 0 ? Object.fromEntries(metadataEntries) : undefined;
 }

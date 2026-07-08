@@ -32,7 +32,7 @@ export type VortexSurfaceId =
   | "collections_queue"
   | "billing_inspector"
   | "webhook_replay_console"
-  | "stripe_exit_console";
+  | "provider_exit_console";
 
 export type VortexSurfaceStatus = "proved" | "ready_to_build" | "missing_product" | "operator_only";
 

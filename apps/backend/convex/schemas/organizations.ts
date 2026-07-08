@@ -98,7 +98,7 @@ export const organizationsTable = defineTable({
   // Allow document owners/admins to transfer document ownership to another org member
   delegateOwnership: v.optional(v.boolean()),
 
-  // Stripe billing customer for this organization
+  // Billing customer for this organization
   billingCustomerId: v.optional(v.string()),
 
   updatedAt: v.number(),

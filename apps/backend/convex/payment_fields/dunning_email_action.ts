@@ -2,7 +2,7 @@
  * Dunning Email Action
  *
  * Sends payment recovery emails at each step of the dunning sequence.
- * Uses the hosted invoice URL so recipients can pay directly via Stripe.
+ * Uses the hosted invoice URL so recipients can pay directly through the hosted payment URL.
  */
 
 import { v } from "convex/values";

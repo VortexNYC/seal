@@ -183,7 +183,7 @@ describe("Payment field mutations", () => {
       expect(config?.currency).toBe("usd");
     });
 
-    test("accepts Vortex Billing linkage fields without Stripe IDs", async () => {
+    test("accepts Vortex Billing linkage fields without provider IDs", async () => {
       const now = Date.now();
 
       const configId = await t.run(async (ctx) => {
@@ -278,7 +278,7 @@ describe("Payment field mutations", () => {
       ).rejects.toThrow("At least one line item is required");
     });
 
-    test("rejects amount below Stripe minimum", async () => {
+    test("rejects amount below provider minimum", async () => {
       await expect(
         t
           .withIdentity({ subject: "test_owner" })
@@ -355,7 +355,7 @@ describe("Payment field mutations", () => {
   });
 
   describe("updatePaymentStatus", () => {
-    test("updates payment status and Stripe IDs", async () => {
+    test("updates payment status and provider IDs", async () => {
       const authed = t.withIdentity({ subject: "test_owner" });
 
       const configId = await authed.mutation(
@@ -402,7 +402,7 @@ describe("Payment field mutations", () => {
   });
 
   describe("storeProviderPaymentIds (internal)", () => {
-    test("stores Stripe IDs on config", async () => {
+    test("stores provider IDs on config", async () => {
       const configId = await t
         .withIdentity({ subject: "test_owner" })
         .mutation(
@@ -441,7 +441,7 @@ describe("Payment field mutations", () => {
           configId,
           paymentStatus: "awaiting",
           providerInvoiceId: "in_url_test_123",
-          hostedInvoiceUrl: "https://invoice.stripe.com/i/acct_123/test_456",
+          hostedInvoiceUrl: "https://billing.vortex.test/i/acct_123/test_456",
         });
       });
 
@@ -451,7 +451,7 @@ describe("Payment field mutations", () => {
 
       expect(config?.paymentStatus).toBe("awaiting");
       expect(config?.providerInvoiceId).toBe("in_url_test_123");
-      expect(config?.hostedInvoiceUrl).toBe("https://invoice.stripe.com/i/acct_123/test_456");
+      expect(config?.hostedInvoiceUrl).toBe("https://billing.vortex.test/i/acct_123/test_456");
     });
   });
 

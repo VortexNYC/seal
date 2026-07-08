@@ -72,7 +72,7 @@ describe("dunning (payment recovery)", () => {
         customerName: "Jane Doe",
         amountDue: 50000,
         currency: "usd",
-        hostedInvoiceUrl: "https://invoice.stripe.com/test",
+        hostedInvoiceUrl: "https://billing.vortex.test/test",
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });

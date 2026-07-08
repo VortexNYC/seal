@@ -207,7 +207,7 @@ export const deletePaymentConfig = mutation({
 });
 
 /**
- * Update payment status (called by Stripe webhook handlers).
+ * Update payment status (called by Vortex Billing webhook handlers).
  */
 export const updatePaymentStatus = mutation({
   args: {
@@ -240,7 +240,7 @@ export const updatePaymentStatus = mutation({
 });
 
 /**
- * Internal mutation to update payment status from Stripe webhook handlers.
+ * Internal mutation to update payment status from Vortex Billing webhook handlers.
  * Looks up the config by providerInvoiceId (set during the send flow).
  * Returns the config ID and documentId if found, or null if not found.
  */
@@ -460,7 +460,7 @@ export const updateVortexPaymentStatusFromWebhook = internalMutation({
 });
 
 /**
- * Internal mutation to update payment status from Stripe subscription webhooks.
+ * Internal mutation to update payment status from Vortex Billing subscription webhooks.
  * Looks up the config by providerSubscriptionId.
  * Returns the config ID if found and updated, or null if not found.
  */
@@ -491,8 +491,8 @@ export const updatePaymentStatusFromProviderSubscription = internalMutation({
 });
 
 /**
- * Internal mutation to store Stripe IDs back on a payment config
- * after Stripe objects are created during the send flow.
+ * Internal mutation to store provider IDs back on a payment config
+ * after provider objects are created during the send flow.
  * Also creates a document_invoices record for revenue tracking.
  */
 export const storeProviderPaymentIds = internalMutation({
@@ -671,10 +671,10 @@ function documentInvoiceStatusForPaymentStatus(
 }
 
 /**
- * Internal mutation to upsert a document_invoices record from a Stripe
+ * Internal mutation to upsert a document_invoices record from a Vortex Billing
  * subscription invoice webhook (invoice.created / invoice.finalized).
  *
- * For recurring payments, Stripe generates new invoices each billing cycle.
+ * For recurring payments, Vortex Billing generates new invoices each billing cycle.
  * This mutation links those subsequent invoices back to the original document
  * by looking up the payment_field_config via providerSubscriptionId.
  *
@@ -728,7 +728,7 @@ export const upsertRecurringInvoice = internalMutation({
         return { invoiceId: existing._id, created: false };
       }
 
-      // Update existing record with latest data from Stripe
+      // Update existing record with latest data from Vortex Billing
       await ctx.db.patch(existing._id, {
         status: args.status,
         amountDue: args.amountDue,

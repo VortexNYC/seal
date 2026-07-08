@@ -194,8 +194,8 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       customerEmail: "customer@example.com",
       amountDue: 10000,
       currency: "usd",
-      hostedInvoiceUrl: "https://invoice.stripe.com/finalized",
-      invoicePdf: "https://invoice.stripe.com/finalized.pdf",
+      hostedInvoiceUrl: "https://billing.vortex.test/finalized",
+      invoicePdf: "https://billing.vortex.test/finalized.pdf",
     });
 
     const invoices = await t.run(async (ctx) => {
@@ -208,10 +208,10 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     expect(invoices).toHaveLength(1);
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
     expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
-      "https://invoice.stripe.com/finalized",
+      "https://billing.vortex.test/finalized",
     );
     expect(sealAssertPresent(invoices[0]).invoicePdf).toBe(
-      "https://invoice.stripe.com/finalized.pdf",
+      "https://billing.vortex.test/finalized.pdf",
     );
     expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
   });
@@ -243,7 +243,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       customerEmail: "customer@example.com",
       amountDue: 10000,
       currency: "usd",
-      hostedInvoiceUrl: "https://invoice.stripe.com/open",
+      hostedInvoiceUrl: "https://billing.vortex.test/open",
     });
 
     const invoices = await t.run(async (ctx) => {
@@ -256,7 +256,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     expect(invoices).toHaveLength(1);
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
     expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
-    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://invoice.stripe.com/open");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://billing.vortex.test/open");
   });
 
   test("tracks multiple billing cycles as separate invoice records", async () => {
@@ -355,7 +355,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       paymentStatus: "paid",
     });
 
-    // Replay invoice.created or invoice.finalized (Stripe retried the event)
+    // Replay invoice.created or invoice.finalized (Vortex Billing retried the event)
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
       providerInvoiceId: "in_regress_test",
       providerSubscriptionId: "sub_recurring_123",

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/integrations")({
       {
         name: "description",
         content:
-          "Connect Seal with your stack. Full REST API, real-time webhooks, MCP server for AI agents, and built-in Stripe payments.",
+          "Connect Seal with your stack. Full REST API, real-time webhooks, MCP server for AI agents, and built-in Vortex Payments.",
       },
     ],
   }),
@@ -92,28 +92,17 @@ function IntegrationsPage() {
           ))}
         </div>
 
-        {/* Payments — Powered by Stripe */}
+        {/* Payments */}
         <FadeIn delay={0.3}>
           <div className="border-border bg-card mt-6 rounded-2xl border p-8 sm:p-10">
-            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-10">
-              <img
-                alt="Stripe"
-                className="h-8 shrink-0 opacity-60 invert dark:invert-0"
-                height={32}
-                src="/stripe-wordmark-white.svg"
-                width={80}
-              />
-              <div>
-                <h2 className="text-foreground mb-3 text-xl font-semibold">
-                  Payments powered by Stripe
-                </h2>
-                <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
-                  Collect payments alongside signatures. Attach a payment request to any document
-                  and recipients pay with Stripe&apos;s secure checkout before or after signing. No
-                  separate invoicing tool needed.
-                </p>
-              </div>
-            </div>
+            <h2 className="text-foreground mb-3 text-xl font-semibold">
+              Payments powered by Vortex
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
+              Collect payments alongside signatures. Attach a payment request to any document and
+              recipients pay through Vortex-hosted checkout before or after signing. No separate
+              invoicing tool needed.
+            </p>
           </div>
         </FadeIn>
 

@@ -27,7 +27,7 @@ Seal is an intelligent document platform for signing, payment collection, and wo
 
 - **AI field detection**: Automatically detect where signature fields belong on uploaded PDFs.
 - **Sequential signing**: Route a document through signers in a specific order before the next group receives it.
-- **Payment collection**: Collect payments as part of the signing flow (Stripe integration).
+- **Payment collection**: Collect payments as part of the signing flow through Vortex Payments.
 - **ESIGN compliance**: Full U.S. ESIGN Act compliance with consent capture and audit trail.
 - **Cryptographic verification**: Every signature is hashed with SHA-256 — tamper detection is built in.
 - **REST API**: Full programmatic access to every feature.

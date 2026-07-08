@@ -35,7 +35,7 @@ const hostedSurfacePaths = {
   collections_queue: "/operator/billing/collections-queue",
   billing_inspector: "/operator/billing/inspector",
   webhook_replay_console: "/operator/webhooks",
-  stripe_exit_console: "/operator/migrations/stripe-exit",
+  provider_exit_console: "/operator/migrations/provider-exit",
 } as const;
 
 export function createVortexHostedLink(

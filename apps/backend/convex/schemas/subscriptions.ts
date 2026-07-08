@@ -1,7 +1,7 @@
 /**
  * SUBSCRIPTIONS TABLE
- * Stripe subscription data for organizations.
- * Synced via Stripe webhooks.
+ * Subscription data for organizations.
+ * Synced via Vortex Billing webhooks.
  */
 
 import { defineTable } from "convex/server";
@@ -23,9 +23,9 @@ export const subscriptionsTable = defineTable({
   organizationId: v.optional(v.id("organizations")),
   userId: v.optional(v.id("users")), // Legacy field — remove after migration
 
-  externalCustomerId: v.string(), // Stripe customer ID
-  externalSubscriptionId: v.string(), // Stripe subscription ID
-  externalPriceId: v.string(), // Stripe price ID (base subscription)
+  externalCustomerId: v.string(), // Billing customer ID
+  externalSubscriptionId: v.string(), // Billing subscription ID
+  externalPriceId: v.string(), // Billing price ID (base subscription)
   status: subscriptionStatus,
   currentPeriodStart: v.number(), // Unix timestamp
   currentPeriodEnd: v.number(), // Unix timestamp
@@ -40,7 +40,7 @@ export const subscriptionsTable = defineTable({
   trialEnd: v.optional(v.number()), // Trial period end (Unix timestamp)
 
   // Latest invoice tracking
-  latestInvoiceId: v.optional(v.string()), // Stripe invoice ID
+  latestInvoiceId: v.optional(v.string()), // Billing invoice ID
   latestInvoiceStatus: v.optional(v.string()), // Invoice status
   pastDueSince: v.optional(v.number()), // When subscription most recently entered past_due (epoch ms)
   lastSourceEventAt: v.optional(v.number()), // Last applied Vortex source event timestamp (ms)

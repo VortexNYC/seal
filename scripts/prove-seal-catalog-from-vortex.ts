@@ -223,8 +223,8 @@ function findLinkedCatalogPrice(
 
 function assertPlanPro(state: JsonObject, context: string): void {
   const plan = objectField(state, "plan");
-  assert(plan.plan === "pro", `${context}: expected Stripe control plan to remain pro`);
-  assert(plan.isPro === true, `${context}: expected Stripe control isPro true`);
+  assert(plan.plan === "pro", `${context}: expected legacy provider control plan to remain pro`);
+  assert(plan.isPro === true, `${context}: expected legacy provider control isPro true`);
 }
 
 async function main(): Promise<void> {
@@ -250,13 +250,13 @@ async function main(): Promise<void> {
   const expectedUnitAmount = numberField(selected.price, "unitAmount");
   const expectedBillingInterval = optionalStringField(selected.price, "billingInterval");
 
-  const stripeSafety = await runConvex<JsonObject>({
+  const legacyProviderSafety = await runConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:seedStripeEntitlementSafetyProof",
+    functionName: "vortex_billing/proof_actions:seedLegacyProviderEntitlementSafetyProof",
     args: { proofRunId },
   });
-  const safetyOrganizationId = stringField(stripeSafety, "organizationId");
-  const safetyExternalPriceId = stringField(stripeSafety, "externalPriceId");
+  const safetyOrganizationId = stringField(legacyProviderSafety, "organizationId");
+  const safetyExternalPriceId = stringField(legacyProviderSafety, "externalPriceId");
 
   const beforeState = await runConvex<JsonObject>({
     deployment: sealDeployment,
@@ -319,14 +319,14 @@ async function main(): Promise<void> {
   });
   assertPlanPro(afterState, "after Vortex catalog sync");
   const safetyPrice = nullableObjectField(afterState, "price");
-  assert(safetyPrice !== null, "Expected Stripe safety price after sync");
+  assert(safetyPrice !== null, "Expected legacy provider safety price after sync");
   assert(
     stringField(safetyPrice, "externalPriceId") === safetyExternalPriceId,
-    "Expected Stripe safety subscription to stay on externalPriceId",
+    "Expected legacy provider safety subscription to stay on externalPriceId",
   );
   assert(
-    afterState.activeStripeIdPresent === true,
-    "Expected Stripe-shaped control IDs to remain active",
+    afterState.activeLegacyProviderIdPresent === true,
+    "Expected legacy-provider-shaped control IDs to remain active",
   );
 
   console.log(
@@ -350,11 +350,11 @@ async function main(): Promise<void> {
           unitAmount: expectedUnitAmount,
           billingInterval: expectedBillingInterval,
         },
-        stripeEntitlementSafety: {
+        legacyProviderEntitlementSafety: {
           organizationId: safetyOrganizationId,
           externalPriceId: safetyExternalPriceId,
           plan: "pro",
-          activeStripeIdPresent: true,
+          activeLegacyProviderIdPresent: true,
         },
       },
       null,

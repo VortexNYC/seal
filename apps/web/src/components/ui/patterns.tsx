@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 
-interface StripeColumnProps {
+interface RailColumnProps {
   className?: string;
   position?: "left" | "right";
 }
 
-export function StripeColumn({ className, position = "left" }: StripeColumnProps) {
+export function RailColumn({ className, position = "left" }: RailColumnProps) {
   return (
     <>
       <div
@@ -41,21 +41,21 @@ export function StripeColumn({ className, position = "left" }: StripeColumnProps
 interface GridLayoutProps {
   children: React.ReactNode;
   className?: string;
-  showStripes?: boolean;
+  showRails?: boolean;
 }
 
-export function GridLayout({ children, className, showStripes = true }: GridLayoutProps) {
+export function GridLayout({ children, className, showRails = true }: GridLayoutProps) {
   return (
     <div
       className={cn(
         "grid min-h-dvh",
-        showStripes ? "grid-cols-1 md:grid-cols-[40px_1fr_40px]" : "grid-cols-1",
+        showRails ? "grid-cols-1 md:grid-cols-[40px_1fr_40px]" : "grid-cols-1",
         className,
       )}
     >
-      {showStripes && <StripeColumn position="left" />}
-      <div className={cn(showStripes && "col-start-2")}>{children}</div>
-      {showStripes && <StripeColumn position="right" />}
+      {showRails && <RailColumn position="left" />}
+      <div className={cn(showRails && "col-start-2")}>{children}</div>
+      {showRails && <RailColumn position="right" />}
     </div>
   );
 }

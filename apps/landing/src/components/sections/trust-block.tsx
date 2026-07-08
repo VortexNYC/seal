@@ -70,17 +70,10 @@ export function StaticTrust() {
           </div>
         </FadeIn>
 
-        {/* Stripe badge */}
+        {/* Payments badge */}
         <FadeIn delay={0.25}>
-          <div className="mt-12 flex items-center justify-center gap-3">
-            <span className="text-muted-foreground text-sm">Payments powered by</span>
-            <img
-              alt="Stripe"
-              className="h-6 opacity-40 invert dark:invert-0"
-              height={24}
-              src="/stripe-wordmark-white.svg"
-              width={60}
-            />
+          <div className="mt-12 flex items-center justify-center">
+            <span className="text-muted-foreground text-sm">Payments powered by Vortex</span>
           </div>
         </FadeIn>
       </div>

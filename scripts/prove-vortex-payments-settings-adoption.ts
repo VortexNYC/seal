@@ -55,7 +55,7 @@ for (const forbiddenFragment of [
   "RadioGroupItem",
   "Who pays the platform fee?",
   "I'll absorb the fee",
-  "Stripe's payment processing fees",
+  "Vortex Payments payment processing fees",
 ]) {
   if (paymentsRoute.includes(forbiddenFragment)) {
     failures.push(

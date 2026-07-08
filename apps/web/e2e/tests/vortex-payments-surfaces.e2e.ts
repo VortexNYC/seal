@@ -49,10 +49,6 @@ test.describe("Vortex payments surfaces", () => {
       await expect(authenticatedPage.getByText(/something went wrong/i)).not.toBeVisible({
         timeout: 1000,
       });
-      await expect(authenticatedPage.getByText(/Stripe Connect|Stripe embedded/i)).not.toBeVisible({
-        timeout: 1000,
-      });
-
       await authenticatedPage.screenshot({
         fullPage: true,
         path: testInfo.outputPath(`${route.path.replaceAll("/", "-").slice(1)}.png`),

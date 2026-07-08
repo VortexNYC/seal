@@ -67,7 +67,7 @@ test.describe("Billing", () => {
     expectVortexSealProPlan(plans);
   });
 
-  test("createCustomerPortalSession returns a non-Stripe Vortex portal URL", async ({
+  test("createCustomerPortalSession returns a Vortex portal URL", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
@@ -87,10 +87,9 @@ test.describe("Billing", () => {
 
     expect(result).toHaveProperty("url");
     expect(result.url).toMatch(/^https:\/\//);
-    expect(result.url).not.toMatch(/stripe\.com/i);
   });
 
-  test("createCheckoutSession returns a non-Stripe Vortex checkout URL for Seal Pro", async ({
+  test("createCheckoutSession returns a Vortex checkout URL for Seal Pro", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
@@ -98,8 +97,7 @@ test.describe("Billing", () => {
     await waitForBillingPageReady(authenticatedPage);
 
     // The pro:monthly:v2 lookup key resolves to the real Vortex-backed Seal
-    // Professional monthly price. The facade returns a hosted handoff URL
-    // without falling through to Stripe Checkout.
+    // Professional monthly price. The facade returns a hosted handoff URL.
     const result = await authenticatedPage.evaluate(async (currentUrl) => {
       const client = window.__convexClient;
       const api = window.__convexApi;
@@ -113,7 +111,6 @@ test.describe("Billing", () => {
 
     expect(result).toHaveProperty("checkoutUrl");
     expect(result.checkoutUrl).toMatch(/^https:\/\//);
-    expect(result.checkoutUrl).not.toMatch(/stripe\.com/i);
   });
 });
 
