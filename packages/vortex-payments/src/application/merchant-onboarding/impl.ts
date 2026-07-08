@@ -15,7 +15,11 @@ import type {
 } from "../../domain/merchant";
 import type { CanonicalDomainEvent } from "../../events/types";
 import type { ProviderRegistry } from "../../providers/registry";
-import type { ProviderContext, ProviderError } from "../../providers/types";
+import type {
+  ProviderContext,
+  ProviderError,
+  ProviderOnboardingRequirementUploadLinkOutput,
+} from "../../providers/types";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import { deriveMerchantAccountState } from "../state/derive-merchant-account-state";
 import type {
@@ -236,23 +240,32 @@ function assertPercentageTotal(total: number | null, field: string, invalid: str
   }
 }
 
-function assertRequiredFinixUnderwriting(merchant: MerchantAccount): void {
+function collectMissingFinixUnderwritingFields(merchant: MerchantAccount): readonly string[] {
   const underwriting = merchant.underwriting;
-  const missing: string[] = [];
+  return [
+    ["achMaxTransactionAmount", merchant.achMaxTransactionAmount === undefined],
+    ["annualCardVolume", merchant.annualCardVolume === undefined],
+    ["underwriting.annualAchVolume", underwriting?.annualAchVolume === undefined],
+    ["underwriting.averageAchTransferAmount", underwriting?.averageAchTransferAmount === undefined],
+    [
+      "underwriting.averageCardTransferAmount",
+      underwriting?.averageCardTransferAmount === undefined,
+    ],
+    ["underwriting.businessDescription", !underwriting?.businessDescription],
+    ["underwriting.cardVolumeDistribution", underwriting?.cardVolumeDistribution === undefined],
+    ["underwriting.refundPolicy", !underwriting?.refundPolicy],
+    [
+      "underwriting.volumeDistributionByBusinessType",
+      underwriting?.volumeDistributionByBusinessType === undefined,
+    ],
+  ]
+    .filter((entry): entry is readonly [string, true] => entry[1])
+    .map(([field]) => field);
+}
+
+function collectInvalidFinixUnderwritingFields(merchant: MerchantAccount): readonly string[] {
+  const underwriting = merchant.underwriting;
   const invalid: string[] = [];
-  if (merchant.achMaxTransactionAmount === undefined) missing.push("achMaxTransactionAmount");
-  if (merchant.annualCardVolume === undefined) missing.push("annualCardVolume");
-  if (underwriting?.annualAchVolume === undefined) missing.push("underwriting.annualAchVolume");
-  if (underwriting?.averageAchTransferAmount === undefined)
-    missing.push("underwriting.averageAchTransferAmount");
-  if (underwriting?.averageCardTransferAmount === undefined)
-    missing.push("underwriting.averageCardTransferAmount");
-  if (!underwriting?.businessDescription) missing.push("underwriting.businessDescription");
-  if (underwriting?.cardVolumeDistribution === undefined)
-    missing.push("underwriting.cardVolumeDistribution");
-  if (!underwriting?.refundPolicy) missing.push("underwriting.refundPolicy");
-  if (underwriting?.volumeDistributionByBusinessType === undefined)
-    missing.push("underwriting.volumeDistributionByBusinessType");
   if (underwriting?.refundPolicy && !FINIX_REFUND_POLICIES.has(underwriting.refundPolicy)) {
     invalid.push("underwriting.refundPolicy is not a supported Finix refund policy");
   }
@@ -290,6 +303,12 @@ function assertRequiredFinixUnderwriting(merchant: MerchantAccount): void {
       );
     }
   }
+  return invalid;
+}
+
+function assertRequiredFinixUnderwriting(merchant: MerchantAccount): void {
+  const missing = collectMissingFinixUnderwritingFields(merchant);
+  const invalid = collectInvalidFinixUnderwritingFields(merchant);
   if (missing.length > 0 || invalid.length > 0) {
     throw new MerchantOnboardingServiceError(
       "invalid_request",
@@ -588,6 +607,25 @@ function getRequirementSnapshotObjectType(
   return null;
 }
 
+const VERIFICATION_REQUIREMENT_STATUS = {
+  SUCCEEDED: "satisfied",
+  APPROVED: "satisfied",
+  FAILED: "failed",
+  REJECTED: "failed",
+  PENDING: "submitted",
+  IN_PROGRESS: "submitted",
+} satisfies Readonly<Record<string, MerchantRequirementStatus>>;
+
+const COMPLIANCE_FORM_REQUIREMENT_STATUS = {
+  COMPLETED: "satisfied",
+  SUCCEEDED: "satisfied",
+  SUBMITTED: "submitted",
+  IN_REVIEW: "submitted",
+  FAILED: "failed",
+  REJECTED: "failed",
+  WAIVED: "waived",
+} satisfies Readonly<Record<string, MerchantRequirementStatus>>;
+
 function mapRequirementSnapshotStatus(
   objectType: "verification" | "compliance_form",
   status: string | undefined,
@@ -595,36 +633,11 @@ function mapRequirementSnapshotStatus(
   if (!status) {
     return null;
   }
-  if (objectType === "verification") {
-    switch (status) {
-      case "SUCCEEDED":
-      case "APPROVED":
-        return "satisfied";
-      case "FAILED":
-      case "REJECTED":
-        return "failed";
-      case "PENDING":
-      case "IN_PROGRESS":
-        return "submitted";
-      default:
-        return "pending";
-    }
-  }
-  switch (status) {
-    case "COMPLETED":
-    case "SUCCEEDED":
-      return "satisfied";
-    case "SUBMITTED":
-    case "IN_REVIEW":
-      return "submitted";
-    case "FAILED":
-    case "REJECTED":
-      return "failed";
-    case "WAIVED":
-      return "waived";
-    default:
-      return "pending";
-  }
+  const statusMap =
+    objectType === "verification"
+      ? VERIFICATION_REQUIREMENT_STATUS
+      : COMPLIANCE_FORM_REQUIREMENT_STATUS;
+  return statusMap[status] ?? "pending";
 }
 
 function readRequirementMetadataValue(
@@ -697,6 +710,306 @@ async function withIdempotentResult<TResult>(
     expiresAt: new Date(Date.parse(options.now) + DEFAULT_IDEMPOTENCY_TTL_MS).toISOString(),
   });
   return result;
+}
+
+async function getRequirementUploadStatusSnapshot(
+  dependencies: MerchantOnboardingServiceDependencies,
+  query: GetMerchantRequirementUploadStatusQuery,
+): Promise<MerchantRequirementUploadStatus | null> {
+  const scope = await getRequirementUploadStatusScope(dependencies.uow, query);
+  if (!scope) {
+    return null;
+  }
+
+  const document = await getRequirementUploadStatusDocument(dependencies.uow, query, scope);
+  if (!document) {
+    return null;
+  }
+
+  const providerContext = dependencies.resolveProviderContext(scope.merchant);
+  const adapter = dependencies.providers.getAdapter(providerContext.provider);
+  const snapshot = await adapter.fetchObjectSnapshot(providerContext, {
+    provider: providerContext.provider,
+    objectType: "file",
+    objectId: document.documentId,
+    relationship: "requirement_document",
+    recordedAt: document.requestedAt,
+  });
+  if (!snapshot.ok || !snapshot.value) {
+    throw mapProviderError(
+      snapshot.error ?? {
+        provider: providerContext.provider,
+        category: "unknown",
+        code: "provider_snapshot_missing",
+        message: "provider upload status snapshot missing",
+        retryable: false,
+      },
+    );
+  }
+
+  await dependencies.uow.onboarding.saveRequirementDocument({
+    ...document,
+    status: snapshot.value.status,
+    recordedAt: snapshot.value.recordedAt,
+  });
+
+  return {
+    requirementId: scope.requirement.id,
+    documentId: document.documentId,
+    uploadLinkId: document.uploadLinkId,
+    fileName: document.fileName,
+    contentType: document.contentType,
+    requestedAt: document.requestedAt,
+    provider: snapshot.value.provider,
+    status: snapshot.value.status,
+    recordedAt: snapshot.value.recordedAt,
+  };
+}
+
+async function getRequirementUploadStatusScope(
+  uow: PaymentsUnitOfWork,
+  query: GetMerchantRequirementUploadStatusQuery,
+): Promise<{
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirement: MerchantRequirement;
+} | null> {
+  const merchant = await uow.merchants.getById(query.merchantAccountId, {
+    environment: query.environment,
+  });
+  if (!merchant) {
+    return null;
+  }
+  const session = await uow.onboarding.getSessionById(query.onboardingSessionId, {
+    environment: query.environment,
+  });
+  if (!session || session.merchantAccountId !== query.merchantAccountId) {
+    return null;
+  }
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: query.environment,
+  });
+  const requirement = requirements.find((entry) => entry.id === query.requirementId) ?? null;
+  return requirement ? { merchant, session, requirement } : null;
+}
+
+async function getRequirementUploadStatusDocument(
+  uow: PaymentsUnitOfWork,
+  query: GetMerchantRequirementUploadStatusQuery,
+  scope: {
+    readonly merchant: MerchantAccount;
+    readonly session: MerchantOnboardingSession;
+    readonly requirement: MerchantRequirement;
+  },
+): Promise<MerchantRequirementDocument | null> {
+  const storedDocuments = await uow.onboarding.listDocumentsForRequirement(scope.requirement.id, {
+    environment: query.environment,
+  });
+  return (
+    getLatestRequirementDocument(storedDocuments) ??
+    createFallbackRequirementDocument({
+      environment: query.environment,
+      merchant: scope.merchant,
+      session: scope.session,
+      requirement: scope.requirement,
+    })
+  );
+}
+
+function createFallbackRequirementDocument(input: {
+  readonly environment: GetMerchantRequirementUploadStatusQuery["environment"];
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirement: MerchantRequirement;
+}): MerchantRequirementDocument | null {
+  const documentId = readRequirementMetadataValue(input.requirement, "lastUploadDocumentId");
+  const uploadLinkId = readRequirementMetadataValue(input.requirement, "lastUploadLinkId");
+  const requestedAt = readRequirementMetadataValue(input.requirement, "lastUploadLinkRequestedAt");
+  if (!documentId || !uploadLinkId || !requestedAt) {
+    return null;
+  }
+  return {
+    id: `${input.requirement.id}:${documentId}`,
+    environment: input.environment,
+    onboardingSessionId: input.session.id,
+    merchantAccountId: input.merchant.id,
+    requirementId: input.requirement.id,
+    sourceProvider: input.requirement.sourceProvider,
+    documentId,
+    uploadLinkId,
+    fileName: readRequirementMetadataValue(input.requirement, "lastUploadFileName"),
+    contentType: readRequirementMetadataValue(input.requirement, "lastUploadContentType"),
+    requestedAt,
+    uploadedByType:
+      readRequirementMetadataValue(input.requirement, "lastUploadLinkRequestedByType") ===
+      "operator"
+        ? "operator"
+        : "merchant",
+    uploadedByRef:
+      readRequirementMetadataValue(input.requirement, "lastUploadLinkRequestedByRef") ?? "unknown",
+  };
+}
+
+async function createRequirementUploadLinkSnapshot(
+  dependencies: MerchantOnboardingServiceDependencies,
+  command: CreateMerchantRequirementUploadLinkCommand,
+  now: () => string,
+): Promise<MerchantRequirementUploadLink> {
+  return dependencies.uow.runInTransaction(async (uow) => {
+    const scope = await getOpenRequirementForUploadLink(uow, command);
+    const providerContext = dependencies.resolveProviderContext(scope.merchant);
+    const providerValue = await createProviderRequirementUploadLink(
+      dependencies,
+      providerContext,
+      scope.requirement,
+      command,
+    );
+    const requestedAt = now();
+    await saveRequirementUploadLinkRecord({
+      uow,
+      command,
+      merchant: scope.merchant,
+      providerContext,
+      providerValue,
+      requestedAt,
+    });
+    return toRequirementUploadLink(command, providerValue);
+  });
+}
+
+async function getOpenRequirementForUploadLink(
+  uow: PaymentsUnitOfWork,
+  command: CreateMerchantRequirementUploadLinkCommand,
+): Promise<{
+  readonly merchant: MerchantAccount;
+  readonly requirement: MerchantRequirement;
+}> {
+  const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
+  const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
+    environment: command.environment,
+  });
+  if (!session || session.merchantAccountId !== command.merchantAccountId) {
+    throw new MerchantOnboardingServiceError("not_found", "onboarding session not found", {
+      details: {
+        merchantAccountId: command.merchantAccountId,
+        onboardingSessionId: command.onboardingSessionId,
+      },
+    });
+  }
+
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: command.environment,
+  });
+  const requirement = requirements.find((entry) => entry.id === command.requirementId) ?? null;
+  if (!requirement) {
+    throw new MerchantOnboardingServiceError("not_found", "merchant requirement not found", {
+      details: { requirementId: command.requirementId },
+    });
+  }
+  if (requirement.status === "satisfied" || requirement.status === "waived") {
+    throw new MerchantOnboardingServiceError("conflict", "merchant requirement is already closed", {
+      details: { requirementId: command.requirementId },
+    });
+  }
+  return { merchant, requirement };
+}
+
+async function createProviderRequirementUploadLink(
+  dependencies: MerchantOnboardingServiceDependencies,
+  providerContext: ProviderContext,
+  requirement: MerchantRequirement,
+  command: CreateMerchantRequirementUploadLinkCommand,
+): Promise<ProviderOnboardingRequirementUploadLinkOutput> {
+  const adapter = dependencies.providers.getAdapter(providerContext.provider);
+  if (!adapter.createOnboardingRequirementUploadLink) {
+    throw new MerchantOnboardingServiceError(
+      "provider_unavailable",
+      "provider does not support onboarding document upload links",
+      { details: { provider: providerContext.provider } },
+    );
+  }
+
+  const providerResult = await adapter.createOnboardingRequirementUploadLink(providerContext, {
+    merchantAccountId: command.merchantAccountId,
+    onboardingSessionId: command.onboardingSessionId,
+    requirementId: command.requirementId,
+    providerRequirementRef: requirement.providerRequirementRef,
+    fileName: command.fileName,
+    contentType: command.contentType,
+    uploadedByType: command.uploadedByType,
+    uploadedByRef: command.uploadedByRef,
+  });
+  if (!providerResult.ok || !providerResult.value) {
+    throw mapProviderError(
+      providerResult.error ?? {
+        provider: providerContext.provider,
+        category: "unknown",
+        code: "provider_result_missing",
+        message: "provider upload link creation failed without error details",
+        retryable: false,
+      },
+    );
+  }
+  return providerResult.value;
+}
+
+async function saveRequirementUploadLinkRecord(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: CreateMerchantRequirementUploadLinkCommand;
+  readonly merchant: MerchantAccount;
+  readonly providerContext: ProviderContext;
+  readonly providerValue: ProviderOnboardingRequirementUploadLinkOutput;
+  readonly requestedAt: string;
+}): Promise<void> {
+  await input.uow.onboarding.saveRequirementDocument(
+    createRequirementDocumentRecord({
+      environment: input.command.environment,
+      merchantAccountId: input.command.merchantAccountId,
+      onboardingSessionId: input.command.onboardingSessionId,
+      requirementId: input.command.requirementId,
+      sourceProvider: input.providerContext.provider,
+      documentId: input.providerValue.documentId,
+      uploadLinkId: input.providerValue.uploadLinkId,
+      contentType: input.command.contentType,
+      fileName: input.command.fileName,
+      requestedAt: input.requestedAt,
+      uploadedByType: input.command.uploadedByType,
+      uploadedByRef: input.command.uploadedByRef,
+    }),
+  );
+  await input.uow.events.saveCanonicalEvent(
+    createMerchantOnboardingEvent({
+      id: `${input.command.requirementId}:merchant_requirement_document.upload_link_created:${input.requestedAt}`,
+      eventType: "merchant_requirement_document.upload_link_created",
+      aggregateType: "merchant_requirement_document",
+      aggregateId: input.providerValue.documentId,
+      environment: input.command.environment,
+      sourceProvider: "vortex",
+      occurredAt: input.requestedAt,
+      merchantAccountId: input.merchant.id,
+      payload: {
+        onboardingSessionId: input.command.onboardingSessionId,
+        requirementId: input.command.requirementId,
+        documentId: input.providerValue.documentId,
+        uploadLinkId: input.providerValue.uploadLinkId,
+        uploadedByType: input.command.uploadedByType,
+        uploadedByRef: input.command.uploadedByRef,
+      },
+    }),
+  );
+}
+
+function toRequirementUploadLink(
+  command: CreateMerchantRequirementUploadLinkCommand,
+  providerValue: ProviderOnboardingRequirementUploadLinkOutput,
+): MerchantRequirementUploadLink {
+  return {
+    requirementId: command.requirementId,
+    documentId: providerValue.documentId,
+    uploadLinkId: providerValue.uploadLinkId,
+    uploadUrl: providerValue.uploadUrl,
+    expiresAt: providerValue.expiresAt,
+  };
 }
 
 export function createMerchantOnboardingService(
@@ -1463,237 +1776,13 @@ export function createMerchantOnboardingService(
     async createRequirementUploadLink(
       command: CreateMerchantRequirementUploadLinkCommand,
     ): Promise<MerchantRequirementUploadLink> {
-      return dependencies.uow.runInTransaction(async (uow) => {
-        const merchant = await getMerchantOrThrow(
-          uow,
-          command.environment,
-          command.merchantAccountId,
-        );
-        const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
-          environment: command.environment,
-        });
-        if (!session || session.merchantAccountId !== command.merchantAccountId) {
-          throw new MerchantOnboardingServiceError("not_found", "onboarding session not found", {
-            details: {
-              merchantAccountId: command.merchantAccountId,
-              onboardingSessionId: command.onboardingSessionId,
-            },
-          });
-        }
-
-        const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
-          environment: command.environment,
-        });
-        const requirement =
-          requirements.find((entry) => entry.id === command.requirementId) ?? null;
-        if (!requirement) {
-          throw new MerchantOnboardingServiceError("not_found", "merchant requirement not found", {
-            details: { requirementId: command.requirementId },
-          });
-        }
-        if (requirement.status === "satisfied" || requirement.status === "waived") {
-          throw new MerchantOnboardingServiceError(
-            "conflict",
-            "merchant requirement is already closed",
-            {
-              details: { requirementId: command.requirementId },
-            },
-          );
-        }
-
-        const providerContext = dependencies.resolveProviderContext(merchant);
-        const adapter = dependencies.providers.getAdapter(providerContext.provider);
-        if (!adapter.createOnboardingRequirementUploadLink) {
-          throw new MerchantOnboardingServiceError(
-            "provider_unavailable",
-            "provider does not support onboarding document upload links",
-            { details: { provider: providerContext.provider } },
-          );
-        }
-
-        const providerResult = await adapter.createOnboardingRequirementUploadLink(
-          providerContext,
-          {
-            merchantAccountId: command.merchantAccountId,
-            onboardingSessionId: command.onboardingSessionId,
-            requirementId: command.requirementId,
-            providerRequirementRef: requirement.providerRequirementRef,
-            fileName: command.fileName,
-            contentType: command.contentType,
-            uploadedByType: command.uploadedByType,
-            uploadedByRef: command.uploadedByRef,
-          },
-        );
-        if (!providerResult.ok || !providerResult.value) {
-          throw mapProviderError(
-            providerResult.error ?? {
-              provider: providerContext.provider,
-              category: "unknown",
-              code: "provider_result_missing",
-              message: "provider upload link creation failed without error details",
-              retryable: false,
-            },
-          );
-        }
-
-        const requestedAt = now();
-        await uow.onboarding.saveRequirementDocument(
-          createRequirementDocumentRecord({
-            environment: command.environment,
-            merchantAccountId: command.merchantAccountId,
-            onboardingSessionId: command.onboardingSessionId,
-            requirementId: command.requirementId,
-            sourceProvider: providerContext.provider,
-            documentId: providerResult.value.documentId,
-            uploadLinkId: providerResult.value.uploadLinkId,
-            contentType: command.contentType,
-            fileName: command.fileName,
-            requestedAt,
-            uploadedByType: command.uploadedByType,
-            uploadedByRef: command.uploadedByRef,
-          }),
-        );
-        await uow.events.saveCanonicalEvent(
-          createMerchantOnboardingEvent({
-            id: `${command.requirementId}:merchant_requirement_document.upload_link_created:${requestedAt}`,
-            eventType: "merchant_requirement_document.upload_link_created",
-            aggregateType: "merchant_requirement_document",
-            aggregateId: providerResult.value.documentId,
-            environment: command.environment,
-            sourceProvider: "vortex",
-            occurredAt: requestedAt,
-            merchantAccountId: merchant.id,
-            payload: {
-              onboardingSessionId: command.onboardingSessionId,
-              requirementId: command.requirementId,
-              documentId: providerResult.value.documentId,
-              uploadLinkId: providerResult.value.uploadLinkId,
-              uploadedByType: command.uploadedByType,
-              uploadedByRef: command.uploadedByRef,
-            },
-          }),
-        );
-
-        return {
-          requirementId: command.requirementId,
-          documentId: providerResult.value.documentId,
-          uploadLinkId: providerResult.value.uploadLinkId,
-          uploadUrl: providerResult.value.uploadUrl,
-          expiresAt: providerResult.value.expiresAt,
-        };
-      });
+      return createRequirementUploadLinkSnapshot(dependencies, command, now);
     },
 
     async getRequirementUploadStatus(
       query: GetMerchantRequirementUploadStatusQuery,
     ): Promise<MerchantRequirementUploadStatus | null> {
-      const merchant = await dependencies.uow.merchants.getById(query.merchantAccountId, {
-        environment: query.environment,
-      });
-      if (!merchant) {
-        return null;
-      }
-      const session = await dependencies.uow.onboarding.getSessionById(query.onboardingSessionId, {
-        environment: query.environment,
-      });
-      if (!session || session.merchantAccountId !== query.merchantAccountId) {
-        return null;
-      }
-      const requirements = await dependencies.uow.onboarding.listRequirementsForSession(
-        session.id,
-        {
-          environment: query.environment,
-        },
-      );
-      const requirement = requirements.find((entry) => entry.id === query.requirementId) ?? null;
-      if (!requirement) {
-        return null;
-      }
-
-      const storedDocuments = await dependencies.uow.onboarding.listDocumentsForRequirement(
-        requirement.id,
-        {
-          environment: query.environment,
-        },
-      );
-      const latestDocument = getLatestRequirementDocument(storedDocuments);
-      const fallbackDocument = latestDocument
-        ? null
-        : (() => {
-            const documentId = readRequirementMetadataValue(requirement, "lastUploadDocumentId");
-            const uploadLinkId = readRequirementMetadataValue(requirement, "lastUploadLinkId");
-            const requestedAt = readRequirementMetadataValue(
-              requirement,
-              "lastUploadLinkRequestedAt",
-            );
-            if (!documentId || !uploadLinkId || !requestedAt) {
-              return null;
-            }
-            return {
-              id: `${requirement.id}:${documentId}`,
-              environment: query.environment,
-              onboardingSessionId: session.id,
-              merchantAccountId: merchant.id,
-              requirementId: requirement.id,
-              sourceProvider: requirement.sourceProvider,
-              documentId,
-              uploadLinkId,
-              fileName: readRequirementMetadataValue(requirement, "lastUploadFileName"),
-              contentType: readRequirementMetadataValue(requirement, "lastUploadContentType"),
-              requestedAt,
-              uploadedByType:
-                readRequirementMetadataValue(requirement, "lastUploadLinkRequestedByType") ===
-                "operator"
-                  ? "operator"
-                  : "merchant",
-              uploadedByRef:
-                readRequirementMetadataValue(requirement, "lastUploadLinkRequestedByRef") ??
-                "unknown",
-            } satisfies MerchantRequirementDocument;
-          })();
-      const document = latestDocument ?? fallbackDocument;
-      if (!document) {
-        return null;
-      }
-
-      const providerContext = dependencies.resolveProviderContext(merchant);
-      const adapter = dependencies.providers.getAdapter(providerContext.provider);
-      const snapshot = await adapter.fetchObjectSnapshot(providerContext, {
-        provider: providerContext.provider,
-        objectType: "file",
-        objectId: document.documentId,
-        relationship: "requirement_document",
-        recordedAt: document.requestedAt,
-      });
-      if (!snapshot.ok || !snapshot.value) {
-        throw mapProviderError(
-          snapshot.error ?? {
-            provider: providerContext.provider,
-            category: "unknown",
-            code: "provider_snapshot_missing",
-            message: "provider upload status snapshot missing",
-            retryable: false,
-          },
-        );
-      }
-
-      await dependencies.uow.onboarding.saveRequirementDocument({
-        ...document,
-        status: snapshot.value.status,
-        recordedAt: snapshot.value.recordedAt,
-      });
-
-      return {
-        requirementId: requirement.id,
-        documentId: document.documentId,
-        uploadLinkId: document.uploadLinkId,
-        fileName: document.fileName,
-        contentType: document.contentType,
-        requestedAt: document.requestedAt,
-        provider: snapshot.value.provider,
-        status: snapshot.value.status,
-        recordedAt: snapshot.value.recordedAt,
-      };
+      return getRequirementUploadStatusSnapshot(dependencies, query);
     },
   };
 }
