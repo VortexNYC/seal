@@ -94,7 +94,7 @@ type VortexSaasBillingProofState = {
     readonly currency: string;
     readonly unitAmount: number | undefined;
   } | null;
-  readonly activeLegacyProviderIdPresent: boolean;
+  readonly activeNonVortexProviderIdPresent: boolean;
 };
 
 type VortexWebhookProofPaymentState = {
@@ -281,7 +281,7 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
   },
 });
 
-function hasLegacyProviderPrefix(value: string | undefined): boolean {
+function hasNonVortexProviderPrefix(value: string | undefined): boolean {
   return value !== undefined && /^(cus|sub|price|prod)_/u.test(value);
 }
 
@@ -336,15 +336,15 @@ function toProofPrice(
   };
 }
 
-function hasActiveLegacyProviderId(
+function hasActiveNonVortexProviderId(
   subscription: Doc<"subscriptions"> | null,
   product: Doc<"subscription_products"> | null,
 ): boolean {
   return (
-    hasLegacyProviderPrefix(subscription?.externalCustomerId) ||
-    hasLegacyProviderPrefix(subscription?.externalSubscriptionId) ||
-    hasLegacyProviderPrefix(subscription?.externalPriceId) ||
-    hasLegacyProviderPrefix(product?.externalProductId)
+    hasNonVortexProviderPrefix(subscription?.externalCustomerId) ||
+    hasNonVortexProviderPrefix(subscription?.externalSubscriptionId) ||
+    hasNonVortexProviderPrefix(subscription?.externalPriceId) ||
+    hasNonVortexProviderPrefix(product?.externalProductId)
   );
 }
 
@@ -1259,7 +1259,7 @@ export const getVortexSaasBillingProofState = internalQuery({
       subscription: toProofSubscription(subscription),
       product: toProofProduct(product),
       price: toProofPrice(price),
-      activeLegacyProviderIdPresent: hasActiveLegacyProviderId(subscription, product),
+      activeNonVortexProviderIdPresent: hasActiveNonVortexProviderId(subscription, product),
     };
   },
 });

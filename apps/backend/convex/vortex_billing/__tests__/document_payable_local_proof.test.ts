@@ -125,7 +125,7 @@ describe("Vortex Billing document payable local proof", () => {
   });
 
   for (const proofCase of documentPayableProofCases) {
-    test(`${proofCase.paymentType} stores Vortex document payment ids and no legacy provider ids`, async () => {
+    test(`${proofCase.paymentType} stores Vortex document payment ids and no non-Vortex provider ids`, async () => {
       const proofRunId = `local-${proofCase.proofSlug}`;
       const recipientEmail = `${proofCase.proofSlug}@seal-vortex-proof.test`;
       const slugForId = proofCase.proofSlug.replace("-", "_");

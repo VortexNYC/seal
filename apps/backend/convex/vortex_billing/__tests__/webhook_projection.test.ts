@@ -142,7 +142,7 @@ describe("Vortex Billing subscription projection", () => {
     );
   }
 
-  test("projects active Vortex subscription and removes active legacy-provider-shaped ids", async () => {
+  test("projects active Vortex subscription and removes active non-Vortex-provider-shaped ids", async () => {
     const priceId = "vtx_price_seal_pro_monthly";
     const subscriptionId = "vtx_sub_seal_org_123_pro_monthly";
     const customerId = "vtx_cust_seal_org_123";
@@ -165,7 +165,7 @@ describe("Vortex Billing subscription projection", () => {
     expect(result).toMatchObject({
       processed: true,
       duplicate: false,
-      activeLegacyProviderIdPresent: false,
+      activeNonVortexProviderIdPresent: false,
       externalSubscriptionId: subscriptionId,
     });
 

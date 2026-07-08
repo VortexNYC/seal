@@ -24,7 +24,7 @@ const localGateForbiddenProofScripts = [
 const catalogProofForbiddenPatterns = [
   "seedLegacyProviderEntitlementSafetyProof",
   "legacyProviderEntitlementSafety",
-  "activeLegacyProviderIdPresent: true",
+  "activeNonVortexProviderIdPresent: true",
   "`cus_catalog_safety_",
   "`sub_catalog_safety_",
   "`price_catalog_safety_",
@@ -129,7 +129,7 @@ for (const relativePath of [
   for (const forbiddenPattern of catalogProofForbiddenPatterns) {
     if (contents.includes(forbiddenPattern)) {
       console.error(
-        `[proof] ${relativePath} still contains catalog safety legacy-provider fragment: ${forbiddenPattern}`,
+        `[proof] ${relativePath} still contains catalog safety non-Vortex-provider fragment: ${forbiddenPattern}`,
       );
       process.exit(1);
     }

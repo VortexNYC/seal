@@ -10,7 +10,7 @@ type ProofCommand = {
 
 const proofCommands: readonly ProofCommand[] = [
   {
-    label: "Vortex document payment creation stores Vortex ids without legacy provider ids",
+    label: "Vortex document payment creation stores Vortex ids without non-Vortex provider ids",
     command: "bun",
     args: [
       "run",
@@ -71,9 +71,9 @@ console.log(
       boundary:
         "Local Seal-side document payment proof only; live sandbox card payment, platform-fee movement, settlements, and payouts still require live proof.",
       proven: [
-        "document payment creation stores Vortex payable/payment request ids for one-time, recurring, installments, and deposit/balance without legacy provider ids",
-        "payable_object.updated paid projection marks document payment paid and completes waiting document without legacy provider ids",
-        "payable_object.updated failed projection marks document payment failed and starts dunning without legacy provider ids",
+        "document payment creation stores Vortex payable/payment request ids for one-time, recurring, installments, and deposit/balance without non-Vortex provider ids",
+        "payable_object.updated paid projection marks document payment paid and completes waiting document without non-Vortex provider ids",
+        "payable_object.updated failed projection marks document payment failed and starts dunning without non-Vortex provider ids",
         "unknown payable ids are ignored without webhook dedupe rows",
         "document payment object creation uses Vortex-owned payment link naming",
         "operational payment surfaces use Vortex components instead of legacy provider Connect embeds",

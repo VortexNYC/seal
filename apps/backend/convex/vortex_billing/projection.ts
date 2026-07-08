@@ -14,7 +14,7 @@ export type VortexSubscriptionProjectionResult = {
   readonly ignored?: boolean;
   readonly organizationId: Id<"organizations">;
   readonly externalSubscriptionId: string;
-  readonly activeLegacyProviderIdPresent: boolean;
+  readonly activeNonVortexProviderIdPresent: boolean;
 };
 
 export type VortexInvoiceProjectionResult = {
@@ -59,7 +59,7 @@ export type VortexPayableObjectProjectionResult = {
   readonly payableId: string;
 };
 
-const legacyProviderIdPattern = /^(cus|sub|price|prod)_/u;
+const nonVortexProviderIdPattern = /^(cus|sub|price|prod)_/u;
 
 function isRecord(value: unknown): value is UnknownRecord {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -253,7 +253,7 @@ async function cancelOtherPaidSubscriptions(
   }
 }
 
-async function hasActiveLegacyProviderShapedSubscription(
+async function hasActiveNonVortexProviderShapedSubscription(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ): Promise<boolean> {
@@ -266,9 +266,9 @@ async function hasActiveLegacyProviderShapedSubscription(
 
   return activeSubscriptions.some(
     (subscription) =>
-      legacyProviderIdPattern.test(subscription.externalCustomerId) ||
-      legacyProviderIdPattern.test(subscription.externalSubscriptionId) ||
-      legacyProviderIdPattern.test(subscription.externalPriceId),
+      nonVortexProviderIdPattern.test(subscription.externalCustomerId) ||
+      nonVortexProviderIdPattern.test(subscription.externalSubscriptionId) ||
+      nonVortexProviderIdPattern.test(subscription.externalPriceId),
   );
 }
 
@@ -300,7 +300,7 @@ export const projectSubscriptionUpdated = internalMutation({
         duplicate: true,
         organizationId: args.sealOrganizationId,
         externalSubscriptionId: args.subscriptionExternalId,
-        activeLegacyProviderIdPresent: await hasActiveLegacyProviderShapedSubscription(
+        activeNonVortexProviderIdPresent: await hasActiveNonVortexProviderShapedSubscription(
           ctx,
           args.sealOrganizationId,
         ),
@@ -337,7 +337,7 @@ export const projectSubscriptionUpdated = internalMutation({
         ignored: true,
         organizationId: args.sealOrganizationId,
         externalSubscriptionId: args.subscriptionExternalId,
-        activeLegacyProviderIdPresent: await hasActiveLegacyProviderShapedSubscription(
+        activeNonVortexProviderIdPresent: await hasActiveNonVortexProviderShapedSubscription(
           ctx,
           args.sealOrganizationId,
         ),
@@ -407,7 +407,7 @@ export const projectSubscriptionUpdated = internalMutation({
       duplicate: false,
       organizationId: args.sealOrganizationId,
       externalSubscriptionId: args.subscriptionExternalId,
-      activeLegacyProviderIdPresent: await hasActiveLegacyProviderShapedSubscription(
+      activeNonVortexProviderIdPresent: await hasActiveNonVortexProviderShapedSubscription(
         ctx,
         args.sealOrganizationId,
       ),

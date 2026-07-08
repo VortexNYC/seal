@@ -329,8 +329,8 @@ async function main(): Promise<void> {
     "Expected Vortex entitlement safety subscription to stay on its Vortex price id",
   );
   assert(
-    afterState.activeLegacyProviderIdPresent === false,
-    "Expected Vortex entitlement control to contain no legacy-provider-shaped IDs",
+    afterState.activeNonVortexProviderIdPresent === false,
+    "Expected Vortex entitlement control to contain no non-Vortex-provider-shaped IDs",
   );
 
   console.log(
@@ -358,7 +358,7 @@ async function main(): Promise<void> {
           organizationId: safetyOrganizationId,
           vortexPriceId: safetyVortexPriceId,
           plan: "pro",
-          activeLegacyProviderIdPresent: false,
+          activeNonVortexProviderIdPresent: false,
         },
       },
       null,

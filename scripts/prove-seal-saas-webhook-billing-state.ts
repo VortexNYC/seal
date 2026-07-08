@@ -301,8 +301,8 @@ async function projectVortexSubscription(input: {
     "Expected subscription projection to process",
   );
   assert(
-    booleanField(projection, "activeLegacyProviderIdPresent") === false,
-    "Expected no active legacy-provider-shaped subscription after Vortex projection",
+    booleanField(projection, "activeNonVortexProviderIdPresent") === false,
+    "Expected no active non-Vortex-provider-shaped subscription after Vortex projection",
   );
   return { subscriptionExternalId, customerExternalId, priceId: input.priceId };
 }
@@ -340,8 +340,8 @@ async function assertProjectedState(input: {
     "Expected active projected subscription",
   );
   assert(
-    booleanField(state, "activeLegacyProviderIdPresent") === false,
-    "Expected proof state to report no active legacy-provider-shaped ids",
+    booleanField(state, "activeNonVortexProviderIdPresent") === false,
+    "Expected proof state to report no active non-Vortex-provider-shaped ids",
   );
 }
 
@@ -388,7 +388,7 @@ function printProofResult(input: {
           subscriptionExternalId: input.projected.subscriptionExternalId,
           customerExternalId: input.projected.customerExternalId,
           priceId: input.projected.priceId,
-          activeLegacyProviderIdPresent: false,
+          activeNonVortexProviderIdPresent: false,
         },
         billingSettingsState: {
           status: stringField(input.billingDetails, "status"),
