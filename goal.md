@@ -56,7 +56,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 ## Production Readiness Audit
 
-Latest presence-only audit command:
+Latest production config audit command:
 
 ```bash
 bun run audit:seal-vortex-production-readiness
@@ -64,6 +64,14 @@ bun run audit:seal-vortex-production-readiness
 
 Current result: failing, as expected, without printing secret values.
 The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. Agents must not execute those commands against production.
+
+Non-mutating launch-boundary wrapper:
+
+```bash
+bun run audit:seal-vortex-launch-boundary
+```
+
+This wrapper passes only when the sandbox settlement handoff is intact and production readiness is either green or blocked only by the known human-run production configuration names listed below. It fails on invalid present production config or unexpected missing env names.
 
 Missing Seal production names:
 
@@ -104,4 +112,5 @@ Work SEA-562:
    - `bun run prove:seal-vortex-migration-local`
    - `bun run audit:seal-vortex-sandbox-settlement-boundary`
    - `bun run audit:seal-vortex-production-readiness`
+   - `bun run audit:seal-vortex-launch-boundary`
 4. Do not mark launch readiness complete until settled sandbox proof and production proof both pass.

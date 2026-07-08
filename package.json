@@ -53,6 +53,7 @@
     "prove:zero-retired-provider-residue": "bun run scripts/prove-zero-retired-provider-residue.ts",
     "audit:seal-vortex-sandbox-settlement-boundary": "bun run scripts/audit-seal-vortex-sandbox-settlement-boundary.ts",
     "audit:seal-vortex-production-readiness": "bun run scripts/audit-seal-vortex-production-readiness.ts",
+    "audit:seal-vortex-launch-boundary": "bun run scripts/audit-seal-vortex-launch-boundary.ts",
     "knip": "turbo run knip",
     "knip:fix": "(cd apps/backend && bun run knip:fix) && (cd packages/react-sdk && bun run knip:fix) && (cd packages/transactional && bun run knip:fix) && (cd apps/web && bun run knip:fix)",
     "verify": "bun run lint && bun run format:changed:check && bun run typecheck && bun run knip",
