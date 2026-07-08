@@ -4,7 +4,7 @@ Date: 2026-07-08
 Repo: `/Users/shlomokabareti/Projects/Seal`
 Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
-Local head: inspect with `git rev-parse --short HEAD` before acting.
+Local head at last sync: `a282d9c2`; inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
 
@@ -22,9 +22,12 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 ## Current Truth
 
 - SEA-556 through SEA-561 are complete locally on `codex/sea-557-provider-neutral-data-contracts`.
-- The strict residue guard scans every tracked file with no archive exception.
+- The strict residue guard scans every tracked path/content for the raw legacy-provider token, including archive docs, and separately blocks retired-provider alias wording in active guidance/config.
 - `git ls-files | rg -i "<legacy-provider-token>"` returns no matches when the placeholder is replaced with the actual legacy provider word.
 - Raw working-tree scan excluding generated/ignored outputs returns no matches.
+- Active raw legacy-provider token scan outside `.git`, installs, and archives returns no matches; legacy-provider-named path scan returns no paths.
+- Non-archive retired-provider alias scan is intentionally down to the live top-down migration contract and the residue guard script.
+- Obsolete/completed provider-migration docs and tracked local skill examples that taught retired-provider patterns were archived or neutralized in `a282d9c2`.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - Full root quality gates passed after the strict cleanup:
   - `bun run format:changed:check`
@@ -67,7 +70,7 @@ Latest production config audit command:
 bun run audit:seal-vortex-production-readiness
 ```
 
-Current result: failing, as expected, without printing secret values.
+Current result from the latest agent refresh: failing, as expected, without printing secret values.
 The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`. Agents must not execute those commands against production.
 
 Non-mutating launch-boundary wrapper:
@@ -94,6 +97,14 @@ Missing Vortex production names:
 - `FINIX_PRODUCTION_PASSWORD`
 - `FINIX_PRODUCTION_APPLICATION_ID`
 - `FINIX_PRODUCTION_WEBHOOK_SECRET`
+
+Latest non-mutating refresh results:
+
+- `bun run prove:seal-vortex-migration-local` passed.
+- `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
+- `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting`.
+- `bun run audit:seal-vortex-launch-boundary` passed because the only production blockers are the known human-run config names.
+- `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above.
 
 ## Current Human Boundary
 
