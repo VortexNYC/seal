@@ -4979,11 +4979,16 @@ export function VortexBillingStatusBanner({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveBillingStatusBannerCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canOpenPortal =
-    billingStatus.action === "open_portal" && billingStatus.portalToken !== undefined;
-  const canOpenRecovery =
-    billingStatus.action === "open_recovery" && billingStatus.recoveryToken !== undefined;
-  const canRunCustomAction = billingStatus.action === "custom";
+  const state = createBillingStatusBannerState(billingStatus);
+  const runPrimaryAction = createBillingStatusBannerActionHandler({
+    billingStatus,
+    onAction,
+    onPortalLaunch,
+    onRecoveryLaunch,
+    runtime,
+    selectedNavigate,
+    state,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -5002,65 +5007,168 @@ export function VortexBillingStatusBanner({
     }
   }, [error, onError]);
 
-  const runPrimaryAction = (): void => {
-    if (canOpenPortal && billingStatus.portalToken !== undefined) {
-      const launch = runtime.createHostedLink({
-        surface: "customer_portal",
-        token: billingStatus.portalToken,
-        query: { view: "billing_status" },
-      });
+  return createElement(
+    "section",
+    createBillingStatusBannerSectionProps({
+      appearance,
+      billingStatus,
+      className,
+      classNames,
+      state,
+    }),
+    createBillingStatusBannerHeader({ billingStatus, classNames }),
+    createBillingStatusBannerFeedback({ classNames, error, loading, resolvedCopy }),
+    createBillingStatusBannerMetrics({ billingStatus, classNames, resolvedCopy }),
+    createBillingStatusBannerActions({
+      billingStatus,
+      classNames,
+      isDisabled,
+      resolvedCopy,
+      runPrimaryAction,
+      state,
+    }),
+  );
+}
+
+function createBillingStatusBannerState(billingStatus: VortexBillingStatusBannerState) {
+  return {
+    canOpenPortal:
+      billingStatus.action === "open_portal" && billingStatus.portalToken !== undefined,
+    canOpenRecovery:
+      billingStatus.action === "open_recovery" && billingStatus.recoveryToken !== undefined,
+    canRunCustomAction: billingStatus.action === "custom",
+  };
+}
+
+type BillingStatusBannerState = ReturnType<typeof createBillingStatusBannerState>;
+
+function createBillingStatusBannerActionHandler({
+  billingStatus,
+  onAction,
+  onPortalLaunch,
+  onRecoveryLaunch,
+  runtime,
+  selectedNavigate,
+  state,
+}: {
+  readonly billingStatus: VortexBillingStatusBannerState;
+  readonly onAction: VortexBillingStatusBannerProps["onAction"];
+  readonly onPortalLaunch: VortexBillingStatusBannerProps["onPortalLaunch"];
+  readonly onRecoveryLaunch: VortexBillingStatusBannerProps["onRecoveryLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: BillingStatusBannerState;
+}) {
+  return (): void => {
+    if (state.canOpenPortal && billingStatus.portalToken !== undefined) {
+      const launch = createBillingStatusPortalLaunch(runtime, billingStatus.portalToken);
       onPortalLaunch?.(launch);
       selectedNavigate(launch);
       return;
     }
-    if (canOpenRecovery && billingStatus.recoveryToken !== undefined) {
-      const launch = runtime.createHostedLink({
-        surface: "payment_recovery",
-        token: billingStatus.recoveryToken,
-        query: { view: "payment_recovery" },
-      });
+    if (state.canOpenRecovery && billingStatus.recoveryToken !== undefined) {
+      const launch = createBillingStatusRecoveryLaunch(runtime, billingStatus.recoveryToken);
       onRecoveryLaunch?.(launch);
       selectedNavigate(launch);
       return;
     }
-    if (canRunCustomAction) {
+    if (state.canRunCustomAction) {
       void onAction?.(billingStatus);
     }
   };
+}
 
+function createBillingStatusPortalLaunch(
+  runtime: VortexSurfaceProviderRuntime,
+  token: string,
+): VortexSurfaceLaunch {
+  return runtime.createHostedLink({
+    surface: "customer_portal",
+    token,
+    query: { view: "billing_status" },
+  });
+}
+
+function createBillingStatusRecoveryLaunch(
+  runtime: VortexSurfaceProviderRuntime,
+  token: string,
+): VortexSurfaceLaunch {
+  return runtime.createHostedLink({
+    surface: "payment_recovery",
+    token,
+    query: { view: "payment_recovery" },
+  });
+}
+
+function createBillingStatusBannerSectionProps({
+  appearance,
+  billingStatus,
+  className,
+  classNames,
+  state,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly billingStatus: VortexBillingStatusBannerState;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: BillingStatusBannerState;
+}) {
+  return {
+    className: cx("vortex-payments-billing-status-banner", className, classNames?.root),
+    "data-vortex-surface": "billing-status-banner",
+    "data-vortex-component": "VortexBillingStatusBanner",
+    "data-vortex-customer-id": billingStatus.customerId,
+    "data-vortex-billing-account-id": billingStatus.billingAccountId,
+    "data-vortex-subscription-id": billingStatus.subscriptionId,
+    "data-vortex-billing-status": billingStatus.status,
+    "data-vortex-billing-severity": billingStatus.severity,
+    "data-vortex-billing-action": billingStatus.action,
+    "data-vortex-customer-portal-ready": String(state.canOpenPortal),
+    "data-vortex-recovery-ready": String(state.canOpenRecovery),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createBillingStatusBannerHeader({
+  billingStatus,
+  classNames,
+}: {
+  readonly billingStatus: VortexBillingStatusBannerState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-billing-status-banner", className, classNames?.root),
-      "data-vortex-surface": "billing-status-banner",
-      "data-vortex-component": "VortexBillingStatusBanner",
-      "data-vortex-customer-id": billingStatus.customerId,
-      "data-vortex-billing-account-id": billingStatus.billingAccountId,
-      "data-vortex-subscription-id": billingStatus.subscriptionId,
-      "data-vortex-billing-status": billingStatus.status,
-      "data-vortex-billing-severity": billingStatus.severity,
-      "data-vortex-billing-action": billingStatus.action,
-      "data-vortex-customer-portal-ready": String(canOpenPortal),
-      "data-vortex-recovery-ready": String(canOpenRecovery),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
-    createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, billingStatus.title),
-      billingStatus.description === undefined
-        ? null
-        : createElement("p", { className: classNames?.description }, billingStatus.description),
-    ),
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, billingStatus.title),
+    createBillingStatusBannerDescription(billingStatus, classNames),
+  );
+}
+
+function createBillingStatusBannerDescription(
+  billingStatus: VortexBillingStatusBannerState,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  if (billingStatus.description === undefined) {
+    return null;
+  }
+  return createElement("p", { className: classNames?.description }, billingStatus.description);
+}
+
+function createBillingStatusBannerFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexBillingStatusBannerCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -5076,36 +5184,73 @@ export function VortexBillingStatusBanner({
           resolvedCopy.errorTitle,
           error,
         ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, billingStatus.status, classNames),
-      createMetric(resolvedCopy.planLabel, billingStatus.planLabel ?? "none", classNames),
-      createMetric(
-        resolvedCopy.amountDueLabel,
-        billingStatus.amountDue === undefined || billingStatus.currency === undefined
-          ? "none"
-          : formatMinorUnitAmount(billingStatus.amountDue, billingStatus.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.nextActionLabel, billingStatus.nextAction ?? "none", classNames),
+  ];
+}
+
+function createBillingStatusBannerMetrics({
+  billingStatus,
+  classNames,
+  resolvedCopy,
+}: {
+  readonly billingStatus: VortexBillingStatusBannerState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexBillingStatusBannerCopy>;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, billingStatus.status, classNames),
+    createMetric(resolvedCopy.planLabel, billingStatus.planLabel ?? "none", classNames),
+    createMetric(
+      resolvedCopy.amountDueLabel,
+      formatBillingStatusAmountDue(billingStatus),
+      classNames,
     ),
+    createMetric(resolvedCopy.nextActionLabel, billingStatus.nextAction ?? "none", classNames),
+  );
+}
+
+function formatBillingStatusAmountDue(billingStatus: VortexBillingStatusBannerState): string {
+  if (billingStatus.amountDue === undefined || billingStatus.currency === undefined) {
+    return "none";
+  }
+  return formatMinorUnitAmount(billingStatus.amountDue, billingStatus.currency);
+}
+
+function createBillingStatusBannerActions({
+  billingStatus,
+  classNames,
+  isDisabled,
+  resolvedCopy,
+  runPrimaryAction,
+  state,
+}: {
+  readonly billingStatus: VortexBillingStatusBannerState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly resolvedCopy: Required<VortexBillingStatusBannerCopy>;
+  readonly runPrimaryAction: () => void;
+  readonly state: BillingStatusBannerState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
     createElement(
-      "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || (!canOpenPortal && !canOpenRecovery && !canRunCustomAction),
-          onClick: runPrimaryAction,
-          type: "button",
-          "data-vortex-billing-status-action": billingStatus.action,
-        },
-        billingStatusActionLabel(billingStatus.action, resolvedCopy),
-      ),
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !canRunBillingStatusBannerAction(state),
+        onClick: runPrimaryAction,
+        type: "button",
+        "data-vortex-billing-status-action": billingStatus.action,
+      },
+      billingStatusActionLabel(billingStatus.action, resolvedCopy),
     ),
   );
+}
+
+function canRunBillingStatusBannerAction(state: BillingStatusBannerState): boolean {
+  return state.canOpenPortal || state.canOpenRecovery || state.canRunCustomAction;
 }
 
 export function VortexSubscriptionActionSummary({
