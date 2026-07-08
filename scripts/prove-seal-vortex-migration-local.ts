@@ -135,7 +135,7 @@ console.log(
         "Local non-mutating Seal Vortex migration proof only; live card payment, settlement reconciliation, payout proof, production credential mutation, and remote git push remain human-boundary work.",
       proven: [
         "tracked paths contain no retired-provider package or file names",
-        "dependency graph and installed package paths contain no retired-provider package residue",
+        "dependency graph and working-tree paths outside .git contain no retired-provider package residue",
         "tracked file contents contain no retired-provider token",
         "working-tree content outside .git contains no provider-shaped retired-provider residue",
         "account creation, merchant onboarding guards, and billing/payments/merchant settings use Vortex naming and actions",

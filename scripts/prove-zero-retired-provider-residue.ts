@@ -71,24 +71,28 @@ for (const relativePath of trackedFiles) {
   }
 }
 
-function scanInstalledPathNames(absoluteDirectory: string, relativeDirectory: string): void {
+function scanWorkingTreePathNames(absoluteDirectory: string, relativeDirectory: string): void {
   if (!existsSync(absoluteDirectory)) {
     return;
   }
 
   for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true })) {
-    const relativePath = `${relativeDirectory}/${entry.name}`;
+    if (relativeDirectory === "." && entry.name === ".git") {
+      continue;
+    }
+
+    const relativePath = relativeDirectory === "." ? entry.name : `${relativeDirectory}/${entry.name}`;
     if (relativePath.toLowerCase().includes(retiredProviderToken)) {
-      failures.push(`${relativePath}: installed package path contains retired provider token`);
+      failures.push(`${relativePath}: working tree path contains retired provider token`);
     }
 
     if (entry.isDirectory()) {
-      scanInstalledPathNames(join(absoluteDirectory, entry.name), relativePath);
+      scanWorkingTreePathNames(join(absoluteDirectory, entry.name), relativePath);
     }
   }
 }
 
-scanInstalledPathNames(join(repoRoot, "node_modules"), "node_modules");
+scanWorkingTreePathNames(repoRoot, ".");
 
 if (failures.length > 0) {
   console.error("Retired provider residue proof failed:");
@@ -102,7 +106,7 @@ console.log("Retired provider residue proof passed:");
 console.log("- No tracked file paths contain the retired provider token.");
 console.log("- No tracked file contents contain the retired provider token.");
 console.log(
-  "- No dependency graph package or installed package path contains the retired provider token.",
+  "- No dependency graph package or working-tree path outside .git contains the retired provider token.",
 );
 console.log(
   "- No working-tree content outside .git contains provider-shaped retired provider residue.",
