@@ -77,6 +77,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - New live document-payment proof runs seed `VORTEX_BILLING_DOCUMENT_*` maps instead of shared SaaS maps.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
 - `bun run prove:seal-vortex-migration-local` statically fails if known live or env-mutating proof commands are added to the local non-mutating gate.
+- `bun run prove:seal-vortex-migration-local` statically fails if live/dev Vortex proof scripts replace existing Vortex map env values instead of merging updates into those maps.
 
 ## Production Readiness Audit
 
@@ -141,6 +142,7 @@ Latest non-mutating refresh results recorded on this branch:
 - `bun run prove:vortex-payments-backend-adapter-adoption` passed.
 - `bun run prove:seal-vortex-migration-local` passed.
 - `bun run prove:seal-vortex-migration-local` now includes the Vortex-shaped catalog entitlement safety guard.
+- `bun run prove:seal-vortex-migration-local` now includes the Vortex proof env-map merge guard, preventing the coupon/checkout/document-payment proof scripts from clobbering existing Vortex map values.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting` and `earliestHumanReconcileAt` preserved as `2026-07-08T18:12:06.10Z`.
 - `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `human_settlement_proof` and `production_config`, while surfacing the sandbox and production human-only boundaries.

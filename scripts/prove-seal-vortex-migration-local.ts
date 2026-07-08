@@ -35,6 +35,44 @@ const catalogProofForbiddenPatterns = [
   '"prod_catalog_safety_',
 ] as const;
 
+const proofEnvMapMergeGuards = [
+  {
+    relativePath: "scripts/prove-seal-coupons-vortex.ts",
+    envName: "VORTEX_BILLING_SAAS_PRICE_MAP",
+    mergeCall: "mergeConvexStringRecordEnv({",
+  },
+  {
+    relativePath: "scripts/prove-seal-coupons-vortex.ts",
+    envName: "VORTEX_BILLING_ACCOUNT_MAP",
+    mergeCall: "mergeConvexStringRecordEnv({",
+  },
+  {
+    relativePath: "scripts/prove-seal-saas-checkout-vortex.ts",
+    envName: "VORTEX_BILLING_ACCOUNT_MAP",
+    mergeCall: "mergeSealStringRecordEnv({",
+  },
+  {
+    relativePath: "scripts/prove-seal-document-payment-vortex-live.ts",
+    envName: "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
+    mergeCall: "mergeSealRecordEnv({",
+  },
+  {
+    relativePath: "scripts/prove-seal-document-payment-vortex-live.ts",
+    envName: "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
+    mergeCall: "mergeSealRecordEnv({",
+  },
+  {
+    relativePath: "scripts/prove-seal-document-payment-vortex-live.ts",
+    envName: "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
+    mergeCall: "mergeSealRecordEnv({",
+  },
+  {
+    relativePath: "scripts/prove-seal-document-payment-vortex-live.ts",
+    envName: "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
+    mergeCall: "mergeSealRecordEnv({",
+  },
+] as const;
+
 type ProofCommand = {
   readonly label: string;
   readonly command: string;
@@ -99,6 +137,22 @@ const proofCommands: readonly ProofCommand[] = [
   },
 ];
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function callBlocks(contents: string, callName: string): readonly string[] {
+  return [
+    ...contents.matchAll(new RegExp(`${escapeRegExp(callName)}[\\s\\S]*?\\n\\s*\\}\\);`, "g")),
+  ].map((match) => match[0]);
+}
+
+function hasCallForEnv(contents: string, callName: string, envName: string): boolean {
+  return callBlocks(contents, callName).some((block) =>
+    new RegExp(`name:\\s*"${escapeRegExp(envName)}"`).test(block),
+  );
+}
+
 console.log("\n[proof] Human-run Vortex proof scripts are checkout-path portable");
 for (const relativePath of portableVortexProofScripts) {
   const contents = readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -136,6 +190,25 @@ for (const relativePath of [
   }
 }
 console.log("[proof] Catalog safety controls are Vortex-shaped.");
+
+console.log("\n[proof] Env-mutating Vortex proof scripts merge map values");
+for (const guard of proofEnvMapMergeGuards) {
+  const contents = readFileSync(new URL(`../${guard.relativePath}`, import.meta.url), "utf8");
+  if (hasCallForEnv(contents, "setConvexEnv({", guard.envName)) {
+    console.error(
+      `[proof] ${guard.relativePath} directly replaces ${guard.envName}; use a merge helper instead.`,
+    );
+    process.exit(1);
+  }
+
+  if (!hasCallForEnv(contents, guard.mergeCall, guard.envName)) {
+    console.error(
+      `[proof] ${guard.relativePath} does not merge updates into ${guard.envName} with ${guard.mergeCall}`,
+    );
+    process.exit(1);
+  }
+}
+console.log("[proof] Env map proof updates preserve existing mappings.");
 
 for (const proofCommand of proofCommands) {
   console.log(`\n[proof] ${proofCommand.label}`);
@@ -178,6 +251,7 @@ console.log(
         "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
         "live and env-mutating proof commands are excluded from the local non-mutating gate",
         "catalog live proof seeds Vortex-shaped entitlement safety controls only",
+        "env-mutating live/dev proof scripts merge Vortex map values instead of replacing existing mappings",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
         "launch boundary reports launchReady false until human settlement proof and production configuration are complete",
       ],
