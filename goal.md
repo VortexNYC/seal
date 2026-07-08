@@ -55,6 +55,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
   - `bun run audit:seal-vortex-sandbox-settlement-boundary`
   - `bun run audit:seal-vortex-launch-boundary`
 - No git push has been performed from this branch. Remote push still requires explicit human confirmation.
+- Remote review is not open yet: `origin/staging...HEAD` is `0 behind / 124 ahead`, `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and there is no open PR for this branch. PR #480 is merged historical work and does not contain the current proof-boundary branch head.
 
 ## Replacement Proof State
 
@@ -70,7 +71,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 ## Not Done
 
-- The local branch has not been pushed or merged.
+- The local branch has not been pushed or merged; it is currently local-only and `124` commits ahead of `origin/staging` with no remote branch and no open PR.
 - Sandbox document-payment settlement is not proven fully settled yet.
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` preserves the captured sandbox payment ids, earliest human reconciliation timestamp, the Vortex final sandbox launch gate, and human-run settlement commands without calling Convex, Finix, or reconciliation. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
 - Production Vortex document-payment routing is not configured.

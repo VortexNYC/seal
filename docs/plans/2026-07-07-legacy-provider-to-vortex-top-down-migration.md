@@ -221,12 +221,14 @@ Current launch baseline:
 - The local migration gate also includes `bun run prove:seal-saas-vortex-local`, so SaaS checkout/catalog/coupon/portal/lifecycle replacement cannot drift while document-payment launch proof is waiting on human-boundary settlement and production work.
 - The local migration gate also includes `bun run prove:seal-account-onboarding-vortex-local`, so the top-of-funnel account/onboarding contract is covered by the same one-command proof.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` statically preserves the checked-in hosted outcome proof artifact: paid Vortex capture, Seal paid projection, failed recovery, duplicate failed idempotency, stale failed ignore-after-paid behavior, dunning cancellation, and the unsettled-money go-live boundary.
+- Remote review is not open yet: the local branch is `0 behind / 124 ahead` of `origin/staging`, `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and no open PR exists for this branch. PR #480 is merged historical work and is not the active review vehicle for the current proof-boundary head.
 
 Do next:
 
 1. Keep `goal.md`, this plan, and Linear synchronized.
 2. Preserve the exact human-run settlement proof command from `docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md`.
-3. Run only non-mutating local gates as agent proof:
+3. Do not assume PR #480 covers this branch; remote push and PR creation require explicit human confirmation.
+4. Run only non-mutating local gates as agent proof:
    - `bun run prove:seal-vortex-migration-local`
    - `bun run audit:seal-vortex-hosted-outcomes-boundary`
    - `bun run audit:seal-vortex-sandbox-settlement-boundary`
@@ -234,7 +236,7 @@ Do next:
    - `bun run audit:seal-vortex-production-proof-boundary`
    - `bun run prove:seal-vortex-production-proof-boundary`
    - `bun run audit:seal-vortex-launch-boundary`
-4. When the provider settlement readiness window is open, a human runs the settlement command and the paid-state proof with `--require-settled`.
-5. Production launch remains blocked until production credentials, document-payment routing maps, one small real payment, and real settlement/payout visibility are proven.
+5. When the provider settlement readiness window is open, a human runs the settlement command and the paid-state proof with `--require-settled`.
+6. Production launch remains blocked until production credentials, document-payment routing maps, one small real payment, and real settlement/payout visibility are proven.
 
 Do not run live card, settlement, payout, production credential, or remote push commands as an agent.
