@@ -49,10 +49,17 @@ const generatedOrInstalledGlobExcludes = [
   "!.playwright-mcp/**",
   "!**/.playwright-cli/**",
   "!**/.playwright-profile/**",
+  "!**/.source/**",
+  "!**/.vite/**",
+  "!**/.vite-content-tools/**",
+  "!**/.nitro/**",
   "!**/.output/**",
   "!**/dist/**",
+  "!**/playwright-report/**",
   "!test-results/**",
   "!**/test-results/**",
+  "!coverage/**",
+  "!**/coverage/**",
 ] as const;
 const generatedOrInstalledDirectoryNames = new Set([
   ".git",
@@ -63,9 +70,15 @@ const generatedOrInstalledDirectoryNames = new Set([
   ".playwright-mcp",
   ".playwright-cli",
   ".playwright-profile",
+  ".source",
+  ".vite",
+  ".vite-content-tools",
+  ".nitro",
   ".output",
   "dist",
+  "playwright-report",
   "test-results",
+  "coverage",
 ]);
 
 const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
@@ -212,7 +225,7 @@ console.log(
   "- No dependency graph package or owned working-tree path contains the retired provider token.",
 );
 console.log(
-  "- No owned working-tree content, including hidden env files, contains provider-shaped retired provider residue.",
+  "- No owned source/config/doc content, including hidden env files and excluding generated/install/cache outputs, contains provider-shaped retired provider residue.",
 );
 console.log(
   "- No active guidance/config/current plan file contains retired provider aliases outside approved proof command names.",
