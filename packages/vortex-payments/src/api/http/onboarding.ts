@@ -142,6 +142,22 @@ function toSuccessResponse<TBody>(
   };
 }
 
+async function handleOnboardingRequest<TCommand, TResult, TBody>(
+  request: HttpRequestEnvelope<TCommand>,
+  createRequestId: () => string,
+  run: (command: TCommand) => Promise<TResult>,
+  toPublicBody: (result: TResult) => TBody,
+  status = 200,
+): Promise<HttpResponseEnvelope<TBody>> {
+  const requestId = request.requestId ?? createRequestId();
+  try {
+    const result = await run(request.body);
+    return toSuccessResponse(toPublicBody(result), requestId, status);
+  } catch (error) {
+    return toErrorResponse(error, requestId);
+  }
+}
+
 function toPublicRequirement(
   requirement: MerchantOnboardingRequirementView,
 ): PublicMerchantOnboardingRequirementView {
@@ -234,33 +250,34 @@ export function createOnboardingHttpHandlers(
   dependencies: OnboardingHttpHandlerDependencies,
 ): OnboardingHttpHandlers {
   const createRequestId = dependencies.createRequestId ?? createDefaultRequestId;
+  const service = dependencies.service;
 
   return {
     async submitMerchantOnboarding(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.submitMerchantOnboarding(request.body);
-        return toSuccessResponse(toPublicSnapshot(result), requestId, 202);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.submitMerchantOnboarding(body),
+        toPublicSnapshot,
+        202,
+      );
     },
 
     async getMerchantOnboardingSnapshot(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.getMerchantOnboardingSnapshot(request.body);
-        return toSuccessResponse(result === null ? null : toPublicSnapshot(result), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.getMerchantOnboardingSnapshot(body),
+        (result) => (result === null ? null : toPublicSnapshot(result)),
+      );
     },
 
     async refreshMerchantOnboardingSession(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.refreshMerchantOnboardingSession(request.body);
-        return toSuccessResponse(
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.refreshMerchantOnboardingSession(body),
+        (result) =>
           result === null
             ? null
             : {
@@ -268,49 +285,44 @@ export function createOnboardingHttpHandlers(
                 snapshot: toPublicSnapshot(result.snapshot),
                 requirements: result.requirements.map(toPublicRequirement),
               },
-          requestId,
-          202,
-        );
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+        202,
+      );
     },
 
     async listMerchantRequirements(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.listMerchantRequirements(request.body);
-        return toSuccessResponse(result.map(toPublicRequirement), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.listMerchantRequirements(body),
+        (result) => result.map(toPublicRequirement),
+      );
     },
 
     async listMerchantRequirementDocuments(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.listMerchantRequirementDocuments(request.body);
-        return toSuccessResponse(result.map(toPublicDocument), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.listMerchantRequirementDocuments(body),
+        (result) => result.map(toPublicDocument),
+      );
     },
 
     async satisfyMerchantRequirements(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.satisfyMerchantRequirements(request.body);
-        return toSuccessResponse(toPublicSnapshot(result), requestId, 202);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.satisfyMerchantRequirements(body),
+        toPublicSnapshot,
+        202,
+      );
     },
 
     async refreshMerchantRequirement(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.refreshMerchantRequirement(request.body);
-        return toSuccessResponse(
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.refreshMerchantRequirement(body),
+        (result) =>
           result === null
             ? null
             : {
@@ -318,32 +330,27 @@ export function createOnboardingHttpHandlers(
                 requirement: toPublicRequirement(result.requirement),
                 documents: result.documents.map(toPublicDocument),
               },
-          requestId,
-          202,
-        );
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+        202,
+      );
     },
 
     async createRequirementUploadLink(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.createRequirementUploadLink(request.body);
-        return toSuccessResponse(toPublicUploadLink(result), requestId, 201);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.createRequirementUploadLink(body),
+        toPublicUploadLink,
+        201,
+      );
     },
 
     async getRequirementUploadStatus(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        const result = await dependencies.service.getRequirementUploadStatus(request.body);
-        return toSuccessResponse(result === null ? null : toPublicUploadStatus(result), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleOnboardingRequest(
+        request,
+        createRequestId,
+        (body) => service.getRequirementUploadStatus(body),
+        (result) => (result === null ? null : toPublicUploadStatus(result)),
+      );
     },
   };
 }
