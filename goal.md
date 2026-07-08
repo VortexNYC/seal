@@ -6,7 +6,7 @@ Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
 Latest code cleanup commit: `b7be17b1` (`refactor: split webhook endpoint row`)
 Latest launch-boundary commit: `aa16ba92` (`chore: harden Seal Vortex production boundary audit`)
-Latest proof-state doc commit: `28c3a3d9` (`docs: record Vortex SaaS live proofs`)
+Latest proof-state doc commit: `c7d072b4` (`docs: refresh Seal proof pointer`)
 Current head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
@@ -111,7 +111,7 @@ Missing Vortex production names:
 - `FINIX_PRODUCTION_APPLICATION_ID`
 - `FINIX_PRODUCTION_WEBHOOK_SECRET`
 
-Latest non-mutating refresh results from head `28c3a3d9`:
+Latest non-mutating refresh results from head `c7d072b4`:
 
 - `bun run prove:zero-retired-provider-residue` passed and scans owned hidden env/config content.
 - Explicit hidden/no-ignore owned working-tree legacy-provider token scan returned no matches.
@@ -141,7 +141,7 @@ Latest non-mutating refresh results from head `28c3a3d9`:
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting` and `earliestHumanReconcileAt` preserved as `2026-07-08T18:12:06.10Z`.
 - `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `human_settlement_proof` and `production_config`, while surfacing the sandbox and production human-only boundaries.
 - `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above and prints the agent-allowed actions, human-only actions, and production success criteria without secret values.
-- Branch worktree was clean after committing `28c3a3d9`.
+- Branch worktree was clean after committing `c7d072b4`.
 
 ## Current Human Boundary
 
