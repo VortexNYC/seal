@@ -5,6 +5,7 @@ Repo: `/Users/shlomokabareti/Projects/Seal`
 Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
 Latest code cleanup commit: `a48c0018` (`chore: scan hidden Seal env for provider residue`)
+Latest launch-boundary commit: `aa16ba92` (`chore: harden Seal Vortex production boundary audit`)
 Current head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
@@ -32,6 +33,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - The Vortex catalog live proof no longer seeds legacy-provider-shaped entitlement safety IDs; its safety organization now uses Vortex-shaped customer, subscription, product, and price ids, and the local migration gate statically blocks the old control from returning.
 - Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale legacy-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
+- `bun run audit:seal-vortex-launch-boundary` now surfaces the sandbox human reconciliation boundary and the production human-only boundary, and fails if production remediation commands do not exactly match the missing production env names.
 - Current root verification passed after the strict cleanup:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
@@ -58,7 +60,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 - The local branch has not been pushed or merged.
 - Sandbox document-payment settlement is not proven fully settled yet.
-- `bun run audit:seal-vortex-sandbox-settlement-boundary` preserves the captured sandbox payment ids, the Vortex final sandbox launch gate, and human-run settlement commands without calling Convex, Finix, or reconciliation. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
+- `bun run audit:seal-vortex-sandbox-settlement-boundary` preserves the captured sandbox payment ids, earliest human reconciliation timestamp, the Vortex final sandbox launch gate, and human-run settlement commands without calling Convex, Finix, or reconciliation. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
 - Production Vortex document-payment routing is not configured.
 - Production real-money proof is not complete.
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
@@ -75,7 +77,7 @@ bun run audit:seal-vortex-production-readiness
 ```
 
 Current result from the latest agent refresh: failing, as expected, without printing secret values.
-The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`. Agents must not execute those commands against production.
+The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It also prints a human-run remediation checklist with exact deployment-scoped `convex env set` commands and placeholders for the missing values, plus machine-readable `agentAllowedActions`, `humanOnlyActions`, and `successCriteria`. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`. Agents must not execute those commands against production.
 
 Non-mutating launch-boundary wrapper:
 
@@ -83,7 +85,7 @@ Non-mutating launch-boundary wrapper:
 bun run audit:seal-vortex-launch-boundary
 ```
 
-This wrapper passes only when the sandbox settlement handoff is intact and production readiness is either green or blocked only by the known human-run production configuration names listed below. It fails on invalid present production config or unexpected missing env names.
+This wrapper passes only when the sandbox settlement handoff is intact and production readiness is either green or blocked only by the known human-run production configuration names listed below. It fails on invalid present production config, unexpected missing env names, remediation commands that omit missing env names, or remediation commands that include non-missing env names.
 
 Missing Seal production names:
 
@@ -107,20 +109,22 @@ Latest non-mutating refresh results:
 - `bun run prove:zero-retired-provider-residue` passed after cleanup commit `a48c0018` and now scans owned hidden env/config content.
 - Package manifests and `bun.lock` contain no legacy-provider token.
 - Explicit hidden/no-ignore owned working-tree legacy-provider token scan returned no matches after cleanup commit `a48c0018`.
-- `bun run verify` passed after cleanup commit `a48c0018`.
-- `bun run test` passed after cleanup commit `a48c0018`.
-- `bun run build` passed after cleanup commit `a48c0018`.
-- `git diff --check` passed after cleanup commit `a48c0018`.
+- `bun run verify` passed after boundary commit `aa16ba92`.
+- `bun run test` passed after boundary commit `aa16ba92`.
+- `bun run build` passed after boundary commit `aa16ba92`.
+- `git diff --check` passed after boundary commit `aa16ba92`.
 - `bun run prove:seal-vortex-migration-local` passed.
 - `bun run prove:seal-vortex-migration-local` now includes the Vortex-shaped catalog entitlement safety guard.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
-- `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting`.
-- `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `human_settlement_proof` and `production_config`.
-- `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above.
+- `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting` and `earliestHumanReconcileAt` preserved as `2026-07-08T18:12:06.10Z`.
+- `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `human_settlement_proof` and `production_config`, while surfacing the sandbox and production human-only boundaries.
+- `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above and prints the agent-allowed actions, human-only actions, and production success criteria without secret values.
 
 ## Current Human Boundary
 
 Agents may prepare commands, audits, and proof harnesses.
+
+Agents may also record missing or invalid production config names without secret values and update repo docs or Linear with non-secret proof state.
 
 Agents must not run:
 
@@ -128,6 +132,8 @@ Agents must not run:
 - production credential mutation,
 - production money movement,
 - settlement or payout proof commands that reconcile live money state,
+- production document-payment allowlist widening,
+- external production webhook retirement,
 - remote git push without explicit confirmation.
 
 ## Next Action

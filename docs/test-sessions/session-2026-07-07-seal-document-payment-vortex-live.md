@@ -279,6 +279,23 @@ Do not call Seal document payments sandbox launch-ready until this exact sequenc
 
 Current sandbox launch answer: SaaS is green, document payable creation is green, real hosted document payment capture and Seal projection are green, failed-payment recovery is green, and settled document-payment money movement is still waiting on provider settlement readiness.
 
+The non-mutating Seal launch audit now preserves the same human-only boundary in machine-readable output:
+
+```bash
+cd /home/debian/Projects/Seal
+bun run audit:seal-vortex-launch-boundary
+```
+
+Expected until settlement and production proof are complete:
+
+```text
+launchReady=false
+waitingOn=human_settlement_proof,production_config
+earliestHumanReconcileAt=2026-07-08T18:12:06.10Z
+```
+
+Agents may run the audit and record non-secret proof state. Agents must not run reconciliation, settlement, payout, live card, production env mutation, allowlist widening, or production webhook retirement.
+
 ## Proof Harness Contract
 
 Future `prove:seal-document-payment-vortex-live` runs seed the document-payment-specific Seal env contract, not the shared SaaS maps:
@@ -338,3 +355,18 @@ Production go-live work left after sandbox settlement proof:
 5. Wait for real settlement/payout visibility.
 6. Run the paid-state proof with `--require-settled` against production ids.
 7. Only then widen the allowlist and retire retired provider webhooks.
+
+The production readiness audit is intentionally non-mutating:
+
+```bash
+cd /home/debian/Projects/Seal
+bun run audit:seal-vortex-production-readiness
+```
+
+Expected until production is configured: it exits nonzero, lists only missing/invalid production config names, prints no secret values, and emits:
+
+- `agentAllowedActions`
+- `humanOnlyActions`
+- `successCriteria`
+
+The aggregate launch audit fails if remediation commands omit missing env names or include non-missing env names.
