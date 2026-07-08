@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 type CapturedProof = {
   readonly merchantAccountId: string;
@@ -12,7 +12,8 @@ type CapturedProof = {
 };
 
 const repoRoot = new URL("..", import.meta.url).pathname;
-const localVortexRepoRoot = join(repoRoot, "../vortex-payments");
+const localVortexRepoRoot =
+  readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? resolve(repoRoot, "../vortex-payments");
 const proofDocPath = join(
   repoRoot,
   "docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md",
@@ -26,6 +27,11 @@ const finalGateDocPath = join(
   "docs/test-sessions/session-2026-07-07-seal-vortex-final-sandbox-launch-gate.md",
 );
 const proofDoc = readFileSync(proofDocPath, "utf8");
+
+function readOptionalEnv(name: string): string | undefined {
+  const value = process.env[name];
+  return value !== undefined && value.length > 0 ? resolve(value) : undefined;
+}
 
 function fail(message: string): never {
   console.error(message);
@@ -79,8 +85,16 @@ assertFileContains(
   "prove:seal-document-payment-vortex-paid-state",
   "Vortex final sandbox launch gate Seal proof step",
 );
-assertFileContains(finalGateScriptPath, "--reconcile-if-ready", "Vortex final sandbox launch gate reconcile flag");
-assertFileContains(finalGateScriptPath, "--require-settled", "Vortex final sandbox launch gate settled flag");
+assertFileContains(
+  finalGateScriptPath,
+  "--reconcile-if-ready",
+  "Vortex final sandbox launch gate reconcile flag",
+);
+assertFileContains(
+  finalGateScriptPath,
+  "--require-settled",
+  "Vortex final sandbox launch gate settled flag",
+);
 
 for (const [label, value] of Object.entries({
   paymentId: captured.paymentId,
