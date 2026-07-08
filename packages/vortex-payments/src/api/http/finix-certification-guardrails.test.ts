@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const scannedRoots = ["packages/payments/src", "apps/backend/convex"] as const;
+const scannedRoots = ["packages/vortex-payments/src", "apps/backend/convex"] as const;
 
 const forbiddenRawPaymentMethodFields = [
   "cardNumber",
