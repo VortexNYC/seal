@@ -89,8 +89,8 @@ console.log(
       status: goLiveProofComplete
         ? "production_go_live_proven"
         : productionMoneyProofComplete
-          ? "waiting_for_post_proof_retirement"
-          : "waiting_for_human_production_money_proof",
+            ? "waiting_for_post_proof_retirement"
+            : "waiting_for_production_money_proof",
     }),
     null,
     2,

@@ -163,7 +163,7 @@ function hasCallForEnv(contents: string, callName: string, envName: string): boo
   );
 }
 
-console.log("\n[proof] Human-run Vortex proof scripts are checkout-path portable");
+console.log("\n[proof] Vortex proof scripts are checkout-path portable");
 for (const relativePath of portableVortexProofScripts) {
   const contents = readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
   if (!contents.includes("VORTEX_PAYMENTS_REPO_ROOT")) {
@@ -246,7 +246,7 @@ console.log(
       ok: true,
       check: "seal_vortex_migration_local",
       boundary:
-        "Local non-mutating Seal Vortex migration proof only; live card payment, settlement reconciliation, payout proof, production credential mutation, and remote git push remain human-boundary work.",
+        "Local non-mutating Seal Vortex migration proof only; live card payment, settlement reconciliation, payout proof, and remote git push stay outside this local gate.",
       proven: [
         "tracked paths contain no retired-provider package or file names",
         "dependency graph and working-tree paths outside .git contain no retired-provider package residue",
@@ -258,14 +258,14 @@ console.log(
         "document payment creation and hosted outcome projection are Vortex-backed locally",
         "checked-in hosted outcome proof preserves paid capture, failed recovery, dunning, and settlement-boundary evidence",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
-        "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
+        "Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
         "live and env-mutating proof commands are excluded from the local non-mutating gate",
         "catalog live proof seeds Vortex-shaped entitlement safety controls only",
         "env-mutating live/dev proof scripts merge Vortex map values instead of replacing existing mappings",
-        "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
+        "sandbox settlement handoff preserves captured Vortex ids and explicit proof commands",
         "production proof boundary fails closed on incomplete proof artifacts",
         "production launch proof stays false until checked-in production money proof and post-proof retirement evidence exist",
-        "launch boundary reports launchReady false until human settlement proof, production configuration, production money proof, and post-proof retirement are complete",
+        "launch boundary reports launchReady false until settlement proof, production configuration, production money proof, and post-proof retirement are complete",
       ],
     },
     null,

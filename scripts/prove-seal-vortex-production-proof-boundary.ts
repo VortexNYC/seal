@@ -51,7 +51,7 @@ try {
     productionMoneyProofComplete: false,
     postProofRetirementComplete: false,
     goLiveProofComplete: false,
-    status: "waiting_for_human_production_money_proof",
+      status: "waiting_for_production_money_proof",
   });
 
   const incompletePath = join(tempDir, "incomplete.md");

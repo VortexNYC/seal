@@ -32,7 +32,7 @@ type ProductionReadinessAudit = {
   readonly remediation: {
     readonly boundary: string;
     readonly agentAllowedActions: readonly string[];
-    readonly humanOnlyActions: readonly string[];
+    readonly operatorControlledActions: readonly string[];
     readonly missingEnvSetCommands: readonly RemediationCommand[];
     readonly proofSequence: readonly string[];
     readonly successCriteria: readonly string[];
@@ -54,8 +54,8 @@ type SandboxSettlementAudit = {
   readonly ok: boolean;
   readonly check: string;
   readonly readinessWindow: "elapsed" | "waiting";
-  readonly earliestHumanReconcileAt: string;
-  readonly humanBoundary: string;
+  readonly earliestReconcileAt: string;
+  readonly operatorBoundary: string;
   readonly captured: {
     readonly merchantAccountId: string;
     readonly vortexPayableId: string;
@@ -86,7 +86,7 @@ const knownProductionConfigBlockers = new Set([
   "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
   "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
   "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
-  "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
+  "VORTEX_BILLING_DOCUMENT_PRICE_ID",
   "VORTEX_PAYMENTS_RUNTIME_MODE",
   "FINIX_PRODUCTION_USERNAME",
   "FINIX_PRODUCTION_PASSWORD",
@@ -159,10 +159,10 @@ if (!production.ok && missingProductionNames.length === 0) {
 }
 
 const productionBoundary = production.ok
-  ? "ready_for_human_production_proof"
+  ? "ready_for_production_proof"
   : "waiting_for_known_production_config";
 const waitingOn = [
-  ...(hostedOutcomes.settlement.fullySettledEvidence ? [] : ["human_settlement_proof"]),
+  ...(hostedOutcomes.settlement.fullySettledEvidence ? [] : ["settlement_proof"]),
   ...(production.ok ? [] : ["production_config"]),
   ...(productionProof.productionMoneyProofComplete ? [] : ["production_live_money_proof"]),
   ...(productionProof.productionMoneyProofComplete && !productionProof.postProofRetirementComplete
@@ -178,7 +178,7 @@ console.log(
       check: "seal_vortex_launch_boundary",
       launchReady,
       boundary:
-        "Non-mutating launch boundary audit. It proves sandbox settlement handoff is preserved, hosted outcomes are projected, and production readiness is either green or blocked only by known human-run configuration names.",
+        "Non-mutating launch boundary audit. It proves sandbox settlement handoff is preserved, hosted outcomes are projected, and production readiness is either green or blocked only by known production configuration names.",
       waitingOn,
       hostedOutcomes: {
         ok: hostedOutcomes.ok,
@@ -187,8 +187,8 @@ console.log(
       sandbox: {
         ok: sandbox.ok,
         readinessWindow: sandbox.readinessWindow,
-        earliestHumanReconcileAt: sandbox.earliestHumanReconcileAt,
-        humanBoundary: sandbox.humanBoundary,
+        earliestReconcileAt: sandbox.earliestReconcileAt,
+        operatorBoundary: sandbox.operatorBoundary,
         captured: sandbox.captured,
         nextAction: sandbox.nextAction,
       },
@@ -198,9 +198,9 @@ console.log(
         missingKnownConfig: missingProductionNames,
         invalidPresentConfig: invalidProductionNames,
         remediationCommandCount: production.remediation.missingEnvSetCommands.length,
-        humanBoundary: production.remediation.boundary,
+        operatorBoundary: production.remediation.boundary,
         agentAllowedActions: production.remediation.agentAllowedActions,
-        humanOnlyActions: production.remediation.humanOnlyActions,
+        operatorControlledActions: production.remediation.operatorControlledActions,
         proofSequence: production.remediation.proofSequence,
         successCriteria: production.remediation.successCriteria,
       },
@@ -302,7 +302,7 @@ function isProductionReadinessAudit(value: unknown): value is ProductionReadines
     isRecord(value.remediation) &&
     typeof value.remediation.boundary === "string" &&
     isStringArray(value.remediation.agentAllowedActions) &&
-    isStringArray(value.remediation.humanOnlyActions) &&
+    isStringArray(value.remediation.operatorControlledActions) &&
     Array.isArray(value.remediation.missingEnvSetCommands) &&
     isStringArray(value.remediation.proofSequence) &&
     isStringArray(value.remediation.successCriteria) &&
@@ -331,8 +331,8 @@ function isSandboxSettlementAudit(value: unknown): value is SandboxSettlementAud
     value.ok === true &&
     value.check === "seal_vortex_sandbox_settlement_boundary" &&
     (value.readinessWindow === "elapsed" || value.readinessWindow === "waiting") &&
-    typeof value.earliestHumanReconcileAt === "string" &&
-    typeof value.humanBoundary === "string" &&
+    typeof value.earliestReconcileAt === "string" &&
+    typeof value.operatorBoundary === "string" &&
     typeof value.captured.merchantAccountId === "string" &&
     typeof value.captured.vortexPayableId === "string" &&
     typeof value.captured.hostedInvoiceUrl === "string" &&
@@ -402,19 +402,19 @@ function getNextAction(input: {
     return "Launch proof is complete; review the checked-in production proof artifact before widening any remaining external rollout scope.";
   }
   if (input.needsSettlementProof && input.needsProductionConfig) {
-    return "Human completes sandbox settlement proof and configures the listed production environment names, then runs the production money proof and post-proof retirement sequence.";
+    return "Complete sandbox settlement proof, configure the listed production environment names, then run the production money proof and post-proof retirement sequence.";
   }
   if (input.needsSettlementProof) {
-    return "Human completes sandbox settlement proof, then reruns the launch boundary audit.";
+    return "Complete sandbox settlement proof, then rerun the launch boundary audit.";
   }
   if (input.needsProductionConfig) {
-    return "Human configures the listed production environment names, then reruns production readiness and live proof.";
+    return "Configure the listed production environment names, then rerun production readiness and live proof.";
   }
   if (input.needsProductionMoneyProof) {
-    return "Human runs the production money proof sequence with explicit target ids, then records the checked-in proof artifact.";
+    return "Run the production money proof sequence with explicit target ids, then record the checked-in proof artifact.";
   }
   if (input.needsPostProofRetirement) {
-    return "Human widens production routing, retires external production payment-provider residue, records the evidence, then reruns this launch boundary audit.";
+    return "Widen production routing, retire external production payment-provider residue, record the evidence, then rerun this launch boundary audit.";
   }
   return "Launch proof is incomplete; inspect production proof boundary output.";
 }

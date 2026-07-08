@@ -146,6 +146,32 @@ describe("Vortex Billing document payable bridge", () => {
     });
   });
 
+  test("uses the default document price when no line-item override exists", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      customerMapJson: JSON.stringify({ org_seal_123: "cust_seal_org_default" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
+      defaultPriceId: "price_document_default",
+    });
+
+    const request = buildCreatePayableRequest({
+      config: baseConfig,
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+    });
+
+    expect(request.customerExternalId).toBe("cust_seal_org_default");
+    expect(request.lineItems[0]).toMatchObject({
+      priceId: "price_document_default",
+      metadata: {
+        sealLineItemId: "seal_line_1",
+      },
+    });
+  });
+
   test("models a resolved Seal card fee as a Vortex fixed platform fee", () => {
     const env = readVortexBillingEnv({
       apiBaseUrl: "https://payments.vortex.test",

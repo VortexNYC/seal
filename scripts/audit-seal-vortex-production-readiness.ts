@@ -45,7 +45,7 @@ type RemediationCommand = {
 type RemediationPlan = {
   readonly boundary: string;
   readonly agentAllowedActions: readonly string[];
-  readonly humanOnlyActions: readonly string[];
+  readonly operatorControlledActions: readonly string[];
   readonly missingEnvSetCommands: readonly RemediationCommand[];
   readonly proofSequence: readonly string[];
   readonly successCriteria: readonly string[];
@@ -92,7 +92,7 @@ const sealGroups: readonly AuditGroup[] = [
       "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
       "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
       "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
-      "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
+      "VORTEX_BILLING_DOCUMENT_PRICE_ID",
     ],
   },
 ];
@@ -117,7 +117,7 @@ const vortexGroups: readonly AuditGroup[] = [
   },
 ];
 
-const humanValuePlaceholders: Readonly<Record<string, string>> = {
+const valuePlaceholders: Readonly<Record<string, string>> = {
   VORTEX_BILLING_PAYMENTS_ENVIRONMENT: "production",
   VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "'[\"<seal-production-org-id>\"]'",
   VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP:
@@ -126,8 +126,7 @@ const humanValuePlaceholders: Readonly<Record<string, string>> = {
     '\'{"<seal-production-org-id>":"<vortex-production-customer-id>"}\'',
   VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP:
     '\'{"<seal-production-org-id>":"<vortex-production-merchant-account-id>"}\'',
-  VORTEX_BILLING_DOCUMENT_PRICE_MAP:
-    '\'{"<seal-production-org-id>":"<vortex-production-document-price-id>"}\'',
+  VORTEX_BILLING_DOCUMENT_PRICE_ID: "'<vortex-production-document-price-id>'",
   VORTEX_PAYMENTS_RUNTIME_MODE: "finix",
   FINIX_PRODUCTION_USERNAME: "'<1password-finix-production-username>'",
   FINIX_PRODUCTION_PASSWORD: "'<1password-finix-production-password>'",
@@ -151,7 +150,7 @@ const envValidators: Readonly<Record<string, EnvValidator>> = {
   VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP: validateStringMap,
   VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP: validateStringMap,
   VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP: validateStringMap,
-  VORTEX_BILLING_DOCUMENT_PRICE_MAP: validateStringMap,
+  VORTEX_BILLING_DOCUMENT_PRICE_ID: validateNonEmptyString,
   VORTEX_PAYMENTS_PROVIDER: mustEqual("finix"),
   VORTEX_PAYMENTS_RUNTIME_MODE: mustEqual("finix"),
 };
@@ -311,7 +310,7 @@ function buildEnvSetCommand(input: {
       "env",
       "set",
       input.name,
-      humanValuePlaceholders[input.name] ?? "'<value>'",
+      valuePlaceholders[input.name] ?? "'<value>'",
       "--prod",
       "--deployment",
       input.deployment,
@@ -342,14 +341,15 @@ function buildRemediationPlan(input: {
 
   return {
     boundary:
-      "Human-run checklist only. These commands are printed for the operator; this audit never sets env values, creates payments, reconciles settlement, or moves money.",
+      "Production setup checklist. Agent-managed configuration is allowed; this audit never sets env values, creates payments, reconciles settlement, or moves money.",
     agentAllowedActions: [
       "Run this non-mutating readiness audit.",
+      "Set deterministic production configuration values and repo-derived routing ids.",
       "Record missing or invalid production config names without secret values.",
       "Update repo docs and Linear with non-secret proof state.",
     ],
-    humanOnlyActions: [
-      "Set or rotate production environment values.",
+    operatorControlledActions: [
+      "Provide or rotate missing external production provider secrets when they are not already available to the agent.",
       "Run production document-payment money movement.",
       "Run production settlement or payout reconciliation.",
       "Widen production document-payment routing.",
@@ -358,9 +358,9 @@ function buildRemediationPlan(input: {
     missingEnvSetCommands,
     proofSequence: [
       "bun run audit:seal-vortex-production-readiness",
-      "Human runs one small production document payment against the explicitly allowlisted organization.",
-      "Human waits for production settlement and payout visibility.",
-      "Human reruns the paid-state proof with production ids and --require-settled.",
+      "Run one small production document payment against the explicitly allowlisted organization.",
+      "Wait for production settlement and payout visibility.",
+      "Rerun the paid-state proof with production ids and --require-settled.",
       "Only after proof passes: widen document-payment routing and retire external production webhook residue.",
     ],
     successCriteria: [
@@ -396,7 +396,7 @@ console.log(
       vortex,
       remediation: buildRemediationPlan({ seal, vortex }),
       nextAction: ok
-        ? "Run the human production proof sequence with explicit target ids."
+        ? "Run the production proof sequence with explicit target ids."
         : "Configure the missing or invalid production environment names, then rerun this readiness audit.",
     },
     null,
@@ -452,6 +452,10 @@ function validateStringMap(value: string): string | null {
   )
     ? null
     : "expected non-empty string keys and values";
+}
+
+function validateNonEmptyString(value: string): string | null {
+  return value.trim().length > 0 ? null : "expected non-empty string";
 }
 
 function parseJson(value: string): unknown {

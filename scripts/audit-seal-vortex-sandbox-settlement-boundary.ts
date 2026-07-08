@@ -72,7 +72,7 @@ const captured: CapturedProof = {
 };
 
 assertContains("--require-settled", "settled paid-state proof flag");
-assertContains("--reconcile-if-ready", "human-run settlement reconciliation flag");
+assertContains("--reconcile-if-ready", "explicit settlement reconciliation flag");
 assertContains("waiting_for_provider_ready_to_settle", "provider settlement readiness state");
 
 assertFileContains(
@@ -115,16 +115,16 @@ const now = new Date();
 const readinessWindow = now.getTime() >= readyToSettleDate.getTime() ? "elapsed" : "waiting";
 const nextAction =
   readinessWindow === "elapsed"
-    ? "Human may inspect provider readiness now, run reconciliation only with --reconcile-if-ready if provider readiness is confirmed, then run the settled paid-state proof and record fullySettled evidence."
-    : `Human waits until ${captured.readyToSettleAt}, then inspects provider readiness before running reconciliation and the settled paid-state proof.`;
+    ? "Inspect provider readiness now, run reconciliation only with --reconcile-if-ready if provider readiness is confirmed, then run the settled paid-state proof and record fullySettled evidence."
+    : `Wait until ${captured.readyToSettleAt}, then inspect provider readiness before running reconciliation and the settled paid-state proof.`;
 
 const vortexDeployment = "dev:notable-leopard-969";
 const sealDeployment = "dev:clever-goose-484";
-const vortexHumanRepoRoot = "/home/debian/Projects/vortex-payments";
-const sealHumanRepoRoot = "/home/debian/Projects/Seal";
+const vortexOperatorRepoRoot = "/home/debian/Projects/vortex-payments";
+const sealOperatorRepoRoot = "/home/debian/Projects/Seal";
 
 const inspectWithoutReconcileCommand = [
-  `cd ${vortexHumanRepoRoot}`,
+  `cd ${vortexOperatorRepoRoot}`,
   `CONVEX_DEPLOYMENT=${vortexDeployment} \\`,
   "bun run inspect:vortex-payment-settlement-readiness -- \\",
   "  --environment sandbox \\",
@@ -132,11 +132,11 @@ const inspectWithoutReconcileCommand = [
   `  --expected-merchant-account-id ${captured.merchantAccountId}`,
 ].join("\n");
 
-const humanReconcileCommand = `${inspectWithoutReconcileCommand} \\
+const reconcileIfReadyCommand = `${inspectWithoutReconcileCommand} \\
   --reconcile-if-ready`;
 
 const settledPaidStateProofCommand = [
-  `cd ${sealHumanRepoRoot}`,
+  `cd ${sealOperatorRepoRoot}`,
   `SEAL_CONVEX_DEPLOYMENT=${sealDeployment} \\`,
   `VORTEX_CONVEX_DEPLOYMENT=${vortexDeployment} \\`,
   "bun run prove:seal-document-payment-vortex-paid-state -- \\",
@@ -146,8 +146,8 @@ const settledPaidStateProofCommand = [
 ].join("\n");
 
 const finalSandboxLaunchGateCommand = [
-  `cd ${vortexHumanRepoRoot}`,
-  `SEAL_REPO_ROOT=${sealHumanRepoRoot} \\`,
+  `cd ${vortexOperatorRepoRoot}`,
+  `SEAL_REPO_ROOT=${sealOperatorRepoRoot} \\`,
   "bun run prove:seal-vortex-final-sandbox-launch-gate",
 ].join("\n");
 
@@ -161,13 +161,13 @@ console.log(
       proofDoc: proofDocPath,
       captured,
       readinessWindow,
-      earliestHumanReconcileAt: captured.readyToSettleAt,
-      humanBoundary:
-        "Agents must not run reconciliation, settlement, payout, live card, or money-moving commands. The printed commands are for the human operator.",
+      earliestReconcileAt: captured.readyToSettleAt,
+      operatorBoundary:
+        "This audit is static and non-mutating. The printed commands are explicit operator actions that inspect or reconcile settlement state.",
       commands: {
         finalSandboxLaunchGate: finalSandboxLaunchGateCommand,
         inspectWithoutReconcile: inspectWithoutReconcileCommand,
-        humanReconcileIfReady: humanReconcileCommand,
+        reconcileIfReady: reconcileIfReadyCommand,
         settledPaidStateProof: settledPaidStateProofCommand,
       },
       nextAction,
