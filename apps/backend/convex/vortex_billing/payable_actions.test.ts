@@ -38,8 +38,8 @@ const baseConfig: BuildPayableInput["config"] = {
 };
 
 describe("Vortex Billing document payable bridge", () => {
-  test("selects Vortex only for allowlisted supported document payments", () => {
-    expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("stripe");
+  test("selects Vortex for every document payment configuration", () => {
+    expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
         VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify(["org_seal_123"]),
@@ -76,7 +76,7 @@ describe("Vortex Billing document payable bridge", () => {
     ).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider("org_not_allowlisted", [{ ...baseConfig, taxEnabled: true }], {}),
-    ).toBe("stripe");
+    ).toBe("vortex_billing");
   });
 
   test("builds a Vortex payable request from a Seal one-time payment config", () => {

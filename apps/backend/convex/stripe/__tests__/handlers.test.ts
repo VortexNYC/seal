@@ -80,6 +80,24 @@ describe("Stripe webhook handlers", () => {
     process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
   }
 
+  async function insertStoredSubscription(externalSubscriptionId: string): Promise<void> {
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("subscriptions", {
+        organizationId,
+        externalCustomerId: "cus_fake_test_001",
+        externalSubscriptionId,
+        externalPriceId: FAKE_PRICE_ID,
+        status: "active",
+        currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+        currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+        cancelAtPeriodEnd: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+  }
+
   /**
    * Build a synthetic Stripe.Subscription payload shaped just enough for
    * `extractSubscriptionData` to pull out everything the handler needs.
@@ -136,7 +154,7 @@ describe("Stripe webhook handlers", () => {
   }
 
   describe("handleSubscriptionCreated", () => {
-    test("inserts a subscription row tied to the org via metadata", async () => {
+    test("skips Stripe subscription creates for resolved orgs", async () => {
       await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
         subscription: buildSubscription(),
       });
@@ -150,15 +168,10 @@ describe("Stripe webhook handlers", () => {
           .first();
       });
 
-      expect(stored).not.toBeNull();
-      expect(stored?.organizationId).toBe(organizationId);
-      expect(stored?.status).toBe("active");
-      expect(stored?.externalCustomerId).toBe("cus_fake_test_001");
-      expect(stored?.externalPriceId).toBe(FAKE_PRICE_ID);
-      expect(stored?.cancelAtPeriodEnd).toBe(false);
+      expect(stored).toBeNull();
     });
 
-    test("falls back to organization lookup by stripeCustomerId when metadata is missing", async () => {
+    test("skips Stripe subscription creates after organization lookup by legacy customer id", async () => {
       await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
         subscription: buildSubscription({
           id: "sub_fake_test_002",
@@ -177,11 +190,10 @@ describe("Stripe webhook handlers", () => {
           .first(),
       );
 
-      expect(stored).not.toBeNull();
-      expect(stored?.organizationId).toBe(organizationId);
+      expect(stored).toBeNull();
     });
 
-    test("skips creating Stripe subscription state for Vortex-billed orgs", async () => {
+    test("ignores the old billing allowlist while skipping Stripe subscription creates", async () => {
       allowlistOrgForVortexBilling();
 
       await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
@@ -202,13 +214,9 @@ describe("Stripe webhook handlers", () => {
   });
 
   describe("handleSubscriptionUpdated", () => {
-    test("patches the existing subscription's status", async () => {
-      // Create first.
-      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
-        subscription: buildSubscription({ id: "sub_fake_test_003" }),
-      });
+    test("skips Stripe subscription updates", async () => {
+      await insertStoredSubscription("sub_fake_test_003");
 
-      // Then update to past_due.
       await t.mutation(internal.stripe.handlers.handleSubscriptionUpdated, {
         subscription: buildSubscription({ id: "sub_fake_test_003", status: "past_due" }),
       });
@@ -221,13 +229,11 @@ describe("Stripe webhook handlers", () => {
           )
           .first(),
       );
-      expect(stored?.status).toBe("past_due");
+      expect(stored?.status).toBe("active");
     });
 
-    test("skips updating Stripe subscription state for Vortex-billed orgs", async () => {
-      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
-        subscription: buildSubscription({ id: "sub_vortex_skip_update" }),
-      });
+    test("ignores the old billing allowlist while skipping Stripe subscription updates", async () => {
+      await insertStoredSubscription("sub_vortex_skip_update");
       allowlistOrgForVortexBilling();
 
       await t.mutation(internal.stripe.handlers.handleSubscriptionUpdated, {
@@ -247,10 +253,8 @@ describe("Stripe webhook handlers", () => {
   });
 
   describe("handleSubscriptionDeleted", () => {
-    test("marks the subscription as canceled", async () => {
-      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
-        subscription: buildSubscription({ id: "sub_fake_test_004" }),
-      });
+    test("skips Stripe subscription deletes", async () => {
+      await insertStoredSubscription("sub_fake_test_004");
 
       await t.mutation(internal.stripe.handlers.handleSubscriptionDeleted, {
         subscription: buildSubscription({ id: "sub_fake_test_004", status: "canceled" }),
@@ -264,13 +268,11 @@ describe("Stripe webhook handlers", () => {
           )
           .first(),
       );
-      expect(stored?.status).toBe("canceled");
+      expect(stored?.status).toBe("active");
     });
 
-    test("skips deleting Stripe subscription state for Vortex-billed orgs", async () => {
-      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
-        subscription: buildSubscription({ id: "sub_vortex_skip_delete" }),
-      });
+    test("ignores the old billing allowlist while skipping Stripe subscription deletes", async () => {
+      await insertStoredSubscription("sub_vortex_skip_delete");
       allowlistOrgForVortexBilling();
 
       await t.mutation(internal.stripe.handlers.handleSubscriptionDeleted, {
@@ -291,9 +293,7 @@ describe("Stripe webhook handlers", () => {
 
   describe("invoice handlers", () => {
     test("keeps Stripe invoice payment failure from mutating Vortex-billed org state", async () => {
-      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
-        subscription: buildSubscription({ id: "sub_vortex_skip_invoice_failure" }),
-      });
+      await insertStoredSubscription("sub_vortex_skip_invoice_failure");
       allowlistOrgForVortexBilling();
 
       await t.mutation(internal.stripe.handlers.handlePaymentFailed, {
@@ -316,9 +316,7 @@ describe("Stripe webhook handlers", () => {
     });
 
     test("keeps Stripe invoice payment success from mutating Vortex-billed org state", async () => {
-      await t.mutation(internal.stripe.handlers.handleSubscriptionCreated, {
-        subscription: buildSubscription({ id: "sub_vortex_skip_invoice_success" }),
-      });
+      await insertStoredSubscription("sub_vortex_skip_invoice_success");
       allowlistOrgForVortexBilling();
 
       await t.mutation(internal.stripe.handlers.handlePaymentSucceeded, {

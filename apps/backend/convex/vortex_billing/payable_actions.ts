@@ -15,7 +15,7 @@ type JsonObject = { readonly [key: string]: Json };
 
 type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
 
-export type DocumentPaymentProvider = "stripe" | "vortex_billing";
+export type DocumentPaymentProvider = "vortex_billing";
 
 export type VortexBillingEnvInput = {
   readonly apiBaseUrl?: string;
@@ -263,8 +263,6 @@ type CreateDepositBalancePayableResult = {
   readonly checkoutUrl: string | undefined;
 };
 
-const DOCUMENT_PAYMENT_ALLOWLIST_ENV = "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS";
-const SHARED_PAYABLE_ALLOWLIST_ENV = "VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
 const API_KEY_ENV = "VORTEX_BILLING_API_KEY";
 const SOURCE_NAMESPACE_ENV = "VORTEX_BILLING_SOURCE_NAMESPACE";
@@ -283,25 +281,11 @@ const SHARED_PRICE_MAP_ENV = "VORTEX_BILLING_PRICE_MAP";
 const PAYMENTS_ENVIRONMENT_ENV = "VORTEX_BILLING_PAYMENTS_ENVIRONMENT";
 
 export function selectDocumentPaymentProvider(
-  organizationId: string,
-  configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
-  env: Env = process.env,
+  _organizationId: string,
+  _configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
+  _env: Env = process.env,
 ): DocumentPaymentProvider {
-  if (!isDocumentPaymentOrganizationAllowlisted(organizationId, env)) {
-    return "stripe";
-  }
-  if (configs.length === 0) {
-    return "stripe";
-  }
-  return configs.every(
-    (config) =>
-      config.paymentType === "one_time" ||
-      config.paymentType === "recurring" ||
-      config.paymentType === "installments" ||
-      config.paymentType === "deposit_balance",
-  )
-    ? "vortex_billing"
-    : "stripe";
+  return "vortex_billing";
 }
 
 export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillingEnv {
@@ -1281,10 +1265,6 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     if (configs.length === 0) {
       return { paymentLinks: [] };
     }
-    if (selectDocumentPaymentProvider(args.organizationId, configs) !== "vortex_billing") {
-      throw new ConvexError("Vortex Billing document payment bridge is not enabled");
-    }
-
     // Prefer this org's own charges-ready Vortex merchant for the payable; falls back to the
     // shared/static merchant map when the per-user merchant isn't provisioned/ready yet (1a is
     // additive — routing is unchanged; only the merchant id is per-user when available).
@@ -1506,42 +1486,10 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
 }
 
 export function isDocumentPaymentOrganizationAllowlisted(
-  organizationId: string,
-  env: Env = process.env,
+  _organizationId: string,
+  _env: Env = process.env,
 ): boolean {
-  const allowlist = env[DOCUMENT_PAYMENT_ALLOWLIST_ENV] ?? env[SHARED_PAYABLE_ALLOWLIST_ENV];
-  return isOrganizationAllowlisted(organizationId, allowlist);
-}
-
-export function isOrganizationAllowlisted(
-  organizationId: string,
-  configured: string | undefined,
-): boolean {
-  if (configured === undefined || configured.trim() === "" || configured.trim() === "[]") {
-    return false;
-  }
-
-  const normalized = configured.trim();
-  if (normalized === "*") {
-    return true;
-  }
-
-  if (normalized.startsWith("[")) {
-    const parsed = parseJson(normalized, DOCUMENT_PAYMENT_ALLOWLIST_ENV);
-    if (!Array.isArray(parsed)) {
-      throw new ConvexError(
-        `${DOCUMENT_PAYMENT_ALLOWLIST_ENV} must be a JSON string array, "*", or "[]"`,
-      );
-    }
-
-    return parsed.some((entry) => entry === organizationId);
-  }
-
-  return normalized
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
-    .includes(organizationId);
+  return true;
 }
 
 function readRequiredValue(value: string | undefined, label: string): string {

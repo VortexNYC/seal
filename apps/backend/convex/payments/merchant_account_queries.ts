@@ -1,7 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
 import { memberQuery } from "../auth";
-import { getConnectionStatus } from "../stripe/connect_helpers";
 import { merchantAccountResultValidator } from "./merchant_account_validators";
 
 const operationalMerchantAccountValidator = v.object({
@@ -171,4 +170,28 @@ export function resolveProcessorAccountId(input: {
   }
 
   return input.stripeAccountId;
+}
+
+function getConnectionStatus(account: {
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  requirements?: {
+    currentlyDue: string[];
+    disabledReason?: string;
+  };
+}): "pending" | "restricted" | "connected" {
+  if (account.requirements?.disabledReason) {
+    return "restricted";
+  }
+
+  if (!account.detailsSubmitted || (account.requirements?.currentlyDue?.length ?? 0) > 0) {
+    return "pending";
+  }
+
+  if (!account.chargesEnabled) {
+    return "restricted";
+  }
+
+  return "connected";
 }

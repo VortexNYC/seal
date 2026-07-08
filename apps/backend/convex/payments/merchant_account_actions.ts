@@ -4,7 +4,6 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
-import { isDocumentPaymentOrganizationAllowlisted } from "../vortex_billing/payable_actions";
 import { feeHandlingValidator } from "./merchant_account_validators";
 
 type CreateMerchantAccountResult = {
@@ -30,22 +29,8 @@ type MerchantAccountSessionResult = {
   clientSecret: string;
 };
 
-type MerchantSurfaceEnv = {
-  readonly [key: string]: string | undefined;
-};
-
-export function assertLegacyStripeMerchantSurfaceAllowed(
-  organizationId: string,
-  surface: string,
-  env: MerchantSurfaceEnv = process.env,
-): void {
-  if (!isDocumentPaymentOrganizationAllowlisted(organizationId, env)) {
-    return;
-  }
-
-  throw new ConvexError(
-    `Legacy Stripe ${surface} is disabled for Vortex document-payment organizations`,
-  );
+export function rejectRetiredMerchantSurface(surface: string): never {
+  throw new ConvexError(`${surface} is retired; use Vortex hosted merchant onboarding`);
 }
 
 export const createMerchantAccount = action({
@@ -57,27 +42,16 @@ export const createMerchantAccount = action({
     processorAccountId: v.string(),
   }),
   handler: async (ctx, args): Promise<CreateMerchantAccountResult> => {
-    if (isDocumentPaymentOrganizationAllowlisted(args.organizationId)) {
-      const result = await ctx.runAction(
-        internal.payments.vortex_merchant_actions.createVortexMerchantAccount,
-        {
-          organizationId: args.organizationId,
-          feeHandling: args.feeHandling,
-        },
-      );
-
-      return {
-        processorAccountId: result.merchantAccountId,
-      };
-    }
-
     const result = await ctx.runAction(
-      internal.stripe.connect_actions.createConnectedAccount,
-      args,
+      internal.payments.vortex_merchant_actions.createVortexMerchantAccount,
+      {
+        organizationId: args.organizationId,
+        feeHandling: args.feeHandling,
+      },
     );
 
     return {
-      processorAccountId: result.stripeAccountId,
+      processorAccountId: result.merchantAccountId,
     };
   },
 });
@@ -94,22 +68,18 @@ export const createMerchantOnboardingLink = action({
     expiresAt: v.optional(v.string()),
   }),
   handler: async (ctx, args): Promise<MerchantOnboardingLinkResult> => {
-    if (isDocumentPaymentOrganizationAllowlisted(args.organizationId)) {
-      const result = await ctx.runAction(
-        internal.payments.vortex_merchant_actions.createVortexOnboardingLink,
-        {
-          organizationId: args.organizationId,
-        },
-      );
+    const result = await ctx.runAction(
+      internal.payments.vortex_merchant_actions.createVortexOnboardingLink,
+      {
+        organizationId: args.organizationId,
+      },
+    );
 
-      return {
-        url: result.url,
-        onboardingSessionId: result.onboardingSessionId,
-        expiresAt: result.expiresAt,
-      };
-    }
-
-    return await ctx.runAction(internal.stripe.connect_actions.createAccountLink, args);
+    return {
+      url: result.url,
+      onboardingSessionId: result.onboardingSessionId,
+      expiresAt: result.expiresAt,
+    };
   },
 });
 
@@ -122,10 +92,8 @@ export const createMerchantOAuthUrl = action({
     url: v.string(),
     state: v.string(),
   }),
-  handler: async (ctx, args): Promise<MerchantOAuthUrlResult> => {
-    assertLegacyStripeMerchantSurfaceAllowed(args.organizationId, "OAuth onboarding");
-
-    return await ctx.runAction(internal.stripe.connect_actions.createConnectOAuthUrl, args);
+  handler: async (_ctx, _args): Promise<MerchantOAuthUrlResult> => {
+    rejectRetiredMerchantSurface("OAuth merchant onboarding");
   },
 });
 
@@ -138,17 +106,8 @@ export const exchangeMerchantOAuthCode = action({
   returns: v.object({
     processorAccountId: v.string(),
   }),
-  handler: async (ctx, args): Promise<CreateMerchantAccountResult> => {
-    assertLegacyStripeMerchantSurfaceAllowed(args.organizationId, "OAuth exchange");
-
-    const result = await ctx.runAction(
-      internal.stripe.connect_actions.exchangeConnectOAuthCode,
-      args,
-    );
-
-    return {
-      processorAccountId: result.stripeAccountId,
-    };
+  handler: async (_ctx, _args): Promise<CreateMerchantAccountResult> => {
+    rejectRetiredMerchantSurface("OAuth merchant exchange");
   },
 });
 
@@ -160,10 +119,8 @@ export const createMerchantAccountSession = action({
   returns: v.object({
     clientSecret: v.string(),
   }),
-  handler: async (ctx, args): Promise<MerchantAccountSessionResult> => {
-    assertLegacyStripeMerchantSurfaceAllowed(args.organizationId, "embedded account session");
-
-    return await ctx.runAction(internal.stripe.connect_actions.createAccountSession, args);
+  handler: async (_ctx, _args): Promise<MerchantAccountSessionResult> => {
+    rejectRetiredMerchantSurface("Embedded merchant account session");
   },
 });
 
@@ -175,19 +132,9 @@ export const refreshMerchantAccount = action({
     status: v.union(v.literal("not_connected"), v.literal("refreshed")),
   }),
   handler: async (ctx, args): Promise<RefreshMerchantAccountResult> => {
-    const existing = await ctx.runQuery(
-      internal.stripe.connect_mutations.getAccountByOrganizationId,
-      {
-        organizationId: args.organizationId,
-      },
+    return await ctx.runAction(
+      internal.payments.vortex_merchant_actions.refreshVortexMerchantAccount,
+      args,
     );
-    if (existing?.provider === "vortex") {
-      return await ctx.runAction(
-        internal.payments.vortex_merchant_actions.refreshVortexMerchantAccount,
-        args,
-      );
-    }
-
-    return await ctx.runAction(internal.stripe.connect_actions.refreshConnectedAccount, args);
   },
 });

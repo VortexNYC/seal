@@ -4,7 +4,7 @@ Date: 2026-07-08
 Host: local Mac plus Herdr as default remote execution host
 Repo: /Users/shlomokabareti/Projects/Seal
 Base: origin/staging
-Active branch: codex/seal-stripe-removal-clean-baseline
+Active branch: codex/sea-556-remove-stripe-fallbacks
 
 ## What We Are Shipping
 
@@ -22,7 +22,9 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
 - Current Stripe residue baseline: 151 files contain Stripe strings.
 - `apps/backend/convex/stripe` still exists with 29 files.
 - `apps/backend/package.json` still depends on `stripe`.
-- Some `apps/backend/convex/payments/*` code still calls `internal.stripe.*` as a legacy provider fallback.
+- SEA-556 local lane removed the executable Stripe provider fallbacks from active payments/Vortex billing paths.
+- Current Stripe residue after SEA-556 local edits: 149 files contain Stripe strings.
+- Remaining `internal.stripe.*` calls are concentrated in the legacy `apps/backend/convex/stripe` modules and tests, not in `apps/backend/convex/payments` or `apps/backend/convex/vortex_billing`.
 
 ## Proven For SaaS Billing
 
@@ -92,25 +94,17 @@ The biggest limiter is now provider deletion order.
 
 Deleting Stripe before replacing the remaining provider fallbacks and data contracts would break legacy paths and historical state. The correct order is:
 
-1. Remove or replace remaining executable calls into `internal.stripe.*`.
-2. Move persisted Stripe-shaped state to provider-neutral names.
-3. Delete Stripe webhook/catalog/sync/runtime modules.
-4. Remove the Stripe dependency and env contract.
-5. Delete remaining tests, proof names, docs, and archive residue.
-6. Run a zero-Stripe scanner as a hard gate.
+1. Move persisted Stripe-shaped state to provider-neutral names.
+2. Delete Stripe webhook/catalog/sync/runtime modules.
+3. Remove the Stripe dependency and env contract.
+4. Delete remaining tests, proof names, docs, and archive residue.
+5. Run a zero-Stripe scanner as a hard gate.
 
 ## Immediate Execution Plan
 
-1. Land the formatter cleanup branch.
-2. Create Linear phase-2 deletion lanes under the existing project:
-   - control
-   - executable Stripe provider deletion
-   - provider-neutral data migration
-   - webhook/catalog/env deletion
-   - package/lock removal
-   - proof/test rename and final scanner
-   - docs/archive cleanup
-3. Start from account creation and onboarding, then SaaS billing, then merchant/document payment code, then operational/webhook code.
+1. Commit and push SEA-556 after explicit push confirmation.
+2. Start SEA-557 provider-neutral data migration for Stripe-shaped merchant account tables, ids, validators, and queries.
+3. Then continue SEA-558 through SEA-561: webhook/catalog/env deletion, package/lock removal, proof/test/doc cleanup, and final zero-Stripe scanner.
 4. Keep every lane proof-gated:
    - `bun run format:changed:check`
    - `bun run lint:strict`

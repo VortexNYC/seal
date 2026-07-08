@@ -19,16 +19,16 @@ describe("Vortex Billing SaaS processor", () => {
     vi.restoreAllMocks();
   });
 
-  test("selects Stripe unless the organization is allowlisted", () => {
-    expect(selectSaasBillingProvider("org_1", {})).toBe("stripe");
+  test("selects Vortex Billing regardless of the legacy allowlist", () => {
+    expect(selectSaasBillingProvider("org_1", {})).toBe("vortex_billing");
     expect(selectSaasBillingProvider("org_1", { VORTEX_BILLING_SAAS_ORGANIZATION_IDS: "[]" })).toBe(
-      "stripe",
+      "vortex_billing",
     );
     expect(
       selectSaasBillingProvider("org_1", {
         VORTEX_BILLING_SAAS_ORGANIZATION_IDS: JSON.stringify(["org_2"]),
       }),
-    ).toBe("stripe");
+    ).toBe("vortex_billing");
     expect(
       selectSaasBillingProvider("org_1", {
         VORTEX_BILLING_SAAS_ORGANIZATION_IDS: JSON.stringify(["org_1"]),
@@ -126,7 +126,7 @@ describe("Vortex Billing SaaS processor", () => {
     ).toBe("vtx_cust_seal_org_org_without_map");
   });
 
-  test("fails closed when an allowlisted checkout has no Vortex account mapping", () => {
+  test("fails closed when checkout has no Vortex account mapping", () => {
     expect(() =>
       resolveVortexBillingConfig(checkoutArgs, {
         VORTEX_BILLING_API_BASE_URL: "https://payments.vortex.test",

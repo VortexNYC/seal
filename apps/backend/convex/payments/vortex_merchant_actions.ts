@@ -8,7 +8,6 @@ import type { ActionCtx } from "../_generated/server";
 import { action, internalAction } from "../_generated/server";
 import { isAdmin } from "../auth.utils";
 import {
-  isDocumentPaymentOrganizationAllowlisted,
   readVortexBillingEnvFromProcess,
   requestVortexBillingJson,
 } from "../vortex_billing/payable_actions";
@@ -855,10 +854,9 @@ async function persistVortexMerchantAccount(
   state: VortexMerchantState,
   feeHandling: FeeHandling | undefined,
 ): Promise<void> {
-  await ctx.runMutation(internal.stripe.connect_mutations.upsertStripeAccount, {
+  await ctx.runMutation(internal.payments.merchant_account_mutations.upsertMerchantAccount, {
     organizationId,
-    provider: "vortex",
-    stripeAccountId: merchantAccountId,
+    merchantAccountId,
     vortexMerchantAccountId: merchantAccountId,
     accountType: "standard",
     chargesEnabled: state.chargesEnabled,
@@ -876,12 +874,8 @@ async function createVortexMerchantAccountForOrganization(
   organizationId: Id<"organizations">,
   feeHandling: FeeHandling | undefined,
 ): Promise<CreateVortexMerchantAccountResult> {
-  if (!isDocumentPaymentOrganizationAllowlisted(organizationId)) {
-    throw new ConvexError("Vortex merchant onboarding is not enabled for this organization");
-  }
-
   const existing = await ctx.runQuery(
-    internal.stripe.connect_mutations.getAccountByOrganizationId,
+    internal.payments.merchant_account_mutations.getAccountByOrganizationId,
     {
       organizationId,
     },
@@ -906,7 +900,7 @@ async function createVortexMerchantAccountForOrganization(
     };
   }
   if (existing) {
-    throw new ConvexError("A Stripe merchant account already exists for this organization");
+    throw new ConvexError("A non-Vortex merchant account already exists for this organization");
   }
 
   const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
@@ -978,7 +972,7 @@ async function refreshVortexMerchantAccountForOrganization(
   organizationId: Id<"organizations">,
 ): Promise<{ readonly status: "not_connected" | "refreshed" }> {
   const existing = await ctx.runQuery(
-    internal.stripe.connect_mutations.getAccountByOrganizationId,
+    internal.payments.merchant_account_mutations.getAccountByOrganizationId,
     {
       organizationId,
     },
@@ -1002,12 +996,8 @@ async function createVortexOnboardingLinkForOrganization(
   ctx: ActionCtx,
   organizationId: Id<"organizations">,
 ): Promise<CreateVortexOnboardingLinkResult> {
-  if (!isDocumentPaymentOrganizationAllowlisted(organizationId)) {
-    throw new ConvexError("Vortex merchant onboarding is not enabled for this organization");
-  }
-
   const existing = await ctx.runQuery(
-    internal.stripe.connect_mutations.getAccountByOrganizationId,
+    internal.payments.merchant_account_mutations.getAccountByOrganizationId,
     {
       organizationId,
     },
@@ -1147,12 +1137,8 @@ export const getVortexMerchantPayoutData = action({
   handler: async (ctx, args): Promise<VortexMerchantPayoutDataResult> => {
     await resolveOrganizationMembership(ctx, args.organizationId);
 
-    if (!isDocumentPaymentOrganizationAllowlisted(args.organizationId)) {
-      return EMPTY_VORTEX_MERCHANT_PAYOUT_DATA;
-    }
-
     const existing = await ctx.runQuery(
-      internal.stripe.connect_mutations.getAccountByOrganizationId,
+      internal.payments.merchant_account_mutations.getAccountByOrganizationId,
       {
         organizationId: args.organizationId,
       },
