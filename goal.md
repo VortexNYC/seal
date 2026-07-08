@@ -6,7 +6,7 @@ Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
 Latest code cleanup commit: `b7be17b1` (`refactor: split webhook endpoint row`)
 Latest launch-boundary commit: `aa16ba92` (`chore: harden Seal Vortex production boundary audit`)
-Latest proof-state doc commit: `c7d072b4` (`docs: refresh Seal proof pointer`)
+Latest proof-state doc commit: inspect with `git log --oneline -1 -- goal.md` before acting.
 Current head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
@@ -37,6 +37,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run audit:seal-vortex-launch-boundary` now surfaces the sandbox human reconciliation boundary and the production human-only boundary, and fails if production remediation commands do not exactly match the missing production env names.
 - `bun run prove:seal-saas-webhook-billing-state` now pushes the current checkout to the Seal dev deployment before running, so the live/dev SaaS billing-state proof cannot pass against stale deployed functions.
 - The Seal dev `organizations` table was cleaned from stale retired-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
+- Non-production Convex data cleanup on 2026-07-08 emptied old retired-provider account/webhook tables in local dev (`dev:aware-buzzard-568`) and staging/dev (`dev:clever-goose-484`), and cleaned the same retired customer field from 6 local-dev organization rows while preserving ids and creation times. Backups were saved under `/tmp` on this machine.
 - Current local verification passed after cleanup commit `b7be17b1`:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
@@ -111,7 +112,7 @@ Missing Vortex production names:
 - `FINIX_PRODUCTION_APPLICATION_ID`
 - `FINIX_PRODUCTION_WEBHOOK_SECRET`
 
-Latest non-mutating refresh results from head `c7d072b4`:
+Latest non-mutating refresh results recorded on this branch:
 
 - `bun run prove:zero-retired-provider-residue` passed and scans owned hidden env/config content.
 - Explicit hidden/no-ignore owned working-tree legacy-provider token scan returned no matches.
@@ -141,7 +142,7 @@ Latest non-mutating refresh results from head `c7d072b4`:
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting` and `earliestHumanReconcileAt` preserved as `2026-07-08T18:12:06.10Z`.
 - `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `human_settlement_proof` and `production_config`, while surfacing the sandbox and production human-only boundaries.
 - `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above and prints the agent-allowed actions, human-only actions, and production success criteria without secret values.
-- Branch worktree was clean after committing `c7d072b4`.
+- Branch worktree was clean after the latest recorded verification.
 
 ## Current Human Boundary
 
