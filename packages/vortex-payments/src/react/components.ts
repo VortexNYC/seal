@@ -342,6 +342,37 @@ export type VortexEmbeddedCheckoutCopy = {
   readonly secureEntryReadyLabel?: ReactNode;
 };
 
+type EmbeddedCheckoutViewState = {
+  readonly canCollect: boolean;
+  readonly hasFailedAttempt: boolean;
+  readonly hostedCheckoutUrl: string | undefined;
+  readonly hostedRecoveryRequest: VortexHostedSurfaceRequest | null;
+  readonly isDisabled: boolean;
+  readonly resolvedCopy: Required<VortexEmbeddedCheckoutCopy>;
+  readonly usesHostedCheckout: boolean;
+};
+
+const DEFAULT_EMBEDDED_CHECKOUT_COPY: Required<VortexEmbeddedCheckoutCopy> = {
+  title: "Checkout",
+  readyDescription: "Complete payment with a Vortex-secured payment method.",
+  paidDescription: "This payment request is paid.",
+  blockedDescription: "This checkout is not currently collectible.",
+  loadingTitle: "Loading checkout...",
+  errorTitle: "Unable to complete checkout.",
+  emptyTitle: "No line items were provided.",
+  emptyDescription: "Checkout can still continue from the payment request total.",
+  amountDueLabel: "Amount due",
+  statusLabel: "Status",
+  customerLabel: "Customer",
+  merchantLabel: "Merchant",
+  dueAtLabel: "Due",
+  expiresAtLabel: "Expires",
+  startPaymentMethodSetupLabel: "Start secure payment entry",
+  submitTokenizedPaymentMethodLabel: "Complete payment",
+  openHostedCheckoutLabel: "Open hosted checkout",
+  secureEntryReadyLabel: "Waiting for secure entry",
+};
+
 export type VortexEmbeddedCheckoutProps = {
   readonly checkout: VortexEmbeddedCheckoutState;
   readonly appearance?: VortexEmbeddedComponentAppearance;
@@ -1534,22 +1565,13 @@ export function VortexEmbeddedCheckout({
 }: VortexEmbeddedCheckoutProps): ReactNode {
   const { runtime, navigate: contextNavigate } = useVortexPayments();
   const selectedNavigate = navigate ?? contextNavigate;
-  const resolvedCopy = resolveEmbeddedCheckoutCopy(copy);
-  const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canCollect = checkout.status === "open" && checkout.amountRemaining > 0;
-  const hasFailedAttempt = checkout.lastAttemptStatus === "failed";
-  const hostedCheckoutUrl =
-    checkout.hostedCheckoutUrl === undefined || checkout.hostedCheckoutUrl.trim().length === 0
-      ? undefined
-      : checkout.hostedCheckoutUrl;
-  const hostedRecoveryRequest: VortexHostedSurfaceRequest | null =
-    checkout.hostedRecoveryToken === undefined
-      ? null
-      : {
-          surface: "payment_recovery",
-          token: checkout.hostedRecoveryToken,
-          query: { view: "payment_recovery" },
-        };
+  const viewState = createEmbeddedCheckoutViewState({
+    checkout,
+    copy,
+    disabled,
+    loading,
+    readOnly,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -1574,64 +1596,160 @@ export function VortexEmbeddedCheckout({
   const submitTokenizedMethod = (): void => {
     void onSubmitTokenizedPaymentMethod?.(checkout);
   };
-  const openHostedCheckout = (): void => {
-    const launch =
-      hostedCheckoutUrl === undefined
-        ? hostedRecoveryRequest === null
-          ? null
-          : runtime.createHostedLink(hostedRecoveryRequest)
-        : {
-            surface: "pay_link" as const,
-            url: hostedCheckoutUrl,
-            mode: "hosted_redirect" as const,
-          };
-    if (launch === null) return;
-    onHostedCheckoutLaunch?.(launch);
-    selectedNavigate(launch);
-  };
-  const usesHostedCheckout = hostedCheckoutUrl !== undefined;
+  const openHostedCheckout = createEmbeddedCheckoutHostedLauncher({
+    onHostedCheckoutLaunch,
+    runtime,
+    selectedNavigate,
+    viewState,
+  });
 
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-embedded-checkout", className, classNames?.root),
-      "data-vortex-surface": "embedded-checkout",
-      "data-vortex-component": "VortexEmbeddedCheckout",
-      "data-vortex-payment-request-id": checkout.paymentRequestId,
-      "data-vortex-checkout-status": checkout.status,
-      "data-vortex-amount-remaining": String(checkout.amountRemaining),
-      "data-vortex-hosted-checkout-url-present": String(usesHostedCheckout),
-      "data-vortex-tokenized-payment-method-ready": String(tokenizedPaymentMethodReady === true),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    createEmbeddedCheckoutSectionProps({
+      appearance,
+      checkout,
+      className,
+      classNames,
+      tokenizedPaymentMethodReady,
+      viewState,
+    }),
+    createEmbeddedCheckoutHeader(checkout, viewState, classNames),
+    createEmbeddedCheckoutFeedback({ checkout, classNames, error, loading, viewState }),
+    createEmbeddedCheckoutMetrics(checkout, viewState.resolvedCopy, classNames),
+    createEmbeddedCheckoutLineItems(checkout, viewState.resolvedCopy, classNames),
+    createEmbeddedCheckoutActions({
+      classNames,
+      openHostedCheckout,
+      startSetup,
+      submitTokenizedMethod,
+      tokenizedPaymentMethodReady,
+      viewState,
+    }),
+  );
+}
+
+function createEmbeddedCheckoutViewState({
+  checkout,
+  copy,
+  disabled,
+  loading,
+  readOnly,
+}: {
+  readonly checkout: VortexEmbeddedCheckoutState;
+  readonly copy: VortexEmbeddedCheckoutCopy | undefined;
+  readonly disabled: boolean | undefined;
+  readonly loading: boolean | undefined;
+  readonly readOnly: boolean | undefined;
+}): EmbeddedCheckoutViewState {
+  const hostedCheckoutUrl = resolveHostedCheckoutUrl(checkout.hostedCheckoutUrl);
+  return {
+    canCollect: checkout.status === "open" && checkout.amountRemaining > 0,
+    hasFailedAttempt: checkout.lastAttemptStatus === "failed",
+    hostedCheckoutUrl,
+    hostedRecoveryRequest: createHostedRecoveryRequest(checkout.hostedRecoveryToken),
+    isDisabled: disabled === true || readOnly === true || loading === true,
+    resolvedCopy: resolveEmbeddedCheckoutCopy(copy),
+    usesHostedCheckout: hostedCheckoutUrl !== undefined,
+  };
+}
+
+function resolveHostedCheckoutUrl(url: string | undefined): string | undefined {
+  if (url === undefined || url.trim().length === 0) {
+    return undefined;
+  }
+  return url;
+}
+
+function createHostedRecoveryRequest(token: string | undefined): VortexHostedSurfaceRequest | null {
+  if (token === undefined) {
+    return null;
+  }
+  return {
+    surface: "payment_recovery",
+    token,
+    query: { view: "payment_recovery" },
+  };
+}
+
+function createEmbeddedCheckoutSectionProps({
+  appearance,
+  checkout,
+  className,
+  classNames,
+  tokenizedPaymentMethodReady,
+  viewState,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly checkout: VortexEmbeddedCheckoutState;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly tokenizedPaymentMethodReady: boolean | undefined;
+  readonly viewState: EmbeddedCheckoutViewState;
+}) {
+  return {
+    className: cx("vortex-payments-embedded-checkout", className, classNames?.root),
+    "data-vortex-surface": "embedded-checkout",
+    "data-vortex-component": "VortexEmbeddedCheckout",
+    "data-vortex-payment-request-id": checkout.paymentRequestId,
+    "data-vortex-checkout-status": checkout.status,
+    "data-vortex-amount-remaining": String(checkout.amountRemaining),
+    "data-vortex-hosted-checkout-url-present": String(viewState.usesHostedCheckout),
+    "data-vortex-tokenized-payment-method-ready": String(tokenizedPaymentMethodReady === true),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createEmbeddedCheckoutHeader(
+  checkout: VortexEmbeddedCheckoutState,
+  viewState: EmbeddedCheckoutViewState,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, viewState.resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        checkout.status === "paid"
-          ? resolvedCopy.paidDescription
-          : canCollect
-            ? resolvedCopy.readyDescription
-            : resolvedCopy.blockedDescription,
-      ),
+      "p",
+      { className: classNames?.description },
+      embeddedCheckoutDescription(checkout, viewState),
     ),
+  );
+}
+
+function embeddedCheckoutDescription(
+  checkout: VortexEmbeddedCheckoutState,
+  viewState: EmbeddedCheckoutViewState,
+): ReactNode {
+  if (checkout.status === "paid") {
+    return viewState.resolvedCopy.paidDescription;
+  }
+  return viewState.canCollect
+    ? viewState.resolvedCopy.readyDescription
+    : viewState.resolvedCopy.blockedDescription;
+}
+
+function createEmbeddedCheckoutFeedback({
+  checkout,
+  classNames,
+  error,
+  loading,
+  viewState,
+}: {
+  readonly checkout: VortexEmbeddedCheckoutState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly viewState: EmbeddedCheckoutViewState;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
           { className: classNames?.loading, role: "status" },
-          resolvedCopy.loadingTitle,
+          viewState.resolvedCopy.loadingTitle,
         )
       : null,
     error === undefined
@@ -1639,103 +1757,241 @@ export function VortexEmbeddedCheckout({
       : createElement(
           "div",
           { className: classNames?.error, role: "alert" },
-          resolvedCopy.errorTitle,
+          viewState.resolvedCopy.errorTitle,
           error,
         ),
-    hasFailedAttempt && checkout.lastAttemptError !== undefined
+    viewState.hasFailedAttempt && checkout.lastAttemptError !== undefined
       ? createElement(
           "div",
           { className: classNames?.error, role: "alert" },
           checkout.lastAttemptError,
         )
       : null,
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(
-        resolvedCopy.amountDueLabel,
-        formatMinorUnitAmount(checkout.amountRemaining, checkout.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.statusLabel, checkout.status, classNames),
-      createMetric(resolvedCopy.customerLabel, checkout.customerLabel ?? "customer", classNames),
-      createMetric(resolvedCopy.merchantLabel, checkout.merchantLabel ?? "merchant", classNames),
-      createMetric(resolvedCopy.dueAtLabel, checkout.dueAt ?? "not_set", classNames),
-      createMetric(resolvedCopy.expiresAtLabel, checkout.expiresAt ?? "not_set", classNames),
+  ];
+}
+
+function createEmbeddedCheckoutMetrics(
+  checkout: VortexEmbeddedCheckoutState,
+  copy: Required<VortexEmbeddedCheckoutCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(
+      copy.amountDueLabel,
+      formatMinorUnitAmount(checkout.amountRemaining, checkout.currency),
+      classNames,
     ),
-    (checkout.lineItems ?? []).length === 0
-      ? createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyTitle),
-          createElement("p", null, resolvedCopy.emptyDescription),
-        )
-      : createElement(
-          "ul",
-          { className: classNames?.list },
-          (checkout.lineItems ?? []).map((lineItem) =>
-            createEmbeddedCheckoutLineItem(lineItem, classNames),
-          ),
-        ),
-    createElement(
-      "div",
-      { className: classNames?.actions },
-      usesHostedCheckout
-        ? createElement(
-            "button",
-            {
-              className: classNames?.button,
-              type: "button",
-              disabled: isDisabled || !canCollect,
-              onClick: openHostedCheckout,
-              "data-vortex-checkout-action": "open_hosted_checkout",
-            },
-            resolvedCopy.openHostedCheckoutLabel,
-          )
-        : [
-            createElement(
-              "button",
-              {
-                className: classNames?.button,
-                type: "button",
-                disabled: isDisabled || !canCollect,
-                onClick: startSetup,
-                "data-vortex-checkout-action": "start_payment_method_setup",
-                key: "start_payment_method_setup",
-              },
-              resolvedCopy.startPaymentMethodSetupLabel,
-            ),
-            createElement(
-              "button",
-              {
-                className: classNames?.button,
-                type: "button",
-                disabled: isDisabled || !canCollect || tokenizedPaymentMethodReady !== true,
-                onClick: submitTokenizedMethod,
-                "data-vortex-checkout-action": "submit_tokenized_payment_method",
-                key: "submit_tokenized_payment_method",
-              },
-              tokenizedPaymentMethodReady === true
-                ? resolvedCopy.submitTokenizedPaymentMethodLabel
-                : resolvedCopy.secureEntryReadyLabel,
-            ),
-            hostedRecoveryRequest === null
-              ? null
-              : createElement(
-                  "button",
-                  {
-                    className: classNames?.button,
-                    type: "button",
-                    disabled: isDisabled,
-                    onClick: openHostedCheckout,
-                    "data-vortex-checkout-action": "open_hosted_checkout",
-                    key: "open_hosted_checkout",
-                  },
-                  resolvedCopy.openHostedCheckoutLabel,
-                ),
-          ],
-    ),
+    createMetric(copy.statusLabel, checkout.status, classNames),
+    createMetric(copy.customerLabel, checkout.customerLabel ?? "customer", classNames),
+    createMetric(copy.merchantLabel, checkout.merchantLabel ?? "merchant", classNames),
+    createMetric(copy.dueAtLabel, checkout.dueAt ?? "not_set", classNames),
+    createMetric(copy.expiresAtLabel, checkout.expiresAt ?? "not_set", classNames),
   );
+}
+
+function createEmbeddedCheckoutLineItems(
+  checkout: VortexEmbeddedCheckoutState,
+  copy: Required<VortexEmbeddedCheckoutCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  const lineItems = checkout.lineItems ?? [];
+  if (lineItems.length === 0) {
+    return createElement(
+      "div",
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, copy.emptyTitle),
+      createElement("p", null, copy.emptyDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    lineItems.map((lineItem) => createEmbeddedCheckoutLineItem(lineItem, classNames)),
+  );
+}
+
+function createEmbeddedCheckoutActions({
+  classNames,
+  openHostedCheckout,
+  startSetup,
+  submitTokenizedMethod,
+  tokenizedPaymentMethodReady,
+  viewState,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly openHostedCheckout: () => void;
+  readonly startSetup: () => void;
+  readonly submitTokenizedMethod: () => void;
+  readonly tokenizedPaymentMethodReady: boolean | undefined;
+  readonly viewState: EmbeddedCheckoutViewState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    viewState.usesHostedCheckout
+      ? createEmbeddedCheckoutHostedButton({
+          classNames,
+          disabled: viewState.isDisabled || !viewState.canCollect,
+          onClick: openHostedCheckout,
+          viewState,
+        })
+      : createEmbeddedCheckoutDirectButtons({
+          classNames,
+          openHostedCheckout,
+          startSetup,
+          submitTokenizedMethod,
+          tokenizedPaymentMethodReady,
+          viewState,
+        }),
+  );
+}
+
+function createEmbeddedCheckoutHostedButton({
+  classNames,
+  disabled,
+  onClick,
+  viewState,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly disabled: boolean;
+  readonly onClick: () => void;
+  readonly viewState: EmbeddedCheckoutViewState;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled,
+      onClick,
+      type: "button",
+      "data-vortex-checkout-action": "open_hosted_checkout",
+    },
+    viewState.resolvedCopy.openHostedCheckoutLabel,
+  );
+}
+
+function createEmbeddedCheckoutDirectButtons({
+  classNames,
+  openHostedCheckout,
+  startSetup,
+  submitTokenizedMethod,
+  tokenizedPaymentMethodReady,
+  viewState,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly openHostedCheckout: () => void;
+  readonly startSetup: () => void;
+  readonly submitTokenizedMethod: () => void;
+  readonly tokenizedPaymentMethodReady: boolean | undefined;
+  readonly viewState: EmbeddedCheckoutViewState;
+}): ReactNode {
+  return [
+    createEmbeddedCheckoutButton({
+      action: "start_payment_method_setup",
+      classNames,
+      disabled: viewState.isDisabled || !viewState.canCollect,
+      key: "start_payment_method_setup",
+      label: viewState.resolvedCopy.startPaymentMethodSetupLabel,
+      onClick: startSetup,
+    }),
+    createEmbeddedCheckoutButton({
+      action: "submit_tokenized_payment_method",
+      classNames,
+      disabled:
+        viewState.isDisabled || !viewState.canCollect || tokenizedPaymentMethodReady !== true,
+      key: "submit_tokenized_payment_method",
+      label: embeddedCheckoutSubmitLabel(tokenizedPaymentMethodReady, viewState),
+      onClick: submitTokenizedMethod,
+    }),
+    viewState.hostedRecoveryRequest === null
+      ? null
+      : createEmbeddedCheckoutButton({
+          action: "open_hosted_checkout",
+          classNames,
+          disabled: viewState.isDisabled,
+          key: "open_hosted_checkout",
+          label: viewState.resolvedCopy.openHostedCheckoutLabel,
+          onClick: openHostedCheckout,
+        }),
+  ];
+}
+
+function embeddedCheckoutSubmitLabel(
+  tokenizedPaymentMethodReady: boolean | undefined,
+  viewState: EmbeddedCheckoutViewState,
+): ReactNode {
+  return tokenizedPaymentMethodReady === true
+    ? viewState.resolvedCopy.submitTokenizedPaymentMethodLabel
+    : viewState.resolvedCopy.secureEntryReadyLabel;
+}
+
+function createEmbeddedCheckoutButton({
+  action,
+  classNames,
+  disabled,
+  key,
+  label,
+  onClick,
+}: {
+  readonly action: string;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly disabled: boolean;
+  readonly key: string;
+  readonly label: ReactNode;
+  readonly onClick: () => void;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled,
+      key,
+      onClick,
+      type: "button",
+      "data-vortex-checkout-action": action,
+    },
+    label,
+  );
+}
+
+function createEmbeddedCheckoutHostedLauncher({
+  onHostedCheckoutLaunch,
+  runtime,
+  selectedNavigate,
+  viewState,
+}: {
+  readonly onHostedCheckoutLaunch: VortexEmbeddedCheckoutProps["onHostedCheckoutLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly viewState: EmbeddedCheckoutViewState;
+}) {
+  return (): void => {
+    const launch = createEmbeddedCheckoutHostedLaunch(runtime, viewState);
+    if (launch === null) {
+      return;
+    }
+    onHostedCheckoutLaunch?.(launch);
+    selectedNavigate(launch);
+  };
+}
+
+function createEmbeddedCheckoutHostedLaunch(
+  runtime: VortexSurfaceProviderRuntime,
+  viewState: EmbeddedCheckoutViewState,
+): VortexSurfaceLaunch | null {
+  if (viewState.hostedCheckoutUrl !== undefined) {
+    return {
+      surface: "pay_link",
+      url: viewState.hostedCheckoutUrl,
+      mode: "hosted_redirect",
+    };
+  }
+  if (viewState.hostedRecoveryRequest === null) {
+    return null;
+  }
+  return runtime.createHostedLink(viewState.hostedRecoveryRequest);
 }
 
 export function VortexPromoCodeControl({
@@ -4801,30 +5057,7 @@ function formatMinorUnitAmount(amount: number, currency: string): string {
 function resolveEmbeddedCheckoutCopy(
   copy: VortexEmbeddedCheckoutCopy | undefined,
 ): Required<VortexEmbeddedCheckoutCopy> {
-  return {
-    title: copy?.title ?? "Checkout",
-    readyDescription:
-      copy?.readyDescription ?? "Complete payment with a Vortex-secured payment method.",
-    paidDescription: copy?.paidDescription ?? "This payment request is paid.",
-    blockedDescription: copy?.blockedDescription ?? "This checkout is not currently collectible.",
-    loadingTitle: copy?.loadingTitle ?? "Loading checkout...",
-    errorTitle: copy?.errorTitle ?? "Unable to complete checkout.",
-    emptyTitle: copy?.emptyTitle ?? "No line items were provided.",
-    emptyDescription:
-      copy?.emptyDescription ?? "Checkout can still continue from the payment request total.",
-    amountDueLabel: copy?.amountDueLabel ?? "Amount due",
-    statusLabel: copy?.statusLabel ?? "Status",
-    customerLabel: copy?.customerLabel ?? "Customer",
-    merchantLabel: copy?.merchantLabel ?? "Merchant",
-    dueAtLabel: copy?.dueAtLabel ?? "Due",
-    expiresAtLabel: copy?.expiresAtLabel ?? "Expires",
-    startPaymentMethodSetupLabel:
-      copy?.startPaymentMethodSetupLabel ?? "Start secure payment entry",
-    submitTokenizedPaymentMethodLabel:
-      copy?.submitTokenizedPaymentMethodLabel ?? "Complete payment",
-    openHostedCheckoutLabel: copy?.openHostedCheckoutLabel ?? "Open hosted checkout",
-    secureEntryReadyLabel: copy?.secureEntryReadyLabel ?? "Waiting for secure entry",
-  };
+  return { ...DEFAULT_EMBEDDED_CHECKOUT_COPY, ...copy };
 }
 
 function resolvePromoCodeControlCopy(
