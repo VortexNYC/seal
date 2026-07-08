@@ -111,3 +111,21 @@ export function getErrorMessage(error: unknown): string {
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+/**
+ * Truncate a string in the middle with an ellipsis.
+ *
+ * If the string length is less than or equal to `max`, it is returned unchanged.
+ * Otherwise the middle is replaced with "…" (or "..." — I'll use "…" is 1 char,
+ * but standard is "..."). Let's use "..." to be safe and backend-style.
+ */
+export function truncateMiddle(s: string, max: number): string {
+  if (s.length <= max) {
+    return s;
+  }
+  if (max <= 3) {
+    return s.slice(0, max);
+  }
+  const side = (max - 3) / 2;
+  return s.slice(0, Math.ceil(side)) + "..." + s.slice(s.length - Math.floor(side));
+}

@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp, truncateMiddle } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -283,5 +283,46 @@ describe("clamp", () => {
       expect(clamp(-0.1, 0, 1)).toBe(0);
       expect(clamp(1.1, 0, 1)).toBe(1);
     });
+  });
+});
+
+describe("truncateMiddle", () => {
+  test("returns original string when length is less than max", () => {
+    expect(truncateMiddle("hello", 10)).toBe("hello");
+  });
+
+  test("returns original string when length equals max", () => {
+    expect(truncateMiddle("hello", 5)).toBe("hello");
+  });
+
+  test("truncates middle of a long string", () => {
+    expect(truncateMiddle("abcdefghijklmnopqrstuvwxyz", 15)).toBe("abcdef...uvwxyz");
+  });
+
+  test("truncates middle evenly when max - 3 is odd", () => {
+    expect(truncateMiddle("abcdefgh", 6)).toBe("ab...h");
+  });
+
+  test("truncates middle with extra char on the right when max - 3 is even", () => {
+    expect(truncateMiddle("abcdefgh", 7)).toBe("ab...gh");
+  });
+
+  test("returns full string when max equals string length", () => {
+    expect(truncateMiddle("abc", 3)).toBe("abc");
+  });
+
+  test("returns empty string for empty input", () => {
+    expect(truncateMiddle("", 5)).toBe("");
+  });
+
+  test("handles max <= 3 by returning the prefix", () => {
+    expect(truncateMiddle("abcdef", 3)).toBe("abc");
+    expect(truncateMiddle("abcdef", 2)).toBe("ab");
+    expect(truncateMiddle("abcdef", 1)).toBe("a");
+  });
+
+  test("handles single-character string", () => {
+    expect(truncateMiddle("a", 5)).toBe("a");
+    expect(truncateMiddle("a", 1)).toBe("a");
   });
 });
