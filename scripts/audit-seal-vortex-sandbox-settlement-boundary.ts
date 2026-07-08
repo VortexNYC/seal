@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 type CapturedProof = {
@@ -12,9 +12,18 @@ type CapturedProof = {
 };
 
 const repoRoot = new URL("..", import.meta.url).pathname;
+const localVortexRepoRoot = join(repoRoot, "../vortex-payments");
 const proofDocPath = join(
   repoRoot,
   "docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md",
+);
+const finalGateScriptPath = join(
+  localVortexRepoRoot,
+  "scripts/prove-seal-vortex-final-sandbox-launch-gate.ts",
+);
+const finalGateDocPath = join(
+  localVortexRepoRoot,
+  "docs/test-sessions/session-2026-07-07-seal-vortex-final-sandbox-launch-gate.md",
 );
 const proofDoc = readFileSync(proofDocPath, "utf8");
 
@@ -38,6 +47,16 @@ function assertContains(fragment: string, label: string): void {
   }
 }
 
+function assertFileContains(path: string, fragment: string, label: string): void {
+  if (!existsSync(path)) {
+    fail(`Missing ${label}: ${path}`);
+  }
+  const contents = readFileSync(path, "utf8");
+  if (!contents.includes(fragment)) {
+    fail(`Missing ${label} fragment in ${path}: ${fragment}`);
+  }
+}
+
 const captured: CapturedProof = {
   merchantAccountId: readRequiredMatch(/^merchantAccountId:\s*(\S+)$/m, "merchant account id"),
   vortexPayableId: readRequiredMatch(/^vortexPayableId:\s*(\S+)$/m, "Vortex payable id"),
@@ -50,6 +69,29 @@ assertContains("--require-settled", "settled paid-state proof flag");
 assertContains("--reconcile-if-ready", "human-run settlement reconciliation flag");
 assertContains("waiting_for_provider_ready_to_settle", "provider settlement readiness state");
 
+assertFileContains(
+  finalGateScriptPath,
+  "inspect:vortex-payment-settlement-readiness",
+  "Vortex final sandbox launch gate settlement step",
+);
+assertFileContains(
+  finalGateScriptPath,
+  "prove:seal-document-payment-vortex-paid-state",
+  "Vortex final sandbox launch gate Seal proof step",
+);
+assertFileContains(finalGateScriptPath, "--reconcile-if-ready", "Vortex final sandbox launch gate reconcile flag");
+assertFileContains(finalGateScriptPath, "--require-settled", "Vortex final sandbox launch gate settled flag");
+
+for (const [label, value] of Object.entries({
+  paymentId: captured.paymentId,
+  merchantAccountId: captured.merchantAccountId,
+  vortexPayableId: captured.vortexPayableId,
+  hostedInvoiceUrl: captured.hostedInvoiceUrl,
+  readyToSettleAt: captured.readyToSettleAt,
+})) {
+  assertFileContains(finalGateDocPath, value, `Vortex final sandbox launch gate ${label}`);
+}
+
 const readyToSettleDate = new Date(captured.readyToSettleAt);
 if (Number.isNaN(readyToSettleDate.getTime())) {
   fail(`Invalid readyToSettleAt timestamp: ${captured.readyToSettleAt}`);
@@ -60,11 +102,11 @@ const readinessWindow = now.getTime() >= readyToSettleDate.getTime() ? "elapsed"
 
 const vortexDeployment = "dev:notable-leopard-969";
 const sealDeployment = "dev:clever-goose-484";
-const vortexRepoRoot = "/home/debian/Projects/vortex-payments";
-const sealRepoRoot = "/home/debian/Projects/Seal";
+const vortexHumanRepoRoot = "/home/debian/Projects/vortex-payments";
+const sealHumanRepoRoot = "/home/debian/Projects/Seal";
 
 const inspectWithoutReconcileCommand = [
-  `cd ${vortexRepoRoot}`,
+  `cd ${vortexHumanRepoRoot}`,
   `CONVEX_DEPLOYMENT=${vortexDeployment} \\`,
   "bun run inspect:vortex-payment-settlement-readiness -- \\",
   "  --environment sandbox \\",
@@ -76,13 +118,19 @@ const humanReconcileCommand = `${inspectWithoutReconcileCommand} \\
   --reconcile-if-ready`;
 
 const settledPaidStateProofCommand = [
-  `cd ${sealRepoRoot}`,
+  `cd ${sealHumanRepoRoot}`,
   `SEAL_CONVEX_DEPLOYMENT=${sealDeployment} \\`,
   `VORTEX_CONVEX_DEPLOYMENT=${vortexDeployment} \\`,
   "bun run prove:seal-document-payment-vortex-paid-state -- \\",
   `  --vortex-payable-id ${captured.vortexPayableId} \\`,
   `  --hosted-invoice-url ${captured.hostedInvoiceUrl} \\`,
   "  --require-settled",
+].join("\n");
+
+const finalSandboxLaunchGateCommand = [
+  `cd ${vortexHumanRepoRoot}`,
+  `SEAL_REPO_ROOT=${sealHumanRepoRoot} \\`,
+  "bun run prove:seal-vortex-final-sandbox-launch-gate",
 ].join("\n");
 
 console.log(
@@ -96,6 +144,7 @@ console.log(
       captured,
       readinessWindow,
       commands: {
+        finalSandboxLaunchGate: finalSandboxLaunchGateCommand,
         inspectWithoutReconcile: inspectWithoutReconcileCommand,
         humanReconcileIfReady: humanReconcileCommand,
         settledPaidStateProof: settledPaidStateProofCommand,
