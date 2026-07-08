@@ -16,9 +16,11 @@ import type {
 import type { CanonicalDomainEvent } from "../../events/types";
 import type { ProviderRegistry } from "../../providers/registry";
 import type {
+  PaymentsProviderAdapter,
   ProviderContext,
   ProviderError,
   ProviderMerchantOnboardingRefreshOutput,
+  ProviderObjectSnapshot,
   ProviderOnboardingRequirementUploadLinkOutput,
 } from "../../providers/types";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
@@ -1272,6 +1274,239 @@ async function saveOnboardingStatusChangeEvent(input: {
   );
 }
 
+async function refreshMerchantRequirementState(
+  dependencies: MerchantOnboardingServiceDependencies,
+  command: RefreshMerchantRequirementCommand,
+  now: () => string,
+): Promise<RefreshedMerchantRequirementState | null> {
+  return dependencies.uow.runInTransaction(async (uow) => {
+    const scope = await getRequirementRefreshScope(uow, command);
+    if (!scope) {
+      return null;
+    }
+
+    const providerContext = dependencies.resolveProviderContext(scope.merchant);
+    const adapter = dependencies.providers.getAdapter(providerContext.provider);
+    const refreshedDocuments = await refreshRequirementDocuments({
+      uow,
+      adapter,
+      providerContext,
+      requirement: scope.requirement,
+      environment: command.environment,
+    });
+    const refreshedRequirement = await refreshProviderRequirement({
+      uow,
+      adapter,
+      providerContext,
+      requirement: scope.requirement,
+      now,
+    });
+    const refreshedAt = now();
+    await saveRequirementRefreshState({
+      uow,
+      command,
+      merchant: scope.merchant,
+      session: scope.session,
+      requirements: scope.requirements,
+      refreshedRequirement,
+      refreshedDocuments,
+      providerContext,
+      refreshedAt,
+    });
+
+    return {
+      requirement: toRequirementView(refreshedRequirement),
+      documents: refreshedDocuments
+        .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt))
+        .map((document) => toRequirementDocumentView(document)),
+    };
+  });
+}
+
+async function getRequirementRefreshScope(
+  uow: PaymentsUnitOfWork,
+  command: RefreshMerchantRequirementCommand,
+): Promise<{
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly requirement: MerchantRequirement;
+} | null> {
+  const merchant = await uow.merchants.getById(command.merchantAccountId, {
+    environment: command.environment,
+  });
+  if (!merchant) {
+    return null;
+  }
+  const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
+    environment: command.environment,
+  });
+  if (!session || session.merchantAccountId !== command.merchantAccountId) {
+    return null;
+  }
+  const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
+    environment: command.environment,
+  });
+  const requirement = requirements.find((entry) => entry.id === command.requirementId) ?? null;
+  return requirement ? { merchant, session, requirements, requirement } : null;
+}
+
+async function refreshRequirementDocuments(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly adapter: PaymentsProviderAdapter;
+  readonly providerContext: ProviderContext;
+  readonly requirement: MerchantRequirement;
+  readonly environment: RefreshMerchantRequirementCommand["environment"];
+}): Promise<MerchantRequirementDocument[]> {
+  const storedDocuments = await input.uow.onboarding.listDocumentsForRequirement(
+    input.requirement.id,
+    {
+      environment: input.environment,
+    },
+  );
+  const refreshedDocuments: MerchantRequirementDocument[] = [];
+  for (const document of storedDocuments) {
+    const snapshot = await fetchProviderSnapshot(input.adapter, input.providerContext, {
+      objectType: "file",
+      objectId: document.documentId,
+      relationship: "requirement_document",
+      recordedAt: document.recordedAt ?? document.requestedAt,
+      missingMessage: "provider document snapshot missing",
+    });
+    const refreshedDocument: MerchantRequirementDocument = {
+      ...document,
+      status: snapshot.status,
+      recordedAt: snapshot.recordedAt,
+    };
+    await input.uow.onboarding.saveRequirementDocument(refreshedDocument);
+    refreshedDocuments.push(refreshedDocument);
+  }
+  return refreshedDocuments;
+}
+
+async function refreshProviderRequirement(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly adapter: PaymentsProviderAdapter;
+  readonly providerContext: ProviderContext;
+  readonly requirement: MerchantRequirement;
+  readonly now: () => string;
+}): Promise<MerchantRequirement> {
+  const requirementObjectType = getRequirementSnapshotObjectType(input.requirement);
+  if (!input.requirement.providerRequirementRef || !requirementObjectType) {
+    return input.requirement;
+  }
+  const snapshot = await fetchProviderSnapshot(input.adapter, input.providerContext, {
+    objectType: requirementObjectType,
+    objectId: input.requirement.providerRequirementRef,
+    relationship: "onboarding_requirement",
+    recordedAt: input.requirement.requestedAt ?? input.now(),
+    missingMessage: "provider requirement snapshot missing",
+  });
+  const mappedStatus = mapRequirementSnapshotStatus(requirementObjectType, snapshot.status);
+  const refreshedRequirement: MerchantRequirement = {
+    ...input.requirement,
+    status: mappedStatus ?? input.requirement.status,
+    satisfiedAt:
+      mappedStatus === "satisfied"
+        ? (snapshot.recordedAt ?? input.requirement.satisfiedAt ?? input.now())
+        : input.requirement.satisfiedAt,
+    metadata: snapshot.metadata
+      ? { ...input.requirement.metadata, ...snapshot.metadata }
+      : input.requirement.metadata,
+  };
+  await input.uow.onboarding.saveRequirement(refreshedRequirement);
+  return refreshedRequirement;
+}
+
+async function fetchProviderSnapshot(
+  adapter: PaymentsProviderAdapter,
+  providerContext: ProviderContext,
+  input: {
+    readonly objectType: string;
+    readonly objectId: string;
+    readonly relationship: ProcessorRef["relationship"];
+    readonly recordedAt: string;
+    readonly missingMessage: string;
+  },
+): Promise<ProviderObjectSnapshot> {
+  const snapshot = await adapter.fetchObjectSnapshot(providerContext, {
+    provider: providerContext.provider,
+    objectType: input.objectType,
+    objectId: input.objectId,
+    relationship: input.relationship,
+    recordedAt: input.recordedAt,
+  });
+  if (!snapshot.ok || !snapshot.value) {
+    throw mapProviderError(
+      snapshot.error ?? {
+        provider: providerContext.provider,
+        category: "unknown",
+        code: "provider_snapshot_missing",
+        message: input.missingMessage,
+        retryable: false,
+      },
+    );
+  }
+  return snapshot.value;
+}
+
+async function saveRequirementRefreshState(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: RefreshMerchantRequirementCommand;
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly refreshedRequirement: MerchantRequirement;
+  readonly refreshedDocuments: readonly MerchantRequirementDocument[];
+  readonly providerContext: ProviderContext;
+  readonly refreshedAt: string;
+}): Promise<void> {
+  const updatedRequirements = input.requirements.map((entry) =>
+    entry.id === input.refreshedRequirement.id ? input.refreshedRequirement : entry,
+  );
+  const openRequirementCount = updatedRequirements.filter(
+    (entry) => entry.status === "pending" || entry.status === "submitted",
+  ).length;
+  const updatedSession: MerchantOnboardingSession = {
+    ...input.session,
+    currentRequirementCount: updatedRequirements.length,
+    openRequirementCount,
+    updatedAt: input.refreshedAt,
+  };
+  const updatedMerchant: MerchantAccount = {
+    ...input.merchant,
+    updatedAt: input.refreshedAt,
+  };
+  await input.uow.onboarding.saveSession(updatedSession);
+  await input.uow.merchants.save(updatedMerchant);
+  await input.uow.merchantStates.save(
+    deriveMerchantAccountState({
+      merchant: updatedMerchant,
+      onboardingSession: updatedSession,
+      requirements: updatedRequirements,
+      generatedAt: input.refreshedAt,
+    }),
+  );
+  await input.uow.events.saveCanonicalEvent(
+    createMerchantOnboardingEvent({
+      id: `${input.refreshedRequirement.id}:merchant_requirement.refreshed:${input.refreshedAt}`,
+      eventType: "merchant_requirement.refreshed",
+      aggregateType: "merchant_requirement",
+      aggregateId: input.refreshedRequirement.id,
+      environment: input.command.environment,
+      sourceProvider: input.providerContext.provider,
+      occurredAt: input.refreshedAt,
+      merchantAccountId: input.merchant.id,
+      payload: {
+        onboardingSessionId: updatedSession.id,
+        requirementId: input.refreshedRequirement.id,
+        requirementStatus: input.refreshedRequirement.status,
+        documentCount: input.refreshedDocuments.length,
+      },
+    }),
+  );
+}
+
 export function createMerchantOnboardingService(
   dependencies: MerchantOnboardingServiceDependencies,
 ): MerchantOnboardingService {
@@ -1573,155 +1808,7 @@ export function createMerchantOnboardingService(
     async refreshMerchantRequirement(
       command: RefreshMerchantRequirementCommand,
     ): Promise<RefreshedMerchantRequirementState | null> {
-      return dependencies.uow.runInTransaction(async (uow) => {
-        const merchant = await uow.merchants.getById(command.merchantAccountId, {
-          environment: command.environment,
-        });
-        if (!merchant) {
-          return null;
-        }
-        const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
-          environment: command.environment,
-        });
-        if (!session || session.merchantAccountId !== command.merchantAccountId) {
-          return null;
-        }
-        const requirements = await uow.onboarding.listRequirementsForSession(session.id, {
-          environment: command.environment,
-        });
-        const requirement =
-          requirements.find((entry) => entry.id === command.requirementId) ?? null;
-        if (!requirement) {
-          return null;
-        }
-
-        const providerContext = dependencies.resolveProviderContext(merchant);
-        const adapter = dependencies.providers.getAdapter(providerContext.provider);
-
-        const storedDocuments = await uow.onboarding.listDocumentsForRequirement(requirement.id, {
-          environment: command.environment,
-        });
-        const refreshedDocuments: MerchantRequirementDocument[] = [];
-        for (const document of storedDocuments) {
-          const snapshot = await adapter.fetchObjectSnapshot(providerContext, {
-            provider: providerContext.provider,
-            objectType: "file",
-            objectId: document.documentId,
-            relationship: "requirement_document",
-            recordedAt: document.recordedAt ?? document.requestedAt,
-          });
-          if (!snapshot.ok || !snapshot.value) {
-            throw mapProviderError(
-              snapshot.error ?? {
-                provider: providerContext.provider,
-                category: "unknown",
-                code: "provider_snapshot_missing",
-                message: "provider document snapshot missing",
-                retryable: false,
-              },
-            );
-          }
-          const refreshedDocument: MerchantRequirementDocument = {
-            ...document,
-            status: snapshot.value.status,
-            recordedAt: snapshot.value.recordedAt,
-          };
-          await uow.onboarding.saveRequirementDocument(refreshedDocument);
-          refreshedDocuments.push(refreshedDocument);
-        }
-
-        let refreshedRequirement = requirement;
-        const requirementObjectType = getRequirementSnapshotObjectType(requirement);
-        if (requirement.providerRequirementRef && requirementObjectType) {
-          const snapshot = await adapter.fetchObjectSnapshot(providerContext, {
-            provider: providerContext.provider,
-            objectType: requirementObjectType,
-            objectId: requirement.providerRequirementRef,
-            relationship: "onboarding_requirement",
-            recordedAt: requirement.requestedAt ?? now(),
-          });
-          if (!snapshot.ok || !snapshot.value) {
-            throw mapProviderError(
-              snapshot.error ?? {
-                provider: providerContext.provider,
-                category: "unknown",
-                code: "provider_snapshot_missing",
-                message: "provider requirement snapshot missing",
-                retryable: false,
-              },
-            );
-          }
-          const mappedStatus = mapRequirementSnapshotStatus(
-            requirementObjectType,
-            snapshot.value.status,
-          );
-          refreshedRequirement = {
-            ...requirement,
-            status: mappedStatus ?? requirement.status,
-            satisfiedAt:
-              mappedStatus === "satisfied"
-                ? (snapshot.value.recordedAt ?? requirement.satisfiedAt ?? now())
-                : requirement.satisfiedAt,
-            metadata: snapshot.value.metadata
-              ? { ...requirement.metadata, ...snapshot.value.metadata }
-              : requirement.metadata,
-          };
-          await uow.onboarding.saveRequirement(refreshedRequirement);
-        }
-
-        const updatedRequirements = requirements.map((entry) =>
-          entry.id === refreshedRequirement.id ? refreshedRequirement : entry,
-        );
-        const openRequirementCount = updatedRequirements.filter(
-          (entry) => entry.status === "pending" || entry.status === "submitted",
-        ).length;
-        const refreshedAt = now();
-        const updatedSession: MerchantOnboardingSession = {
-          ...session,
-          currentRequirementCount: updatedRequirements.length,
-          openRequirementCount,
-          updatedAt: refreshedAt,
-        };
-        const updatedMerchant: MerchantAccount = {
-          ...merchant,
-          updatedAt: refreshedAt,
-        };
-        await uow.onboarding.saveSession(updatedSession);
-        await uow.merchants.save(updatedMerchant);
-        await uow.merchantStates.save(
-          deriveMerchantAccountState({
-            merchant: updatedMerchant,
-            onboardingSession: updatedSession,
-            requirements: updatedRequirements,
-            generatedAt: refreshedAt,
-          }),
-        );
-        await uow.events.saveCanonicalEvent(
-          createMerchantOnboardingEvent({
-            id: `${refreshedRequirement.id}:merchant_requirement.refreshed:${refreshedAt}`,
-            eventType: "merchant_requirement.refreshed",
-            aggregateType: "merchant_requirement",
-            aggregateId: refreshedRequirement.id,
-            environment: command.environment,
-            sourceProvider: providerContext.provider,
-            occurredAt: refreshedAt,
-            merchantAccountId: merchant.id,
-            payload: {
-              onboardingSessionId: updatedSession.id,
-              requirementId: refreshedRequirement.id,
-              requirementStatus: refreshedRequirement.status,
-              documentCount: refreshedDocuments.length,
-            },
-          }),
-        );
-
-        return {
-          requirement: toRequirementView(refreshedRequirement),
-          documents: refreshedDocuments
-            .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt))
-            .map((document) => toRequirementDocumentView(document)),
-        };
-      });
+      return refreshMerchantRequirementState(dependencies, command, now);
     },
 
     async satisfyMerchantRequirements(
