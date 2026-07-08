@@ -4580,6 +4580,12 @@ export function VortexMerchantActionQueue({
   const selectedNavigate = navigate ?? contextNavigate;
   const isDisabled = disabled === true || readOnly === true;
   const resolvedCopy = resolveMerchantActionQueueCopy(copy);
+  const launchAction = createMerchantActionQueueLauncher({
+    onAction,
+    onActionLaunch,
+    runtime,
+    selectedNavigate,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -4601,35 +4607,75 @@ export function VortexMerchantActionQueue({
 
   return createElement(
     "section",
-    {
-      className: cx("vortex-payments-merchant-action-queue", className, classNames?.root),
-      "data-vortex-surface": "merchant-action-queue",
-      "data-vortex-component": "VortexMerchantActionQueue",
-      "data-vortex-merchant-status": merchantState.merchantStatus,
-      "data-vortex-can-accept-payments": String(merchantState.canAcceptPayments),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    createMerchantActionQueueSectionProps({ appearance, className, classNames, merchantState }),
+    createMerchantActionQueueHeader(merchantState, resolvedCopy, classNames),
+    createMerchantActionQueueFeedback({ classNames, error, loading, resolvedCopy }),
+    createMerchantActionQueueMetrics(merchantState, resolvedCopy, classNames),
+    createMerchantActionQueueBody({
+      actions: resolvedActions,
+      classNames,
+      error,
+      isDisabled,
+      launchAction,
+      loading,
+      resolvedCopy,
+    }),
+  );
+}
+
+function createMerchantActionQueueSectionProps({
+  appearance,
+  className,
+  classNames,
+  merchantState,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly merchantState: MerchantAccountStateSnapshot;
+}) {
+  return {
+    className: cx("vortex-payments-merchant-action-queue", className, classNames?.root),
+    "data-vortex-surface": "merchant-action-queue",
+    "data-vortex-component": "VortexMerchantActionQueue",
+    "data-vortex-merchant-status": merchantState.merchantStatus,
+    "data-vortex-can-accept-payments": String(merchantState.canAcceptPayments),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createMerchantActionQueueHeader(
+  merchantState: MerchantAccountStateSnapshot,
+  copy: Required<VortexMerchantActionQueueCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, copy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        merchantState.canAcceptPayments
-          ? resolvedCopy.readyDescription
-          : resolvedCopy.blockedDescription,
-      ),
+      "p",
+      { className: classNames?.description },
+      merchantState.canAcceptPayments ? copy.readyDescription : copy.blockedDescription,
     ),
+  );
+}
+
+function createMerchantActionQueueFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexMerchantActionQueueCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -4645,99 +4691,189 @@ export function VortexMerchantActionQueue({
           resolvedCopy.errorTitle,
           error,
         ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, merchantState.merchantStatus, classNames),
-      createMetric(
-        resolvedCopy.onboardingLabel,
-        merchantState.onboardingStatus ?? "not_started",
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.paymentCollectionLabel,
-        merchantState.canAcceptPayments ? "ready" : "blocked",
-        classNames,
-      ),
-      createMetric(resolvedCopy.payoutsLabel, merchantState.payoutReadiness, classNames),
+  ];
+}
+
+function createMerchantActionQueueMetrics(
+  merchantState: MerchantAccountStateSnapshot,
+  copy: Required<VortexMerchantActionQueueCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(copy.statusLabel, merchantState.merchantStatus, classNames),
+    createMetric(copy.onboardingLabel, merchantState.onboardingStatus ?? "not_started", classNames),
+    createMetric(
+      copy.paymentCollectionLabel,
+      merchantState.canAcceptPayments ? "ready" : "blocked",
+      classNames,
     ),
-    loading === true || error !== undefined
-      ? null
-      : resolvedActions.length === 0
-        ? createElement(
-            "div",
-            { className: classNames?.empty, role: "status" },
-            createElement("p", null, resolvedCopy.emptyTitle),
-            createElement("p", null, resolvedCopy.emptyDescription),
-          )
-        : createElement(
-            "ul",
-            { className: classNames?.list },
-            resolvedActions.map((action) =>
-              createElement(
-                "li",
-                {
-                  key: action.id,
-                  className: classNames?.item,
-                  "data-vortex-action-kind": action.kind,
-                  "data-vortex-action-severity": action.severity,
-                  "data-vortex-action-status": action.status,
-                },
-                createElement("strong", { className: classNames?.itemTitle }, action.title),
-                action.description === undefined
-                  ? null
-                  : createElement(
-                      "p",
-                      { className: classNames?.itemDescription },
-                      action.description,
-                    ),
-                createElement("span", { className: classNames?.status }, action.status),
-                createElement(
-                  "div",
-                  { className: classNames?.actions },
-                  action.primaryAction === undefined
-                    ? null
-                    : createElement(
-                        "button",
-                        {
-                          className: classNames?.button,
-                          type: "button",
-                          disabled: isDisabled,
-                          onClick: () => {
-                            const launch = runtime.createHostedLink(
-                              action.primaryAction as VortexHostedSurfaceRequest,
-                            );
-                            onAction?.(action);
-                            onActionLaunch?.(action, launch);
-                            selectedNavigate(launch);
-                          },
-                        },
-                        action.primaryActionLabel ?? "Open action",
-                      ),
-                  action.secondaryAction === undefined
-                    ? null
-                    : createElement(
-                        "button",
-                        {
-                          className: classNames?.button,
-                          type: "button",
-                          disabled: isDisabled,
-                          onClick: () => {
-                            const launch = runtime.createHostedLink(
-                              action.secondaryAction as VortexHostedSurfaceRequest,
-                            );
-                            onAction?.(action);
-                            onActionLaunch?.(action, launch);
-                            selectedNavigate(launch);
-                          },
-                        },
-                        action.secondaryActionLabel ?? "View details",
-                      ),
-                ),
-              ),
-            ),
-          ),
+    createMetric(copy.payoutsLabel, merchantState.payoutReadiness, classNames),
   );
+}
+
+function createMerchantActionQueueBody({
+  actions,
+  classNames,
+  error,
+  isDisabled,
+  launchAction,
+  loading,
+  resolvedCopy,
+}: {
+  readonly actions: readonly VortexMerchantActionQueueItem[];
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly isDisabled: boolean;
+  readonly launchAction: (
+    action: VortexMerchantActionQueueItem,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexMerchantActionQueueCopy>;
+}): ReactNode {
+  if (loading === true || error !== undefined) {
+    return null;
+  }
+  if (actions.length === 0) {
+    return createElement(
+      "div",
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyTitle),
+      createElement("p", null, resolvedCopy.emptyDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    actions.map((action) =>
+      createMerchantActionQueueItem({ action, classNames, isDisabled, launchAction }),
+    ),
+  );
+}
+
+function createMerchantActionQueueItem({
+  action,
+  classNames,
+  isDisabled,
+  launchAction,
+}: {
+  readonly action: VortexMerchantActionQueueItem;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly launchAction: (
+    action: VortexMerchantActionQueueItem,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+}): ReactNode {
+  return createElement(
+    "li",
+    {
+      key: action.id,
+      className: classNames?.item,
+      "data-vortex-action-kind": action.kind,
+      "data-vortex-action-severity": action.severity,
+      "data-vortex-action-status": action.status,
+    },
+    createElement("strong", { className: classNames?.itemTitle }, action.title),
+    action.description === undefined
+      ? null
+      : createElement("p", { className: classNames?.itemDescription }, action.description),
+    createElement("span", { className: classNames?.status }, action.status),
+    createMerchantActionQueueItemActions({ action, classNames, isDisabled, launchAction }),
+  );
+}
+
+function createMerchantActionQueueItemActions({
+  action,
+  classNames,
+  isDisabled,
+  launchAction,
+}: {
+  readonly action: VortexMerchantActionQueueItem;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly launchAction: (
+    action: VortexMerchantActionQueueItem,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    action.primaryAction === undefined
+      ? null
+      : createMerchantActionQueueButton({
+          action,
+          classNames,
+          isDisabled,
+          label: action.primaryActionLabel ?? "Open action",
+          launchAction,
+          request: action.primaryAction,
+        }),
+    action.secondaryAction === undefined
+      ? null
+      : createMerchantActionQueueButton({
+          action,
+          classNames,
+          isDisabled,
+          label: action.secondaryActionLabel ?? "View details",
+          launchAction,
+          request: action.secondaryAction,
+        }),
+  );
+}
+
+function createMerchantActionQueueButton({
+  action,
+  classNames,
+  isDisabled,
+  label,
+  launchAction,
+  request,
+}: {
+  readonly action: VortexMerchantActionQueueItem;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly label: ReactNode;
+  readonly launchAction: (
+    action: VortexMerchantActionQueueItem,
+    request: VortexHostedSurfaceRequest,
+  ) => void;
+  readonly request: VortexHostedSurfaceRequest;
+}): ReactNode {
+  return createElement(
+    "button",
+    {
+      className: classNames?.button,
+      disabled: isDisabled,
+      onClick: () => {
+        launchAction(action, request);
+      },
+      type: "button",
+    },
+    label,
+  );
+}
+
+function createMerchantActionQueueLauncher({
+  onAction,
+  onActionLaunch,
+  runtime,
+  selectedNavigate,
+}: {
+  readonly onAction: VortexMerchantActionQueueProps["onAction"];
+  readonly onActionLaunch: VortexMerchantActionQueueProps["onActionLaunch"];
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+}) {
+  return (action: VortexMerchantActionQueueItem, request: VortexHostedSurfaceRequest): void => {
+    const launch = runtime.createHostedLink(request);
+    onAction?.(action);
+    onActionLaunch?.(action, launch);
+    selectedNavigate(launch);
+  };
 }
 
 export function VortexMerchantAccountPanel({
