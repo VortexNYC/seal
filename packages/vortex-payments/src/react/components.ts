@@ -8118,14 +8118,14 @@ function createUsageMeterSummaryItemMetrics(
   );
 }
 
-function formatUsageMeterIncludedAmount(meter: VortexUsageMeterSummaryMeter): string {
+function formatUsageMeterIncludedAmount(meter: VortexUsageMeterSummaryMeter): ReactNode {
   if (meter.includedAmount === undefined) {
     return "none";
   }
   return formatUsageMeterAmount(meter.includedAmount, meter.unitLabel);
 }
 
-function formatUsageMeterBillableAmount(meter: VortexUsageMeterSummaryMeter): string {
+function formatUsageMeterBillableAmount(meter: VortexUsageMeterSummaryMeter): ReactNode {
   if (meter.billableAmount === undefined) {
     return "none";
   }

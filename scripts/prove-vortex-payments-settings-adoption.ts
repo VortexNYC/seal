@@ -29,12 +29,22 @@ for (const requiredFragment of [
   "VortexFeePolicyState",
   "buildFeePolicy",
   "handleVortexFeePolicyChange",
-  "onPolicyChange={handleVortexFeePolicyChange}",
   'feeHandling === "pass_to_recipient" ? "customer_pays" : "merchant_pays"',
 ]) {
   if (!paymentsRoute.includes(requiredFragment)) {
     failures.push(`payments route missing required Vortex adoption fragment: ${requiredFragment}`);
   }
+}
+
+const feePolicyHandlerWired =
+  paymentsRoute.includes("onPolicyChange={handleVortexFeePolicyChange}") ||
+  (paymentsRoute.includes("onFeePolicyChange={handleVortexFeePolicyChange}") &&
+    paymentsRoute.includes("onPolicyChange={onFeePolicyChange}"));
+
+if (!feePolicyHandlerWired) {
+  failures.push(
+    "payments route must wire VortexFeePolicyPanel policy changes to Vortex fee handling",
+  );
 }
 
 for (const requiredPackageFragment of [

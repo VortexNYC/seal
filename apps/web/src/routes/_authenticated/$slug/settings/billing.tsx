@@ -187,57 +187,96 @@ function BillingSettingsPage() {
     <PageWrapper
       title="Billing"
       headerActions={
-        <Button variant="outline" size="sm" onClick={handleManageBilling} disabled={portalLoading}>
-          {portalLoading ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          ) : (
-            <ExternalLink className="mr-2 size-4" />
-          )}
-          Manage Billing
-        </Button>
+        <ManageBillingButton portalLoading={portalLoading} onManageBilling={handleManageBilling} />
       }
     >
-      <div className="space-y-6">
-        <p className="text-muted-foreground text-sm text-pretty">
-          Manage your subscription and billing information.
-        </p>
-
-        <VortexPaymentsProvider
-          config={{
-            baseUrl: window.location.origin,
-            environment,
-            branding: { brandName: "Seal" },
-          }}
-          navigate={() => undefined}
-        >
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
-            <VortexSubscriptionActionSummary
-              subscription={subscriptionSummary}
-              classNames={vortexBillingClassNames}
-              copy={{
-                customActionLabel: "Manage billing",
-                title: "Current subscription",
-              }}
-              onAction={handleSubscriptionAction}
-            />
-            <VortexPlanComparison
-              comparison={planComparison}
-              classNames={vortexBillingClassNames}
-              disabled={checkoutLoadingPlanId !== null}
-              loading={checkoutLoadingPlanId !== null}
-              copy={{
-                currentButtonLabel: "Current plan",
-                loadingTitle: "Opening checkout...",
-                openCheckoutLabel: "Upgrade",
-                selectPlanLabel: "Select plan",
-                title: "Plans",
-              }}
-              onPlanSelect={handlePlanSelect}
-            />
-          </div>
-        </VortexPaymentsProvider>
-      </div>
+      <BillingSettingsContent
+        checkoutLoading={checkoutLoadingPlanId !== null}
+        environment={environment}
+        planComparison={planComparison}
+        subscriptionSummary={subscriptionSummary}
+        onPlanSelect={handlePlanSelect}
+        onSubscriptionAction={handleSubscriptionAction}
+      />
     </PageWrapper>
+  );
+}
+
+function ManageBillingButton({
+  portalLoading,
+  onManageBilling,
+}: {
+  readonly portalLoading: boolean;
+  readonly onManageBilling: () => void;
+}) {
+  return (
+    <Button variant="outline" size="sm" onClick={onManageBilling} disabled={portalLoading}>
+      {portalLoading ? (
+        <Loader2 className="mr-2 size-4 animate-spin" />
+      ) : (
+        <ExternalLink className="mr-2 size-4" />
+      )}
+      Manage Billing
+    </Button>
+  );
+}
+
+function BillingSettingsContent({
+  checkoutLoading,
+  environment,
+  planComparison,
+  subscriptionSummary,
+  onPlanSelect,
+  onSubscriptionAction,
+}: {
+  readonly checkoutLoading: boolean;
+  readonly environment: VortexPaymentsEnvironment;
+  readonly planComparison: VortexPlanComparisonState;
+  readonly subscriptionSummary: VortexSubscriptionActionSummaryState;
+  readonly onPlanSelect: (plan: VortexPlanComparisonPlan) => void;
+  readonly onSubscriptionAction: (actionSummary: VortexSubscriptionActionSummaryState) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <p className="text-muted-foreground text-sm text-pretty">
+        Manage your subscription and billing information.
+      </p>
+
+      <VortexPaymentsProvider
+        config={{
+          baseUrl: window.location.origin,
+          environment,
+          branding: { brandName: "Seal" },
+        }}
+        navigate={() => undefined}
+      >
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+          <VortexSubscriptionActionSummary
+            subscription={subscriptionSummary}
+            classNames={vortexBillingClassNames}
+            copy={{
+              customActionLabel: "Manage billing",
+              title: "Current subscription",
+            }}
+            onAction={onSubscriptionAction}
+          />
+          <VortexPlanComparison
+            comparison={planComparison}
+            classNames={vortexBillingClassNames}
+            disabled={checkoutLoading}
+            loading={checkoutLoading}
+            copy={{
+              currentButtonLabel: "Current plan",
+              loadingTitle: "Opening checkout...",
+              openCheckoutLabel: "Upgrade",
+              selectPlanLabel: "Select plan",
+              title: "Plans",
+            }}
+            onPlanSelect={onPlanSelect}
+          />
+        </div>
+      </VortexPaymentsProvider>
+    </div>
   );
 }
 
@@ -251,6 +290,8 @@ function buildSubscriptionActionSummary(
   const status = subscriptionActionStatus(subscription, isFreePlan);
   const action = subscriptionAction(status);
   const planLabel = isFreePlan ? "Free" : (subscription?.planName ?? "Professional");
+  const renewalAt = subscriptionRenewalAt(subscription);
+  const scheduledCancelAt = subscriptionScheduledCancelAt(subscription);
 
   return {
     action,
@@ -261,12 +302,8 @@ function buildSubscriptionActionSummary(
     customerId: "current-organization",
     description: subscriptionActionMessage(subscription, isFreePlan),
     planLabel,
-    renewalAt: subscription?.cancelAtPeriodEnd
-      ? undefined
-      : formatDate(subscription?.currentPeriodEnd),
-    scheduledCancelAt: subscription?.cancelAtPeriodEnd
-      ? formatDate(subscription.currentPeriodEnd)
-      : undefined,
+    renewalAt,
+    scheduledCancelAt,
     status,
     title: planLabel,
     trialEndsAt: formatDate(subscription?.trialEnd),
@@ -281,19 +318,7 @@ function buildPlanComparison(
   const proPlan = plans?.find((plan) => plan.tier === "pro");
   const proMonthly = proPlan?.pricing.monthly;
   const hasProCheckout = Boolean(proMonthly?.lookupKey);
-  const planRows: VortexPlanComparisonPlan[] = [
-    {
-      cadence: "monthly",
-      cadenceLabel: "Monthly",
-      currency: "usd",
-      description: "Core signing and document workflows.",
-      featureHighlights: ["Document signing", "Basic workspace features"],
-      id: freePlanId,
-      priceAmount: 0,
-      status: isFreePlan ? "current" : "available",
-      title: "Free",
-    },
-  ];
+  const planRows: VortexPlanComparisonPlan[] = [freePlanRow(isFreePlan)];
 
   if (proPlan && proMonthly) {
     planRows.push({
@@ -320,6 +345,20 @@ function buildPlanComparison(
     plans: planRows,
     recommendedPlanId: isFreePlan && proPlan ? proPlanId : undefined,
     status: planRows.length > 1 ? "ready" : "empty",
+  };
+}
+
+function freePlanRow(isFreePlan: boolean): VortexPlanComparisonPlan {
+  return {
+    cadence: "monthly",
+    cadenceLabel: "Monthly",
+    currency: "usd",
+    description: "Core signing and document workflows.",
+    featureHighlights: ["Document signing", "Basic workspace features"],
+    id: freePlanId,
+    priceAmount: 0,
+    status: isFreePlan ? "current" : "available",
+    title: "Free",
   };
 }
 
@@ -353,6 +392,20 @@ function subscriptionActionMessage(
     return "Your latest payment needs attention.";
   }
   return "Your paid workspace billing is active.";
+}
+
+function subscriptionRenewalAt(
+  subscription: BillingSubscription | null | undefined,
+): string | undefined {
+  if (subscription?.cancelAtPeriodEnd) return undefined;
+  return formatDate(subscription?.currentPeriodEnd);
+}
+
+function subscriptionScheduledCancelAt(
+  subscription: BillingSubscription | null | undefined,
+): string | undefined {
+  if (!subscription?.cancelAtPeriodEnd) return undefined;
+  return formatDate(subscription.currentPeriodEnd);
 }
 
 function subscriptionCadenceLabel(subscription: BillingSubscription | null | undefined): string {
