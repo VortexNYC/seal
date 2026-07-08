@@ -22,3 +22,4 @@ deployment (see `.vortex/qa.json` web.verify). Do not invent a preview-deploy co
 - Seal has a separate marketing site at apps/landing (distinct from the apps/web app).  (apps/landing)
 - Seal e2e smoke tests run the smoke-contract Playwright project: cd apps/web && bun run test:e2e --project=smoke-contract.  (.vortex/qa.json)  (human follow-up (Linear))
 - Seal env vars for the web app are prefixed VITE_ (e.g. VITE_CONVEX_URL); server-only secrets are NOT VITE_-prefixed.  (apps/web/.env)
+- Seal uses Convex for its backend data layer.  (human follow-up (Slack))
