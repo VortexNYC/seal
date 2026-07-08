@@ -15,6 +15,16 @@ const activeConfigExamplePaths = [
   "apps/web/.env.example",
   "apps/landing/.env.example",
 ] as const;
+const activeGuidanceAndConfigPaths = [
+  ...activeConfigExamplePaths,
+  "AGENTS.md",
+  "CLAUDE.md",
+  "LLM-INTEGRATION.md",
+  "README.md",
+  "goal.md",
+  "turbo.json",
+  "vortex.project.json",
+] as const;
 const retiredProviderAliasRegex = /\bretired provider\b|retired_provider|RETIRED_PROVIDER/i;
 
 const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
@@ -79,7 +89,7 @@ for (const relativePath of trackedFiles) {
   }
 }
 
-for (const relativePath of activeConfigExamplePaths) {
+for (const relativePath of activeGuidanceAndConfigPaths) {
   const absolutePath = join(repoRoot, relativePath);
   if (!existsSync(absolutePath)) {
     continue;
@@ -87,7 +97,7 @@ for (const relativePath of activeConfigExamplePaths) {
 
   const fileContents = readFileSync(absolutePath, "utf8");
   if (retiredProviderAliasRegex.test(fileContents)) {
-    failures.push(`${relativePath}: active config example contains retired provider alias`);
+    failures.push(`${relativePath}: active guidance/config contains retired provider alias`);
   }
 }
 
@@ -132,4 +142,4 @@ console.log(
 console.log(
   "- No working-tree content outside .git contains provider-shaped retired provider residue.",
 );
-console.log("- No active env example contains retired provider aliases.");
+console.log("- No active guidance/config file contains retired provider aliases.");

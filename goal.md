@@ -10,11 +10,11 @@ Current lane: `SEA-562`
 
 ## Objective
 
-Remove the retired payment provider from Seal top down and leave Vortex Payments as the only active payment path.
+Remove the legacy payment provider from Seal top down and leave Vortex Payments as the only active payment path.
 
 This has two separate gates:
 
-1. Code deletion gate: no tracked code, packages, scripts, config, product copy, or docs contain the retired provider token.
+1. Code deletion gate: no tracked code, packages, scripts, config, product copy, or docs contain the legacy provider token.
 2. Launch-readiness gate: Vortex Payments proves the active Seal paths end to end, including hosted payment outcomes, settlement visibility, and production routing boundaries.
 
 Do not collapse these gates. Code deletion can be green while launch readiness is still proof-gated.
@@ -23,7 +23,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 - SEA-556 through SEA-561 are complete locally on `codex/sea-557-provider-neutral-data-contracts`.
 - The strict residue guard scans every tracked file with no archive exception.
-- `git ls-files | rg -i "<retired-provider-token>"` returns no matches when the placeholder is replaced with the actual retired provider word.
+- `git ls-files | rg -i "<legacy-provider-token>"` returns no matches when the placeholder is replaced with the actual legacy provider word.
 - Raw working-tree scan excluding generated/ignored outputs returns no matches.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - Full root quality gates passed after the strict cleanup:
