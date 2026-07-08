@@ -127,6 +127,9 @@ Latest non-mutating refresh results from head `b7be17b1`:
 - `bun run prove:vortex-payments-settings-adoption` passed.
 - `bun run prove:vortex-merchant-settings-adoption` passed.
 - `bun run prove:seal-saas-vortex-local` passed with 2 files and 23 tests.
+- `bun run prove:seal-catalog-from-vortex` passed against `dev:clever-goose-484` and Vortex `https://notable-leopard-969.convex.site`; synced 16 products and 22 prices and preserved Vortex-shaped entitlement safety.
+- `bun run prove:seal-coupons-vortex` passed against Vortex public catalog/customer/checkout/coupon APIs; discounted checkout total was 3750 from a 5000 price, invalid promo code created no checkout, and no-code checkout stayed at 5000.
+- `bun run prove:seal-saas-checkout-vortex` passed against `dev:clever-goose-484` and `dev:notable-leopard-969`; checkout used `pro:monthly:v2`, Vortex price `vtx_price_seal_pro_monthly_v2`, and returned a hosted Vortex `/pay/` URL for 1900.
 - `bun run prove:vortex-saas-webhook-projection` passed with 3 files and 22 tests.
 - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-webhook-billing-state` passed after syncing current Convex code; result projected Vortex-shaped customer/subscription/price ids and reported `activeNonVortexProviderIdPresent: false`.
 - `bun run prove:seal-document-payment-vortex-local` passed.
