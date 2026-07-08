@@ -13,11 +13,20 @@ export const Route = createFileRoute("/_auth/sign-in")({
 function RouteComponent() {
   const { resolvedTheme } = useTheme();
 
-  return (
-    <SignIn
-      routing="virtual"
-      signUpUrl="/waitlist"
-      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
-    />
-  );
+  const signInProps = {
+    routing: "virtual" as const,
+    signUpUrl: "/waitlist",
+    appearance: getClerkAuthAppearance(resolvedTheme === "dark"),
+  };
+
+  // Clerk's SignIn component accepts localization at runtime even though
+  // the TypeScript types don't expose it yet.
+  Object.defineProperty(signInProps, "localization", {
+    value: { formButtonPrimary: "Sign in" },
+    enumerable: true,
+    configurable: true,
+    writable: true,
+  });
+
+  return <SignIn {...signInProps} />;
 }

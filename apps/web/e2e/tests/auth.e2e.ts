@@ -66,7 +66,7 @@ test.describe("Authentication", () => {
 
     // Fill in an email that doesn't exist in the Clerk instance
     await page.getByRole("textbox", { name: /email/i }).first().fill(bogusEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
     // Should show an auth error message (account not found, invalid, etc.)
     await expect(
