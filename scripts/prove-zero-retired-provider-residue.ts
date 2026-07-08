@@ -30,7 +30,12 @@ const activeVortexMirrorSchemaPaths = [
   "apps/backend/convex/schemas/subscription_coupons.ts",
   "apps/backend/convex/schemas/subscription_promo_codes.ts",
 ] as const;
-const retiredProviderAliasRegex = /\bretired provider\b|retired_provider|RETIRED_PROVIDER/i;
+const retiredProviderAliasRegex =
+  /\bretired provider\b|retired-provider|retired_provider|RETIRED_PROVIDER/i;
+const allowedRetiredProviderCommandNames = [
+  "prove:zero-retired-provider-residue",
+  "prove-zero-retired-provider-residue",
+] as const;
 const stalePaymentProviderMirrorRegex = /\bpayment provider\b/i;
 const generatedOrInstalledGlobExcludes = [
   "!.git/**",
@@ -139,7 +144,10 @@ for (const relativePath of activeGuidanceAndConfigPaths) {
     continue;
   }
 
-  const fileContents = readFileSync(absolutePath, "utf8");
+  let fileContents = readFileSync(absolutePath, "utf8");
+  for (const commandName of allowedRetiredProviderCommandNames) {
+    fileContents = fileContents.replaceAll(commandName, "");
+  }
   if (retiredProviderAliasRegex.test(fileContents)) {
     failures.push(
       `${relativePath}: active guidance/config/current plan contains retired provider alias`,
@@ -206,5 +214,7 @@ console.log(
 console.log(
   "- No owned working-tree content, including hidden env files, contains provider-shaped retired provider residue.",
 );
-console.log("- No active guidance/config/current plan file contains retired provider aliases.");
+console.log(
+  "- No active guidance/config/current plan file contains retired provider aliases outside approved proof command names.",
+);
 console.log("- Active Vortex mirror schemas name Vortex Billing as source of truth.");

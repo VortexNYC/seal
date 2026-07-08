@@ -25,14 +25,14 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 ## Current Truth
 
 - SEA-556 through SEA-561 are complete locally on `codex/sea-557-provider-neutral-data-contracts`.
-- The strict residue guard scans every tracked path/content for the raw legacy-provider token, including archive docs, scans owned hidden env/config content, and separately blocks retired-provider alias wording in active guidance/config.
+- The strict residue guard scans every tracked path/content for the raw legacy-provider token, including archive docs, scans owned hidden env/config content, and separately blocks old-provider alias wording in active guidance/config/current-plan files.
 - `git ls-files | rg -i "<legacy-provider-token>"` returns no matches when the placeholder is replaced with the actual legacy provider word.
 - Raw owned working-tree scan, including hidden env/config and excluding generated/install/cache outputs, returns no matches.
 - Active raw legacy-provider token scan outside `.git`, installs, generated output, and caches returns no matches; legacy-provider-named path scan returns no paths.
-- Non-archive retired-provider alias scan is intentionally down to the live top-down migration contract and the residue guard script.
-- Obsolete/completed provider-migration docs and tracked local skill examples that taught retired-provider patterns were archived or neutralized in `a282d9c2`.
-- The Vortex catalog live proof no longer seeds legacy-provider-shaped entitlement safety IDs; its safety organization now uses Vortex-shaped customer, subscription, product, and price ids, and the local migration gate statically blocks the old control from returning.
-- Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale legacy-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
+- Non-archive old-provider alias scan is intentionally down to exact proof command names and the residue guard script.
+- Obsolete/completed provider-migration docs and tracked local skill examples that taught old-provider patterns were archived or neutralized in `a282d9c2`.
+- The Vortex catalog live proof no longer seeds non-Vortex-provider-shaped entitlement safety IDs; its safety organization now uses Vortex-shaped customer, subscription, product, and price ids, and the local migration gate statically blocks the old control from returning.
+- Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale old-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
 - Active subscription coupon and promo-code mirror schemas now name Vortex Billing as the source of truth, and the strict residue guard fails if those active schemas drift back to generic payment-provider wording.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - `bun run audit:seal-vortex-launch-boundary` now surfaces the sandbox human reconciliation boundary and the production human-only boundary, and fails if production remediation commands do not exactly match the missing production env names.
@@ -41,8 +41,8 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run audit:seal-vortex-launch-boundary` cannot report `launchReady: true` from production config alone; it now also requires production money proof and post-proof retirement evidence.
 - `bun run prove:seal-saas-webhook-billing-state` now pushes the current checkout to the Seal dev deployment before running, so the live/dev SaaS billing-state proof cannot pass against stale deployed functions.
 - `bun run prove:seal-coupons-vortex` now merges its temporary proof price into `VORTEX_BILLING_SAAS_PRICE_MAP` instead of replacing the whole map; this preserves the `pro:monthly:v2` checkout mapping when coupon proofs run before SaaS checkout proofs.
-- The Seal dev `organizations` table was cleaned from stale retired-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
-- Non-production Convex data cleanup on 2026-07-08 emptied old retired-provider account/webhook tables in local dev (`dev:aware-buzzard-568`) and staging/dev (`dev:clever-goose-484`), and cleaned the same retired customer field from 6 local-dev organization rows while preserving ids and creation times. Backups were saved under `/tmp` on this machine.
+- The Seal dev `organizations` table was cleaned from stale old-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
+- Non-production Convex data cleanup on 2026-07-08 emptied old provider account/webhook tables in local dev (`dev:aware-buzzard-568`) and staging/dev (`dev:clever-goose-484`), and cleaned the same retired customer field from 6 local-dev organization rows while preserving ids and creation times. Backups were saved under `/tmp` on this machine.
 - Latest local proof refresh has passed on this branch, including root quality gates; rerun the root gates after any non-doc runtime change:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
@@ -60,7 +60,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 ## Replacement Proof State
 
-- Account and organization creation is anchored in Vortex Auth and does not create retired-provider state.
+- Account and organization creation is anchored in Vortex Auth and does not create legacy payment-provider state.
 - `bun run prove:seal-account-onboarding-vortex-local` proves account creation, Vortex Auth anchoring, retired merchant-surface blocking, charges-ready merchant resolution, and Vortex payable request mapping without live mutation.
 - Merchant onboarding and settings paths route through Vortex-owned actions for Vortex document-payment organizations.
 - SaaS checkout, subscription webhook projection, catalog, and coupon paths are Vortex-backed.
@@ -78,7 +78,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Production Vortex document-payment routing is not configured.
 - Production real-money proof is not complete.
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
-- Read-only production data audit on 2026-07-08 found the old retired-provider webhook-events table still has 22 rows; the retired-provider account table is empty, and checked active tables had no retired-token docs or were empty. Agents must not retire this production residue until production proof passes.
+- Read-only production data audit on 2026-07-08 found the old provider webhook-events table still has 22 rows; the old provider account table is empty, and checked active tables had no retired-token docs or were empty. Agents must not retire this production residue until production proof passes.
 - New live document-payment proof runs seed `VORTEX_BILLING_DOCUMENT_*` maps instead of shared SaaS maps.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
 - `bun run prove:seal-vortex-migration-local` statically fails if known live or env-mutating proof commands are added to the local non-mutating gate.
