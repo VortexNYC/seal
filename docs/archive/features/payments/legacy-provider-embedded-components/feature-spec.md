@@ -33,12 +33,12 @@ This document catalogs **every available retired provider embedded component**, 
 
 ### Key Numbers
 
-| Family                      | Package                       | Total Components     | Relevant to Seal |
-| --------------------------- | ----------------------------- | -------------------- | ---------------- |
-| Connect Embedded Components | `@retired_provider/react-connect-js`    | 35                   | ~8               |
-| retired provider Elements             | `@retired_provider/react-retired_provider-js`     | 7                    | ~3               |
-| Embedded Checkout           | `@retired_provider/react-retired_provider-js`     | 1 (provider pattern) | 1                |
-| Pricing Table / Buy Button  | Web components (no React pkg) | 2                    | 1                |
+| Family                      | Package                                       | Total Components     | Relevant to Seal |
+| --------------------------- | --------------------------------------------- | -------------------- | ---------------- |
+| Connect Embedded Components | `@retired_provider/react-connect-js`          | 35                   | ~8               |
+| retired provider Elements   | `@retired_provider/react-retired_provider-js` | 7                    | ~3               |
+| Embedded Checkout           | `@retired_provider/react-retired_provider-js` | 1 (provider pattern) | 1                |
+| Pricing Table / Buy Button  | Web components (no React pkg)                 | 2                    | 1                |
 
 ---
 
@@ -167,12 +167,12 @@ A document enters `waiting_for_payment` when all signatures are collected but pa
 
 **Vision**: A contract is like a project. The document detail page shows everything — signatures, fields, AND all financial data in one clean view:
 
-| Section               | What It Shows                                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Payment Status**    | Current status badge: Unpaid / Waiting / Paid / Overdue / Partial                                             |
+| Section               | What It Shows                                                                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Payment Status**    | Current status badge: Unpaid / Waiting / Paid / Overdue / Partial                                                       |
 | **Invoices**          | All retired provider invoices linked to this document (one-time, deposit, balance, recurring) with status, amount, date |
-| **Payment Timeline**  | Chronological feed: "Invoice created → Payment attempted → Payment succeeded"                                 |
-| **Upcoming Payments** | For recurring/installments: next invoice date, remaining installments                                         |
+| **Payment Timeline**  | Chronological feed: "Invoice created → Payment attempted → Payment succeeded"                                           |
+| **Upcoming Payments** | For recurring/installments: next invoice date, remaining installments                                                   |
 
 This data comes from two sources:
 
@@ -214,25 +214,25 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 
 ### Key Design Choices
 
-| Aspect              | PandaDoc Approach                                                                                              |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Payment timing**  | After ALL parties sign and finalize — payment gated behind signature completion                                |
-| **Payment UI**      | Embedded inline within the document viewer (no redirect for card/ACH; PayPal redirects to PayPal auth)         |
+| Aspect              | PandaDoc Approach                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Payment timing**  | After ALL parties sign and finalize — payment gated behind signature completion                                          |
+| **Payment UI**      | Embedded inline within the document viewer (no redirect for card/ACH; PayPal redirects to PayPal auth)                   |
 | **Payment methods** | Credit card, ACH/bank transfer, PayPal, digital wallets, Klarna, SEPA (all methods enabled in retired provider settings) |
-| **Gating**          | All parties must sign before payment becomes available                                                         |
+| **Gating**          | All parties must sign before payment becomes available                                                                   |
 | **Platform fee**    | $0 PandaDoc fee (retired provider processing fee still applies)                                                          |
 | **Limitations**     | Minimum charge $0.50; one retired provider account per workspace                                                         |
-| **NOT supported**   | Real-time payments, cash vouchers, bank transfers (push), BNPL                                                 |
+| **NOT supported**   | Real-time payments, cash vouchers, bank transfers (push), BNPL                                                           |
 
 ### How Seal Will Differ from PandaDoc
 
-| Aspect               | PandaDoc                 | Seal                                                   |
-| -------------------- | ------------------------ | ------------------------------------------------------ |
-| Payment types        | One-time, recurring      | One-time, recurring, installments, deposit + balance   |
+| Aspect               | PandaDoc                           | Seal                                                   |
+| -------------------- | ---------------------------------- | ------------------------------------------------------ |
+| Payment types        | One-time, recurring                | One-time, recurring, installments, deposit + balance   |
 | Payment architecture | retired provider Checkout (likely) | Invoice-based with PaymentElement (more control)       |
-| Platform fees        | $0                       | 1% free / 0.25% Pro (configurable absorb/pass-through) |
-| Fee handling         | Fixed                    | Sender chooses: absorb or pass to recipient            |
-| Multi-account        | One retired provider per workspace | One retired provider Connect account per org                     |
+| Platform fees        | $0                                 | 1% free / 0.25% Pro (configurable absorb/pass-through) |
+| Fee handling         | Fixed                              | Sender chooses: absorb or pass to recipient            |
+| Multi-account        | One retired provider per workspace | One retired provider Connect account per org           |
 
 ### Sources
 
@@ -247,24 +247,24 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 
 ### Backend Actions (`apps/backend/convex/retired_provider/`)
 
-| File                       | Action                        | What It Does                                                    | Redirect?                                |
-| -------------------------- | ----------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| File                       | Action                        | What It Does                                                              | Redirect?                                          |
+| -------------------------- | ----------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
 | `actions.ts`               | `createCheckoutSession`       | Creates `retired_provider.checkout.sessions.create()`, returns URL        | **Yes** — redirects to retired provider Checkout   |
 | `actions.ts`               | `createCustomerPortalSession` | Creates `retired_provider.billingPortal.sessions.create()`, returns URL   | **Yes** — redirects to retired provider Portal     |
-| `connect_actions.ts`       | `createConnectedAccount`      | Creates Standard Connect account via `retired_provider.accounts.create()` | No (API only)                            |
+| `connect_actions.ts`       | `createConnectedAccount`      | Creates Standard Connect account via `retired_provider.accounts.create()` | No (API only)                                      |
 | `connect_actions.ts`       | `createAccountLink`           | Creates `retired_provider.accountLinks.create()` for hosted onboarding    | **Yes** — redirects to retired provider onboarding |
-| `connect_actions.ts`       | `createConnectOAuthUrl`       | Generates OAuth authorize URL                                   | **Yes** — redirects to retired provider OAuth      |
-| `connect_actions.ts`       | `exchangeConnectOAuthCode`    | Handles OAuth code exchange                                     | No (API only)                            |
-| `connect_actions.ts`       | `refreshConnectedAccount`     | Refreshes account status from retired provider                            | No (API only)                            |
-| `payment_field_actions.ts` | Various                       | Creates invoices/subscriptions for payment fields               | **Yes** — hosted invoice URLs in email   |
+| `connect_actions.ts`       | `createConnectOAuthUrl`       | Generates OAuth authorize URL                                             | **Yes** — redirects to retired provider OAuth      |
+| `connect_actions.ts`       | `exchangeConnectOAuthCode`    | Handles OAuth code exchange                                               | No (API only)                                      |
+| `connect_actions.ts`       | `refreshConnectedAccount`     | Refreshes account status from retired provider                            | No (API only)                                      |
+| `payment_field_actions.ts` | Various                       | Creates invoices/subscriptions for payment fields                         | **Yes** — hosted invoice URLs in email             |
 
 ### Frontend Pages
 
-| File                    | Page                      | Current UX                                                                                 |
-| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
-| `settings/billing.tsx`  | Subscription billing      | Custom pricing cards → redirect to retired provider Checkout; "Manage" → redirect to Customer Portal |
-| `settings/payments.tsx` | retired provider Connect onboarding | Status display → redirect to Account Link for onboarding; OAuth flow for connection        |
-| Signing page            | Payment collection        | Recipient clicks hosted invoice URL in email → retired provider-hosted payment page                  |
+| File                    | Page                                | Current UX                                                                                           |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `settings/billing.tsx`  | Subscription billing                | Custom pricing cards → redirect to retired provider Checkout; "Manage" → redirect to Customer Portal |
+| `settings/payments.tsx` | retired provider Connect onboarding | Status display → redirect to Account Link for onboarding; OAuth flow for connection                  |
+| Signing page            | Payment collection                  | Recipient clicks hosted invoice URL in email → retired provider-hosted payment page                  |
 
 ### Webhook Handlers
 
@@ -346,11 +346,11 @@ const retired_providerConnect = loadConnectAndInitialize({
 
 ##### Capital (3 components)
 
-| Component                         | React Element                            | Status  | Description                            |
-| --------------------------------- | ---------------------------------------- | ------- | -------------------------------------- |
-| **Capital Financing Application** | `<ConnectCapitalFinancingApplication />` | Preview | Apply for retired provider Capital financing.    |
-| **Capital Financing Promotion**   | `<ConnectCapitalFinancingPromotion />`   | Preview | Promotional banner for Capital offers. |
-| **Capital Financing**             | `<ConnectCapitalFinancing />`            | Preview | Overview of active Capital financing.  |
+| Component                         | React Element                            | Status  | Description                                   |
+| --------------------------------- | ---------------------------------------- | ------- | --------------------------------------------- |
+| **Capital Financing Application** | `<ConnectCapitalFinancingApplication />` | Preview | Apply for retired provider Capital financing. |
+| **Capital Financing Promotion**   | `<ConnectCapitalFinancingPromotion />`   | Preview | Promotional banner for Capital offers.        |
+| **Capital Financing**             | `<ConnectCapitalFinancing />`            | Preview | Overview of active Capital financing.         |
 
 ##### Tax (5 components)
 
@@ -380,8 +380,8 @@ const retired_providerConnect = loadConnectAndInitialize({
 
 ##### Apps (2 components)
 
-| Component        | React Element            | Status  | Description                                   |
-| ---------------- | ------------------------ | ------- | --------------------------------------------- |
+| Component        | React Element            | Status  | Description                                             |
+| ---------------- | ------------------------ | ------- | ------------------------------------------------------- |
 | **App Install**  | `<ConnectAppInstall />`  | Preview | Install retired provider Apps into a connected account. |
 | **App Viewport** | `<ConnectAppViewport />` | Preview | Render a retired provider App within your platform UI.  |
 
@@ -411,7 +411,7 @@ const retired_providerPromise = loadretired provider("pk_...");
 | ------------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | **Payment Element**                  | `<PaymentElement />`                | Unified payment method selector — cards, wallets, bank transfers, BNPL. Auto-adapts to customer location. | **Primary** — replaces hosted invoice for payment collection |
 | **Express Checkout Element**         | `<ExpressCheckoutElement />`        | One-click checkout buttons — Apple Pay, Google Pay, Link.                                                 | Fast payment for returning users                             |
-| **Link Authentication Element**      | `<LinkAuthenticationElement />`     | Email input that auto-detects retired provider Link users for 1-click pay.                                          | Pre-auth for payment flows                                   |
+| **Link Authentication Element**      | `<LinkAuthenticationElement />`     | Email input that auto-detects retired provider Link users for 1-click pay.                                | Pre-auth for payment flows                                   |
 | **Address Element**                  | `<AddressElement />`                | Smart address form with autocomplete, validation, formatting per country.                                 | Billing/shipping address collection                          |
 | **Payment Method Messaging Element** | `<PaymentMethodMessagingElement />` | "Pay in 4 with Afterpay" or "Pay with Klarna" messaging banners.                                          | BNPL promotion on pricing pages                              |
 | **Currency Selector Element**        | `<CurrencySelectorElement />`       | Currency picker for multi-currency payments.                                                              | International payment flows                                  |
@@ -481,12 +481,12 @@ This section maps each current redirect-based flow to its embedded component rep
 
 ### Map 1: Connect Onboarding (settings/payments.tsx)
 
-| Current Flow                                               | Embedded Replacement                                              |
-| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| Current Flow                                                         | Embedded Replacement                                              |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `createAccountLink` → redirect to retired provider-hosted onboarding | `<ConnectAccountOnboarding />` — inline onboarding                |
-| `createConnectOAuthUrl` → redirect to OAuth                | Can be replaced entirely by Account Onboarding component          |
-| Custom status display + "Continue Setup" button            | `<ConnectNotificationBanner />` — auto-shows pending requirements |
-| No post-onboarding account management                      | `<ConnectAccountManagement />` — inline account settings          |
+| `createConnectOAuthUrl` → redirect to OAuth                          | Can be replaced entirely by Account Onboarding component          |
+| Custom status display + "Continue Setup" button                      | `<ConnectNotificationBanner />` — auto-shows pending requirements |
+| No post-onboarding account management                                | `<ConnectAccountManagement />` — inline account settings          |
 
 **Backend changes needed**:
 
@@ -511,10 +511,10 @@ This section maps each current redirect-based flow to its embedded component rep
 
 **Decision**: Keep custom pricing cards + Embedded Checkout. Customer Portal stays redirect-based.
 
-| Current Flow                                                                 | Embedded Replacement                                                      |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Current Flow                                                                           | Embedded Replacement                                                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Custom pricing cards → `createCheckoutSession` → redirect to retired provider Checkout | Keep custom cards → Embedded Checkout with `ui_mode: "embedded"` (inline) |
-| "Manage Subscription" → `createCustomerPortalSession` → redirect to Portal   | **No change** — Customer Portal stays redirect-based                      |
+| "Manage Subscription" → `createCustomerPortalSession` → redirect to Portal             | **No change** — Customer Portal stays redirect-based                      |
 
 **Backend changes needed**:
 
@@ -538,10 +538,10 @@ This section maps each current redirect-based flow to its embedded component rep
 
 **Decision**: Sign-then-pay flow. Keep invoices, expose `client_secret` for inline `<PaymentElement />`.
 
-| Current Flow                                                                              | Embedded Replacement                                                                   |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Current Flow                                                                                                  | Embedded Replacement                                                                   |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Backend creates retired provider invoice → `hosted_invoice_url` in email → recipient pays on retired provider | Invoice stays. Also return `client_secret` → `<PaymentElement />` inline after signing |
-| Recipient leaves Seal entirely to pay                                                     | Signer signs first → inline payment appears → pays without leaving                     |
+| Recipient leaves Seal entirely to pay                                                                         | Signer signs first → inline payment appears → pays without leaving                     |
 
 **This is the highest-impact change** — recipients currently leave Seal to pay. The sign-then-pay flow with inline PaymentElement:
 
@@ -825,7 +825,7 @@ retired provider embedded components load data **from retired provider's servers
 These components are part of an **active user flow** where retired provider handling its own data loading is natural and expected:
 
 | Component                      | Context                              | Why retired provider-Loading Is Fine                                   |
-| ------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
+| ------------------------------ | ------------------------------------ | ---------------------------------------------------------------------- |
 | `<PaymentElement />`           | Signing page — collecting payment    | User is actively paying. retired provider loads its own PaymentIntent. |
 | `<EmbeddedCheckout />`         | Billing page — subscription checkout | User is actively checking out. retired provider loads its own session. |
 | `<ConnectAccountOnboarding />` | Settings — Connect setup             | User is actively onboarding. retired provider manages the flow.        |
@@ -916,12 +916,12 @@ For completeness, these Connect components exist but are **not relevant** to Sea
 
 | Component                        | Why Not Relevant                                   |
 | -------------------------------- | -------------------------------------------------- |
-| Capital (3 components)           | retired provider Capital lending — not applicable            |
+| Capital (3 components)           | retired provider Capital lending — not applicable  |
 | Tax (5 components)               | Tax compliance tooling — Seal doesn't manage taxes |
 | Financial Account / Transactions | Treasury/banking — not applicable                  |
 | Issuing Card / Cards List        | Card issuing — not applicable                      |
 | Reporting Chart                  | Generic reporting — Seal has its own analytics     |
-| App Install / App Viewport       | retired provider Apps marketplace — not applicable           |
+| App Install / App Viewport       | retired provider Apps marketplace — not applicable |
 | Currency Selector Element        | Multi-currency — not needed currently              |
 | Tax ID Element                   | B2B tax IDs — not core to signing flow             |
 

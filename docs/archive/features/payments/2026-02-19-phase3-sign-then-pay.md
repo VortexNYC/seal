@@ -492,7 +492,9 @@ export const updatePaymentStatusFromWebhook = internalMutation({
   handler: async (ctx, args) => {
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_retired_provider_invoice", (q) => q.eq("retired_providerInvoiceId", args.retired_providerInvoiceId))
+      .withIndex("by_retired_provider_invoice", (q) =>
+        q.eq("retired_providerInvoiceId", args.retired_providerInvoiceId),
+      )
       .first();
 
     if (!config) {

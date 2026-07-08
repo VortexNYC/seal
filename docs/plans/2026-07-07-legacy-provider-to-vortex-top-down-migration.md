@@ -2,8 +2,8 @@
 
 Date: 2026-07-07
 Repo: Seal
-Control branch: codex/seal-vortex-document-payment-proof
-Linear project: Seal retired provider to Vortex Top-Down Migration
+Control branch: codex/sea-557-provider-neutral-data-contracts
+Linear project: Seal retired-provider to Vortex Top-Down Migration
 
 ## Objective
 
@@ -29,11 +29,14 @@ The goal is not to rename every historical `retired_provider` field in one pass.
 ## Current Truth
 
 - SaaS billing through Vortex is staging-ready.
-- Document-payment Vortex payable creation is locally and sandbox-proven for the one-time path.
-- Full retired provider replacement is not launch-ready until paid hosted checkout, webhook projection, platform fee movement, and merchant settlement/payout visibility are tied together.
+- Document-payment Vortex payable creation is locally and sandbox-proven for the current supported path.
+- Hosted Vortex payment capture projects into Seal as paid and completes the waiting document.
+- Failed hosted payment recovery projects into Seal, starts dunning once, ignores duplicate failures, and cancels dunning after later payment.
+- Full retired provider replacement is not launch-ready until settlement/payout visibility and production routing are proven.
 - Account/org creation currently anchors Vortex Auth and does not create retired provider state.
-- The first active top-down retired provider leak found after account creation is merchant onboarding: legacy retired provider Connect OAuth/session actions were still callable.
-- First guard cut is local on this branch: Vortex document-payment organizations are blocked from retired provider OAuth onboarding, OAuth exchange, and embedded account sessions.
+- Top-down replacement lanes A through F were completed before the physical deletion phase.
+- Physical deletion lanes G through L are complete locally through `800dbab9`.
+- The strict zero-residue scanner now checks all tracked paths and file contents, including archive docs.
 
 ## Merge Order
 
@@ -183,52 +186,29 @@ Proof:
 
 ## Immediate Next Action
 
-Previous replacement lanes A through F are complete and merged through PR #480. The next phase is physical retired provider deletion.
+Phase 2 physical deletion is locally complete.
 
-### Phase 2: Physical retired provider Deletion
+The current lane is `SEA-562`: prove the remaining document-payment launch boundary without pretending code deletion equals launch readiness.
 
-Current residue baseline after PR #480:
+### Phase 3: Settlement and Production Readiness
 
-- 151 files contain retired provider strings.
-- 29 files remain under `apps/backend/convex/retired_provider`.
-- `apps/backend/package.json` still depends on `retired_provider`.
-- `apps/backend/convex/payments/*` still contains legacy `internal.retired_provider.*` fallbacks.
-- Persisted schema and historical fields still contain retired provider-shaped names such as `retired_providerCustomerId`, `retired_provider_accounts`, `retired_providerInvoiceId`, and `retired_providerSubscriptionId`.
+Current launch baseline:
 
-Deletion order:
+- SaaS Vortex path is green.
+- Document payable creation is green.
+- Hosted document payment capture and Seal paid-state projection are green in sandbox.
+- Failed-payment recovery is green in sandbox.
+- Settled document-payment money movement is still waiting on provider settlement readiness.
+- Production document-payment routing is not configured.
 
-1. Clean baseline and proof gates.
-2. Remove executable retired provider provider calls from account creation, onboarding, SaaS billing, merchant setup, document payments, and operations.
-3. Migrate retired provider-shaped data contracts to provider-neutral names.
-4. Delete retired provider webhook, catalog sync, subscription processor, Connect, invoice/payment-field, coupon, and revenue modules.
-5. Remove retired provider package/env/runtime config.
-6. Rename or delete tests/proofs that only exist to guard the old retired provider transition.
-7. Clean docs/archive residue or explicitly move historical notes outside the active codebase.
-8. Add a hard zero-retired provider scanner gate.
+Do next:
 
-Hard completion gate:
+1. Keep `goal.md`, this plan, and Linear synchronized.
+2. Preserve the exact human-run settlement proof command from `docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md`.
+3. Run only non-mutating local gates as agent proof:
+   - `bun run prove:zero-retired-provider-residue`
+   - `bun run prove:seal-document-payment-vortex-local`
+4. When the provider settlement readiness window is open, a human runs the settlement command and the paid-state proof with `--require-settled`.
+5. Production launch remains blocked until production credentials, document-payment routing maps, one small real payment, and real settlement/payout visibility are proven.
 
-- `rg -i "retired_provider" apps packages scripts docs package.json bun.lock*` must be zero for active code/package surfaces.
-- `find apps/backend/convex/retired_provider -type f` must fail because the directory is gone.
-- `bun run format:changed:check`
-- `bun run lint:strict`
-- `bun run typecheck`
-- `bun run test`
-- `bun run build`
-- `bun run prove:vortex-payments-backend-adapter-adoption`
-- `bun run prove:vortex-operational-payments-adoption`
-- `bun run prove:seal-document-payment-vortex-local`
-- `bun run prove:vortex-saas-webhook-projection`
-
-Live sandbox card payment, settlement, and payout proof remains human-run. The code must prepare the proof boundary, but agents do not move live money.
-
-Immediate next action:
-
-Create Linear phase-2 deletion lanes, then start the executable provider deletion lane. Do not start with docs. Deleting docs first makes the scanner look better while the product still has retired provider runtime code.
-
-Historical immediate action from phase 1:
-
-- Lane A proves account creation is retired provider-free.
-- Lane B finishes onboarding and merchant setup replacement.
-
-After those two are stable, dispatch Lane C and Lane D.
+Do not run live card, settlement, payout, production credential, or remote push commands as an agent.

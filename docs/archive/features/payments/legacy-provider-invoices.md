@@ -94,7 +94,7 @@ All Connect events are handled in `connect_webhook_handlers.ts`. Events are idem
 
 Each handler calls `updatePaymentStatusFromWebhook`, which looks up the config by `retired_providerInvoiceId` (via the `by_retired_provider_invoice` index):
 
-| retired provider Event                   | Payment Status |
+| retired provider Event         | Payment Status |
 | ------------------------------ | -------------- |
 | `invoice.paid`                 | `"paid"`       |
 | `invoice.payment_failed`       | `"failed"`     |
@@ -106,10 +106,10 @@ Each handler calls `updatePaymentStatusFromWebhook`, which looks up the config b
 
 Each handler calls `updatePaymentStatusFromSubscriptionWebhook`, which looks up the config by `retired_providerSubscriptionId` (via the `by_retired_provider_subscription` index):
 
-| retired provider Event                    | Status Mapping                                                                                                                                                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| retired provider Event          | Status Mapping                                                                                                                                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `customer.subscription.updated` | Maps retired provider status: `active`→`"awaiting"`, `past_due`→`"failed"`, `canceled`→`"cancelled"`, `unpaid`→`"failed"`, `incomplete`→`"awaiting"`, `incomplete_expired`→`"cancelled"`, `trialing`→`"awaiting"`, `paused`→`"awaiting"` |
-| `customer.subscription.deleted` | `"paid"` if ended naturally (`ended_at` set + `cancel_at_period_end`), otherwise `"cancelled"`                                                                                                                                 |
+| `customer.subscription.deleted` | `"paid"` if ended naturally (`ended_at` set + `cancel_at_period_end`), otherwise `"cancelled"`                                                                                                                                           |
 
 ## Platform Fees
 
