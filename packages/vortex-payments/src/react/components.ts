@@ -2641,8 +2641,8 @@ export function VortexBalanceWalletPanel({
 }: VortexBalanceWalletPanelProps): ReactNode {
   const resolvedCopy = resolveBalanceWalletPanelCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const hasEntries = balance.entries.length > 0;
-  const blocked = balance.status === "blocked";
+  const state = createBalanceWalletPanelState(balance);
+  const addFunds = createBalanceWalletAddFundsHandler({ balance, isDisabled, onAddFunds });
 
   useEffect(() => {
     onReady?.({
@@ -2661,45 +2661,110 @@ export function VortexBalanceWalletPanel({
     }
   }, [error, onError]);
 
-  const addFunds = (): void => {
+  return createElement(
+    "section",
+    createBalanceWalletPanelSectionProps({ appearance, balance, className, classNames }),
+    createBalanceWalletPanelHeader(balance, resolvedCopy, classNames),
+    createBalanceWalletPanelFeedback({ balance, classNames, error, loading, resolvedCopy, state }),
+    createBalanceWalletPanelMetrics({ balance, classNames, resolvedCopy }),
+    createBalanceWalletPanelEntries({
+      balance,
+      classNames,
+      isDisabled,
+      onEntrySelect,
+      resolvedCopy,
+      state,
+    }),
+    createBalanceWalletPanelActions({ addFunds, classNames, isDisabled, resolvedCopy, state }),
+  );
+}
+
+function createBalanceWalletPanelState(balance: VortexBalanceWalletState) {
+  return {
+    blocked: balance.status === "blocked",
+    hasEntries: balance.entries.length > 0,
+  };
+}
+
+type BalanceWalletPanelState = ReturnType<typeof createBalanceWalletPanelState>;
+
+function createBalanceWalletAddFundsHandler({
+  balance,
+  isDisabled,
+  onAddFunds,
+}: {
+  readonly balance: VortexBalanceWalletState;
+  readonly isDisabled: boolean;
+  readonly onAddFunds: VortexBalanceWalletPanelProps["onAddFunds"];
+}) {
+  return (): void => {
     if (isDisabled) {
       return;
     }
     void onAddFunds?.(balance);
   };
+}
 
+function createBalanceWalletPanelSectionProps({
+  appearance,
+  balance,
+  className,
+  classNames,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly balance: VortexBalanceWalletState;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+}) {
+  return {
+    className: cx("vortex-payments-balance-wallet-panel", className, classNames?.root),
+    "data-vortex-surface": "balance-wallet-panel",
+    "data-vortex-component": "VortexBalanceWalletPanel",
+    "data-vortex-customer-id": balance.customerId,
+    "data-vortex-billing-account-id": balance.billingAccountId,
+    "data-vortex-wallet-status": balance.status,
+    "data-vortex-available-amount": String(balance.availableAmount),
+    "data-vortex-currency": balance.currency,
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createBalanceWalletPanelHeader(
+  balance: VortexBalanceWalletState,
+  copy: Required<VortexBalanceWalletPanelCopy>,
+  classNames: VortexEmbeddedComponentClassNames | undefined,
+): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-balance-wallet-panel", className, classNames?.root),
-      "data-vortex-surface": "balance-wallet-panel",
-      "data-vortex-component": "VortexBalanceWalletPanel",
-      "data-vortex-customer-id": balance.customerId,
-      "data-vortex-billing-account-id": balance.billingAccountId,
-      "data-vortex-wallet-status": balance.status,
-      "data-vortex-available-amount": String(balance.availableAmount),
-      "data-vortex-currency": balance.currency,
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, copy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        balanceWalletDescription(balance, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      balanceWalletDescription(balance, copy),
     ),
+  );
+}
+
+function createBalanceWalletPanelFeedback({
+  balance,
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+  state,
+}: {
+  readonly balance: VortexBalanceWalletState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexBalanceWalletPanelCopy>;
+  readonly state: BalanceWalletPanelState;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -2715,60 +2780,104 @@ export function VortexBalanceWalletPanel({
           resolvedCopy.errorTitle,
           error,
         ),
-    blocked && balance.message !== undefined
+    state.blocked && balance.message !== undefined
       ? createElement("div", { className: classNames?.error, role: "alert" }, balance.message)
       : null,
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(
-        resolvedCopy.availableBalanceLabel,
-        formatMinorUnitAmount(balance.availableAmount, balance.currency),
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.pendingBalanceLabel,
-        formatMinorUnitAmount(balance.pendingAmount ?? 0, balance.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.entryCountLabel, String(balance.entries.length), classNames),
-      createMetric(resolvedCopy.nextActionLabel, balance.nextAction ?? "none", classNames),
+  ];
+}
+
+function createBalanceWalletPanelMetrics({
+  balance,
+  classNames,
+  resolvedCopy,
+}: {
+  readonly balance: VortexBalanceWalletState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly resolvedCopy: Required<VortexBalanceWalletPanelCopy>;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(
+      resolvedCopy.availableBalanceLabel,
+      formatMinorUnitAmount(balance.availableAmount, balance.currency),
+      classNames,
     ),
-    hasEntries
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          balance.entries.map((entry) =>
-            createBalanceWalletEntryItem(
-              entry,
-              balance,
-              resolvedCopy,
-              classNames,
-              isDisabled,
-              onEntrySelect,
-            ),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyTitle),
-          createElement("p", null, resolvedCopy.emptyStateDescription),
-        ),
-    createElement(
+    createMetric(
+      resolvedCopy.pendingBalanceLabel,
+      formatMinorUnitAmount(balance.pendingAmount ?? 0, balance.currency),
+      classNames,
+    ),
+    createMetric(resolvedCopy.entryCountLabel, String(balance.entries.length), classNames),
+    createMetric(resolvedCopy.nextActionLabel, balance.nextAction ?? "none", classNames),
+  );
+}
+
+function createBalanceWalletPanelEntries({
+  balance,
+  classNames,
+  isDisabled,
+  onEntrySelect,
+  resolvedCopy,
+  state,
+}: {
+  readonly balance: VortexBalanceWalletState;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly onEntrySelect: VortexBalanceWalletPanelProps["onEntrySelect"];
+  readonly resolvedCopy: Required<VortexBalanceWalletPanelCopy>;
+  readonly state: BalanceWalletPanelState;
+}): ReactNode {
+  if (!state.hasEntries) {
+    return createElement(
       "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || blocked,
-          onClick: addFunds,
-          type: "button",
-          "data-vortex-wallet-action": "add_funds",
-        },
-        resolvedCopy.addFundsLabel,
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyTitle),
+      createElement("p", null, resolvedCopy.emptyStateDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    balance.entries.map((entry) =>
+      createBalanceWalletEntryItem(
+        entry,
+        balance,
+        resolvedCopy,
+        classNames,
+        isDisabled,
+        onEntrySelect,
       ),
+    ),
+  );
+}
+
+function createBalanceWalletPanelActions({
+  addFunds,
+  classNames,
+  isDisabled,
+  resolvedCopy,
+  state,
+}: {
+  readonly addFunds: () => void;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly resolvedCopy: Required<VortexBalanceWalletPanelCopy>;
+  readonly state: BalanceWalletPanelState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || state.blocked,
+        onClick: addFunds,
+        type: "button",
+        "data-vortex-wallet-action": "add_funds",
+      },
+      resolvedCopy.addFundsLabel,
     ),
   );
 }
