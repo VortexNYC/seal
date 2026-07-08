@@ -21,6 +21,7 @@ const activeGuidanceAndConfigPaths = [
   "CLAUDE.md",
   "LLM-INTEGRATION.md",
   "README.md",
+  "docs/plans/2026-07-07-legacy-provider-to-vortex-top-down-migration.md",
   "goal.md",
   "turbo.json",
   "vortex.project.json",
@@ -140,7 +141,9 @@ for (const relativePath of activeGuidanceAndConfigPaths) {
 
   const fileContents = readFileSync(absolutePath, "utf8");
   if (retiredProviderAliasRegex.test(fileContents)) {
-    failures.push(`${relativePath}: active guidance/config contains retired provider alias`);
+    failures.push(
+      `${relativePath}: active guidance/config/current plan contains retired provider alias`,
+    );
   }
 }
 
@@ -153,7 +156,9 @@ for (const relativePath of activeVortexMirrorSchemaPaths) {
 
   const fileContents = readFileSync(absolutePath, "utf8");
   if (stalePaymentProviderMirrorRegex.test(fileContents)) {
-    failures.push(`${relativePath}: active Vortex mirror schema uses stale payment provider wording`);
+    failures.push(
+      `${relativePath}: active Vortex mirror schema uses stale payment provider wording`,
+    );
   }
   if (!fileContents.includes("Vortex Billing")) {
     failures.push(`${relativePath}: active Vortex mirror schema does not name Vortex Billing`);
@@ -201,5 +206,5 @@ console.log(
 console.log(
   "- No owned working-tree content, including hidden env files, contains provider-shaped retired provider residue.",
 );
-console.log("- No active guidance/config file contains retired provider aliases.");
+console.log("- No active guidance/config/current plan file contains retired provider aliases.");
 console.log("- Active Vortex mirror schemas name Vortex Billing as source of truth.");

@@ -1,13 +1,13 @@
-# retired provider to Vortex Top-Down Migration
+# Legacy Payment Provider to Vortex Top-Down Migration
 
 Date: 2026-07-07
 Repo: Seal
 Control branch: codex/sea-557-provider-neutral-data-contracts
-Linear project: Seal retired-provider to Vortex Top-Down Migration
+Linear project: Seal legacy-payment-provider to Vortex Top-Down Migration
 
 ## Objective
 
-Remove retired provider from Seal by walking the product path in order:
+Remove the legacy payment provider from Seal by walking the product path in order:
 
 1. Account creation
 2. Onboarding
@@ -16,11 +16,11 @@ Remove retired provider from Seal by walking the product path in order:
 5. Hosted document-payment surfaces
 6. Webhooks, receipts, refunds, payouts, and settlement visibility
 
-The goal is not to rename every historical `retired_provider` field in one pass. The goal is to prevent new retired provider state from being created on the active product path, replace each active retired provider surface with Vortex, then delete legacy retired provider code once proof says it is dead.
+The goal is not to rename every historical legacy-provider field in one pass. The goal is to prevent new legacy-provider state from being created on the active product path, replace each active legacy payment surface with Vortex, then delete legacy payment-provider code once proof says it is dead.
 
 ## Non-Goals
 
-- No broad `retired_provider` string deletion without proving the caller path.
+- No broad legacy-provider token deletion without proving the caller path.
 - No direct Finix dependency from Seal.
 - No new provider-specific concepts in core Seal domain state.
 - No tax, accounting sync, CRM sync, or PDF polish in this lane.
@@ -32,12 +32,12 @@ The goal is not to rename every historical `retired_provider` field in one pass.
 - Document-payment Vortex payable creation is locally and sandbox-proven for the current supported path.
 - Hosted Vortex payment capture projects into Seal as paid and completes the waiting document.
 - Failed hosted payment recovery projects into Seal, starts dunning once, ignores duplicate failures, and cancels dunning after later payment.
-- Full retired provider replacement is not launch-ready until settlement/payout visibility and production routing are proven.
-- Account/org creation currently anchors Vortex Auth and does not create retired provider state.
+- Full legacy payment-provider replacement is not launch-ready until settlement/payout visibility and production routing are proven.
+- Account/org creation currently anchors Vortex Auth and does not create legacy payment-provider state.
 - Top-down replacement lanes A through F were completed before the physical deletion phase.
 - Physical deletion lanes G through L are complete locally; local proof guard expansion now continues through the current branch head.
-- The strict zero-residue scanner checks all tracked paths and file contents for the raw legacy-provider token, including archive docs, and blocks retired-provider alias wording in active guidance/config.
-- Stale and completed provider-migration docs now live under `docs/archive/legacy-provider-migration/`; active non-archive retired-provider alias usage is intentionally limited to this migration contract and the residue guard script.
+- The strict zero-residue scanner checks all tracked paths and file contents for the raw legacy-provider token, including archive docs, and blocks retired-provider alias wording in active guidance, config, and this current plan.
+- Stale and completed provider-migration docs now live under `docs/archive/legacy-provider-migration/`; active non-archive legacy-provider discussion is intentionally limited to current migration contracts and proof scripts.
 - `bun run prove:vortex-payments-backend-adapter-adoption` is now an executable backend boundary proof, not just a planned command.
 - `bun run prove:seal-account-onboarding-vortex-local` is now the non-mutating local account/onboarding proof for account creation, Vortex Auth anchoring, retired merchant-surface blocking, charges-ready merchant resolution, and Vortex payable request mapping.
 - `bun run prove:seal-saas-vortex-local` is now the non-mutating local SaaS proof for Vortex checkout, catalog price resolution, coupon application/fail-closed cleanup, portal links, and lifecycle guards.
@@ -54,7 +54,7 @@ Workers can investigate in parallel, but merges must land in this order:
 4. Merchant/payment setup
 5. Document-payment creation by payment type
 6. Hosted payment outcome handling
-7. Operational surfaces and retired provider deletion
+7. Operational surfaces and legacy provider deletion
 
 Lower layers may discover work early, but they do not merge until the layer above has a documented contract and proof.
 
@@ -70,14 +70,14 @@ Scope:
 
 Deliverable:
 
-- A written contract proving account creation creates/anchors Vortex Auth state and does not create retired provider customer, subscription, or Connect account state.
+- A written contract proving account creation creates/anchors Vortex Auth state and does not create legacy-provider customer, subscription, or Connect account state.
 - Focused tests or proof script for that contract.
 
 Proof:
 
 - `bun run --cwd apps/backend typecheck`
 - Focused backend tests covering organization creation and Vortex Auth anchoring.
-- Static grep evidence that account creation does not call `retired_provider` modules.
+- Static grep evidence that account creation does not call legacy payment-provider modules.
 
 ### Lane B: Onboarding and Merchant Setup
 
@@ -86,13 +86,13 @@ Scope:
 - `apps/web/src/routes/_authenticated/$slug/settings/payments.tsx`
 - `apps/backend/convex/payments/merchant_account_actions.ts`
 - `apps/backend/convex/payments/vortex_merchant_actions.ts`
-- retired provider Connect fallbacks reachable from onboarding
+- legacy provider Connect fallbacks reachable from onboarding
 
 Deliverable:
 
 - Vortex-routed onboarding for allowlisted document-payment organizations.
-- Legacy retired provider onboarding surfaces blocked for Vortex organizations.
-- UI state that does not present retired provider Connect as the Vortex onboarding path.
+- Legacy provider onboarding surfaces blocked for Vortex organizations.
+- UI state that does not present legacy provider Connect as the Vortex onboarding path.
 
 Proof:
 
@@ -106,12 +106,12 @@ Proof:
 Scope:
 
 - SaaS checkout, billing settings, subscription projection, lifecycle guards.
-- retired provider customer/subscription creation and seat-sync entry points.
+- legacy provider customer/subscription creation and seat-sync entry points.
 
 Deliverable:
 
 - SaaS billing path creates Vortex billing state only.
-- retired provider lifecycle actions are unavailable on Vortex billing organizations.
+- legacy provider lifecycle actions are unavailable on Vortex billing organizations.
 
 Proof:
 
@@ -126,11 +126,11 @@ Scope:
 
 - Document send/payment-field actions.
 - Vortex payable creation for one-time, recurring, installments, and deposit/balance.
-- retired provider invoice/subscription/payment-intent writes reachable from sending a document.
+- legacy provider invoice/subscription/payment-intent writes reachable from sending a document.
 
 Deliverable:
 
-- All real payment types create Vortex payable state without retired provider writes.
+- All real payment types create Vortex payable state without legacy provider writes.
 - Existing document-payment local proof covers all payment types.
 
 Proof:
@@ -150,7 +150,7 @@ Scope:
 
 Deliverable:
 
-- Hosted Vortex payment outcome changes Seal state without retired provider webhook dependency.
+- Hosted Vortex payment outcome changes Seal state without legacy provider webhook dependency.
 - Paid outcome completes waiting documents.
 - Failed outcome starts the existing dunning path.
 
@@ -167,12 +167,12 @@ Proof:
 Scope:
 
 - Merchant payout, settlement, balance, and operational components.
-- Remaining retired provider Connect queries/webhooks/schemas after active paths are replaced.
+- Remaining legacy provider Connect queries/webhooks/schemas after active paths are replaced.
 
 Deliverable:
 
 - Merchant operational surface reads Vortex public settlement/payout/profile data.
-- Dead retired provider Connect code is deleted or quarantined behind explicit legacy paths.
+- Dead legacy provider Connect code is deleted or quarantined behind explicit legacy paths.
 
 Proof:
 
@@ -214,9 +214,9 @@ Current launch baseline:
 - `bun run audit:seal-vortex-launch-boundary` is the passing non-mutating wrapper for future agent sessions: it verifies hosted outcome projection, preserves the sandbox settlement handoff, reports `launchReady: false` while fully settled evidence, production config, production money proof, or post-proof retirement evidence is missing, and accepts production readiness only when it is green or blocked by the exact known human-run production configuration names. Unexpected missing names, invalid present config, or malformed production proof artifacts fail the wrapper.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
-- `bun run prove:zero-retired-provider-residue` is the retired-provider residue gate. It keeps dependency-graph and whole-working-tree path checks strict for the raw retired-provider token, requires tracked file contents to contain zero raw retired-provider token, scans the whole working tree outside `.git` for provider-shaped residue, and fails active guidance/config if retired-provider alias wording returns. It intentionally does not fail on unrelated longer words from third-party generated output.
+- `bun run prove:zero-retired-provider-residue` is the legacy payment-provider residue gate. It keeps dependency-graph and whole-working-tree path checks strict for the raw legacy-provider token, requires tracked file contents to contain zero raw legacy-provider token, scans the whole working tree outside `.git` for provider-shaped residue, and fails active guidance/config/current-plan files if retired-provider alias wording returns. It intentionally does not fail on unrelated longer words from third-party generated output.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it includes the launch-boundary wrapper and the zero-residue gate, and intentionally excludes live card, settlement, payout, production credential, remote git work, and known env-mutating proof commands. The gate statically fails if those commands are added back.
-- The local migration gate also statically checks that the env-mutating Vortex catalog proof seeds Vortex-shaped entitlement safety controls only; the obsolete legacy-provider-shaped catalog safety control is gone from active proof code.
+- The local migration gate also statically checks that the env-mutating Vortex catalog proof seeds Vortex-shaped entitlement safety controls only; the obsolete non-Vortex-provider-shaped catalog safety control is gone from active proof code.
 - `bun run verify:seal-vortex-migration` is wired into root `verify` and Vortex Quality CI. Seal intentionally sets `instructionFiles.testEnvExample=false` in `vortex.project.json` because the shared project-kit test-env template is not provider-neutral yet; Seal's checked-in `.test-env.example` stays owned by the zero-residue proof instead.
 - The local migration gate also includes `bun run prove:seal-saas-vortex-local`, so SaaS checkout/catalog/coupon/portal/lifecycle replacement cannot drift while document-payment launch proof is waiting on human-boundary settlement and production work.
 - The local migration gate also includes `bun run prove:seal-account-onboarding-vortex-local`, so the top-of-funnel account/onboarding contract is covered by the same one-command proof.
