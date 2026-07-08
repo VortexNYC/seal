@@ -44,8 +44,11 @@ type RemediationCommand = {
 
 type RemediationPlan = {
   readonly boundary: string;
+  readonly agentAllowedActions: readonly string[];
+  readonly humanOnlyActions: readonly string[];
   readonly missingEnvSetCommands: readonly RemediationCommand[];
   readonly proofSequence: readonly string[];
+  readonly successCriteria: readonly string[];
 };
 
 const repoRoot = resolve(import.meta.dir, "..");
@@ -340,6 +343,18 @@ function buildRemediationPlan(input: {
   return {
     boundary:
       "Human-run checklist only. These commands are printed for the operator; this audit never sets env values, creates payments, reconciles settlement, or moves money.",
+    agentAllowedActions: [
+      "Run this non-mutating readiness audit.",
+      "Record missing or invalid production config names without secret values.",
+      "Update repo docs and Linear with non-secret proof state.",
+    ],
+    humanOnlyActions: [
+      "Set or rotate production environment values.",
+      "Run production document-payment money movement.",
+      "Run production settlement or payout reconciliation.",
+      "Widen production document-payment routing.",
+      "Retire external production webhook residue.",
+    ],
     missingEnvSetCommands,
     proofSequence: [
       "bun run audit:seal-vortex-production-readiness",
@@ -347,6 +362,12 @@ function buildRemediationPlan(input: {
       "Human waits for production settlement and payout visibility.",
       "Human reruns the paid-state proof with production ids and --require-settled.",
       "Only after proof passes: widen document-payment routing and retire external production webhook residue.",
+    ],
+    successCriteria: [
+      "Production readiness audit returns ok true.",
+      "A small production document payment is captured for the explicitly allowlisted organization.",
+      "Production settlement and payout visibility are confirmed.",
+      "Paid-state proof passes with production ids and --require-settled.",
     ],
   };
 }

@@ -31,8 +31,11 @@ type ProductionReadinessAudit = {
   readonly vortex: DeploymentAudit;
   readonly remediation: {
     readonly boundary: string;
+    readonly agentAllowedActions: readonly string[];
+    readonly humanOnlyActions: readonly string[];
     readonly missingEnvSetCommands: readonly RemediationCommand[];
     readonly proofSequence: readonly string[];
+    readonly successCriteria: readonly string[];
   };
   readonly nextAction: string;
 };
@@ -118,9 +121,18 @@ const remediationLabels = new Set(
   production.remediation.missingEnvSetCommands.map((command) => command.label),
 );
 const missingCommands = missingProductionNames.filter((name) => !remediationLabels.has(name));
+const extraRemediationCommands = [...remediationLabels].filter(
+  (name) => !missingProductionNames.includes(name),
+);
 
 if (missingCommands.length > 0) {
   fail(`Production readiness remediation omits missing values: ${missingCommands.join(", ")}`);
+}
+
+if (extraRemediationCommands.length > 0) {
+  fail(
+    `Production readiness remediation includes non-missing values: ${extraRemediationCommands.join(", ")}`,
+  );
 }
 
 if (!production.ok && missingProductionNames.length === 0) {
@@ -163,6 +175,11 @@ console.log(
         missingKnownConfig: missingProductionNames,
         invalidPresentConfig: invalidProductionNames,
         remediationCommandCount: production.remediation.missingEnvSetCommands.length,
+        humanBoundary: production.remediation.boundary,
+        agentAllowedActions: production.remediation.agentAllowedActions,
+        humanOnlyActions: production.remediation.humanOnlyActions,
+        proofSequence: production.remediation.proofSequence,
+        successCriteria: production.remediation.successCriteria,
       },
       nextAction: getNextAction({
         launchReady,
@@ -246,8 +263,12 @@ function isProductionReadinessAudit(value: unknown): value is ProductionReadines
     isDeploymentAudit(value.seal) &&
     isDeploymentAudit(value.vortex) &&
     isRecord(value.remediation) &&
+    typeof value.remediation.boundary === "string" &&
+    isStringArray(value.remediation.agentAllowedActions) &&
+    isStringArray(value.remediation.humanOnlyActions) &&
     Array.isArray(value.remediation.missingEnvSetCommands) &&
-    Array.isArray(value.remediation.proofSequence) &&
+    isStringArray(value.remediation.proofSequence) &&
+    isStringArray(value.remediation.successCriteria) &&
     typeof value.nextAction === "string"
   );
 }
