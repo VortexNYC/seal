@@ -1368,6 +1368,288 @@ export type VortexPaymentMethodSummaryProps = {
   readonly className?: string;
 };
 
+const DEFAULT_BALANCE_WALLET_PANEL_COPY: Required<VortexBalanceWalletPanelCopy> = {
+  title: "Balance and credits",
+  readyDescription: "Review available credits and wallet ledger activity.",
+  emptyDescription: "No prepaid balance is currently available.",
+  blockedDescription: "This balance needs attention before it can be used.",
+  loadingTitle: "Loading balance...",
+  errorTitle: "Unable to load balance.",
+  availableBalanceLabel: "Available",
+  pendingBalanceLabel: "Pending",
+  entryCountLabel: "Ledger rows",
+  nextActionLabel: "Next action",
+  emptyTitle: "No balance activity",
+  emptyStateDescription: "Add credits to create the first wallet ledger row.",
+  addFundsLabel: "Add credits",
+  viewEntryLabel: "View row",
+  settlementLabel: "Funding settlement",
+  targetLabel: "Targets",
+};
+
+const DEFAULT_RECOVERY_SUMMARY_COPY: Required<VortexRecoverySummaryCopy> = {
+  title: "Payment recovery",
+  healthyDescription: "No payment recovery action is currently required.",
+  actionRequiredDescription: "Review the payment issue and recover collection through Vortex.",
+  recoveredDescription: "The payment issue has been recovered.",
+  loadingTitle: "Loading recovery state...",
+  errorTitle: "Unable to load recovery state.",
+  statusLabel: "Status",
+  reasonLabel: "Reason",
+  amountDueLabel: "Amount due",
+  nextRetryLabel: "Next retry",
+  invoiceLabel: "Invoice",
+  attemptsLabel: "Attempts",
+  emptyAttemptsTitle: "No recovery attempts yet",
+  openHostedRecoveryLabel: "Update payment method",
+  retryPaymentLabel: "Retry payment",
+};
+
+const DEFAULT_ENTITLEMENT_SUMMARY_COPY: Required<VortexEntitlementSummaryCopy> = {
+  title: "Access",
+  activeDescription: "This customer has active access through Vortex.",
+  limitedDescription: "This customer has limited access and may need billing attention.",
+  blockedDescription: "This customer does not currently have full access.",
+  emptyDescription: "No customer access is currently enabled.",
+  loadingTitle: "Loading access...",
+  errorTitle: "Unable to load access.",
+  statusLabel: "Status",
+  planLabel: "Plan",
+  featureCountLabel: "Features",
+  renewalLabel: "Renews",
+  trialLabel: "Trial ends",
+  emptyFeaturesTitle: "No entitlements are active.",
+  openPortalLabel: "Manage billing",
+  viewFeatureLabel: "View feature",
+};
+
+const DEFAULT_PAYMENT_TIMELINE_SUMMARY_COPY: Required<VortexPaymentTimelineSummaryCopy> = {
+  title: "Payments",
+  currentDescription: "Recent invoice, payment, refund, and receipt activity is current.",
+  attentionRequiredDescription: "Review billing activity that needs customer attention.",
+  emptyDescription: "No billing activity is available yet.",
+  loadingTitle: "Loading payment timeline...",
+  errorTitle: "Unable to load payment timeline.",
+  statusLabel: "Status",
+  amountDueLabel: "Amount due",
+  entryCountLabel: "Rows",
+  nextActionLabel: "Next action",
+  emptyEntriesTitle: "No payment activity",
+  emptyEntriesDescription: "Invoices, payments, refunds, credits, and receipts will appear here.",
+  openPortalLabel: "View billing history",
+  viewEntryLabel: "View row",
+};
+
+const DEFAULT_INVOICE_LIST_COPY: Required<VortexInvoiceListCopy> = {
+  title: "Invoices",
+  currentDescription: "Invoice history is current.",
+  attentionRequiredDescription: "Review invoices that need customer action.",
+  emptyDescription: "No invoices are available yet.",
+  loadingTitle: "Loading invoices...",
+  errorTitle: "Unable to load invoices.",
+  statusLabel: "Status",
+  amountDueLabel: "Amount due",
+  invoiceCountLabel: "Invoices",
+  overdueCountLabel: "Overdue",
+  actionRequiredCountLabel: "Needs action",
+  rowLimitLabel: "Rows shown",
+  nextActionLabel: "Next action",
+  emptyInvoicesTitle: "No invoices",
+  emptyInvoicesDescription: "Invoices and receipts will appear here when billing starts.",
+  openPortalLabel: "View invoice center",
+  viewInvoiceLabel: "View invoice",
+  viewReceiptLabel: "View receipt",
+  payInvoiceLabel: "Pay invoice",
+  customActionLabel: "Open",
+  loadMoreLabel: "Load more",
+};
+
+const DEFAULT_PLAN_COMPARISON_COPY: Required<VortexPlanComparisonCopy> = {
+  title: "Plans",
+  readyDescription: "Compare available plans and continue to Vortex checkout.",
+  emptyDescription: "No plans are currently available.",
+  blockedDescription: "Plan changes are not currently available.",
+  loadingTitle: "Loading plans...",
+  errorTitle: "Unable to load plans.",
+  statusLabel: "Status",
+  planCountLabel: "Plans",
+  selectedPlanLabel: "Selected",
+  currentPlanLabel: "Current",
+  recommendedPlanLabel: "Recommended",
+  priceLabel: "Price",
+  cadenceLabel: "Cadence",
+  featureCountLabel: "Features",
+  emptyPlansTitle: "No plans",
+  emptyPlansDescription: "Plans will appear here when product pricing is available.",
+  openCheckoutLabel: "Continue to checkout",
+  currentButtonLabel: "Current plan",
+  disabledButtonLabel: "Unavailable",
+  selectPlanLabel: "Select plan",
+};
+
+const DEFAULT_USAGE_METER_SUMMARY_COPY: Required<VortexUsageMeterSummaryCopy> = {
+  title: "Usage",
+  currentDescription: "Usage is current for this billing period.",
+  attentionRequiredDescription: "Review usage that may affect the next invoice.",
+  emptyDescription: "No usage meters are active for this customer.",
+  blockedDescription: "Usage is not currently available.",
+  loadingTitle: "Loading usage...",
+  errorTitle: "Unable to load usage.",
+  statusLabel: "Status",
+  planLabel: "Plan",
+  periodLabel: "Period",
+  nextResetLabel: "Next reset",
+  meterCountLabel: "Meters",
+  usedLabel: "Used",
+  includedLabel: "Included",
+  billableLabel: "Billable",
+  usagePercentLabel: "Usage",
+  resetLabel: "Resets",
+  nextActionLabel: "Next action",
+  emptyMetersTitle: "No usage meters",
+  emptyMetersDescription: "Metered usage will appear here when this plan records usage.",
+  openPortalLabel: "View billing usage",
+  viewMeterLabel: "View meter",
+};
+
+const DEFAULT_BILLING_STATUS_BANNER_COPY: Required<VortexBillingStatusBannerCopy> = {
+  loadingTitle: "Loading billing status...",
+  errorTitle: "Unable to load billing status.",
+  statusLabel: "Status",
+  planLabel: "Plan",
+  amountDueLabel: "Amount due",
+  nextActionLabel: "Next action",
+  openPortalLabel: "Manage billing",
+  openRecoveryLabel: "Update payment method",
+  customActionLabel: "Continue",
+};
+
+const DEFAULT_SUBSCRIPTION_ACTION_SUMMARY_COPY: Required<VortexSubscriptionActionSummaryCopy> = {
+  title: "Subscription",
+  activeDescription: "This subscription is active and ready for customer self-service.",
+  trialingDescription: "This subscription is in trial and can be managed through Vortex.",
+  scheduledCancellationDescription: "This subscription is scheduled to cancel.",
+  pausedDescription: "This subscription is paused and can be resumed through Vortex.",
+  pastDueDescription: "This subscription needs billing attention before it is fully current.",
+  canceledDescription: "This subscription is canceled.",
+  emptyDescription: "No active subscription action is available.",
+  loadingTitle: "Loading subscription...",
+  errorTitle: "Unable to load subscription.",
+  statusLabel: "Status",
+  planLabel: "Plan",
+  cadenceLabel: "Billing cadence",
+  renewalLabel: "Renews",
+  trialLabel: "Trial ends",
+  scheduledCancelLabel: "Cancels",
+  pausedUntilLabel: "Paused until",
+  amountDueLabel: "Amount due",
+  nextActionLabel: "Next action",
+  openPortalLabel: "Manage subscription",
+  changePlanLabel: "Change plan",
+  pauseLabel: "Pause subscription",
+  resumeLabel: "Resume subscription",
+  cancelLabel: "Cancel subscription",
+  customActionLabel: "Continue",
+};
+
+const DEFAULT_PAYMENT_METHOD_SUMMARY_COPY: Required<VortexPaymentMethodSummaryCopy> = {
+  title: "Payment method",
+  readyDescription: "A default payment method is ready for collection.",
+  missingDescription: "Add a payment method before automatic collection can continue.",
+  expiredDescription: "The default payment method needs to be updated.",
+  disabledDescription: "The default payment method is disabled.",
+  actionRequiredDescription: "Review the payment method before the next collection attempt.",
+  blockedDescription: "Payment collection is blocked until this payment method is fixed.",
+  loadingTitle: "Loading payment method...",
+  errorTitle: "Unable to load payment method.",
+  statusLabel: "Status",
+  kindLabel: "Type",
+  methodLabel: "Default method",
+  expiryLabel: "Expires",
+  bankLabel: "Bank",
+  accountTypeLabel: "Account type",
+  readinessLabel: "Readiness",
+  nextActionLabel: "Next action",
+  openPaymentMethodsLabel: "Manage payment methods",
+  addPaymentMethodLabel: "Add payment method",
+  updatePaymentMethodLabel: "Update payment method",
+  customActionLabel: "Continue",
+};
+
+const DEFAULT_MERCHANT_ACTION_QUEUE_COPY: Required<VortexMerchantActionQueueCopy> = {
+  title: "Vortex Connect actions",
+  readyDescription: "Vortex Connect is ready for this merchant.",
+  blockedDescription:
+    "Resolve the open Vortex Connect actions before this merchant can accept payments.",
+  loadingTitle: "Loading Vortex Connect actions...",
+  errorTitle: "Unable to load Vortex Connect actions.",
+  emptyTitle: "No merchant actions are open.",
+  emptyDescription:
+    "This merchant has no current Vortex Connect payment, onboarding, or payout blockers.",
+  statusLabel: "Status",
+  onboardingLabel: "Onboarding",
+  paymentCollectionLabel: "Payment collection",
+  payoutsLabel: "Payouts",
+};
+
+const DEFAULT_MERCHANT_ACCOUNT_PANEL_COPY: Required<VortexMerchantAccountPanelCopy> = {
+  title: "Vortex Connect",
+  readyDescription: "This merchant can accept payments through Vortex Connect.",
+  blockedDescription:
+    "This merchant needs Vortex Connect review before all payment flows are ready.",
+  loadingTitle: "Loading Vortex Connect...",
+  errorTitle: "Unable to load Vortex Connect.",
+  stateUnavailableTitle: "Readiness state is unavailable.",
+  stateUnavailableDescription: "Profile data is loaded, but live readiness has not been provided.",
+  businessLabel: "Business",
+  merchantModeLabel: "Mode",
+  merchantStatusLabel: "Status",
+  paymentCollectionLabel: "Payment collection",
+  payoutReadinessLabel: "Payouts",
+  defaultCurrencyLabel: "Currency",
+  activeCapabilitiesLabel: "Active capabilities",
+  restrictedCapabilitiesLabel: "Restricted capabilities",
+  openRequirementsLabel: "Open requirements",
+  openOnboardingLabel: "Open Vortex Connect onboarding",
+  openActionsLabel: "Review actions",
+  openPayoutReadinessLabel: "Review payouts",
+};
+
+const DEFAULT_PAYOUT_READINESS_PANEL_COPY: Required<VortexPayoutReadinessPanelCopy> = {
+  title: "Payout readiness",
+  readyDescription: "Payout configuration is readable and currently not blocking this merchant.",
+  blockedDescription: "Payouts need review before funds can move normally.",
+  loadingTitle: "Loading payout readiness...",
+  errorTitle: "Unable to load payout readiness.",
+  profileUnavailableTitle: "Payout profile is unavailable.",
+  profileUnavailableDescription:
+    "Merchant readiness is loaded, but payout profile details were not provided.",
+  payoutReadinessLabel: "Readiness",
+  payoutModeLabel: "Mode",
+  payoutRailLabel: "Rail",
+  payoutScheduleLabel: "Schedule",
+  currencyLabel: "Currency",
+  fundingRequirementLabel: "Funding requirement",
+  latestSettlementLabel: "Latest settlement",
+  latestPayoutLabel: "Latest payout",
+  settlementReadinessLabel: "Settlement readiness",
+  nextActionLabel: "Next action",
+  capabilitiesLabel: "Capabilities",
+  openMerchantAccountLabel: "Open merchant account",
+  openActionsLabel: "Review actions",
+};
+
+const DEFAULT_FEE_POLICY_PANEL_COPY: Required<VortexFeePolicyPanelCopy> = {
+  title: "Fee policy",
+  description: "Control how platform fees are assigned for merchant payment collection.",
+  loadingTitle: "Loading fee policy...",
+  errorTitle: "Unable to load fee policy.",
+  ownerModeLabel: "Fee owner",
+  platformFeeLabel: "Platform fee",
+  settlementLabel: "Settlement",
+  policyOptionsLabel: "Policy options",
+};
+
 export type VortexMerchantActionQueueProps = {
   readonly merchantState: MerchantAccountStateSnapshot;
   readonly actions?: readonly VortexMerchantActionQueueItem[];
@@ -5069,196 +5351,43 @@ function resolvePromoCodeControlCopy(
 function resolveBalanceWalletPanelCopy(
   copy: VortexBalanceWalletPanelCopy | undefined,
 ): Required<VortexBalanceWalletPanelCopy> {
-  return {
-    title: copy?.title ?? "Balance and credits",
-    readyDescription:
-      copy?.readyDescription ?? "Review available credits and wallet ledger activity.",
-    emptyDescription: copy?.emptyDescription ?? "No prepaid balance is currently available.",
-    blockedDescription:
-      copy?.blockedDescription ?? "This balance needs attention before it can be used.",
-    loadingTitle: copy?.loadingTitle ?? "Loading balance...",
-    errorTitle: copy?.errorTitle ?? "Unable to load balance.",
-    availableBalanceLabel: copy?.availableBalanceLabel ?? "Available",
-    pendingBalanceLabel: copy?.pendingBalanceLabel ?? "Pending",
-    entryCountLabel: copy?.entryCountLabel ?? "Ledger rows",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    emptyTitle: copy?.emptyTitle ?? "No balance activity",
-    emptyStateDescription:
-      copy?.emptyStateDescription ?? "Add credits to create the first wallet ledger row.",
-    addFundsLabel: copy?.addFundsLabel ?? "Add credits",
-    viewEntryLabel: copy?.viewEntryLabel ?? "View row",
-    settlementLabel: copy?.settlementLabel ?? "Funding settlement",
-    targetLabel: copy?.targetLabel ?? "Targets",
-  };
+  return { ...DEFAULT_BALANCE_WALLET_PANEL_COPY, ...copy };
 }
 
 function resolveRecoverySummaryCopy(
   copy: VortexRecoverySummaryCopy | undefined,
 ): Required<VortexRecoverySummaryCopy> {
-  return {
-    title: copy?.title ?? "Payment recovery",
-    healthyDescription:
-      copy?.healthyDescription ?? "No payment recovery action is currently required.",
-    actionRequiredDescription:
-      copy?.actionRequiredDescription ??
-      "Review the payment issue and recover collection through Vortex.",
-    recoveredDescription: copy?.recoveredDescription ?? "The payment issue has been recovered.",
-    loadingTitle: copy?.loadingTitle ?? "Loading recovery state...",
-    errorTitle: copy?.errorTitle ?? "Unable to load recovery state.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    reasonLabel: copy?.reasonLabel ?? "Reason",
-    amountDueLabel: copy?.amountDueLabel ?? "Amount due",
-    nextRetryLabel: copy?.nextRetryLabel ?? "Next retry",
-    invoiceLabel: copy?.invoiceLabel ?? "Invoice",
-    attemptsLabel: copy?.attemptsLabel ?? "Attempts",
-    emptyAttemptsTitle: copy?.emptyAttemptsTitle ?? "No recovery attempts yet",
-    openHostedRecoveryLabel: copy?.openHostedRecoveryLabel ?? "Update payment method",
-    retryPaymentLabel: copy?.retryPaymentLabel ?? "Retry payment",
-  };
+  return { ...DEFAULT_RECOVERY_SUMMARY_COPY, ...copy };
 }
 
 function resolveEntitlementSummaryCopy(
   copy: VortexEntitlementSummaryCopy | undefined,
 ): Required<VortexEntitlementSummaryCopy> {
-  return {
-    title: copy?.title ?? "Access",
-    activeDescription: copy?.activeDescription ?? "This customer has active access through Vortex.",
-    limitedDescription:
-      copy?.limitedDescription ??
-      "This customer has limited access and may need billing attention.",
-    blockedDescription:
-      copy?.blockedDescription ?? "This customer does not currently have full access.",
-    emptyDescription: copy?.emptyDescription ?? "No customer access is currently enabled.",
-    loadingTitle: copy?.loadingTitle ?? "Loading access...",
-    errorTitle: copy?.errorTitle ?? "Unable to load access.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    planLabel: copy?.planLabel ?? "Plan",
-    featureCountLabel: copy?.featureCountLabel ?? "Features",
-    renewalLabel: copy?.renewalLabel ?? "Renews",
-    trialLabel: copy?.trialLabel ?? "Trial ends",
-    emptyFeaturesTitle: copy?.emptyFeaturesTitle ?? "No entitlements are active.",
-    openPortalLabel: copy?.openPortalLabel ?? "Manage billing",
-    viewFeatureLabel: copy?.viewFeatureLabel ?? "View feature",
-  };
+  return { ...DEFAULT_ENTITLEMENT_SUMMARY_COPY, ...copy };
 }
 
 function resolvePaymentTimelineSummaryCopy(
   copy: VortexPaymentTimelineSummaryCopy | undefined,
 ): Required<VortexPaymentTimelineSummaryCopy> {
-  return {
-    title: copy?.title ?? "Payments",
-    currentDescription:
-      copy?.currentDescription ??
-      "Recent invoice, payment, refund, and receipt activity is current.",
-    attentionRequiredDescription:
-      copy?.attentionRequiredDescription ??
-      "Review billing activity that needs customer attention.",
-    emptyDescription: copy?.emptyDescription ?? "No billing activity is available yet.",
-    loadingTitle: copy?.loadingTitle ?? "Loading payment timeline...",
-    errorTitle: copy?.errorTitle ?? "Unable to load payment timeline.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    amountDueLabel: copy?.amountDueLabel ?? "Amount due",
-    entryCountLabel: copy?.entryCountLabel ?? "Rows",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    emptyEntriesTitle: copy?.emptyEntriesTitle ?? "No payment activity",
-    emptyEntriesDescription:
-      copy?.emptyEntriesDescription ??
-      "Invoices, payments, refunds, credits, and receipts will appear here.",
-    openPortalLabel: copy?.openPortalLabel ?? "View billing history",
-    viewEntryLabel: copy?.viewEntryLabel ?? "View row",
-  };
+  return { ...DEFAULT_PAYMENT_TIMELINE_SUMMARY_COPY, ...copy };
 }
 
 function resolveInvoiceListCopy(
   copy: VortexInvoiceListCopy | undefined,
 ): Required<VortexInvoiceListCopy> {
-  return {
-    title: copy?.title ?? "Invoices",
-    currentDescription: copy?.currentDescription ?? "Invoice history is current.",
-    attentionRequiredDescription:
-      copy?.attentionRequiredDescription ?? "Review invoices that need customer action.",
-    emptyDescription: copy?.emptyDescription ?? "No invoices are available yet.",
-    loadingTitle: copy?.loadingTitle ?? "Loading invoices...",
-    errorTitle: copy?.errorTitle ?? "Unable to load invoices.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    amountDueLabel: copy?.amountDueLabel ?? "Amount due",
-    invoiceCountLabel: copy?.invoiceCountLabel ?? "Invoices",
-    overdueCountLabel: copy?.overdueCountLabel ?? "Overdue",
-    actionRequiredCountLabel: copy?.actionRequiredCountLabel ?? "Needs action",
-    rowLimitLabel: copy?.rowLimitLabel ?? "Rows shown",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    emptyInvoicesTitle: copy?.emptyInvoicesTitle ?? "No invoices",
-    emptyInvoicesDescription:
-      copy?.emptyInvoicesDescription ??
-      "Invoices and receipts will appear here when billing starts.",
-    openPortalLabel: copy?.openPortalLabel ?? "View invoice center",
-    viewInvoiceLabel: copy?.viewInvoiceLabel ?? "View invoice",
-    viewReceiptLabel: copy?.viewReceiptLabel ?? "View receipt",
-    payInvoiceLabel: copy?.payInvoiceLabel ?? "Pay invoice",
-    customActionLabel: copy?.customActionLabel ?? "Open",
-    loadMoreLabel: copy?.loadMoreLabel ?? "Load more",
-  };
+  return { ...DEFAULT_INVOICE_LIST_COPY, ...copy };
 }
 
 function resolvePlanComparisonCopy(
   copy: VortexPlanComparisonCopy | undefined,
 ): Required<VortexPlanComparisonCopy> {
-  return {
-    title: copy?.title ?? "Plans",
-    readyDescription:
-      copy?.readyDescription ?? "Compare available plans and continue to Vortex checkout.",
-    emptyDescription: copy?.emptyDescription ?? "No plans are currently available.",
-    blockedDescription: copy?.blockedDescription ?? "Plan changes are not currently available.",
-    loadingTitle: copy?.loadingTitle ?? "Loading plans...",
-    errorTitle: copy?.errorTitle ?? "Unable to load plans.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    planCountLabel: copy?.planCountLabel ?? "Plans",
-    selectedPlanLabel: copy?.selectedPlanLabel ?? "Selected",
-    currentPlanLabel: copy?.currentPlanLabel ?? "Current",
-    recommendedPlanLabel: copy?.recommendedPlanLabel ?? "Recommended",
-    priceLabel: copy?.priceLabel ?? "Price",
-    cadenceLabel: copy?.cadenceLabel ?? "Cadence",
-    featureCountLabel: copy?.featureCountLabel ?? "Features",
-    emptyPlansTitle: copy?.emptyPlansTitle ?? "No plans",
-    emptyPlansDescription:
-      copy?.emptyPlansDescription ?? "Plans will appear here when product pricing is available.",
-    openCheckoutLabel: copy?.openCheckoutLabel ?? "Continue to checkout",
-    currentButtonLabel: copy?.currentButtonLabel ?? "Current plan",
-    disabledButtonLabel: copy?.disabledButtonLabel ?? "Unavailable",
-    selectPlanLabel: copy?.selectPlanLabel ?? "Select plan",
-  };
+  return { ...DEFAULT_PLAN_COMPARISON_COPY, ...copy };
 }
 
 function resolveUsageMeterSummaryCopy(
   copy: VortexUsageMeterSummaryCopy | undefined,
 ): Required<VortexUsageMeterSummaryCopy> {
-  return {
-    title: copy?.title ?? "Usage",
-    currentDescription: copy?.currentDescription ?? "Usage is current for this billing period.",
-    attentionRequiredDescription:
-      copy?.attentionRequiredDescription ?? "Review usage that may affect the next invoice.",
-    emptyDescription: copy?.emptyDescription ?? "No usage meters are active for this customer.",
-    blockedDescription: copy?.blockedDescription ?? "Usage is not currently available.",
-    loadingTitle: copy?.loadingTitle ?? "Loading usage...",
-    errorTitle: copy?.errorTitle ?? "Unable to load usage.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    planLabel: copy?.planLabel ?? "Plan",
-    periodLabel: copy?.periodLabel ?? "Period",
-    nextResetLabel: copy?.nextResetLabel ?? "Next reset",
-    meterCountLabel: copy?.meterCountLabel ?? "Meters",
-    usedLabel: copy?.usedLabel ?? "Used",
-    includedLabel: copy?.includedLabel ?? "Included",
-    billableLabel: copy?.billableLabel ?? "Billable",
-    usagePercentLabel: copy?.usagePercentLabel ?? "Usage",
-    resetLabel: copy?.resetLabel ?? "Resets",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    emptyMetersTitle: copy?.emptyMetersTitle ?? "No usage meters",
-    emptyMetersDescription:
-      copy?.emptyMetersDescription ??
-      "Metered usage will appear here when this plan records usage.",
-    openPortalLabel: copy?.openPortalLabel ?? "View billing usage",
-    viewMeterLabel: copy?.viewMeterLabel ?? "View meter",
-  };
+  return { ...DEFAULT_USAGE_METER_SUMMARY_COPY, ...copy };
 }
 
 function resolveReceiptDownloadButtonCopy(
@@ -5270,90 +5399,19 @@ function resolveReceiptDownloadButtonCopy(
 function resolveBillingStatusBannerCopy(
   copy: VortexBillingStatusBannerCopy | undefined,
 ): Required<VortexBillingStatusBannerCopy> {
-  return {
-    loadingTitle: copy?.loadingTitle ?? "Loading billing status...",
-    errorTitle: copy?.errorTitle ?? "Unable to load billing status.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    planLabel: copy?.planLabel ?? "Plan",
-    amountDueLabel: copy?.amountDueLabel ?? "Amount due",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    openPortalLabel: copy?.openPortalLabel ?? "Manage billing",
-    openRecoveryLabel: copy?.openRecoveryLabel ?? "Update payment method",
-    customActionLabel: copy?.customActionLabel ?? "Continue",
-  };
+  return { ...DEFAULT_BILLING_STATUS_BANNER_COPY, ...copy };
 }
 
 function resolveSubscriptionActionSummaryCopy(
   copy: VortexSubscriptionActionSummaryCopy | undefined,
 ): Required<VortexSubscriptionActionSummaryCopy> {
-  return {
-    title: copy?.title ?? "Subscription",
-    activeDescription:
-      copy?.activeDescription ?? "This subscription is active and ready for customer self-service.",
-    trialingDescription:
-      copy?.trialingDescription ??
-      "This subscription is in trial and can be managed through Vortex.",
-    scheduledCancellationDescription:
-      copy?.scheduledCancellationDescription ?? "This subscription is scheduled to cancel.",
-    pausedDescription:
-      copy?.pausedDescription ?? "This subscription is paused and can be resumed through Vortex.",
-    pastDueDescription:
-      copy?.pastDueDescription ??
-      "This subscription needs billing attention before it is fully current.",
-    canceledDescription: copy?.canceledDescription ?? "This subscription is canceled.",
-    emptyDescription: copy?.emptyDescription ?? "No active subscription action is available.",
-    loadingTitle: copy?.loadingTitle ?? "Loading subscription...",
-    errorTitle: copy?.errorTitle ?? "Unable to load subscription.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    planLabel: copy?.planLabel ?? "Plan",
-    cadenceLabel: copy?.cadenceLabel ?? "Billing cadence",
-    renewalLabel: copy?.renewalLabel ?? "Renews",
-    trialLabel: copy?.trialLabel ?? "Trial ends",
-    scheduledCancelLabel: copy?.scheduledCancelLabel ?? "Cancels",
-    pausedUntilLabel: copy?.pausedUntilLabel ?? "Paused until",
-    amountDueLabel: copy?.amountDueLabel ?? "Amount due",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    openPortalLabel: copy?.openPortalLabel ?? "Manage subscription",
-    changePlanLabel: copy?.changePlanLabel ?? "Change plan",
-    pauseLabel: copy?.pauseLabel ?? "Pause subscription",
-    resumeLabel: copy?.resumeLabel ?? "Resume subscription",
-    cancelLabel: copy?.cancelLabel ?? "Cancel subscription",
-    customActionLabel: copy?.customActionLabel ?? "Continue",
-  };
+  return { ...DEFAULT_SUBSCRIPTION_ACTION_SUMMARY_COPY, ...copy };
 }
 
 function resolvePaymentMethodSummaryCopy(
   copy: VortexPaymentMethodSummaryCopy | undefined,
 ): Required<VortexPaymentMethodSummaryCopy> {
-  return {
-    title: copy?.title ?? "Payment method",
-    readyDescription: copy?.readyDescription ?? "A default payment method is ready for collection.",
-    missingDescription:
-      copy?.missingDescription ?? "Add a payment method before automatic collection can continue.",
-    expiredDescription:
-      copy?.expiredDescription ?? "The default payment method needs to be updated.",
-    disabledDescription: copy?.disabledDescription ?? "The default payment method is disabled.",
-    actionRequiredDescription:
-      copy?.actionRequiredDescription ??
-      "Review the payment method before the next collection attempt.",
-    blockedDescription:
-      copy?.blockedDescription ??
-      "Payment collection is blocked until this payment method is fixed.",
-    loadingTitle: copy?.loadingTitle ?? "Loading payment method...",
-    errorTitle: copy?.errorTitle ?? "Unable to load payment method.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    kindLabel: copy?.kindLabel ?? "Type",
-    methodLabel: copy?.methodLabel ?? "Default method",
-    expiryLabel: copy?.expiryLabel ?? "Expires",
-    bankLabel: copy?.bankLabel ?? "Bank",
-    accountTypeLabel: copy?.accountTypeLabel ?? "Account type",
-    readinessLabel: copy?.readinessLabel ?? "Readiness",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    openPaymentMethodsLabel: copy?.openPaymentMethodsLabel ?? "Manage payment methods",
-    addPaymentMethodLabel: copy?.addPaymentMethodLabel ?? "Add payment method",
-    updatePaymentMethodLabel: copy?.updatePaymentMethodLabel ?? "Update payment method",
-    customActionLabel: copy?.customActionLabel ?? "Continue",
-  };
+  return { ...DEFAULT_PAYMENT_METHOD_SUMMARY_COPY, ...copy };
 }
 
 function balanceWalletDescription(
@@ -6197,54 +6255,13 @@ function createEmbeddedCheckoutLineItem(
 function resolveMerchantActionQueueCopy(
   copy: VortexMerchantActionQueueCopy | undefined,
 ): Required<VortexMerchantActionQueueCopy> {
-  return {
-    title: copy?.title ?? "Vortex Connect actions",
-    readyDescription: copy?.readyDescription ?? "Vortex Connect is ready for this merchant.",
-    blockedDescription:
-      copy?.blockedDescription ??
-      "Resolve the open Vortex Connect actions before this merchant can accept payments.",
-    loadingTitle: copy?.loadingTitle ?? "Loading Vortex Connect actions...",
-    errorTitle: copy?.errorTitle ?? "Unable to load Vortex Connect actions.",
-    emptyTitle: copy?.emptyTitle ?? "No merchant actions are open.",
-    emptyDescription:
-      copy?.emptyDescription ??
-      "This merchant has no current Vortex Connect payment, onboarding, or payout blockers.",
-    statusLabel: copy?.statusLabel ?? "Status",
-    onboardingLabel: copy?.onboardingLabel ?? "Onboarding",
-    paymentCollectionLabel: copy?.paymentCollectionLabel ?? "Payment collection",
-    payoutsLabel: copy?.payoutsLabel ?? "Payouts",
-  };
+  return { ...DEFAULT_MERCHANT_ACTION_QUEUE_COPY, ...copy };
 }
 
 function resolveMerchantAccountPanelCopy(
   copy: VortexMerchantAccountPanelCopy | undefined,
 ): Required<VortexMerchantAccountPanelCopy> {
-  return {
-    title: copy?.title ?? "Vortex Connect",
-    readyDescription:
-      copy?.readyDescription ?? "This merchant can accept payments through Vortex Connect.",
-    blockedDescription:
-      copy?.blockedDescription ??
-      "This merchant needs Vortex Connect review before all payment flows are ready.",
-    loadingTitle: copy?.loadingTitle ?? "Loading Vortex Connect...",
-    errorTitle: copy?.errorTitle ?? "Unable to load Vortex Connect.",
-    stateUnavailableTitle: copy?.stateUnavailableTitle ?? "Readiness state is unavailable.",
-    stateUnavailableDescription:
-      copy?.stateUnavailableDescription ??
-      "Profile data is loaded, but live readiness has not been provided.",
-    businessLabel: copy?.businessLabel ?? "Business",
-    merchantModeLabel: copy?.merchantModeLabel ?? "Mode",
-    merchantStatusLabel: copy?.merchantStatusLabel ?? "Status",
-    paymentCollectionLabel: copy?.paymentCollectionLabel ?? "Payment collection",
-    payoutReadinessLabel: copy?.payoutReadinessLabel ?? "Payouts",
-    defaultCurrencyLabel: copy?.defaultCurrencyLabel ?? "Currency",
-    activeCapabilitiesLabel: copy?.activeCapabilitiesLabel ?? "Active capabilities",
-    restrictedCapabilitiesLabel: copy?.restrictedCapabilitiesLabel ?? "Restricted capabilities",
-    openRequirementsLabel: copy?.openRequirementsLabel ?? "Open requirements",
-    openOnboardingLabel: copy?.openOnboardingLabel ?? "Open Vortex Connect onboarding",
-    openActionsLabel: copy?.openActionsLabel ?? "Review actions",
-    openPayoutReadinessLabel: copy?.openPayoutReadinessLabel ?? "Review payouts",
-  };
+  return { ...DEFAULT_MERCHANT_ACCOUNT_PANEL_COPY, ...copy };
 }
 
 function createMerchantAccountListItem(
@@ -6268,50 +6285,13 @@ function createMerchantAccountListItem(
 function resolvePayoutReadinessPanelCopy(
   copy: VortexPayoutReadinessPanelCopy | undefined,
 ): Required<VortexPayoutReadinessPanelCopy> {
-  return {
-    title: copy?.title ?? "Payout readiness",
-    readyDescription:
-      copy?.readyDescription ??
-      "Payout configuration is readable and currently not blocking this merchant.",
-    blockedDescription:
-      copy?.blockedDescription ?? "Payouts need review before funds can move normally.",
-    loadingTitle: copy?.loadingTitle ?? "Loading payout readiness...",
-    errorTitle: copy?.errorTitle ?? "Unable to load payout readiness.",
-    profileUnavailableTitle: copy?.profileUnavailableTitle ?? "Payout profile is unavailable.",
-    profileUnavailableDescription:
-      copy?.profileUnavailableDescription ??
-      "Merchant readiness is loaded, but payout profile details were not provided.",
-    payoutReadinessLabel: copy?.payoutReadinessLabel ?? "Readiness",
-    payoutModeLabel: copy?.payoutModeLabel ?? "Mode",
-    payoutRailLabel: copy?.payoutRailLabel ?? "Rail",
-    payoutScheduleLabel: copy?.payoutScheduleLabel ?? "Schedule",
-    currencyLabel: copy?.currencyLabel ?? "Currency",
-    fundingRequirementLabel: copy?.fundingRequirementLabel ?? "Funding requirement",
-    latestSettlementLabel: copy?.latestSettlementLabel ?? "Latest settlement",
-    latestPayoutLabel: copy?.latestPayoutLabel ?? "Latest payout",
-    settlementReadinessLabel: copy?.settlementReadinessLabel ?? "Settlement readiness",
-    nextActionLabel: copy?.nextActionLabel ?? "Next action",
-    capabilitiesLabel: copy?.capabilitiesLabel ?? "Capabilities",
-    openMerchantAccountLabel: copy?.openMerchantAccountLabel ?? "Open merchant account",
-    openActionsLabel: copy?.openActionsLabel ?? "Review actions",
-  };
+  return { ...DEFAULT_PAYOUT_READINESS_PANEL_COPY, ...copy };
 }
 
 function resolveFeePolicyPanelCopy(
   copy: VortexFeePolicyPanelCopy | undefined,
 ): Required<VortexFeePolicyPanelCopy> {
-  return {
-    title: copy?.title ?? "Fee policy",
-    description:
-      copy?.description ??
-      "Control how platform fees are assigned for merchant payment collection.",
-    loadingTitle: copy?.loadingTitle ?? "Loading fee policy...",
-    errorTitle: copy?.errorTitle ?? "Unable to load fee policy.",
-    ownerModeLabel: copy?.ownerModeLabel ?? "Fee owner",
-    platformFeeLabel: copy?.platformFeeLabel ?? "Platform fee",
-    settlementLabel: copy?.settlementLabel ?? "Settlement",
-    policyOptionsLabel: copy?.policyOptionsLabel ?? "Policy options",
-  };
+  return { ...DEFAULT_FEE_POLICY_PANEL_COPY, ...copy };
 }
 
 function createPayoutCapabilityItem(
