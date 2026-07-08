@@ -9,8 +9,11 @@ type RequiredMarker = {
 };
 
 const repoRoot = resolve(import.meta.dir, "..");
-const proofDocRelativePath = "docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md";
-const proofDocPath = resolve(repoRoot, proofDocRelativePath);
+const proofDocRelativePath =
+  "docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md";
+const proofDocArg = parseProofDocArg(process.argv.slice(2));
+const proofDocPath = proofDocArg ?? resolve(repoRoot, proofDocRelativePath);
+const proofDocForOutput = proofDocArg ?? proofDocRelativePath;
 
 const moneyProofMarkers: readonly RequiredMarker[] = [
   {
@@ -31,18 +34,21 @@ const moneyProofMarkers: readonly RequiredMarker[] = [
   },
   {
     label: "settlement id evidence",
-    pattern: /settlementIds?\s*[:=]\s*\[[\s\S]*[a-z0-9_ -]+[\s\S]*\]|settlementId\s*[:=]\s*["'][^"']+["']/i,
+    pattern:
+      /settlementIds?\s*[:=]\s*\[[\s\S]*[a-z0-9_ -]+[\s\S]*\]|settlementId\s*[:=]\s*["'][^"']+["']/i,
   },
   {
     label: "payout visibility evidence",
-    pattern: /payout visibility|payoutIds?\s*[:=]\s*\[[\s\S]*[a-z0-9_ -]+[\s\S]*\]|payoutId\s*[:=]\s*["'][^"']+["']/i,
+    pattern:
+      /payout visibility|payoutIds?\s*[:=]\s*\[[\s\S]*[a-z0-9_ -]+[\s\S]*\]|payoutId\s*[:=]\s*["'][^"']+["']/i,
   },
 ];
 
 const postProofRetirementMarkers: readonly RequiredMarker[] = [
   {
     label: "production routing widened after proof",
-    pattern: /production routing widened\s*[:=]\s*true|document-payment allowlist widened\s*[:=]\s*true/i,
+    pattern:
+      /production routing widened\s*[:=]\s*true|document-payment allowlist widened\s*[:=]\s*true/i,
   },
   {
     label: "external production payment-provider residue retired after proof",
@@ -101,7 +107,7 @@ function buildAudit(input: { readonly ok: boolean; readonly status: string }) {
     check: "seal_vortex_production_proof_boundary",
     boundary:
       "Static production proof audit only. It reads a checked-in proof note if present and never calls Convex, Finix, card payment, settlement reconciliation, payout, production config, or webhook retirement.",
-    proofDoc: proofDocRelativePath,
+    proofDoc: proofDocForOutput,
     proofDocExists,
     productionMoneyProofComplete,
     postProofRetirementComplete,
@@ -115,7 +121,18 @@ function buildAudit(input: { readonly ok: boolean; readonly status: string }) {
       "Confirm production settlement and payout visibility.",
       "Run the paid-state proof with production ids and --require-settled.",
       "Only after proof passes, widen production routing and retire external production payment-provider residue.",
-      `Record the evidence in ${proofDocRelativePath}.`,
+      `Record the evidence in ${proofDocForOutput}.`,
     ],
   };
+}
+
+function parseProofDocArg(args: readonly string[]): string | undefined {
+  if (args.length === 0) {
+    return undefined;
+  }
+  if (args.length !== 2 || args[0] !== "--proof-doc" || args[1].length === 0) {
+    console.error("Usage: audit-seal-vortex-production-proof-boundary.ts [--proof-doc <path>]");
+    process.exit(1);
+  }
+  return resolve(args[1]);
 }

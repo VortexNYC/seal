@@ -36,6 +36,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
 - `bun run audit:seal-vortex-launch-boundary` now surfaces the sandbox human reconciliation boundary and the production human-only boundary, and fails if production remediation commands do not exactly match the missing production env names.
 - `bun run audit:seal-vortex-production-proof-boundary` keeps production live-money proof and post-proof external residue retirement as explicit launch blockers until a checked-in production proof artifact exists.
+- `bun run prove:seal-vortex-production-proof-boundary` proves the production proof boundary fails closed on incomplete production proof artifacts, distinguishes money-proof-only from full go-live evidence, and requires post-proof retirement markers.
 - `bun run audit:seal-vortex-launch-boundary` cannot report `launchReady: true` from production config alone; it now also requires production money proof and post-proof retirement evidence.
 - `bun run prove:seal-saas-webhook-billing-state` now pushes the current checkout to the Seal dev deployment before running, so the live/dev SaaS billing-state proof cannot pass against stale deployed functions.
 - `bun run prove:seal-coupons-vortex` now merges its temporary proof price into `VORTEX_BILLING_SAAS_PRICE_MAP` instead of replacing the whole map; this preserves the `pro:monthly:v2` checkout mapping when coupon proofs run before SaaS checkout proofs.
@@ -81,6 +82,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run prove:seal-vortex-migration-local` statically fails if known live or env-mutating proof commands are added to the local non-mutating gate.
 - `bun run prove:seal-vortex-migration-local` statically fails if live/dev Vortex proof scripts replace existing Vortex map env values instead of merging updates into those maps.
 - `bun run prove:seal-vortex-migration-local` now includes the production proof boundary audit, so launch readiness stays false until production proof and post-proof retirement evidence are checked in.
+- `bun run prove:seal-vortex-migration-local` now includes the production proof boundary self-proof, so malformed production proof notes cannot silently satisfy launch readiness.
 
 ## Production Readiness Audit
 
@@ -150,6 +152,7 @@ Latest non-mutating refresh results recorded on this branch:
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting` and `earliestHumanReconcileAt` preserved as `2026-07-08T18:12:06.10Z`.
 - `bun run audit:seal-vortex-production-proof-boundary` passed as a non-mutating guard and reported `productionMoneyProofComplete: false`, `postProofRetirementComplete: false`, and `goLiveProofComplete: false` because the checked-in production go-live proof artifact does not exist yet.
+- `bun run prove:seal-vortex-production-proof-boundary` passed and proved missing, incomplete, money-proof-only, and full go-live proof artifact cases.
 - `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `human_settlement_proof`, `production_config`, and `production_live_money_proof`, while surfacing the sandbox, production config, production proof, and post-proof retirement boundaries.
 - `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above and prints the agent-allowed actions, human-only actions, and production success criteria without secret values.
 - Branch worktree was clean after the latest recorded verification.
@@ -182,5 +185,6 @@ Work SEA-562:
    - `bun run audit:seal-vortex-sandbox-settlement-boundary`
    - `bun run audit:seal-vortex-production-readiness`
    - `bun run audit:seal-vortex-production-proof-boundary`
+   - `bun run prove:seal-vortex-production-proof-boundary`
    - `bun run audit:seal-vortex-launch-boundary`
 4. Do not mark launch readiness complete until settled sandbox proof and production proof both pass.

@@ -220,7 +220,8 @@ console.log(
         needsProductionConfig: !production.ok,
         needsProductionMoneyProof: !productionProof.productionMoneyProofComplete,
         needsPostProofRetirement:
-          productionProof.productionMoneyProofComplete && !productionProof.postProofRetirementComplete,
+          productionProof.productionMoneyProofComplete &&
+          !productionProof.postProofRetirementComplete,
       }),
     },
     null,
