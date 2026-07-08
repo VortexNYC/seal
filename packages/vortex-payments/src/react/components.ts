@@ -5573,10 +5573,15 @@ export function VortexPaymentMethodSummary({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolvePaymentMethodSummaryCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const canOpenPaymentMethods =
-    paymentMethod.action !== "custom" && paymentMethod.portalToken !== undefined;
-  const canRunCustomAction = paymentMethod.action === "custom";
-  const actionDisabledReason = paymentMethod.actionDisabledReason;
+  const state = createPaymentMethodSummaryState(paymentMethod);
+  const runPrimaryAction = createPaymentMethodSummaryActionHandler({
+    onAction,
+    onPaymentMethodsLaunch,
+    paymentMethod,
+    runtime,
+    selectedNavigate,
+    state,
+  });
 
   useEffect(() => {
     onReady?.({
@@ -5595,62 +5600,148 @@ export function VortexPaymentMethodSummary({
     }
   }, [error, onError]);
 
-  const runPrimaryAction = (): void => {
-    if (canOpenPaymentMethods && paymentMethod.portalToken !== undefined) {
-      const launch = runtime.createHostedLink({
-        surface: "payment_methods",
-        token: paymentMethod.portalToken,
-        query: paymentMethodSummaryPortalQuery(paymentMethod.action),
-      });
+  return createElement(
+    "section",
+    createPaymentMethodSummarySectionProps({
+      appearance,
+      className,
+      classNames,
+      paymentMethod,
+      state,
+    }),
+    createPaymentMethodSummaryHeader({ classNames, paymentMethod, resolvedCopy }),
+    createPaymentMethodSummaryFeedback({ classNames, error, loading, resolvedCopy }),
+    createPaymentMethodSummaryDisabledReason({ classNames, state }),
+    createPaymentMethodSummaryMetrics({ classNames, paymentMethod, resolvedCopy }),
+    createPaymentMethodSummaryActions({
+      classNames,
+      isDisabled,
+      paymentMethod,
+      resolvedCopy,
+      runPrimaryAction,
+      state,
+    }),
+  );
+}
+
+function createPaymentMethodSummaryState(paymentMethod: VortexPaymentMethodSummaryState) {
+  return {
+    actionDisabledReason: paymentMethod.actionDisabledReason,
+    canOpenPaymentMethods:
+      paymentMethod.action !== "custom" && paymentMethod.portalToken !== undefined,
+    canRunCustomAction: paymentMethod.action === "custom",
+  };
+}
+
+type PaymentMethodSummaryState = ReturnType<typeof createPaymentMethodSummaryState>;
+
+function createPaymentMethodSummaryActionHandler({
+  onAction,
+  onPaymentMethodsLaunch,
+  paymentMethod,
+  runtime,
+  selectedNavigate,
+  state,
+}: {
+  readonly onAction: VortexPaymentMethodSummaryProps["onAction"];
+  readonly onPaymentMethodsLaunch: VortexPaymentMethodSummaryProps["onPaymentMethodsLaunch"];
+  readonly paymentMethod: VortexPaymentMethodSummaryState;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: PaymentMethodSummaryState;
+}) {
+  return (): void => {
+    if (state.canOpenPaymentMethods && paymentMethod.portalToken !== undefined) {
+      const launch = createPaymentMethodSummaryPortalLaunch(runtime, paymentMethod);
       onPaymentMethodsLaunch?.(launch);
       selectedNavigate(launch);
       return;
     }
-    if (canRunCustomAction) {
+    if (state.canRunCustomAction) {
       void onAction?.(paymentMethod);
     }
   };
+}
 
+function createPaymentMethodSummaryPortalLaunch(
+  runtime: VortexSurfaceProviderRuntime,
+  paymentMethod: VortexPaymentMethodSummaryState,
+): VortexSurfaceLaunch {
+  return runtime.createHostedLink({
+    surface: "payment_methods",
+    token: paymentMethod.portalToken ?? "",
+    query: paymentMethodSummaryPortalQuery(paymentMethod.action),
+  });
+}
+
+function createPaymentMethodSummarySectionProps({
+  appearance,
+  className,
+  classNames,
+  paymentMethod,
+  state,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly paymentMethod: VortexPaymentMethodSummaryState;
+  readonly state: PaymentMethodSummaryState;
+}) {
+  return {
+    className: cx("vortex-payments-payment-method-summary", className, classNames?.root),
+    "data-vortex-surface": "payment-method-summary",
+    "data-vortex-component": "VortexPaymentMethodSummary",
+    "data-vortex-customer-id": paymentMethod.customerId,
+    "data-vortex-billing-account-id": paymentMethod.billingAccountId,
+    "data-vortex-payment-method-id": paymentMethod.paymentMethodId,
+    "data-vortex-payment-method-status": paymentMethod.status,
+    "data-vortex-payment-method-kind": paymentMethod.kind,
+    "data-vortex-payment-method-action": paymentMethod.action,
+    "data-vortex-payment-methods-ready": String(state.canOpenPaymentMethods),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createPaymentMethodSummaryHeader({
+  classNames,
+  paymentMethod,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly paymentMethod: VortexPaymentMethodSummaryState;
+  readonly resolvedCopy: Required<VortexPaymentMethodSummaryCopy>;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-payment-method-summary", className, classNames?.root),
-      "data-vortex-surface": "payment-method-summary",
-      "data-vortex-component": "VortexPaymentMethodSummary",
-      "data-vortex-customer-id": paymentMethod.customerId,
-      "data-vortex-billing-account-id": paymentMethod.billingAccountId,
-      "data-vortex-payment-method-id": paymentMethod.paymentMethodId,
-      "data-vortex-payment-method-status": paymentMethod.status,
-      "data-vortex-payment-method-kind": paymentMethod.kind,
-      "data-vortex-payment-method-action": paymentMethod.action,
-      "data-vortex-payment-methods-ready": String(canOpenPaymentMethods),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement(
-        "h2",
-        { className: classNames?.title },
-        paymentMethod.title ?? resolvedCopy.title,
-      ),
-      paymentMethod.description === undefined
-        ? createElement(
-            "p",
-            { className: classNames?.description },
-            paymentMethodSummaryDescription(paymentMethod, resolvedCopy),
-          )
-        : createElement("p", { className: classNames?.description }, paymentMethod.description),
+      "h2",
+      { className: classNames?.title },
+      paymentMethod.title ?? resolvedCopy.title,
     ),
+    createElement(
+      "p",
+      { className: classNames?.description },
+      paymentMethod.description ?? paymentMethodSummaryDescription(paymentMethod, resolvedCopy),
+    ),
+  );
+}
+
+function createPaymentMethodSummaryFeedback({
+  classNames,
+  error,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexPaymentMethodSummaryCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -5666,50 +5757,92 @@ export function VortexPaymentMethodSummary({
           resolvedCopy.errorTitle,
           error,
         ),
-    actionDisabledReason === undefined
-      ? null
-      : createElement(
-          "p",
-          {
-            className: classNames?.status,
-            "data-vortex-payment-method-action-disabled-reason": true,
-          },
-          actionDisabledReason,
-        ),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, paymentMethod.status, classNames),
-      createMetric(resolvedCopy.kindLabel, paymentMethod.kind, classNames),
-      createMetric(resolvedCopy.methodLabel, paymentMethodLabel(paymentMethod), classNames),
-      createMetric(resolvedCopy.expiryLabel, paymentMethod.expiryLabel ?? "none", classNames),
-      createMetric(resolvedCopy.bankLabel, paymentMethod.bankLabel ?? "none", classNames),
-      createMetric(
-        resolvedCopy.accountTypeLabel,
-        paymentMethod.accountTypeLabel ?? "none",
-        classNames,
-      ),
-      createMetric(resolvedCopy.readinessLabel, paymentMethod.readinessLabel ?? "none", classNames),
-      createMetric(resolvedCopy.nextActionLabel, paymentMethod.nextAction ?? "none", classNames),
+  ];
+}
+
+function createPaymentMethodSummaryDisabledReason({
+  classNames,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly state: PaymentMethodSummaryState;
+}): ReactNode {
+  if (state.actionDisabledReason === undefined) {
+    return null;
+  }
+  return createElement(
+    "p",
+    {
+      className: classNames?.status,
+      "data-vortex-payment-method-action-disabled-reason": true,
+    },
+    state.actionDisabledReason,
+  );
+}
+
+function createPaymentMethodSummaryMetrics({
+  classNames,
+  paymentMethod,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly paymentMethod: VortexPaymentMethodSummaryState;
+  readonly resolvedCopy: Required<VortexPaymentMethodSummaryCopy>;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, paymentMethod.status, classNames),
+    createMetric(resolvedCopy.kindLabel, paymentMethod.kind, classNames),
+    createMetric(resolvedCopy.methodLabel, paymentMethodLabel(paymentMethod), classNames),
+    createMetric(resolvedCopy.expiryLabel, paymentMethod.expiryLabel ?? "none", classNames),
+    createMetric(resolvedCopy.bankLabel, paymentMethod.bankLabel ?? "none", classNames),
+    createMetric(
+      resolvedCopy.accountTypeLabel,
+      paymentMethod.accountTypeLabel ?? "none",
+      classNames,
     ),
+    createMetric(resolvedCopy.readinessLabel, paymentMethod.readinessLabel ?? "none", classNames),
+    createMetric(resolvedCopy.nextActionLabel, paymentMethod.nextAction ?? "none", classNames),
+  );
+}
+
+function createPaymentMethodSummaryActions({
+  classNames,
+  isDisabled,
+  paymentMethod,
+  resolvedCopy,
+  runPrimaryAction,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly isDisabled: boolean;
+  readonly paymentMethod: VortexPaymentMethodSummaryState;
+  readonly resolvedCopy: Required<VortexPaymentMethodSummaryCopy>;
+  readonly runPrimaryAction: () => void;
+  readonly state: PaymentMethodSummaryState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
     createElement(
-      "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled:
-            isDisabled ||
-            actionDisabledReason !== undefined ||
-            (!canOpenPaymentMethods && !canRunCustomAction),
-          onClick: runPrimaryAction,
-          type: "button",
-          "data-vortex-payment-method-summary-action": paymentMethod.action,
-        },
-        paymentMethodActionLabel(paymentMethod.action, resolvedCopy),
-      ),
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !canRunPaymentMethodSummaryAction(state),
+        onClick: runPrimaryAction,
+        type: "button",
+        "data-vortex-payment-method-summary-action": paymentMethod.action,
+      },
+      paymentMethodActionLabel(paymentMethod.action, resolvedCopy),
     ),
+  );
+}
+
+function canRunPaymentMethodSummaryAction(state: PaymentMethodSummaryState): boolean {
+  return (
+    state.actionDisabledReason === undefined &&
+    (state.canOpenPaymentMethods || state.canRunCustomAction)
   );
 }
 
