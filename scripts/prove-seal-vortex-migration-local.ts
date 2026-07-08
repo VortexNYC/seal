@@ -51,6 +51,11 @@ const proofCommands: readonly ProofCommand[] = [
     args: ["run", "prove:vortex-merchant-settings-adoption"],
   },
   {
+    label: "Vortex account creation and onboarding local proof",
+    command: "bun",
+    args: ["run", "prove:seal-account-onboarding-vortex-local"],
+  },
+  {
     label: "Vortex SaaS webhook projection",
     command: "bun",
     args: ["run", "prove:vortex-saas-webhook-projection"],
@@ -115,7 +120,7 @@ console.log(
       proven: [
         "tracked source contains no retired-provider residue",
         "working tree contains no retired-provider residue outside generated outputs",
-        "billing, payments, and merchant settings use Vortex naming and actions",
+        "account creation, merchant onboarding guards, and billing/payments/merchant settings use Vortex naming and actions",
         "SaaS checkout, catalog price resolution, coupon application, portal links, and webhook projection are Vortex-backed locally",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",

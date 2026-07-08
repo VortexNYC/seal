@@ -38,6 +38,7 @@
     "prove:vortex-billing-settings-adoption": "bun run scripts/prove-vortex-billing-settings-adoption.ts",
     "prove:vortex-payments-settings-adoption": "bun run scripts/prove-vortex-payments-settings-adoption.ts",
     "prove:vortex-merchant-settings-adoption": "bun run scripts/prove-vortex-merchant-settings-adoption.ts",
+    "prove:seal-account-onboarding-vortex-local": "bun run --cwd apps/backend test convex/organizations/__tests__/account_creation.test.ts convex/payments/merchant_account_actions.test.ts convex/payments/vortex_merchant_queries.test.ts convex/vortex_billing/payable_actions.test.ts",
     "prove:seal-vortex-onboarding-wiring": "bun run scripts/prove-seal-vortex-onboarding-wiring.ts",
     "prove:seal-catalog-from-vortex": "bun run scripts/prove-seal-catalog-from-vortex.ts",
     "prove:seal-coupons-vortex": "bun run scripts/prove-seal-coupons-vortex.ts",
