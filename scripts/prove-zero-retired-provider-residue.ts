@@ -25,7 +25,12 @@ const activeGuidanceAndConfigPaths = [
   "turbo.json",
   "vortex.project.json",
 ] as const;
+const activeVortexMirrorSchemaPaths = [
+  "apps/backend/convex/schemas/subscription_coupons.ts",
+  "apps/backend/convex/schemas/subscription_promo_codes.ts",
+] as const;
 const retiredProviderAliasRegex = /\bretired provider\b|retired_provider|RETIRED_PROVIDER/i;
+const stalePaymentProviderMirrorRegex = /\bpayment provider\b/i;
 const generatedOrInstalledGlobExcludes = [
   "!.git/**",
   "!node_modules/**",
@@ -139,6 +144,22 @@ for (const relativePath of activeGuidanceAndConfigPaths) {
   }
 }
 
+for (const relativePath of activeVortexMirrorSchemaPaths) {
+  const absolutePath = join(repoRoot, relativePath);
+  if (!existsSync(absolutePath)) {
+    failures.push(`${relativePath}: expected active Vortex mirror schema is missing`);
+    continue;
+  }
+
+  const fileContents = readFileSync(absolutePath, "utf8");
+  if (stalePaymentProviderMirrorRegex.test(fileContents)) {
+    failures.push(`${relativePath}: active Vortex mirror schema uses stale payment provider wording`);
+  }
+  if (!fileContents.includes("Vortex Billing")) {
+    failures.push(`${relativePath}: active Vortex mirror schema does not name Vortex Billing`);
+  }
+}
+
 function scanWorkingTreePathNames(absoluteDirectory: string, relativeDirectory: string): void {
   if (!existsSync(absoluteDirectory)) {
     return;
@@ -181,3 +202,4 @@ console.log(
   "- No owned working-tree content, including hidden env files, contains provider-shaped retired provider residue.",
 );
 console.log("- No active guidance/config file contains retired provider aliases.");
+console.log("- Active Vortex mirror schemas name Vortex Billing as source of truth.");

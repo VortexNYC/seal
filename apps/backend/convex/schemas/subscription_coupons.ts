@@ -1,8 +1,8 @@
 /**
  * SUBSCRIPTION COUPONS TABLE
- * Coupons synced from payment provider - READ-ONLY mirror for fast queries.
- * Source of truth: Payment provider.
- * NEVER modify directly - only via payment provider API + webhooks.
+ * Coupons synced from Vortex Billing - READ-ONLY mirror for fast queries.
+ * Source of truth: Vortex Billing.
+ * NEVER modify directly - only via Vortex Billing API + webhooks.
  */
 
 import { defineTable } from "convex/server";
@@ -37,7 +37,7 @@ export const subscriptionCouponsTable = defineTable({
   durationInMonths: v.optional(v.number()), // For "repeating" duration
 
   // Product restrictions (which products can use this coupon)
-  appliesToProducts: v.optional(v.array(v.string())), // provider product IDs
+  appliesToProducts: v.optional(v.array(v.string())), // Vortex product IDs
 
   // Metadata
   metadata: v.optional(

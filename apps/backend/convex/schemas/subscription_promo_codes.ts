@@ -1,8 +1,8 @@
 /**
  * SUBSCRIPTION PROMO CODES TABLE
- * Promotion codes synced from payment provider - READ-ONLY mirror for fast queries.
- * Source of truth: Payment provider.
- * NEVER modify directly - only via payment provider API + webhooks.
+ * Promotion codes synced from Vortex Billing - READ-ONLY mirror for fast queries.
+ * Source of truth: Vortex Billing.
+ * NEVER modify directly - only via Vortex Billing API + webhooks.
  */
 
 import { defineTable } from "convex/server";
@@ -19,7 +19,7 @@ export const subscriptionPromoCodeStatus = v.union(
 export type SubscriptionPromoCodeStatus = Infer<typeof subscriptionPromoCodeStatus>;
 
 export const subscriptionPromoCodesTable = defineTable({
-  // External IDs (source of truth from payment provider)
+  // External IDs (source of truth from Vortex Billing)
   providerPromotionCodeId: v.string(),
 
   // Reference to coupon
