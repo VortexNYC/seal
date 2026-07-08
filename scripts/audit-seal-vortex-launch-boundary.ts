@@ -37,6 +37,16 @@ type ProductionReadinessAudit = {
   readonly nextAction: string;
 };
 
+type HostedOutcomeAudit = {
+  readonly ok: boolean;
+  readonly check: string;
+  readonly settlement: {
+    readonly fullySettledEvidence: boolean;
+    readonly status: string;
+    readonly requiredBeforeLaunch: string;
+  };
+};
+
 type SandboxSettlementAudit = {
   readonly ok: boolean;
   readonly check: string;
@@ -71,6 +81,13 @@ const sandbox = runJsonScript<SandboxSettlementAudit>({
   scriptPath: "scripts/audit-seal-vortex-sandbox-settlement-boundary.ts",
   allowedStatuses: new Set([0]),
   isExpectedShape: isSandboxSettlementAudit,
+});
+
+const hostedOutcomes = runJsonScript<HostedOutcomeAudit>({
+  label: "hosted outcomes boundary",
+  scriptPath: "scripts/audit-seal-vortex-hosted-outcomes-boundary.ts",
+  allowedStatuses: new Set([0]),
+  isExpectedShape: isHostedOutcomeAudit,
 });
 
 const production = runJsonScript<ProductionReadinessAudit>({
@@ -110,14 +127,25 @@ if (!production.ok && missingProductionNames.length === 0) {
 const productionBoundary = production.ok
   ? "ready_for_human_production_proof"
   : "waiting_for_known_production_config";
+const waitingOn = [
+  ...(hostedOutcomes.settlement.fullySettledEvidence ? [] : ["human_settlement_proof"]),
+  ...(production.ok ? [] : ["production_config"]),
+] as const;
+const launchReady = waitingOn.length === 0;
 
 console.log(
   JSON.stringify(
     {
       ok: true,
       check: "seal_vortex_launch_boundary",
+      launchReady,
       boundary:
-        "Non-mutating launch boundary audit. It proves sandbox settlement handoff is preserved and production readiness is either green or blocked only by known human-run configuration names.",
+        "Non-mutating launch boundary audit. It proves sandbox settlement handoff is preserved, hosted outcomes are projected, and production readiness is either green or blocked only by known human-run configuration names.",
+      waitingOn,
+      hostedOutcomes: {
+        ok: hostedOutcomes.ok,
+        settlement: hostedOutcomes.settlement,
+      },
       sandbox: {
         ok: sandbox.ok,
         readinessWindow: sandbox.readinessWindow,
@@ -130,9 +158,11 @@ console.log(
         invalidPresentConfig: invalidProductionNames,
         remediationCommandCount: production.remediation.missingEnvSetCommands.length,
       },
-      nextAction: production.ok
-        ? "Human runs the production proof sequence with explicit target ids."
-        : "Human configures the listed production environment names, then reruns production readiness and live proof.",
+      nextAction: getNextAction({
+        launchReady,
+        needsSettlementProof: !hostedOutcomes.settlement.fullySettledEvidence,
+        needsProductionConfig: !production.ok,
+      }),
     },
     null,
     2,
@@ -216,6 +246,19 @@ function isProductionReadinessAudit(value: unknown): value is ProductionReadines
   );
 }
 
+function isHostedOutcomeAudit(value: unknown): value is HostedOutcomeAudit {
+  if (!isRecord(value) || !isRecord(value.settlement)) {
+    return false;
+  }
+  return (
+    value.ok === true &&
+    value.check === "seal_vortex_hosted_outcomes_boundary" &&
+    typeof value.settlement.fullySettledEvidence === "boolean" &&
+    typeof value.settlement.status === "string" &&
+    typeof value.settlement.requiredBeforeLaunch === "string"
+  );
+}
+
 function isSandboxSettlementAudit(value: unknown): value is SandboxSettlementAudit {
   if (!isRecord(value) || !isRecord(value.captured)) {
     return false;
@@ -262,6 +305,23 @@ function isStringArray(value: unknown): value is readonly string[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function getNextAction(input: {
+  readonly launchReady: boolean;
+  readonly needsSettlementProof: boolean;
+  readonly needsProductionConfig: boolean;
+}): string {
+  if (input.launchReady) {
+    return "Human runs the production proof sequence with explicit target ids.";
+  }
+  if (input.needsSettlementProof && input.needsProductionConfig) {
+    return "Human completes sandbox settlement proof and configures the listed production environment names, then reruns production readiness and live proof.";
+  }
+  if (input.needsSettlementProof) {
+    return "Human completes sandbox settlement proof, then reruns the launch boundary audit.";
+  }
+  return "Human configures the listed production environment names, then reruns production readiness and live proof.";
 }
 
 function fail(message: string): never {

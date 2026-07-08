@@ -153,6 +153,12 @@ console.log(
       boundary:
         "Static hosted-outcome proof audit only. It reads the checked-in proof note and never calls Convex, Finix, card payment, settlement reconciliation, payout, or production config.",
       proofDoc: proofDocPath,
+      settlement: {
+        fullySettledEvidence: false,
+        status: "waiting_for_human_settlement_proof",
+        requiredBeforeLaunch:
+          "Confirm fullySettled true and at least one settlement id for pay_mrayujpd_uha1hffh.",
+      },
       proven: [
         "captured hosted Vortex payment projects into Seal as paid and completes the document",
         "failed hosted Vortex payment projects into Seal as uncollectible and starts dunning",

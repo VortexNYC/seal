@@ -147,7 +147,7 @@ console.log(
         "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
         "live and env-mutating proof commands are excluded from the local non-mutating gate",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
-        "launch boundary is either green or blocked only by known human-run production configuration names",
+        "launch boundary reports launchReady false until human settlement proof and production configuration are complete",
       ],
     },
     null,
