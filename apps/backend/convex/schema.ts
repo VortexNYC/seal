@@ -71,12 +71,6 @@ import {
   merchantAccountsTable,
 } from "./schemas/merchant_accounts";
 import {
-  type StripeAccountType,
-  type StripeFeeHandling,
-  stripeAccountsTable,
-} from "./schemas/stripe_accounts";
-import { stripeWebhookEventsTable } from "./schemas/stripe_webhook_events";
-import {
   type SubscriptionCouponDuration,
   type SubscriptionCouponType,
   subscriptionCouponsTable,
@@ -147,9 +141,6 @@ export type { NotificationType };
 // Re-export webhook types
 export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 
-// Re-export Stripe Connect types
-export type { StripeAccountType, StripeFeeHandling };
-
 // Re-export merchant account types
 export type { MerchantAccountType, MerchantFeeHandling };
 
@@ -198,8 +189,6 @@ export default defineSchema({
   subscription_coupons: subscriptionCouponsTable,
   subscription_promo_codes: subscriptionPromoCodesTable,
   merchant_accounts: merchantAccountsTable,
-  stripe_accounts: stripeAccountsTable,
-  stripe_webhook_events: stripeWebhookEventsTable,
   vortex_billing_webhook_events: vortexBillingWebhookEventsTable,
 
   // Integrations

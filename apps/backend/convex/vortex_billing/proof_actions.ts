@@ -136,7 +136,7 @@ type CreateVortexDocumentPayableProofObjectsResult = {
 };
 
 type VortexMerchantProofState = {
-  readonly provider: "stripe" | "vortex" | undefined;
+  readonly provider: "vortex" | undefined;
   readonly vortexMerchantAccountId: string | undefined;
   readonly chargesEnabled: boolean | undefined;
   readonly payoutsEnabled: boolean | undefined;
@@ -1516,13 +1516,13 @@ export const getVortexMerchantProofState = internalQuery({
   },
   handler: async (ctx, args): Promise<VortexMerchantProofState> => {
     const account = await ctx.db
-      .query("stripe_accounts")
+      .query("merchant_accounts")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
       .first();
 
     return {
       provider: account?.provider,
-      vortexMerchantAccountId: account?.vortexMerchantAccountId,
+      vortexMerchantAccountId: account?.providerAccountId,
       chargesEnabled: account?.chargesEnabled,
       payoutsEnabled: account?.payoutsEnabled,
       requirements: account?.requirements,

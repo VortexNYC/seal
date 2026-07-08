@@ -8,14 +8,10 @@
  */
 
 import { v } from "convex/values";
-import Stripe from "stripe";
 
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  action,
   internalMutation,
-  internalQuery,
   type MutationCtx,
   mutation,
   query,
@@ -26,7 +22,6 @@ import {
   resolveComponentMembershipForOrganization,
 } from "./lib/componentOrgReads";
 import { setVortexAuthInvitationStatus } from "./lib/vortexAuthOrganizations";
-import { getOrCreateStripeCustomer } from "./stripe/helpers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present.",
@@ -651,119 +646,5 @@ export const seedProSubscription = internalMutation({
     });
 
     return { seeded: true };
-  },
-});
-
-/**
- * Look up an org by slug for the Stripe customer seeder.
- * Internal so the action can resolve the workspace + sender email without
- * round-tripping through a public mutation.
- */
-export const getOrgForStripeSeeding = internalQuery({
-  args: { organizationSlug: v.string() },
-  handler: async (ctx, { organizationSlug }) => {
-    requireE2eDeployment();
-
-    const org = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
-      .first();
-    if (!org) return null;
-
-    const owner = await ctx.db
-      .query("users")
-      .withIndex("by_active_org", (q) => q.eq("activeOrganizationId", org._id))
-      .first();
-
-    return {
-      organizationId: org._id,
-      organizationName: org.name,
-      billingCustomerId: org.billingCustomerId ?? null,
-      ownerEmail: owner?.email ?? null,
-    };
-  },
-});
-
-/**
- * Persist a Stripe customer id on the org. Called from
- * `seedBillingCustomerForE2E` after the action has spoken to Stripe.
- */
-export const setOrgBillingCustomerId = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    billingCustomerId: v.string(),
-  },
-  handler: async (ctx, { organizationId, billingCustomerId }) => {
-    requireE2eDeployment();
-    await ctx.db.patch(organizationId, {
-      billingCustomerId,
-      updatedAt: Date.now(),
-    });
-    return { success: true };
-  },
-});
-
-/**
- * Provision a real Stripe sandbox customer for the E2E workspace and pin its
- * id on `organizations.billingCustomerId`. Idempotent — exits early if the org
- * already has a customer record.
- *
- * This unblocks any test that exercises Stripe actions which require a real
- * customer (e.g. `createCustomerPortalSession`). The synthetic
- * `seedProSubscriptionForE2E` row alone isn't enough — Stripe's portal API
- * looks up the actual customer in Stripe's records, not Convex's.
- *
- * Mutations can't make external HTTP calls, so this lives as an action and
- * writes back via `setOrgBillingCustomerId`.
- */
-export const seedBillingCustomerForE2E = action({
-  args: {
-    organizationSlug: v.string(),
-  },
-  handler: async (
-    ctx,
-    { organizationSlug },
-  ): Promise<{ seeded: boolean; billingCustomerId: string; reason?: string }> => {
-    requireE2eDeployment();
-
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
-      throw new Error(
-        "STRIPE_SECRET_KEY not configured on this deployment — cannot seed Stripe customer",
-      );
-    }
-
-    const orgInfo = await ctx.runQuery(internal.test_e2e_helpers.getOrgForStripeSeeding, {
-      organizationSlug,
-    });
-    if (!orgInfo) {
-      return { seeded: false, billingCustomerId: "", reason: "org_not_found" };
-    }
-
-    if (orgInfo.billingCustomerId) {
-      return {
-        seeded: false,
-        billingCustomerId: orgInfo.billingCustomerId,
-        reason: "already_seeded",
-      };
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2026-02-25.clover",
-    });
-
-    const billingCustomerId = await getOrCreateStripeCustomer(
-      stripe,
-      orgInfo.organizationId,
-      orgInfo.ownerEmail ?? `e2e-${orgInfo.organizationId}@example.com`,
-      orgInfo.organizationName,
-    );
-
-    await ctx.runMutation(internal.test_e2e_helpers.setOrgBillingCustomerId, {
-      organizationId: orgInfo.organizationId,
-      billingCustomerId,
-    });
-
-    return { seeded: true, billingCustomerId };
   },
 });

@@ -46,10 +46,6 @@ export default defineConfig(() => {
       return "vendor-analytics";
     }
 
-    if (moduleId.includes("@stripe")) {
-      return "vendor-stripe";
-    }
-
     if (
       moduleId.includes("/convex/") &&
       !moduleId.includes("_generated") &&

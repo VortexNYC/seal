@@ -17,10 +17,7 @@ export const dunningStatusTuple = v.union(
   v.literal("cancelled"),
 );
 
-export const documentInvoiceProviderTuple = v.union(
-  v.literal("stripe"),
-  v.literal("vortex_billing"),
-);
+export const documentInvoiceProviderTuple = v.literal("vortex_billing");
 
 export const documentInvoicesTable = defineTable({
   documentId: v.id("documents"),

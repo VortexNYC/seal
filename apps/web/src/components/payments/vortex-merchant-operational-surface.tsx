@@ -44,7 +44,7 @@ type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
     _id: string;
-    provider?: "stripe" | "vortex";
+    provider?: "vortex";
     processorAccountId: string;
     vortexMerchantAccountId?: string;
     accountType: "standard" | "express";

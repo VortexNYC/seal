@@ -525,8 +525,6 @@ function getAuditAndBillingRules(
   | "subscription_products"
   | "subscription_prices"
   | "merchant_accounts"
-  | "stripe_accounts"
-  | "stripe_webhook_events"
   | "vortex_billing_webhook_events"
   | "feedback"
 > {
@@ -581,23 +579,6 @@ function getAuditAndBillingRules(
         if (doc.organizationId !== rlsCtx.orgId) return false;
         return rlsCtx.isAdmin;
       },
-    },
-    stripe_accounts: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId !== rlsCtx.orgId) return false;
-        return rlsCtx.isAdmin;
-      },
-    },
-    stripe_webhook_events: {
-      read: async () => Boolean(rlsCtx?.isSuperAdmin),
-      modify: async () => false,
     },
     vortex_billing_webhook_events: {
       read: async () => Boolean(rlsCtx?.isSuperAdmin),

@@ -50,6 +50,16 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
 - Current Stripe residue after the fourth SEA-557 local cut: 136 files contain Stripe strings.
 - Shared subscription coupon/promo schema is clean for `stripeCouponId`, `stripePromotionCodeId`, `stripeCustomerId`, `by_stripe_coupon_id`, and `by_stripe_promotion_code_id`.
 - Remaining provider-neutral data-contract work is now legacy Stripe webhook tables and the legacy `apps/backend/convex/stripe` module tree.
+- SEA-558 local cut deleted the executable backend Stripe runtime:
+  - Removed `/stripe-webhook` and `/stripe-connect-webhook` HTTP routes.
+  - Removed Stripe cron jobs.
+  - Deleted `apps/backend/convex/stripe`.
+  - Deleted `stripe_accounts` and `stripe_webhook_events` schema tables.
+  - Removed the backend `stripe` package and lockfile entry.
+  - Removed the E2E Stripe customer seeder and web caller.
+  - Removed the remaining active provider literal `"stripe"` from document invoice and merchant surface contracts.
+- SEA-558 strict active runtime/package scanner is clean for `stripe_accounts`, `stripe_webhook_events`, `internal.stripe`, `api.stripe`, `stripe/`, `STRIPE_`, `Stripe(`, `@stripe`, `stripe@`, `"stripe"`, and `v.literal("stripe")` across `apps/backend/convex`, web E2E setup, Vite manual chunks, backend package, root package, and `bun.lock`.
+- Current broad Stripe residue after SEA-558 local edits: 95 files contain Stripe strings. Remaining hits are scripts/proofs, landing/docs copy/assets, comments/tests, legacy user cleanup, Stripe-shaped subscription safety naming, and non-Stripe visual/component naming like UI stripes.
 
 ## Proven For SaaS Billing
 
@@ -106,30 +116,32 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
 Do not call full Stripe removal done until this exists:
 
 1. `rg -i "stripe" apps packages scripts docs package.json bun.lock*` returns zero active-code/package hits, with any historical archive decision documented explicitly.
-2. `apps/backend/convex/stripe` is deleted.
-3. `apps/backend/package.json` and lockfile no longer include the `stripe` package.
-4. `internal.stripe.*`, `api.stripe.*`, Stripe env names, and Stripe webhook routes are gone.
-5. Stripe-shaped persisted data contracts are migrated or replaced with provider-neutral names.
+2. `apps/backend/convex/stripe` is deleted. DONE locally in SEA-558.
+3. `apps/backend/package.json` and lockfile no longer include the `stripe` package. DONE locally in SEA-558.
+4. `internal.stripe.*`, `api.stripe.*`, Stripe env names, and Stripe webhook routes are gone. DONE locally for active backend/runtime/package surfaces in SEA-558.
+5. Stripe-shaped persisted data contracts are migrated or replaced with provider-neutral names. Partially done; legacy `users.stripeCustomerId`, Stripe-shaped subscription proof naming, scripts, tests, comments, and docs still remain.
 6. Seal account creation, onboarding, SaaS billing, merchant setup, document payment creation, hosted payment outcomes, billing portal, merchant operations, and webhook processing all pass Vortex proofs.
 7. Live-money settlement/payout proof remains human-run, but the code and harness must be ready.
 
 ## Single Biggest Limiter
 
-The biggest limiter is now provider deletion order.
+The biggest limiter is now residue discipline, not replacement implementation.
 
-Deleting Stripe before replacing the remaining provider fallbacks and data contracts would break legacy paths and historical state. The correct order is:
+SEA-558 removed the executable backend Stripe runtime and package surface. The next cuts must delete or rename the remaining active-code string residue without hiding real migration risk:
 
-1. Move persisted Stripe-shaped state to provider-neutral names.
-2. Delete Stripe webhook/catalog/sync/runtime modules.
-3. Remove the Stripe dependency and env contract.
-4. Delete remaining tests, proof names, docs, and archive residue.
-5. Run a zero-Stripe scanner as a hard gate.
+1. Remove obsolete Stripe proof scripts and root script names that call deleted modules.
+2. Rename provider-neutral comments/tests/proof field names that still say Stripe.
+3. Remove or migrate legacy `users.stripeCustomerId`.
+4. Update landing/product copy away from Stripe.
+5. Decide what stays in historical `docs/archive`; document the archive exception or delete it.
+6. Run a zero-Stripe scanner as a hard gate.
 
 ## Immediate Execution Plan
 
-1. Commit SEA-557 provider-neutral merchant account storage cut locally.
-2. Continue SEA-557 provider-neutral data migration for the remaining Stripe-shaped billing/payment ids.
-3. Then continue SEA-558 through SEA-561: webhook/catalog/env deletion, package/lock removal, proof/test/doc cleanup, and final zero-Stripe scanner.
+1. Commit SEA-558 backend runtime/package deletion cut locally.
+2. Continue SEA-559 proof/script cleanup: delete obsolete Stripe lifecycle/backend-adapter proof scripts and root script entries that reference deleted modules.
+3. Continue SEA-560 active code naming cleanup: comments, tests, legacy user field/migration, landing copy, and non-archived docs.
+4. Continue SEA-561 final zero-Stripe scanner and archive decision.
 4. Keep every lane proof-gated:
    - `bun run format:changed:check`
    - `bun run lint:strict`
@@ -157,4 +169,4 @@ Vortex replacement paths: staging-proven for non-money proof and sandbox-proven 
 
 Full Seal Stripe removal: not done.
 
-Next proof target: zero-Stripe deletion phase with Linear-backed lanes.
+Next proof target: SEA-559 proof/script cleanup and zero active script references to deleted Stripe modules.
