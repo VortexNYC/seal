@@ -1250,7 +1250,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
       v.object({
         recipientEmail: v.string(),
         hostedInvoiceUrl: v.union(v.string(), v.null()),
-        providerInvoiceId: v.string(),
+        vortexPayableId: v.string(),
         totalAmountCents: v.number(),
         currency: v.string(),
       }),
@@ -1291,7 +1291,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     const paymentLinks: Array<{
       recipientEmail: string;
       hostedInvoiceUrl: string | null;
-      providerInvoiceId: string;
+      vortexPayableId: string;
       totalAmountCents: number;
       currency: string;
     }> = [];
@@ -1341,7 +1341,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: recurringPayable.checkoutUrl,
-          providerInvoiceId: recurringPayable.payableId,
+          vortexPayableId: recurringPayable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1379,7 +1379,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: installmentPayable.checkoutUrl,
-          providerInvoiceId: installmentPayable.payableId,
+          vortexPayableId: installmentPayable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1417,7 +1417,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: depositBalancePayable.checkoutUrl,
-          providerInvoiceId: depositBalancePayable.payableId,
+          vortexPayableId: depositBalancePayable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1452,7 +1452,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: payable.checkoutUrl,
-          providerInvoiceId: payable.payableId,
+          vortexPayableId: payable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });

@@ -4,7 +4,7 @@ Date: 2026-07-08
 Repo: `/Users/shlomokabareti/Projects/Seal`
 Base: `origin/staging`
 Active branch: `codex/sea-557-provider-neutral-data-contracts`
-Local head: `800dbab9`
+Local head: inspect with `git rev-parse --short HEAD` before acting.
 Linear control: `SEA-555`
 Current lane: `SEA-562`
 
@@ -51,6 +51,33 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Production real-money proof is not complete.
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
 
+## Production Readiness Audit
+
+Latest presence-only audit command:
+
+```bash
+bun run audit:seal-vortex-production-readiness
+```
+
+Current result: failing, as expected, without printing secret values.
+
+Missing Seal production names:
+
+- `VORTEX_BILLING_PAYMENTS_ENVIRONMENT`
+- `VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS`
+- `VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP`
+- `VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP`
+- `VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP`
+- `VORTEX_BILLING_DOCUMENT_PRICE_MAP`
+
+Missing Vortex production names:
+
+- `VORTEX_PAYMENTS_RUNTIME_MODE`
+- `FINIX_PRODUCTION_USERNAME`
+- `FINIX_PRODUCTION_PASSWORD`
+- `FINIX_PRODUCTION_APPLICATION_ID`
+- `FINIX_PRODUCTION_WEBHOOK_SECRET`
+
 ## Current Human Boundary
 
 Agents may prepare commands, audits, and proof harnesses.
@@ -72,4 +99,5 @@ Work SEA-562:
 3. Run non-mutating local proof gates only:
    - `bun run prove:zero-retired-provider-residue`
    - `bun run prove:seal-document-payment-vortex-local`
+   - `bun run audit:seal-vortex-production-readiness`
 4. Do not mark launch readiness complete until settled sandbox proof and production proof both pass.

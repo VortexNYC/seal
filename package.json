@@ -49,6 +49,7 @@
     "prove:vortex-operational-payments-adoption": "bun run scripts/prove-vortex-operational-payments-adoption.ts",
     "prove:vortex-saas-webhook-projection": "bun run --cwd apps/backend test convex/vortex_billing/__tests__/webhook_signature.test.ts convex/vortex_billing/__tests__/webhook_handlers.test.ts convex/vortex_billing/__tests__/webhook_projection.test.ts",
     "prove:zero-retired-provider-residue": "bun run scripts/prove-zero-retired-provider-residue.ts",
+    "audit:seal-vortex-production-readiness": "bun run scripts/audit-seal-vortex-production-readiness.ts",
     "knip": "turbo run knip",
     "knip:fix": "(cd apps/backend && bun run knip:fix) && (cd packages/react-sdk && bun run knip:fix) && (cd packages/transactional && bun run knip:fix) && (cd apps/web && bun run knip:fix)",
     "verify": "bun run lint && bun run format:changed:check && bun run typecheck && bun run knip",

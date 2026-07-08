@@ -6,16 +6,16 @@ import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 
-type ProviderPaymentLink = {
+type VortexPaymentLink = {
   recipientEmail: string;
   hostedInvoiceUrl: string | null;
-  providerInvoiceId: string;
+  vortexPayableId: string;
   totalAmountCents: number;
   currency: string;
 };
 
-type ProviderPaymentObjectsResult = {
-  paymentLinks: ProviderPaymentLink[];
+type VortexPaymentObjectsResult = {
+  paymentLinks: VortexPaymentLink[];
 };
 
 type PaymentObjectsResult = {
@@ -55,7 +55,7 @@ export const createPaymentObjectsForDocumentFields = internalAction({
       return { paymentLinks: [] };
     }
 
-    const result: ProviderPaymentObjectsResult = await ctx.runAction(
+    const result: VortexPaymentObjectsResult = await ctx.runAction(
       internal.vortex_billing.payable_actions.createVortexPaymentObjectsForDocumentFields,
       args,
     );
@@ -64,7 +64,7 @@ export const createPaymentObjectsForDocumentFields = internalAction({
       paymentLinks: result.paymentLinks.map((link) => ({
         recipientEmail: link.recipientEmail,
         hostedPaymentUrl: link.hostedInvoiceUrl,
-        processorInvoiceId: link.providerInvoiceId,
+        processorInvoiceId: link.vortexPayableId,
         totalAmountCents: link.totalAmountCents,
         currency: link.currency,
       })),

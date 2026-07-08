@@ -129,7 +129,7 @@ type CreateVortexDocumentPayableProofObjectsResult = {
   readonly paymentLinks: {
     readonly recipientEmail: string;
     readonly hostedInvoiceUrl: string | null;
-    readonly providerInvoiceId: string;
+    readonly vortexPayableId: string;
     readonly totalAmountCents: number;
     readonly currency: string;
   }[];
@@ -1450,7 +1450,7 @@ export const createVortexDocumentPayableProofObjects = internalAction({
       v.object({
         recipientEmail: v.string(),
         hostedInvoiceUrl: v.union(v.string(), v.null()),
-        providerInvoiceId: v.string(),
+        vortexPayableId: v.string(),
         totalAmountCents: v.number(),
         currency: v.string(),
       }),

@@ -508,7 +508,7 @@ async function main(): Promise<void> {
   const hostedInvoiceUrl = stringField(paymentLink, "hostedInvoiceUrl");
   assert(hostedInvoiceUrl.startsWith(vortexBaseUrl), "Expected hosted invoice URL from Vortex");
   assert(numberField(paymentLink, "totalAmountCents") === amountCents, "Unexpected payment amount");
-  const vortexPayableId = stringField(paymentLink, "providerInvoiceId");
+  const vortexPayableId = stringField(paymentLink, "vortexPayableId");
 
   const state = await runSealConvex<JsonObject>({
     deployment: sealDeployment,

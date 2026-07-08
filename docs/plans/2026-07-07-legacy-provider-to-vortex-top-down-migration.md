@@ -200,6 +200,7 @@ Current launch baseline:
 - Failed-payment recovery is green in sandbox.
 - Settled document-payment money movement is still waiting on provider settlement readiness.
 - Production document-payment routing is not configured.
+- `bun run audit:seal-vortex-production-readiness` is the presence-only production gate. It currently fails without printing secret values because Seal production is missing document-payment routing names and Vortex production is missing runtime/Finix production names.
 
 Do next:
 
@@ -208,6 +209,7 @@ Do next:
 3. Run only non-mutating local gates as agent proof:
    - `bun run prove:zero-retired-provider-residue`
    - `bun run prove:seal-document-payment-vortex-local`
+   - `bun run audit:seal-vortex-production-readiness`
 4. When the provider settlement readiness window is open, a human runs the settlement command and the paid-state proof with `--require-settled`.
 5. Production launch remains blocked until production credentials, document-payment routing maps, one small real payment, and real settlement/payout visibility are proven.
 
