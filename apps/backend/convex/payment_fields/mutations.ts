@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, mutation, type MutationCtx } from "../_generated/server";
 import {
   dueDateTermsTuple,
@@ -311,6 +311,22 @@ type PaymentWebhookUpdateResult = {
   readonly invoiceRecordId: Id<"document_invoices"> | undefined;
 };
 
+type PaymentFieldConfig = Doc<"payment_field_configs">;
+type DocumentInvoice = Doc<"document_invoices">;
+
+type VortexPaymentWebhookRecords = {
+  readonly config: PaymentFieldConfig | null;
+  readonly invoiceRecord: DocumentInvoice | null;
+};
+
+type DocumentInvoicePatch = {
+  readonly status: DocumentInvoiceWebhookStatus;
+  readonly paidAt?: number;
+  readonly voidedAt?: number;
+  readonly finalizedAt?: number;
+  readonly updatedAt: number;
+};
+
 const documentInvoiceStatusByPaymentStatus: Partial<
   Record<PaymentStatus, DocumentInvoiceWebhookStatus>
 > = {
@@ -363,85 +379,132 @@ export async function updateVortexPaymentStatusFromWebhookInDb(
 ): Promise<PaymentWebhookUpdateResult | null> {
   const now = Date.now();
   const invoiceStatus = documentInvoiceStatusByPaymentStatus[args.paymentStatus];
+  const { config, invoiceRecord } = await getVortexPaymentWebhookRecords(ctx, args.vortexPayableId);
 
-  // Correlate strictly by vortexPayableId. The by_vortex_payable indexes are not unique, so a
-  // money webhook must FAIL CLOSED on any ambiguity rather than "join by hope": refuse if a payable
-  // id maps to more than one config/invoice, or if the config and invoice disagree on the document
-  // (a document belongs to exactly one org, so a documentId match is the tenant/correlation guard).
+  if (!config && !invoiceRecord) return null;
+  assertVortexWebhookDocumentMatch(config, invoiceRecord, args.vortexPayableId);
+  if (shouldSkipInvoiceWebhookUpdate(invoiceRecord, invoiceStatus)) {
+    return paymentWebhookUpdateResult(config, invoiceRecord);
+  }
+  if (shouldSkipConfigWebhookUpdate(config, invoiceRecord, args.paymentStatus)) {
+    return paymentWebhookUpdateResult(config, invoiceRecord);
+  }
+
+  if (config) await patchPaymentConfigStatus(ctx, config, args.paymentStatus, now);
+  if (invoiceRecord && invoiceStatus !== undefined) {
+    await patchDocumentInvoiceStatus(ctx, invoiceRecord, invoiceStatus, now);
+  }
+
+  return paymentWebhookUpdateResult(config, invoiceRecord);
+}
+
+async function getVortexPaymentWebhookRecords(
+  ctx: Pick<MutationCtx, "db">,
+  vortexPayableId: string,
+): Promise<VortexPaymentWebhookRecords> {
   const configMatches = await ctx.db
     .query("payment_field_configs")
-    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
     .collect();
-  if (configMatches.length > 1) {
-    throw new Error(
-      `ambiguous vortexPayableId across payment_field_configs: ${args.vortexPayableId}`,
-    );
-  }
-  const config = configMatches[0] ?? null;
+  assertUniqueVortexPayableMatch("payment_field_configs", vortexPayableId, configMatches.length);
 
   const invoiceMatches = await ctx.db
     .query("document_invoices")
-    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
     .collect();
-  if (invoiceMatches.length > 1) {
-    throw new Error(`ambiguous vortexPayableId across document_invoices: ${args.vortexPayableId}`);
-  }
-  const invoiceRecord = invoiceMatches[0] ?? null;
 
-  if (!config && !invoiceRecord) {
-    return null;
-  }
+  assertUniqueVortexPayableMatch("document_invoices", vortexPayableId, invoiceMatches.length);
 
+  return {
+    config: configMatches[0] ?? null,
+    invoiceRecord: invoiceMatches[0] ?? null,
+  };
+}
+
+function assertUniqueVortexPayableMatch(
+  tableName: "payment_field_configs" | "document_invoices",
+  vortexPayableId: string,
+  matchCount: number,
+) {
+  if (matchCount > 1) {
+    throw new Error(`ambiguous vortexPayableId across ${tableName}: ${vortexPayableId}`);
+  }
+}
+
+function assertVortexWebhookDocumentMatch(
+  config: PaymentFieldConfig | null,
+  invoiceRecord: DocumentInvoice | null,
+  vortexPayableId: string,
+) {
   if (config && invoiceRecord && config.documentId !== invoiceRecord.documentId) {
     throw new Error(
-      `vortexPayableId ${args.vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`,
+      `vortexPayableId ${vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`,
     );
   }
+}
 
-  if (
-    invoiceRecord &&
+function shouldSkipInvoiceWebhookUpdate(
+  invoiceRecord: DocumentInvoice | null,
+  invoiceStatus: DocumentInvoiceWebhookStatus | undefined,
+): boolean {
+  return (
+    invoiceRecord !== null &&
     invoiceStatus !== undefined &&
     shouldSkipTerminalInvoiceUpdate(invoiceRecord.status, invoiceStatus)
-  ) {
-    return {
-      configId: config?._id,
-      documentId: config?.documentId ?? invoiceRecord.documentId,
-      invoiceRecordId: invoiceRecord._id,
-    };
-  }
+  );
+}
 
-  if (
-    !invoiceRecord &&
-    config &&
-    shouldSkipTerminalConfigUpdate(config.paymentStatus, args.paymentStatus)
-  ) {
-    return {
-      configId: config._id,
-      documentId: config.documentId,
-      invoiceRecordId: undefined,
-    };
-  }
+function shouldSkipConfigWebhookUpdate(
+  config: PaymentFieldConfig | null,
+  invoiceRecord: DocumentInvoice | null,
+  paymentStatus: PaymentStatus,
+): boolean {
+  return (
+    invoiceRecord === null &&
+    config !== null &&
+    shouldSkipTerminalConfigUpdate(config.paymentStatus, paymentStatus)
+  );
+}
 
-  if (config) {
-    await ctx.db.patch(config._id, {
-      paymentStatus: args.paymentStatus,
-      updatedAt: now,
-    });
-  }
+async function patchPaymentConfigStatus(
+  ctx: Pick<MutationCtx, "db">,
+  config: PaymentFieldConfig,
+  paymentStatus: PaymentStatus,
+  now: number,
+) {
+  await ctx.db.patch(config._id, { paymentStatus, updatedAt: now });
+}
 
-  if (invoiceRecord && invoiceStatus !== undefined) {
-    await ctx.db.patch(invoiceRecord._id, {
-      status: invoiceStatus,
-      ...(invoiceStatus === "paid" && { paidAt: now }),
-      ...(invoiceStatus === "void" && { voidedAt: now }),
-      ...(invoiceStatus === "open" &&
-        invoiceRecord.finalizedAt === undefined && {
-          finalizedAt: now,
-        }),
-      updatedAt: now,
-    });
-  }
+async function patchDocumentInvoiceStatus(
+  ctx: Pick<MutationCtx, "db">,
+  invoiceRecord: DocumentInvoice,
+  invoiceStatus: DocumentInvoiceWebhookStatus,
+  now: number,
+) {
+  await ctx.db.patch(invoiceRecord._id, documentInvoicePatch(invoiceRecord, invoiceStatus, now));
+}
 
+function documentInvoicePatch(
+  invoiceRecord: DocumentInvoice,
+  invoiceStatus: DocumentInvoiceWebhookStatus,
+  now: number,
+): DocumentInvoicePatch {
+  return {
+    status: invoiceStatus,
+    ...(invoiceStatus === "paid" && { paidAt: now }),
+    ...(invoiceStatus === "void" && { voidedAt: now }),
+    ...(invoiceStatus === "open" &&
+      invoiceRecord.finalizedAt === undefined && {
+        finalizedAt: now,
+      }),
+    updatedAt: now,
+  };
+}
+
+function paymentWebhookUpdateResult(
+  config: PaymentFieldConfig | null,
+  invoiceRecord: DocumentInvoice | null,
+): PaymentWebhookUpdateResult {
   return {
     configId: config?._id,
     documentId: config?.documentId ?? invoiceRecord?.documentId,
