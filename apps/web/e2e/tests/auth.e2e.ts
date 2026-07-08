@@ -19,6 +19,7 @@ test.describe("Authentication", () => {
     // Users are now redirected to the sign-in flow when not authenticated.
     await expect(page).toHaveURL("/sign-in");
     await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
+    await expect(page).toHaveTitle("Sign In - Seal");
   });
 
   test("should keep unauthenticated users on sign-in when accessing app", async ({ page }) => {

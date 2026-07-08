@@ -1,5 +1,6 @@
 import { SignIn } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { useTheme } from "@/components/theme-provider";
 import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
@@ -12,6 +13,10 @@ export const Route = createFileRoute("/_auth/sign-in")({
 
 function RouteComponent() {
   const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    document.title = pageSEO.signIn.title;
+  }, []);
 
   return (
     <SignIn
