@@ -26,6 +26,36 @@ const activeGuidanceAndConfigPaths = [
   "vortex.project.json",
 ] as const;
 const retiredProviderAliasRegex = /\bretired provider\b|retired_provider|RETIRED_PROVIDER/i;
+const generatedOrInstalledGlobExcludes = [
+  "!.git/**",
+  "!node_modules/**",
+  "!**/node_modules/**",
+  "!.cache/**",
+  "!.turbo/**",
+  "!**/.turbo/**",
+  "!.openlogs/**",
+  "!**/.openlogs/**",
+  "!.playwright-mcp/**",
+  "!**/.playwright-cli/**",
+  "!**/.playwright-profile/**",
+  "!**/.output/**",
+  "!**/dist/**",
+  "!test-results/**",
+  "!**/test-results/**",
+] as const;
+const generatedOrInstalledDirectoryNames = new Set([
+  ".git",
+  "node_modules",
+  ".cache",
+  ".turbo",
+  ".openlogs",
+  ".playwright-mcp",
+  ".playwright-cli",
+  ".playwright-profile",
+  ".output",
+  "dist",
+  "test-results",
+]);
 
 const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
   cwd: repoRoot,
@@ -49,7 +79,15 @@ if (dependencyGraph.status === 0 || !dependencyGraphOutput.includes("No packages
 
 const workingTreeContent = spawnSync(
   "rg",
-  ["--no-ignore", "-i", "-n", retiredProviderContentPattern, ".", "--glob", "!.git/**"],
+  [
+    "--hidden",
+    "--no-ignore",
+    "-i",
+    "-n",
+    retiredProviderContentPattern,
+    ".",
+    ...generatedOrInstalledGlobExcludes.flatMap((glob) => ["--glob", glob]),
+  ],
   {
     cwd: repoRoot,
     encoding: "utf8",
@@ -107,7 +145,7 @@ function scanWorkingTreePathNames(absoluteDirectory: string, relativeDirectory: 
   }
 
   for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true })) {
-    if (relativeDirectory === "." && entry.name === ".git") {
+    if (entry.isDirectory() && generatedOrInstalledDirectoryNames.has(entry.name)) {
       continue;
     }
 
@@ -137,9 +175,9 @@ console.log("Retired provider residue proof passed:");
 console.log("- No tracked file paths contain the retired provider token.");
 console.log("- No tracked file contents contain the retired provider token.");
 console.log(
-  "- No dependency graph package or working-tree path outside .git contains the retired provider token.",
+  "- No dependency graph package or owned working-tree path contains the retired provider token.",
 );
 console.log(
-  "- No working-tree content outside .git contains provider-shaped retired provider residue.",
+  "- No owned working-tree content, including hidden env files, contains provider-shaped retired provider residue.",
 );
 console.log("- No active guidance/config file contains retired provider aliases.");
