@@ -312,10 +312,10 @@ export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillin
     customerMap,
     billingAccountMap,
     defaultBillingAccountId: input.defaultBillingAccountId,
-      merchantAccountMap,
-      defaultMerchantAccountId: input.defaultMerchantAccountId,
-      priceMap,
-      defaultPriceId: input.defaultPriceId,
+    merchantAccountMap,
+    defaultMerchantAccountId: input.defaultMerchantAccountId,
+    priceMap,
+    defaultPriceId: input.defaultPriceId,
   };
 }
 
@@ -329,11 +329,11 @@ export function readVortexBillingEnvFromProcess(env: Env = process.env): VortexB
     defaultBillingAccountId: env[DOCUMENT_DEFAULT_ACCOUNT_ID_ENV] ?? env[SHARED_ACCOUNT_ID_ENV],
     merchantAccountMapJson:
       env[DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV] ?? env[SHARED_MERCHANT_ACCOUNT_MAP_ENV],
-      defaultMerchantAccountId:
-        env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV] ?? env[SHARED_MERCHANT_ACCOUNT_ID_ENV],
-      paymentsEnvironment: env[PAYMENTS_ENVIRONMENT_ENV] ?? "sandbox",
-      priceMapJson: env[DOCUMENT_PRICE_MAP_ENV] ?? env[SHARED_PRICE_MAP_ENV],
-      defaultPriceId: env[DOCUMENT_DEFAULT_PRICE_ID_ENV] ?? env[SHARED_PRICE_ID_ENV],
+    defaultMerchantAccountId:
+      env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV] ?? env[SHARED_MERCHANT_ACCOUNT_ID_ENV],
+    paymentsEnvironment: env[PAYMENTS_ENVIRONMENT_ENV] ?? "sandbox",
+    priceMapJson: env[DOCUMENT_PRICE_MAP_ENV] ?? env[SHARED_PRICE_MAP_ENV],
+    defaultPriceId: env[DOCUMENT_DEFAULT_PRICE_ID_ENV] ?? env[SHARED_PRICE_ID_ENV],
   });
 }
 
@@ -382,9 +382,9 @@ export function buildCreatePayableRequest(input: {
     collectionIntent: "manual",
     feePolicy: buildFeePolicy(config, input.platformFeeCents),
     ...(dueAt !== undefined ? { dueAt } : {}),
-      lineItems: config.items.map((item) =>
-        buildPayableLineItem(item, env.priceMap, env.defaultPriceId)
-      ),
+    lineItems: config.items.map((item) =>
+      buildPayableLineItem(item, env.priceMap, env.defaultPriceId),
+    ),
     ...buildPayableTaxFields(config),
     metadata: {
       sourceSystem: env.sourceNamespace,
@@ -449,9 +449,9 @@ export function buildCreateRecurringPayableRequest(input: {
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
     currency: toVortexCurrency(config.currency),
-      lineItems: config.items.map((item) =>
-        buildPayableLineItem(item, env.priceMap, env.defaultPriceId)
-      ),
+    lineItems: config.items.map((item) =>
+      buildPayableLineItem(item, env.priceMap, env.defaultPriceId),
+    ),
     taxMode: buildPayableTaxMode(config),
     ...buildPayableTaxFields(config),
     collectionIntent: "manual",
@@ -535,7 +535,7 @@ export function buildCreateInstallmentPayableRequest(input: {
       role: "installment",
       dueAt: addInstallmentInterval(firstDueAt, installmentsConfig.interval, index),
       amountDue,
-        lineItems: buildInstallmentLineItems(config, amountDue, env.priceMap, env.defaultPriceId),
+      lineItems: buildInstallmentLineItems(config, amountDue, env.priceMap, env.defaultPriceId),
     })),
     metadata: {
       sourceSystem: env.sourceNamespace,
@@ -615,22 +615,22 @@ export function buildCreateDepositBalancePayableRequest(input: {
       amountDue: amounts.depositAmountDue,
       lineItems: buildDepositBalanceLineItems(
         config,
-          "deposit",
-          amounts.depositAmountDue,
-          env.priceMap,
-          env.defaultPriceId,
-        ),
+        "deposit",
+        amounts.depositAmountDue,
+        env.priceMap,
+        env.defaultPriceId,
+      ),
     },
     balance: {
       dueAt: balanceDueAt,
       amountDue: amounts.balanceAmountDue,
       lineItems: buildDepositBalanceLineItems(
         config,
-          "balance",
-          amounts.balanceAmountDue,
-          env.priceMap,
-          env.defaultPriceId,
-        ),
+        "balance",
+        amounts.balanceAmountDue,
+        env.priceMap,
+        env.defaultPriceId,
+      ),
     },
     metadata: {
       sourceSystem: env.sourceNamespace,
@@ -710,13 +710,13 @@ function buildInstallmentLineItems(
     throw new ConvexError("Installment amount must divide evenly into the configured line item");
   }
 
-    return [
-      buildPayableLineItem(
-        { ...item, quantity: amountDue / item.unitPrice },
-        priceMap,
-        defaultPriceId,
-      ),
-    ];
+  return [
+    buildPayableLineItem(
+      { ...item, quantity: amountDue / item.unitPrice },
+      priceMap,
+      defaultPriceId,
+    ),
+  ];
 }
 
 function buildDepositBalanceLineItems(
@@ -742,10 +742,10 @@ function buildDepositBalanceLineItems(
         description: `${item.description} (${role})`,
         quantity: 1,
         unitPrice: amountDue,
-        },
-        priceMap,
-        defaultPriceId,
-      ),
+      },
+      priceMap,
+      defaultPriceId,
+    ),
   ];
 }
 

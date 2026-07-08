@@ -59,6 +59,7 @@
     "audit:seal-vortex-production-readiness": "bun run scripts/audit-seal-vortex-production-readiness.ts",
     "audit:seal-vortex-production-proof-boundary": "bun run scripts/audit-seal-vortex-production-proof-boundary.ts",
     "audit:seal-vortex-launch-boundary": "bun run scripts/audit-seal-vortex-launch-boundary.ts",
+    "audit:qa-feature-tracker": "bun run scripts/audit-qa-feature-tracker.ts",
     "verify:seal-vortex-migration": "bun run prove:zero-retired-provider-residue && bun run prove:seal-vortex-migration-local",
     "knip": "turbo run knip",
     "knip:fix": "(cd apps/backend && bun run knip:fix) && (cd packages/react-sdk && bun run knip:fix) && (cd packages/transactional && bun run knip:fix) && (cd apps/web && bun run knip:fix)",

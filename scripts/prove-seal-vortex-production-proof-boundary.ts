@@ -51,7 +51,7 @@ try {
     productionMoneyProofComplete: false,
     postProofRetirementComplete: false,
     goLiveProofComplete: false,
-      status: "waiting_for_production_money_proof",
+    status: "waiting_for_production_money_proof",
   });
 
   const incompletePath = join(tempDir, "incomplete.md");
@@ -64,7 +64,10 @@ try {
     "invalid_production_proof_artifact",
     "incomplete proof doc reports invalid status",
   );
-  assert(incomplete.audit.missingMoneyProofMarkers.length > 0, "incomplete proof doc lists missing markers");
+  assert(
+    incomplete.audit.missingMoneyProofMarkers.length > 0,
+    "incomplete proof doc lists missing markers",
+  );
 
   const moneyOnlyPath = join(tempDir, "money-only.md");
   writeFileSync(moneyOnlyPath, productionMoneyProofOnlyFixture, "utf8");
@@ -83,7 +86,11 @@ try {
   );
 
   const completePath = join(tempDir, "complete.md");
-  writeFileSync(completePath, `${productionMoneyProofOnlyFixture}\n${postProofRetirementFixture}`, "utf8");
+  writeFileSync(
+    completePath,
+    `${productionMoneyProofOnlyFixture}\n${postProofRetirementFixture}`,
+    "utf8",
+  );
   const complete = runAudit(completePath);
   assertEqual(complete.status, 0, "complete proof doc exits 0");
   assertAudit(complete.audit, {
@@ -95,7 +102,9 @@ try {
   });
 
   console.log("Seal Vortex production proof boundary self-proof passed:");
-  console.log("- missing proof artifact keeps launch proof incomplete without failing local audits");
+  console.log(
+    "- missing proof artifact keeps launch proof incomplete without failing local audits",
+  );
   console.log("- incomplete proof artifact fails closed");
   console.log("- production money proof alone waits for post-proof retirement evidence");
   console.log("- full money proof plus retirement evidence proves go-live boundary");
@@ -109,12 +118,7 @@ function runAudit(proofDoc: string): {
 } {
   const result = spawnSync(
     "bun",
-    [
-      "run",
-      "scripts/audit-seal-vortex-production-proof-boundary.ts",
-      "--proof-doc",
-      proofDoc,
-    ],
+    ["run", "scripts/audit-seal-vortex-production-proof-boundary.ts", "--proof-doc", proofDoc],
     {
       cwd: repoRoot,
       encoding: "utf8",
@@ -188,7 +192,11 @@ function assertAudit(
     expected.postProofRetirementComplete,
     `${expected.status} postProofRetirementComplete`,
   );
-  assertEqual(audit.goLiveProofComplete, expected.goLiveProofComplete, `${expected.status} goLiveProofComplete`);
+  assertEqual(
+    audit.goLiveProofComplete,
+    expected.goLiveProofComplete,
+    `${expected.status} goLiveProofComplete`,
+  );
   assertEqual(audit.status, expected.status, `${expected.status} status`);
 }
 

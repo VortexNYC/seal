@@ -155,7 +155,7 @@ console.log(
       proofDoc: proofDocPath,
       settlement: {
         fullySettledEvidence: false,
-          status: "waiting_for_settlement_proof",
+        status: "waiting_for_settlement_proof",
         requiredBeforeLaunch:
           "Confirm fullySettled true and at least one settlement id for pay_mrayujpd_uha1hffh.",
       },
@@ -165,7 +165,7 @@ console.log(
         "duplicate failed events are skipped",
         "later paid recovery completes the document and cancels dunning",
         "stale failed events after paid are ignored",
-          "settlement remains a separate go-live boundary until fullySettled evidence exists",
+        "settlement remains a separate go-live boundary until fullySettled evidence exists",
       ],
     },
     null,
