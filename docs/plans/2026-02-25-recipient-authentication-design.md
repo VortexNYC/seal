@@ -24,7 +24,7 @@ Three tiers, configurable per-recipient by the sender:
 | -------------------- | --------------------------------------------------- | ------------------------------------- | ---------------------------------------- |
 | **Email (default)**  | Token in signing link — current behavior            | Free                                  | Low-risk documents                       |
 | **SMS verification** | Recipient enters a 6-digit code sent to their phone | ~$0.01/SMS (Twilio)                   | Medium-risk: employment agreements, NDAs |
-| **ID verification**  | Recipient uploads government ID + selfie            | ~$1.50/verification (Stripe Identity) | High-risk: real estate, financial, legal |
+| **ID verification**  | Recipient uploads government ID + selfie            | ~$1.50/verification (retired provider Identity) | High-risk: real estate, financial, legal |
 
 ### User Flow: Sender Side
 
@@ -51,10 +51,10 @@ Three tiers, configurable per-recipient by the sender:
 #### ID Verification
 
 1. Recipient clicks signing link → lands on `/sign/{token}`
-2. They see a **Stripe Identity verification gate**:
+2. They see a **retired provider Identity verification gate**:
    - "This document requires identity verification before signing"
    - "Verify your identity" button
-3. Stripe Identity embedded component opens (captures ID photo + selfie)
+3. retired provider Identity embedded component opens (captures ID photo + selfie)
 4. On successful verification → document renders
 5. Verification result (verified/failed) stored on recipient record
 6. If failed → recipient can retry (up to 3 attempts)
@@ -73,7 +73,7 @@ authenticationMethod: v.optional(v.union(
 phone: v.optional(v.string()),                    // For SMS auth
 smsVerificationId: v.optional(v.string()),        // Active verification session
 smsVerifiedAt: v.optional(v.number()),            // When SMS was verified
-idVerificationSessionId: v.optional(v.string()),  // Stripe Identity session ID
+idVerificationSessionId: v.optional(v.string()),  // retired provider Identity session ID
 idVerifiedAt: v.optional(v.number()),             // When ID was verified
 idVerificationStatus: v.optional(v.union(
   v.literal("pending"),
@@ -121,12 +121,12 @@ securitySettings: v.optional(
 - Twilio Verify API handles delivery, retry, and phone number validation
 - Environment variables: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`
 
-#### ID Verification (Stripe Identity)
+#### ID Verification (retired provider Identity)
 
-- New Convex action: `createIdVerificationSession` — creates a Stripe Identity VerificationSession via Stripe Connect (uses the org's connected Stripe account)
-- Frontend embeds `@stripe/react-identity` component
-- Stripe webhook `identity.verification_session.verified` / `identity.verification_session.requires_input` updates `idVerificationStatus` on recipient
-- Falls back to Seal's platform Stripe account if org has no connected account
+- New Convex action: `createIdVerificationSession` — creates a retired provider Identity VerificationSession via retired provider Connect (uses the org's connected retired provider account)
+- Frontend embeds `@retired_provider/react-identity` component
+- retired provider webhook `identity.verification_session.verified` / `identity.verification_session.requires_input` updates `idVerificationStatus` on recipient
+- Falls back to Seal's platform retired provider account if org has no connected account
 
 #### Signing Page Gate (`sign.$token.tsx`)
 
@@ -150,7 +150,7 @@ All authentication events logged to `audit_logs`:
 - `recipient.sms_sent` — SMS verification code sent
 - `recipient.sms_verified` — SMS code verified successfully
 - `recipient.sms_failed` — SMS code verification failed
-- `recipient.id_verification_started` — Stripe Identity session created
+- `recipient.id_verification_started` — retired provider Identity session created
 - `recipient.id_verified` — ID verification successful
 - `recipient.id_verification_failed` — ID verification failed
 - `recipient.auth_locked` — Account locked after too many failures
@@ -161,7 +161,7 @@ The existing certificate PDF generator should include the authentication method 
 
 - "Authenticated via: Email link"
 - "Authenticated via: SMS verification to •••••4567"
-- "Authenticated via: Government ID verification (Stripe Identity)"
+- "Authenticated via: Government ID verification (retired provider Identity)"
 
 ### Permissions
 
@@ -175,13 +175,13 @@ No new permissions — controlled by who can add recipients (existing `documents
 | SMS auth        | No   | Yes |
 | ID verification | No   | Yes |
 
-SMS and ID verification costs are passed through to the organization (tracked in usage, billed via Stripe).
+SMS and ID verification costs are passed through to the organization (tracked in usage, billed via retired provider).
 
 ### What We Skip (v1)
 
 - KBA (Knowledge-Based Authentication) — requires LexisNexis/Equifax integration, complex and expensive
 - Phone call verification — lower demand than SMS
-- Biometric authentication beyond what Stripe Identity provides
+- Biometric authentication beyond what retired provider Identity provides
 - Custom authentication providers (SAML/OAuth for recipients)
 - Access code authentication (sender sets a shared passcode) — simple but lower security than SMS
 
@@ -193,7 +193,7 @@ SMS and ID verification costs are passed through to the organization (tracked in
 | `apps/backend/convex/schemas/sms_verifications.ts`               | Create                                  |
 | `apps/backend/convex/schema.ts`                                  | Modify — register new table             |
 | `apps/backend/convex/documents/sms_verification.ts`              | Create — send/verify actions            |
-| `apps/backend/convex/documents/id_verification.ts`               | Create — Stripe Identity actions        |
+| `apps/backend/convex/documents/id_verification.ts`               | Create — retired provider Identity actions        |
 | `apps/backend/convex/schemas/audit_logs.ts`                      | Modify — add new action types           |
 | `apps/backend/convex/documents/certificate_of_completion.ts`     | Modify — show auth method               |
 | `apps/web/src/routes/sign.$token.tsx`                            | Modify — add auth gates                 |

@@ -14,7 +14,7 @@ VORTEX_AUTH_TEST_SESSION_SECRET=
 
 # Third-party provider item IDs, only when the project explicitly still uses them.
 CLERK_SECRET_KEY_1PASSWORD_ITEM=
-STRIPE_SECRET_KEY_1PASSWORD_ITEM=
+RETIRED_PROVIDER_SECRET_KEY_1PASSWORD_ITEM=
 
 # Dev URLs declared by vortex.project.json.
 # DEV_URL_1=http://seal.localhost:1355

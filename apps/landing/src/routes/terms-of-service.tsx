@@ -62,9 +62,7 @@ function TermsOfService() {
             <li>Promptly notify us of any unauthorized use of your account</li>
             <li>Accept responsibility for all activity that occurs under your account</li>
           </ul>
-          <p>
-            Authentication is managed by Seal on our own infrastructure.
-          </p>
+          <p>Authentication is managed by Seal on our own infrastructure.</p>
 
           <h2>4. Service Description</h2>
           <p>Seal is an intelligent document platform that provides:</p>

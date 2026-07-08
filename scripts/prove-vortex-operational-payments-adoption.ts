@@ -58,7 +58,6 @@ for (const routePath of fallbackRoutePaths) {
   if (!route.includes("NoVortexMerchantAccountState")) {
     failures.push(`${routePath} must use the Vortex merchant fallback state.`);
   }
-
 }
 
 for (const requiredSurfaceFragment of [

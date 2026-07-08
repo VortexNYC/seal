@@ -31,7 +31,7 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 - Bun `1.3.0` or newer
 - A Convex deployment for backend-backed local work
 - Better-Auth (via @vortexnyc/vortex-auth) is the auth provider; no external auth credentials needed for local work
-- Optional: Stripe, Resend, and other integration secrets for billing/email flows
+- Optional: retired provider, Resend, and other integration secrets for billing/email flows
 
 Install dependencies once from the repo root:
 
@@ -89,7 +89,7 @@ Required for boot:
 Common optional vars:
 
 - `VITE_PUBLIC_POSTHOG_KEY`
-- `VITE_STRIPE_PUBLISHABLE_KEY`
+- `VITE_RETIRED_PROVIDER_PUBLISHABLE_KEY`
 - `VITE_APP_URL`
 
 ### Backend (`apps/backend`)
@@ -97,9 +97,9 @@ Common optional vars:
 Common vars used by the Convex backend include:
 
 - `BETTER_AUTH_SECRET`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_CONNECT_WEBHOOK_SECRET`
+- `RETIRED_PROVIDER_SECRET_KEY`
+- `RETIRED_PROVIDER_WEBHOOK_SECRET`
+- `RETIRED_PROVIDER_CONNECT_WEBHOOK_SECRET`
 - `SIGNATURE_ENCRYPTION_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`

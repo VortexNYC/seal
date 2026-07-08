@@ -1,13 +1,13 @@
-# Stripe to Vortex Top-Down Migration
+# retired provider to Vortex Top-Down Migration
 
 Date: 2026-07-07
 Repo: Seal
 Control branch: codex/seal-vortex-document-payment-proof
-Linear project: Seal Stripe to Vortex Top-Down Migration
+Linear project: Seal retired provider to Vortex Top-Down Migration
 
 ## Objective
 
-Remove Stripe from Seal by walking the product path in order:
+Remove retired provider from Seal by walking the product path in order:
 
 1. Account creation
 2. Onboarding
@@ -16,11 +16,11 @@ Remove Stripe from Seal by walking the product path in order:
 5. Hosted document-payment surfaces
 6. Webhooks, receipts, refunds, payouts, and settlement visibility
 
-The goal is not to rename every historical `stripe` field in one pass. The goal is to prevent new Stripe state from being created on the active product path, replace each active Stripe surface with Vortex, then delete legacy Stripe code once proof says it is dead.
+The goal is not to rename every historical `retired_provider` field in one pass. The goal is to prevent new retired provider state from being created on the active product path, replace each active retired provider surface with Vortex, then delete legacy retired provider code once proof says it is dead.
 
 ## Non-Goals
 
-- No broad `stripe` string deletion without proving the caller path.
+- No broad `retired_provider` string deletion without proving the caller path.
 - No direct Finix dependency from Seal.
 - No new provider-specific concepts in core Seal domain state.
 - No tax, accounting sync, CRM sync, or PDF polish in this lane.
@@ -30,10 +30,10 @@ The goal is not to rename every historical `stripe` field in one pass. The goal 
 
 - SaaS billing through Vortex is staging-ready.
 - Document-payment Vortex payable creation is locally and sandbox-proven for the one-time path.
-- Full Stripe replacement is not launch-ready until paid hosted checkout, webhook projection, platform fee movement, and merchant settlement/payout visibility are tied together.
-- Account/org creation currently anchors Vortex Auth and does not create Stripe state.
-- The first active top-down Stripe leak found after account creation is merchant onboarding: legacy Stripe Connect OAuth/session actions were still callable.
-- First guard cut is local on this branch: Vortex document-payment organizations are blocked from Stripe OAuth onboarding, OAuth exchange, and embedded account sessions.
+- Full retired provider replacement is not launch-ready until paid hosted checkout, webhook projection, platform fee movement, and merchant settlement/payout visibility are tied together.
+- Account/org creation currently anchors Vortex Auth and does not create retired provider state.
+- The first active top-down retired provider leak found after account creation is merchant onboarding: legacy retired provider Connect OAuth/session actions were still callable.
+- First guard cut is local on this branch: Vortex document-payment organizations are blocked from retired provider OAuth onboarding, OAuth exchange, and embedded account sessions.
 
 ## Merge Order
 
@@ -45,7 +45,7 @@ Workers can investigate in parallel, but merges must land in this order:
 4. Merchant/payment setup
 5. Document-payment creation by payment type
 6. Hosted payment outcome handling
-7. Operational surfaces and Stripe deletion
+7. Operational surfaces and retired provider deletion
 
 Lower layers may discover work early, but they do not merge until the layer above has a documented contract and proof.
 
@@ -61,14 +61,14 @@ Scope:
 
 Deliverable:
 
-- A written contract proving account creation creates/anchors Vortex Auth state and does not create Stripe customer, subscription, or Connect account state.
+- A written contract proving account creation creates/anchors Vortex Auth state and does not create retired provider customer, subscription, or Connect account state.
 - Focused tests or proof script for that contract.
 
 Proof:
 
 - `bun run --cwd apps/backend typecheck`
 - Focused backend tests covering organization creation and Vortex Auth anchoring.
-- Static grep evidence that account creation does not call `stripe` modules.
+- Static grep evidence that account creation does not call `retired_provider` modules.
 
 ### Lane B: Onboarding and Merchant Setup
 
@@ -77,13 +77,13 @@ Scope:
 - `apps/web/src/routes/_authenticated/$slug/settings/payments.tsx`
 - `apps/backend/convex/payments/merchant_account_actions.ts`
 - `apps/backend/convex/payments/vortex_merchant_actions.ts`
-- Stripe Connect fallbacks reachable from onboarding
+- retired provider Connect fallbacks reachable from onboarding
 
 Deliverable:
 
 - Vortex-routed onboarding for allowlisted document-payment organizations.
-- Legacy Stripe onboarding surfaces blocked for Vortex organizations.
-- UI state that does not present Stripe Connect as the Vortex onboarding path.
+- Legacy retired provider onboarding surfaces blocked for Vortex organizations.
+- UI state that does not present retired provider Connect as the Vortex onboarding path.
 
 Proof:
 
@@ -97,18 +97,18 @@ Proof:
 Scope:
 
 - SaaS checkout, billing settings, subscription projection, lifecycle guards.
-- Stripe customer/subscription creation and seat-sync entry points.
+- retired provider customer/subscription creation and seat-sync entry points.
 
 Deliverable:
 
 - SaaS billing path creates Vortex billing state only.
-- Stripe lifecycle actions are unavailable on Vortex billing organizations.
+- retired provider lifecycle actions are unavailable on Vortex billing organizations.
 
 Proof:
 
 - `bun run prove:seal-saas-checkout-vortex`
 - `bun run prove:seal-saas-webhook-billing-state`
-- `bun run prove:seal-saas-stripe-lifecycle-guard`
+- `bun run prove:seal-saas-retired_provider-lifecycle-guard`
 - `bun run prove:vortex-saas-webhook-projection`
 
 ### Lane D: Document Payment Creation
@@ -117,11 +117,11 @@ Scope:
 
 - Document send/payment-field actions.
 - Vortex payable creation for one-time, recurring, installments, and deposit/balance.
-- Stripe invoice/subscription/payment-intent writes reachable from sending a document.
+- retired provider invoice/subscription/payment-intent writes reachable from sending a document.
 
 Deliverable:
 
-- All real payment types create Vortex payable state without Stripe writes.
+- All real payment types create Vortex payable state without retired provider writes.
 - Existing document-payment local proof covers all payment types.
 
 Proof:
@@ -141,7 +141,7 @@ Scope:
 
 Deliverable:
 
-- Hosted Vortex payment outcome changes Seal state without Stripe webhook dependency.
+- Hosted Vortex payment outcome changes Seal state without retired provider webhook dependency.
 - Paid outcome completes waiting documents.
 - Failed outcome starts the existing dunning path.
 
@@ -157,12 +157,12 @@ Proof:
 Scope:
 
 - Merchant payout, settlement, balance, and operational components.
-- Remaining Stripe Connect queries/webhooks/schemas after active paths are replaced.
+- Remaining retired provider Connect queries/webhooks/schemas after active paths are replaced.
 
 Deliverable:
 
 - Merchant operational surface reads Vortex public settlement/payout/profile data.
-- Dead Stripe Connect code is deleted or quarantined behind explicit legacy paths.
+- Dead retired provider Connect code is deleted or quarantined behind explicit legacy paths.
 
 Proof:
 
@@ -183,33 +183,33 @@ Proof:
 
 ## Immediate Next Action
 
-Previous replacement lanes A through F are complete and merged through PR #480. The next phase is physical Stripe deletion.
+Previous replacement lanes A through F are complete and merged through PR #480. The next phase is physical retired provider deletion.
 
-### Phase 2: Physical Stripe Deletion
+### Phase 2: Physical retired provider Deletion
 
 Current residue baseline after PR #480:
 
-- 151 files contain Stripe strings.
-- 29 files remain under `apps/backend/convex/stripe`.
-- `apps/backend/package.json` still depends on `stripe`.
-- `apps/backend/convex/payments/*` still contains legacy `internal.stripe.*` fallbacks.
-- Persisted schema and historical fields still contain Stripe-shaped names such as `stripeCustomerId`, `stripe_accounts`, `stripeInvoiceId`, and `stripeSubscriptionId`.
+- 151 files contain retired provider strings.
+- 29 files remain under `apps/backend/convex/retired_provider`.
+- `apps/backend/package.json` still depends on `retired_provider`.
+- `apps/backend/convex/payments/*` still contains legacy `internal.retired_provider.*` fallbacks.
+- Persisted schema and historical fields still contain retired provider-shaped names such as `retired_providerCustomerId`, `retired_provider_accounts`, `retired_providerInvoiceId`, and `retired_providerSubscriptionId`.
 
 Deletion order:
 
 1. Clean baseline and proof gates.
-2. Remove executable Stripe provider calls from account creation, onboarding, SaaS billing, merchant setup, document payments, and operations.
-3. Migrate Stripe-shaped data contracts to provider-neutral names.
-4. Delete Stripe webhook, catalog sync, subscription processor, Connect, invoice/payment-field, coupon, and revenue modules.
-5. Remove Stripe package/env/runtime config.
-6. Rename or delete tests/proofs that only exist to guard the old Stripe transition.
+2. Remove executable retired provider provider calls from account creation, onboarding, SaaS billing, merchant setup, document payments, and operations.
+3. Migrate retired provider-shaped data contracts to provider-neutral names.
+4. Delete retired provider webhook, catalog sync, subscription processor, Connect, invoice/payment-field, coupon, and revenue modules.
+5. Remove retired provider package/env/runtime config.
+6. Rename or delete tests/proofs that only exist to guard the old retired provider transition.
 7. Clean docs/archive residue or explicitly move historical notes outside the active codebase.
-8. Add a hard zero-Stripe scanner gate.
+8. Add a hard zero-retired provider scanner gate.
 
 Hard completion gate:
 
-- `rg -i "stripe" apps packages scripts docs package.json bun.lock*` must be zero for active code/package surfaces.
-- `find apps/backend/convex/stripe -type f` must fail because the directory is gone.
+- `rg -i "retired_provider" apps packages scripts docs package.json bun.lock*` must be zero for active code/package surfaces.
+- `find apps/backend/convex/retired_provider -type f` must fail because the directory is gone.
 - `bun run format:changed:check`
 - `bun run lint:strict`
 - `bun run typecheck`
@@ -224,11 +224,11 @@ Live sandbox card payment, settlement, and payout proof remains human-run. The c
 
 Immediate next action:
 
-Create Linear phase-2 deletion lanes, then start the executable provider deletion lane. Do not start with docs. Deleting docs first makes the scanner look better while the product still has Stripe runtime code.
+Create Linear phase-2 deletion lanes, then start the executable provider deletion lane. Do not start with docs. Deleting docs first makes the scanner look better while the product still has retired provider runtime code.
 
 Historical immediate action from phase 1:
 
-- Lane A proves account creation is Stripe-free.
+- Lane A proves account creation is retired provider-free.
 - Lane B finishes onboarding and merchant setup replacement.
 
 After those two are stable, dispatch Lane C and Lane D.

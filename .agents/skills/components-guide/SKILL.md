@@ -26,7 +26,7 @@ Use components to encapsulate features and build maintainable, reusable backends
 convex/
 ├── users.ts           (500 lines)
 ├── files.ts           (600 lines - upload, storage, permissions, rate limiting)
-├── payments.ts        (400 lines - Stripe, webhooks, billing)
+├── payments.ts        (400 lines - retired provider, webhooks, billing)
 ├── notifications.ts   (300 lines)
 └── analytics.ts       (200 lines)
 
@@ -399,7 +399,7 @@ Each component:
 
 - `auth` - User authentication & sessions
 - `organizations` - Tenant isolation & permissions
-- `billing` - Stripe integration & subscriptions
+- `billing` - retired provider integration & subscriptions
 - `storage` - File uploads to R2
 - `analytics` - Event tracking & metrics
 - `emails` - Email sending via SendGrid

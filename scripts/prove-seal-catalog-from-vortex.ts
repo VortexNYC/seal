@@ -190,15 +190,19 @@ function selectCatalogPrice(catalog: JsonObject): {
   assert(products.length > 0, "Expected Vortex catalog to include at least one active product");
   assert(prices.length > 0, "Expected Vortex catalog to include at least one active price");
 
-  const vortexShaped = findLinkedCatalogPrice(products, prices, (productId, priceId) =>
-    productId.startsWith("vtx_") && priceId.startsWith("vtx_"),
+  const vortexShaped = findLinkedCatalogPrice(
+    products,
+    prices,
+    (productId, priceId) => productId.startsWith("vtx_") && priceId.startsWith("vtx_"),
   );
   if (vortexShaped !== null) {
     return vortexShaped;
   }
 
-  return findLinkedCatalogPrice(products, prices, () => true) ??
-    fail("Expected at least one Vortex catalog price to reference an active product");
+  return (
+    findLinkedCatalogPrice(products, prices, () => true) ??
+    fail("Expected at least one Vortex catalog price to reference an active product")
+  );
 }
 
 function findLinkedCatalogPrice(

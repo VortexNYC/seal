@@ -26,26 +26,26 @@ type PublicMerchantOnboardingRequirementView = Omit<
   "sourceProvider" | "providerRequirementRef"
 >;
 
-type PublicMerchantRequirementDocumentView = Omit<
-  MerchantRequirementDocumentView,
-  "provider"
->;
+type PublicMerchantRequirementDocumentView = Omit<MerchantRequirementDocumentView, "provider">;
 
-type PublicMerchantRequirementUploadStatus = Omit<
-  MerchantRequirementUploadStatus,
-  "provider"
->;
+type PublicMerchantRequirementUploadStatus = Omit<MerchantRequirementUploadStatus, "provider">;
 
 type PublicMerchantOnboardingSnapshot = Omit<MerchantOnboardingSnapshot, "metadata"> & {
   readonly metadata?: MerchantOnboardingSnapshot["metadata"];
 };
 
-type PublicRefreshedMerchantRequirementState = Omit<RefreshedMerchantRequirementState, "requirement" | "documents"> & {
+type PublicRefreshedMerchantRequirementState = Omit<
+  RefreshedMerchantRequirementState,
+  "requirement" | "documents"
+> & {
   readonly requirement: PublicMerchantOnboardingRequirementView;
   readonly documents: readonly PublicMerchantRequirementDocumentView[];
 };
 
-type PublicRefreshedMerchantOnboardingSessionState = Omit<RefreshedMerchantOnboardingSessionState, "requirements"> & {
+type PublicRefreshedMerchantOnboardingSessionState = Omit<
+  RefreshedMerchantOnboardingSessionState,
+  "requirements"
+> & {
   readonly requirements: readonly PublicMerchantOnboardingRequirementView[];
 };
 
@@ -121,7 +121,8 @@ function toErrorResponse(error: unknown, requestId: string): HttpResponseEnvelop
     body: {
       code: "internal_error",
       category: "merchant_onboarding_service",
-      message: error instanceof Error ? error.message : "unexpected merchant onboarding handler failure",
+      message:
+        error instanceof Error ? error.message : "unexpected merchant onboarding handler failure",
       requestId,
     },
   };
@@ -144,7 +145,11 @@ function toSuccessResponse<TBody>(
 function toPublicRequirement(
   requirement: MerchantOnboardingRequirementView,
 ): PublicMerchantOnboardingRequirementView {
-  const { sourceProvider: _sourceProvider, providerRequirementRef: _providerRequirementRef, ...publicRequirement } = requirement;
+  const {
+    sourceProvider: _sourceProvider,
+    providerRequirementRef: _providerRequirementRef,
+    ...publicRequirement
+  } = requirement;
   if (_sourceProvider === "vortex") {
     const publicMetadata = toPublicMetadata(publicRequirement.metadata);
     const { metadata: _metadata, ...publicRequirementWithoutMetadata } = publicRequirement;
@@ -155,7 +160,8 @@ function toPublicRequirement(
   }
   const { description: _description, ...providerNeutralRequirement } = publicRequirement;
   const publicMetadata = toPublicMetadata(providerNeutralRequirement.metadata);
-  const { metadata: _metadata, ...providerNeutralRequirementWithoutMetadata } = providerNeutralRequirement;
+  const { metadata: _metadata, ...providerNeutralRequirementWithoutMetadata } =
+    providerNeutralRequirement;
   return {
     ...providerNeutralRequirementWithoutMetadata,
     requirementId: toPublicRequirementId(providerNeutralRequirement.requirementId),
@@ -185,9 +191,7 @@ function toPublicUploadStatus(
   };
 }
 
-function toPublicUploadLink(
-  link: MerchantRequirementUploadLink,
-): MerchantRequirementUploadLink {
+function toPublicUploadLink(link: MerchantRequirementUploadLink): MerchantRequirementUploadLink {
   return {
     ...link,
     requirementId: toPublicRequirementId(link.requirementId),
@@ -204,18 +208,18 @@ function toPublicMetadata(
   const metadataEntries = Object.entries(metadata ?? {}).filter(([key, value]) => {
     const normalizedKey = key.toLowerCase();
     const normalizedValue = value.toLowerCase();
-    return !normalizedKey.includes("provider") &&
+    return (
+      !normalizedKey.includes("provider") &&
       !normalizedKey.includes("processor") &&
       !normalizedValue.includes("provider") &&
       !normalizedValue.includes("processor") &&
-      !normalizedValue.includes("finix");
+      !normalizedValue.includes("finix")
+    );
   });
   return metadataEntries.length > 0 ? Object.fromEntries(metadataEntries) : undefined;
 }
 
-function toPublicSnapshot(
-  snapshot: MerchantOnboardingSnapshot,
-): PublicMerchantOnboardingSnapshot {
+function toPublicSnapshot(snapshot: MerchantOnboardingSnapshot): PublicMerchantOnboardingSnapshot {
   const publicMetadata = toPublicMetadata(snapshot.metadata);
   const { metadata: _metadata, ...snapshotWithoutMetadata } = snapshot;
   return {
@@ -256,11 +260,17 @@ export function createOnboardingHttpHandlers(
       const requestId = request.requestId ?? createRequestId();
       try {
         const result = await dependencies.service.refreshMerchantOnboardingSession(request.body);
-        return toSuccessResponse(result === null ? null : {
-          ...result,
-          snapshot: toPublicSnapshot(result.snapshot),
-          requirements: result.requirements.map(toPublicRequirement),
-        }, requestId, 202);
+        return toSuccessResponse(
+          result === null
+            ? null
+            : {
+                ...result,
+                snapshot: toPublicSnapshot(result.snapshot),
+                requirements: result.requirements.map(toPublicRequirement),
+              },
+          requestId,
+          202,
+        );
       } catch (error) {
         return toErrorResponse(error, requestId);
       }
@@ -300,11 +310,17 @@ export function createOnboardingHttpHandlers(
       const requestId = request.requestId ?? createRequestId();
       try {
         const result = await dependencies.service.refreshMerchantRequirement(request.body);
-        return toSuccessResponse(result === null ? null : {
-          ...result,
-          requirement: toPublicRequirement(result.requirement),
-          documents: result.documents.map(toPublicDocument),
-        }, requestId, 202);
+        return toSuccessResponse(
+          result === null
+            ? null
+            : {
+                ...result,
+                requirement: toPublicRequirement(result.requirement),
+                documents: result.documents.map(toPublicDocument),
+              },
+          requestId,
+          202,
+        );
       } catch (error) {
         return toErrorResponse(error, requestId);
       }

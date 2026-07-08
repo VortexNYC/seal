@@ -256,7 +256,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     expect(invoices).toHaveLength(1);
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
     expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
-    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://billing.vortex.test/open");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
+      "https://billing.vortex.test/open",
+    );
   });
 
   test("tracks multiple billing cycles as separate invoice records", async () => {

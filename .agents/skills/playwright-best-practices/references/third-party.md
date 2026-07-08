@@ -137,13 +137,13 @@ test("SAML SSO login", async ({ page }) => {
 
 ## Payment Gateway Mocking
 
-### Mock Stripe
+### Mock retired provider
 
 ```typescript
-test("Stripe checkout", async ({ page }) => {
-  // Mock Stripe.js
+test("retired provider checkout", async ({ page }) => {
+  // Mock retired provider.js
   await page.addInitScript(() => {
-    (window as any).Stripe = () => ({
+    (window as any).retired provider = () => ({
       elements: () => ({
         create: () => ({
           mount: () => {},
@@ -225,15 +225,15 @@ test("PayPal checkout", async ({ page }) => {
 ```typescript
 // fixtures/payment.fixture.ts
 type PaymentFixtures = {
-  mockStripe: (options?: { failPayment?: boolean }) => Promise<void>;
+  mockretired provider: (options?: { failPayment?: boolean }) => Promise<void>;
 };
 
 export const test = base.extend<PaymentFixtures>({
-  mockStripe: async ({ page }, use) => {
+  mockretired provider: async ({ page }, use) => {
     await use(async (options = {}) => {
       await page.addInitScript(
         ([shouldFail]) => {
-          (window as any).Stripe = () => ({
+          (window as any).retired provider = () => ({
             elements: () => ({
               create: () => ({
                 mount: () => {},
@@ -258,8 +258,8 @@ export const test = base.extend<PaymentFixtures>({
 });
 
 // Usage
-test("handles declined card", async ({ page, mockStripe }) => {
-  await mockStripe({ failPayment: true });
+test("handles declined card", async ({ page, mockretired provider }) => {
+  await mockretired provider({ failPayment: true });
 
   await page.goto("/checkout");
   await page.getByRole("button", { name: "Pay" }).click();

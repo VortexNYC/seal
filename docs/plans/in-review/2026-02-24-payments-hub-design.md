@@ -2,13 +2,13 @@
 
 ## Problem
 
-Seal has comprehensive Stripe Connect integration (payouts, balances, disputes, tax documents, payment history) but it's buried in workspace settings where users rarely find it. Competitor agree.com surfaces payments as a first-class section with dedicated navigation. Additionally, Seal lacks revenue overview and subscription management views despite having the backend data (`document_invoices` table, recurring payment configs).
+Seal has comprehensive retired provider Connect integration (payouts, balances, disputes, tax documents, payment history) but it's buried in workspace settings where users rarely find it. Competitor agree.com surfaces payments as a first-class section with dedicated navigation. Additionally, Seal lacks revenue overview and subscription management views despite having the backend data (`document_invoices` table, recurring payment configs).
 
 ## Solution
 
 Create a dedicated Payments section in the main workspace sidebar that:
 
-1. Promotes existing Stripe Connect pages from settings to main navigation
+1. Promotes existing retired provider Connect pages from settings to main navigation
 2. Adds a Payments Overview page with revenue summary and transaction list
 3. Adds a Subscriptions page for managing recurring document payments
 
@@ -32,16 +32,16 @@ Add "Payments" to the workspace sidebar (between Documents and Templates). Uses 
 
 ### New Backend Queries
 
-**`stripe/revenue_queries.ts`**:
+**`retired_provider/revenue_queries.ts`**:
 
 - `getRevenueStats` — Aggregates from `document_invoices`: total revenue, paid count, pending count, monthly trend. Scoped to organization.
 - `getTransactionList` — Paginated list from `document_invoices` joined with document title. Filterable by status (paid/open/void).
 
-**`stripe/subscription_queries.ts`**:
+**`retired_provider/subscription_queries.ts`**:
 
-- `getActiveRecurringPayments` — Finds documents with `paymentType: "recurring"` payment fields that have active Stripe subscriptions. Returns subscription details (amount, interval, status, customer).
-- `pauseRecurringPayment` — Calls Stripe API to pause a subscription.
-- `cancelRecurringPayment` — Calls Stripe API to cancel a subscription.
+- `getActiveRecurringPayments` — Finds documents with `paymentType: "recurring"` payment fields that have active retired provider subscriptions. Returns subscription details (amount, interval, status, customer).
+- `pauseRecurringPayment` — Calls retired provider API to pause a subscription.
+- `cancelRecurringPayment` — Calls retired provider API to cancel a subscription.
 
 ### New Frontend Pages
 
@@ -70,7 +70,7 @@ The following pages move from `settings/` to `payments/` with minimal code chang
 | `settings/disputes`        | `payments/disputes` |
 | `settings/tax-documents`   | `payments/tax`      |
 
-The `settings/payments` page (Stripe Connect onboarding) stays in settings since it's a one-time setup flow.
+The `settings/payments` page (retired provider Connect onboarding) stays in settings since it's a one-time setup flow.
 
 ### Permissions
 
@@ -88,8 +88,8 @@ Reuse existing payment-related permissions. Overview and subscriptions pages req
 | `routes/_authenticated/$slug/payments/balances.tsx`      | Moved from settings                |
 | `routes/_authenticated/$slug/payments/disputes.tsx`      | Moved from settings                |
 | `routes/_authenticated/$slug/payments/tax.tsx`           | Moved from settings                |
-| `convex/stripe/revenue_queries.ts`                       | Revenue stats and transaction list |
-| `convex/stripe/subscription_queries.ts`                  | Recurring payment management       |
+| `convex/retired_provider/revenue_queries.ts`                       | Revenue stats and transaction list |
+| `convex/retired_provider/subscription_queries.ts`                  | Recurring payment management       |
 
 ## Files to Modify
 

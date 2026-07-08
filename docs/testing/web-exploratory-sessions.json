@@ -1225,7 +1225,7 @@
           "status": "passed",
           "steps": [
             "General Settings: Workspace Name editable, Workspace Slug read-only, Save Changes button",
-            "Full settings sub-nav: General, Team, Profile, AI, Branding, Signing, Notifications, Security, Audit Log, Billing, Stripe Connect",
+            "Full settings sub-nav: General, Team, Profile, AI, Branding, Signing, Notifications, Security, Audit Log, Billing, retired provider Connect",
             "Team page: Members/Invitations tabs, 1 member (shlomo kabareti, owner, Active, Feb 16), Search, Role filter, Invite Member button",
             "Audit Log: Filters (date range, action type, user), 38 events, Export CSV, color-coded action badges, IP tracking",
             "All settings pages load without errors"
@@ -1256,7 +1256,7 @@
           "status": "passed",
           "steps": [
             "All sidebar nav items tested: Dashboard, Documents, Templates, Contacts, Analytics \u2014 all navigate correctly",
-            "Settings expands to sub-nav (General/Team/Profile/AI/Branding/Signing/Notifications/Security/Audit Log/Billing/Stripe Connect)",
+            "Settings expands to sub-nav (General/Team/Profile/AI/Branding/Signing/Notifications/Security/Audit Log/Billing/retired provider Connect)",
             "Developer expands to API Keys/Webhooks/Documentation"
           ],
           "bugs": [],
@@ -1765,7 +1765,7 @@
           "Full sub-nav verified: Overview, Subscriptions, History, Payouts, Balances, Disputes, Tax Documents"
         ],
         "bugs": [],
-        "notes": "All payment sub-pages load without errors. No Stripe Connect account configured so data is empty/placeholder."
+        "notes": "All payment sub-pages load without errors. No retired provider Connect account configured so data is empty/placeholder."
       },
       {
         "id": "V4",

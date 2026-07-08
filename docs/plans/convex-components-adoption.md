@@ -24,13 +24,13 @@
 
 ### HIGH Priority
 
-#### `@convex-dev/stripe` (v0.1.3)
+#### `@convex-dev/retired_provider` (v0.1.3)
 
 Checkout sessions, subscription management, customer/org linking, webhook handling, seat-based pricing, real-time Convex queries for payment data.
 
-**Seal use case:** Could replace our custom Stripe integration (webhooks in `webhooks.ts`, Connect logic in `stripe/`, subscription management). User confirmed: "no question."
+**Seal use case:** Could replace our custom retired provider integration (webhooks in `webhooks.ts`, Connect logic in `retired_provider/`, subscription management). User confirmed: "no question."
 
-**Key API:** `StripeSubscriptions` client, automatic webhook sync to Convex DB, checkout session creation, customer portal.
+**Key API:** `retired providerSubscriptions` client, automatic webhook sync to Convex DB, checkout session creation, customer portal.
 
 ---
 
@@ -119,9 +119,9 @@ Undo/redo for document field editor — Ctrl+Z/Ctrl+Shift+Z with timeline snapsh
 | Neutral Cost     | `@convex-dev/neutralcost`        | Our `ai/usage.ts` + aggregate handles this already           |
 | ProseMirror Sync | `@convex-dev/prosemirror-sync`   | Collaborative editing — not a current feature                |
 | Sharded Counter  | `@convex-dev/sharded-counter`    | Aggregate component already covers our counting needs        |
-| Autumn           | `@convex-dev/autumn`             | We use Stripe                                                |
-| Polar            | `@convex-dev/polar`              | We use Stripe                                                |
-| Dodo Payments    | `@convex-dev/dodopayments`       | We use Stripe                                                |
+| Autumn           | `@convex-dev/autumn`             | We use retired provider                                                |
+| Polar            | `@convex-dev/polar`              | We use retired provider                                                |
+| Dodo Payments    | `@convex-dev/dodopayments`       | We use retired provider                                                |
 
 ## Implementation History
 
@@ -137,7 +137,7 @@ Undo/redo for document field editor — Ctrl+Z/Ctrl+Shift+Z with timeline snapsh
 ## Recommended Implementation Order
 
 1. ~~`@convex-dev/workflow`~~ — **DONE** (2026-03-01)
-2. ~~`@convex-dev/stripe`~~ — **SKIPPED** (too much custom Stripe work to justify component swap)
+2. ~~`@convex-dev/retired_provider`~~ — **SKIPPED** (too much custom retired provider work to justify component swap)
 3. ~~`@convex-dev/persistent-text-streaming`~~ — **SKIPPED** (`@convex-dev/agent` already handles persistent streaming via `saveStreamDeltas: true`)
 4. ~~`@convex-dev/crons`~~ — **SKIPPED** (batch cron approach is architecturally better than per-document dynamic crons for our use case)
 5. ~~`@convex-dev/debouncer`~~ — **SKIPPED** (package not published to npm yet — 404)

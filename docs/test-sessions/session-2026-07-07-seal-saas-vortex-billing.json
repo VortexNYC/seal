@@ -44,7 +44,7 @@
         "subscriptionExternalId": "vtx_sub_seal_projection_mra1q404_e8vecb",
         "customerExternalId": "vtx_cust_seal_projection_mra1q404_e8vecb",
         "priceId": "vtx_price_seal_pro_monthly_v2",
-        "activeStripeIdPresent": false,
+        "activeretired providerIdPresent": false,
         "billingSettingsState": {
           "status": "active",
           "tier": "pro",
@@ -55,23 +55,23 @@
       }
     },
     {
-      "step": "Stripe lifecycle guard proof",
-      "command": "SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-stripe-lifecycle-guard",
+      "step": "retired provider lifecycle guard proof",
+      "command": "SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-retired_provider-lifecycle-guard",
       "result": {
         "ok": true,
-        "check": "seal_saas_stripe_lifecycle_guard",
+        "check": "seal_saas_retired_provider_lifecycle_guard",
         "proofRunId": "mra1qmf5_lskpm0",
         "organizationId": "nh7b9h22d65bjsqw2gm4e9xgyd8a201n",
         "handleNewOrgCreatedSkippedReason": "vortex_billing",
         "syncSeatCountSkipped": true,
-        "organizationStripeCustomerId": null,
+        "organizationretired providerCustomerId": null,
         "subscription": null
       }
     }
   ],
   "readiness": {
     "sealSaasSubscriptionBillingViaVortex": "Sandbox proof complete.",
-    "fullStripeReplacement": "Not complete. Document payments and Connect-style money movement still require proof."
+    "fullretired providerReplacement": "Not complete. Document payments and Connect-style money movement still require proof."
   },
   "knownBlockers": [
     "Browser billing UI should be checked once on staging after branch push/PR.",

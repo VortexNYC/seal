@@ -275,7 +275,7 @@ Do not call Seal document payments sandbox launch-ready until this exact sequenc
 2. Re-run the Seal paid-state proof with `--require-settled`.
 3. Confirm `fullySettled: true` and at least one settlement id for `pay_mrayujpd_uha1hffh`.
 4. Only then promote this sandbox document-payment proof from captured to settled.
-5. Production real-money launch still requires production credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and Stripe webhook retirement.
+5. Production real-money launch still requires production credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and retired provider webhook retirement.
 
 Current sandbox launch answer: SaaS is green, document payable creation is green, real hosted document payment capture and Seal projection are green, failed-payment recovery is green, and settled document-payment money movement is still waiting on provider settlement readiness.
 
@@ -322,4 +322,4 @@ Production go-live work left after sandbox settlement proof:
 4. Run one real small production document payment.
 5. Wait for real settlement/payout visibility.
 6. Run the paid-state proof with `--require-settled` against production ids.
-7. Only then widen the allowlist and retire Stripe webhooks.
+7. Only then widen the allowlist and retire retired provider webhooks.

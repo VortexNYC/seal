@@ -1,6 +1,6 @@
 # Slice 1b-S — Wire Seal to Vortex hosted onboarding (start-link → hosted KYC → charges-ready)
 
-**Context:** Vortex-side onboarding is complete + live-proven (1b-V.1 API path, 1b-V.2 hosted KYC form, 1b-V.3 public `POST /v1/merchant-accounts/:id/onboarding-link`). Seal 1a already provisions a minimal Vortex merchant per allowlisted org (`vortex_merchant_actions.ts createVortexMerchantAccount` via raw HTTP + `apiKey`), stores `vortexMerchantAccountId`/`chargesEnabled` on the org's `stripe_accounts` row, and `getVortexMerchantAccountIdForOrg` returns the id ONLY when `chargesEnabled`. So per-user routing already flips on at charges-ready — Seal just can't get a merchant THERE yet (no way to start onboarding).
+**Context:** Vortex-side onboarding is complete + live-proven (1b-V.1 API path, 1b-V.2 hosted KYC form, 1b-V.3 public `POST /v1/merchant-accounts/:id/onboarding-link`). Seal 1a already provisions a minimal Vortex merchant per allowlisted org (`vortex_merchant_actions.ts createVortexMerchantAccount` via raw HTTP + `apiKey`), stores `vortexMerchantAccountId`/`chargesEnabled` on the org's `retired_provider_accounts` row, and `getVortexMerchantAccountIdForOrg` returns the id ONLY when `chargesEnabled`. So per-user routing already flips on at charges-ready — Seal just can't get a merchant THERE yet (no way to start onboarding).
 
 **Goal:** let a Seal user complete KYC via the Vortex-hosted page and reach charges-ready, so their document payments route to their own Vortex merchant. **Seal calls the Vortex PUBLIC API only — never Finix.**
 
@@ -17,7 +17,7 @@
 - CQ4: How does Seal learn charges-ready — poll `refreshVortexMerchantAccount` on settings load (simple), or is there/should there be a Vortex→Seal merchant-state webhook? Is poll-on-load enough for 1b-S?
 
 ## Out of scope
-- 1c payout (liability-gated), 1d Stripe Connect deletion + table rename, SDK onboarding-link method (follow-up).
+- 1c payout (liability-gated), 1d retired provider Connect deletion + table rename, SDK onboarding-link method (follow-up).
 
 ## Gates
 Seal from ROOT: typecheck/lint/build/test. Boundary grep = zero direct Finix. Cross-repo proof green (vs Vortex dev). Codex reviews this plan (CQ1-CQ4) then the diff.
@@ -27,7 +27,7 @@ Seal from ROOT: typecheck/lint/build/test. Boundary grep = zero direct Finix. Cr
 CQ answers: SDK 0.1.0 has NO onboarding-link → raw HTTP correct (mirror `requestVortexBillingJson`). CTA home is `apps/web/src/routes/_authenticated/$slug/settings/payments.tsx` (extend existing Vortex Connect panel @188/224, NOT operational `payments/*`). Charges-ready via existing `refreshMerchantAccount` (already provider-branched, merchant_account_actions.ts:127) polled on load — NO webhook. Boundary confirmed clean.
 
 **Architecture correction (do this, not the orphan action):**
-1. Make the EXISTING public action `payments/merchant_account_actions.createMerchantOnboardingLink` (merchant_account_actions.ts:65, currently always Stripe) **provider-aware** — allowlisted/Vortex orgs route to a new Vortex helper; others keep Stripe. Mirrors 1a's `createMerchantAccount` provider split. The existing UI CTA that calls this action then works for both.
+1. Make the EXISTING public action `payments/merchant_account_actions.createMerchantOnboardingLink` (merchant_account_actions.ts:65, currently always retired provider) **provider-aware** — allowlisted/Vortex orgs route to a new Vortex helper; others keep retired provider. Mirrors 1a's `createMerchantAccount` provider split. The existing UI CTA that calls this action then works for both.
 2. New internal helper `createVortexOnboardingLink` in `vortex_merchant_actions.ts` using `requestVortexBillingJson` (apiBaseUrl + apiKey) → `POST /v1/merchant-accounts/:id/onboarding-link` → returns `{ url, onboardingSessionId, expiresAt }`. Boundary: Vortex public API only.
 3. **UI**: extend the existing Vortex Connect panel in `settings/payments.tsx` — when the org's Vortex merchant is not `chargesEnabled`, the existing/CTA opens the returned hosted URL (new tab). When ready, show active. Do NOT build a new panel.
 4. **Charges-ready**: existing `refreshMerchantAccount` (provider-branched) on settings load/return syncs `chargesEnabled`; 1a resolver flips per-user routing. No webhook.

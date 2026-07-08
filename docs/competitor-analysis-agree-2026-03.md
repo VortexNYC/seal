@@ -121,7 +121,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 ### 10. Social Proof — UNVERIFIED
 
 - Claims "75,000+ teams" (TechCrunch May 2025 said 25K users — 3x inflation in ~10 months or metric change from users→teams)
-- Logos: Google, Deel, Perplexity, Anthropic, Rippling, Stripe, Meta, Amazon, Rho, Beehiiv
+- Logos: Google, Deel, Perplexity, Anthropic, Rippling, retired provider, Meta, Amazon, Rho, Beehiiv
 - No third-party verification of broad enterprise deployment
 - Real testimonials: Mat Sherman (VP Sales, Product Hunt), Tyler Denk (CEO, Beehiiv), Sasha Orloff (CEO, Puzzle)
 - Awards: Money 20/20 2x Bronze, Product Hunt Product of the Day/Week, SOC 2 Type II
@@ -163,7 +163,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - QR code verification on completion
 - iFrame SDK embedding
 
-### 2. Payments (Stripe Connect)
+### 2. Payments (retired provider Connect)
 
 - One-time payments
 - Recurring billing (week/month/year intervals)
@@ -176,7 +176,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Multiple payment methods: card, ACH, Apple Pay, Google Pay, Link
 - Late fee configuration (percentage or fixed)
 - Due date terms (on receipt, net 15/30/60, custom)
-- Stripe Connect for payouts
+- retired provider Connect for payouts
 
 ### 3. AI Features
 
@@ -247,7 +247,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 | 1   | **Redlining / negotiation**              | Built-in contract editing, tracked changes, comments, @mentions, version history | AI annotations only (read-only)                      | HIGH — biggest product disqualifier in B2B workflows. If we lose before signature, payment flexibility doesn't matter. | P0       |
 | 2   | **Auto-invoicing from signed contracts** | Billing agent auto-generates invoices at signature                               | Manual — payment fields must be pre-configured       | HIGH — "sign and get paid" is their core pitch                                                                         | P1       |
 | 3   | **Clause library**                       | Reusable clause snippets                                                         | None                                                 | MEDIUM — templates partially cover this                                                                                | P2       |
-| 4   | **Recurring invoice scheduling**         | Automatic schedule from contract terms                                           | Stripe recurring exists but no invoice UI/automation | MEDIUM — we have recurring payments, need the invoice layer                                                            | P2       |
+| 4   | **Recurring invoice scheduling**         | Automatic schedule from contract terms                                           | retired provider recurring exists but no invoice UI/automation | MEDIUM — we have recurring payments, need the invoice layer                                                            | P2       |
 | 5   | **Payment recovery / dunning**           | Automated reminders, retries, stalled invoice detection, collection analytics    | None — no dunning system                             | MEDIUM — matters more as users scale                                                                                   | P2       |
 | 6   | **Accounting sync**                      | QuickBooks, Xero, NetSuite, Sage                                                 | None                                                 | MEDIUM — SMBs live in QuickBooks                                                                                       | P2       |
 | 7   | **Real-time collaboration**              | Inline comments, @mentions, version history in agreements                        | None                                                 | MEDIUM — expected in modern B2B tools                                                                                  | P2       |
@@ -285,7 +285,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 
 ### Where Agree Is Going
 
-They're building the **"Stripe for contracts"** — a revenue operations platform. Their moat is the contract-to-cash pipeline: sign a contract, auto-generate invoices, collect payments, chase overdue, reconcile books, report metrics. All automated by workflow modules marketed as AI agents.
+They're building the **"retired provider for contracts"** — a revenue operations platform. Their moat is the contract-to-cash pipeline: sign a contract, auto-generate invoices, collect payments, chase overdue, reconcile books, report metrics. All automated by workflow modules marketed as AI agents.
 
 **Their bet**: Mid-market companies ($1M-$100M annual volume) will pay $599/mo to automate their entire revenue cycle.
 
@@ -331,9 +331,9 @@ Each feature ships as its own branch/PR. No breaking main. Surgical.
 
 | #   | Feature                          | Size | Notes                                                                                                 |
 | --- | -------------------------------- | ---- | ----------------------------------------------------------------------------------------------------- |
-| 3   | **Auto-invoice on signature**    | S    | document.completed → Stripe invoice from payment fields. Convex mutation. We're 80% there.            |
+| 3   | **Auto-invoice on signature**    | S    | document.completed → retired provider invoice from payment fields. Convex mutation. We're 80% there.            |
 | 4   | **Payment recovery / dunning**   | S    | 3-email overdue sequence. Convex cron + Resend. Not an AI agent — just automation.                    |
-| 5   | **Recurring invoice scheduling** | S    | Convex cron → invoice generation per contract schedule. We have Stripe recurring, need invoice layer. |
+| 5   | **Recurring invoice scheduling** | S    | Convex cron → invoice generation per contract schedule. We have retired provider recurring, need invoice layer. |
 | 6   | **Revenue dashboard**            | S    | Aggregate existing invoice/payment data. Query + render. Data already exists.                         |
 | 7   | **Collection analytics**         | S    | Aging dashboard, stalled invoice detection. Extension of revenue dashboard.                           |
 

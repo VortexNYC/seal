@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Promote buried Stripe Connect pages to a first-class Payments section with revenue overview and subscription management.
+**Goal:** Promote buried retired provider Connect pages to a first-class Payments section with revenue overview and subscription management.
 
-**Architecture:** New `/$slug/payments/` route group in the workspace sidebar. Backend queries aggregate `document_invoices` for revenue stats and `payment_field_configs` for subscription management. Existing settings pages move to the new route group with minimal code changes. Stripe API actions handle subscription pause/cancel.
+**Architecture:** New `/$slug/payments/` route group in the workspace sidebar. Backend queries aggregate `document_invoices` for revenue stats and `payment_field_configs` for subscription management. Existing settings pages move to the new route group with minimal code changes. retired provider API actions handle subscription pause/cancel.
 
-**Tech Stack:** TanStack Router (file-based routing), Convex (backend queries/actions), Stripe Connect embedded components (`@stripe/react-connect-js`), Stripe Node SDK (for subscription management actions), Lucide icons, Tailwind CSS v4.
+**Tech Stack:** TanStack Router (file-based routing), Convex (backend queries/actions), retired provider Connect embedded components (`@retired_provider/react-connect-js`), retired provider Node SDK (for subscription management actions), Lucide icons, Tailwind CSS v4.
 
 ---
 
@@ -16,7 +16,7 @@
 
 - Modify: `apps/web/src/components/app-sidebar.tsx:113-272`
 
-**Context:** The sidebar in `app-sidebar.tsx` has a `buildNavSections()` function (line 113) that returns an array of nav sections. Currently there are 3 sections: Workspace, Settings, Developer. Each section has `title`, `icon`, and `items[]` (each item: `title`, `url`, `visible`, optional `exactMatch`). Payment-related items are currently inside the `settingsItems` array (lines 183-207) gated by `hasStripeConnect`. We need to:
+**Context:** The sidebar in `app-sidebar.tsx` has a `buildNavSections()` function (line 113) that returns an array of nav sections. Currently there are 3 sections: Workspace, Settings, Developer. Each section has `title`, `icon`, and `items[]` (each item: `title`, `url`, `visible`, optional `exactMatch`). Payment-related items are currently inside the `settingsItems` array (lines 183-207) gated by `hasretired providerConnect`. We need to:
 
 1. Move payment items out of `settingsItems` into a new `paymentsItems` array
 2. Add a new "Payments" section between Workspace and Settings
@@ -47,47 +47,47 @@ const paymentsItems = [
   {
     title: "Overview",
     url: buildOrganizationPath(slug, "/payments"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
     exactMatch: true,
   },
   {
     title: "Subscriptions",
     url: buildOrganizationPath(slug, "/payments/subscriptions"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
   },
   {
     title: "History",
     url: buildOrganizationPath(slug, "/payments/history"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
   },
   {
     title: "Payouts",
     url: buildOrganizationPath(slug, "/payments/payouts"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
   },
   {
     title: "Balances",
     url: buildOrganizationPath(slug, "/payments/balances"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
   },
   {
     title: "Disputes",
     url: buildOrganizationPath(slug, "/payments/disputes"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
   },
   {
     title: "Tax Documents",
     url: buildOrganizationPath(slug, "/payments/tax"),
-    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    visible: hasretired providerConnect && canView(permissionFlags?.canViewSettings),
   },
 ].filter((item) => item.visible);
 ```
 
-Then remove the 5 payment items from `settingsItems` (lines 183-207 — Payment History, Payouts, Balances, Disputes, Tax Documents). Keep the "Payments" item (line 179-182) that links to `settings/payments` for Stripe Connect onboarding, but rename it to "Stripe Connect" so it's clear:
+Then remove the 5 payment items from `settingsItems` (lines 183-207 — Payment History, Payouts, Balances, Disputes, Tax Documents). Keep the "Payments" item (line 179-182) that links to `settings/payments` for retired provider Connect onboarding, but rename it to "retired provider Connect" so it's clear:
 
 ```typescript
     {
-      title: "Stripe Connect",
+      title: "retired provider Connect",
       url: buildOrganizationPath(slug, "/settings/payments"),
       visible: canView(permissionFlags?.canViewSettings),
     },
@@ -187,20 +187,20 @@ git commit -m "feat: add payments layout route"
 - Delete: `apps/web/src/routes/_authenticated/$slug/settings/disputes.tsx`
 - Delete: `apps/web/src/routes/_authenticated/$slug/settings/tax-documents.tsx`
 
-**Context:** Each existing page follows the same pattern: `createFileRoute()` → query org + Stripe account → gate on connection status → render `PageWrapper` + `StripeConnectProvider` + Stripe embedded component. The ONLY change needed per file is the route string in `createFileRoute()`.
+**Context:** Each existing page follows the same pattern: `createFileRoute()` → query org + retired provider account → gate on connection status → render `PageWrapper` + `retired providerConnectProvider` + retired provider embedded component. The ONLY change needed per file is the route string in `createFileRoute()`.
 
 **Step 1: Create `payments/history.tsx`**
 
 Copy `settings/payment-history.tsx` content but change the route path:
 
 ```typescript
-import { ConnectNotificationBanner, ConnectPayments } from "@stripe/react-connect-js";
+import { ConnectNotificationBanner, ConnectPayments } from "@retired_provider/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { StripeConnectProvider } from "@/components/stripe/connect-provider";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { retired providerConnectProvider } from "@/components/retired_provider/connect-provider";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -211,7 +211,7 @@ export const Route = createFileRoute("/_authenticated/$slug/payments/history")({
 function PaymentHistoryPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   if (connectedAccount === undefined || !orgId) {
@@ -219,7 +219,7 @@ function PaymentHistoryPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Payment History" />;
+    return <Noretired providerConnectState slug={slug} title="Payment History" />;
   }
 
   return (
@@ -227,12 +227,12 @@ function PaymentHistoryPage() {
       title="Payment History"
       description="View all payments received through your documents."
     >
-      <StripeConnectProvider organizationId={orgId}>
+      <retired providerConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
         <div className="mt-6">
           <ConnectPayments />
         </div>
-      </StripeConnectProvider>
+      </retired providerConnectProvider>
     </PageWrapper>
   );
 }
@@ -243,13 +243,13 @@ function PaymentHistoryPage() {
 Same pattern — change route to `"/_authenticated/$slug/payments/payouts"`:
 
 ```typescript
-import { ConnectNotificationBanner, ConnectPayouts } from "@stripe/react-connect-js";
+import { ConnectNotificationBanner, ConnectPayouts } from "@retired_provider/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { StripeConnectProvider } from "@/components/stripe/connect-provider";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { retired providerConnectProvider } from "@/components/retired_provider/connect-provider";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -260,7 +260,7 @@ export const Route = createFileRoute("/_authenticated/$slug/payments/payouts")({
 function PayoutsPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   if (connectedAccount === undefined || !orgId) {
@@ -268,17 +268,17 @@ function PayoutsPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Payouts" />;
+    return <Noretired providerConnectState slug={slug} title="Payouts" />;
   }
 
   return (
     <PageWrapper title="Payouts" description="Track payouts to your bank account.">
-      <StripeConnectProvider organizationId={orgId}>
+      <retired providerConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
         <div className="mt-6">
           <ConnectPayouts />
         </div>
-      </StripeConnectProvider>
+      </retired providerConnectProvider>
     </PageWrapper>
   );
 }
@@ -293,13 +293,13 @@ import {
   ConnectBalances,
   ConnectInstantPayoutsPromotion,
   ConnectNotificationBanner,
-} from "@stripe/react-connect-js";
+} from "@retired_provider/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { StripeConnectProvider } from "@/components/stripe/connect-provider";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { retired providerConnectProvider } from "@/components/retired_provider/connect-provider";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -310,7 +310,7 @@ export const Route = createFileRoute("/_authenticated/$slug/payments/balances")(
 function BalancesPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   if (connectedAccount === undefined || !orgId) {
@@ -318,18 +318,18 @@ function BalancesPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Balances" />;
+    return <Noretired providerConnectState slug={slug} title="Balances" />;
   }
 
   return (
-    <PageWrapper title="Balances" description="View your current Stripe balance and pending funds.">
-      <StripeConnectProvider organizationId={orgId}>
+    <PageWrapper title="Balances" description="View your current retired provider balance and pending funds.">
+      <retired providerConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
         <div className="mt-6 space-y-6">
           <ConnectBalances />
           <ConnectInstantPayoutsPromotion />
         </div>
-      </StripeConnectProvider>
+      </retired providerConnectProvider>
     </PageWrapper>
   );
 }
@@ -340,13 +340,13 @@ function BalancesPage() {
 Change route to `"/_authenticated/$slug/payments/disputes"`:
 
 ```typescript
-import { ConnectDisputesList, ConnectNotificationBanner } from "@stripe/react-connect-js";
+import { ConnectDisputesList, ConnectNotificationBanner } from "@retired_provider/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { StripeConnectProvider } from "@/components/stripe/connect-provider";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { retired providerConnectProvider } from "@/components/retired_provider/connect-provider";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -357,7 +357,7 @@ export const Route = createFileRoute("/_authenticated/$slug/payments/disputes")(
 function DisputesPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   if (connectedAccount === undefined || !orgId) {
@@ -365,17 +365,17 @@ function DisputesPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Disputes" />;
+    return <Noretired providerConnectState slug={slug} title="Disputes" />;
   }
 
   return (
     <PageWrapper title="Disputes" description="Manage and respond to payment disputes.">
-      <StripeConnectProvider organizationId={orgId}>
+      <retired providerConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
         <div className="mt-6">
           <ConnectDisputesList />
         </div>
-      </StripeConnectProvider>
+      </retired providerConnectProvider>
     </PageWrapper>
   );
 }
@@ -386,13 +386,13 @@ function DisputesPage() {
 Change route to `"/_authenticated/$slug/payments/tax"`:
 
 ```typescript
-import { ConnectDocuments, ConnectNotificationBanner } from "@stripe/react-connect-js";
+import { ConnectDocuments, ConnectNotificationBanner } from "@retired_provider/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { StripeConnectProvider } from "@/components/stripe/connect-provider";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { retired providerConnectProvider } from "@/components/retired_provider/connect-provider";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -403,7 +403,7 @@ export const Route = createFileRoute("/_authenticated/$slug/payments/tax")({
 function TaxDocumentsPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   if (connectedAccount === undefined || !orgId) {
@@ -411,17 +411,17 @@ function TaxDocumentsPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Tax Documents" />;
+    return <Noretired providerConnectState slug={slug} title="Tax Documents" />;
   }
 
   return (
-    <PageWrapper title="Tax Documents" description="Access tax forms and documents from Stripe.">
-      <StripeConnectProvider organizationId={orgId}>
+    <PageWrapper title="Tax Documents" description="Access tax forms and documents from retired provider.">
+      <retired providerConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
         <div className="mt-6">
           <ConnectDocuments />
         </div>
-      </StripeConnectProvider>
+      </retired providerConnectProvider>
     </PageWrapper>
   );
 }
@@ -455,13 +455,13 @@ git commit -m "feat: move payment pages from settings to payments route group"
 
 **Files:**
 
-- Create: `apps/backend/convex/stripe/revenue_queries.ts`
+- Create: `apps/backend/convex/retired_provider/revenue_queries.ts`
 
 **Context:** Revenue data lives in the `document_invoices` table which has an `by_organization` index. We need two queries: `getRevenueStats` (aggregate cards) and `getTransactionList` (paginated table). Both use `memberQuery` wrapper (same as `connect_queries.ts`) which ensures the user is a member of the organization. The `memberQuery` wrapper provides `ctx.auth.organization._id` for scoping.
 
 **Step 1: Create the revenue queries file**
 
-Create `apps/backend/convex/stripe/revenue_queries.ts`:
+Create `apps/backend/convex/retired_provider/revenue_queries.ts`:
 
 ```typescript
 import { ConvexError, v } from "convex/values";
@@ -581,7 +581,7 @@ Expected: PASS
 **Step 3: Commit**
 
 ```bash
-git add apps/backend/convex/stripe/revenue_queries.ts
+git add apps/backend/convex/retired_provider/revenue_queries.ts
 git commit -m "feat: add revenue stats and transaction list queries"
 ```
 
@@ -591,13 +591,13 @@ git commit -m "feat: add revenue stats and transaction list queries"
 
 **Files:**
 
-- Create: `apps/backend/convex/stripe/subscription_queries.ts`
+- Create: `apps/backend/convex/retired_provider/subscription_queries.ts`
 
-**Context:** Active subscriptions are tracked in `payment_field_configs` where `paymentType === "recurring"` and `stripeSubscriptionId` is set. There's a `by_organization` index on that table. For pause/cancel we need Stripe API calls, which must run in `"use node"` actions. The existing `connect_actions.ts` pattern shows how to initialize Stripe and use `createAccountSession`. We follow the same pattern.
+**Context:** Active subscriptions are tracked in `payment_field_configs` where `paymentType === "recurring"` and `retired_providerSubscriptionId` is set. There's a `by_organization` index on that table. For pause/cancel we need retired provider API calls, which must run in `"use node"` actions. The existing `connect_actions.ts` pattern shows how to initialize retired provider and use `createAccountSession`. We follow the same pattern.
 
 **Step 1: Create the subscription queries file**
 
-Create `apps/backend/convex/stripe/subscription_queries.ts`:
+Create `apps/backend/convex/retired_provider/subscription_queries.ts`:
 
 ```typescript
 import { ConvexError, v } from "convex/values";
@@ -624,9 +624,9 @@ export const getActiveSubscriptions = memberQuery({
       .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
       .collect();
 
-    // Filter to recurring payments with active Stripe subscriptions
+    // Filter to recurring payments with active retired provider subscriptions
     const recurring = configs.filter(
-      (c) => c.paymentType === "recurring" && c.stripeSubscriptionId,
+      (c) => c.paymentType === "recurring" && c.retired_providerSubscriptionId,
     );
 
     const subscriptions = await Promise.all(
@@ -634,11 +634,11 @@ export const getActiveSubscriptions = memberQuery({
         const document = await ctx.db.get(config.documentId);
 
         // Look up the invoice to get customer info
-        const invoice = config.stripeInvoiceId
+        const invoice = config.retired_providerInvoiceId
           ? await ctx.db
               .query("document_invoices")
-              .withIndex("by_stripe_invoice", (q) =>
-                q.eq("stripeInvoiceId", config.stripeInvoiceId!),
+              .withIndex("by_retired_provider_invoice", (q) =>
+                q.eq("retired_providerInvoiceId", config.retired_providerInvoiceId!),
               )
               .first()
           : null;
@@ -655,7 +655,7 @@ export const getActiveSubscriptions = memberQuery({
           intervalCount: config.recurringConfig?.intervalCount ?? 1,
           endCondition: config.recurringConfig?.endCondition ?? "never",
           paymentStatus: config.paymentStatus ?? "pending",
-          stripeSubscriptionId: config.stripeSubscriptionId!,
+          retired_providerSubscriptionId: config.retired_providerSubscriptionId!,
           createdAt: config.createdAt,
         };
       }),
@@ -668,46 +668,46 @@ export const getActiveSubscriptions = memberQuery({
 
 **Step 2: Create subscription actions for pause/cancel**
 
-Add to the same file — but since Stripe API calls need Node.js runtime, create a separate action file.
+Add to the same file — but since retired provider API calls need Node.js runtime, create a separate action file.
 
-Create `apps/backend/convex/stripe/subscription_actions.ts`:
+Create `apps/backend/convex/retired_provider/subscription_actions.ts`:
 
 ```typescript
 "use node";
 
 import { ConvexError, v } from "convex/values";
-import Stripe from "stripe";
+import retired provider from "retired_provider";
 
 import { internalAction } from "../_generated/server";
 import { action } from "../_generated/server";
 
-function initializeStripe(): Stripe {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeSecretKey) {
-    throw new Error("STRIPE_SECRET_KEY not configured");
+function initializeretired provider(): retired provider {
+  const retired_providerSecretKey = process.env.RETIRED_PROVIDER_SECRET_KEY;
+  if (!retired_providerSecretKey) {
+    throw new Error("RETIRED_PROVIDER_SECRET_KEY not configured");
   }
 
-  return new Stripe(stripeSecretKey, {
+  return new retired provider(retired_providerSecretKey, {
     apiVersion: "2025-12-15.clover",
   });
 }
 
 /**
- * Pause a recurring subscription via Stripe API.
+ * Pause a recurring subscription via retired provider API.
  * Sets pause_collection to "void" which stops billing but keeps the subscription.
  */
 export const pauseSubscription = action({
   args: {
     subscriptionId: v.string(),
-    stripeAccountId: v.string(),
+    retired_providerAccountId: v.string(),
   },
   handler: async (_ctx, args) => {
-    const stripe = initializeStripe();
+    const retired_provider = initializeretired provider();
 
-    await stripe.subscriptions.update(
+    await retired_provider.subscriptions.update(
       args.subscriptionId,
       { pause_collection: { behavior: "void" } },
-      { stripeAccount: args.stripeAccountId },
+      { retired_providerAccount: args.retired_providerAccountId },
     );
 
     return { success: true };
@@ -720,15 +720,15 @@ export const pauseSubscription = action({
 export const resumeSubscription = action({
   args: {
     subscriptionId: v.string(),
-    stripeAccountId: v.string(),
+    retired_providerAccountId: v.string(),
   },
   handler: async (_ctx, args) => {
-    const stripe = initializeStripe();
+    const retired_provider = initializeretired provider();
 
-    await stripe.subscriptions.update(
+    await retired_provider.subscriptions.update(
       args.subscriptionId,
-      { pause_collection: "" as Stripe.Emptyable<Stripe.SubscriptionUpdateParams.PauseCollection> },
-      { stripeAccount: args.stripeAccountId },
+      { pause_collection: "" as retired provider.Emptyable<retired provider.SubscriptionUpdateParams.PauseCollection> },
+      { retired_providerAccount: args.retired_providerAccountId },
     );
 
     return { success: true };
@@ -736,21 +736,21 @@ export const resumeSubscription = action({
 });
 
 /**
- * Cancel a recurring subscription via Stripe API.
+ * Cancel a recurring subscription via retired provider API.
  * Cancels at period end to avoid prorating issues.
  */
 export const cancelSubscription = action({
   args: {
     subscriptionId: v.string(),
-    stripeAccountId: v.string(),
+    retired_providerAccountId: v.string(),
   },
   handler: async (_ctx, args) => {
-    const stripe = initializeStripe();
+    const retired_provider = initializeretired provider();
 
-    await stripe.subscriptions.update(
+    await retired_provider.subscriptions.update(
       args.subscriptionId,
       { cancel_at_period_end: true },
-      { stripeAccount: args.stripeAccountId },
+      { retired_providerAccount: args.retired_providerAccountId },
     );
 
     return { success: true };
@@ -766,8 +766,8 @@ Expected: PASS
 **Step 4: Commit**
 
 ```bash
-git add apps/backend/convex/stripe/subscription_queries.ts apps/backend/convex/stripe/subscription_actions.ts
-git commit -m "feat: add subscription queries and Stripe management actions"
+git add apps/backend/convex/retired_provider/subscription_queries.ts apps/backend/convex/retired_provider/subscription_actions.ts
+git commit -m "feat: add subscription queries and retired provider management actions"
 ```
 
 ---
@@ -778,7 +778,7 @@ git commit -m "feat: add subscription queries and Stripe management actions"
 
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/index.tsx`
 
-**Context:** This is the main landing page for `/$slug/payments/`. It shows 4 revenue summary cards and a transactions table. It uses the `getRevenueStats` and `getTransactionList` queries from Task 4. The page gates on Stripe Connect status (same pattern as all other payment pages). Uses `PageWrapper` for the page layout.
+**Context:** This is the main landing page for `/$slug/payments/`. It shows 4 revenue summary cards and a transactions table. It uses the `getRevenueStats` and `getTransactionList` queries from Task 4. The page gates on retired provider Connect status (same pattern as all other payment pages). Uses `PageWrapper` for the page layout.
 
 **Step 1: Create the overview page**
 
@@ -808,7 +808,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useState } from "react";
@@ -844,18 +844,18 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 function PaymentsOverviewPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "open" | "void">("all");
 
   const stats = useQuery(
-    api.stripe.revenue_queries.getRevenueStats,
+    api.retired_provider.revenue_queries.getRevenueStats,
     connectedAccount?.status === "connected" ? { slug } : "skip",
   );
 
   const transactions = useQuery(
-    api.stripe.revenue_queries.getTransactionList,
+    api.retired_provider.revenue_queries.getTransactionList,
     connectedAccount?.status === "connected"
       ? { slug, statusFilter: statusFilter === "all" ? "all" : statusFilter }
       : "skip",
@@ -866,7 +866,7 @@ function PaymentsOverviewPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Payments Overview" />;
+    return <Noretired providerConnectState slug={slug} title="Payments Overview" />;
   }
 
   return (
@@ -1043,7 +1043,7 @@ git commit -m "feat: add payments overview page with revenue cards and transacti
 
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/subscriptions.tsx`
 
-**Context:** This page lists active recurring payment configs with their Stripe subscription IDs. Users can pause, resume, or cancel subscriptions. Uses the `getActiveSubscriptions` query from Task 5 and the `pauseSubscription`, `resumeSubscription`, `cancelSubscription` actions. Needs an `AlertDialog` for destructive cancel action (per ui-skills: "MUST use AlertDialog for destructive or irreversible actions"). The `stripeAccountId` needed for actions comes from the `connectedAccount` query's `account.stripeAccountId`.
+**Context:** This page lists active recurring payment configs with their retired provider subscription IDs. Users can pause, resume, or cancel subscriptions. Uses the `getActiveSubscriptions` query from Task 5 and the `pauseSubscription`, `resumeSubscription`, `cancelSubscription` actions. Needs an `AlertDialog` for destructive cancel action (per ui-skills: "MUST use AlertDialog for destructive or irreversible actions"). The `retired_providerAccountId` needed for actions comes from the `connectedAccount` query's `account.retired_providerAccountId`.
 
 **Step 1: Create the subscriptions page**
 
@@ -1079,7 +1079,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { Noretired providerConnectState } from "@/components/retired_provider/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -1102,17 +1102,17 @@ function formatInterval(interval: string, count: number) {
 function SubscriptionsPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const connectedAccount = useQuery(api.retired_provider.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   const subscriptions = useQuery(
-    api.stripe.subscription_queries.getActiveSubscriptions,
+    api.retired_provider.subscription_queries.getActiveSubscriptions,
     connectedAccount?.status === "connected" ? { slug } : "skip",
   );
 
-  const pauseSubscription = useAction(api.stripe.subscription_actions.pauseSubscription);
-  const resumeSubscription = useAction(api.stripe.subscription_actions.resumeSubscription);
-  const cancelSubscription = useAction(api.stripe.subscription_actions.cancelSubscription);
+  const pauseSubscription = useAction(api.retired_provider.subscription_actions.pauseSubscription);
+  const resumeSubscription = useAction(api.retired_provider.subscription_actions.resumeSubscription);
+  const cancelSubscription = useAction(api.retired_provider.subscription_actions.cancelSubscription);
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -1121,16 +1121,16 @@ function SubscriptionsPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Subscriptions" />;
+    return <Noretired providerConnectState slug={slug} title="Subscriptions" />;
   }
 
-  const stripeAccountId = connectedAccount.account?.stripeAccountId;
+  const retired_providerAccountId = connectedAccount.account?.retired_providerAccountId;
 
   const handlePause = async (subscriptionId: string) => {
-    if (!stripeAccountId) return;
+    if (!retired_providerAccountId) return;
     setLoadingId(subscriptionId);
     try {
-      await pauseSubscription({ subscriptionId, stripeAccountId });
+      await pauseSubscription({ subscriptionId, retired_providerAccountId });
       toast.success("Subscription paused");
     } catch {
       toast.error("Failed to pause subscription");
@@ -1140,10 +1140,10 @@ function SubscriptionsPage() {
   };
 
   const handleResume = async (subscriptionId: string) => {
-    if (!stripeAccountId) return;
+    if (!retired_providerAccountId) return;
     setLoadingId(subscriptionId);
     try {
-      await resumeSubscription({ subscriptionId, stripeAccountId });
+      await resumeSubscription({ subscriptionId, retired_providerAccountId });
       toast.success("Subscription resumed");
     } catch {
       toast.error("Failed to resume subscription");
@@ -1153,10 +1153,10 @@ function SubscriptionsPage() {
   };
 
   const handleCancel = async (subscriptionId: string) => {
-    if (!stripeAccountId) return;
+    if (!retired_providerAccountId) return;
     setLoadingId(subscriptionId);
     try {
-      await cancelSubscription({ subscriptionId, stripeAccountId });
+      await cancelSubscription({ subscriptionId, retired_providerAccountId });
       toast.success("Subscription will cancel at end of period");
     } catch {
       toast.error("Failed to cancel subscription");
@@ -1200,7 +1200,7 @@ function SubscriptionsPage() {
               </TableHeader>
               <TableBody>
                 {subscriptions.map((sub) => {
-                  const isLoading = loadingId === sub.stripeSubscriptionId;
+                  const isLoading = loadingId === sub.retired_providerSubscriptionId;
                   return (
                     <TableRow key={sub._id}>
                       <TableCell className="max-w-[200px] truncate font-medium">
@@ -1240,7 +1240,7 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() => handlePause(sub.stripeSubscriptionId)}
+                                  onClick={() => handlePause(sub.retired_providerSubscriptionId)}
                                   aria-label="Pause subscription"
                                 >
                                   <Pause className="size-3.5" />
@@ -1250,7 +1250,7 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() => handleResume(sub.stripeSubscriptionId)}
+                                  onClick={() => handleResume(sub.retired_providerSubscriptionId)}
                                   aria-label="Resume subscription"
                                 >
                                   <Play className="size-3.5" />
@@ -1278,7 +1278,7 @@ function SubscriptionsPage() {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Keep active</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleCancel(sub.stripeSubscriptionId)}
+                                      onClick={() => handleCancel(sub.retired_providerSubscriptionId)}
                                     >
                                       Cancel subscription
                                     </AlertDialogAction>
@@ -1379,7 +1379,7 @@ Expected: All commits pushed successfully
 
 | Area        | What Changed                                                                                                                                                                                                                    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sidebar** | New "Payments" section with CreditCard icon between Workspace and Settings. 7 items: Overview, Subscriptions, History, Payouts, Balances, Disputes, Tax Documents. Existing "Payments" in Settings renamed to "Stripe Connect". |
+| **Sidebar** | New "Payments" section with CreditCard icon between Workspace and Settings. 7 items: Overview, Subscriptions, History, Payouts, Balances, Disputes, Tax Documents. Existing "Payments" in Settings renamed to "retired provider Connect". |
 | **Routes**  | 8 new route files under `payments/`. 5 old settings routes deleted. 1 layout route.                                                                                                                                             |
 | **Backend** | 2 new query files: `revenue_queries.ts` (stats + transactions), `subscription_queries.ts` (active subscriptions). 1 new action file: `subscription_actions.ts` (pause/resume/cancel).                                           |
-| **Pages**   | Payments Overview with 4 revenue cards + filterable transaction table. Subscriptions page with pause/resume/cancel. 5 moved Stripe Connect pages.                                                                               |
+| **Pages**   | Payments Overview with 4 revenue cards + filterable transaction table. Subscriptions page with pause/resume/cancel. 5 moved retired provider Connect pages.                                                                               |

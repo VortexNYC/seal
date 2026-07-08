@@ -126,7 +126,9 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
     expect(sealAssertPresent(invoices[0]).amountDue).toBe(50000);
     expect(sealAssertPresent(invoices[0]).currency).toBe("usd");
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
-    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://billing.vortex.test/test");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
+      "https://billing.vortex.test/test",
+    );
   });
 
   test("document_invoices accepts Vortex Billing invoice records without provider IDs", async () => {

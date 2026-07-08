@@ -10,7 +10,7 @@ While server functions are ideal for internal RPC, server routes provide traditi
 
 ```tsx
 // Using server functions for webhook endpoints
-export const stripeWebhook = createServerFn({ method: "POST" }).handler(async ({ request }) => {
+export const retired_providerWebhook = createServerFn({ method: "POST" }).handler(async ({ request }) => {
   // Server functions aren't designed for raw request handling
   // No easy access to raw body for signature verification
   // Response format is JSON by default
@@ -65,17 +65,17 @@ export const Route = createFileRoute("/api/users")({
 ## Good Example: Webhook Handler
 
 ```tsx
-// routes/api/webhooks/stripe.ts
+// routes/api/webhooks/retired_provider.ts
 import { createFileRoute } from "@tanstack/react-router";
-import Stripe from "stripe";
+import retired provider from "retired_provider";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const retired_provider = new retired provider(process.env.RETIRED_PROVIDER_SECRET_KEY!);
 
-export const Route = createFileRoute("/api/webhooks/stripe")({
+export const Route = createFileRoute("/api/webhooks/retired_provider")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const signature = request.headers.get("stripe-signature");
+        const signature = request.headers.get("retired_provider-signature");
         if (!signature) {
           return new Response("Missing signature", { status: 400 });
         }
@@ -83,12 +83,12 @@ export const Route = createFileRoute("/api/webhooks/stripe")({
         // Get raw body for signature verification
         const rawBody = await request.text();
 
-        let event: Stripe.Event;
+        let event: retired provider.Event;
         try {
-          event = stripe.webhooks.constructEvent(
+          event = retired_provider.webhooks.constructEvent(
             rawBody,
             signature,
-            process.env.STRIPE_WEBHOOK_SECRET!,
+            process.env.RETIRED_PROVIDER_WEBHOOK_SECRET!,
           );
         } catch (err) {
           console.error("Webhook signature verification failed:", err);

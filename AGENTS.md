@@ -63,7 +63,7 @@ seal/
 
 - Raw Convex `query`/`mutation` without wrappers.
 - Modify `apps/backend/convex/schemas/subscription_coupons.ts` or `apps/backend/convex/schemas/subscription_promo_codes.ts` directly.
-- Update `creditsUsed` in `apps/backend/convex/stripe/handlers.ts` (preserve usage history).
+- Update `creditsUsed` in `apps/backend/convex/retired_provider/handlers.ts` (preserve usage history).
 - Edit generated files: `apps/backend/convex/_generated/*`, `apps/web/src/routeTree.gen.ts`, `apps/landing/src/routeTree.gen.ts`, `apps/landing/.source/*`.
 - Hand-edit generated API reference docs under `apps/landing/content/docs/api-reference/`; update `apps/landing/openapi.yaml` and regenerate instead.
 - Use CSS-class selectors in E2E tests.

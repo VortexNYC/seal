@@ -122,5 +122,5 @@ Core owns:
 ## Cloud Notes
 
 - Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.
-- Use staging for Stripe Connect, subscriptions, webhooks, billing, and payment verification.
+- Use staging for retired provider Connect, subscriptions, webhooks, billing, and payment verification.
 - Do not target the retired self-hosted Convex URLs.

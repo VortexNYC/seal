@@ -4,7 +4,7 @@
 
 Seal has moved its user-facing billing and merchant payment surfaces behind the Vortex Payments boundary.
 
-The migration is not "off Stripe" at the processor layer. Stripe is still the current processor adapter for hosted checkout, billing portal, Connect onboarding, invoices, webhooks, and processor IDs. That is acceptable only if Stripe stays behind `api.payments.*` and `apps/backend/convex/stripe/*`, never in Seal web routes or user-facing payment UI ownership.
+The migration is not "off retired provider" at the processor layer. retired provider is still the current processor adapter for hosted checkout, billing portal, Connect onboarding, invoices, webhooks, and processor IDs. That is acceptable only if retired provider stays behind `api.payments.*` and `apps/backend/convex/retired_provider/*`, never in Seal web routes or user-facing payment UI ownership.
 
 ## Seal Owns
 
@@ -22,23 +22,23 @@ The migration is not "off Stripe" at the processor layer. Stripe is still the cu
 
 ## Processor Adapter Owns
 
-- Stripe SDK calls while Stripe remains the current processor.
-- Stripe checkout session creation, billing portal session creation, Connect account/session/link creation, webhooks, and payment object creation.
-- Stripe-specific IDs and webhook event projections.
+- retired provider SDK calls while retired provider remains the current processor.
+- retired provider checkout session creation, billing portal session creation, Connect account/session/link creation, webhooks, and payment object creation.
+- retired provider-specific IDs and webhook event projections.
 
-The adapter boundary is currently in `apps/backend/convex/stripe/*`. The browser must not pass processor account IDs or import Stripe provider APIs directly.
+The adapter boundary is currently in `apps/backend/convex/retired_provider/*`. The browser must not pass processor account IDs or import retired provider provider APIs directly.
 
 ## Current Leaks To Keep Hammering
 
-- `apps/backend/convex/payments/subscription_actions.ts` still carries Stripe compatibility names for internal generated APIs and existing org customer fields, but it no longer imports or constructs the Stripe SDK. Hosted checkout, billing portal, and subscription mutation calls now delegate to `apps/backend/convex/stripe/subscription_processor.ts`.
-- Core persisted tables and fields still carry Stripe names such as `stripe_accounts`, `stripeCustomerId`, `stripeInvoiceId`, and `stripeSubscriptionId`. Keep them while they are existing data contracts, but new Vortex-facing code should use processor/provider-neutral names at the boundary.
-- E2E helpers still say `seedStripeCustomerForE2E` because the current processor is Stripe. That is acceptable for adapter tests; Vortex-facing tests should assert Vortex behavior, not Stripe labels.
+- `apps/backend/convex/payments/subscription_actions.ts` still carries retired provider compatibility names for internal generated APIs and existing org customer fields, but it no longer imports or constructs the retired provider SDK. Hosted checkout, billing portal, and subscription mutation calls now delegate to `apps/backend/convex/retired_provider/subscription_processor.ts`.
+- Core persisted tables and fields still carry retired provider names such as `retired_provider_accounts`, `retired_providerCustomerId`, `retired_providerInvoiceId`, and `retired_providerSubscriptionId`. Keep them while they are existing data contracts, but new Vortex-facing code should use processor/provider-neutral names at the boundary.
+- E2E helpers still say `seedretired providerCustomerForE2E` because the current processor is retired provider. That is acceptable for adapter tests; Vortex-facing tests should assert Vortex behavior, not retired provider labels.
 
 ## Proved Today
 
 - Seal billing settings render through `@vortex/payments/react` and `api.payments.billing_queries`.
 - Billing portal and checkout are both reachable through `api.payments.subscription_actions`.
-- New/free organizations no longer fail customer portal creation just because `organizations.stripeCustomerId` is empty.
+- New/free organizations no longer fail customer portal creation just because `organizations.retired_providerCustomerId` is empty.
 - Merchant settings render Vortex Connect and Vortex fee policy surfaces.
 - Operational routes render Vortex surfaces or Vortex no-account states for payments overview, balances, payouts, history, disputes, tax, and subscriptions.
 - The full billing E2E dependency chain passes after fixing seeded API document ownership in the E2E Convex helpers.
@@ -53,4 +53,4 @@ The adapter boundary is currently in `apps/backend/convex/stripe/*`. The browser
 
 ## Remaining Blockers
 
-- Full provider independence still requires a later data-contract migration from persisted `stripe*` field names to provider-neutral names.
+- Full provider independence still requires a later data-contract migration from persisted `retired_provider*` field names to provider-neutral names.

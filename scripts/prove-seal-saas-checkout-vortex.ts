@@ -207,7 +207,10 @@ function readStringArray(value: string | undefined, label: string): readonly str
   const parsed = JSON.parse(value) as Json;
   assert(Array.isArray(parsed), `Expected ${label} to be a JSON string array`);
   const entries = parsed.map((entry, index) => {
-    assert(typeof entry === "string" && entry.length > 0, `Expected ${label}[${index}] to be a string`);
+    assert(
+      typeof entry === "string" && entry.length > 0,
+      `Expected ${label}[${index}] to be a string`,
+    );
     return entry;
   });
   return entries;
@@ -415,19 +418,18 @@ async function readProofConfig(): Promise<ProofConfig> {
   const priceId = priceMap[lookupKey];
   assert(priceId !== undefined, `VORTEX_BILLING_SAAS_PRICE_MAP is missing ${lookupKey}`);
 
-  const selected =
-    selectMappedProofOrganization({
+  const selected = selectMappedProofOrganization({
+    explicitOrganizationId,
+    allowlistedOrganizationIds,
+    accountMap,
+    defaultBillingAccountId,
+  }) ?? {
+    organizationId: selectOrganizationForProvisioning({
       explicitOrganizationId,
       allowlistedOrganizationIds,
-      accountMap,
-      defaultBillingAccountId,
-    }) ?? {
-      organizationId: selectOrganizationForProvisioning({
-        explicitOrganizationId,
-        allowlistedOrganizationIds,
-      }),
-      billingAccountId: "",
-    };
+    }),
+    billingAccountId: "",
+  };
   const billingAccountId =
     selected.billingAccountId.length > 0
       ? selected.billingAccountId

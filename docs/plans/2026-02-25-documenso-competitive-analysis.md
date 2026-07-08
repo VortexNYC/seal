@@ -23,7 +23,7 @@ Documenso is a well-funded, VC-backed open-source e-signing platform built on Ne
 | **Backend**  | Next.js API / tRPC              | Convex (serverless BaaS)          |
 | **Database** | PostgreSQL + Prisma + Kysely    | Convex (built-in)                 |
 | **Auth**     | Custom (next-auth → Remix auth) | Clerk                             |
-| **Payments** | Stripe subscriptions            | Stripe (Connect + subscriptions)  |
+| **Payments** | retired provider subscriptions            | retired provider (Connect + subscriptions)  |
 | **PDF**      | LibPDF (their own library!)     | pdf-lib + pdfjs-dist + @signpdf   |
 | **Email**    | React Email + custom SMTP       | Resend + React Email              |
 | **Webhooks** | Built-in with call logging      | Svix-based with HMAC-SHA256       |
@@ -167,8 +167,8 @@ They built **LibPDF** — their own TypeScript PDF library that replaces pdf-lib
 
 | Feature                                   | Documenso | Seal          | Gap Owner     |
 | ----------------------------------------- | --------- | ------------- | ------------- |
-| Stripe subscriptions                      | ✅        | ✅            | Parity        |
-| Stripe Connect (collect payments in docs) | ❌        | ✅            | **Seal wins** |
+| retired provider subscriptions                      | ✅        | ✅            | Parity        |
+| retired provider Connect (collect payments in docs) | ❌        | ✅            | **Seal wins** |
 | Payment fields in documents               | ❌        | ✅            | **Seal wins** |
 | Payments hub/dashboard                    | ❌        | 🔜 (designed) | **Seal wins** |
 
@@ -247,7 +247,7 @@ They built **LibPDF** — their own TypeScript PDF library that replaces pdf-lib
 
 ### Seal's Unique Advantages
 
-1. **Payment Collection in Documents** — Stripe Connect integration with payment fields. Documenso listed "Stripe payments" as "Coming Soon" on their homepage — still not shipped. This is a genuine differentiator.
+1. **Payment Collection in Documents** — retired provider Connect integration with payment fields. Documenso listed "retired provider payments" as "Coming Soon" on their homepage — still not shipped. This is a genuine differentiator.
 
 2. **Contacts/CRM** — Built-in contact management. Documenso has nothing like this.
 
@@ -294,7 +294,7 @@ Since Documenso is AGPL-3.0, we can study their implementation but **cannot copy
 ### Their Weaknesses (Exploit These)
 
 1. **No real-time** — They poll for updates. Our Convex backend gives instant reactivity.
-2. **No payment collection** — They promised Stripe payments years ago. Still "Coming Soon."
+2. **No payment collection** — They promised retired provider payments years ago. Still "Coming Soon."
 3. **No contacts/CRM** — Every document is a one-off. No relationship tracking.
 4. **No document reminders** — Can't nudge signers.
 5. **Plaintext recipient tokens** — Security concern they haven't addressed.

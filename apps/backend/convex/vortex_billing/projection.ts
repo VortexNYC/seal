@@ -407,7 +407,10 @@ export const projectSubscriptionUpdated = internalMutation({
       duplicate: false,
       organizationId: args.sealOrganizationId,
       externalSubscriptionId: args.subscriptionExternalId,
-      activeLegacyProviderIdPresent: await hasActiveLegacyProviderShapedSubscription(ctx, args.sealOrganizationId),
+      activeLegacyProviderIdPresent: await hasActiveLegacyProviderShapedSubscription(
+        ctx,
+        args.sealOrganizationId,
+      ),
     };
   },
 });

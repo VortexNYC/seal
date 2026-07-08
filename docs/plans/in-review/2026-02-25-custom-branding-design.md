@@ -12,7 +12,7 @@ Allow organizations to customize the signing experience with their own branding 
 - Signing page (`/sign/$token`) hardcodes `<SealLogo>` in the header
 - Email templates use `FROM_EMAIL = "Seal <no-reply@seal.nyc>"` — no per-org customization
 - No brand color, font, or custom domain support anywhere
-- Stripe appearance is hardcoded in `stripe-theme.ts`
+- retired provider appearance is hardcoded in `retired_provider-theme.ts`
 
 ## Design
 
@@ -53,7 +53,7 @@ brandingSettings: v.optional(
 | **Reminder emails**                  | Same as invitation emails.                                                                              |
 | **Completion emails**                | Same branding.                                                                                          |
 | **Certificate of completion PDF**    | Org logo in header instead of Seal logo (if logo uploaded).                                             |
-| **Signing page Stripe payment form** | Brand color passed to Stripe `appearance.variables.colorPrimary`.                                       |
+| **Signing page retired provider payment form** | Brand color passed to retired provider `appearance.variables.colorPrimary`.                                       |
 
 ### What Branding Does NOT Affect (v1)
 

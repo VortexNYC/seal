@@ -38,7 +38,7 @@
 
 - Each phase is ADDITIVE and must `typecheck` green before the next. Clerk is torn out (P6) only AFTER vortex-auth is proven live.
 - Copy/adapt the **crm blueprint** (B2B, proven): `~/projects/crm/convex/{convex.config.ts, betterAuthClient.ts, auth.config.ts, betterAuth.ts, lib/canonicalGlue.ts, lib/authIdentities.ts}` and crm `users.ts` (`upsertFromBetterAuth`/`deleteFromBetterAuth`).
-- Keep Seal app-side: org anchor + rich org fields (branding/signing/security/ai/stripeCustomerId), the 5-tier roles + ~40 permissions + custom roles (`auth.utils.ts`). Component owns membership/role/invitation/api-key TRUTH.
+- Keep Seal app-side: org anchor + rich org fields (branding/signing/security/ai/retired_providerCustomerId), the 5-tier roles + ~40 permissions + custom roles (`auth.utils.ts`). Component owns membership/role/invitation/api-key TRUTH.
 - Run from `apps/backend`: `bunx convex dev --once` to codegen after component/schema changes. Test UI via dev-browser at `http://seal.localhost:1355` (`portless seal ol bun run dev`).
 
 ## Phases
@@ -97,7 +97,7 @@ API keys fully on the vortexAuth component (Clerk out of the API-key path):
 
 ## P6 — DONE (dead-code teardown, commit `8c4a645`), verified
 
-Removed the now-dead Clerk surface from the Seal app: DELETED `clerk_webhooks.ts` (~1033L) + its test; stripped the `/clerk-webhooks` http route + all handlers/types/helpers from `http.ts` (kept Stripe + MCP-oauth + REST routes); removed dead `recoverOrganizationSyncFromClerk`/`setActiveOrganizationFromClerk` from `check_membership.ts`; removed Clerk→Convex backfill actions from `sync_external_data.ts` (kept Stripe sync); `auth.config.ts` now Better-Auth-provider-only. tsc/lint/1359 tests green; `convex dev --once` deploys clean.
+Removed the now-dead Clerk surface from the Seal app: DELETED `clerk_webhooks.ts` (~1033L) + its test; stripped the `/clerk-webhooks` http route + all handlers/types/helpers from `http.ts` (kept retired provider + MCP-oauth + REST routes); removed dead `recoverOrganizationSyncFromClerk`/`setActiveOrganizationFromClerk` from `check_membership.ts`; removed Clerk→Convex backfill actions from `sync_external_data.ts` (kept retired provider sync); `auth.config.ts` now Better-Auth-provider-only. tsc/lint/1359 tests green; `convex dev --once` deploys clean.
 
 - **P6 REMAINDER folded into P7/P8 (entangled, NOT yet removed):** `organizations/actions.ts` Clerk invite actions (need P7 invitation-component routing first), the JWT/OAuth Clerk path in `api/context.ts` (`verifyToken`/`verifyOAuthAccessToken` — serves MCP; needs MCP→Better-Auth or a session-token path), old `api_keys/actions.ts`, `@clerk/backend` dep (used by those), `CLERK_*` env, frontend `@clerk/*` deps (`@clerk/testing` used by e2e — rewrite e2e in P8; `@clerk/clerk-react`/`@clerk/themes` now import-free but kept until e2e migrates), dead `svix` backend dep.
 
