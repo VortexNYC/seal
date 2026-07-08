@@ -3,7 +3,7 @@
  * This is a lightweight query that doesn't require organization context
  */
 
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { resolveComponentMemberships } from "./lib/componentOrgReads";
@@ -135,6 +135,62 @@ export const ensureActiveOrganization = mutation({
       activeOrganizationId: organization._id,
       activeOrganizationSlug: organization.slug,
       wasFixed: true,
+    };
+  },
+});
+
+export const setActiveOrganizationBySlug = mutation({
+  args: {
+    organizationSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .first();
+
+    if (!user) {
+      throw new ConvexError("User not found");
+    }
+
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
+      .first();
+
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+
+    if (!organization.vortexAuthOrganizationId) {
+      throw new ConvexError("Organization is not anchored to Vortex Auth");
+    }
+
+    const memberships = await resolveComponentMemberships(ctx, user);
+    const membership = memberships.find(
+      (candidate) =>
+        candidate.organizationId === organization._id && candidate.status === "active",
+    );
+
+    if (!membership) {
+      throw new ConvexError("Organization mismatch");
+    }
+
+    await ctx.db.patch(user._id, {
+      activeOrganizationId: organization._id,
+      activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      activeOrganizationId: organization._id,
+      activeOrganizationSlug: organization.slug,
     };
   },
 });
