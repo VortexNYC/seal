@@ -72,6 +72,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Production Vortex document-payment routing is not configured.
 - Production real-money proof is not complete.
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
+- Read-only production data audit on 2026-07-08 found the old retired-provider webhook-events table still has 22 rows; the retired-provider account table is empty, and checked active tables had no retired-token docs or were empty. Agents must not retire this production residue until production proof passes.
 - New live document-payment proof runs seed `VORTEX_BILLING_DOCUMENT_*` maps instead of shared SaaS maps.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
 - `bun run prove:seal-vortex-migration-local` statically fails if known live or env-mutating proof commands are added to the local non-mutating gate.
