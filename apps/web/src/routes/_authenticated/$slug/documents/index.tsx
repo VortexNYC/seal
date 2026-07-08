@@ -118,6 +118,8 @@ const fuseOptions = {
   minMatchCharLength: 2,
 };
 
+const DOCUMENTS_PER_PAGE = 20;
+
 // SEA-73: Highlight matching text component
 function HighlightedText({
   text,
@@ -231,12 +233,157 @@ type DocumentListActions = {
   }) => void;
 };
 
+type ConfirmDialogState = {
+  readonly open: boolean;
+  readonly type: "delete" | "send" | "cancel";
+  readonly documentId: Id<"documents"> | null;
+};
+
+type ConfirmDialogContent = {
+  readonly title: string;
+  readonly description: string;
+};
+
+type DocumentsListData = {
+  readonly currentPage: number;
+  readonly hasFiltersOrSearch: boolean;
+  readonly matchesMap: Map<Id<"documents">, readonly FuseResultMatch[] | undefined>;
+  readonly paginatedDocuments: readonly DocumentListItem[];
+  readonly setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  readonly sortedDocuments: readonly DocumentListItem[];
+  readonly subfolders: readonly FolderListItem[] | undefined;
+  readonly totalPages: number;
+};
+
+type SortHeaderProps = {
+  readonly field: SortField;
+  readonly label: string;
+  readonly onSortChange: (field: SortField) => void;
+  readonly sortDirection: SortDirection;
+  readonly sortField: SortField;
+};
+
+function defaultConfirmDialog(): ConfirmDialogState {
+  return { open: false, type: "delete", documentId: null };
+}
+
+function confirmDialogContent(type: ConfirmDialogState["type"]): ConfirmDialogContent {
+  switch (type) {
+    case "delete":
+      return {
+        title: "Delete Document",
+        description: "Are you sure you want to delete this document? This action cannot be undone.",
+      };
+    case "send":
+      return {
+        title: "Send Document",
+        description: "Send this document? Once sent, recipients will be notified to take action.",
+      };
+    case "cancel":
+      return {
+        title: "Cancel Document",
+        description:
+          "Cancel this document? This action cannot be undone and recipients will be notified.",
+      };
+  }
+}
+
+function confirmDialogActionLabel(type: ConfirmDialogState["type"]): string {
+  if (type === "delete") return "Delete";
+  return type === "send" ? "Send" : "Cancel Document";
+}
+
+function confirmDialogActionVariant(type: ConfirmDialogState["type"]): "default" | "destructive" {
+  return type === "delete" || type === "cancel" ? "destructive" : "default";
+}
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
+}
+
+function filterDocumentsByStatusAndDate(
+  documents: readonly DocumentListItem[],
+  workflowStatusFilter: WorkflowStatusFilter,
+  dateRange: DateRange | undefined,
+): readonly DocumentListItem[] {
+  return documents.filter((doc) => {
+    const workflowStatusMatches =
+      workflowStatusFilter === "all" || (doc.workflowStatus ?? "draft") === workflowStatusFilter;
+    return workflowStatusMatches && documentMatchesDateRange(doc, dateRange);
+  });
+}
+
+function documentMatchesDateRange(
+  doc: DocumentListItem,
+  dateRange: DateRange | undefined,
+): boolean {
+  const fromTime = dateRange?.from ? dayStart(dateRange.from).getTime() : undefined;
+  const toTime = dateRange?.to ? dayEnd(dateRange.to).getTime() : undefined;
+  return (
+    (fromTime === undefined || doc.createdAt >= fromTime) &&
+    (toTime === undefined || doc.createdAt <= toTime)
+  );
+}
+
+function dayStart(date: Date): Date {
+  const fromDate = new Date(date);
+  fromDate.setHours(0, 0, 0, 0);
+  return fromDate;
+}
+
+function dayEnd(date: Date): Date {
+  const toDate = new Date(date);
+  toDate.setHours(23, 59, 59, 999);
+  return toDate;
+}
+
+function sortDocuments(
+  documents: readonly DocumentListItem[],
+  searchQuery: string,
+  sortField: SortField,
+  sortDirection: SortDirection,
+): readonly DocumentListItem[] {
+  if (searchQuery.trim() && sortField === "createdAt") return documents;
+  return [...documents].sort((a, b) => documentSortComparison(a, b, sortField, sortDirection));
+}
+
+function documentSortComparison(
+  a: DocumentListItem,
+  b: DocumentListItem,
+  sortField: SortField,
+  sortDirection: SortDirection,
+): number {
+  const comparison = documentSortValue(a, b, sortField);
+  return sortDirection === "asc" ? comparison : -comparison;
+}
+
+function documentSortValue(a: DocumentListItem, b: DocumentListItem, sortField: SortField): number {
+  if (sortField === "name") return a.name.localeCompare(b.name);
+  if (sortField === "createdAt") return a.createdAt - b.createdAt;
+  return (a.workflowStatus ?? "draft").localeCompare(b.workflowStatus ?? "draft");
+}
+
+function paginatedDocuments(
+  documents: readonly DocumentListItem[],
+  currentPage: number,
+): readonly DocumentListItem[] {
+  const startIndex = (currentPage - 1) * DOCUMENTS_PER_PAGE;
+  return documents.slice(startIndex, startIndex + DOCUMENTS_PER_PAGE);
+}
+
+function buildMatchesMap(
+  searchResults: readonly {
+    readonly item: DocumentListItem;
+    readonly matches?: readonly FuseResultMatch[];
+  }[],
+): Map<Id<"documents">, readonly FuseResultMatch[] | undefined> {
+  const map = new Map<Id<"documents">, readonly FuseResultMatch[] | undefined>();
+  for (const result of searchResults) map.set(result.item._id, result.matches);
+  return map;
 }
 
 function formatDate(timestamp: number): string {
@@ -600,6 +747,488 @@ function DocumentActionsMenu({
   );
 }
 
+function useDocumentsListData({
+  dateRange,
+  filter,
+  folderId,
+  organizationId,
+  searchQuery,
+  sortDirection,
+  sortField,
+  workflowStatusFilter,
+}: Pick<
+  DocumentsListProps,
+  | "dateRange"
+  | "filter"
+  | "folderId"
+  | "organizationId"
+  | "searchQuery"
+  | "sortDirection"
+  | "sortField"
+  | "workflowStatusFilter"
+>): DocumentsListData & { readonly refetch: () => void } {
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: allDocuments, refetch } = useSuspenseQuery(
+    convexQuery(api.documents.queries.listDocuments, {
+      organizationId,
+      filter,
+      folderId,
+      rootOnly: !folderId,
+    }),
+  );
+  const subfolders = useQuery(api.folders.queries.listFolders, {
+    organizationId,
+    type: "document" as const,
+    parentId: folderId,
+  });
+
+  const filteredByStatus = useMemo(
+    () => filterDocumentsByStatusAndDate(allDocuments, workflowStatusFilter, dateRange),
+    [allDocuments, workflowStatusFilter, dateRange],
+  );
+  const fuse = useMemo(() => new Fuse(filteredByStatus, fuseOptions), [filteredByStatus]);
+  const searchResults = useMemo(
+    () =>
+      searchQuery.trim()
+        ? fuse.search(searchQuery)
+        : filteredByStatus.map((doc) => ({ item: doc, matches: undefined })),
+    [fuse, searchQuery, filteredByStatus],
+  );
+  const filteredDocuments = useMemo(
+    () => searchResults.map((result) => result.item),
+    [searchResults],
+  );
+  const matchesMap = useMemo(() => buildMatchesMap(searchResults), [searchResults]);
+  const sortedDocuments = useMemo(
+    () => sortDocuments(filteredDocuments, searchQuery, sortField, sortDirection),
+    [filteredDocuments, sortField, sortDirection, searchQuery],
+  );
+  const totalPages = Math.ceil(sortedDocuments.length / DOCUMENTS_PER_PAGE);
+  const visibleDocuments = useMemo(
+    () => paginatedDocuments(sortedDocuments, currentPage),
+    [sortedDocuments, currentPage],
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery, dateRange]);
+
+  return {
+    currentPage,
+    hasFiltersOrSearch: Boolean(
+      searchQuery.trim() ||
+      filter !== "all" ||
+      workflowStatusFilter !== "all" ||
+      dateRange?.from ||
+      dateRange?.to,
+    ),
+    matchesMap,
+    paginatedDocuments: visibleDocuments,
+    refetch,
+    setCurrentPage,
+    sortedDocuments,
+    subfolders,
+    totalPages,
+  };
+}
+
+function DocumentsListContent({
+  data,
+  delegateOwnership,
+  documentActions,
+  onFolderNavigate,
+  onSortChange,
+  onUploadClick,
+  searchQuery,
+  sortDirection,
+  sortField,
+  viewMode,
+}: {
+  readonly data: DocumentsListData;
+  readonly delegateOwnership: boolean;
+  readonly documentActions: DocumentListActions;
+  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onSortChange: (field: SortField) => void;
+  readonly onUploadClick: () => void;
+  readonly searchQuery: string;
+  readonly sortDirection: SortDirection;
+  readonly sortField: SortField;
+  readonly viewMode: ViewMode;
+}) {
+  if (data.sortedDocuments.length === 0 && (!data.subfolders || data.subfolders.length === 0)) {
+    return (
+      <DocumentsEmptyState
+        hasFiltersOrSearch={data.hasFiltersOrSearch}
+        onUploadClick={onUploadClick}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {viewMode === "table" ? (
+        <DocumentsTable
+          data={data}
+          delegateOwnership={delegateOwnership}
+          documentActions={documentActions}
+          onFolderNavigate={onFolderNavigate}
+          onSortChange={onSortChange}
+          searchQuery={searchQuery}
+          sortDirection={sortDirection}
+          sortField={sortField}
+        />
+      ) : (
+        <DocumentsGrid
+          data={data}
+          documentActions={documentActions}
+          onFolderNavigate={onFolderNavigate}
+          searchQuery={searchQuery}
+        />
+      )}
+      <DocumentsPagination data={data} />
+    </div>
+  );
+}
+
+function DocumentsEmptyState({
+  hasFiltersOrSearch,
+  onUploadClick,
+}: {
+  readonly hasFiltersOrSearch: boolean;
+  readonly onUploadClick: () => void;
+}) {
+  return hasFiltersOrSearch ? (
+    <EmptyState
+      icon={SearchIcon}
+      title="No documents found"
+      description="Try adjusting your search or filters to find what you're looking for."
+    />
+  ) : (
+    <EmptyState
+      icon={FileTextIcon}
+      title="No documents yet"
+      description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
+      action={{ label: "Upload Document", onClick: onUploadClick, icon: UploadIcon }}
+    />
+  );
+}
+
+function DocumentsTable({
+  data,
+  delegateOwnership,
+  documentActions,
+  onFolderNavigate,
+  onSortChange,
+  searchQuery,
+  sortDirection,
+  sortField,
+}: {
+  readonly data: DocumentsListData;
+  readonly delegateOwnership: boolean;
+  readonly documentActions: DocumentListActions;
+  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onSortChange: (field: SortField) => void;
+  readonly searchQuery: string;
+  readonly sortDirection: SortDirection;
+  readonly sortField: SortField;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table className="min-w-[600px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[80px] sm:w-[100px]">Thumbnail</TableHead>
+            <TableHead>
+              <SortHeader
+                field="name"
+                label="Title"
+                onSortChange={onSortChange}
+                sortDirection={sortDirection}
+                sortField={sortField}
+              />
+            </TableHead>
+            <TableHead className="hidden sm:table-cell">
+              <SortHeader
+                field="createdAt"
+                label="Upload Date"
+                onSortChange={onSortChange}
+                sortDirection={sortDirection}
+                sortField={sortField}
+              />
+            </TableHead>
+            <TableHead>
+              <SortHeader
+                field="workflowStatus"
+                label="Status"
+                onSortChange={onSortChange}
+                sortDirection={sortDirection}
+                sortField={sortField}
+              />
+            </TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {!searchQuery.trim() &&
+            data.subfolders?.map((folder) => (
+              <FolderTableRow
+                key={folder._id}
+                folder={folder}
+                onFolderNavigate={onFolderNavigate}
+              />
+            ))}
+          {data.paginatedDocuments.map((doc) => (
+            <DocumentTableRow
+              key={doc._id}
+              actions={documentActions}
+              delegateOwnership={delegateOwnership}
+              doc={doc}
+              matches={data.matchesMap.get(doc._id)}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function DocumentsGrid({
+  data,
+  documentActions,
+  onFolderNavigate,
+  searchQuery,
+}: {
+  readonly data: DocumentsListData;
+  readonly documentActions: DocumentListActions;
+  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly searchQuery: string;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {!searchQuery.trim() &&
+        data.subfolders?.map((folder) => (
+          <FolderGridCard key={folder._id} folder={folder} onFolderNavigate={onFolderNavigate} />
+        ))}
+      {data.paginatedDocuments.map((doc) => (
+        <DocumentGridCard
+          key={doc._id}
+          actions={documentActions}
+          doc={doc}
+          matches={data.matchesMap.get(doc._id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
+  if (data.totalPages <= 1) return null;
+  return (
+    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+      <p className="text-muted-foreground text-center text-sm sm:text-left" aria-live="polite">
+        Showing {(data.currentPage - 1) * DOCUMENTS_PER_PAGE + 1} to{" "}
+        {Math.min(data.currentPage * DOCUMENTS_PER_PAGE, data.sortedDocuments.length)} of{" "}
+        {data.sortedDocuments.length} documents
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => data.setCurrentPage((prev) => Math.max(1, prev - 1))}
+          disabled={data.currentPage === 1}
+          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+          <span className="hidden sm:inline">Previous</span>
+        </Button>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: data.totalPages }, (_, index) => index + 1).map((page) => (
+            <Button
+              key={page}
+              variant={page === data.currentPage ? "default" : "outline"}
+              size="sm"
+              onClick={() => data.setCurrentPage(page)}
+              className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
+            >
+              {page}
+            </Button>
+          ))}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => data.setCurrentPage((prev) => Math.min(data.totalPages, prev + 1))}
+          disabled={data.currentPage === data.totalPages}
+          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+        >
+          <span className="hidden sm:inline">Next</span>
+          <ChevronRightIcon className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SortHeader({ field, label, onSortChange, sortDirection, sortField }: SortHeaderProps) {
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => onSortChange(field)}
+      className="h-auto p-0 hover:bg-transparent"
+    >
+      <span className="font-medium">{label}</span>
+      {sortField === field &&
+        (sortDirection === "asc" ? (
+          <ArrowUpIcon className="ml-2 h-4 w-4" />
+        ) : (
+          <ArrowDownIcon className="ml-2 h-4 w-4" />
+        ))}
+    </Button>
+  );
+}
+
+function DocumentConfirmationDialog({
+  confirmDialog,
+  onConfirm,
+  setConfirmDialog,
+}: {
+  readonly confirmDialog: ConfirmDialogState;
+  readonly onConfirm: () => Promise<void>;
+  readonly setConfirmDialog: React.Dispatch<React.SetStateAction<ConfirmDialogState>>;
+}) {
+  const content = confirmDialogContent(confirmDialog.type);
+  return (
+    <AlertDialog
+      open={confirmDialog.open}
+      onOpenChange={(open) => setConfirmDialog({ ...defaultConfirmDialog(), open })}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{content.title}</AlertDialogTitle>
+          <AlertDialogDescription>{content.description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            variant={confirmDialogActionVariant(confirmDialog.type)}
+          >
+            {confirmDialogActionLabel(confirmDialog.type)}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function useDocumentListActions({
+  onMoveToFolder,
+  onShareClick,
+  onTransferOwnership,
+  refetch,
+}: Pick<DocumentsListProps, "onMoveToFolder" | "onShareClick" | "onTransferOwnership"> & {
+  readonly refetch: () => void;
+}): {
+  readonly confirmDialog: ConfirmDialogState;
+  readonly documentActions: DocumentListActions;
+  readonly handleConfirmAction: () => Promise<void>;
+  readonly setConfirmDialog: React.Dispatch<React.SetStateAction<ConfirmDialogState>>;
+} {
+  const { slug } = Route.useParams();
+  const router = useRouter();
+  const { convexClient } = useRouteContext({ from: "__root__" });
+  const { track } = useAnalytics();
+  const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
+  const sendDocument = useMutation(api.documents.mutations.sendDocument);
+  const cancelDocument = useMutation(api.documents.mutations.cancelDocument);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(defaultConfirmDialog());
+
+  const openConfirmDialog = (type: ConfirmDialogState["type"], documentId: Id<"documents">) => {
+    setConfirmDialog({ open: true, type, documentId });
+  };
+  const handleOpenDocument = (documentId: Id<"documents">) => {
+    router.navigate({ to: "/$slug/documents/$documentId", params: { slug, documentId } });
+  };
+  const handleDownload = async (documentId: Id<"documents">) => {
+    try {
+      const url = await convexClient.query(api.documents.queries.getDocumentUrl, { documentId });
+      track.documentDownloaded({ documentId });
+      window.open(url, "_blank");
+    } catch (_error) {
+      toast.error("Failed to download document");
+    }
+  };
+  const handleConfirmAction = async () => {
+    if (!confirmDialog.documentId) return;
+    try {
+      await runConfirmedDocumentAction({
+        cancelDocument,
+        confirmDialog,
+        deleteDocument,
+        refetch,
+        sendDocument,
+        track,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : `Failed to ${confirmDialog.type} document`;
+      toast.error(errorMessage);
+    } finally {
+      setConfirmDialog(defaultConfirmDialog());
+    }
+  };
+
+  return {
+    confirmDialog,
+    documentActions: {
+      openDocument: handleOpenDocument,
+      sendDocument: (documentId) => openConfirmDialog("send", documentId),
+      cancelDocument: (documentId) => openConfirmDialog("cancel", documentId),
+      downloadDocument: handleDownload,
+      shareDocument: onShareClick,
+      moveToFolder: onMoveToFolder,
+      deleteDocument: (documentId) => openConfirmDialog("delete", documentId),
+      transferOwnership: onTransferOwnership,
+    },
+    handleConfirmAction,
+    setConfirmDialog,
+  };
+}
+
+async function runConfirmedDocumentAction({
+  cancelDocument,
+  confirmDialog,
+  deleteDocument,
+  refetch,
+  sendDocument,
+  track,
+}: {
+  readonly cancelDocument: (args: { readonly documentId: Id<"documents"> }) => Promise<unknown>;
+  readonly confirmDialog: ConfirmDialogState;
+  readonly deleteDocument: (args: { readonly documentId: Id<"documents"> }) => Promise<unknown>;
+  readonly refetch: () => void;
+  readonly sendDocument: (args: { readonly documentId: Id<"documents"> }) => Promise<unknown>;
+  readonly track: ReturnType<typeof useAnalytics>["track"];
+}) {
+  const documentId = confirmDialog.documentId;
+  if (!documentId) return;
+  if (confirmDialog.type === "delete") {
+    await deleteDocument({ documentId });
+    track.documentDeleted({ documentId });
+    toast.success("Document deleted");
+  } else if (confirmDialog.type === "send") {
+    await sendDocument({ documentId });
+    track.documentSent({ documentId });
+    toast.success("Document sent successfully");
+  } else {
+    await cancelDocument({ documentId });
+    track.documentCancelled({ documentId });
+    toast.success("Document cancelled");
+  }
+  refetch();
+}
+
 function DocumentsList({
   organizationId,
   filter,
@@ -618,435 +1247,43 @@ function DocumentsList({
   delegateOwnership,
   onTransferOwnership,
 }: DocumentsListProps) {
-  const { slug } = Route.useParams();
-  const router = useRouter();
-  const { convexClient } = useRouteContext({ from: "__root__" });
-  const { track } = useAnalytics();
-
-  // Pagination state (SEA-68: 20 items per page)
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 20;
-
-  const { data: allDocuments, refetch } = useSuspenseQuery(
-    convexQuery(api.documents.queries.listDocuments, {
-      organizationId,
-      filter,
-      folderId,
-      rootOnly: !folderId,
-    }),
-  );
-
-  // Query subfolders at the current level for inline folder rows
-  const subfolders = useQuery(api.folders.queries.listFolders, {
+  const data = useDocumentsListData({
+    dateRange,
+    filter,
+    folderId,
     organizationId,
-    type: "document" as const,
-    parentId: folderId,
+    searchQuery,
+    sortDirection,
+    sortField,
+    workflowStatusFilter,
   });
-
-  // Filter documents by workflow status on the client side
-  const filteredByStatus = useMemo(() => {
-    let filtered = allDocuments;
-
-    // Apply workflow status filter
-    if (workflowStatusFilter !== "all") {
-      filtered = filtered.filter((doc) => {
-        const docWorkflowStatus = doc.workflowStatus ?? "draft";
-        return docWorkflowStatus === workflowStatusFilter;
-      });
-    }
-
-    // SEA-74: Apply date range filter
-    if (dateRange?.from) {
-      const fromDate = new Date(dateRange.from);
-      fromDate.setHours(0, 0, 0, 0);
-      filtered = filtered.filter((doc) => doc.createdAt >= fromDate.getTime());
-    }
-    if (dateRange?.to) {
-      const toDate = new Date(dateRange.to);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((doc) => doc.createdAt <= toDate.getTime());
-    }
-
-    return filtered;
-  }, [allDocuments, workflowStatusFilter, dateRange]);
-
-  // SEA-73: Fuzzy search with Fuse.js
-  const fuse = useMemo(() => new Fuse(filteredByStatus, fuseOptions), [filteredByStatus]);
-
-  // SEA-73: Apply fuzzy search and track matches for highlighting
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) {
-      // No search - return all documents without matches
-      return filteredByStatus.map((doc) => ({ item: doc, matches: undefined }));
-    }
-    // Return fuse results with match info
-    return fuse.search(searchQuery);
-  }, [fuse, searchQuery, filteredByStatus]);
-
-  // Extract just the documents for sorting
-  const filteredDocuments = useMemo(() => searchResults.map((r) => r.item), [searchResults]);
-
-  // Create a map of document ID to matches for highlighting
-  const matchesMap = useMemo(() => {
-    const map = new Map<Id<"documents">, readonly FuseResultMatch[] | undefined>();
-    for (const result of searchResults) {
-      map.set(result.item._id, result.matches);
-    }
-    return map;
-  }, [searchResults]);
-
-  // Sort documents (SEA-68: sorting by name and date)
-  const sortedDocuments = useMemo(() => {
-    // If searching, keep search relevance order unless explicitly sorting
-    if (searchQuery.trim() && sortField === "createdAt") {
-      return filteredDocuments;
-    }
-
-    const docs = [...filteredDocuments];
-    docs.sort((a, b) => {
-      let comparison = 0;
-
-      if (sortField === "name") {
-        comparison = a.name.localeCompare(b.name);
-      } else if (sortField === "createdAt") {
-        comparison = a.createdAt - b.createdAt;
-      } else if (sortField === "workflowStatus") {
-        const aStatus = a.workflowStatus ?? "draft";
-        const bStatus = b.workflowStatus ?? "draft";
-        comparison = aStatus.localeCompare(bStatus);
-      }
-
-      return sortDirection === "asc" ? comparison : -comparison;
+  const { confirmDialog, documentActions, handleConfirmAction, setConfirmDialog } =
+    useDocumentListActions({
+      onMoveToFolder,
+      onShareClick,
+      onTransferOwnership,
+      refetch: data.refetch,
     });
-    return docs;
-  }, [filteredDocuments, sortField, sortDirection, searchQuery]);
-
-  // Pagination logic (SEA-68)
-  const totalPages = Math.ceil(sortedDocuments.length / ITEMS_PER_PAGE);
-  const paginatedDocuments = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return sortedDocuments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [sortedDocuments, currentPage]);
-
-  // Reset to page 1 when filters change
-  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters/search change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery, dateRange]);
-
-  const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
-  const sendDocument = useMutation(api.documents.mutations.sendDocument);
-  const cancelDocument = useMutation(api.documents.mutations.cancelDocument);
-
-  // Confirmation dialog state
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    type: "delete" | "send" | "cancel";
-    documentId: Id<"documents"> | null;
-  }>({
-    open: false,
-    type: "delete",
-    documentId: null,
-  });
-
-  const handleDelete = (documentId: Id<"documents">) => {
-    setConfirmDialog({
-      open: true,
-      type: "delete",
-      documentId,
-    });
-  };
-
-  const handleSendDocument = (documentId: Id<"documents">) => {
-    setConfirmDialog({
-      open: true,
-      type: "send",
-      documentId,
-    });
-  };
-
-  const handleCancelDocument = (documentId: Id<"documents">) => {
-    setConfirmDialog({
-      open: true,
-      type: "cancel",
-      documentId,
-    });
-  };
-
-  const handleConfirmAction = async () => {
-    if (!confirmDialog.documentId) return;
-
-    try {
-      if (confirmDialog.type === "delete") {
-        await deleteDocument({ documentId: confirmDialog.documentId });
-        track.documentDeleted({ documentId: confirmDialog.documentId });
-        toast.success("Document deleted");
-        refetch();
-      } else if (confirmDialog.type === "send") {
-        await sendDocument({ documentId: confirmDialog.documentId });
-        track.documentSent({ documentId: confirmDialog.documentId });
-        toast.success("Document sent successfully");
-        refetch();
-      } else if (confirmDialog.type === "cancel") {
-        await cancelDocument({ documentId: confirmDialog.documentId });
-        track.documentCancelled({ documentId: confirmDialog.documentId });
-        toast.success("Document cancelled");
-        refetch();
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : `Failed to ${confirmDialog.type} document`;
-      toast.error(errorMessage);
-    } finally {
-      setConfirmDialog({ open: false, type: "delete", documentId: null });
-    }
-  };
-
-  const handleDownload = async (documentId: Id<"documents">) => {
-    try {
-      const url = await convexClient.query(api.documents.queries.getDocumentUrl, {
-        documentId,
-      });
-      track.documentDownloaded({ documentId });
-      window.open(url, "_blank");
-    } catch (_error) {
-      toast.error("Failed to download document");
-    }
-  };
-
-  const handleOpenDocument = (documentId: Id<"documents">) => {
-    router.navigate({
-      to: "/$slug/documents/$documentId",
-      params: { slug, documentId },
-    });
-  };
-
-  const getConfirmDialogContent = () => {
-    switch (confirmDialog.type) {
-      case "delete":
-        return {
-          title: "Delete Document",
-          description:
-            "Are you sure you want to delete this document? This action cannot be undone.",
-        };
-      case "send":
-        return {
-          title: "Send Document",
-          description: "Send this document? Once sent, recipients will be notified to take action.",
-        };
-      case "cancel":
-        return {
-          title: "Cancel Document",
-          description:
-            "Cancel this document? This action cannot be undone and recipients will be notified.",
-        };
-    }
-  };
-
-  const dialogContent = getConfirmDialogContent();
-
-  // SEA-68: Sort header component
-  const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
-    <Button
-      variant="ghost"
-      onClick={() => onSortChange(field)}
-      className="h-auto p-0 hover:bg-transparent"
-    >
-      <span className="font-medium">{label}</span>
-      {sortField === field &&
-        (sortDirection === "asc" ? (
-          <ArrowUpIcon className="ml-2 h-4 w-4" />
-        ) : (
-          <ArrowDownIcon className="ml-2 h-4 w-4" />
-        ))}
-    </Button>
-  );
-
-  // SEA-140: Determine if we're showing filtered results vs truly empty
-  const hasFiltersOrSearch =
-    searchQuery.trim() ||
-    filter !== "all" ||
-    workflowStatusFilter !== "all" ||
-    dateRange?.from ||
-    dateRange?.to;
-
-  const documentActions: DocumentListActions = {
-    openDocument: handleOpenDocument,
-    sendDocument: handleSendDocument,
-    cancelDocument: handleCancelDocument,
-    downloadDocument: handleDownload,
-    shareDocument: onShareClick,
-    moveToFolder: onMoveToFolder,
-    deleteDocument: handleDelete,
-    transferOwnership: onTransferOwnership,
-  };
 
   return (
     <>
-      {/* SEA-140: Enhanced empty state with helpful CTAs */}
-      {sortedDocuments.length === 0 && (!subfolders || subfolders.length === 0) ? (
-        hasFiltersOrSearch ? (
-          <EmptyState
-            icon={SearchIcon}
-            title="No documents found"
-            description="Try adjusting your search or filters to find what you're looking for."
-          />
-        ) : (
-          <EmptyState
-            icon={FileTextIcon}
-            title="No documents yet"
-            description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
-            action={{
-              label: "Upload Document",
-              onClick: onUploadClick,
-              icon: UploadIcon,
-            }}
-          />
-        )
-      ) : (
-        <div className="space-y-4">
-          {/* Table View (SEA-68) */}
-          {viewMode === "table" ? (
-            <div className="overflow-x-auto rounded-lg border">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[80px] sm:w-[100px]">Thumbnail</TableHead>
-                    <TableHead>
-                      <SortHeader field="name" label="Title" />
-                    </TableHead>
-                    <TableHead className="hidden sm:table-cell">
-                      <SortHeader field="createdAt" label="Upload Date" />
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="workflowStatus" label="Status" />
-                    </TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Folder rows (shown above documents, not paginated) */}
-                  {!searchQuery.trim() &&
-                    subfolders?.map((folder) => (
-                      <FolderTableRow
-                        key={folder._id}
-                        folder={folder}
-                        onFolderNavigate={onFolderNavigate}
-                      />
-                    ))}
-                  {paginatedDocuments.map((doc) => (
-                    <DocumentTableRow
-                      key={doc._id}
-                      actions={documentActions}
-                      delegateOwnership={delegateOwnership}
-                      doc={doc}
-                      matches={matchesMap.get(doc._id)}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            /* Grid View */
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {/* Folder cards (shown above documents when not searching) */}
-              {!searchQuery.trim() &&
-                subfolders?.map((folder) => (
-                  <FolderGridCard
-                    key={folder._id}
-                    folder={folder}
-                    onFolderNavigate={onFolderNavigate}
-                  />
-                ))}
-              {paginatedDocuments.map((doc) => (
-                <DocumentGridCard
-                  key={doc._id}
-                  actions={documentActions}
-                  doc={doc}
-                  matches={matchesMap.get(doc._id)}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Pagination (SEA-68: 20 items per page) */}
-          {totalPages > 1 && (
-            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-              <p
-                className="text-muted-foreground text-center text-sm sm:text-left"
-                aria-live="polite"
-              >
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                {Math.min(currentPage * ITEMS_PER_PAGE, sortedDocuments.length)} of{" "}
-                {sortedDocuments.length} documents
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
-                >
-                  <ChevronLeftIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Previous</span>
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={page === currentPage ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
-                    >
-                      {page}
-                    </Button>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
-                >
-                  <span className="hidden sm:inline">Next</span>
-                  <ChevronRightIcon className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Confirmation Dialog */}
-      <AlertDialog
-        open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog({ open, type: "delete", documentId: null })}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-            <AlertDialogDescription>{dialogContent.description}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAction}
-              variant={
-                confirmDialog.type === "delete" || confirmDialog.type === "cancel"
-                  ? "destructive"
-                  : "default"
-              }
-            >
-              {confirmDialog.type === "delete" && "Delete"}
-              {confirmDialog.type === "send" && "Send"}
-              {confirmDialog.type === "cancel" && "Cancel Document"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DocumentsListContent
+        data={data}
+        delegateOwnership={delegateOwnership}
+        documentActions={documentActions}
+        onFolderNavigate={onFolderNavigate}
+        onSortChange={onSortChange}
+        onUploadClick={onUploadClick}
+        searchQuery={searchQuery}
+        sortDirection={sortDirection}
+        sortField={sortField}
+        viewMode={viewMode}
+      />
+      <DocumentConfirmationDialog
+        confirmDialog={confirmDialog}
+        onConfirm={handleConfirmAction}
+        setConfirmDialog={setConfirmDialog}
+      />
     </>
   );
 }
