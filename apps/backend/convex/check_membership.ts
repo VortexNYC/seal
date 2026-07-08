@@ -173,8 +173,7 @@ export const setActiveOrganizationBySlug = mutation({
 
     const memberships = await resolveComponentMemberships(ctx, user);
     const membership = memberships.find(
-      (candidate) =>
-        candidate.organizationId === organization._id && candidate.status === "active",
+      (candidate) => candidate.organizationId === organization._id && candidate.status === "active",
     );
 
     if (!membership) {
