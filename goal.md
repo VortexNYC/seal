@@ -126,7 +126,8 @@ Browser payment attempt exposed one more proof-harness bug: the document-payment
 8. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
 9. Assert Stripe absence explicitly where the state shape exposes it.
 10. Keep local proof green:
-   - `bun run prove:seal-document-payment-vortex-local`
+
+- `bun run prove:seal-document-payment-vortex-local`
 
 ## Guardrails
 

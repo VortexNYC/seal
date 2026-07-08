@@ -18,13 +18,12 @@ describe("account creation", () => {
       });
     });
 
-    const result = await t.withIdentity({ subject: authSubject }).mutation(
-      api.organizations.mutations.ensurePersonalOrganization,
-      {
+    const result = await t
+      .withIdentity({ subject: authSubject })
+      .mutation(api.organizations.mutations.ensurePersonalOrganization, {
         organizationName: "Account Creation Owner Workspace",
         organizationSlug: "account-creation-owner-workspace",
-      },
-    );
+      });
 
     const proof = await t.run(async (ctx) => {
       const user = await ctx.db

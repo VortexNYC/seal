@@ -333,7 +333,10 @@ async function main(): Promise<void> {
     functionName: "_paymentsCanonical:listPaymentsMerchantsByTenant",
     args: { environment, tenantId: vortexOrganizationId },
   });
-  const processorAccountRefs = findMerchantProcessorRefs({ merchants: existingMerchants, merchantAccountId });
+  const processorAccountRefs = findMerchantProcessorRefs({
+    merchants: existingMerchants,
+    merchantAccountId,
+  });
   assert(
     processorAccountRefs.length > 0,
     `No Vortex merchant processor reference found for ${merchantAccountId}; seed the merchant in Vortex Payments before live card proof`,

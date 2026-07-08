@@ -115,7 +115,10 @@ describe("Stripe webhook handlers", () => {
     } as any;
   }
 
-  function buildInvoice(subscriptionId: string, overrides?: Partial<{ id: string; status: string }>) {
+  function buildInvoice(
+    subscriptionId: string,
+    overrides?: Partial<{ id: string; status: string }>,
+  ) {
     return {
       id: overrides?.id ?? "in_fake_test_001",
       object: "invoice",

@@ -154,7 +154,10 @@ function optionalNumberField(value: JsonObject, field: string): number | undefin
   if (child === undefined) {
     return undefined;
   }
-  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a finite number when present`);
+  assert(
+    typeof child === "number" && Number.isFinite(child),
+    `Expected ${field} to be a finite number when present`,
+  );
   return child;
 }
 
@@ -184,7 +187,10 @@ function nullableStringField(value: JsonObject, field: string): string | null {
 
 function numberField(value: JsonObject, field: string): number {
   const child = value[field];
-  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a finite number`);
+  assert(
+    typeof child === "number" && Number.isFinite(child),
+    `Expected ${field} to be a finite number`,
+  );
   return child;
 }
 
@@ -429,15 +435,27 @@ async function readVortexMoneyPath(input: {
     },
   });
   assert(payable !== null, `Expected Vortex payable ${input.vortexPayableId}`);
-  assert(stringField(payable, "status") === "paid", `Expected Vortex payable paid: ${JSON.stringify(payable)}`);
+  assert(
+    stringField(payable, "status") === "paid",
+    `Expected Vortex payable paid: ${JSON.stringify(payable)}`,
+  );
   const payableTotal = numberField(payable, "total");
-  assert(numberField(payable, "amountPaid") === payableTotal, "Expected Vortex payable amountPaid to equal total");
-  assert(numberField(payable, "amountRemaining") === 0, "Expected Vortex payable amountRemaining to be zero");
+  assert(
+    numberField(payable, "amountPaid") === payableTotal,
+    "Expected Vortex payable amountPaid to equal total",
+  );
+  assert(
+    numberField(payable, "amountRemaining") === 0,
+    "Expected Vortex payable amountRemaining to be zero",
+  );
 
   const lineage = objectField(payable, "lineage");
   const invoiceId = nullableStringField(lineage, "invoiceId");
   const paymentRequestId = nullableStringField(lineage, "paymentRequestId");
-  assert(invoiceId !== null, `Expected Vortex payable ${input.vortexPayableId} to carry invoice lineage`);
+  assert(
+    invoiceId !== null,
+    `Expected Vortex payable ${input.vortexPayableId} to carry invoice lineage`,
+  );
 
   const artifacts = await runVortexConvex<JsonObject | null>({
     deployment: input.deployment,
@@ -450,27 +468,48 @@ async function readVortexMoneyPath(input: {
   assert(artifacts !== null, `Expected Vortex invoice artifacts for ${invoiceId}`);
   const invoice = objectField(artifacts, "invoice");
   assert(stringField(invoice, "invoiceId") === invoiceId, "Vortex invoice artifact id mismatch");
-  assert(stringField(invoice, "status") === "paid", `Expected Vortex invoice paid: ${JSON.stringify(invoice)}`);
-  assert(numberField(invoice, "amountPaid") === payableTotal, "Expected Vortex invoice amountPaid to equal payable total");
-  assert(numberField(invoice, "amountRemaining") === 0, "Expected Vortex invoice amountRemaining to be zero");
+  assert(
+    stringField(invoice, "status") === "paid",
+    `Expected Vortex invoice paid: ${JSON.stringify(invoice)}`,
+  );
+  assert(
+    numberField(invoice, "amountPaid") === payableTotal,
+    "Expected Vortex invoice amountPaid to equal payable total",
+  );
+  assert(
+    numberField(invoice, "amountRemaining") === 0,
+    "Expected Vortex invoice amountRemaining to be zero",
+  );
 
   const attempts = arrayField(artifacts, "attempts").filter(isJsonObject);
-  const succeededAttempt = attempts.find((attempt) =>
-    optionalStringField(attempt, "status") === "succeeded" &&
-    optionalStringField(attempt, "paymentId") !== undefined &&
-    optionalStringField(attempt, "paymentIntentId") !== undefined
-  ) ?? null;
-  assert(succeededAttempt !== null, `Expected succeeded Vortex collection attempt: ${JSON.stringify(attempts)}`);
+  const succeededAttempt =
+    attempts.find(
+      (attempt) =>
+        optionalStringField(attempt, "status") === "succeeded" &&
+        optionalStringField(attempt, "paymentId") !== undefined &&
+        optionalStringField(attempt, "paymentIntentId") !== undefined,
+    ) ?? null;
+  assert(
+    succeededAttempt !== null,
+    `Expected succeeded Vortex collection attempt: ${JSON.stringify(attempts)}`,
+  );
   const paymentId = stringField(succeededAttempt, "paymentId");
   const paymentIntentId = stringField(succeededAttempt, "paymentIntentId");
-  assert(numberField(succeededAttempt, "collectedAmount") === payableTotal, "Expected collectedAmount to equal payable total");
+  assert(
+    numberField(succeededAttempt, "collectedAmount") === payableTotal,
+    "Expected collectedAmount to equal payable total",
+  );
 
   const allocations = arrayField(artifacts, "allocations").filter(isJsonObject);
-  const matchingAllocations = allocations.filter((allocation) =>
-    optionalStringField(allocation, "paymentId") === paymentId &&
-    optionalNumberField(allocation, "amount") === payableTotal
+  const matchingAllocations = allocations.filter(
+    (allocation) =>
+      optionalStringField(allocation, "paymentId") === paymentId &&
+      optionalNumberField(allocation, "amount") === payableTotal,
   );
-  assert(matchingAllocations.length > 0, `Expected Vortex payment allocation for ${paymentId}: ${JSON.stringify(allocations)}`);
+  assert(
+    matchingAllocations.length > 0,
+    `Expected Vortex payment allocation for ${paymentId}: ${JSON.stringify(allocations)}`,
+  );
 
   const receiptRows = await runVortexConvex<readonly Json[] & Json>({
     deployment: input.deployment,
@@ -481,14 +520,17 @@ async function readVortexMoneyPath(input: {
       invoiceId,
     },
   });
-  const receipts = receiptRows
-    .filter(isJsonObject)
-    .map((row) => objectField(row, "receipt"));
-  const receipt = receipts.find((candidate) =>
-    optionalStringField(candidate, "paymentId") === paymentId &&
-    optionalNumberField(candidate, "amount") === payableTotal
-  ) ?? null;
-  assert(receipt !== null, `Expected Vortex receipt for captured payment ${paymentId}: ${JSON.stringify(receipts)}`);
+  const receipts = receiptRows.filter(isJsonObject).map((row) => objectField(row, "receipt"));
+  const receipt =
+    receipts.find(
+      (candidate) =>
+        optionalStringField(candidate, "paymentId") === paymentId &&
+        optionalNumberField(candidate, "amount") === payableTotal,
+    ) ?? null;
+  assert(
+    receipt !== null,
+    `Expected Vortex receipt for captured payment ${paymentId}: ${JSON.stringify(receipts)}`,
+  );
 
   const payment = await runVortexConvex<JsonObject | null>({
     deployment: input.deployment,
@@ -499,9 +541,18 @@ async function readVortexMoneyPath(input: {
     },
   });
   assert(payment !== null, `Expected canonical Vortex payment ${paymentId}`);
-  assert(stringField(payment, "status") === "captured", `Expected captured Vortex payment: ${JSON.stringify(payment)}`);
-  assert(stringField(payment, "paymentIntentId") === paymentIntentId, "Vortex payment intent lineage mismatch");
-  assert(numberField(payment, "amount") === payableTotal, "Expected canonical Vortex payment amount to equal payable total");
+  assert(
+    stringField(payment, "status") === "captured",
+    `Expected captured Vortex payment: ${JSON.stringify(payment)}`,
+  );
+  assert(
+    stringField(payment, "paymentIntentId") === paymentIntentId,
+    "Vortex payment intent lineage mismatch",
+  );
+  assert(
+    numberField(payment, "amount") === payableTotal,
+    "Expected canonical Vortex payment amount to equal payable total",
+  );
   const paymentRefs = assertProcessorLineage(payment, "processorPaymentRefs");
 
   const paymentIntent = await runVortexConvex<JsonObject | null>({
@@ -513,7 +564,10 @@ async function readVortexMoneyPath(input: {
     },
   });
   assert(paymentIntent !== null, `Expected canonical Vortex payment intent ${paymentIntentId}`);
-  assert(numberField(paymentIntent, "amount") === payableTotal, "Expected Vortex payment intent amount to equal payable total");
+  assert(
+    numberField(paymentIntent, "amount") === payableTotal,
+    "Expected Vortex payment intent amount to equal payable total",
+  );
   const paymentIntentRefs = assertProcessorLineage(paymentIntent, "processorIntentRefs");
 
   const operatorInspection = await runVortexConvex<JsonObject | null>({
@@ -579,7 +633,8 @@ function eventMatchesPaidPayable(event: VortexEvent, vortexPayableId: string): b
     return false;
   }
   const payload = parseEventPayload(event);
-  const payableObject = payload === null ? undefined : optionalObjectField(payload, "payableObject");
+  const payableObject =
+    payload === null ? undefined : optionalObjectField(payload, "payableObject");
   if (payableObject === undefined) {
     return false;
   }
@@ -617,7 +672,9 @@ async function attemptVortexWebhookRedrive(input: {
       limit: 100,
     },
   });
-  const event = events.find((candidate) => eventMatchesPaidPayable(candidate, input.vortexPayableId));
+  const event = events.find((candidate) =>
+    eventMatchesPaidPayable(candidate, input.vortexPayableId),
+  );
   if (event === undefined) {
     return { attempted: false, reason: "missing_event" };
   }
@@ -644,21 +701,21 @@ async function attemptVortexWebhookRedrive(input: {
     };
   }
 
-  const dispatchTarget = deliveryToDispatch.status === "failed"
-    ? await runVortexConvex<JsonObject>({
-      deployment: input.vortexDeployment,
-      functionName: "outboundWebhooks:resendEvent",
-      args: {
-        organizationId: context.organizationId,
-        environment: context.environment,
-        eventId: event.eventId,
-        endpointId: deliveryToDispatch.endpointId,
-      },
-    })
-    : null;
-  const resentDeliveries = dispatchTarget === null
-    ? []
-    : ((dispatchTarget.deliveries ?? []) as readonly VortexDelivery[]);
+  const dispatchTarget =
+    deliveryToDispatch.status === "failed"
+      ? await runVortexConvex<JsonObject>({
+          deployment: input.vortexDeployment,
+          functionName: "outboundWebhooks:resendEvent",
+          args: {
+            organizationId: context.organizationId,
+            environment: context.environment,
+            eventId: event.eventId,
+            endpointId: deliveryToDispatch.endpointId,
+          },
+        })
+      : null;
+  const resentDeliveries =
+    dispatchTarget === null ? [] : ((dispatchTarget.deliveries ?? []) as readonly VortexDelivery[]);
   const targetDelivery =
     deliveryToDispatch.status === "failed"
       ? resentDeliveries.find((delivery) => delivery.status === "pending")
@@ -697,7 +754,9 @@ function printFailureDiagnostic(input: {
   const vortexStatus =
     input.vortexPayable === null ? undefined : optionalStringField(input.vortexPayable, "status");
   const amountPaid =
-    input.vortexPayable === null ? undefined : optionalNumberField(input.vortexPayable, "amountPaid");
+    input.vortexPayable === null
+      ? undefined
+      : optionalNumberField(input.vortexPayable, "amountPaid");
   const amountRemaining =
     input.vortexPayable === null
       ? undefined
@@ -734,15 +793,12 @@ async function main(): Promise<void> {
   const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
   const vortexDeployment = readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
   const redriveDisabled = hasFlag("no-redrive-vortex-webhook");
-  const requireSettled = hasFlag("require-settled") || readEnv("SEAL_REQUIRE_VORTEX_SETTLED") === "true";
+  const requireSettled =
+    hasFlag("require-settled") || readEnv("SEAL_REQUIRE_VORTEX_SETTLED") === "true";
   const vortexPayableId =
-    parseArgValue("vortex-payable-id") ??
-    readEnv("VORTEX_PAYABLE_ID") ??
-    defaultVortexPayableId;
+    parseArgValue("vortex-payable-id") ?? readEnv("VORTEX_PAYABLE_ID") ?? defaultVortexPayableId;
   const hostedInvoiceUrl =
-    parseArgValue("hosted-invoice-url") ??
-    readEnv("HOSTED_INVOICE_URL") ??
-      defaultHostedInvoiceUrl;
+    parseArgValue("hosted-invoice-url") ?? readEnv("HOSTED_INVOICE_URL") ?? defaultHostedInvoiceUrl;
   const state = await readPaymentState({ deployment: sealDeployment, vortexPayableId });
   const vortexPayable = await readVortexPayable({ deployment: sealDeployment, vortexPayableId });
 
@@ -752,7 +808,8 @@ async function main(): Promise<void> {
   const documentWorkflowStatus = optionalStringField(state, "documentWorkflowStatus");
   const invoicePaidAt = optionalNumberField(state, "invoicePaidAt");
   const stateHostedInvoiceUrl =
-    optionalStringField(state, "hostedInvoiceUrl") ?? optionalStringField(state, "invoiceHostedUrl");
+    optionalStringField(state, "hostedInvoiceUrl") ??
+    optionalStringField(state, "invoiceHostedUrl");
 
   let finalState = state;
   let webhookRedrive: VortexRedriveResult | undefined;
@@ -825,8 +882,14 @@ async function main(): Promise<void> {
     optionalStringField(finalState, "hostedInvoiceUrl") ??
     optionalStringField(finalState, "invoiceHostedUrl");
 
-  assert(finalPaymentStatus === "paid", `Expected paymentStatus paid, got ${finalPaymentStatus ?? "missing"}`);
-  assert(finalInvoiceStatus === "paid", `Expected invoiceStatus paid, got ${finalInvoiceStatus ?? "missing"}`);
+  assert(
+    finalPaymentStatus === "paid",
+    `Expected paymentStatus paid, got ${finalPaymentStatus ?? "missing"}`,
+  );
+  assert(
+    finalInvoiceStatus === "paid",
+    `Expected invoiceStatus paid, got ${finalInvoiceStatus ?? "missing"}`,
+  );
   assert(
     finalInvoiceProvider === "vortex_billing",
     `Expected invoiceProvider vortex_billing, got ${finalInvoiceProvider ?? "missing"}`,
@@ -842,7 +905,10 @@ async function main(): Promise<void> {
   );
 
   const vortexContext = await resolveVortexContext({ sealDeployment, vortexDeployment });
-  assert(vortexContext !== null, "Expected Seal Vortex API key to resolve to a Vortex organization");
+  assert(
+    vortexContext !== null,
+    "Expected Seal Vortex API key to resolve to a Vortex organization",
+  );
   const vortexMoneyPath = await readVortexMoneyPath({
     deployment: vortexDeployment,
     context: vortexContext,
@@ -876,10 +942,9 @@ async function main(): Promise<void> {
       {
         ok: true,
         check: "seal_document_payment_vortex_paid_state",
-        boundary:
-          requireSettled
-            ? "Verifies Seal state plus fully settled Vortex document-payment money path after a real Vortex-hosted payment."
-            : "Verifies Seal state and Vortex post-capture money path after a real Vortex-hosted document payment is paid; settlement batch and payout reconciliation remain follow-up proof.",
+        boundary: requireSettled
+          ? "Verifies Seal state plus fully settled Vortex document-payment money path after a real Vortex-hosted payment."
+          : "Verifies Seal state and Vortex post-capture money path after a real Vortex-hosted document payment is paid; settlement batch and payout reconciliation remain follow-up proof.",
         sealDeployment,
         vortexDeployment,
         vortexPayableId,

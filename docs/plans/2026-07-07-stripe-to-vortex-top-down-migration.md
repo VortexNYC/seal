@@ -54,15 +54,18 @@ Lower layers may discover work early, but they do not merge until the layer abov
 ### Lane A: Account Creation Contract
 
 Scope:
+
 - `apps/web/src/routes/_authenticated/onboarding/choose-organization/index.tsx`
 - `apps/backend/convex/organizations/*`
 - Vortex Auth organization anchor helpers
 
 Deliverable:
+
 - A written contract proving account creation creates/anchors Vortex Auth state and does not create Stripe customer, subscription, or Connect account state.
 - Focused tests or proof script for that contract.
 
 Proof:
+
 - `bun run --cwd apps/backend typecheck`
 - Focused backend tests covering organization creation and Vortex Auth anchoring.
 - Static grep evidence that account creation does not call `stripe` modules.
@@ -70,17 +73,20 @@ Proof:
 ### Lane B: Onboarding and Merchant Setup
 
 Scope:
+
 - `apps/web/src/routes/_authenticated/$slug/settings/payments.tsx`
 - `apps/backend/convex/payments/merchant_account_actions.ts`
 - `apps/backend/convex/payments/vortex_merchant_actions.ts`
 - Stripe Connect fallbacks reachable from onboarding
 
 Deliverable:
+
 - Vortex-routed onboarding for allowlisted document-payment organizations.
 - Legacy Stripe onboarding surfaces blocked for Vortex organizations.
 - UI state that does not present Stripe Connect as the Vortex onboarding path.
 
 Proof:
+
 - `bun run --cwd apps/backend test convex/payments/merchant_account_actions.test.ts convex/vortex_billing/payable_actions.test.ts`
 - `bun run --cwd apps/backend typecheck`
 - `bun run typecheck`
@@ -89,14 +95,17 @@ Proof:
 ### Lane C: SaaS Billing Lifecycle
 
 Scope:
+
 - SaaS checkout, billing settings, subscription projection, lifecycle guards.
 - Stripe customer/subscription creation and seat-sync entry points.
 
 Deliverable:
+
 - SaaS billing path creates Vortex billing state only.
 - Stripe lifecycle actions are unavailable on Vortex billing organizations.
 
 Proof:
+
 - `bun run prove:seal-saas-checkout-vortex`
 - `bun run prove:seal-saas-webhook-billing-state`
 - `bun run prove:seal-saas-stripe-lifecycle-guard`
@@ -105,15 +114,18 @@ Proof:
 ### Lane D: Document Payment Creation
 
 Scope:
+
 - Document send/payment-field actions.
 - Vortex payable creation for one-time, recurring, installments, and deposit/balance.
 - Stripe invoice/subscription/payment-intent writes reachable from sending a document.
 
 Deliverable:
+
 - All real payment types create Vortex payable state without Stripe writes.
 - Existing document-payment local proof covers all payment types.
 
 Proof:
+
 - `bun run prove:seal-document-payment-vortex-local`
 - Focused backend tests for payment-field config to Vortex payable mapping.
 - Live creation proof is human-run only:
@@ -122,16 +134,19 @@ Proof:
 ### Lane E: Hosted Payment Outcomes
 
 Scope:
+
 - Vortex webhook projection.
 - Paid, failed, voided, uncollectible, dunning, and document completion state.
 - Receipt and failed-payment recovery surfaces.
 
 Deliverable:
+
 - Hosted Vortex payment outcome changes Seal state without Stripe webhook dependency.
 - Paid outcome completes waiting documents.
 - Failed outcome starts the existing dunning path.
 
 Proof:
+
 - `bun run prove:seal-document-payment-vortex-local`
 - `bun run prove:vortex-saas-webhook-projection`
 - Human-run paid-state proof after a real sandbox card payment:
@@ -140,14 +155,17 @@ Proof:
 ### Lane F: Operational Surface and Deletion
 
 Scope:
+
 - Merchant payout, settlement, balance, and operational components.
 - Remaining Stripe Connect queries/webhooks/schemas after active paths are replaced.
 
 Deliverable:
+
 - Merchant operational surface reads Vortex public settlement/payout/profile data.
 - Dead Stripe Connect code is deleted or quarantined behind explicit legacy paths.
 
 Proof:
+
 - `bun run prove:vortex-operational-payments-adoption`
 - `bun run prove:vortex-payments-backend-adapter-adoption`
 - `bun run typecheck`
