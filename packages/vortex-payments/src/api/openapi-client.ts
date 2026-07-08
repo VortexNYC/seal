@@ -447,16 +447,24 @@ export type VortexBillingClientOptions = {
   readonly fetch?: typeof fetch;
 };
 
-export function createVortexBillingOpenApiClient(options: VortexBillingClientOptions) {
+type OpenApiRequestInput = {
+  readonly method: string;
+  readonly path: string;
+  readonly body?: JsonObject;
+  readonly idempotencyKey?: string;
+};
+
+type OpenApiRequest = <TBody extends Json>(
+  input: OpenApiRequestInput,
+) => Promise<ClientResponse<TBody>>;
+
+function createOpenApiRequest(options: VortexBillingClientOptions): OpenApiRequest {
   const fetcher = options.fetch ?? fetch;
   const baseUrl = options.baseUrl.replace(/\/$/u, "");
 
-  async function request<TBody extends Json>(input: {
-    readonly method: string;
-    readonly path: string;
-    readonly body?: JsonObject;
-    readonly idempotencyKey?: string;
-  }): Promise<ClientResponse<TBody>> {
+  return async function request<TBody extends Json>(
+    input: OpenApiRequestInput,
+  ): Promise<ClientResponse<TBody>> {
     const headers = new Headers();
     headers.set("Authorization", `Bearer ${options.apiKey}`);
     if (input.idempotencyKey !== undefined) {
@@ -478,8 +486,10 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
       idempotencyKey: input.idempotencyKey ?? null,
       body: parsed,
     };
-  }
+  };
+}
 
+function createOpenApiCouponMethods(request: OpenApiRequest) {
   return {
     async applyCoupon(
       params: { readonly couponId: string },
@@ -493,6 +503,109 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
+    async createCoupon(
+      body: OpenApiCreateCouponRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CouponResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/coupons",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getAppliedCoupon(
+      params: { readonly appliedCouponId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<AppliedCouponResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/applied-coupons/${encodeURIComponent(params.appliedCouponId)}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getCoupon(
+      params: { readonly couponId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CouponResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/coupons/${encodeURIComponent(params.couponId)}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async listAppliedCoupons(
+      options?: RequestOptions,
+    ): Promise<ClientResponse<AppliedCouponListResponse>> {
+      return request({
+        method: "GET",
+        path: "/v1/applied-coupons",
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async listCoupons(options?: RequestOptions): Promise<ClientResponse<CouponListResponse>> {
+      return request({
+        method: "GET",
+        path: "/v1/coupons",
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async terminateAppliedCoupon(
+      params: { readonly appliedCouponId: string },
+      body: OpenApiTerminateAppliedCouponRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<AppliedCouponResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/applied-coupons/${encodeURIComponent(params.appliedCouponId)}/terminate`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async terminateCoupon(
+      params: { readonly couponId: string },
+      body: OpenApiTerminateCouponRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CouponResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/coupons/${encodeURIComponent(params.couponId)}/terminate`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiCustomerProfileMethods(request: OpenApiRequest) {
+  return {
+    async getCustomerState(
+      params: { readonly customerId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerStateResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/state`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async upsertCustomer(
+      params: { readonly customerId: string },
+      body: CustomerUpsertRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerResponse>> {
+      return request({
+        method: "PUT",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiCustomerPaymentMethodMethods(request: OpenApiRequest) {
+  return {
     async archiveCustomerPaymentMethod(
       params: { readonly customerId: string; readonly paymentMethodId: string },
       body: CustomerPaymentMethodArchiveRequest,
@@ -517,85 +630,6 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async changeSubscription(
-      params: { readonly subscriptionId: string },
-      body: SubscriptionChangeRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<SubscriptionChangeResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/subscriptions/${encodeURIComponent(params.subscriptionId)}/change`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async checkCustomerAccess(
-      params: { readonly customerId: string; readonly key: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerAccessResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/access?${new URLSearchParams({ key: params.key }).toString()}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async collectInvoice(
-      params: { readonly invoiceId: string },
-      body: InvoiceCollectRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/collect`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async collectPaymentRequest(
-      params: { readonly paymentRequestId: string },
-      body: PaymentRequestCollectRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<PaymentRequestResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/payment-requests/${encodeURIComponent(params.paymentRequestId)}/collect`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async createCheckoutSession(
-      body: OpenApiCreateCheckoutSessionRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<OpenApiCreateCheckoutSessionResponse>> {
-      return request({
-        method: "POST",
-        path: "/v1/checkout/sessions",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async createCoupon(
-      body: OpenApiCreateCouponRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CouponResponse>> {
-      return request({
-        method: "POST",
-        path: "/v1/coupons",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async createCreditNote(
-      body: CreditNoteCreateRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CreditNoteResponse>> {
-      return request({
-        method: "POST",
-        path: "/v1/credit-notes",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
     async createCustomerPaymentMethodSetup(
       params: { readonly customerId: string },
       body: CustomerPaymentMethodSetupRequest,
@@ -608,36 +642,161 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async createInvoice(
-      body: InvoiceCreateRequest,
+    async getCustomerPaymentState(
+      params: { readonly customerId: string },
       options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
+    ): Promise<ClientResponse<CustomerPaymentStateResponse>> {
       return request({
-        method: "POST",
-        path: "/v1/invoices",
+        method: "GET",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/payment-state`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async listCustomerPaymentMethods(
+      params: { readonly customerId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerPaymentMethodsResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/payment-methods`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async setCustomerDefaultPaymentMethod(
+      params: { readonly customerId: string },
+      body: CustomerDefaultPaymentMethodRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerPaymentMethodResponse>> {
+      return request({
+        method: "PATCH",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/default-payment-method`,
         body,
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async createPaymentRequest(
-      body: PaymentRequestCreateRequest,
+  };
+}
+
+function createOpenApiCustomerBalanceMethods(request: OpenApiRequest) {
+  return {
+    async expireCustomerBalance(
+      params: { readonly customerId: string },
+      body: OpenApiExpireCustomerBalanceRequest,
       options?: RequestOptions,
-    ): Promise<ClientResponse<PaymentRequestResponse>> {
+    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
       return request({
         method: "POST",
-        path: "/v1/payment-requests",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/expire`,
         body,
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async createPaymentRequestLink(
-      params: { readonly paymentRequestId: string },
-      body: PaymentRequestLinkCreateRequest,
+    async getCustomerBalance(
+      params: { readonly customerId: string },
       options?: RequestOptions,
-    ): Promise<ClientResponse<PaymentRequestLinkResponse>> {
+    ): Promise<ClientResponse<CustomerBalanceResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async grantCustomerBalance(
+      params: { readonly customerId: string },
+      body: OpenApiGrantCustomerBalanceRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
       return request({
         method: "POST",
-        path: `/v1/payment-requests/${encodeURIComponent(params.paymentRequestId)}/link`,
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/grant`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async grantCustomerBalanceFromPayment(
+      params: { readonly customerId: string },
+      body: OpenApiGrantCustomerBalanceFromPaymentRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/grant-from-payment`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async reverseCustomerBalance(
+      params: { readonly customerId: string },
+      body: OpenApiReverseCustomerBalanceRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/reverse`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiCustomerEntitlementMethods(request: OpenApiRequest) {
+  return {
+    async checkCustomerAccess(
+      params: { readonly customerId: string; readonly key: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerAccessResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/access?${new URLSearchParams({ key: params.key }).toString()}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getCustomerEntitlements(
+      params: { readonly customerId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CustomerEntitlementsResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/customers/${encodeURIComponent(params.customerId)}/entitlements`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async grantEntitlement(
+      body: OpenApiGrantEntitlementRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<EntitlementResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/entitlements/grant",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async revokeEntitlement(
+      body: OpenApiRevokeEntitlementRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<EntitlementResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/entitlements/revoke",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiCatalogSubscriptionMethods(request: OpenApiRequest) {
+  return {
+    async changeSubscription(
+      params: { readonly subscriptionId: string },
+      body: SubscriptionChangeRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<SubscriptionChangeResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/subscriptions/${encodeURIComponent(params.subscriptionId)}/change`,
         body,
         idempotencyKey: options?.idempotencyKey,
       });
@@ -675,6 +834,279 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
+    async previewSubscriptionItemChange(
+      params: { readonly subscriptionId: string },
+      body: SubscriptionItemChangePreviewRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<SubscriptionItemChangePreviewResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/subscriptions/${encodeURIComponent(params.subscriptionId)}/change/preview`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiMerchantAccountMethods(request: OpenApiRequest) {
+  return {
+    async getMerchantAccountCapabilities(
+      params: { readonly merchantAccountId: string; readonly environment: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<MerchantAccountCapabilitiesResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/merchant-accounts/${encodeURIComponent(params.merchantAccountId)}/capabilities?${new URLSearchParams({ environment: params.environment }).toString()}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getMerchantAccountState(
+      params: { readonly merchantAccountId: string; readonly environment: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<MerchantAccountStateResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/merchant-accounts/${encodeURIComponent(params.merchantAccountId)}/state?${new URLSearchParams({ environment: params.environment }).toString()}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiInvoiceMethods(request: OpenApiRequest) {
+  return {
+    async collectInvoice(
+      params: { readonly invoiceId: string },
+      body: InvoiceCollectRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/collect`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async createInvoice(
+      body: InvoiceCreateRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/invoices",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async finalizeInvoice(
+      params: { readonly invoiceId: string },
+      body: InvoiceFinalizeRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/finalize`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getInvoice(
+      params: { readonly invoiceId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getInvoicePaymentLifecycle(
+      params: { readonly invoiceId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<PaymentLifecycleResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/payment-lifecycle`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async listInvoiceReceipts(
+      params: { readonly invoiceId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<ReceiptListResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/receipts`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiInvoiceActionMethods(request: OpenApiRequest) {
+  return {
+    async markInvoiceUncollectible(
+      params: { readonly invoiceId: string },
+      body: InvoiceMarkUncollectibleRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/mark-uncollectible`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async previewInvoice(
+      body: InvoiceCreateRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoicePreviewResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/invoices/preview",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async refreshInvoice(
+      params: { readonly invoiceId: string },
+      body: InvoiceRefreshRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/refresh`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async voidInvoice(
+      params: { readonly invoiceId: string },
+      body: InvoiceVoidRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<InvoiceResponse>> {
+      return request({
+        method: "DELETE",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/void`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiInvoiceTaxMethods(request: OpenApiRequest) {
+  return {
+    async finalizeInvoiceTax(
+      params: { readonly invoiceId: string },
+      body: TaxFinalizeRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<OpenApiInvoiceTaxResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/tax/finalize`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async quoteInvoiceTax(
+      params: { readonly invoiceId: string },
+      body: TaxQuoteRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<OpenApiInvoiceTaxResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/tax/quote`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiPaymentRequestMethods(request: OpenApiRequest) {
+  return {
+    async collectPaymentRequest(
+      params: { readonly paymentRequestId: string },
+      body: PaymentRequestCollectRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<PaymentRequestResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/payment-requests/${encodeURIComponent(params.paymentRequestId)}/collect`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async createCheckoutSession(
+      body: OpenApiCreateCheckoutSessionRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<OpenApiCreateCheckoutSessionResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/checkout/sessions",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async createPaymentRequest(
+      body: PaymentRequestCreateRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<PaymentRequestResponse>> {
+      return request({
+        method: "POST",
+        path: "/v1/payment-requests",
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async createPaymentRequestLink(
+      params: { readonly paymentRequestId: string },
+      body: PaymentRequestLinkCreateRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<PaymentRequestLinkResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/payment-requests/${encodeURIComponent(params.paymentRequestId)}/link`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getPaymentReceipt(
+      params: { readonly receiptId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<ReceiptResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/payment-receipts/${encodeURIComponent(params.receiptId)}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getPaymentRequest(
+      params: { readonly paymentRequestId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<PaymentRequestResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/payment-requests/${encodeURIComponent(params.paymentRequestId)}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async listPaymentReceipts(
+      options?: RequestOptions,
+    ): Promise<ClientResponse<ReceiptListResponse>> {
+      return request({
+        method: "GET",
+        path: "/v1/payment-receipts",
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+function createOpenApiWebhookMethods(request: OpenApiRequest) {
+  return {
     async createWebhookEndpoint(
       body: WebhookEndpointCreateRequest,
       options?: RequestOptions,
@@ -709,182 +1141,6 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async expireCustomerBalance(
-      params: { readonly customerId: string },
-      body: OpenApiExpireCustomerBalanceRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/expire`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async finalizeInvoice(
-      params: { readonly invoiceId: string },
-      body: InvoiceFinalizeRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/finalize`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async finalizeInvoiceTax(
-      params: { readonly invoiceId: string },
-      body: TaxFinalizeRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<OpenApiInvoiceTaxResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/tax/finalize`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getAppliedCoupon(
-      params: { readonly appliedCouponId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<AppliedCouponResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/applied-coupons/${encodeURIComponent(params.appliedCouponId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCoupon(
-      params: { readonly couponId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CouponResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/coupons/${encodeURIComponent(params.couponId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCreditNote(
-      params: { readonly creditNoteId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CreditNoteResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCreditNoteRefundLineage(
-      params: { readonly creditNoteId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CreditNoteRefundLineageResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}/refund-lineage`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCustomerBalance(
-      params: { readonly customerId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerBalanceResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCustomerEntitlements(
-      params: { readonly customerId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerEntitlementsResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/entitlements`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCustomerPaymentState(
-      params: { readonly customerId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerPaymentStateResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/payment-state`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getCustomerState(
-      params: { readonly customerId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerStateResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/state`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getInvoice(
-      params: { readonly invoiceId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getInvoicePaymentLifecycle(
-      params: { readonly invoiceId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<PaymentLifecycleResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/payment-lifecycle`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getMerchantAccountCapabilities(
-      params: { readonly merchantAccountId: string; readonly environment: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<MerchantAccountCapabilitiesResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/merchant-accounts/${encodeURIComponent(params.merchantAccountId)}/capabilities?${new URLSearchParams({ environment: params.environment }).toString()}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getMerchantAccountState(
-      params: { readonly merchantAccountId: string; readonly environment: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<MerchantAccountStateResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/merchant-accounts/${encodeURIComponent(params.merchantAccountId)}/state?${new URLSearchParams({ environment: params.environment }).toString()}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getPaymentReceipt(
-      params: { readonly receiptId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<ReceiptResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/payment-receipts/${encodeURIComponent(params.receiptId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async getPaymentRequest(
-      params: { readonly paymentRequestId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<PaymentRequestResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/payment-requests/${encodeURIComponent(params.paymentRequestId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
     async getWebhookDelivery(
       params: { readonly deliveryId: string },
       options?: RequestOptions,
@@ -902,86 +1158,6 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
       return request({
         method: "GET",
         path: `/v1/events/${encodeURIComponent(params.eventId)}`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async grantCustomerBalance(
-      params: { readonly customerId: string },
-      body: OpenApiGrantCustomerBalanceRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/grant`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async grantCustomerBalanceFromPayment(
-      params: { readonly customerId: string },
-      body: OpenApiGrantCustomerBalanceFromPaymentRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/grant-from-payment`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async grantEntitlement(
-      body: OpenApiGrantEntitlementRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<EntitlementResponse>> {
-      return request({
-        method: "POST",
-        path: "/v1/entitlements/grant",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async listAppliedCoupons(
-      options?: RequestOptions,
-    ): Promise<ClientResponse<AppliedCouponListResponse>> {
-      return request({
-        method: "GET",
-        path: "/v1/applied-coupons",
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async listCoupons(options?: RequestOptions): Promise<ClientResponse<CouponListResponse>> {
-      return request({
-        method: "GET",
-        path: "/v1/coupons",
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async listCustomerPaymentMethods(
-      params: { readonly customerId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerPaymentMethodsResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/payment-methods`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async listInvoiceReceipts(
-      params: { readonly invoiceId: string },
-      options?: RequestOptions,
-    ): Promise<ClientResponse<ReceiptListResponse>> {
-      return request({
-        method: "GET",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/receipts`,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async listPaymentReceipts(
-      options?: RequestOptions,
-    ): Promise<ClientResponse<ReceiptListResponse>> {
-      return request({
-        method: "GET",
-        path: "/v1/payment-receipts",
         idempotencyKey: options?.idempotencyKey,
       });
     },
@@ -1021,65 +1197,11 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async markInvoiceUncollectible(
-      params: { readonly invoiceId: string },
-      body: InvoiceMarkUncollectibleRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/mark-uncollectible`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async previewInvoice(
-      body: InvoiceCreateRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<InvoicePreviewResponse>> {
-      return request({
-        method: "POST",
-        path: "/v1/invoices/preview",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async previewSubscriptionItemChange(
-      params: { readonly subscriptionId: string },
-      body: SubscriptionItemChangePreviewRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<SubscriptionItemChangePreviewResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/subscriptions/${encodeURIComponent(params.subscriptionId)}/change/preview`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async quoteInvoiceTax(
-      params: { readonly invoiceId: string },
-      body: TaxQuoteRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<OpenApiInvoiceTaxResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/tax/quote`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async reconcileCreditNoteRefund(
-      params: { readonly creditNoteId: string },
-      body: CreditNoteRefundReconcileRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CreditNoteRefundLineageResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}/reconcile-refund`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
+  };
+}
+
+function createOpenApiWebhookActionMethods(request: OpenApiRequest) {
+  return {
     async redriveWebhookDeliveries(
       body: WebhookDeliveriesRedriveRequest,
       options?: RequestOptions,
@@ -1087,30 +1209,6 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
       return request({
         method: "POST",
         path: "/v1/webhook-deliveries/redrive",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async refreshInvoice(
-      params: { readonly invoiceId: string },
-      body: InvoiceRefreshRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/refresh`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async refundCreditNote(
-      params: { readonly creditNoteId: string },
-      body: CreditNoteRefundRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CreditNoteResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}/refund`,
         body,
         idempotencyKey: options?.idempotencyKey,
       });
@@ -1139,29 +1237,6 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async reverseCustomerBalance(
-      params: { readonly customerId: string },
-      body: OpenApiReverseCustomerBalanceRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerBalanceEntryResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/balance/reverse`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async revokeEntitlement(
-      body: OpenApiRevokeEntitlementRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<EntitlementResponse>> {
-      return request({
-        method: "POST",
-        path: "/v1/entitlements/revoke",
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
     async rotateWebhookEndpointSecret(
       params: { readonly endpointId: string },
       body: WebhookEndpointSecretRotateRequest,
@@ -1170,42 +1245,6 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
       return request({
         method: "POST",
         path: `/v1/webhook-endpoints/${encodeURIComponent(params.endpointId)}/rotate-secret`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async setCustomerDefaultPaymentMethod(
-      params: { readonly customerId: string },
-      body: CustomerDefaultPaymentMethodRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerPaymentMethodResponse>> {
-      return request({
-        method: "PATCH",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}/default-payment-method`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async terminateAppliedCoupon(
-      params: { readonly appliedCouponId: string },
-      body: OpenApiTerminateAppliedCouponRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<AppliedCouponResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/applied-coupons/${encodeURIComponent(params.appliedCouponId)}/terminate`,
-        body,
-        idempotencyKey: options?.idempotencyKey,
-      });
-    },
-    async terminateCoupon(
-      params: { readonly couponId: string },
-      body: OpenApiTerminateCouponRequest,
-      options?: RequestOptions,
-    ): Promise<ClientResponse<CouponResponse>> {
-      return request({
-        method: "POST",
-        path: `/v1/coupons/${encodeURIComponent(params.couponId)}/terminate`,
         body,
         idempotencyKey: options?.idempotencyKey,
       });
@@ -1234,29 +1273,86 @@ export function createVortexBillingOpenApiClient(options: VortexBillingClientOpt
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async upsertCustomer(
-      params: { readonly customerId: string },
-      body: CustomerUpsertRequest,
+  };
+}
+
+function createOpenApiCreditNoteMethods(request: OpenApiRequest) {
+  return {
+    async createCreditNote(
+      body: CreditNoteCreateRequest,
       options?: RequestOptions,
-    ): Promise<ClientResponse<CustomerResponse>> {
+    ): Promise<ClientResponse<CreditNoteResponse>> {
       return request({
-        method: "PUT",
-        path: `/v1/customers/${encodeURIComponent(params.customerId)}`,
+        method: "POST",
+        path: "/v1/credit-notes",
         body,
         idempotencyKey: options?.idempotencyKey,
       });
     },
-    async voidInvoice(
-      params: { readonly invoiceId: string },
-      body: InvoiceVoidRequest,
+    async getCreditNote(
+      params: { readonly creditNoteId: string },
       options?: RequestOptions,
-    ): Promise<ClientResponse<InvoiceResponse>> {
+    ): Promise<ClientResponse<CreditNoteResponse>> {
       return request({
-        method: "DELETE",
-        path: `/v1/invoices/${encodeURIComponent(params.invoiceId)}/void`,
+        method: "GET",
+        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async getCreditNoteRefundLineage(
+      params: { readonly creditNoteId: string },
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CreditNoteRefundLineageResponse>> {
+      return request({
+        method: "GET",
+        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}/refund-lineage`,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+    async reconcileCreditNoteRefund(
+      params: { readonly creditNoteId: string },
+      body: CreditNoteRefundReconcileRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CreditNoteRefundLineageResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}/reconcile-refund`,
         body,
         idempotencyKey: options?.idempotencyKey,
       });
     },
+    async refundCreditNote(
+      params: { readonly creditNoteId: string },
+      body: CreditNoteRefundRequest,
+      options?: RequestOptions,
+    ): Promise<ClientResponse<CreditNoteResponse>> {
+      return request({
+        method: "POST",
+        path: `/v1/credit-notes/${encodeURIComponent(params.creditNoteId)}/refund`,
+        body,
+        idempotencyKey: options?.idempotencyKey,
+      });
+    },
+  };
+}
+
+export function createVortexBillingOpenApiClient(options: VortexBillingClientOptions) {
+  const request = createOpenApiRequest(options);
+
+  return {
+    ...createOpenApiCouponMethods(request),
+    ...createOpenApiCustomerProfileMethods(request),
+    ...createOpenApiCustomerPaymentMethodMethods(request),
+    ...createOpenApiCustomerBalanceMethods(request),
+    ...createOpenApiCustomerEntitlementMethods(request),
+    ...createOpenApiCatalogSubscriptionMethods(request),
+    ...createOpenApiMerchantAccountMethods(request),
+    ...createOpenApiInvoiceMethods(request),
+    ...createOpenApiInvoiceActionMethods(request),
+    ...createOpenApiInvoiceTaxMethods(request),
+    ...createOpenApiPaymentRequestMethods(request),
+    ...createOpenApiWebhookMethods(request),
+    ...createOpenApiWebhookActionMethods(request),
+    ...createOpenApiCreditNoteMethods(request),
   };
 }
