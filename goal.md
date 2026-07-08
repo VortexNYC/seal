@@ -41,7 +41,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run prove:seal-account-onboarding-vortex-local` proves account creation, Vortex Auth anchoring, retired merchant-surface blocking, charges-ready merchant resolution, and Vortex payable request mapping without live mutation.
 - Merchant onboarding and settings paths route through Vortex-owned actions for Vortex document-payment organizations.
 - SaaS checkout, subscription webhook projection, catalog, and coupon paths are Vortex-backed.
-- `bun run prove:seal-saas-vortex-local` proves the non-mutating SaaS checkout, catalog-price resolver, coupon, and portal replacement paths.
+- `bun run prove:seal-saas-vortex-local` proves the non-mutating SaaS checkout, catalog-price resolver, coupon, portal, and lifecycle guard replacement paths.
 - Document payable creation through Vortex is proven locally and in sandbox for the current supported path.
 - Hosted Vortex payment capture has projected into Seal as paid and completed the waiting document.
 - Failed hosted payment recovery is proven: failed outcome marks the invoice uncollectible, starts dunning once, ignores duplicate failures, and cancels dunning after a later paid event.

@@ -2,7 +2,13 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { createCheckoutSession, createCustomerPortalSession } from "./subscription_actions";
+import {
+  cancelSubscription,
+  createCheckoutSession,
+  createCustomerPortalSession,
+  pauseSubscription,
+  resumeSubscription,
+} from "./subscription_actions";
 
 type CheckoutArgs = {
   readonly lookupKey: string;
@@ -23,6 +29,18 @@ type PortalHandler = (
 const portalHandler = (
   createCustomerPortalSession as unknown as { readonly _handler: PortalHandler }
 )._handler;
+
+type LifecycleHandler = (
+  ctx: ActionCtx,
+  args: { readonly slug: string; readonly subscriptionId: string },
+) => Promise<unknown>;
+
+const pauseHandler = (pauseSubscription as unknown as { readonly _handler: LifecycleHandler })
+  ._handler;
+const resumeHandler = (resumeSubscription as unknown as { readonly _handler: LifecycleHandler })
+  ._handler;
+const cancelHandler = (cancelSubscription as unknown as { readonly _handler: LifecycleHandler })
+  ._handler;
 
 const organizationId = "org_seal_123" as Id<"organizations">;
 const baseCheckoutArgs = {
@@ -269,5 +287,31 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
       url: "https://pay.vortex.test/portal/default",
     });
     expect(ctx.runMutation).not.toHaveBeenCalled();
+  });
+});
+
+describe("payments/subscription_actions Vortex lifecycle guards", () => {
+  const lifecycleCtx = {} as ActionCtx;
+  const lifecycleArgs = {
+    slug: "seal-test-org",
+    subscriptionId: "vtx_sub_seal_org_org_seal_123_pro_monthly_v2",
+  };
+
+  test("blocks pause locally until Vortex Billing owns the lifecycle action", async () => {
+    await expect(pauseHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
+      "Subscription pause must be handled by Vortex Billing",
+    );
+  });
+
+  test("blocks resume locally until Vortex Billing owns the lifecycle action", async () => {
+    await expect(resumeHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
+      "Subscription resume must be handled by Vortex Billing",
+    );
+  });
+
+  test("blocks cancellation locally until Vortex Billing owns the lifecycle action", async () => {
+    await expect(cancelHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
+      "Subscription cancellation must be handled by Vortex Billing",
+    );
   });
 });
