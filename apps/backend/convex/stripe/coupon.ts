@@ -28,7 +28,7 @@ export const handleCouponDeleted = internalMutation({
     // Find the coupon in our database
     const coupon = await ctx.db
       .query("subscription_coupons")
-      .withIndex("by_stripe_coupon_id", (q) => q.eq("stripeCouponId", couponId))
+      .withIndex("by_provider_coupon", (q) => q.eq("providerCouponId", couponId))
       .unique();
 
     if (!coupon) {
@@ -85,13 +85,13 @@ export const handleCouponCreatedOrUpdated = internalMutation({
     // Check if coupon already exists (for updates)
     const existing = await ctx.db
       .query("subscription_coupons")
-      .withIndex("by_stripe_coupon_id", (q) => q.eq("stripeCouponId", stripeCoupon.id))
+      .withIndex("by_provider_coupon", (q) => q.eq("providerCouponId", stripeCoupon.id))
       .unique();
 
     const now = Date.now();
 
     const couponData = {
-      stripeCouponId: stripeCoupon.id,
+      providerCouponId: stripeCoupon.id,
       couponType: stripeCoupon.percent_off ? ("percent_off" as const) : ("amount_off" as const),
       percentOff: stripeCoupon.percent_off ?? undefined,
       amountOff: stripeCoupon.amount_off ?? undefined,
@@ -117,7 +117,7 @@ export const handleCouponCreatedOrUpdated = internalMutation({
       });
       console.info("Updated coupon", {
         couponId: existing._id,
-        stripeCouponId: stripeCoupon.id,
+        providerCouponId: stripeCoupon.id,
       });
       return existing._id;
     }
@@ -129,7 +129,7 @@ export const handleCouponCreatedOrUpdated = internalMutation({
     });
     console.info("Created coupon", {
       couponId,
-      stripeCouponId: stripeCoupon.id,
+      providerCouponId: stripeCoupon.id,
     });
     return couponId;
   },

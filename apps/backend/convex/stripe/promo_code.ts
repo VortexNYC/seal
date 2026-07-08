@@ -39,22 +39,22 @@ export const handlePromotionCodeCreatedOrUpdated = internalMutation({
     // Check if promo code already exists (for updates)
     const existing = await ctx.db
       .query("subscription_promo_codes")
-      .withIndex("by_stripe_promotion_code_id", (q) =>
-        q.eq("stripePromotionCodeId", stripePromoCode.id),
+      .withIndex("by_provider_promotion_code", (q) =>
+        q.eq("providerPromotionCodeId", stripePromoCode.id),
       )
       .unique();
 
     const now = Date.now();
 
     const promoCodeData = {
-      stripePromotionCodeId: stripePromoCode.id,
+      providerPromotionCodeId: stripePromoCode.id,
       couponId,
       code: stripePromoCode.code,
       maxRedemptions: stripePromoCode.max_redemptions ?? undefined,
       timesRedeemed: stripePromoCode.times_redeemed,
       active: stripePromoCode.active,
       expiresAt: stripePromoCode.expires_at ? stripePromoCode.expires_at * 1000 : undefined,
-      stripeCustomerId:
+      providerCustomerId:
         typeof stripePromoCode.customer === "string" ? stripePromoCode.customer : undefined,
       restrictions: stripePromoCode.restrictions
         ? {
@@ -114,8 +114,8 @@ export const handlePromotionCodeDeleted = internalMutation({
     // Find the promo code in our database
     const promoCode = await ctx.db
       .query("subscription_promo_codes")
-      .withIndex("by_stripe_promotion_code_id", (q) =>
-        q.eq("stripePromotionCodeId", promotionCodeId),
+      .withIndex("by_provider_promotion_code", (q) =>
+        q.eq("providerPromotionCodeId", promotionCodeId),
       )
       .unique();
 

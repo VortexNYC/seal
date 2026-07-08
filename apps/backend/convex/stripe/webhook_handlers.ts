@@ -170,10 +170,10 @@ async function handlePromotionCodeCreated(
   ctx: HttpActionCtx,
   promotionCode: PromotionCodeWithCoupon,
 ): Promise<void> {
-  const stripeCouponId = extractCouponIdFromPromotionCode(promotionCode);
+  const providerCouponId = extractCouponIdFromPromotionCode(promotionCode);
 
   // If coupon is missing from the webhook payload, fetch the full promotion code from Stripe
-  if (!stripeCouponId) {
+  if (!providerCouponId) {
     console.info("Promotion code webhook missing coupon, fetching from Stripe", {
       operation: "handlePromotionCodeCreated",
       promotionCodeId: promotionCode.id,
@@ -204,7 +204,7 @@ async function handlePromotionCodeCreated(
 
   // Fetch the coupon to ensure we have full data
   const coupon = (await ctx.runAction(internal.stripe.actions.retrieveCoupon, {
-    couponId: stripeCouponId,
+    couponId: providerCouponId,
   })) as Stripe.Coupon;
 
   await ctx.runMutation(internal.stripe.promo_code.handlePromotionCodeCreatedOrUpdated, {
@@ -217,10 +217,10 @@ async function handlePromotionCodeUpdated(
   ctx: HttpActionCtx,
   promotionCode: PromotionCodeWithCoupon,
 ): Promise<void> {
-  const stripeCouponId = extractCouponIdFromPromotionCode(promotionCode);
+  const providerCouponId = extractCouponIdFromPromotionCode(promotionCode);
 
   // If coupon is missing, fetch the full promotion code
-  if (!stripeCouponId) {
+  if (!providerCouponId) {
     const hydratedPromotionCode = (await ctx.runAction(
       internal.stripe.actions.retrievePromotionCode,
       { promotionCodeId: promotionCode.id },
@@ -245,7 +245,7 @@ async function handlePromotionCodeUpdated(
 
   // Fetch the coupon to ensure we have full data
   const coupon = (await ctx.runAction(internal.stripe.actions.retrieveCoupon, {
-    couponId: stripeCouponId,
+    couponId: providerCouponId,
   })) as Stripe.Coupon;
 
   await ctx.runMutation(internal.stripe.promo_code.handlePromotionCodeCreatedOrUpdated, {

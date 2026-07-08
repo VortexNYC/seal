@@ -41,7 +41,15 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
 - SEA-557 third local cut moved organization billing customer storage from `stripeCustomerId` / `by_stripe_customer_id` to `billingCustomerId` / `by_billing_customer`.
 - Current Stripe residue after the third SEA-557 local cut: 138 files contain Stripe strings.
 - Shared organization billing customer state is clean for `stripeCustomerId` and `by_stripe_customer_id`; remaining `stripeCustomerId` hits are legacy user cleanup, Stripe-only helper/promo code, and docs.
-- Remaining provider-neutral data-contract work includes subscription promo/customer ids, legacy Stripe webhook tables, and the legacy `apps/backend/convex/stripe` module tree.
+- SEA-557 fourth local cut moved subscription coupon/promo shared ids to provider-neutral names:
+  - `providerCouponId`
+  - `providerPromotionCodeId`
+  - `providerCustomerId`
+  - `by_provider_coupon`
+  - `by_provider_promotion_code`
+- Current Stripe residue after the fourth SEA-557 local cut: 136 files contain Stripe strings.
+- Shared subscription coupon/promo schema is clean for `stripeCouponId`, `stripePromotionCodeId`, `stripeCustomerId`, `by_stripe_coupon_id`, and `by_stripe_promotion_code_id`.
+- Remaining provider-neutral data-contract work is now legacy Stripe webhook tables and the legacy `apps/backend/convex/stripe` module tree.
 
 ## Proven For SaaS Billing
 
