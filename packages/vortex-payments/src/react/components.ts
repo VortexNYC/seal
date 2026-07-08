@@ -3797,9 +3797,15 @@ export function VortexInvoiceList({
   const selectedNavigate = navigate ?? contextNavigate;
   const resolvedCopy = resolveInvoiceListCopy(copy);
   const isDisabled = disabled === true || readOnly === true || loading === true;
-  const hasInvoices = invoiceList.invoices.length > 0;
-  const canOpenPortal = invoiceList.portalToken !== undefined;
-  const canLoadMore = invoiceList.hasMore === true && invoiceList.nextPageToken !== undefined;
+  const state = createInvoiceListState(invoiceList);
+  const openPortal = createInvoiceListPortalHandler({
+    invoiceList,
+    runtime,
+    selectedNavigate,
+    state,
+    onPortalLaunch,
+  });
+  const loadMore = createInvoiceListLoadMoreHandler({ invoiceList, state, onLoadMore });
 
   useEffect(() => {
     onReady?.({
@@ -3818,8 +3824,57 @@ export function VortexInvoiceList({
     }
   }, [error, onError]);
 
-  const openPortal = (): void => {
-    if (!canOpenPortal || invoiceList.portalToken === undefined) {
+  return createElement(
+    "section",
+    createInvoiceListSectionProps({ appearance, className, classNames, invoiceList, state }),
+    createInvoiceListHeader({ classNames, invoiceList, resolvedCopy }),
+    createInvoiceListFeedback({ classNames, error, invoiceList, loading, resolvedCopy }),
+    createInvoiceListMetrics({ classNames, invoiceList, resolvedCopy }),
+    createInvoiceListRows({
+      classNames,
+      invoiceList,
+      isDisabled,
+      onInvoiceSelect,
+      resolvedCopy,
+      state,
+    }),
+    createInvoiceListActions({
+      classNames,
+      invoiceList,
+      isDisabled,
+      loadMore,
+      openPortal,
+      resolvedCopy,
+      state,
+    }),
+  );
+}
+
+function createInvoiceListState(invoiceList: VortexInvoiceListState) {
+  return {
+    canLoadMore: invoiceList.hasMore === true && invoiceList.nextPageToken !== undefined,
+    canOpenPortal: invoiceList.portalToken !== undefined,
+    hasInvoices: invoiceList.invoices.length > 0,
+  };
+}
+
+type InvoiceListState = ReturnType<typeof createInvoiceListState>;
+
+function createInvoiceListPortalHandler({
+  invoiceList,
+  runtime,
+  selectedNavigate,
+  state,
+  onPortalLaunch,
+}: {
+  readonly invoiceList: VortexInvoiceListState;
+  readonly runtime: VortexSurfaceProviderRuntime;
+  readonly selectedNavigate: (launch: VortexSurfaceLaunch) => void;
+  readonly state: InvoiceListState;
+  readonly onPortalLaunch: VortexInvoiceListProps["onPortalLaunch"];
+}) {
+  return (): void => {
+    if (!state.canOpenPortal || invoiceList.portalToken === undefined) {
       return;
     }
     const launch = runtime.createHostedLink({
@@ -3830,41 +3885,91 @@ export function VortexInvoiceList({
     onPortalLaunch?.(launch);
     selectedNavigate(launch);
   };
+}
 
+function createInvoiceListLoadMoreHandler({
+  invoiceList,
+  state,
+  onLoadMore,
+}: {
+  readonly invoiceList: VortexInvoiceListState;
+  readonly state: InvoiceListState;
+  readonly onLoadMore: VortexInvoiceListProps["onLoadMore"];
+}) {
+  return (): void => {
+    if (!state.canLoadMore) {
+      return;
+    }
+    void onLoadMore?.(invoiceList);
+  };
+}
+
+function createInvoiceListSectionProps({
+  appearance,
+  className,
+  classNames,
+  invoiceList,
+  state,
+}: {
+  readonly appearance: VortexEmbeddedComponentAppearance | undefined;
+  readonly className: string | undefined;
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly invoiceList: VortexInvoiceListState;
+  readonly state: InvoiceListState;
+}) {
+  return {
+    className: cx("vortex-payments-invoice-list", className, classNames?.root),
+    "data-vortex-surface": "invoice-list",
+    "data-vortex-component": "VortexInvoiceList",
+    "data-vortex-customer-id": invoiceList.customerId,
+    "data-vortex-billing-account-id": invoiceList.billingAccountId,
+    "data-vortex-invoice-list-status": invoiceList.status,
+    "data-vortex-invoice-count": String(invoiceList.invoices.length),
+    "data-vortex-invoice-row-limit": String(invoiceList.rowLimit ?? invoiceList.invoices.length),
+    "data-vortex-invoice-has-more": String(invoiceList.hasMore === true),
+    "data-vortex-customer-portal-ready": String(state.canOpenPortal),
+    "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
+    "data-vortex-appearance-density": appearance?.density ?? "comfortable",
+    "data-vortex-appearance-radius": appearance?.radius ?? "md",
+    style: createAppearanceAccentStyle(appearance),
+  };
+}
+
+function createInvoiceListHeader({
+  classNames,
+  invoiceList,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly invoiceList: VortexInvoiceListState;
+  readonly resolvedCopy: Required<VortexInvoiceListCopy>;
+}): ReactNode {
   return createElement(
-    "section",
-    {
-      className: cx("vortex-payments-invoice-list", className, classNames?.root),
-      "data-vortex-surface": "invoice-list",
-      "data-vortex-component": "VortexInvoiceList",
-      "data-vortex-customer-id": invoiceList.customerId,
-      "data-vortex-billing-account-id": invoiceList.billingAccountId,
-      "data-vortex-invoice-list-status": invoiceList.status,
-      "data-vortex-invoice-count": String(invoiceList.invoices.length),
-      "data-vortex-invoice-row-limit": String(invoiceList.rowLimit ?? invoiceList.invoices.length),
-      "data-vortex-invoice-has-more": String(invoiceList.hasMore === true),
-      "data-vortex-customer-portal-ready": String(canOpenPortal),
-      "data-vortex-appearance-color-scheme": appearance?.colorScheme ?? "system",
-      "data-vortex-appearance-density": appearance?.density ?? "comfortable",
-      "data-vortex-appearance-radius": appearance?.radius ?? "md",
-      style:
-        appearance?.accentColor === undefined
-          ? undefined
-          : ({ "--vortex-payments-accent-color": appearance.accentColor } as Record<
-              string,
-              string
-            >),
-    },
+    "header",
+    { className: classNames?.header },
+    createElement("h2", { className: classNames?.title }, resolvedCopy.title),
     createElement(
-      "header",
-      { className: classNames?.header },
-      createElement("h2", { className: classNames?.title }, resolvedCopy.title),
-      createElement(
-        "p",
-        { className: classNames?.description },
-        invoiceListDescription(invoiceList, resolvedCopy),
-      ),
+      "p",
+      { className: classNames?.description },
+      invoiceListDescription(invoiceList, resolvedCopy),
     ),
+  );
+}
+
+function createInvoiceListFeedback({
+  classNames,
+  error,
+  invoiceList,
+  loading,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly error: ReactNode | undefined;
+  readonly invoiceList: VortexInvoiceListState;
+  readonly loading: boolean | undefined;
+  readonly resolvedCopy: Required<VortexInvoiceListCopy>;
+}): ReactNode {
+  return [
     loading === true
       ? createElement(
           "div",
@@ -3883,84 +3988,126 @@ export function VortexInvoiceList({
     invoiceList.message === undefined
       ? null
       : createElement("p", { className: classNames?.status }, invoiceList.message),
-    createElement(
-      "dl",
-      { className: classNames?.metrics },
-      createMetric(resolvedCopy.statusLabel, invoiceList.status, classNames),
-      createMetric(
-        resolvedCopy.amountDueLabel,
-        invoiceList.amountDue === undefined || invoiceList.currency === undefined
-          ? "none"
-          : formatMinorUnitAmount(invoiceList.amountDue, invoiceList.currency),
-        classNames,
-      ),
-      createMetric(resolvedCopy.invoiceCountLabel, String(invoiceList.invoices.length), classNames),
-      createMetric(
-        resolvedCopy.overdueCountLabel,
-        String(invoiceList.overdueCount ?? 0),
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.actionRequiredCountLabel,
-        String(invoiceList.actionRequiredCount ?? 0),
-        classNames,
-      ),
-      createMetric(
-        resolvedCopy.rowLimitLabel,
-        String(invoiceList.rowLimit ?? invoiceList.invoices.length),
-        classNames,
-      ),
-      createMetric(resolvedCopy.nextActionLabel, invoiceList.nextAction ?? "none", classNames),
+  ];
+}
+
+function createInvoiceListMetrics({
+  classNames,
+  invoiceList,
+  resolvedCopy,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly invoiceList: VortexInvoiceListState;
+  readonly resolvedCopy: Required<VortexInvoiceListCopy>;
+}): ReactNode {
+  return createElement(
+    "dl",
+    { className: classNames?.metrics },
+    createMetric(resolvedCopy.statusLabel, invoiceList.status, classNames),
+    createMetric(
+      resolvedCopy.amountDueLabel,
+      invoiceList.amountDue === undefined || invoiceList.currency === undefined
+        ? "none"
+        : formatMinorUnitAmount(invoiceList.amountDue, invoiceList.currency),
+      classNames,
     ),
-    hasInvoices
-      ? createElement(
-          "ul",
-          { className: classNames?.list },
-          invoiceList.invoices.map((invoice) =>
-            createInvoiceListRowItem(
-              invoice,
-              invoiceList,
-              resolvedCopy,
-              classNames,
-              isDisabled,
-              onInvoiceSelect,
-            ),
-          ),
-        )
-      : createElement(
-          "div",
-          { className: classNames?.empty, role: "status" },
-          createElement("p", null, resolvedCopy.emptyInvoicesTitle),
-          createElement("p", null, resolvedCopy.emptyInvoicesDescription),
-        ),
-    createElement(
+    createMetric(resolvedCopy.invoiceCountLabel, String(invoiceList.invoices.length), classNames),
+    createMetric(resolvedCopy.overdueCountLabel, String(invoiceList.overdueCount ?? 0), classNames),
+    createMetric(
+      resolvedCopy.actionRequiredCountLabel,
+      String(invoiceList.actionRequiredCount ?? 0),
+      classNames,
+    ),
+    createMetric(
+      resolvedCopy.rowLimitLabel,
+      String(invoiceList.rowLimit ?? invoiceList.invoices.length),
+      classNames,
+    ),
+    createMetric(resolvedCopy.nextActionLabel, invoiceList.nextAction ?? "none", classNames),
+  );
+}
+
+function createInvoiceListRows({
+  classNames,
+  invoiceList,
+  isDisabled,
+  onInvoiceSelect,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly invoiceList: VortexInvoiceListState;
+  readonly isDisabled: boolean;
+  readonly onInvoiceSelect: VortexInvoiceListProps["onInvoiceSelect"];
+  readonly resolvedCopy: Required<VortexInvoiceListCopy>;
+  readonly state: InvoiceListState;
+}): ReactNode {
+  if (!state.hasInvoices) {
+    return createElement(
       "div",
-      { className: classNames?.actions },
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canOpenPortal,
-          onClick: openPortal,
-          type: "button",
-          "data-vortex-invoice-list-action": "open_invoice_receipt_center",
-        },
-        resolvedCopy.openPortalLabel,
+      { className: classNames?.empty, role: "status" },
+      createElement("p", null, resolvedCopy.emptyInvoicesTitle),
+      createElement("p", null, resolvedCopy.emptyInvoicesDescription),
+    );
+  }
+  return createElement(
+    "ul",
+    { className: classNames?.list },
+    invoiceList.invoices.map((invoice) =>
+      createInvoiceListRowItem(
+        invoice,
+        invoiceList,
+        resolvedCopy,
+        classNames,
+        isDisabled,
+        onInvoiceSelect,
       ),
-      createElement(
-        "button",
-        {
-          className: classNames?.button,
-          disabled: isDisabled || !canLoadMore,
-          onClick: () => {
-            void onLoadMore?.(invoiceList);
-          },
-          type: "button",
-          "data-vortex-invoice-list-action": "load_more",
-          "data-vortex-invoice-next-page-token": invoiceList.nextPageToken,
-        },
-        resolvedCopy.loadMoreLabel,
-      ),
+    ),
+  );
+}
+
+function createInvoiceListActions({
+  classNames,
+  invoiceList,
+  isDisabled,
+  loadMore,
+  openPortal,
+  resolvedCopy,
+  state,
+}: {
+  readonly classNames: VortexEmbeddedComponentClassNames | undefined;
+  readonly invoiceList: VortexInvoiceListState;
+  readonly isDisabled: boolean;
+  readonly loadMore: () => void;
+  readonly openPortal: () => void;
+  readonly resolvedCopy: Required<VortexInvoiceListCopy>;
+  readonly state: InvoiceListState;
+}): ReactNode {
+  return createElement(
+    "div",
+    { className: classNames?.actions },
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canOpenPortal,
+        onClick: openPortal,
+        type: "button",
+        "data-vortex-invoice-list-action": "open_invoice_receipt_center",
+      },
+      resolvedCopy.openPortalLabel,
+    ),
+    createElement(
+      "button",
+      {
+        className: classNames?.button,
+        disabled: isDisabled || !state.canLoadMore,
+        onClick: loadMore,
+        type: "button",
+        "data-vortex-invoice-list-action": "load_more",
+        "data-vortex-invoice-next-page-token": invoiceList.nextPageToken,
+      },
+      resolvedCopy.loadMoreLabel,
     ),
   );
 }
