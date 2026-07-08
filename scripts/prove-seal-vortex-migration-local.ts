@@ -13,6 +13,16 @@ const portableVortexProofScripts = [
   "scripts/audit-seal-vortex-production-readiness.ts",
 ] as const;
 
+const localGateForbiddenProofScripts = [
+  "prove:seal-catalog-from-vortex",
+  "prove:seal-coupons-vortex",
+  "prove:seal-saas-checkout-vortex",
+  "prove:seal-saas-webhook-billing-state",
+  "prove:seal-vortex-onboarding-wiring",
+  "prove:seal-document-payment-vortex-live",
+  "prove:seal-document-payment-vortex-paid-state",
+] as const;
+
 type ProofCommand = {
   readonly label: string;
   readonly command: string;
@@ -102,6 +112,17 @@ for (const relativePath of portableVortexProofScripts) {
 }
 console.log("[proof] VORTEX_PAYMENTS_REPO_ROOT support is present on Vortex proof scripts.");
 
+console.log("\n[proof] Local migration gate excludes live and env-mutating proof commands");
+const localGateCommands = proofCommands.map((proofCommand) => proofCommand.args.join(" "));
+for (const forbiddenScript of localGateForbiddenProofScripts) {
+  const included = localGateCommands.some((command) => command.includes(forbiddenScript));
+  if (included) {
+    console.error(`[proof] ${forbiddenScript} must stay out of prove:seal-vortex-migration-local`);
+    process.exit(1);
+  }
+}
+console.log("[proof] Live and env-mutating proof commands stay outside the local gate.");
+
 for (const proofCommand of proofCommands) {
   console.log(`\n[proof] ${proofCommand.label}`);
   console.log(`$ ${proofCommand.command} ${proofCommand.args.join(" ")}`);
@@ -145,6 +166,7 @@ console.log(
         "document payment creation and hosted outcome projection are Vortex-backed locally",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
         "human-run Vortex proof scripts support VORTEX_PAYMENTS_REPO_ROOT for portable checkout layouts",
+        "live and env-mutating proof commands are excluded from the local non-mutating gate",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
         "launch boundary is either green or blocked only by known human-run production configuration names",
       ],

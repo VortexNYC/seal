@@ -209,7 +209,7 @@ Current launch baseline:
 - `bun run audit:seal-vortex-launch-boundary` is the passing non-mutating wrapper for future agent sessions: it verifies the sandbox settlement handoff and then accepts production readiness only when it is green or blocked by the exact known human-run production configuration names. Unexpected missing names or invalid present config fail the wrapper.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
-- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it includes the launch-boundary wrapper and intentionally excludes live card, settlement, payout, production credential, and remote git work.
+- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it includes the launch-boundary wrapper and intentionally excludes live card, settlement, payout, production credential, remote git work, and known env-mutating proof commands. The gate statically fails if those commands are added back.
 - The local migration gate also includes `bun run prove:seal-saas-vortex-local`, so SaaS checkout/catalog/coupon/portal/lifecycle replacement cannot drift while document-payment launch proof is waiting on human-boundary settlement and production work.
 - The local migration gate also includes `bun run prove:seal-account-onboarding-vortex-local`, so the top-of-funnel account/onboarding contract is covered by the same one-command proof.
 

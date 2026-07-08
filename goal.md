@@ -56,6 +56,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
 - New live document-payment proof runs seed `VORTEX_BILLING_DOCUMENT_*` maps instead of shared SaaS maps.
 - Human-run Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
+- `bun run prove:seal-vortex-migration-local` statically fails if known live or env-mutating proof commands are added to the local non-mutating gate.
 
 ## Production Readiness Audit
 
