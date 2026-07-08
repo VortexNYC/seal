@@ -201,6 +201,7 @@ Current launch baseline:
 - Settled document-payment money movement is still waiting on provider settlement readiness.
 - Production document-payment routing is not configured.
 - `bun run audit:seal-vortex-production-readiness` is the presence-only production gate. It currently fails without printing secret values because Seal production is missing document-payment routing names and Vortex production is missing runtime/Finix production names.
+- New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
 
 Do next:
 

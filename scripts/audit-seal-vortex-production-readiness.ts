@@ -204,8 +204,7 @@ async function auditDeployment(input: {
     deployment: input.deployment,
     groups: input.groups,
   });
-  const ok =
-    audit.errors.length === 0 && audit.groups.every((group) => group.missing.length === 0);
+  const ok = audit.errors.length === 0 && audit.groups.every((group) => group.missing.length === 0);
   return ok
     ? {
         ok: true,

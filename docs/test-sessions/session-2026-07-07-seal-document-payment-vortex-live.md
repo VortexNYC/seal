@@ -279,6 +279,20 @@ Do not call Seal document payments sandbox launch-ready until this exact sequenc
 
 Current sandbox launch answer: SaaS is green, document payable creation is green, real hosted document payment capture and Seal projection are green, failed-payment recovery is green, and settled document-payment money movement is still waiting on provider settlement readiness.
 
+## Proof Harness Contract
+
+Future `prove:seal-document-payment-vortex-live` runs seed the document-payment-specific Seal env contract, not the shared SaaS maps:
+
+```text
+VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS
+VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP
+VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP
+VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP
+VORTEX_BILLING_DOCUMENT_PRICE_MAP
+```
+
+This is intentional. Document-payment real money must not silently reuse SaaS billing maps.
+
 ## Production Gate Audit
 
 Presence-only audit run on Herdr. No secret values should be recorded here.
@@ -310,9 +324,10 @@ VORTEX_BILLING_SAAS_PRICE_MAP=set
 VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP=empty
 VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP=empty
 VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP=empty
+VORTEX_BILLING_DOCUMENT_PRICE_MAP=empty
 ```
 
-Meaning: Seal production has the SaaS Vortex config, but document-payment production routing is not configured. Before flipping document payments, production needs an explicit document-payment allowlist plus document billing account, customer, and merchant maps for the target organization.
+Meaning: Seal production has the SaaS Vortex config, but document-payment production routing is not configured. Before flipping document payments, production needs an explicit document-payment allowlist plus document billing account, customer, merchant, and price maps for the target organization.
 
 Production go-live work left after sandbox settlement proof:
 

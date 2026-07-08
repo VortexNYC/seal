@@ -50,6 +50,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - Production Vortex document-payment routing is not configured.
 - Production real-money proof is not complete.
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
+- New live document-payment proof runs seed `VORTEX_BILLING_DOCUMENT_*` maps instead of shared SaaS maps.
 
 ## Production Readiness Audit
 

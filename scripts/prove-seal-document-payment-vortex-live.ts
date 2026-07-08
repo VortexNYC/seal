@@ -482,17 +482,22 @@ async function main(): Promise<void> {
   });
   await mergeSealRecordEnv({
     deployment: sealDeployment,
-    name: "VORTEX_BILLING_CUSTOMER_MAP",
+    name: "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
     updates: { [recipientEmail]: customerId },
   });
   await mergeSealRecordEnv({
     deployment: sealDeployment,
-    name: "VORTEX_BILLING_ACCOUNT_MAP",
+    name: "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
     updates: { [organizationId]: billingAccountId },
   });
   await mergeSealRecordEnv({
     deployment: sealDeployment,
-    name: "VORTEX_BILLING_PRICE_MAP",
+    name: "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
+    updates: { [organizationId]: merchantAccountId },
+  });
+  await mergeSealRecordEnv({
+    deployment: sealDeployment,
+    name: "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
     updates: { [lineItemId]: priceId },
   });
 
@@ -563,6 +568,13 @@ async function main(): Promise<void> {
           hostedInvoiceUrl,
           totalAmountCents: numberField(paymentLink, "totalAmountCents"),
           currency: stringField(paymentLink, "currency"),
+        },
+        envContract: {
+          allowlist: "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS",
+          customerMap: "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
+          accountMap: "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
+          merchantAccountMap: "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
+          priceMap: "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
         },
         state: {
           paymentStatus: stringField(postSignatureState, "paymentStatus"),
