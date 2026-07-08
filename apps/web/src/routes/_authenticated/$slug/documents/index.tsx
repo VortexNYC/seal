@@ -38,7 +38,10 @@ import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
 import { TransferOwnershipDialog } from "@/components/documents/transfer-ownership-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
-import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
+import {
+  type DocumentWorkflowStatus,
+  WorkflowStatusBadge,
+} from "@/components/documents/workflow-status-badge";
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
@@ -189,6 +192,412 @@ interface DocumentsListProps {
     ownerId: Id<"users">;
     sharingMode: string;
   }) => void;
+}
+
+type DocumentListItem = {
+  readonly _id: Id<"documents">;
+  readonly name: string;
+  readonly description?: string;
+  readonly storageId: string;
+  readonly thumbnailDataUrl?: string;
+  readonly pageCount?: number;
+  readonly createdAt: number;
+  readonly fileSize: number;
+  readonly workflowStatus?: DocumentWorkflowStatus;
+  readonly aiProcessingStatus?: string;
+  readonly sharingMode: string;
+  readonly ownerId: Id<"users">;
+};
+
+type FolderListItem = {
+  readonly _id: Id<"folders">;
+  readonly name: string;
+  readonly createdAt: number;
+};
+
+type DocumentListActions = {
+  readonly openDocument: (documentId: Id<"documents">) => void;
+  readonly sendDocument: (documentId: Id<"documents">) => void;
+  readonly cancelDocument: (documentId: Id<"documents">) => void;
+  readonly downloadDocument: (documentId: Id<"documents">) => void;
+  readonly shareDocument: (documentId: Id<"documents">, documentName: string) => void;
+  readonly moveToFolder: (documentId: Id<"documents">) => void;
+  readonly deleteDocument: (documentId: Id<"documents">) => void;
+  readonly transferOwnership: (doc: {
+    _id: Id<"documents">;
+    name: string;
+    ownerId: Id<"users">;
+    sharingMode: string;
+  }) => void;
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
+}
+
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function FolderTableRow({
+  folder,
+  onFolderNavigate,
+}: {
+  readonly folder: FolderListItem;
+  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+}) {
+  return (
+    <TableRow
+      key={folder._id}
+      className="hover:bg-muted/50 cursor-pointer"
+      onClick={() => onFolderNavigate(folder._id)}
+    >
+      <TableCell>
+        <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-[60px]">
+          <FolderIcon className="text-muted-foreground h-5 w-5" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <p className="font-medium">{folder.name}</p>
+        <p className="text-muted-foreground text-xs">Folder</p>
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        <div className="text-sm">
+          <p>{formatDate(folder.createdAt)}</p>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline" className="text-xs">
+          Folder
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right" />
+    </TableRow>
+  );
+}
+
+function DocumentTableRow({
+  actions,
+  delegateOwnership,
+  doc,
+  matches,
+}: {
+  readonly actions: DocumentListActions;
+  readonly delegateOwnership: boolean;
+  readonly doc: DocumentListItem;
+  readonly matches: readonly FuseResultMatch[] | undefined;
+}) {
+  return (
+    <TableRow
+      key={doc._id}
+      data-testid="document-row"
+      className="hover:bg-muted/50 cursor-pointer"
+      onClick={() => actions.openDocument(doc._id)}
+    >
+      <TableCell>
+        <DocumentThumbnail
+          documentId={doc._id}
+          storageId={doc.storageId}
+          thumbnailDataUrl={doc.thumbnailDataUrl}
+          name={doc.name}
+        />
+      </TableCell>
+      <TableCell>
+        <DocumentSummary doc={doc} matches={matches} />
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        <div className="text-sm">
+          <p>{formatDate(doc.createdAt)}</p>
+          <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <WorkflowStatusBadge status={doc.workflowStatus} />
+          <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
+        </div>
+      </TableCell>
+      <TableCell className="text-right">
+        <DocumentActionsMenu
+          actions={actions}
+          delegateOwnership={delegateOwnership}
+          doc={doc}
+          includeExpiredSend
+          includeTransferOwnership
+        />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function DocumentSummary({
+  doc,
+  matches,
+}: {
+  readonly doc: DocumentListItem;
+  readonly matches: readonly FuseResultMatch[] | undefined;
+}) {
+  return (
+    <div>
+      <p className="font-medium">
+        <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
+      </p>
+      {doc.description && (
+        <p className="text-muted-foreground line-clamp-1 text-sm">
+          <HighlightedText text={doc.description} matches={matches} fieldKey="description" />
+        </p>
+      )}
+      {doc.pageCount !== undefined && doc.pageCount > 0 && (
+        <p className="text-muted-foreground mt-1 text-xs">
+          {doc.pageCount} {doc.pageCount === 1 ? "page" : "pages"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function FolderGridCard({
+  folder,
+  onFolderNavigate,
+}: {
+  readonly folder: FolderListItem;
+  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+}) {
+  return (
+    <Card
+      key={folder._id}
+      className="hover:bg-secondary cursor-pointer transition-colors duration-200"
+      onClick={() => onFolderNavigate(folder._id)}
+    >
+      <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
+        <FolderIcon className="text-muted-foreground h-12 w-12" />
+      </div>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <FolderIcon className="h-4 w-4 shrink-0" />
+          <span className="line-clamp-2">{folder.name}</span>
+        </CardTitle>
+        <CardDescription>Folder</CardDescription>
+      </CardHeader>
+    </Card>
+  );
+}
+
+function DocumentGridCard({
+  actions,
+  doc,
+  matches,
+}: {
+  readonly actions: DocumentListActions;
+  readonly doc: DocumentListItem;
+  readonly matches: readonly FuseResultMatch[] | undefined;
+}) {
+  return (
+    <Card
+      key={doc._id}
+      className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+      onClick={() => actions.openDocument(doc._id)}
+    >
+      <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
+        <DocumentThumbnail
+          documentId={doc._id}
+          storageId={doc.storageId}
+          thumbnailDataUrl={doc.thumbnailDataUrl}
+          name={doc.name}
+          className="h-full w-full"
+        />
+      </div>
+      <CardHeader>
+        <GridCardHeader actions={actions} doc={doc} matches={matches} />
+        {doc.description && (
+          <CardDescription className="line-clamp-2">
+            <HighlightedText text={doc.description} matches={matches} fieldKey="description" />
+          </CardDescription>
+        )}
+      </CardHeader>
+      <CardContent>
+        <DocumentGridMetadata doc={doc} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function GridCardHeader({
+  actions,
+  doc,
+  matches,
+}: {
+  readonly actions: DocumentListActions;
+  readonly doc: DocumentListItem;
+  readonly matches: readonly FuseResultMatch[] | undefined;
+}) {
+  return (
+    <div className="flex items-start justify-between">
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        <FileIcon className="text-muted-foreground h-5 w-5" />
+        <CardTitle className="line-clamp-2 text-base leading-5 break-all">
+          <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
+        </CardTitle>
+      </div>
+      <DocumentActionsMenu actions={actions} doc={doc} />
+    </div>
+  );
+}
+
+function DocumentGridMetadata({ doc }: { readonly doc: DocumentListItem }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">Status</span>
+        <div className="flex items-center gap-1.5">
+          <WorkflowStatusBadge status={doc.workflowStatus} />
+          <DocumentAiStatus status={doc.aiProcessingStatus} />
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">Size</span>
+        <span>{formatBytes(doc.fileSize)}</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">Uploaded</span>
+        <span>{formatDate(doc.createdAt)}</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">Sharing</span>
+        <SharingModeBadge sharingMode={doc.sharingMode} />
+      </div>
+    </div>
+  );
+}
+
+function SharingModeBadge({ sharingMode }: { readonly sharingMode: string }) {
+  return (
+    <Badge variant={sharingMode === "private" ? "secondary" : "default"}>
+      {sharingMode === "private" && "Private"}
+      {sharingMode === "workspace" && "Team"}
+      {sharingMode === "specific" && "Specific"}
+    </Badge>
+  );
+}
+
+function DocumentAiStatus({
+  status,
+  tooltip = false,
+}: {
+  readonly status: string | undefined;
+  readonly tooltip?: boolean;
+}) {
+  if (status === "processing") {
+    return tooltip ? (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+        </TooltipTrigger>
+        <TooltipContent>AI analyzing document</TooltipContent>
+      </Tooltip>
+    ) : (
+      <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+    );
+  }
+  if (status !== "completed") return null;
+  return tooltip ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <SparklesIcon className="text-ai-accent h-3 w-3" />
+      </TooltipTrigger>
+      <TooltipContent>AI analysis complete</TooltipContent>
+    </Tooltip>
+  ) : (
+    <SparklesIcon className="text-ai-accent h-3 w-3" />
+  );
+}
+
+function DocumentActionsMenu({
+  actions,
+  delegateOwnership = false,
+  doc,
+  includeExpiredSend = false,
+  includeTransferOwnership = false,
+}: {
+  readonly actions: DocumentListActions;
+  readonly delegateOwnership?: boolean;
+  readonly doc: DocumentListItem;
+  readonly includeExpiredSend?: boolean;
+  readonly includeTransferOwnership?: boolean;
+}) {
+  const workflowStatus = doc.workflowStatus ?? "draft";
+  const canSend =
+    workflowStatus === "draft" || (includeExpiredSend && workflowStatus === "expired");
+  const canCancel = workflowStatus === "sent" || workflowStatus === "in_progress";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Document actions for ${doc.name}`}
+          className="h-8 w-8 shrink-0"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <MoreVerticalIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+        <DropdownMenuItem onClick={() => actions.openDocument(doc._id)}>
+          <FileTextIcon className="mr-2 h-4 w-4" />
+          Open
+        </DropdownMenuItem>
+        {canSend && (
+          <DropdownMenuItem onClick={() => actions.sendDocument(doc._id)}>
+            <SendIcon className="mr-2 h-4 w-4" />
+            {workflowStatus === "expired" ? "Re-send Document" : "Send Document"}
+          </DropdownMenuItem>
+        )}
+        {canCancel && (
+          <DropdownMenuItem
+            onClick={() => actions.cancelDocument(doc._id)}
+            className="text-destructive"
+          >
+            <BanIcon className="mr-2 h-4 w-4" />
+            Cancel Document
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => actions.downloadDocument(doc._id)}>
+          <DownloadIcon className="mr-2 h-4 w-4" />
+          Download
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => actions.shareDocument(doc._id, doc.name)}>
+          <Share2Icon className="mr-2 h-4 w-4" />
+          Share
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => actions.moveToFolder(doc._id)}>
+          <FolderInputIcon className="mr-2 h-4 w-4" />
+          Move to Folder
+        </DropdownMenuItem>
+        {includeTransferOwnership && delegateOwnership && (
+          <DropdownMenuItem onClick={() => actions.transferOwnership(doc)}>
+            <ArrowRightLeftIcon className="mr-2 h-4 w-4" />
+            Transfer Ownership
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onClick={() => actions.deleteDocument(doc._id)}
+          className="text-destructive"
+        >
+          <TrashIcon className="mr-2 h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 function DocumentsList({
@@ -412,22 +821,6 @@ function DocumentsList({
     });
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
-  };
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   const getConfirmDialogContent = () => {
     switch (confirmDialog.type) {
       case "delete":
@@ -477,6 +870,17 @@ function DocumentsList({
     dateRange?.from ||
     dateRange?.to;
 
+  const documentActions: DocumentListActions = {
+    openDocument: handleOpenDocument,
+    sendDocument: handleSendDocument,
+    cancelDocument: handleCancelDocument,
+    downloadDocument: handleDownload,
+    shareDocument: onShareClick,
+    moveToFolder: onMoveToFolder,
+    deleteDocument: handleDelete,
+    transferOwnership: onTransferOwnership,
+  };
+
   return (
     <>
       {/* SEA-140: Enhanced empty state with helpful CTAs */}
@@ -524,166 +928,20 @@ function DocumentsList({
                   {/* Folder rows (shown above documents, not paginated) */}
                   {!searchQuery.trim() &&
                     subfolders?.map((folder) => (
-                      <TableRow
+                      <FolderTableRow
                         key={folder._id}
-                        className="hover:bg-muted/50 cursor-pointer"
-                        onClick={() => onFolderNavigate(folder._id)}
-                      >
-                        <TableCell>
-                          <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-[60px]">
-                            <FolderIcon className="text-muted-foreground h-5 w-5" />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <p className="font-medium">{folder.name}</p>
-                          <p className="text-muted-foreground text-xs">Folder</p>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <div className="text-sm">
-                            <p>{formatDate(folder.createdAt)}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            Folder
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right" />
-                      </TableRow>
+                        folder={folder}
+                        onFolderNavigate={onFolderNavigate}
+                      />
                     ))}
                   {paginatedDocuments.map((doc) => (
-                    <TableRow
+                    <DocumentTableRow
                       key={doc._id}
-                      data-testid="document-row"
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => handleOpenDocument(doc._id)}
-                    >
-                      <TableCell>
-                        <DocumentThumbnail
-                          documentId={doc._id}
-                          storageId={doc.storageId}
-                          thumbnailDataUrl={doc.thumbnailDataUrl}
-                          name={doc.name}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            <HighlightedText
-                              text={doc.name}
-                              matches={matchesMap.get(doc._id)}
-                              fieldKey="name"
-                            />
-                          </p>
-                          {doc.description && (
-                            <p className="text-muted-foreground line-clamp-1 text-sm">
-                              <HighlightedText
-                                text={doc.description}
-                                matches={matchesMap.get(doc._id)}
-                                fieldKey="description"
-                              />
-                            </p>
-                          )}
-                          {doc.pageCount !== undefined && doc.pageCount > 0 && (
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              {doc.pageCount} {doc.pageCount === 1 ? "page" : "pages"}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <div className="text-sm">
-                          <p>{formatDate(doc.createdAt)}</p>
-                          <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <WorkflowStatusBadge status={doc.workflowStatus} />
-                          {doc.aiProcessingStatus === "processing" && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
-                              </TooltipTrigger>
-                              <TooltipContent>AI analyzing document</TooltipContent>
-                            </Tooltip>
-                          )}
-                          {doc.aiProcessingStatus === "completed" && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <SparklesIcon className="text-ai-accent h-3 w-3" />
-                              </TooltipTrigger>
-                              <TooltipContent>AI analysis complete</TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Document actions for ${doc.name}`}
-                              className="h-8 w-8"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVerticalIcon className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => handleOpenDocument(doc._id)}>
-                              <FileTextIcon className="mr-2 h-4 w-4" />
-                              Open
-                            </DropdownMenuItem>
-                            {((doc.workflowStatus ?? "draft") === "draft" ||
-                              (doc.workflowStatus ?? "draft") === "expired") && (
-                              <DropdownMenuItem onClick={() => handleSendDocument(doc._id)}>
-                                <SendIcon className="mr-2 h-4 w-4" />
-                                {(doc.workflowStatus ?? "draft") === "expired"
-                                  ? "Re-send Document"
-                                  : "Send Document"}
-                              </DropdownMenuItem>
-                            )}
-                            {((doc.workflowStatus ?? "draft") === "sent" ||
-                              (doc.workflowStatus ?? "draft") === "in_progress") && (
-                              <DropdownMenuItem
-                                onClick={() => handleCancelDocument(doc._id)}
-                                className="text-destructive"
-                              >
-                                <BanIcon className="mr-2 h-4 w-4" />
-                                Cancel Document
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => handleDownload(doc._id)}>
-                              <DownloadIcon className="mr-2 h-4 w-4" />
-                              Download
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onShareClick(doc._id, doc.name)}>
-                              <Share2Icon className="mr-2 h-4 w-4" />
-                              Share
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onMoveToFolder(doc._id)}>
-                              <FolderInputIcon className="mr-2 h-4 w-4" />
-                              Move to Folder
-                            </DropdownMenuItem>
-                            {delegateOwnership && (
-                              <DropdownMenuItem onClick={() => onTransferOwnership(doc)}>
-                                <ArrowRightLeftIcon className="mr-2 h-4 w-4" />
-                                Transfer Ownership
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(doc._id)}
-                              className="text-destructive"
-                            >
-                              <TrashIcon className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                      actions={documentActions}
+                      delegateOwnership={delegateOwnership}
+                      doc={doc}
+                      matches={matchesMap.get(doc._id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -694,148 +952,19 @@ function DocumentsList({
               {/* Folder cards (shown above documents when not searching) */}
               {!searchQuery.trim() &&
                 subfolders?.map((folder) => (
-                  <Card
+                  <FolderGridCard
                     key={folder._id}
-                    className="hover:bg-secondary cursor-pointer transition-colors duration-200"
-                    onClick={() => onFolderNavigate(folder._id)}
-                  >
-                    <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
-                      <FolderIcon className="text-muted-foreground h-12 w-12" />
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <FolderIcon className="h-4 w-4 shrink-0" />
-                        <span className="line-clamp-2">{folder.name}</span>
-                      </CardTitle>
-                      <CardDescription>Folder</CardDescription>
-                    </CardHeader>
-                  </Card>
+                    folder={folder}
+                    onFolderNavigate={onFolderNavigate}
+                  />
                 ))}
               {paginatedDocuments.map((doc) => (
-                <Card
+                <DocumentGridCard
                   key={doc._id}
-                  className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-                  onClick={() => handleOpenDocument(doc._id)}
-                >
-                  <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
-                    <DocumentThumbnail
-                      documentId={doc._id}
-                      storageId={doc.storageId}
-                      thumbnailDataUrl={doc.thumbnailDataUrl}
-                      name={doc.name}
-                      className="h-full w-full"
-                    />
-                  </div>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex min-w-0 flex-1 items-start gap-2">
-                        <FileIcon className="text-muted-foreground h-5 w-5" />
-                        <CardTitle className="line-clamp-2 text-base leading-5 break-all">
-                          <HighlightedText
-                            text={doc.name}
-                            matches={matchesMap.get(doc._id)}
-                            fieldKey="name"
-                          />
-                        </CardTitle>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Document actions for ${doc.name}`}
-                            className="h-8 w-8 shrink-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVerticalIcon className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenuItem onClick={() => handleOpenDocument(doc._id)}>
-                            <FileTextIcon className="mr-2 h-4 w-4" />
-                            Open
-                          </DropdownMenuItem>
-                          {(doc.workflowStatus ?? "draft") === "draft" && (
-                            <DropdownMenuItem onClick={() => handleSendDocument(doc._id)}>
-                              <SendIcon className="mr-2 h-4 w-4" />
-                              Send Document
-                            </DropdownMenuItem>
-                          )}
-                          {((doc.workflowStatus ?? "draft") === "sent" ||
-                            (doc.workflowStatus ?? "draft") === "in_progress") && (
-                            <DropdownMenuItem
-                              onClick={() => handleCancelDocument(doc._id)}
-                              className="text-destructive"
-                            >
-                              <BanIcon className="mr-2 h-4 w-4" />
-                              Cancel Document
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => handleDownload(doc._id)}>
-                            <DownloadIcon className="mr-2 h-4 w-4" />
-                            Download
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onShareClick(doc._id, doc.name)}>
-                            <Share2Icon className="mr-2 h-4 w-4" />
-                            Share
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onMoveToFolder(doc._id)}>
-                            <FolderInputIcon className="mr-2 h-4 w-4" />
-                            Move to Folder
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(doc._id)}
-                            className="text-destructive"
-                          >
-                            <TrashIcon className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    {doc.description && (
-                      <CardDescription className="line-clamp-2">
-                        <HighlightedText
-                          text={doc.description}
-                          matches={matchesMap.get(doc._id)}
-                          fieldKey="description"
-                        />
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Status</span>
-                        <div className="flex items-center gap-1.5">
-                          <WorkflowStatusBadge status={doc.workflowStatus} />
-                          {doc.aiProcessingStatus === "processing" && (
-                            <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
-                          )}
-                          {doc.aiProcessingStatus === "completed" && (
-                            <SparklesIcon className="text-ai-accent h-3 w-3" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Size</span>
-                        <span>{formatBytes(doc.fileSize)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Uploaded</span>
-                        <span>{formatDate(doc.createdAt)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Sharing</span>
-                        <Badge variant={doc.sharingMode === "private" ? "secondary" : "default"}>
-                          {doc.sharingMode === "private" && "Private"}
-                          {doc.sharingMode === "workspace" && "Team"}
-                          {doc.sharingMode === "specific" && "Specific"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  actions={documentActions}
+                  doc={doc}
+                  matches={matchesMap.get(doc._id)}
+                />
               ))}
             </div>
           )}
