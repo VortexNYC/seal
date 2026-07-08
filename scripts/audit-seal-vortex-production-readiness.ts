@@ -110,13 +110,13 @@ const humanValuePlaceholders: Readonly<Record<string, string>> = {
   VORTEX_BILLING_PAYMENTS_ENVIRONMENT: "production",
   VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "'[\"<seal-production-org-id>\"]'",
   VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP:
-    "'{\"<seal-production-org-id>\":\"<vortex-production-billing-account-id>\"}'",
+    '\'{"<seal-production-org-id>":"<vortex-production-billing-account-id>"}\'',
   VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP:
-    "'{\"<seal-production-org-id>\":\"<vortex-production-customer-id>\"}'",
+    '\'{"<seal-production-org-id>":"<vortex-production-customer-id>"}\'',
   VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP:
-    "'{\"<seal-production-org-id>\":\"<vortex-production-merchant-account-id>\"}'",
+    '\'{"<seal-production-org-id>":"<vortex-production-merchant-account-id>"}\'',
   VORTEX_BILLING_DOCUMENT_PRICE_MAP:
-    "'{\"<seal-production-org-id>\":\"<vortex-production-document-price-id>\"}'",
+    '\'{"<seal-production-org-id>":"<vortex-production-document-price-id>"}\'',
   VORTEX_PAYMENTS_RUNTIME_MODE: "production",
   FINIX_PRODUCTION_USERNAME: "'<1password-finix-production-username>'",
   FINIX_PRODUCTION_PASSWORD: "'<1password-finix-production-password>'",

@@ -48,6 +48,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 - The local branch has not been pushed or merged.
 - Sandbox document-payment settlement is not proven fully settled yet.
+- `bun run audit:seal-vortex-sandbox-settlement-boundary` preserves the captured sandbox payment ids and human-run settlement commands without calling Convex, Finix, or reconciliation.
 - Production Vortex document-payment routing is not configured.
 - Production real-money proof is not complete.
 - Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
@@ -101,5 +102,6 @@ Work SEA-562:
 2. Preserve the exact human-run sandbox settlement command from `docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md`.
 3. Run non-mutating local proof gates only:
    - `bun run prove:seal-vortex-migration-local`
+   - `bun run audit:seal-vortex-sandbox-settlement-boundary`
    - `bun run audit:seal-vortex-production-readiness`
 4. Do not mark launch readiness complete until settled sandbox proof and production proof both pass.

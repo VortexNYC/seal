@@ -60,6 +60,11 @@ const proofCommands: readonly ProofCommand[] = [
     command: "bun",
     args: ["run", "prove:seal-document-payment-vortex-local"],
   },
+  {
+    label: "Seal Vortex sandbox settlement boundary",
+    command: "bun",
+    args: ["run", "audit:seal-vortex-sandbox-settlement-boundary"],
+  },
 ];
 
 for (const proofCommand of proofCommands) {
@@ -104,6 +109,7 @@ console.log(
         "SaaS webhook projection is Vortex-backed",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
         "operational payment surfaces and backend adapter seams route through Vortex-owned APIs",
+        "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
       ],
     },
     null,
