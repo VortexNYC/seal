@@ -35,6 +35,18 @@ type DeploymentAudit =
       readonly errors?: readonly string[];
     };
 
+type RemediationCommand = {
+  readonly label: string;
+  readonly cwd: string;
+  readonly command: string;
+};
+
+type RemediationPlan = {
+  readonly boundary: string;
+  readonly missingEnvSetCommands: readonly RemediationCommand[];
+  readonly proofSequence: readonly string[];
+};
+
 const repoRoot = resolve(import.meta.dir, "..");
 const sealBackendRoot = resolve(repoRoot, "apps/backend");
 const vortexBackendRoot = resolve(repoRoot, "../vortex-payments/apps/backend");
@@ -93,6 +105,24 @@ const vortexGroups: readonly AuditGroup[] = [
     ],
   },
 ];
+
+const humanValuePlaceholders: Readonly<Record<string, string>> = {
+  VORTEX_BILLING_PAYMENTS_ENVIRONMENT: "production",
+  VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "'[\"<seal-production-org-id>\"]'",
+  VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP:
+    "'{\"<seal-production-org-id>\":\"<vortex-production-billing-account-id>\"}'",
+  VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP:
+    "'{\"<seal-production-org-id>\":\"<vortex-production-customer-id>\"}'",
+  VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP:
+    "'{\"<seal-production-org-id>\":\"<vortex-production-merchant-account-id>\"}'",
+  VORTEX_BILLING_DOCUMENT_PRICE_MAP:
+    "'{\"<seal-production-org-id>\":\"<vortex-production-document-price-id>\"}'",
+  VORTEX_PAYMENTS_RUNTIME_MODE: "production",
+  FINIX_PRODUCTION_USERNAME: "'<1password-finix-production-username>'",
+  FINIX_PRODUCTION_PASSWORD: "'<1password-finix-production-password>'",
+  FINIX_PRODUCTION_APPLICATION_ID: "'<finix-production-application-id>'",
+  FINIX_PRODUCTION_WEBHOOK_SECRET: "'<finix-production-webhook-secret>'",
+};
 
 async function runCommand(cmd: readonly string[], cwd: string): Promise<CommandResult> {
   const child = Bun.spawn({
@@ -221,6 +251,67 @@ async function auditDeployment(input: {
       };
 }
 
+function collectMissingEnvNames(audit: DeploymentAudit): readonly string[] {
+  return [...new Set(audit.groups.flatMap((group) => group.missing))];
+}
+
+function buildEnvSetCommand(input: {
+  readonly repoRoot: string;
+  readonly deployment: string;
+  readonly name: string;
+}): RemediationCommand {
+  return {
+    label: input.name,
+    cwd: input.repoRoot,
+    command: [
+      "bunx",
+      "convex",
+      "env",
+      "set",
+      input.name,
+      humanValuePlaceholders[input.name] ?? "'<value>'",
+      "--prod",
+      "--deployment",
+      input.deployment,
+    ].join(" "),
+  };
+}
+
+function buildRemediationPlan(input: {
+  readonly seal: DeploymentAudit;
+  readonly vortex: DeploymentAudit;
+}): RemediationPlan {
+  const missingEnvSetCommands = [
+    ...collectMissingEnvNames(input.seal).map((name) =>
+      buildEnvSetCommand({
+        repoRoot: input.seal.repoRoot,
+        deployment: input.seal.deployment,
+        name,
+      }),
+    ),
+    ...collectMissingEnvNames(input.vortex).map((name) =>
+      buildEnvSetCommand({
+        repoRoot: input.vortex.repoRoot,
+        deployment: input.vortex.deployment,
+        name,
+      }),
+    ),
+  ];
+
+  return {
+    boundary:
+      "Human-run checklist only. These commands are printed for the operator; this audit never sets env values, creates payments, reconciles settlement, or moves money.",
+    missingEnvSetCommands,
+    proofSequence: [
+      "bun run audit:seal-vortex-production-readiness",
+      "Human runs one small production document payment against the explicitly allowlisted organization.",
+      "Human waits for production settlement and payout visibility.",
+      "Human reruns the paid-state proof with production ids and --require-settled.",
+      "Only after proof passes: widen document-payment routing and retire external production webhook residue.",
+    ],
+  };
+}
+
 const seal = await auditDeployment({
   repoRoot: sealBackendRoot,
   deployment: sealProductionDeployment,
@@ -243,6 +334,7 @@ console.log(
         "Presence-only audit. It lists required environment variable names but never prints secret values or mutates deployments.",
       seal,
       vortex,
+      remediation: buildRemediationPlan({ seal, vortex }),
       nextAction: ok
         ? "Run the human production proof sequence with explicit target ids."
         : "Configure the missing production environment names, then rerun this presence audit.",

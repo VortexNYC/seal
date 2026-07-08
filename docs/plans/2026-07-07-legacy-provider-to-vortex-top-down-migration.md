@@ -202,7 +202,7 @@ Current launch baseline:
 - Failed-payment recovery is green in sandbox.
 - Settled document-payment money movement is still waiting on provider settlement readiness.
 - Production document-payment routing is not configured.
-- `bun run audit:seal-vortex-production-readiness` is the presence-only production gate. It currently fails without printing secret values because Seal production is missing document-payment routing names and Vortex production is missing runtime/Finix production names.
+- `bun run audit:seal-vortex-production-readiness` is the presence-only production gate. It currently fails without printing secret values because Seal production is missing document-payment routing names and Vortex production is missing runtime/Finix production names. The audit prints human-run `convex env set` commands with placeholders for the missing values; agents must not execute those production mutations.
 - New live proof runs must seed `VORTEX_BILLING_DOCUMENT_*` maps, not shared SaaS maps, so document-payment money routing stays explicit.
 - `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate for future sessions; it intentionally excludes live card, settlement, payout, production credential, and remote git work.
 
