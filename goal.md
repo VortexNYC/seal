@@ -42,7 +42,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 - `bun run prove:seal-coupons-vortex` now merges its temporary proof price into `VORTEX_BILLING_SAAS_PRICE_MAP` instead of replacing the whole map; this preserves the `pro:monthly:v2` checkout mapping when coupon proofs run before SaaS checkout proofs.
 - The Seal dev `organizations` table was cleaned from stale retired-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
 - Non-production Convex data cleanup on 2026-07-08 emptied old retired-provider account/webhook tables in local dev (`dev:aware-buzzard-568`) and staging/dev (`dev:clever-goose-484`), and cleaned the same retired customer field from 6 local-dev organization rows while preserving ids and creation times. Backups were saved under `/tmp` on this machine.
-- Latest focused local proof passed after remote-boundary commit `1c19bdc9`; the broader root quality gates last passed after proof-boundary commit `ab710aab`:
+- Latest focused local proof has passed on this branch; the broader root quality gates last passed after proof-boundary commit `ab710aab`:
   - `bun run prove:zero-retired-provider-residue`
   - explicit hidden/no-ignore owned working-tree legacy-provider token scan
   - `bun run verify`
@@ -55,7 +55,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
   - `bun run audit:seal-vortex-sandbox-settlement-boundary`
   - `bun run audit:seal-vortex-launch-boundary`
 - No git push has been performed from this branch. Remote push still requires explicit human confirmation.
-- Remote review is not open yet: `origin/staging...HEAD` is `0 behind / 125 ahead`, `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and there is no open PR for this branch. PR #480 is merged historical work and does not contain the current proof-boundary branch head.
+- Remote review is not open yet: inspect the current local-vs-staging count with `git rev-list --left-right --count origin/staging...HEAD`; `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and there is no open PR for this branch. PR #480 is merged historical work and does not contain the current proof-boundary branch head.
 
 ## Replacement Proof State
 
@@ -71,7 +71,7 @@ Do not collapse these gates. Code deletion can be green while launch readiness i
 
 ## Not Done
 
-- The local branch has not been pushed or merged; it is currently local-only and `125` commits ahead of `origin/staging` with no remote branch and no open PR.
+- The local branch has not been pushed or merged; it is currently local-only with no remote branch and no open PR. Inspect the current ahead count with `git rev-list --left-right --count origin/staging...HEAD`.
 - Sandbox document-payment settlement is not proven fully settled yet.
 - `bun run audit:seal-vortex-sandbox-settlement-boundary` preserves the captured sandbox payment ids, earliest human reconciliation timestamp, the Vortex final sandbox launch gate, and human-run settlement commands without calling Convex, Finix, or reconciliation. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
 - Production Vortex document-payment routing is not configured.

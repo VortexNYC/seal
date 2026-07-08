@@ -221,7 +221,7 @@ Current launch baseline:
 - The local migration gate also includes `bun run prove:seal-saas-vortex-local`, so SaaS checkout/catalog/coupon/portal/lifecycle replacement cannot drift while document-payment launch proof is waiting on human-boundary settlement and production work.
 - The local migration gate also includes `bun run prove:seal-account-onboarding-vortex-local`, so the top-of-funnel account/onboarding contract is covered by the same one-command proof.
 - `bun run audit:seal-vortex-hosted-outcomes-boundary` statically preserves the checked-in hosted outcome proof artifact: paid Vortex capture, Seal paid projection, failed recovery, duplicate failed idempotency, stale failed ignore-after-paid behavior, dunning cancellation, and the unsettled-money go-live boundary.
-- Remote review is not open yet: the local branch is `0 behind / 125 ahead` of `origin/staging`, `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and no open PR exists for this branch. PR #480 is merged historical work and is not the active review vehicle for the current proof-boundary head.
+- Remote review is not open yet: inspect the current local-vs-staging count with `git rev-list --left-right --count origin/staging...HEAD`; `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and no open PR exists for this branch. PR #480 is merged historical work and is not the active review vehicle for the current proof-boundary head.
 
 Do next:
 
