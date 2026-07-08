@@ -2,8 +2,6 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
-const retiredProviderToken = String.fromCharCode(115, 116, 114, 105, 112, 101);
-
 const portableVortexProofScripts = [
   "scripts/prove-seal-saas-checkout-vortex.ts",
   "scripts/prove-seal-document-payment-vortex-live.ts",
@@ -31,29 +29,9 @@ type ProofCommand = {
 
 const proofCommands: readonly ProofCommand[] = [
   {
-    label: "No tracked retired-provider residue",
+    label: "No retired-provider package, path, or provider-shaped content residue",
     command: "bun",
     args: ["run", "prove:zero-retired-provider-residue"],
-  },
-  {
-    label: "No working-tree retired-provider residue outside generated outputs",
-    command: "rg",
-    args: [
-      "-i",
-      "-n",
-      retiredProviderToken,
-      ".",
-      "-g",
-      "!**/node_modules/**",
-      "-g",
-      "!**/.output/**",
-      "-g",
-      "!**/.turbo/**",
-      "-g",
-      "!**/dist/**",
-      "-g",
-      "!.git/**",
-    ],
   },
   {
     label: "Vortex billing settings adoption",
@@ -143,14 +121,6 @@ for (const proofCommand of proofCommands) {
     process.exit(1);
   }
 
-  if (proofCommand.command === "rg") {
-    if (result.status === 1) {
-      console.log("[proof] Working-tree retired-provider scan passed with no matches.");
-      continue;
-    }
-    process.exit(result.status ?? 1);
-  }
-
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
@@ -164,8 +134,9 @@ console.log(
       boundary:
         "Local non-mutating Seal Vortex migration proof only; live card payment, settlement reconciliation, payout proof, production credential mutation, and remote git push remain human-boundary work.",
       proven: [
-        "tracked source contains no retired-provider residue",
-        "working tree contains no retired-provider residue outside generated outputs",
+        "tracked paths contain no retired-provider package or file names",
+        "dependency graph and installed package paths contain no retired-provider package residue",
+        "tracked files and working-tree content outside .git contain no provider-shaped retired-provider residue",
         "account creation, merchant onboarding guards, and billing/payments/merchant settings use Vortex naming and actions",
         "SaaS checkout, catalog price resolution, coupon application, portal links, lifecycle guards, and webhook projection are Vortex-backed locally",
         "document payment creation and hosted outcome projection are Vortex-backed locally",
