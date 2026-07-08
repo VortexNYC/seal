@@ -10,12 +10,7 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalMutation, type MutationCtx, mutation, query } from "./_generated/server";
 import {
   listComponentInvitationsByOrganization,
   listComponentMembersByOrganization,

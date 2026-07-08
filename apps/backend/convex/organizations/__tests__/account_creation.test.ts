@@ -67,8 +67,9 @@ describe("account creation", () => {
         subscriptionProductCount: (await ctx.db.query("subscription_products").collect()).length,
         subscriptionPriceCount: (await ctx.db.query("subscription_prices").collect()).length,
         merchantAccountCount: (await ctx.db.query("merchant_accounts").collect()).length,
-        vortexBillingWebhookEventCount: (await ctx.db.query("vortex_billing_webhook_events").collect())
-          .length,
+        vortexBillingWebhookEventCount: (
+          await ctx.db.query("vortex_billing_webhook_events").collect()
+        ).length,
       };
     });
 

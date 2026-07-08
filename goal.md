@@ -73,10 +73,8 @@ The goal is zero executable Stripe code, zero Stripe packages, zero Stripe runti
   - Billing settings show active Pro.
   - `activeStripeIdPresent` is false.
 
-- `prove:seal-saas-stripe-lifecycle-guard`
-  - Stripe org-created lifecycle skipped under `vortex_billing`.
-  - Stripe seat sync skipped.
-  - No Stripe customer/subscription was created.
+- Retired after SEA-558/SEA-559:
+  - `prove:seal-saas-stripe-lifecycle-guard` was deleted because the backend Stripe lifecycle actions it called were intentionally removed.
 
 - Staging browser check:
   - Billing settings page rendered on staging.
@@ -136,13 +134,18 @@ SEA-558 removed the executable backend Stripe runtime and package surface. The n
 5. Decide what stays in historical `docs/archive`; document the archive exception or delete it.
 6. Run a zero-Stripe scanner as a hard gate.
 
+- SEA-559 local cut deleted obsolete proof scripts that referenced deleted Stripe backend modules:
+  - `scripts/prove-seal-saas-stripe-lifecycle-guard.ts`
+  - `scripts/prove-vortex-payments-backend-adapter-adoption.ts`
+  - Removed their root package script aliases.
+
 ## Immediate Execution Plan
 
 1. Commit SEA-558 backend runtime/package deletion cut locally.
 2. Continue SEA-559 proof/script cleanup: delete obsolete Stripe lifecycle/backend-adapter proof scripts and root script entries that reference deleted modules.
 3. Continue SEA-560 active code naming cleanup: comments, tests, legacy user field/migration, landing copy, and non-archived docs.
 4. Continue SEA-561 final zero-Stripe scanner and archive decision.
-4. Keep every lane proof-gated:
+5. Keep every lane proof-gated:
    - `bun run format:changed:check`
    - `bun run lint:strict`
    - `bun run typecheck`
@@ -152,7 +155,7 @@ SEA-558 removed the executable backend Stripe runtime and package surface. The n
    - `bun run prove:vortex-operational-payments-adoption`
    - `bun run prove:seal-document-payment-vortex-local`
    - `bun run prove:vortex-saas-webhook-projection`
-5. Live sandbox/payment/settlement proof stays a human-run boundary.
+6. Live sandbox/payment/settlement proof stays a human-run boundary.
 
 ## Guardrails
 
