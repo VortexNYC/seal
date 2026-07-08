@@ -18,6 +18,7 @@ import type { ProviderRegistry } from "../../providers/registry";
 import type {
   ProviderContext,
   ProviderError,
+  ProviderMerchantOnboardingRefreshOutput,
   ProviderOnboardingRequirementUploadLinkOutput,
 } from "../../providers/types";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
@@ -1012,6 +1013,265 @@ function toRequirementUploadLink(
   };
 }
 
+async function refreshMerchantOnboardingSessionState(
+  dependencies: MerchantOnboardingServiceDependencies,
+  command: RefreshMerchantOnboardingSessionCommand,
+  now: () => string,
+): Promise<RefreshedMerchantOnboardingSessionState | null> {
+  return dependencies.uow.runInTransaction(async (uow) => {
+    const scope = await getOnboardingRefreshScope(uow, command);
+    if (!scope) {
+      return null;
+    }
+
+    const providerContext = dependencies.resolveProviderContext(scope.merchant);
+    const providerValue = await refreshProviderMerchantOnboarding(
+      dependencies,
+      providerContext,
+      scope.merchant,
+      command,
+    );
+    const existingRequirements = await uow.onboarding.listRequirementsForSession(scope.session.id, {
+      environment: command.environment,
+    });
+    const refreshedAt = now();
+    const reconciled = reconcileMerchantOnboardingRequirements(
+      existingRequirements,
+      providerValue,
+      refreshedAt,
+    );
+    for (const requirement of reconciled.allRequirements) {
+      await uow.onboarding.saveRequirement(requirement);
+    }
+
+    const updatedSession = createRefreshedOnboardingSession({
+      session: scope.session,
+      providerValue,
+      currentRequirements: reconciled.currentRequirements,
+      refreshedAt,
+    });
+    const updatedMerchant = createRefreshedOnboardingMerchant({
+      merchant: scope.merchant,
+      providerValue,
+      refreshedAt,
+    });
+    await saveRefreshedOnboardingState({
+      uow,
+      merchant: updatedMerchant,
+      session: updatedSession,
+      requirements: reconciled.allRequirements,
+      generatedAt: refreshedAt,
+    });
+    await saveOnboardingStatusChangeEvent({
+      uow,
+      command,
+      merchant: scope.merchant,
+      previousSession: scope.session,
+      updatedSession,
+      providerContext,
+      occurredAt: refreshedAt,
+    });
+
+    return {
+      snapshot: toSnapshot(updatedSession, reconciled.currentRequirements),
+      requirements: reconciled.currentRequirements.map((requirement) =>
+        toRequirementView(requirement),
+      ),
+    };
+  });
+}
+
+async function getOnboardingRefreshScope(
+  uow: PaymentsUnitOfWork,
+  command: RefreshMerchantOnboardingSessionCommand,
+): Promise<{
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+} | null> {
+  const merchant = await uow.merchants.getById(command.merchantAccountId, {
+    environment: command.environment,
+  });
+  if (!merchant) {
+    return null;
+  }
+  const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
+    environment: command.environment,
+  });
+  return session && session.merchantAccountId === command.merchantAccountId
+    ? { merchant, session }
+    : null;
+}
+
+async function refreshProviderMerchantOnboarding(
+  dependencies: MerchantOnboardingServiceDependencies,
+  providerContext: ProviderContext,
+  merchant: MerchantAccount,
+  command: RefreshMerchantOnboardingSessionCommand,
+): Promise<ProviderMerchantOnboardingRefreshOutput> {
+  const adapter = dependencies.providers.getAdapter(providerContext.provider);
+  if (!adapter.refreshMerchantOnboarding) {
+    throw new MerchantOnboardingServiceError(
+      "provider_unavailable",
+      "provider does not support onboarding session refresh",
+      { details: { provider: providerContext.provider } },
+    );
+  }
+  const merchantRef = merchant.processorAccountRefs.find((ref) => ref.objectType === "merchant");
+  const providerResult = await adapter.refreshMerchantOnboarding(providerContext, {
+    merchantAccountId: command.merchantAccountId,
+    onboardingSessionId: command.onboardingSessionId,
+    merchantRef,
+  });
+  if (!providerResult.ok || !providerResult.value) {
+    throw mapProviderError(
+      providerResult.error ?? {
+        provider: providerContext.provider,
+        category: "unknown",
+        code: "provider_result_missing",
+        message: "provider onboarding refresh failed without error details",
+        retryable: false,
+      },
+    );
+  }
+  return providerResult.value;
+}
+
+function reconcileMerchantOnboardingRequirements(
+  existingRequirements: readonly MerchantRequirement[],
+  providerValue: ProviderMerchantOnboardingRefreshOutput,
+  refreshedAt: string,
+): {
+  readonly currentRequirements: readonly MerchantRequirement[];
+  readonly allRequirements: readonly MerchantRequirement[];
+} {
+  const existingRequirementsById = new Map(
+    existingRequirements.map((requirement) => [requirement.id, requirement]),
+  );
+  const existingRequirementsByProviderRef = new Map(
+    existingRequirements
+      .filter((requirement) => requirement.providerRequirementRef !== undefined)
+      .map((requirement) => [sealAssertPresent(requirement.providerRequirementRef), requirement]),
+  );
+  const currentRequirements = providerValue.requirements.map((requirement) => {
+    const existingRequirement =
+      existingRequirementsById.get(requirement.id) ??
+      (requirement.providerRequirementRef
+        ? (existingRequirementsByProviderRef.get(requirement.providerRequirementRef) ?? null)
+        : null);
+    return reconcileRefreshedRequirement(existingRequirement, requirement);
+  });
+  const matchedRequirementIds = new Set(currentRequirements.map((requirement) => requirement.id));
+  const closedRequirements = existingRequirements
+    .filter((requirement) => !matchedRequirementIds.has(requirement.id))
+    .map((requirement) =>
+      closeRemovedRequirement(requirement, providerValue.onboardingStatus, refreshedAt),
+    );
+  return {
+    currentRequirements,
+    allRequirements: [...currentRequirements, ...closedRequirements],
+  };
+}
+
+function createRefreshedOnboardingSession(input: {
+  readonly session: MerchantOnboardingSession;
+  readonly providerValue: ProviderMerchantOnboardingRefreshOutput;
+  readonly currentRequirements: readonly MerchantRequirement[];
+  readonly refreshedAt: string;
+}): MerchantOnboardingSession {
+  const openRequirementCount = input.currentRequirements.filter(
+    (requirement) => requirement.status === "pending" || requirement.status === "submitted",
+  ).length;
+  return {
+    ...input.session,
+    status: input.providerValue.onboardingStatus,
+    currentRequirementCount: input.currentRequirements.length,
+    openRequirementCount,
+    processorRefs: dedupeProcessorRefs([
+      ...input.session.processorRefs,
+      ...input.providerValue.processorRefs,
+    ]),
+    approvedAt:
+      input.providerValue.onboardingStatus === "approved"
+        ? (input.session.approvedAt ?? input.refreshedAt)
+        : input.session.approvedAt,
+    rejectedAt:
+      input.providerValue.onboardingStatus === "rejected"
+        ? (input.session.rejectedAt ?? input.refreshedAt)
+        : input.session.rejectedAt,
+    updatedAt: input.refreshedAt,
+  };
+}
+
+function createRefreshedOnboardingMerchant(input: {
+  readonly merchant: MerchantAccount;
+  readonly providerValue: ProviderMerchantOnboardingRefreshOutput;
+  readonly refreshedAt: string;
+}): MerchantAccount {
+  return {
+    ...input.merchant,
+    status: input.providerValue.merchantStatus,
+    metadata: input.providerValue.metadata
+      ? { ...input.merchant.metadata, ...input.providerValue.metadata }
+      : input.merchant.metadata,
+    processorAccountRefs: dedupeProcessorRefs([
+      ...input.merchant.processorAccountRefs,
+      ...input.providerValue.processorRefs,
+    ]),
+    updatedAt: input.refreshedAt,
+  };
+}
+
+async function saveRefreshedOnboardingState(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly merchant: MerchantAccount;
+  readonly session: MerchantOnboardingSession;
+  readonly requirements: readonly MerchantRequirement[];
+  readonly generatedAt: string;
+}): Promise<void> {
+  await input.uow.onboarding.saveSession(input.session);
+  await input.uow.merchants.save(input.merchant);
+  await input.uow.merchantStates.save(
+    deriveMerchantAccountState({
+      merchant: input.merchant,
+      onboardingSession: input.session,
+      requirements: input.requirements,
+      generatedAt: input.generatedAt,
+    }),
+  );
+}
+
+async function saveOnboardingStatusChangeEvent(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: RefreshMerchantOnboardingSessionCommand;
+  readonly merchant: MerchantAccount;
+  readonly previousSession: MerchantOnboardingSession;
+  readonly updatedSession: MerchantOnboardingSession;
+  readonly providerContext: ProviderContext;
+  readonly occurredAt: string;
+}): Promise<void> {
+  if (input.updatedSession.status === input.previousSession.status) {
+    return;
+  }
+  await input.uow.events.saveCanonicalEvent(
+    createMerchantOnboardingEvent({
+      id: `${input.merchant.id}:${input.updatedSession.status}:${input.occurredAt}`,
+      eventType: mapOnboardingStatusEventType(input.updatedSession.status),
+      aggregateType: "merchant_account",
+      aggregateId: input.merchant.id,
+      environment: input.command.environment,
+      sourceProvider: input.providerContext.provider,
+      occurredAt: input.occurredAt,
+      merchantAccountId: input.merchant.id,
+      payload: {
+        onboardingSessionId: input.updatedSession.id,
+        previousOnboardingStatus: input.previousSession.status,
+        onboardingStatus: input.updatedSession.status,
+        openRequirementCount: input.updatedSession.openRequirementCount,
+      },
+    }),
+  );
+}
+
 export function createMerchantOnboardingService(
   dependencies: MerchantOnboardingServiceDependencies,
 ): MerchantOnboardingService {
@@ -1256,161 +1516,7 @@ export function createMerchantOnboardingService(
     async refreshMerchantOnboardingSession(
       command: RefreshMerchantOnboardingSessionCommand,
     ): Promise<RefreshedMerchantOnboardingSessionState | null> {
-      return dependencies.uow.runInTransaction(async (uow) => {
-        const merchant = await uow.merchants.getById(command.merchantAccountId, {
-          environment: command.environment,
-        });
-        if (!merchant) {
-          return null;
-        }
-        const session = await uow.onboarding.getSessionById(command.onboardingSessionId, {
-          environment: command.environment,
-        });
-        if (!session || session.merchantAccountId !== command.merchantAccountId) {
-          return null;
-        }
-
-        const providerContext = dependencies.resolveProviderContext(merchant);
-        const adapter = dependencies.providers.getAdapter(providerContext.provider);
-        if (!adapter.refreshMerchantOnboarding) {
-          throw new MerchantOnboardingServiceError(
-            "provider_unavailable",
-            "provider does not support onboarding session refresh",
-            { details: { provider: providerContext.provider } },
-          );
-        }
-        const merchantRef = merchant.processorAccountRefs.find(
-          (ref) => ref.objectType === "merchant",
-        );
-        const providerResult = await adapter.refreshMerchantOnboarding(providerContext, {
-          merchantAccountId: command.merchantAccountId,
-          onboardingSessionId: command.onboardingSessionId,
-          merchantRef,
-        });
-        if (!providerResult.ok || !providerResult.value) {
-          throw mapProviderError(
-            providerResult.error ?? {
-              provider: providerContext.provider,
-              category: "unknown",
-              code: "provider_result_missing",
-              message: "provider onboarding refresh failed without error details",
-              retryable: false,
-            },
-          );
-        }
-
-        const providerValue = providerResult.value;
-        const existingRequirements = await uow.onboarding.listRequirementsForSession(session.id, {
-          environment: command.environment,
-        });
-        const existingRequirementsById = new Map(
-          existingRequirements.map((requirement) => [requirement.id, requirement]),
-        );
-        const existingRequirementsByProviderRef = new Map(
-          existingRequirements
-            .filter((requirement) => requirement.providerRequirementRef !== undefined)
-            .map((requirement) => [
-              sealAssertPresent(requirement.providerRequirementRef),
-              requirement,
-            ]),
-        );
-
-        const refreshedAt = now();
-        const reconciledCurrentRequirements = providerValue.requirements.map((requirement) => {
-          const existingRequirement =
-            existingRequirementsById.get(requirement.id) ??
-            (requirement.providerRequirementRef
-              ? (existingRequirementsByProviderRef.get(requirement.providerRequirementRef) ?? null)
-              : null);
-          return reconcileRefreshedRequirement(existingRequirement, requirement);
-        });
-
-        const matchedRequirementIds = new Set(
-          reconciledCurrentRequirements.map((requirement) => requirement.id),
-        );
-        const closedRequirements = existingRequirements
-          .filter((requirement) => !matchedRequirementIds.has(requirement.id))
-          .map((requirement) =>
-            closeRemovedRequirement(requirement, providerValue.onboardingStatus, refreshedAt),
-          );
-        const reconciledRequirements = [...reconciledCurrentRequirements, ...closedRequirements];
-
-        for (const requirement of reconciledRequirements) {
-          await uow.onboarding.saveRequirement(requirement);
-        }
-
-        const openRequirementCount = reconciledCurrentRequirements.filter(
-          (requirement) => requirement.status === "pending" || requirement.status === "submitted",
-        ).length;
-        const updatedSession: MerchantOnboardingSession = {
-          ...session,
-          status: providerValue.onboardingStatus,
-          currentRequirementCount: reconciledCurrentRequirements.length,
-          openRequirementCount,
-          processorRefs: dedupeProcessorRefs([
-            ...session.processorRefs,
-            ...providerValue.processorRefs,
-          ]),
-          approvedAt:
-            providerValue.onboardingStatus === "approved"
-              ? (session.approvedAt ?? refreshedAt)
-              : session.approvedAt,
-          rejectedAt:
-            providerValue.onboardingStatus === "rejected"
-              ? (session.rejectedAt ?? refreshedAt)
-              : session.rejectedAt,
-          updatedAt: refreshedAt,
-        };
-        const updatedMerchant: MerchantAccount = {
-          ...merchant,
-          status: providerValue.merchantStatus,
-          metadata: providerValue.metadata
-            ? { ...merchant.metadata, ...providerValue.metadata }
-            : merchant.metadata,
-          processorAccountRefs: dedupeProcessorRefs([
-            ...merchant.processorAccountRefs,
-            ...providerValue.processorRefs,
-          ]),
-          updatedAt: refreshedAt,
-        };
-        await uow.onboarding.saveSession(updatedSession);
-        await uow.merchants.save(updatedMerchant);
-        await uow.merchantStates.save(
-          deriveMerchantAccountState({
-            merchant: updatedMerchant,
-            onboardingSession: updatedSession,
-            requirements: reconciledRequirements,
-            generatedAt: refreshedAt,
-          }),
-        );
-        if (updatedSession.status !== session.status) {
-          await uow.events.saveCanonicalEvent(
-            createMerchantOnboardingEvent({
-              id: `${merchant.id}:${updatedSession.status}:${refreshedAt}`,
-              eventType: mapOnboardingStatusEventType(updatedSession.status),
-              aggregateType: "merchant_account",
-              aggregateId: merchant.id,
-              environment: command.environment,
-              sourceProvider: providerContext.provider,
-              occurredAt: refreshedAt,
-              merchantAccountId: merchant.id,
-              payload: {
-                onboardingSessionId: updatedSession.id,
-                previousOnboardingStatus: session.status,
-                onboardingStatus: updatedSession.status,
-                openRequirementCount: updatedSession.openRequirementCount,
-              },
-            }),
-          );
-        }
-
-        return {
-          snapshot: toSnapshot(updatedSession, reconciledCurrentRequirements),
-          requirements: reconciledCurrentRequirements.map((requirement) =>
-            toRequirementView(requirement),
-          ),
-        };
-      });
+      return refreshMerchantOnboardingSessionState(dependencies, command, now);
     },
 
     async listMerchantRequirements(
