@@ -56,6 +56,7 @@
     "audit:seal-vortex-hosted-outcomes-boundary": "bun run scripts/audit-seal-vortex-hosted-outcomes-boundary.ts",
     "audit:seal-vortex-sandbox-settlement-boundary": "bun run scripts/audit-seal-vortex-sandbox-settlement-boundary.ts",
     "audit:seal-vortex-production-readiness": "bun run scripts/audit-seal-vortex-production-readiness.ts",
+    "audit:seal-vortex-production-proof-boundary": "bun run scripts/audit-seal-vortex-production-proof-boundary.ts",
     "audit:seal-vortex-launch-boundary": "bun run scripts/audit-seal-vortex-launch-boundary.ts",
     "verify:seal-vortex-migration": "bun run prove:zero-retired-provider-residue && bun run prove:seal-vortex-migration-local",
     "knip": "turbo run knip",

@@ -131,6 +131,11 @@ const proofCommands: readonly ProofCommand[] = [
     args: ["run", "audit:seal-vortex-sandbox-settlement-boundary"],
   },
   {
+    label: "Seal Vortex production proof boundary",
+    command: "bun",
+    args: ["run", "audit:seal-vortex-production-proof-boundary"],
+  },
+  {
     label: "Seal Vortex launch boundary",
     command: "bun",
     args: ["run", "audit:seal-vortex-launch-boundary"],
@@ -253,7 +258,8 @@ console.log(
         "catalog live proof seeds Vortex-shaped entitlement safety controls only",
         "env-mutating live/dev proof scripts merge Vortex map values instead of replacing existing mappings",
         "sandbox settlement handoff preserves captured Vortex ids and human-run proof commands",
-        "launch boundary reports launchReady false until human settlement proof and production configuration are complete",
+        "production launch proof stays false until checked-in production money proof and post-proof retirement evidence exist",
+        "launch boundary reports launchReady false until human settlement proof, production configuration, production money proof, and post-proof retirement are complete",
       ],
     },
     null,

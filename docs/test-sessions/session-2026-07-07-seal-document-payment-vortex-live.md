@@ -290,9 +290,11 @@ Expected until settlement and production proof are complete:
 
 ```text
 launchReady=false
-waitingOn=human_settlement_proof,production_config
+waitingOn=human_settlement_proof,production_config,production_live_money_proof
 earliestHumanReconcileAt=2026-07-08T18:12:06.10Z
 ```
+
+The launch audit also reads `docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md` if it exists. Until that checked-in artifact proves the production money path and post-proof retirement, production proof remains incomplete.
 
 Agents may run the audit and record non-secret proof state. Agents must not run reconciliation, settlement, payout, live card, production env mutation, allowlist widening, or production webhook retirement.
 
@@ -370,3 +372,19 @@ Expected until production is configured: it exits nonzero, lists only missing/in
 - `successCriteria`
 
 The aggregate launch audit fails if remediation commands omit missing env names or include non-missing env names.
+
+The production proof boundary is intentionally static:
+
+```bash
+cd /home/debian/Projects/Seal
+bun run audit:seal-vortex-production-proof-boundary
+```
+
+Expected until the human production proof sequence is recorded:
+
+```text
+productionMoneyProofComplete=false
+postProofRetirementComplete=false
+goLiveProofComplete=false
+proofDoc=docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md
+```

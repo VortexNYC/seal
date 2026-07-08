@@ -66,6 +66,18 @@ type SandboxSettlementAudit = {
   readonly nextAction: string;
 };
 
+type ProductionProofAudit = {
+  readonly ok: boolean;
+  readonly check: string;
+  readonly proofDoc: string;
+  readonly proofDocExists: boolean;
+  readonly productionMoneyProofComplete: boolean;
+  readonly postProofRetirementComplete: boolean;
+  readonly goLiveProofComplete: boolean;
+  readonly status: string;
+  readonly requiredBeforeLaunch: readonly string[];
+};
+
 const repoRoot = new URL("..", import.meta.url).pathname;
 
 const knownProductionConfigBlockers = new Set([
@@ -101,6 +113,13 @@ const production = runJsonScript<ProductionReadinessAudit>({
   scriptPath: "scripts/audit-seal-vortex-production-readiness.ts",
   allowedStatuses: new Set([0, 1]),
   isExpectedShape: isProductionReadinessAudit,
+});
+
+const productionProof = runJsonScript<ProductionProofAudit>({
+  label: "production proof boundary",
+  scriptPath: "scripts/audit-seal-vortex-production-proof-boundary.ts",
+  allowedStatuses: new Set([0]),
+  isExpectedShape: isProductionProofAudit,
 });
 
 const missingProductionNames = collectMissingNames(production);
@@ -145,8 +164,12 @@ const productionBoundary = production.ok
 const waitingOn = [
   ...(hostedOutcomes.settlement.fullySettledEvidence ? [] : ["human_settlement_proof"]),
   ...(production.ok ? [] : ["production_config"]),
+  ...(productionProof.productionMoneyProofComplete ? [] : ["production_live_money_proof"]),
+  ...(productionProof.productionMoneyProofComplete && !productionProof.postProofRetirementComplete
+    ? ["production_external_residue_retirement"]
+    : []),
 ] as const;
-const launchReady = waitingOn.length === 0;
+const launchReady = waitingOn.length === 0 && productionProof.goLiveProofComplete;
 
 console.log(
   JSON.stringify(
@@ -181,10 +204,23 @@ console.log(
         proofSequence: production.remediation.proofSequence,
         successCriteria: production.remediation.successCriteria,
       },
+      productionProof: {
+        ok: productionProof.ok,
+        proofDoc: productionProof.proofDoc,
+        proofDocExists: productionProof.proofDocExists,
+        productionMoneyProofComplete: productionProof.productionMoneyProofComplete,
+        postProofRetirementComplete: productionProof.postProofRetirementComplete,
+        goLiveProofComplete: productionProof.goLiveProofComplete,
+        status: productionProof.status,
+        requiredBeforeLaunch: productionProof.requiredBeforeLaunch,
+      },
       nextAction: getNextAction({
         launchReady,
         needsSettlementProof: !hostedOutcomes.settlement.fullySettledEvidence,
         needsProductionConfig: !production.ok,
+        needsProductionMoneyProof: !productionProof.productionMoneyProofComplete,
+        needsPostProofRetirement:
+          productionProof.productionMoneyProofComplete && !productionProof.postProofRetirementComplete,
       }),
     },
     null,
@@ -305,6 +341,23 @@ function isSandboxSettlementAudit(value: unknown): value is SandboxSettlementAud
   );
 }
 
+function isProductionProofAudit(value: unknown): value is ProductionProofAudit {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    value.ok === true &&
+    value.check === "seal_vortex_production_proof_boundary" &&
+    typeof value.proofDoc === "string" &&
+    typeof value.proofDocExists === "boolean" &&
+    typeof value.productionMoneyProofComplete === "boolean" &&
+    typeof value.postProofRetirementComplete === "boolean" &&
+    typeof value.goLiveProofComplete === "boolean" &&
+    typeof value.status === "string" &&
+    isStringArray(value.requiredBeforeLaunch)
+  );
+}
+
 function isDeploymentAudit(value: unknown): value is DeploymentAudit {
   if (!isRecord(value) || !Array.isArray(value.groups)) {
     return false;
@@ -341,17 +394,28 @@ function getNextAction(input: {
   readonly launchReady: boolean;
   readonly needsSettlementProof: boolean;
   readonly needsProductionConfig: boolean;
+  readonly needsProductionMoneyProof: boolean;
+  readonly needsPostProofRetirement: boolean;
 }): string {
   if (input.launchReady) {
-    return "Human runs the production proof sequence with explicit target ids.";
+    return "Launch proof is complete; review the checked-in production proof artifact before widening any remaining external rollout scope.";
   }
   if (input.needsSettlementProof && input.needsProductionConfig) {
-    return "Human completes sandbox settlement proof and configures the listed production environment names, then reruns production readiness and live proof.";
+    return "Human completes sandbox settlement proof and configures the listed production environment names, then runs the production money proof and post-proof retirement sequence.";
   }
   if (input.needsSettlementProof) {
     return "Human completes sandbox settlement proof, then reruns the launch boundary audit.";
   }
-  return "Human configures the listed production environment names, then reruns production readiness and live proof.";
+  if (input.needsProductionConfig) {
+    return "Human configures the listed production environment names, then reruns production readiness and live proof.";
+  }
+  if (input.needsProductionMoneyProof) {
+    return "Human runs the production money proof sequence with explicit target ids, then records the checked-in proof artifact.";
+  }
+  if (input.needsPostProofRetirement) {
+    return "Human widens production routing, retires external production payment-provider residue, records the evidence, then reruns this launch boundary audit.";
+  }
+  return "Launch proof is incomplete; inspect production proof boundary output.";
 }
 
 function fail(message: string): never {
