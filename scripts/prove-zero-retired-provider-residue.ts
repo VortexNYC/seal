@@ -81,7 +81,8 @@ function scanWorkingTreePathNames(absoluteDirectory: string, relativeDirectory: 
       continue;
     }
 
-    const relativePath = relativeDirectory === "." ? entry.name : `${relativeDirectory}/${entry.name}`;
+    const relativePath =
+      relativeDirectory === "." ? entry.name : `${relativeDirectory}/${entry.name}`;
     if (relativePath.toLowerCase().includes(retiredProviderToken)) {
       failures.push(`${relativePath}: working tree path contains retired provider token`);
     }
