@@ -495,6 +495,9 @@ export const getTestDocumentState = query({
     return {
       workflowStatus: doc.workflowStatus,
       status: doc.status,
+      completedAt: doc.completedAt ?? null,
+      qrToken: doc.qrToken ?? null,
+      documentHash: doc.documentHash ?? null,
       recipients: recipients.map((r) => ({
         id: r._id,
         status: r.status,
