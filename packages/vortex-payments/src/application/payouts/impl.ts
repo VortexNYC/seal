@@ -105,6 +105,46 @@ function buildDefaultSellerPayoutCapabilities(
   ];
 }
 
+function getFailedFundingTransferBlocker(payouts: readonly Payout[]): string | null {
+  const terminalFailedPayout = payouts.find(
+    (payout) => payout.status === "failed" || payout.status === "returned",
+  );
+  return terminalFailedPayout ? `funding_transfer_${terminalFailedPayout.status}` : null;
+}
+
+function getMerchantPayoutReadinessBlocker(readiness: string | undefined): string | null {
+  if (readiness === "blocked" || readiness === "paused") {
+    return `merchant_payout_${readiness}`;
+  }
+  if (readiness === undefined || readiness === "unknown") {
+    return "merchant_payout_readiness_unknown";
+  }
+  return null;
+}
+
+function getSettlementAmountBlockers(settlement: Settlement): readonly string[] {
+  const blockers: string[] = [];
+  if (settlement.direction === "debit") {
+    blockers.push("negative_or_debit_settlement");
+  }
+  if (settlement.netAmount <= 0) {
+    blockers.push("non_positive_net_amount");
+  }
+  return blockers;
+}
+
+function buildPayoutReadinessBlockers(args: {
+  readonly settlement: Settlement;
+  readonly payouts: readonly Payout[];
+  readonly merchantPayoutReadiness?: string;
+}): readonly string[] {
+  return [
+    getFailedFundingTransferBlocker(args.payouts),
+    getMerchantPayoutReadinessBlocker(args.merchantPayoutReadiness),
+    ...getSettlementAmountBlockers(args.settlement),
+  ].filter((blocker): blocker is string => blocker !== null);
+}
+
 function deriveReadinessStatus(args: {
   readonly settlement: Settlement;
   readonly payouts: readonly Payout[];
@@ -114,36 +154,16 @@ function deriveReadinessStatus(args: {
   readonly blockers: readonly string[];
   readonly nextAction: string;
 } {
-  const blockers: string[] = [];
   const terminalSucceededPayout = args.payouts.find((payout) => payout.status === "succeeded");
   if (terminalSucceededPayout) {
     return {
       status: "paid",
-      blockers,
+      blockers: [],
       nextAction: "funding_transfer_succeeded",
     };
   }
 
-  const terminalFailedPayout = args.payouts.find(
-    (payout) => payout.status === "failed" || payout.status === "returned",
-  );
-  if (terminalFailedPayout) {
-    blockers.push(`funding_transfer_${terminalFailedPayout.status}`);
-  }
-
-  if (args.merchantPayoutReadiness === "blocked" || args.merchantPayoutReadiness === "paused") {
-    blockers.push(`merchant_payout_${args.merchantPayoutReadiness}`);
-  }
-  if (args.merchantPayoutReadiness === undefined || args.merchantPayoutReadiness === "unknown") {
-    blockers.push("merchant_payout_readiness_unknown");
-  }
-
-  if (args.settlement.direction === "debit") {
-    blockers.push("negative_or_debit_settlement");
-  }
-  if (args.settlement.netAmount <= 0) {
-    blockers.push("non_positive_net_amount");
-  }
+  const blockers = buildPayoutReadinessBlockers(args);
 
   switch (args.settlement.status) {
     case "accruing":
@@ -285,6 +305,47 @@ async function getScopedSettlement(
   return settlement;
 }
 
+async function getMerchantSellerPayoutProfileDetail(
+  dependencies: PayoutsServiceDependencies,
+  query: GetMerchantSellerPayoutProfileQuery,
+): Promise<MerchantSellerPayoutProfileDetail> {
+  const merchant = await dependencies.uow.merchants.getById(query.merchantAccountId, {
+    environment: query.environment,
+  });
+  if (!merchant || !dependencies.providers || !dependencies.resolveProviderContext) {
+    return null;
+  }
+  const merchantRef = findMerchantProcessorRef(merchant);
+  if (!merchantRef) {
+    return null;
+  }
+  const providerContext = dependencies.resolveProviderContext(merchant);
+  const adapter = dependencies.providers.getAdapter(providerContext.provider);
+  if (!adapter.getSellerPayoutProfile) {
+    return null;
+  }
+  const result = await adapter.getSellerPayoutProfile(providerContext, {
+    merchantAccountId: query.merchantAccountId,
+    merchantRef,
+  });
+  if (!result.ok || !result.value) {
+    return null;
+  }
+  const { capabilities, ...providerSnapshot } = result.value;
+  const snapshotWithoutCapabilities = {
+    environment: query.environment,
+    merchantAccountId: query.merchantAccountId,
+    provider: providerContext.provider,
+    ...providerSnapshot,
+  };
+  const snapshot: SellerPayoutProfileSnapshot = {
+    ...snapshotWithoutCapabilities,
+    capabilities: capabilities ?? buildDefaultSellerPayoutCapabilities(snapshotWithoutCapabilities),
+  };
+  await dependencies.uow.sellerPayoutProfileSnapshots?.save(snapshot);
+  return toSellerPayoutProfileSnapshot(snapshot);
+}
+
 export function createPayoutsService(dependencies: PayoutsServiceDependencies): PayoutsService {
   const now = dependencies.now ?? defaultNow;
 
@@ -317,42 +378,7 @@ export function createPayoutsService(dependencies: PayoutsServiceDependencies): 
     async getMerchantSellerPayoutProfile(
       query: GetMerchantSellerPayoutProfileQuery,
     ): Promise<MerchantSellerPayoutProfileDetail> {
-      const merchant = await dependencies.uow.merchants.getById(query.merchantAccountId, {
-        environment: query.environment,
-      });
-      if (!merchant || !dependencies.providers || !dependencies.resolveProviderContext) {
-        return null;
-      }
-      const merchantRef = findMerchantProcessorRef(merchant);
-      if (!merchantRef) {
-        return null;
-      }
-      const providerContext = dependencies.resolveProviderContext(merchant);
-      const adapter = dependencies.providers.getAdapter(providerContext.provider);
-      if (!adapter.getSellerPayoutProfile) {
-        return null;
-      }
-      const result = await adapter.getSellerPayoutProfile(providerContext, {
-        merchantAccountId: query.merchantAccountId,
-        merchantRef,
-      });
-      if (!result.ok || !result.value) {
-        return null;
-      }
-      const { capabilities, ...providerSnapshot } = result.value;
-      const snapshotWithoutCapabilities = {
-        environment: query.environment,
-        merchantAccountId: query.merchantAccountId,
-        provider: providerContext.provider,
-        ...providerSnapshot,
-      };
-      const snapshot: SellerPayoutProfileSnapshot = {
-        ...snapshotWithoutCapabilities,
-        capabilities:
-          capabilities ?? buildDefaultSellerPayoutCapabilities(snapshotWithoutCapabilities),
-      };
-      await dependencies.uow.sellerPayoutProfileSnapshots?.save(snapshot);
-      return toSellerPayoutProfileSnapshot(snapshot);
+      return getMerchantSellerPayoutProfileDetail(dependencies, query);
     },
 
     async getSettlementPayoutReadiness(
