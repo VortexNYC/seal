@@ -122,7 +122,7 @@ Latest non-mutating refresh results from head `b7be17b1`:
 - `bun run build` passed.
 - `git diff --check` passed.
 - `bun run prove:seal-account-onboarding-vortex-local` passed with 4 files and 13 tests.
-- `bun run prove:seal-vortex-onboarding-wiring` skipped live wiring as expected because sandbox live-proof credentials were absent.
+- `bun run prove:seal-vortex-onboarding-wiring` passed against `dev:clever-goose-484` and `dev:notable-leopard-969`; hosted onboarding reconciled to Vortex, `chargesEnabled: true`, the Seal resolver returned the Vortex merchant account, and the payout profile reported net daily next-day ACH.
 - `bun run prove:vortex-billing-settings-adoption` passed.
 - `bun run prove:vortex-payments-settings-adoption` passed.
 - `bun run prove:vortex-merchant-settings-adoption` passed.
