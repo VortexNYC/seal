@@ -183,7 +183,50 @@ Proof:
 
 ## Immediate Next Action
 
-Finish Lane B's current local cut, then create Lane A and Lane B workers in parallel:
+Previous replacement lanes A through F are complete and merged through PR #480. The next phase is physical Stripe deletion.
+
+### Phase 2: Physical Stripe Deletion
+
+Current residue baseline after PR #480:
+
+- 151 files contain Stripe strings.
+- 29 files remain under `apps/backend/convex/stripe`.
+- `apps/backend/package.json` still depends on `stripe`.
+- `apps/backend/convex/payments/*` still contains legacy `internal.stripe.*` fallbacks.
+- Persisted schema and historical fields still contain Stripe-shaped names such as `stripeCustomerId`, `stripe_accounts`, `stripeInvoiceId`, and `stripeSubscriptionId`.
+
+Deletion order:
+
+1. Clean baseline and proof gates.
+2. Remove executable Stripe provider calls from account creation, onboarding, SaaS billing, merchant setup, document payments, and operations.
+3. Migrate Stripe-shaped data contracts to provider-neutral names.
+4. Delete Stripe webhook, catalog sync, subscription processor, Connect, invoice/payment-field, coupon, and revenue modules.
+5. Remove Stripe package/env/runtime config.
+6. Rename or delete tests/proofs that only exist to guard the old Stripe transition.
+7. Clean docs/archive residue or explicitly move historical notes outside the active codebase.
+8. Add a hard zero-Stripe scanner gate.
+
+Hard completion gate:
+
+- `rg -i "stripe" apps packages scripts docs package.json bun.lock*` must be zero for active code/package surfaces.
+- `find apps/backend/convex/stripe -type f` must fail because the directory is gone.
+- `bun run format:changed:check`
+- `bun run lint:strict`
+- `bun run typecheck`
+- `bun run test`
+- `bun run build`
+- `bun run prove:vortex-payments-backend-adapter-adoption`
+- `bun run prove:vortex-operational-payments-adoption`
+- `bun run prove:seal-document-payment-vortex-local`
+- `bun run prove:vortex-saas-webhook-projection`
+
+Live sandbox card payment, settlement, and payout proof remains human-run. The code must prepare the proof boundary, but agents do not move live money.
+
+Immediate next action:
+
+Create Linear phase-2 deletion lanes, then start the executable provider deletion lane. Do not start with docs. Deleting docs first makes the scanner look better while the product still has Stripe runtime code.
+
+Historical immediate action from phase 1:
 
 - Lane A proves account creation is Stripe-free.
 - Lane B finishes onboarding and merchant setup replacement.
