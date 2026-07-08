@@ -3,7 +3,8 @@
   "rootScriptPolicy": "replace",
   "instructionFiles": {
     "agents": false,
-    "claude": false
+    "claude": false,
+    "testEnvExample": false
   },
   "auth": {
     "enabled": true,
@@ -24,6 +25,7 @@
       "bun run check:preferred-stack",
       "bun run build",
       "bun run test",
+      "bun run verify:seal-vortex-migration",
       "bun run auth:check",
       "bun run auth:preflight"
     ],

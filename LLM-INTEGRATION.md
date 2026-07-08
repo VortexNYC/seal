@@ -36,6 +36,7 @@ bun run format:changed:check
 bun run check:preferred-stack
 bun run build
 bun run test
+bun run verify:seal-vortex-migration
 bun run auth:check
 bun run auth:preflight
 ```
