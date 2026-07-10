@@ -1,8 +1,8 @@
 /**
  * SUBSCRIPTION PROMO CODES TABLE
- * Promotion codes synced from payment provider - READ-ONLY mirror for fast queries.
- * Source of truth: Payment provider (Stripe).
- * NEVER modify directly - only via payment provider API + webhooks.
+ * Promotion codes synced from Vortex Billing - READ-ONLY mirror for fast queries.
+ * Source of truth: Vortex Billing.
+ * NEVER modify directly - only via Vortex Billing API + webhooks.
  */
 
 import { defineTable } from "convex/server";
@@ -19,8 +19,8 @@ export const subscriptionPromoCodeStatus = v.union(
 export type SubscriptionPromoCodeStatus = Infer<typeof subscriptionPromoCodeStatus>;
 
 export const subscriptionPromoCodesTable = defineTable({
-  // External IDs (source of truth from payment provider)
-  stripePromotionCodeId: v.string(),
+  // External IDs (source of truth from Vortex Billing)
+  providerPromotionCodeId: v.string(),
 
   // Reference to coupon
   couponId: v.id("subscription_coupons"),
@@ -36,10 +36,10 @@ export const subscriptionPromoCodesTable = defineTable({
   // Validity period
   expiresAt: v.optional(v.number()), // Unix timestamp (null = no expiry)
 
-  // Customer restriction (from Stripe)
-  stripeCustomerId: v.optional(v.string()), // If set, only this customer can use the code
+  // Customer restriction
+  providerCustomerId: v.optional(v.string()), // If set, only this customer can use the code
 
-  // Restrictions (from Stripe)
+  // Restrictions
   restrictions: v.optional(
     v.object({
       firstTimeTransaction: v.optional(v.boolean()),
@@ -64,6 +64,6 @@ export const subscriptionPromoCodesTable = defineTable({
   .index("by_code", ["code"])
   .index("by_coupon_id", ["couponId"])
   .index("by_expires_at", ["expiresAt"])
-  .index("by_stripe_promotion_code_id", ["stripePromotionCodeId"])
+  .index("by_provider_promotion_code", ["providerPromotionCodeId"])
   .index("by_deleted_at", ["deletedAt"])
   .index("by_active_deleted_at", ["active", "deletedAt"]);

@@ -31,11 +31,10 @@ describe("Vortex merchant resolver", () => {
     ).resolves.toBeNull();
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("stripe_accounts", {
+      await ctx.db.insert("merchant_accounts", {
         organizationId,
         provider: "vortex",
-        stripeAccountId: "ma_not_ready",
-        vortexMerchantAccountId: "ma_not_ready",
+        providerAccountId: "ma_not_ready",
         accountType: "standard",
         chargesEnabled: false,
         payoutsEnabled: false,
@@ -54,7 +53,7 @@ describe("Vortex merchant resolver", () => {
 
     await t.run(async (ctx) => {
       const account = await ctx.db
-        .query("stripe_accounts")
+        .query("merchant_accounts")
         .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
         .first();
       if (!account) {

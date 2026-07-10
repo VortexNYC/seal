@@ -15,7 +15,7 @@ type JsonObject = { readonly [key: string]: Json };
 
 type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
 
-export type DocumentPaymentProvider = "stripe" | "vortex_billing";
+export type DocumentPaymentProvider = "vortex_billing";
 
 export type VortexBillingEnvInput = {
   readonly apiBaseUrl?: string;
@@ -28,6 +28,7 @@ export type VortexBillingEnvInput = {
   readonly defaultMerchantAccountId?: string;
   readonly paymentsEnvironment?: string;
   readonly priceMapJson?: string;
+  readonly defaultPriceId?: string;
 };
 
 export type VortexBillingEnv = {
@@ -41,6 +42,7 @@ export type VortexBillingEnv = {
   readonly merchantAccountMap: Record<string, string>;
   readonly defaultMerchantAccountId?: string;
   readonly priceMap: Record<string, string>;
+  readonly defaultPriceId?: string;
 };
 
 type PaymentFieldConfigInput = {
@@ -263,8 +265,6 @@ type CreateDepositBalancePayableResult = {
   readonly checkoutUrl: string | undefined;
 };
 
-const DOCUMENT_PAYMENT_ALLOWLIST_ENV = "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS";
-const SHARED_PAYABLE_ALLOWLIST_ENV = "VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS";
 const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
 const API_KEY_ENV = "VORTEX_BILLING_API_KEY";
 const SOURCE_NAMESPACE_ENV = "VORTEX_BILLING_SOURCE_NAMESPACE";
@@ -280,28 +280,16 @@ const DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV = "VORTEX_BILLING_DOCUMENT_MERCHA
 const SHARED_MERCHANT_ACCOUNT_ID_ENV = "VORTEX_BILLING_MERCHANT_ACCOUNT_ID";
 const DOCUMENT_PRICE_MAP_ENV = "VORTEX_BILLING_DOCUMENT_PRICE_MAP";
 const SHARED_PRICE_MAP_ENV = "VORTEX_BILLING_PRICE_MAP";
+const DOCUMENT_DEFAULT_PRICE_ID_ENV = "VORTEX_BILLING_DOCUMENT_PRICE_ID";
+const SHARED_PRICE_ID_ENV = "VORTEX_BILLING_PRICE_ID";
 const PAYMENTS_ENVIRONMENT_ENV = "VORTEX_BILLING_PAYMENTS_ENVIRONMENT";
 
 export function selectDocumentPaymentProvider(
-  organizationId: string,
-  configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
-  env: Env = process.env,
+  _organizationId: string,
+  _configs: readonly Pick<PaymentFieldConfigInput, "paymentType" | "taxEnabled">[],
+  _env: Env = process.env,
 ): DocumentPaymentProvider {
-  if (!isDocumentPaymentOrganizationAllowlisted(organizationId, env)) {
-    return "stripe";
-  }
-  if (configs.length === 0) {
-    return "stripe";
-  }
-  return configs.every(
-    (config) =>
-      config.paymentType === "one_time" ||
-      config.paymentType === "recurring" ||
-      config.paymentType === "installments" ||
-      config.paymentType === "deposit_balance",
-  )
-    ? "vortex_billing"
-    : "stripe";
+  return "vortex_billing";
 }
 
 export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillingEnv {
@@ -327,6 +315,7 @@ export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillin
     merchantAccountMap,
     defaultMerchantAccountId: input.defaultMerchantAccountId,
     priceMap,
+    defaultPriceId: input.defaultPriceId,
   };
 }
 
@@ -344,6 +333,7 @@ export function readVortexBillingEnvFromProcess(env: Env = process.env): VortexB
       env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV] ?? env[SHARED_MERCHANT_ACCOUNT_ID_ENV],
     paymentsEnvironment: env[PAYMENTS_ENVIRONMENT_ENV] ?? "sandbox",
     priceMapJson: env[DOCUMENT_PRICE_MAP_ENV] ?? env[SHARED_PRICE_MAP_ENV],
+    defaultPriceId: env[DOCUMENT_DEFAULT_PRICE_ID_ENV] ?? env[SHARED_PRICE_ID_ENV],
   });
 }
 
@@ -392,7 +382,9 @@ export function buildCreatePayableRequest(input: {
     collectionIntent: "manual",
     feePolicy: buildFeePolicy(config, input.platformFeeCents),
     ...(dueAt !== undefined ? { dueAt } : {}),
-    lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
+    lineItems: config.items.map((item) =>
+      buildPayableLineItem(item, env.priceMap, env.defaultPriceId),
+    ),
     ...buildPayableTaxFields(config),
     metadata: {
       sourceSystem: env.sourceNamespace,
@@ -457,7 +449,9 @@ export function buildCreateRecurringPayableRequest(input: {
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
     currency: toVortexCurrency(config.currency),
-    lineItems: config.items.map((item) => buildPayableLineItem(item, env.priceMap)),
+    lineItems: config.items.map((item) =>
+      buildPayableLineItem(item, env.priceMap, env.defaultPriceId),
+    ),
     taxMode: buildPayableTaxMode(config),
     ...buildPayableTaxFields(config),
     collectionIntent: "manual",
@@ -541,7 +535,7 @@ export function buildCreateInstallmentPayableRequest(input: {
       role: "installment",
       dueAt: addInstallmentInterval(firstDueAt, installmentsConfig.interval, index),
       amountDue,
-      lineItems: buildInstallmentLineItems(config, amountDue, env.priceMap),
+      lineItems: buildInstallmentLineItems(config, amountDue, env.priceMap, env.defaultPriceId),
     })),
     metadata: {
       sourceSystem: env.sourceNamespace,
@@ -624,6 +618,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
         "deposit",
         amounts.depositAmountDue,
         env.priceMap,
+        env.defaultPriceId,
       ),
     },
     balance: {
@@ -634,6 +629,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
         "balance",
         amounts.balanceAmountDue,
         env.priceMap,
+        env.defaultPriceId,
       ),
     },
     metadata: {
@@ -655,9 +651,7 @@ function buildPayableTaxMode(config: PaymentFieldConfigInput): VortexTaxMode {
   return config.taxEnabled ? "taxable_requires_evidence" : "not_taxable";
 }
 
-function buildPayableTaxFields(
-  config: PaymentFieldConfigInput,
-):
+function buildPayableTaxFields(config: PaymentFieldConfigInput):
   | {
       readonly taxable: true;
       readonly taxBehavior: TaxBehavior;
@@ -677,8 +671,9 @@ function buildPayableTaxFields(
 function buildPayableLineItem(
   item: PaymentFieldConfigInput["items"][number],
   priceMap: Record<string, string>,
+  defaultPriceId: string | undefined,
 ): JsonObject {
-  const priceId = priceMap[item.id];
+  const priceId = priceMap[item.id] ?? defaultPriceId;
   if (!priceId) {
     throw new ConvexError(`Vortex Billing price missing for payment item: ${item.id}`);
   }
@@ -699,6 +694,7 @@ function buildInstallmentLineItems(
   config: Pick<PaymentFieldConfigInput, "items">,
   amountDue: number,
   priceMap: Record<string, string>,
+  defaultPriceId: string | undefined,
 ): readonly JsonObject[] {
   if (config.items.length !== 1) {
     throw new ConvexError("Vortex Billing installment bridge requires exactly one line item");
@@ -714,7 +710,13 @@ function buildInstallmentLineItems(
     throw new ConvexError("Installment amount must divide evenly into the configured line item");
   }
 
-  return [buildPayableLineItem({ ...item, quantity: amountDue / item.unitPrice }, priceMap)];
+  return [
+    buildPayableLineItem(
+      { ...item, quantity: amountDue / item.unitPrice },
+      priceMap,
+      defaultPriceId,
+    ),
+  ];
 }
 
 function buildDepositBalanceLineItems(
@@ -722,6 +724,7 @@ function buildDepositBalanceLineItems(
   role: "deposit" | "balance",
   amountDue: number,
   priceMap: Record<string, string>,
+  defaultPriceId: string | undefined,
 ): readonly JsonObject[] {
   if (config.items.length !== 1) {
     throw new ConvexError("Vortex Billing deposit/balance bridge requires exactly one line item");
@@ -741,6 +744,7 @@ function buildDepositBalanceLineItems(
         unitPrice: amountDue,
       },
       priceMap,
+      defaultPriceId,
     ),
   ];
 }
@@ -784,7 +788,9 @@ function getInitialVortexChargeAmountCents(config: PaymentFieldConfigInput): num
   }
   if (config.paymentType === "deposit_balance") {
     if (config.depositBalanceConfig === undefined) {
-      throw new ConvexError("Deposit/balance payment field is missing deposit balance configuration");
+      throw new ConvexError(
+        "Deposit/balance payment field is missing deposit balance configuration",
+      );
     }
     return buildDepositBalanceAmounts(config.totalAmountCents, config.depositBalanceConfig)
       .depositAmountDue;
@@ -1266,7 +1272,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
       v.object({
         recipientEmail: v.string(),
         hostedInvoiceUrl: v.union(v.string(), v.null()),
-        providerInvoiceId: v.string(),
+        vortexPayableId: v.string(),
         totalAmountCents: v.number(),
         currency: v.string(),
       }),
@@ -1281,10 +1287,6 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     if (configs.length === 0) {
       return { paymentLinks: [] };
     }
-    if (selectDocumentPaymentProvider(args.organizationId, configs) !== "vortex_billing") {
-      throw new ConvexError("Vortex Billing document payment bridge is not enabled");
-    }
-
     // Prefer this org's own charges-ready Vortex merchant for the payable; falls back to the
     // shared/static merchant map when the per-user merchant isn't provisioned/ready yet (1a is
     // additive — routing is unchanged; only the merchant id is per-user when available).
@@ -1311,7 +1313,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     const paymentLinks: Array<{
       recipientEmail: string;
       hostedInvoiceUrl: string | null;
-      providerInvoiceId: string;
+      vortexPayableId: string;
       totalAmountCents: number;
       currency: string;
     }> = [];
@@ -1361,7 +1363,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: recurringPayable.checkoutUrl,
-          providerInvoiceId: recurringPayable.payableId,
+          vortexPayableId: recurringPayable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1399,7 +1401,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: installmentPayable.checkoutUrl,
-          providerInvoiceId: installmentPayable.payableId,
+          vortexPayableId: installmentPayable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1437,7 +1439,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: depositBalancePayable.checkoutUrl,
-          providerInvoiceId: depositBalancePayable.payableId,
+          vortexPayableId: depositBalancePayable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1472,7 +1474,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         paymentLinks.push({
           recipientEmail: recipient.email,
           hostedInvoiceUrl: payable.checkoutUrl,
-          providerInvoiceId: payable.payableId,
+          vortexPayableId: payable.payableId,
           totalAmountCents: config.totalAmountCents,
           currency: config.currency,
         });
@@ -1506,42 +1508,10 @@ function toPaymentFieldConfigInput(config: Doc<"payment_field_configs">): Paymen
 }
 
 export function isDocumentPaymentOrganizationAllowlisted(
-  organizationId: string,
-  env: Env = process.env,
+  _organizationId: string,
+  _env: Env = process.env,
 ): boolean {
-  const allowlist = env[DOCUMENT_PAYMENT_ALLOWLIST_ENV] ?? env[SHARED_PAYABLE_ALLOWLIST_ENV];
-  return isOrganizationAllowlisted(organizationId, allowlist);
-}
-
-export function isOrganizationAllowlisted(
-  organizationId: string,
-  configured: string | undefined,
-): boolean {
-  if (configured === undefined || configured.trim() === "" || configured.trim() === "[]") {
-    return false;
-  }
-
-  const normalized = configured.trim();
-  if (normalized === "*") {
-    return true;
-  }
-
-  if (normalized.startsWith("[")) {
-    const parsed = parseJson(normalized, DOCUMENT_PAYMENT_ALLOWLIST_ENV);
-    if (!Array.isArray(parsed)) {
-      throw new ConvexError(
-        `${DOCUMENT_PAYMENT_ALLOWLIST_ENV} must be a JSON string array, "*", or "[]"`,
-      );
-    }
-
-    return parsed.some((entry) => entry === organizationId);
-  }
-
-  return normalized
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
-    .includes(organizationId);
+  return true;
 }
 
 function readRequiredValue(value: string | undefined, label: string): string {

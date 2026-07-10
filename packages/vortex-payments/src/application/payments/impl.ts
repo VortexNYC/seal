@@ -1,9 +1,27 @@
-import type { MerchantAccountId, PaymentIntentId, PaymentMethodId, ProcessorRef } from "../../domain/common";
+import type {
+  MerchantAccountId,
+  PaymentIntentId,
+  PaymentMethodId,
+  ProcessorRef,
+} from "../../domain/common";
 import type { MerchantAccount } from "../../domain/merchant";
 import type { PaymentMethod } from "../../domain/payment-methods";
-import type { Payment, PaymentIntent, PaymentIntentNextStep, PaymentIntentStatus, PaymentStatus } from "../../domain/payments";
+import type {
+  Payment,
+  PaymentIntent,
+  PaymentIntentNextStep,
+  PaymentIntentStatus,
+  PaymentStatus,
+} from "../../domain/payments";
 import type { CanonicalDomainEvent } from "../../events/types";
-import type { ProviderContext, ProviderError } from "../../providers/types";
+import type {
+  PaymentsProviderAdapter,
+  ProviderCancelPaymentIntentOutput,
+  ProviderCapturePaymentIntentOutput,
+  ProviderContext,
+  ProviderError,
+  ProviderPaymentIntentOutput,
+} from "../../providers/types";
 import type { ProviderRegistry } from "../../providers/registry";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
 import { deriveCustomerPaymentState } from "../state/derive-customer-payment-state";
@@ -108,7 +126,7 @@ function stableStringify(value: unknown): string {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
-      left.localeCompare(right)
+      left.localeCompare(right),
     );
     return `{${entries
       .map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`)
@@ -195,10 +213,19 @@ function mapPaymentStatus(status: PaymentIntentStatus): PaymentStatus {
 }
 
 function shouldPersistFailedProviderResult(error: ProviderError): boolean {
-  return error.category === "invalid_request" && error.retryable === false && typeof error.rawRef === "string" && error.rawRef.length > 0;
+  return (
+    error.category === "invalid_request" &&
+    error.retryable === false &&
+    typeof error.rawRef === "string" &&
+    error.rawRef.length > 0
+  );
 }
 
-function createFailedProcessorRef(error: ProviderError, provider: ProviderContext["provider"], recordedAt: string): ProcessorRef {
+function createFailedProcessorRef(
+  error: ProviderError,
+  provider: ProviderContext["provider"],
+  recordedAt: string,
+): ProcessorRef {
   return {
     provider,
     objectType: "authorization",
@@ -220,8 +247,12 @@ function canCapturePaymentIntent(record: PaymentIntent): boolean {
 }
 
 function canCancelPaymentIntent(record: PaymentIntent): boolean {
-  return record.captureMode === "manual"
-    && (record.status === "pending" || record.status === "requires_action" || record.status === "authorized");
+  return (
+    record.captureMode === "manual" &&
+    (record.status === "pending" ||
+      record.status === "requires_action" ||
+      record.status === "authorized")
+  );
 }
 
 function canRetryPaymentIntent(record: PaymentIntent): boolean {
@@ -244,10 +275,13 @@ function getPaymentIntentNextStep(record: PaymentIntent): PaymentIntentNextStep 
   return "none";
 }
 
-function toSnapshot(record: PaymentIntent, input?: {
-  paymentId?: string;
-  paymentMethodId?: PaymentMethodId;
-}): PaymentIntentSnapshot {
+function toSnapshot(
+  record: PaymentIntent,
+  input?: {
+    paymentId?: string;
+    paymentMethodId?: PaymentMethodId;
+  },
+): PaymentIntentSnapshot {
   return {
     id: record.id,
     paymentId: input?.paymentId,
@@ -281,17 +315,24 @@ async function getMerchantOrThrow(
   return merchant;
 }
 
-function selectMerchantRef(merchant: MerchantAccount, provider: ProviderContext["provider"]): ProcessorRef {
+function selectMerchantRef(
+  merchant: MerchantAccount,
+  provider: ProviderContext["provider"],
+): ProcessorRef {
   const merchantRef = merchant.processorAccountRefs.find(
     (processorRef) => processorRef.provider === provider,
   );
   if (!merchantRef) {
-    throw new PaymentsServiceError("invalid_request", "merchant is missing provider merchant reference", {
-      details: {
-        merchantAccountId: merchant.id,
-        provider,
+    throw new PaymentsServiceError(
+      "invalid_request",
+      "merchant is missing provider merchant reference",
+      {
+        details: {
+          merchantAccountId: merchant.id,
+          provider,
+        },
       },
-    });
+    );
   }
   return merchantRef;
 }
@@ -320,9 +361,13 @@ function selectPaymentMethodId(
       );
 
       if (!selected) {
-        throw new PaymentsServiceError("invalid_request", "payment method is not active for customer", {
-          details: { paymentMethodId: command.paymentMethodId },
-        });
+        throw new PaymentsServiceError(
+          "invalid_request",
+          "payment method is not active for customer",
+          {
+            details: { paymentMethodId: command.paymentMethodId },
+          },
+        );
       }
 
       return selected.id;
@@ -356,8 +401,7 @@ function selectPaymentMethodId(
 
   const selected = paymentMethods.find(
     (paymentMethod) =>
-      paymentMethod.id === command.paymentMethodId &&
-      paymentMethod.status === "active",
+      paymentMethod.id === command.paymentMethodId && paymentMethod.status === "active",
   );
 
   if (!selected) {
@@ -463,11 +507,17 @@ function selectPaymentIntentRef(
   record: PaymentIntent,
   provider: ProviderContext["provider"],
 ): ProcessorRef {
-  const paymentIntentRef = record.processorIntentRefs.find((processorRef) => processorRef.provider === provider);
+  const paymentIntentRef = record.processorIntentRefs.find(
+    (processorRef) => processorRef.provider === provider,
+  );
   if (!paymentIntentRef) {
-    throw new PaymentsServiceError("invalid_request", "payment intent is missing provider reference", {
-      details: { paymentIntentId: record.id, provider },
-    });
+    throw new PaymentsServiceError(
+      "invalid_request",
+      "payment intent is missing provider reference",
+      {
+        details: { paymentIntentId: record.id, provider },
+      },
+    );
   }
   return paymentIntentRef;
 }
@@ -502,6 +552,738 @@ async function saveCustomerPaymentStateForIntent(
   );
 }
 
+function assertCapturablePaymentIntent(record: PaymentIntent): void {
+  if (record.captureMode !== "manual") {
+    throw new PaymentsServiceError(
+      "conflict",
+      "only manual authorization payment intents can be captured",
+      {
+        details: { paymentIntentId: record.id },
+      },
+    );
+  }
+  if (record.status !== "authorized") {
+    throw new PaymentsServiceError("conflict", "payment intent is not capturable", {
+      details: { paymentIntentId: record.id, status: record.status },
+    });
+  }
+}
+
+function assertCancelablePaymentIntent(record: PaymentIntent): void {
+  if (record.captureMode !== "manual") {
+    throw new PaymentsServiceError(
+      "conflict",
+      "only manual authorization payment intents can be canceled",
+      {
+        details: { paymentIntentId: record.id },
+      },
+    );
+  }
+  if (record.status === "captured" || record.status === "failed") {
+    throw new PaymentsServiceError("conflict", "payment intent is not cancelable", {
+      details: { paymentIntentId: record.id, status: record.status },
+    });
+  }
+}
+
+async function resolvePaymentIntentProvider(input: {
+  readonly dependencies: PaymentsServiceDependencies;
+  readonly uow: PaymentsUnitOfWork;
+  readonly environment: CreatePaymentIntentCommand["environment"];
+  readonly merchantAccountId: MerchantAccountId;
+}): Promise<{
+  readonly merchant: MerchantAccount;
+  readonly providerContext: ProviderContext;
+  readonly adapter: PaymentsProviderAdapter;
+}> {
+  const merchant = await getMerchantOrThrow(input.uow, input.environment, input.merchantAccountId);
+  const providerContext = input.dependencies.resolveProviderContext(merchant);
+  const adapter = input.dependencies.providers.getAdapter(providerContext.provider);
+  return { merchant, providerContext, adapter };
+}
+
+function requireProviderCapture(
+  adapter: PaymentsProviderAdapter,
+  providerContext: ProviderContext,
+): NonNullable<PaymentsProviderAdapter["capturePaymentIntent"]> {
+  if (!adapter.capturePaymentIntent) {
+    throw new PaymentsServiceError(
+      "provider_unavailable",
+      "provider does not support capture for payment intents",
+      {
+        details: { provider: providerContext.provider },
+      },
+    );
+  }
+  return adapter.capturePaymentIntent;
+}
+
+function requireProviderCancel(
+  adapter: PaymentsProviderAdapter,
+  providerContext: ProviderContext,
+): NonNullable<PaymentsProviderAdapter["cancelPaymentIntent"]> {
+  if (!adapter.cancelPaymentIntent) {
+    throw new PaymentsServiceError(
+      "provider_unavailable",
+      "provider does not support cancel for payment intents",
+      {
+        details: { provider: providerContext.provider },
+      },
+    );
+  }
+  return adapter.cancelPaymentIntent;
+}
+
+function missingCaptureResultError(providerContext: ProviderContext): ProviderError {
+  return {
+    provider: providerContext.provider,
+    category: "unknown",
+    code: "provider_result_missing",
+    message: "provider capture failed without error details",
+    retryable: false,
+  };
+}
+
+function missingCancelResultError(providerContext: ProviderContext): ProviderError {
+  return {
+    provider: providerContext.provider,
+    category: "unknown",
+    code: "provider_result_missing",
+    message: "provider cancel failed without error details",
+    retryable: false,
+  };
+}
+
+function applyCapturedIntentResult(
+  record: PaymentIntent,
+  providerOutput: ProviderCapturePaymentIntentOutput,
+): PaymentIntent {
+  const nextStatus = mapProviderPaymentIntentStatus(providerOutput.status);
+  return {
+    ...record,
+    status: nextStatus,
+    nextActionType: nextStatus === "requires_action" ? record.nextActionType : undefined,
+    hostedActionUrl: nextStatus === "requires_action" ? record.hostedActionUrl : undefined,
+    processorIntentRefs: [providerOutput.intentRef],
+    updatedAt: providerOutput.recordedAt,
+  };
+}
+
+function applyCapturedPaymentResult(
+  existingPayment: Payment,
+  providerOutput: ProviderCapturePaymentIntentOutput,
+): Payment {
+  const nextStatus = mapProviderPaymentIntentStatus(providerOutput.status);
+  return {
+    ...existingPayment,
+    status: mapPaymentStatus(nextStatus),
+    capturedAt: nextStatus === "captured" ? providerOutput.recordedAt : existingPayment.capturedAt,
+    settlementEligibleAt:
+      nextStatus === "captured" ? providerOutput.recordedAt : existingPayment.settlementEligibleAt,
+    updatedAt: providerOutput.recordedAt,
+    processorPaymentRefs: providerOutput.paymentRef
+      ? [providerOutput.paymentRef]
+      : existingPayment.processorPaymentRefs,
+  };
+}
+
+function applyCanceledIntentResult(
+  record: PaymentIntent,
+  providerOutput: ProviderCancelPaymentIntentOutput,
+): PaymentIntent {
+  const nextStatus = mapProviderPaymentIntentStatus(providerOutput.status);
+  return {
+    ...record,
+    status: nextStatus,
+    nextActionType: nextStatus === "requires_action" ? record.nextActionType : undefined,
+    hostedActionUrl: nextStatus === "requires_action" ? record.hostedActionUrl : undefined,
+    canceledAt: nextStatus === "canceled" ? providerOutput.recordedAt : record.canceledAt,
+    processorIntentRefs: [providerOutput.intentRef],
+    updatedAt: providerOutput.recordedAt,
+  };
+}
+
+function applyCanceledPaymentResult(
+  existingPayment: Payment,
+  providerOutput: ProviderCancelPaymentIntentOutput,
+): Payment {
+  const nextStatus = mapProviderPaymentIntentStatus(providerOutput.status);
+  return {
+    ...existingPayment,
+    status: mapPaymentStatus(nextStatus),
+    updatedAt: providerOutput.recordedAt,
+  };
+}
+
+async function savePaymentTransitionEvent(
+  uow: PaymentsUnitOfWork,
+  input: {
+    readonly eventType:
+      | "payment.captured"
+      | "payment.canceled"
+      | "payment.created"
+      | "payment.failed";
+    readonly paymentIntent: PaymentIntent;
+    readonly payment: Payment | null;
+    readonly occurredAt: string;
+  },
+): Promise<void> {
+  if (!input.payment) {
+    return;
+  }
+  await uow.events.saveCanonicalEvent(
+    createPaymentEvent({
+      id: `${input.payment.id}:${input.eventType}:${input.occurredAt}`,
+      eventType: input.eventType,
+      paymentIntent: input.paymentIntent,
+      payment: input.payment,
+      occurredAt: input.occurredAt,
+    }),
+  );
+}
+
+async function snapshotPaymentIntentWithPayment(
+  uow: PaymentsUnitOfWork,
+  environment: CreatePaymentIntentCommand["environment"],
+  record: PaymentIntent,
+): Promise<PaymentIntentSnapshot> {
+  const payment = await uow.payments.getByPaymentIntentId(environment, record.id);
+  return toSnapshot(record, {
+    paymentId: payment?.id,
+    paymentMethodId: payment?.paymentMethodId ?? record.metadata?.selectedPaymentMethodId,
+  });
+}
+
+async function capturePaymentIntentInTransaction(
+  dependencies: PaymentsServiceDependencies,
+  uow: PaymentsUnitOfWork,
+  command: CapturePaymentIntentCommand,
+): Promise<PaymentIntentSnapshot> {
+  const record = await getPaymentIntentInScope(uow, command);
+  assertCapturablePaymentIntent(record);
+
+  const { merchant, providerContext, adapter } = await resolvePaymentIntentProvider({
+    dependencies,
+    uow,
+    environment: command.environment,
+    merchantAccountId: command.merchantAccountId,
+  });
+  const capturePaymentIntent = requireProviderCapture(adapter, providerContext);
+  const providerResult = await capturePaymentIntent(providerContext, {
+    merchantAccountId: merchant.id,
+    intentRef: selectPaymentIntentRef(record, providerContext.provider),
+    amount: record.amount,
+  });
+  if (!providerResult.ok || !providerResult.value) {
+    throw mapProviderError(providerResult.error ?? missingCaptureResultError(providerContext));
+  }
+
+  const updatedIntent = applyCapturedIntentResult(record, providerResult.value);
+  await uow.paymentIntents.save(updatedIntent);
+
+  const existingPayment = await uow.payments.getByPaymentIntentId(
+    command.environment,
+    command.paymentIntentId,
+  );
+  const updatedPayment = existingPayment
+    ? applyCapturedPaymentResult(existingPayment, providerResult.value)
+    : null;
+  if (updatedPayment) {
+    await uow.payments.save(updatedPayment);
+  }
+
+  await saveCustomerPaymentStateForIntent(dependencies, uow, updatedIntent);
+  await savePaymentTransitionEvent(uow, {
+    eventType: "payment.captured",
+    paymentIntent: updatedIntent,
+    payment: updatedPayment,
+    occurredAt: providerResult.value.recordedAt,
+  });
+  return snapshotPaymentIntentWithPayment(uow, command.environment, updatedIntent);
+}
+
+async function cancelPaymentIntentInTransaction(
+  dependencies: PaymentsServiceDependencies,
+  uow: PaymentsUnitOfWork,
+  command: CancelPaymentIntentCommand,
+): Promise<PaymentIntentSnapshot> {
+  const record = await getPaymentIntentInScope(uow, command);
+  if (record.status === "canceled") {
+    return snapshotPaymentIntentWithPayment(uow, command.environment, record);
+  }
+  assertCancelablePaymentIntent(record);
+
+  const { merchant, providerContext, adapter } = await resolvePaymentIntentProvider({
+    dependencies,
+    uow,
+    environment: command.environment,
+    merchantAccountId: command.merchantAccountId,
+  });
+  const cancelPaymentIntent = requireProviderCancel(adapter, providerContext);
+  const providerResult = await cancelPaymentIntent(providerContext, {
+    merchantAccountId: merchant.id,
+    intentRef: selectPaymentIntentRef(record, providerContext.provider),
+  });
+  if (!providerResult.ok || !providerResult.value) {
+    throw mapProviderError(providerResult.error ?? missingCancelResultError(providerContext));
+  }
+
+  const updatedIntent = applyCanceledIntentResult(record, providerResult.value);
+  await uow.paymentIntents.save(updatedIntent);
+
+  const existingPayment = await uow.payments.getByPaymentIntentId(
+    command.environment,
+    command.paymentIntentId,
+  );
+  const updatedPayment = existingPayment
+    ? applyCanceledPaymentResult(existingPayment, providerResult.value)
+    : null;
+  if (updatedPayment) {
+    await uow.payments.save(updatedPayment);
+  }
+
+  await saveCustomerPaymentStateForIntent(dependencies, uow, updatedIntent);
+  await savePaymentTransitionEvent(uow, {
+    eventType: "payment.canceled",
+    paymentIntent: updatedIntent,
+    payment: updatedPayment,
+    occurredAt: providerResult.value.recordedAt,
+  });
+  return snapshotPaymentIntentWithPayment(uow, command.environment, updatedIntent);
+}
+
+function missingCreateResultError(providerContext: ProviderContext): ProviderError {
+  return {
+    provider: providerContext.provider,
+    category: "unknown",
+    code: "provider_result_missing",
+    message: "provider payment intent failed without error details",
+    retryable: false,
+  };
+}
+
+function createIntentMetadata(
+  command: CreatePaymentIntentCommand,
+  selectedPaymentMethodId: PaymentMethodId,
+): PaymentIntent["metadata"] {
+  return {
+    ...command.metadata,
+    selectedPaymentMethodId,
+  };
+}
+
+function buildFailedPaymentIntentRecord(input: {
+  readonly command: CreatePaymentIntentCommand;
+  readonly selectedPaymentMethodId: PaymentMethodId;
+  readonly failedIntentRef: ProcessorRef;
+  readonly recordedAt: string;
+  readonly createId: (prefix: "pi") => string;
+}): PaymentIntent {
+  return {
+    id: input.createId("pi"),
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+    customerProfileId: input.command.customerProfileId,
+    externalPaymentRef: input.command.externalPaymentRef,
+    amount: input.command.amount,
+    currency: input.command.currency,
+    captureMode: input.command.captureMode,
+    status: "failed",
+    returnUrl: input.command.returnUrl,
+    fraudSessionId: input.command.fraudSessionId,
+    metadata: createIntentMetadata(input.command, input.selectedPaymentMethodId),
+    nextActionType: undefined,
+    hostedActionUrl: undefined,
+    processorIntentRefs: [input.failedIntentRef],
+    createdAt: input.recordedAt,
+    updatedAt: input.recordedAt,
+  };
+}
+
+function buildFailedPaymentRecord(input: {
+  readonly command: CreatePaymentIntentCommand;
+  readonly failedIntentRecord: PaymentIntent;
+  readonly selectedPaymentMethodId: PaymentMethodId;
+  readonly failedIntentRef: ProcessorRef;
+  readonly providerError: ProviderError;
+  readonly recordedAt: string;
+  readonly createId: (prefix: "pay") => string;
+}): Payment {
+  return {
+    id: input.createId("pay"),
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+    paymentIntentId: input.failedIntentRecord.id,
+    customerProfileId: input.command.customerProfileId,
+    paymentMethodId: input.selectedPaymentMethodId,
+    amount: input.command.amount,
+    currency: input.command.currency,
+    status: "failed",
+    direction: "debit",
+    failureCode: input.providerError.code,
+    failureMessage: input.providerError.message,
+    processorPaymentRefs: [
+      {
+        ...input.failedIntentRef,
+        relationship: "payment",
+      },
+    ],
+    createdAt: input.recordedAt,
+    updatedAt: input.recordedAt,
+  };
+}
+
+async function saveCustomerStateForCreatedIntent(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly paymentIntent: PaymentIntent;
+  readonly paymentMethods: readonly PaymentMethod[];
+  readonly generatedAt: string;
+}): Promise<void> {
+  if (!input.paymentIntent.customerProfileId) {
+    return;
+  }
+  await input.uow.customerStates.save(
+    deriveCustomerPaymentState({
+      customerProfileId: input.paymentIntent.customerProfileId,
+      merchantAccountId: input.paymentIntent.merchantAccountId,
+      environment: input.paymentIntent.environment,
+      paymentMethods: input.paymentMethods,
+      paymentIntents: [input.paymentIntent],
+      generatedAt: input.generatedAt,
+    }),
+  );
+}
+
+async function persistFailedProviderPaymentIntent(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: CreatePaymentIntentCommand;
+  readonly providerContext: ProviderContext;
+  readonly providerError: ProviderError;
+  readonly paymentMethods: readonly PaymentMethod[];
+  readonly selectedPaymentMethodId: PaymentMethodId;
+  readonly recordedAt: string;
+  readonly createId: (prefix: "pi" | "pay") => string;
+}): Promise<PaymentIntentSnapshot> {
+  const failedIntentRef = createFailedProcessorRef(
+    input.providerError,
+    input.providerContext.provider,
+    input.recordedAt,
+  );
+  const failedIntentRecord = buildFailedPaymentIntentRecord({
+    command: input.command,
+    selectedPaymentMethodId: input.selectedPaymentMethodId,
+    failedIntentRef,
+    recordedAt: input.recordedAt,
+    createId: input.createId,
+  });
+  await input.uow.paymentIntents.save(failedIntentRecord);
+
+  const failedPaymentRecord = buildFailedPaymentRecord({
+    command: input.command,
+    failedIntentRecord,
+    selectedPaymentMethodId: input.selectedPaymentMethodId,
+    failedIntentRef,
+    providerError: input.providerError,
+    recordedAt: input.recordedAt,
+    createId: input.createId,
+  });
+  await input.uow.payments.save(failedPaymentRecord);
+  await saveCustomerStateForCreatedIntent({
+    uow: input.uow,
+    paymentIntent: failedIntentRecord,
+    paymentMethods: input.paymentMethods,
+    generatedAt: input.recordedAt,
+  });
+  await savePaymentTransitionEvent(input.uow, {
+    eventType: "payment.failed",
+    paymentIntent: failedIntentRecord,
+    payment: failedPaymentRecord,
+    occurredAt: input.recordedAt,
+  });
+
+  return toSnapshot(failedIntentRecord, {
+    paymentId: failedPaymentRecord.id,
+    paymentMethodId: input.selectedPaymentMethodId,
+  });
+}
+
+function buildCreatedPaymentIntentRecord(input: {
+  readonly command: CreatePaymentIntentCommand;
+  readonly selectedPaymentMethodId: PaymentMethodId;
+  readonly providerOutput: ProviderPaymentIntentOutput;
+  readonly recordedAt: string;
+  readonly createId: (prefix: "pi") => string;
+}): PaymentIntent {
+  return {
+    id: input.createId("pi"),
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+    customerProfileId: input.command.customerProfileId,
+    externalPaymentRef: input.command.externalPaymentRef,
+    amount: input.command.amount,
+    currency: input.command.currency,
+    captureMode: input.command.captureMode,
+    status: mapProviderPaymentIntentStatus(input.providerOutput.status),
+    returnUrl: input.command.returnUrl,
+    fraudSessionId: input.command.fraudSessionId,
+    metadata: createIntentMetadata(input.command, input.selectedPaymentMethodId),
+    nextActionType: input.providerOutput.nextActionType,
+    hostedActionUrl: readHostedActionUrl(input.providerOutput.clientTokenRef),
+    processorIntentRefs: [input.providerOutput.intentRef],
+    createdAt: input.recordedAt,
+    updatedAt: input.recordedAt,
+  };
+}
+
+function buildCreatedPaymentRecord(input: {
+  readonly command: CreatePaymentIntentCommand;
+  readonly record: PaymentIntent;
+  readonly selectedPaymentMethodId: PaymentMethodId;
+  readonly recordedAt: string;
+  readonly createId: (prefix: "pay") => string;
+}): Payment {
+  return {
+    id: input.createId("pay"),
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+    paymentIntentId: input.record.id,
+    customerProfileId: input.command.customerProfileId,
+    paymentMethodId: input.selectedPaymentMethodId,
+    amount: input.command.amount,
+    currency: input.command.currency,
+    status: mapPaymentStatus(input.record.status),
+    direction: "debit",
+    authorizedAt: input.record.status === "authorized" ? input.recordedAt : undefined,
+    capturedAt: input.record.status === "captured" ? input.recordedAt : undefined,
+    settlementEligibleAt: input.record.status === "captured" ? input.recordedAt : undefined,
+    processorPaymentRefs: input.record.processorIntentRefs,
+    createdAt: input.recordedAt,
+    updatedAt: input.recordedAt,
+  };
+}
+
+async function persistCreatedProviderPaymentIntent(input: {
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: CreatePaymentIntentCommand;
+  readonly providerOutput: ProviderPaymentIntentOutput;
+  readonly paymentMethods: readonly PaymentMethod[];
+  readonly selectedPaymentMethodId: PaymentMethodId;
+  readonly recordedAt: string;
+  readonly createId: (prefix: "pi" | "pay") => string;
+}): Promise<PaymentIntentSnapshot> {
+  const record = buildCreatedPaymentIntentRecord({
+    command: input.command,
+    selectedPaymentMethodId: input.selectedPaymentMethodId,
+    providerOutput: input.providerOutput,
+    recordedAt: input.recordedAt,
+    createId: input.createId,
+  });
+  await input.uow.paymentIntents.save(record);
+
+  const paymentRecord = buildCreatedPaymentRecord({
+    command: input.command,
+    record,
+    selectedPaymentMethodId: input.selectedPaymentMethodId,
+    recordedAt: input.recordedAt,
+    createId: input.createId,
+  });
+  await input.uow.payments.save(paymentRecord);
+  await saveCustomerStateForCreatedIntent({
+    uow: input.uow,
+    paymentIntent: record,
+    paymentMethods: input.paymentMethods,
+    generatedAt: input.recordedAt,
+  });
+  await savePaymentTransitionEvent(input.uow, {
+    eventType: "payment.created",
+    paymentIntent: record,
+    payment: paymentRecord,
+    occurredAt: input.recordedAt,
+  });
+
+  return toSnapshot(record, {
+    paymentId: paymentRecord.id,
+    paymentMethodId: input.selectedPaymentMethodId,
+  });
+}
+
+async function createPaymentIntentInTransaction(input: {
+  readonly dependencies: PaymentsServiceDependencies;
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: CreatePaymentIntentCommand;
+  readonly now: () => string;
+  readonly createId: (prefix: "pi" | "pay" | "idem") => string;
+}): Promise<PaymentIntentSnapshot> {
+  return withIdempotentResult(
+    input.uow,
+    {
+      environment: input.command.environment,
+      scope: `payments:createPaymentIntent:${input.command.merchantAccountId}`,
+      idempotencyKey: input.command.idempotencyKey,
+      request: input.command,
+      createId: (prefix) => input.createId(prefix),
+      now: input.now(),
+    },
+    () => createPaymentIntentWithoutIdempotency(input),
+  );
+}
+
+async function createPaymentIntentWithoutIdempotency(input: {
+  readonly dependencies: PaymentsServiceDependencies;
+  readonly uow: PaymentsUnitOfWork;
+  readonly command: CreatePaymentIntentCommand;
+  readonly now: () => string;
+  readonly createId: (prefix: "pi" | "pay") => string;
+}): Promise<PaymentIntentSnapshot> {
+  const { merchant, providerContext, adapter } = await resolvePaymentIntentProvider({
+    dependencies: input.dependencies,
+    uow: input.uow,
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+  });
+  const paymentMethods = await input.dependencies.listPaymentMethods({
+    environment: input.command.environment,
+    merchantAccountId: input.command.merchantAccountId,
+    customerProfileId: input.command.customerProfileId,
+  });
+  const selectedPaymentMethodId = selectPaymentMethodId(input.command, paymentMethods, input.now());
+  const selectedPaymentMethod = paymentMethods.find(
+    (paymentMethod) => paymentMethod.id === selectedPaymentMethodId,
+  );
+  const providerResult = await adapter.createPaymentIntent(providerContext, {
+    merchantAccountId: merchant.id,
+    merchantRef: selectMerchantRef(merchant, providerContext.provider),
+    paymentMethodRef: selectPaymentMethodRef(
+      selectedPaymentMethod,
+      providerContext.provider,
+      selectedPaymentMethodId,
+    ),
+    amount: input.command.amount,
+    currency: input.command.currency,
+    captureMode: input.command.captureMode,
+    returnUrl: input.command.returnUrl,
+    fraudSessionId: input.command.fraudSessionId,
+    idempotencyKey: input.command.idempotencyKey,
+  });
+
+  const recordedAt = input.now();
+  if (!providerResult.ok || !providerResult.value) {
+    const providerError = providerResult.error ?? missingCreateResultError(providerContext);
+    if (!shouldPersistFailedProviderResult(providerError)) {
+      throw mapProviderError(providerError);
+    }
+    return persistFailedProviderPaymentIntent({
+      uow: input.uow,
+      command: input.command,
+      providerContext,
+      providerError,
+      paymentMethods,
+      selectedPaymentMethodId,
+      recordedAt,
+      createId: input.createId,
+    });
+  }
+
+  return persistCreatedProviderPaymentIntent({
+    uow: input.uow,
+    command: input.command,
+    providerOutput: providerResult.value,
+    paymentMethods,
+    selectedPaymentMethodId,
+    recordedAt,
+    createId: input.createId,
+  });
+}
+
+async function listPaymentIntentsForMerchant(
+  uow: PaymentsUnitOfWork,
+  query: ListPaymentIntentsQuery,
+): Promise<readonly PaymentIntentSnapshot[]> {
+  const records = await uow.paymentIntents.listByMerchant(
+    query.environment,
+    query.merchantAccountId,
+  );
+  const filtered = records
+    .filter(
+      (record) =>
+        query.customerProfileId === undefined ||
+        record.customerProfileId === query.customerProfileId,
+    )
+    .filter((record) => query.status === undefined || record.status === query.status)
+    .filter(
+      (record) =>
+        query.externalPaymentRef === undefined ||
+        record.externalPaymentRef === query.externalPaymentRef,
+    )
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, Math.min(query.limit ?? 50, 100));
+
+  return Promise.all(
+    filtered.map(async (record) =>
+      snapshotPaymentIntentWithPayment(uow, record.environment, record),
+    ),
+  );
+}
+
+async function retryPaymentIntentUsingCreate(
+  uow: PaymentsUnitOfWork,
+  command: RetryPaymentIntentCommand,
+  createPaymentIntent: (command: CreatePaymentIntentCommand) => Promise<PaymentIntentSnapshot>,
+): Promise<PaymentIntentSnapshot> {
+  const record = await uow.paymentIntents.getById(command.paymentIntentId, {
+    environment: command.environment,
+  });
+  if (!record || record.merchantAccountId !== command.merchantAccountId) {
+    throw new PaymentsServiceError("not_found", "payment intent not found", {
+      details: { paymentIntentId: command.paymentIntentId },
+    });
+  }
+  if (!canRetryPaymentIntent(record)) {
+    throw new PaymentsServiceError("conflict", "payment intent is not retryable", {
+      details: { paymentIntentId: record.id, status: record.status },
+    });
+  }
+
+  const retrySourcePaymentMethodId =
+    command.paymentMethodId ?? record.metadata?.selectedPaymentMethodId;
+  const retryMetadata: Record<string, string> = {
+    ...record.metadata,
+    retriedFromPaymentIntentId: record.id,
+  };
+
+  if (retrySourcePaymentMethodId) {
+    retryMetadata.selectedPaymentMethodId = retrySourcePaymentMethodId;
+  }
+
+  return createPaymentIntent({
+    environment: command.environment,
+    merchantAccountId: record.merchantAccountId,
+    customerProfileId: record.customerProfileId,
+    amount: record.amount,
+    currency: record.currency,
+    captureMode: record.captureMode,
+    paymentMethodId: retrySourcePaymentMethodId,
+    externalPaymentRef: record.externalPaymentRef,
+    returnUrl: record.returnUrl,
+    fraudSessionId: record.fraudSessionId,
+    metadata: retryMetadata,
+    idempotencyKey: command.idempotencyKey,
+  });
+}
+
+async function getPaymentIntentSnapshot(
+  uow: PaymentsUnitOfWork,
+  query: GetPaymentIntentQuery,
+): Promise<PaymentIntentSnapshot | null> {
+  const record = await uow.paymentIntents.getById(query.paymentIntentId, {
+    environment: query.environment,
+  });
+  if (!record) {
+    return null;
+  }
+  return snapshotPaymentIntentWithPayment(uow, query.environment, record);
+}
+
 export function createPaymentsService(dependencies: PaymentsServiceDependencies): PaymentsService {
   const now = dependencies.now ?? (() => new Date().toISOString());
   const createId = dependencies.createId ?? createDefaultId;
@@ -509,460 +1291,44 @@ export function createPaymentsService(dependencies: PaymentsServiceDependencies)
   return {
     async createPaymentIntent(command: CreatePaymentIntentCommand): Promise<PaymentIntentSnapshot> {
       return dependencies.uow.runInTransaction(async (uow) => {
-        return withIdempotentResult(
+        return createPaymentIntentInTransaction({
+          dependencies,
           uow,
-          {
-            environment: command.environment,
-            scope: `payments:createPaymentIntent:${command.merchantAccountId}`,
-            idempotencyKey: command.idempotencyKey,
-            request: command,
-            createId: (prefix) => createId(prefix),
-            now: now(),
-          },
-          async () => {
-            const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
-            const providerContext = dependencies.resolveProviderContext(merchant);
-            const adapter = dependencies.providers.getAdapter(providerContext.provider);
-            const paymentMethods = await dependencies.listPaymentMethods({
-              environment: command.environment,
-              merchantAccountId: command.merchantAccountId,
-              customerProfileId: command.customerProfileId,
-            });
-            const selectedPaymentMethodId = selectPaymentMethodId(command, paymentMethods, now());
-            const selectedPaymentMethod = paymentMethods.find(
-              (paymentMethod) => paymentMethod.id === selectedPaymentMethodId,
-            );
-            const merchantRef = selectMerchantRef(merchant, providerContext.provider);
-            const paymentMethodRef = selectPaymentMethodRef(
-              selectedPaymentMethod,
-              providerContext.provider,
-              selectedPaymentMethodId,
-            );
-            const providerResult = await adapter.createPaymentIntent(providerContext, {
-              merchantAccountId: merchant.id,
-              merchantRef,
-              paymentMethodRef,
-              amount: command.amount,
-              currency: command.currency,
-              captureMode: command.captureMode,
-              returnUrl: command.returnUrl,
-              fraudSessionId: command.fraudSessionId,
-              idempotencyKey: command.idempotencyKey,
-            });
-
-            if (!providerResult.ok || !providerResult.value) {
-              const providerError = providerResult.error ?? {
-                provider: providerContext.provider,
-                category: "unknown",
-                code: "provider_result_missing",
-                message: "provider payment intent failed without error details",
-                retryable: false,
-              };
-
-              if (!shouldPersistFailedProviderResult(providerError)) {
-                throw mapProviderError(providerError);
-              }
-
-              const recordedAt = now();
-              const failedIntentRef = createFailedProcessorRef(
-                providerError,
-                providerContext.provider,
-                recordedAt,
-              );
-              const failedIntentRecord: PaymentIntent = {
-                id: createId("pi"),
-                environment: command.environment,
-                merchantAccountId: command.merchantAccountId,
-                customerProfileId: command.customerProfileId,
-                externalPaymentRef: command.externalPaymentRef,
-                amount: command.amount,
-                currency: command.currency,
-                captureMode: command.captureMode,
-                status: "failed",
-                returnUrl: command.returnUrl,
-                fraudSessionId: command.fraudSessionId,
-                metadata: {
-                  ...command.metadata,
-                  selectedPaymentMethodId,
-                },
-                nextActionType: undefined,
-                hostedActionUrl: undefined,
-                processorIntentRefs: [failedIntentRef],
-                createdAt: recordedAt,
-                updatedAt: recordedAt,
-              };
-              await uow.paymentIntents.save(failedIntentRecord);
-
-              const failedPaymentRecord: Payment = {
-                id: createId("pay"),
-                environment: command.environment,
-                merchantAccountId: command.merchantAccountId,
-                paymentIntentId: failedIntentRecord.id,
-                customerProfileId: command.customerProfileId,
-                paymentMethodId: selectedPaymentMethodId,
-                amount: command.amount,
-                currency: command.currency,
-                status: "failed",
-                direction: "debit",
-                failureCode: providerError.code,
-                failureMessage: providerError.message,
-                processorPaymentRefs: [{
-                  ...failedIntentRef,
-                  relationship: "payment",
-                }],
-                createdAt: recordedAt,
-                updatedAt: recordedAt,
-              };
-              await uow.payments.save(failedPaymentRecord);
-
-              if (failedIntentRecord.customerProfileId) {
-                await uow.customerStates.save(
-                  deriveCustomerPaymentState({
-                    customerProfileId: failedIntentRecord.customerProfileId,
-                    merchantAccountId: failedIntentRecord.merchantAccountId,
-                    environment: failedIntentRecord.environment,
-                    paymentMethods,
-                    paymentIntents: [failedIntentRecord],
-                    generatedAt: recordedAt,
-                  }),
-                );
-              }
-              await uow.events.saveCanonicalEvent(createPaymentEvent({
-                id: `${failedPaymentRecord.id}:payment.failed:${recordedAt}`,
-                eventType: "payment.failed",
-                paymentIntent: failedIntentRecord,
-                payment: failedPaymentRecord,
-                occurredAt: recordedAt,
-              }));
-
-              return toSnapshot(failedIntentRecord, {
-                paymentId: failedPaymentRecord.id,
-                paymentMethodId: selectedPaymentMethodId,
-              });
-            }
-
-            const recordedAt = now();
-            const paymentIntentStatus = mapProviderPaymentIntentStatus(providerResult.value.status);
-            const record: PaymentIntent = {
-              id: createId("pi"),
-              environment: command.environment,
-              merchantAccountId: command.merchantAccountId,
-              customerProfileId: command.customerProfileId,
-              externalPaymentRef: command.externalPaymentRef,
-              amount: command.amount,
-              currency: command.currency,
-              captureMode: command.captureMode,
-              status: paymentIntentStatus,
-              returnUrl: command.returnUrl,
-              fraudSessionId: command.fraudSessionId,
-              metadata: {
-                ...command.metadata,
-                selectedPaymentMethodId,
-              },
-              nextActionType: providerResult.value.nextActionType,
-              hostedActionUrl: readHostedActionUrl(providerResult.value.clientTokenRef),
-              processorIntentRefs: [providerResult.value.intentRef],
-              createdAt: recordedAt,
-              updatedAt: recordedAt,
-            };
-            await uow.paymentIntents.save(record);
-
-            const paymentRecord: Payment = {
-              id: createId("pay"),
-              environment: command.environment,
-              merchantAccountId: command.merchantAccountId,
-              paymentIntentId: record.id,
-              customerProfileId: command.customerProfileId,
-              paymentMethodId: selectedPaymentMethodId,
-              amount: command.amount,
-              currency: command.currency,
-              status: mapPaymentStatus(paymentIntentStatus),
-              direction: "debit",
-              authorizedAt: paymentIntentStatus === "authorized" ? recordedAt : undefined,
-              capturedAt: paymentIntentStatus === "captured" ? recordedAt : undefined,
-              settlementEligibleAt: paymentIntentStatus === "captured" ? recordedAt : undefined,
-              processorPaymentRefs: [providerResult.value.intentRef],
-              createdAt: recordedAt,
-              updatedAt: recordedAt,
-            };
-            await uow.payments.save(paymentRecord);
-
-            if (record.customerProfileId) {
-              await uow.customerStates.save(
-                deriveCustomerPaymentState({
-                  customerProfileId: record.customerProfileId,
-                  merchantAccountId: record.merchantAccountId,
-                  environment: record.environment,
-                  paymentMethods,
-                  paymentIntents: [record],
-                  generatedAt: recordedAt,
-                }),
-              );
-            }
-            await uow.events.saveCanonicalEvent(createPaymentEvent({
-              id: `${paymentRecord.id}:payment.created:${recordedAt}`,
-              eventType: "payment.created",
-              paymentIntent: record,
-              payment: paymentRecord,
-              occurredAt: recordedAt,
-            }));
-
-            return toSnapshot(record, {
-              paymentId: paymentRecord.id,
-              paymentMethodId: selectedPaymentMethodId,
-            });
-          },
-        );
+          command,
+          now,
+          createId,
+        });
       });
     },
 
-    async listPaymentIntents(query: ListPaymentIntentsQuery): Promise<readonly PaymentIntentSnapshot[]> {
-      const records = await dependencies.uow.paymentIntents.listByMerchant(
-        query.environment,
-        query.merchantAccountId,
-      );
-      const filtered = records
-        .filter((record) => query.customerProfileId === undefined || record.customerProfileId === query.customerProfileId)
-        .filter((record) => query.status === undefined || record.status === query.status)
-        .filter((record) => query.externalPaymentRef === undefined || record.externalPaymentRef === query.externalPaymentRef)
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-        .slice(0, Math.min(query.limit ?? 50, 100));
-
-      const snapshots = await Promise.all(filtered.map(async (record) => {
-        const payment = await dependencies.uow.payments.getByPaymentIntentId(record.environment, record.id);
-        return toSnapshot(record, {
-          paymentId: payment?.id,
-          paymentMethodId: payment?.paymentMethodId ?? record.metadata?.selectedPaymentMethodId,
-        });
-      }));
-      return snapshots;
+    async listPaymentIntents(
+      query: ListPaymentIntentsQuery,
+    ): Promise<readonly PaymentIntentSnapshot[]> {
+      return listPaymentIntentsForMerchant(dependencies.uow, query);
     },
 
-    async capturePaymentIntent(command: CapturePaymentIntentCommand): Promise<PaymentIntentSnapshot> {
+    async capturePaymentIntent(
+      command: CapturePaymentIntentCommand,
+    ): Promise<PaymentIntentSnapshot> {
       return dependencies.uow.runInTransaction(async (uow) => {
-        const record = await getPaymentIntentInScope(uow, command);
-        if (record.captureMode !== "manual") {
-          throw new PaymentsServiceError("conflict", "only manual authorization payment intents can be captured", {
-            details: { paymentIntentId: record.id },
-          });
-        }
-        if (record.status !== "authorized") {
-          throw new PaymentsServiceError("conflict", "payment intent is not capturable", {
-            details: { paymentIntentId: record.id, status: record.status },
-          });
-        }
-
-        const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
-        const providerContext = dependencies.resolveProviderContext(merchant);
-        const adapter = dependencies.providers.getAdapter(providerContext.provider);
-        if (!adapter.capturePaymentIntent) {
-          throw new PaymentsServiceError("provider_unavailable", "provider does not support capture for payment intents", {
-            details: { provider: providerContext.provider },
-          });
-        }
-
-        const providerResult = await adapter.capturePaymentIntent(providerContext, {
-          merchantAccountId: merchant.id,
-          intentRef: selectPaymentIntentRef(record, providerContext.provider),
-          amount: record.amount,
-        });
-        if (!providerResult.ok || !providerResult.value) {
-          throw mapProviderError(providerResult.error ?? {
-            provider: providerContext.provider,
-            category: "unknown",
-            code: "provider_result_missing",
-            message: "provider capture failed without error details",
-            retryable: false,
-          });
-        }
-
-        const nextStatus = mapProviderPaymentIntentStatus(providerResult.value.status);
-        const updatedIntent: PaymentIntent = {
-          ...record,
-          status: nextStatus,
-          nextActionType: nextStatus === "requires_action" ? record.nextActionType : undefined,
-          hostedActionUrl: nextStatus === "requires_action" ? record.hostedActionUrl : undefined,
-          processorIntentRefs: [providerResult.value.intentRef],
-          updatedAt: providerResult.value.recordedAt,
-        };
-        await uow.paymentIntents.save(updatedIntent);
-
-        const existingPayment = await uow.payments.getByPaymentIntentId(command.environment, command.paymentIntentId);
-        let updatedPayment: Payment | null = null;
-        if (existingPayment) {
-          updatedPayment = {
-            ...existingPayment,
-            status: mapPaymentStatus(nextStatus),
-            capturedAt: nextStatus === "captured" ? providerResult.value.recordedAt : existingPayment.capturedAt,
-            settlementEligibleAt: nextStatus === "captured" ? providerResult.value.recordedAt : existingPayment.settlementEligibleAt,
-            updatedAt: providerResult.value.recordedAt,
-            processorPaymentRefs: providerResult.value.paymentRef ? [providerResult.value.paymentRef] : existingPayment.processorPaymentRefs,
-          };
-          await uow.payments.save(updatedPayment);
-        }
-
-        await saveCustomerPaymentStateForIntent(dependencies, uow, updatedIntent);
-        if (updatedPayment) {
-          await uow.events.saveCanonicalEvent(createPaymentEvent({
-            id: `${updatedPayment.id}:payment.captured:${providerResult.value.recordedAt}`,
-            eventType: "payment.captured",
-            paymentIntent: updatedIntent,
-            payment: updatedPayment,
-            occurredAt: providerResult.value.recordedAt,
-          }));
-        }
-        const payment = await uow.payments.getByPaymentIntentId(command.environment, command.paymentIntentId);
-        return toSnapshot(updatedIntent, {
-          paymentId: payment?.id,
-          paymentMethodId: payment?.paymentMethodId ?? updatedIntent.metadata?.selectedPaymentMethodId,
-        });
+        return capturePaymentIntentInTransaction(dependencies, uow, command);
       });
     },
 
     async cancelPaymentIntent(command: CancelPaymentIntentCommand): Promise<PaymentIntentSnapshot> {
       return dependencies.uow.runInTransaction(async (uow) => {
-        const record = await getPaymentIntentInScope(uow, command);
-        if (record.status === "canceled") {
-          const payment = await uow.payments.getByPaymentIntentId(command.environment, command.paymentIntentId);
-          return toSnapshot(record, {
-            paymentId: payment?.id,
-            paymentMethodId: payment?.paymentMethodId ?? record.metadata?.selectedPaymentMethodId,
-          });
-        }
-        if (record.captureMode !== "manual") {
-          throw new PaymentsServiceError("conflict", "only manual authorization payment intents can be canceled", {
-            details: { paymentIntentId: record.id },
-          });
-        }
-        if (record.status === "captured" || record.status === "failed") {
-          throw new PaymentsServiceError("conflict", "payment intent is not cancelable", {
-            details: { paymentIntentId: record.id, status: record.status },
-          });
-        }
-
-        const merchant = await getMerchantOrThrow(uow, command.environment, command.merchantAccountId);
-        const providerContext = dependencies.resolveProviderContext(merchant);
-        const adapter = dependencies.providers.getAdapter(providerContext.provider);
-        if (!adapter.cancelPaymentIntent) {
-          throw new PaymentsServiceError("provider_unavailable", "provider does not support cancel for payment intents", {
-            details: { provider: providerContext.provider },
-          });
-        }
-
-        const providerResult = await adapter.cancelPaymentIntent(providerContext, {
-          merchantAccountId: merchant.id,
-          intentRef: selectPaymentIntentRef(record, providerContext.provider),
-        });
-        if (!providerResult.ok || !providerResult.value) {
-          throw mapProviderError(providerResult.error ?? {
-            provider: providerContext.provider,
-            category: "unknown",
-            code: "provider_result_missing",
-            message: "provider cancel failed without error details",
-            retryable: false,
-          });
-        }
-
-        const nextStatus = mapProviderPaymentIntentStatus(providerResult.value.status);
-        const updatedIntent: PaymentIntent = {
-          ...record,
-          status: nextStatus,
-          nextActionType: nextStatus === "requires_action" ? record.nextActionType : undefined,
-          hostedActionUrl: nextStatus === "requires_action" ? record.hostedActionUrl : undefined,
-          canceledAt: nextStatus === "canceled" ? providerResult.value.recordedAt : record.canceledAt,
-          processorIntentRefs: [providerResult.value.intentRef],
-          updatedAt: providerResult.value.recordedAt,
-        };
-        await uow.paymentIntents.save(updatedIntent);
-
-        const existingPayment = await uow.payments.getByPaymentIntentId(command.environment, command.paymentIntentId);
-        let updatedPayment: Payment | null = null;
-        if (existingPayment) {
-          updatedPayment = {
-            ...existingPayment,
-            status: mapPaymentStatus(nextStatus),
-            updatedAt: providerResult.value.recordedAt,
-          };
-          await uow.payments.save(updatedPayment);
-        }
-
-        await saveCustomerPaymentStateForIntent(dependencies, uow, updatedIntent);
-        if (updatedPayment) {
-          await uow.events.saveCanonicalEvent(createPaymentEvent({
-            id: `${updatedPayment.id}:payment.canceled:${providerResult.value.recordedAt}`,
-            eventType: "payment.canceled",
-            paymentIntent: updatedIntent,
-            payment: updatedPayment,
-            occurredAt: providerResult.value.recordedAt,
-          }));
-        }
-        const payment = await uow.payments.getByPaymentIntentId(command.environment, command.paymentIntentId);
-        return toSnapshot(updatedIntent, {
-          paymentId: payment?.id,
-          paymentMethodId: payment?.paymentMethodId ?? updatedIntent.metadata?.selectedPaymentMethodId,
-        });
+        return cancelPaymentIntentInTransaction(dependencies, uow, command);
       });
     },
 
     async retryPaymentIntent(command: RetryPaymentIntentCommand): Promise<PaymentIntentSnapshot> {
-      const record = await dependencies.uow.paymentIntents.getById(command.paymentIntentId, {
-        environment: command.environment,
-      });
-      if (!record || record.merchantAccountId !== command.merchantAccountId) {
-        throw new PaymentsServiceError("not_found", "payment intent not found", {
-          details: { paymentIntentId: command.paymentIntentId },
-        });
-      }
-      if (!canRetryPaymentIntent(record)) {
-        throw new PaymentsServiceError("conflict", "payment intent is not retryable", {
-          details: { paymentIntentId: record.id, status: record.status },
-        });
-      }
-
-      const retrySourcePaymentMethodId = command.paymentMethodId
-        ?? record.metadata?.selectedPaymentMethodId;
-      const retryMetadata: Record<string, string> = {
-        ...record.metadata,
-        retriedFromPaymentIntentId: record.id,
-      };
-
-      if (retrySourcePaymentMethodId) {
-        retryMetadata.selectedPaymentMethodId = retrySourcePaymentMethodId;
-      }
-
-      return this.createPaymentIntent({
-        environment: command.environment,
-        merchantAccountId: record.merchantAccountId,
-        customerProfileId: record.customerProfileId,
-        amount: record.amount,
-        currency: record.currency,
-        captureMode: record.captureMode,
-        paymentMethodId: retrySourcePaymentMethodId,
-        externalPaymentRef: record.externalPaymentRef,
-        returnUrl: record.returnUrl,
-        fraudSessionId: record.fraudSessionId,
-        metadata: retryMetadata,
-        idempotencyKey: command.idempotencyKey,
-      });
+      return retryPaymentIntentUsingCreate(dependencies.uow, command, (retryCommand) =>
+        this.createPaymentIntent(retryCommand),
+      );
     },
 
     async getPaymentIntent(query: GetPaymentIntentQuery): Promise<PaymentIntentSnapshot | null> {
-      const record = await dependencies.uow.paymentIntents.getById(query.paymentIntentId, {
-        environment: query.environment,
-      });
-      if (!record) {
-        return null;
-      }
-
-      const payment = await dependencies.uow.payments.getByPaymentIntentId(
-        query.environment,
-        query.paymentIntentId,
-      );
-
-      return toSnapshot(record, {
-        paymentId: payment?.id,
-        paymentMethodId: payment?.paymentMethodId ?? record.metadata?.selectedPaymentMethodId,
-      });
+      return getPaymentIntentSnapshot(dependencies.uow, query);
     },
   };
 }

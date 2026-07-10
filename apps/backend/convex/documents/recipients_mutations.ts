@@ -16,6 +16,10 @@ import {
   recipientRoleTuple,
   recipientStatusTuple,
 } from "../schemas/document_recipients";
+import {
+  type DocumentWorkflowStatus,
+  isValidWorkflowTransition,
+} from "../schemas/document_workflow_status";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { workflow } from "../workflows";
 import {
@@ -264,6 +268,50 @@ async function maybePublishRecipientWebhook(
       },
     });
   }
+}
+
+function getDocumentWorkflowStatus(document: Doc<"documents">): DocumentWorkflowStatus {
+  return document.workflowStatus ?? "draft";
+}
+
+async function maybeMarkDocumentDeclined(
+  ctx: Pick<MutationCtx, "db">,
+  document: Doc<"documents"> | null,
+  recipient: Doc<"document_recipients">,
+  args: RecipientStatusChangeArgs,
+): Promise<void> {
+  if (args.status !== "declined" || !document || document.status === "deleted") {
+    return;
+  }
+
+  const currentStatus = getDocumentWorkflowStatus(document);
+  if (currentStatus === "declined") {
+    return;
+  }
+
+  if (!isValidWorkflowTransition(currentStatus, "declined")) {
+    throw new ConvexError(`Cannot decline a document in ${currentStatus} status`);
+  }
+
+  const declinedAt = Date.now();
+  await ctx.db.patch(document._id, {
+    workflowStatus: "declined",
+    declinedAt,
+    updatedAt: declinedAt,
+  });
+
+  await publishWebhookEvent(ctx, {
+    organizationId: document.organizationId,
+    eventType: "document.declined",
+    data: {
+      document_id: document._id,
+      name: document.name,
+      recipient_id: recipient._id,
+      recipient_email: recipient.email,
+      decline_reason: args.declineReason,
+      declined_at: new Date(declinedAt).toISOString(),
+    },
+  });
 }
 
 async function loadTokenRecipientStatusContext(
@@ -571,6 +619,7 @@ export const submitRecipientSignature = mutation({
   handler: async (ctx, args) => {
     const { recipient, document } = await loadTokenRecipientStatusContext(ctx, args.signingToken);
     const viewedAt = await applyRecipientStatusChange(ctx, recipient, document, args);
+    await maybeMarkDocumentDeclined(ctx, document, recipient, args);
     await logRecipientStatusChange(ctx, document, recipient, args);
     await maybeSendViewedNotification(ctx, recipient, viewedAt);
     await maybeStartPostSignatureWorkflow(ctx, recipient, args.status);
@@ -646,6 +695,7 @@ export const submitSignatureAuthenticated = authMutation({
     const { updateData, viewedAt } = buildRecipientStatusUpdate(recipient, args, "authenticated");
 
     await ctx.db.patch(recipient._id, updateData);
+    await maybeMarkDocumentDeclined(ctx, document, recipient, args);
 
     const auditAction = getRecipientAuditAction(args.status);
     if (auditAction) {

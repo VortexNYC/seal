@@ -1,1 +1,4 @@
 docs/archive/design-phase/**
+apps/landing/public/api/search.json
+apps/landing/src/routeTree.gen.ts
+apps/web/src/routeTree.gen.ts

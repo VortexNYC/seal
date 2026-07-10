@@ -119,6 +119,7 @@ async function runConvex<T extends Json>(input: {
       "bunx",
       "convex",
       "run",
+      "--push",
       "--typecheck=disable",
       "--codegen=disable",
       ...(input.identity === undefined ? [] : ["--identity", JSON.stringify(input.identity)]),
@@ -301,8 +302,8 @@ async function projectVortexSubscription(input: {
     "Expected subscription projection to process",
   );
   assert(
-    booleanField(projection, "activeStripeIdPresent") === false,
-    "Expected no active Stripe-shaped subscription after Vortex projection",
+    booleanField(projection, "activeNonVortexProviderIdPresent") === false,
+    "Expected no active non-Vortex-provider-shaped subscription after Vortex projection",
   );
   return { subscriptionExternalId, customerExternalId, priceId: input.priceId };
 }
@@ -318,8 +319,8 @@ async function assertProjectedState(input: {
     args: { organizationId: input.organizationId },
   });
   assert(
-    nullableStringField(state, "organizationStripeCustomerId") === null,
-    "Expected no org Stripe customer after projection",
+    nullableStringField(state, "organizationBillingCustomerId") === null,
+    "Expected no organization billing customer after projection",
   );
   const subscription = nullableObjectField(state, "subscription");
   assert(subscription !== null, "Expected projected Vortex subscription");
@@ -340,8 +341,8 @@ async function assertProjectedState(input: {
     "Expected active projected subscription",
   );
   assert(
-    booleanField(state, "activeStripeIdPresent") === false,
-    "Expected proof state to report no active Stripe-shaped ids",
+    booleanField(state, "activeNonVortexProviderIdPresent") === false,
+    "Expected proof state to report no active non-Vortex-provider-shaped ids",
   );
 }
 
@@ -388,7 +389,7 @@ function printProofResult(input: {
           subscriptionExternalId: input.projected.subscriptionExternalId,
           customerExternalId: input.projected.customerExternalId,
           priceId: input.projected.priceId,
-          activeStripeIdPresent: false,
+          activeNonVortexProviderIdPresent: false,
         },
         billingSettingsState: {
           status: stringField(input.billingDetails, "status"),

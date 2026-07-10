@@ -18,12 +18,8 @@ export interface PaymentMethodsService {
   setDefaultCustomerPaymentMethod(
     command: SetDefaultCustomerPaymentMethodCommand,
   ): Promise<readonly PaymentMethodSnapshot[]>;
-  archivePaymentMethod(
-    command: ArchivePaymentMethodCommand,
-  ): Promise<PaymentMethodSnapshot>;
-  disablePaymentMethod(
-    command: DisablePaymentMethodCommand,
-  ): Promise<PaymentMethodSnapshot>;
+  archivePaymentMethod(command: ArchivePaymentMethodCommand): Promise<PaymentMethodSnapshot>;
+  disablePaymentMethod(command: DisablePaymentMethodCommand): Promise<PaymentMethodSnapshot>;
   getCustomerPaymentState(
     query: ListCustomerPaymentMethodsQuery,
   ): Promise<CustomerPaymentStateSnapshot>;

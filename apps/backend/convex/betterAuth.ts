@@ -9,7 +9,7 @@ import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { betterAuthConvexProvider } from "./auth.config";
 import { authComponent as consumerAuthComponent } from "./betterAuthClient";
-import { resendComponent } from "./emails/resend_component";
+import { sendEmailFromAction } from "./emails/resend_component";
 
 /** Auth-email from-address (same source as Seal's transactional senders). */
 function authEmailFromAddress(): string {
@@ -42,7 +42,7 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
     // Transport seam: the package owns POLICY (when/what kind + the tokenized
     // url); Seal owns RENDER + SEND. Render with the package's shipped draft
     // builders (no hand-rolled HTML — pile's lesson) and send via the same
-    // Resend component the rest of Seal's mail uses.
+    // direct Resend transport the rest of Seal's mail uses.
     sendEmail: async ({ ctx, kind, to, url }) => {
       const from = authEmailFromAddress();
       const draft =
@@ -55,10 +55,10 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
         return;
       }
       // Better Auth invokes sendEmail inside a mutation-capable handler ctx;
-      // the seam types it as the broad GenericCtx, so narrow to the resend
-      // sender's expected ctx (which needs runMutation).
-      const sendCtx = ctx as unknown as Parameters<typeof resendComponent.sendEmail>[0];
-      await resendComponent.sendEmail(sendCtx, draft);
+      // the seam types it as the broad GenericCtx, so narrow to the sender's
+      // expected ctx (which needs runMutation).
+      const sendCtx = ctx as unknown as Parameters<typeof sendEmailFromAction>[0];
+      await sendEmailFromAction(sendCtx, draft);
     },
     // Captcha is a PROVEN opt-in capability (Cloudflare Turnstile,
     // sign-up/reset scoped). Kept DISABLED on the shared dev deployment

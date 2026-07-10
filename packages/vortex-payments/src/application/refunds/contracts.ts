@@ -1,9 +1,4 @@
-import type {
-  Environment,
-  MerchantAccountId,
-  PaymentId,
-  RefundId,
-} from "../../domain/common";
+import type { Environment, MerchantAccountId, PaymentId, RefundId } from "../../domain/common";
 import type { RefundStatus } from "../../domain/payments";
 
 export interface CreateRefundCommand {

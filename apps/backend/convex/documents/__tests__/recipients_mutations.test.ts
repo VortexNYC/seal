@@ -323,6 +323,48 @@ describe("Recipients mutations", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // submitRecipientSignature
+  // ---------------------------------------------------------------------------
+  describe("submitRecipientSignature", () => {
+    test("declining a sent document marks recipient and document declined", async () => {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(documentId, {
+          workflowStatus: "sent",
+          sentAt: Date.now(),
+        });
+      });
+
+      const beforeDecline = Date.now();
+      const result = await t.mutation(api.documents.recipients_mutations.submitRecipientSignature, {
+        signingToken: "test-token-recip",
+        status: "declined",
+        declineReason: "Cannot sign this version",
+        ipAddress: "127.0.0.1",
+      });
+
+      expect(result.success).toBe(true);
+
+      const state = await t.run(async (ctx) => {
+        const document = await ctx.db.get(documentId);
+        const recipient = await ctx.db.get(recipientId);
+        const auditEntries = await ctx.db
+          .query("audit_logs")
+          .withIndex("by_document", (q) => q.eq("documentId", documentId))
+          .collect();
+
+        return { document, recipient, auditEntries };
+      });
+
+      expect(state.recipient?.status).toBe("declined");
+      expect(state.recipient?.declineReason).toBe("Cannot sign this version");
+      expect(state.recipient?.declinedAt).toBeGreaterThanOrEqual(beforeDecline);
+      expect(state.document?.workflowStatus).toBe("declined");
+      expect(state.document?.declinedAt).toBeGreaterThanOrEqual(beforeDecline);
+      expect(state.auditEntries.map((entry) => entry.action)).toContain("recipient.declined");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // updateRecipient
   // ---------------------------------------------------------------------------
   describe("updateRecipient", () => {

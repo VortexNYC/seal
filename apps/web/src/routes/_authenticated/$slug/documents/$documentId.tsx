@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document } from "react-pdf";
 import { pdfjs } from "react-pdf";
+import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
@@ -64,9 +65,7 @@ import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-t
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 import { Button } from "../../../../components/ui/button";
 
-// SEA-72: Configure PDF.js worker
-// Use unpkg CDN which has reliable pdf.js worker files
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/$documentId")({
   component: DocumentDetailPage,

@@ -1,6 +1,6 @@
 /**
  * Document sharing cleanup helpers for subscription lapse and member removal scenarios.
- * These internal mutations are called from Stripe webhooks and organization
+ * These internal mutations are called from Vortex Billing webhooks and organization
  * membership changes.
  */
 

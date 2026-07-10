@@ -18,14 +18,30 @@ import type { PaymentHardwareService } from "../../application/hardware/service"
 import type { HttpRequestEnvelope, HttpResponseEnvelope } from "./billing";
 
 export interface PaymentHardwareHttpHandlers {
-  upsertSku(request: HttpRequestEnvelope<UpsertPaymentHardwareSkuCommand>): Promise<HttpResponseEnvelope<PaymentHardwareSkuSnapshot>>;
-  listSkus(request: HttpRequestEnvelope<ListPaymentHardwareSkusQuery>): Promise<HttpResponseEnvelope<readonly PaymentHardwareSkuSnapshot[]>>;
-  previewOrder(request: HttpRequestEnvelope<PreviewPaymentHardwareOrderCommand>): Promise<HttpResponseEnvelope<PaymentHardwareOrderPreview>>;
-  createOrder(request: HttpRequestEnvelope<CreatePaymentHardwareOrderCommand>): Promise<HttpResponseEnvelope<PaymentHardwareOrderSnapshot>>;
-  getOrder(request: HttpRequestEnvelope<GetPaymentHardwareOrderQuery>): Promise<HttpResponseEnvelope<PaymentHardwareOrderSnapshot | null>>;
-  listOrders(request: HttpRequestEnvelope<ListPaymentHardwareOrdersQuery>): Promise<HttpResponseEnvelope<readonly PaymentHardwareOrderSnapshot[]>>;
-  cancelOrder(request: HttpRequestEnvelope<CancelPaymentHardwareOrderCommand>): Promise<HttpResponseEnvelope<PaymentHardwareOrderSnapshot>>;
-  requestReturn(request: HttpRequestEnvelope<RequestPaymentHardwareReturnCommand>): Promise<HttpResponseEnvelope<PaymentHardwareReturnSnapshot>>;
+  upsertSku(
+    request: HttpRequestEnvelope<UpsertPaymentHardwareSkuCommand>,
+  ): Promise<HttpResponseEnvelope<PaymentHardwareSkuSnapshot>>;
+  listSkus(
+    request: HttpRequestEnvelope<ListPaymentHardwareSkusQuery>,
+  ): Promise<HttpResponseEnvelope<readonly PaymentHardwareSkuSnapshot[]>>;
+  previewOrder(
+    request: HttpRequestEnvelope<PreviewPaymentHardwareOrderCommand>,
+  ): Promise<HttpResponseEnvelope<PaymentHardwareOrderPreview>>;
+  createOrder(
+    request: HttpRequestEnvelope<CreatePaymentHardwareOrderCommand>,
+  ): Promise<HttpResponseEnvelope<PaymentHardwareOrderSnapshot>>;
+  getOrder(
+    request: HttpRequestEnvelope<GetPaymentHardwareOrderQuery>,
+  ): Promise<HttpResponseEnvelope<PaymentHardwareOrderSnapshot | null>>;
+  listOrders(
+    request: HttpRequestEnvelope<ListPaymentHardwareOrdersQuery>,
+  ): Promise<HttpResponseEnvelope<readonly PaymentHardwareOrderSnapshot[]>>;
+  cancelOrder(
+    request: HttpRequestEnvelope<CancelPaymentHardwareOrderCommand>,
+  ): Promise<HttpResponseEnvelope<PaymentHardwareOrderSnapshot>>;
+  requestReturn(
+    request: HttpRequestEnvelope<RequestPaymentHardwareReturnCommand>,
+  ): Promise<HttpResponseEnvelope<PaymentHardwareReturnSnapshot>>;
 }
 
 export interface PaymentHardwareHttpHandlerDependencies {
@@ -66,7 +82,8 @@ function toErrorResponse(error: unknown, requestId: string): HttpResponseEnvelop
     body: {
       code: "internal_error",
       category: "payment_hardware_service",
-      message: error instanceof Error ? error.message : "unexpected payment hardware handler failure",
+      message:
+        error instanceof Error ? error.message : "unexpected payment hardware handler failure",
       requestId,
     },
   };
@@ -94,7 +111,11 @@ export function createPaymentHardwareHttpHandlers(
     async upsertSku(request) {
       const requestId = request.requestId ?? createRequestId();
       try {
-        return toSuccessResponse(await dependencies.service.upsertSku(request.body), requestId, 201);
+        return toSuccessResponse(
+          await dependencies.service.upsertSku(request.body),
+          requestId,
+          201,
+        );
       } catch (error) {
         return toErrorResponse(error, requestId);
       }
@@ -118,7 +139,11 @@ export function createPaymentHardwareHttpHandlers(
     async createOrder(request) {
       const requestId = request.requestId ?? createRequestId();
       try {
-        return toSuccessResponse(await dependencies.service.createOrder(request.body), requestId, 201);
+        return toSuccessResponse(
+          await dependencies.service.createOrder(request.body),
+          requestId,
+          201,
+        );
       } catch (error) {
         return toErrorResponse(error, requestId);
       }
@@ -150,7 +175,11 @@ export function createPaymentHardwareHttpHandlers(
     async requestReturn(request) {
       const requestId = request.requestId ?? createRequestId();
       try {
-        return toSuccessResponse(await dependencies.service.requestReturn(request.body), requestId, 201);
+        return toSuccessResponse(
+          await dependencies.service.requestReturn(request.body),
+          requestId,
+          201,
+        );
       } catch (error) {
         return toErrorResponse(error, requestId);
       }

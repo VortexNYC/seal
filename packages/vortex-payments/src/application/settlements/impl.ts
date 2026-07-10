@@ -41,13 +41,17 @@ export function createSettlementsService(
   dependencies: SettlementsServiceDependencies,
 ): SettlementsService {
   return {
-    async listMerchantSettlements(query: ListMerchantSettlementsQuery): Promise<MerchantSettlementList> {
+    async listMerchantSettlements(
+      query: ListMerchantSettlementsQuery,
+    ): Promise<MerchantSettlementList> {
       const settlements = await dependencies.uow.settlements.listByMerchant(
         query.environment,
         query.merchantAccountId,
       );
       const items = settlements
-        .filter((settlement) => query.currency === undefined || settlement.currency === query.currency)
+        .filter(
+          (settlement) => query.currency === undefined || settlement.currency === query.currency,
+        )
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .map(toSettlementSnapshot);
       return {
@@ -56,7 +60,9 @@ export function createSettlementsService(
       };
     },
 
-    async getMerchantSettlement(query: GetMerchantSettlementQuery): Promise<MerchantSettlementDetail> {
+    async getMerchantSettlement(
+      query: GetMerchantSettlementQuery,
+    ): Promise<MerchantSettlementDetail> {
       const settlement = await dependencies.uow.settlements.getById(query.settlementId, {
         environment: query.environment,
       });

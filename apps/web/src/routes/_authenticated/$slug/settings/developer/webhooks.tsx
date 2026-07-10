@@ -815,6 +815,55 @@ interface WebhookEndpointRowProps {
   endpoint: WebhookEndpointWithStats;
 }
 
+type WebhookEndpointActions = {
+  readonly deleteEndpoint: () => Promise<void>;
+  readonly rotateSecret: () => Promise<void>;
+  readonly testEndpoint: () => Promise<void>;
+  readonly toggleStatus: () => Promise<void>;
+};
+
+type WebhookEndpointStatusConfig = {
+  readonly badge: string;
+  readonly border: string;
+  readonly dot: string;
+};
+
+function webhookEndpointStatusConfig(
+  status: WebhookEndpointWithStats["status"],
+): WebhookEndpointStatusConfig {
+  const config = {
+    active: {
+      border: "border-l-ai-accent",
+      badge: "text-ai-accent",
+      dot: "bg-ai-accent",
+    },
+    paused: {
+      border: "border-l-warning",
+      badge: "text-warning",
+      dot: "bg-warning",
+    },
+    disabled: {
+      border: "border-l-destructive",
+      badge: "text-destructive",
+      dot: "bg-destructive",
+    },
+  } satisfies Record<WebhookEndpointWithStats["status"], WebhookEndpointStatusConfig>;
+  return config[status];
+}
+
+function splitWebhookUrl(url: string): { readonly protocol: string; readonly urlPath: string } {
+  const urlParts = url.match(/^(https?:\/\/)(.+)$/);
+  return {
+    protocol: urlParts?.[1] || "",
+    urlPath: urlParts?.[2] || url,
+  };
+}
+
+function successRateClassName(successRate: number): string {
+  if (successRate >= 90) return "text-success";
+  return successRate >= 70 ? "text-warning" : "text-destructive";
+}
+
 function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -876,234 +925,340 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
     }
   };
 
-  const statusConfig = {
-    active: {
-      border: "border-l-ai-accent",
-      badge: "text-ai-accent",
-      dot: "bg-ai-accent",
-    },
-    paused: {
-      border: "border-l-warning",
-      badge: "text-warning",
-      dot: "bg-warning",
-    },
-    disabled: {
-      border: "border-l-destructive",
-      badge: "text-destructive",
-      dot: "bg-destructive",
-    },
+  const config = webhookEndpointStatusConfig(endpoint.status);
+  const actions: WebhookEndpointActions = {
+    deleteEndpoint: handleDelete,
+    rotateSecret: handleRotateSecret,
+    testEndpoint: handleTest,
+    toggleStatus: handleToggleStatus,
   };
-
-  const config = statusConfig[endpoint.status];
-
-  const urlParts = endpoint.url.match(/^(https?:\/\/)(.+)$/);
-  const protocol = urlParts?.[1] || "";
-  const urlPath = urlParts?.[2] || endpoint.url;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <div className="group hover:border-ai-accent/30 relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:shadow-sm">
         <div className={cn("absolute top-0 bottom-0 left-0 w-1", config.border)} />
-
-        <div className="p-4 pl-5">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <CollapsibleTrigger className="hover:text-ai-accent flex items-center gap-2 transition-colors">
-                  {isExpanded ? (
-                    <ChevronDown className="text-muted-foreground h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="text-muted-foreground h-4 w-4" />
-                  )}
-                  <span className="font-medium">{endpoint.name}</span>
-                </CollapsibleTrigger>
-                <div className={cn("h-2 w-2 rounded-full", config.dot)} />
-                <Badge variant="secondary" className={config.badge}>
-                  {endpoint.status}
-                </Badge>
-                {endpoint.format === "slack" && (
-                  <Badge variant="outline" className="text-xs">
-                    Slack
-                  </Badge>
-                )}
-              </div>
-              <div className="truncate font-mono text-sm">
-                <span className="text-muted-foreground">{protocol}</span>
-                <span>{urlPath}</span>
-              </div>
-              <div className="text-muted-foreground flex items-center gap-4 text-xs">
-                <span
-                  className={cn(
-                    "font-mono font-medium",
-                    endpoint.stats.successRate >= 90
-                      ? "text-success"
-                      : endpoint.stats.successRate >= 70
-                        ? "text-warning"
-                        : "text-destructive",
-                  )}
-                >
-                  {endpoint.stats.successRate}% success
-                </span>
-                <span>
-                  {endpoint.events.length === 0 ? "All events" : `${endpoint.events.length} events`}
-                </span>
-                {endpoint.lastSuccessAt && (
-                  <span>Last success {formatRelativeTime(endpoint.lastSuccessAt)}</span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTest}
-                disabled={isTesting}
-                title="Send test webhook"
-              >
-                <Send className={cn("h-4 w-4", isTesting && "motion-safe:animate-pulse")} />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleStatus}
-                title={endpoint.status === "active" ? "Pause" : "Enable"}
-              >
-                {endpoint.status === "active" ? (
-                  <Pause className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4" />
-                )}
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" title="Delete">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Webhook</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this webhook endpoint and all its delivery
-                      history. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-        </div>
+        <WebhookEndpointSummary
+          actions={actions}
+          config={config}
+          endpoint={endpoint}
+          isExpanded={isExpanded}
+          isTesting={isTesting}
+        />
 
         <CollapsibleContent>
           <Separator />
-          <div className="space-y-6 p-4 pl-5">
-            {endpoint.format !== "slack" && (
-              <div className="space-y-2">
-                <Label>Signing Secret</Label>
-                <div className="flex items-center gap-2">
-                  <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
-                    <code
-                      className={cn(
-                        "font-mono text-sm transition-[filter,color] duration-300",
-                        showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
-                      )}
-                    >
-                      {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
-                    </code>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
-                    onClick={() => setShowSecret(!showSecret)}
-                  >
-                    {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        title="Rotate secret"
-                        aria-label="Rotate signing secret"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will generate a new signing secret. The old secret will be
-                          invalidated immediately. Make sure to update your integration.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleRotateSecret}
-                          className="bg-warning hover:bg-warning/90 text-white"
-                        >
-                          Rotate Secret
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Subscribed Events</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {endpoint.events.length === 0 ? (
-                  <Badge variant="outline" className="text-ai-accent font-mono text-xs">
-                    All events
-                  </Badge>
-                ) : (
-                  endpoint.events.map((event) => (
-                    <Badge key={event} variant="outline" className="font-mono text-xs">
-                      {event}
-                    </Badge>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Recent Deliveries</Label>
-              {deliveries === undefined ? (
-                <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                  <div className="border-muted-foreground/30 border-t-ai-accent h-4 w-4 animate-spin rounded-full border-2" />
-                  Loading...
-                </div>
-              ) : deliveries.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No deliveries yet</p>
-              ) : (
-                <div className="max-h-64 space-y-2 overflow-y-auto pr-2">
-                  {deliveries.map((delivery, index) => (
-                    <DeliveryRow
-                      key={delivery._id}
-                      delivery={delivery}
-                      isLast={index === deliveries.length - 1}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <WebhookEndpointDetails
+            actions={actions}
+            deliveries={deliveries}
+            endpoint={endpoint}
+            setShowSecret={setShowSecret}
+            showSecret={showSecret}
+          />
         </CollapsibleContent>
       </div>
     </Collapsible>
+  );
+}
+
+function WebhookEndpointSummary({
+  actions,
+  config,
+  endpoint,
+  isExpanded,
+  isTesting,
+}: {
+  readonly actions: WebhookEndpointActions;
+  readonly config: WebhookEndpointStatusConfig;
+  readonly endpoint: WebhookEndpointWithStats;
+  readonly isExpanded: boolean;
+  readonly isTesting: boolean;
+}) {
+  return (
+    <div className="p-4 pl-5">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <WebhookEndpointIdentity config={config} endpoint={endpoint} isExpanded={isExpanded} />
+        <WebhookEndpointButtons actions={actions} endpoint={endpoint} isTesting={isTesting} />
+      </div>
+    </div>
+  );
+}
+
+function WebhookEndpointIdentity({
+  config,
+  endpoint,
+  isExpanded,
+}: {
+  readonly config: WebhookEndpointStatusConfig;
+  readonly endpoint: WebhookEndpointWithStats;
+  readonly isExpanded: boolean;
+}) {
+  const { protocol, urlPath } = splitWebhookUrl(endpoint.url);
+  return (
+    <div className="min-w-0 flex-1 space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <CollapsibleTrigger className="hover:text-ai-accent flex items-center gap-2 transition-colors">
+          {isExpanded ? (
+            <ChevronDown className="text-muted-foreground h-4 w-4" />
+          ) : (
+            <ChevronRight className="text-muted-foreground h-4 w-4" />
+          )}
+          <span className="font-medium">{endpoint.name}</span>
+        </CollapsibleTrigger>
+        <div className={cn("h-2 w-2 rounded-full", config.dot)} />
+        <Badge variant="secondary" className={config.badge}>
+          {endpoint.status}
+        </Badge>
+        {endpoint.format === "slack" && (
+          <Badge variant="outline" className="text-xs">
+            Slack
+          </Badge>
+        )}
+      </div>
+      <div className="truncate font-mono text-sm">
+        <span className="text-muted-foreground">{protocol}</span>
+        <span>{urlPath}</span>
+      </div>
+      <WebhookEndpointStats endpoint={endpoint} />
+    </div>
+  );
+}
+
+function WebhookEndpointStats({ endpoint }: { readonly endpoint: WebhookEndpointWithStats }) {
+  return (
+    <div className="text-muted-foreground flex items-center gap-4 text-xs">
+      <span
+        className={cn("font-mono font-medium", successRateClassName(endpoint.stats.successRate))}
+      >
+        {endpoint.stats.successRate}% success
+      </span>
+      <span>
+        {endpoint.events.length === 0 ? "All events" : `${endpoint.events.length} events`}
+      </span>
+      {endpoint.lastSuccessAt && (
+        <span>Last success {formatRelativeTime(endpoint.lastSuccessAt)}</span>
+      )}
+    </div>
+  );
+}
+
+function WebhookEndpointButtons({
+  actions,
+  endpoint,
+  isTesting,
+}: {
+  readonly actions: WebhookEndpointActions;
+  readonly endpoint: WebhookEndpointWithStats;
+  readonly isTesting: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 self-end sm:self-center">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={actions.testEndpoint}
+        disabled={isTesting}
+        title="Send test webhook"
+      >
+        <Send className={cn("h-4 w-4", isTesting && "motion-safe:animate-pulse")} />
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={actions.toggleStatus}
+        title={endpoint.status === "active" ? "Pause" : "Enable"}
+      >
+        {endpoint.status === "active" ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4" />
+        )}
+      </Button>
+      <DeleteWebhookButton deleteEndpoint={actions.deleteEndpoint} />
+    </div>
+  );
+}
+
+function DeleteWebhookButton({ deleteEndpoint }: { readonly deleteEndpoint: () => Promise<void> }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" title="Delete">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Webhook</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete this webhook endpoint and all its delivery history. This
+            action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={deleteEndpoint}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function WebhookEndpointDetails({
+  actions,
+  deliveries,
+  endpoint,
+  setShowSecret,
+  showSecret,
+}: {
+  readonly actions: WebhookEndpointActions;
+  readonly deliveries: Doc<"webhook_deliveries">[] | undefined;
+  readonly endpoint: WebhookEndpointWithStats;
+  readonly setShowSecret: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly showSecret: boolean;
+}) {
+  return (
+    <div className="space-y-6 p-4 pl-5">
+      {endpoint.format !== "slack" && (
+        <SigningSecretSection
+          endpoint={endpoint}
+          rotateSecret={actions.rotateSecret}
+          setShowSecret={setShowSecret}
+          showSecret={showSecret}
+        />
+      )}
+      <SubscribedEventsSection events={endpoint.events} />
+      <RecentDeliveriesSection deliveries={deliveries} />
+    </div>
+  );
+}
+
+function SigningSecretSection({
+  endpoint,
+  rotateSecret,
+  setShowSecret,
+  showSecret,
+}: {
+  readonly endpoint: WebhookEndpointWithStats;
+  readonly rotateSecret: () => Promise<void>;
+  readonly setShowSecret: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly showSecret: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>Signing Secret</Label>
+      <div className="flex items-center gap-2">
+        <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
+          <code
+            className={cn(
+              "font-mono text-sm transition-[filter,color] duration-300",
+              showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
+            )}
+          >
+            {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
+          </code>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
+          onClick={() => setShowSecret(!showSecret)}
+        >
+          {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </Button>
+        <RotateSecretButton rotateSecret={rotateSecret} />
+      </div>
+    </div>
+  );
+}
+
+function RotateSecretButton({ rotateSecret }: { readonly rotateSecret: () => Promise<void> }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Rotate secret"
+          aria-label="Rotate signing secret"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will generate a new signing secret. The old secret will be invalidated immediately.
+            Make sure to update your integration.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={rotateSecret}
+            className="bg-warning hover:bg-warning/90 text-white"
+          >
+            Rotate Secret
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function SubscribedEventsSection({ events }: { readonly events: readonly string[] }) {
+  return (
+    <div className="space-y-2">
+      <Label>Subscribed Events</Label>
+      <div className="flex flex-wrap gap-1.5">
+        {events.length === 0 ? (
+          <Badge variant="outline" className="text-ai-accent font-mono text-xs">
+            All events
+          </Badge>
+        ) : (
+          events.map((event) => (
+            <Badge key={event} variant="outline" className="font-mono text-xs">
+              {event}
+            </Badge>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RecentDeliveriesSection({
+  deliveries,
+}: {
+  readonly deliveries: Doc<"webhook_deliveries">[] | undefined;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>Recent Deliveries</Label>
+      {deliveries === undefined ? (
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <div className="border-muted-foreground/30 border-t-ai-accent h-4 w-4 animate-spin rounded-full border-2" />
+          Loading...
+        </div>
+      ) : deliveries.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No deliveries yet</p>
+      ) : (
+        <div className="max-h-64 space-y-2 overflow-y-auto pr-2">
+          {deliveries.map((delivery, index) => (
+            <DeliveryRow
+              key={delivery._id}
+              delivery={delivery}
+              isLast={index === deliveries.length - 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1112,10 +1267,13 @@ interface DeliveryRowProps {
   isLast: boolean;
 }
 
-function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+type WebhookDelivery = Doc<"webhook_deliveries">;
 
-  const statusConfig = {
+function deliveryStatusConfig(status: WebhookDelivery["status"]): {
+  readonly bg: string;
+  readonly icon: React.ReactNode;
+} {
+  const config = {
     pending: {
       icon: <Clock className="text-info h-4 w-4" />,
       bg: "bg-info-surface",
@@ -1132,24 +1290,29 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
       icon: <XCircle className="text-muted-foreground h-4 w-4" />,
       bg: "bg-muted",
     },
-  };
+  } satisfies Record<
+    WebhookDelivery["status"],
+    { readonly bg: string; readonly icon: React.ReactNode }
+  >;
+  return config[status];
+}
 
-  const config = statusConfig[delivery.status];
+function responseCodeColor(responseCode: number | undefined): string {
+  if (responseCode && responseCode >= 200 && responseCode < 300) return "text-success";
+  return responseCode && responseCode >= 400 ? "text-destructive" : "text-warning";
+}
 
-  const responseCodeColor =
-    delivery.responseCode && delivery.responseCode >= 200 && delivery.responseCode < 300
-      ? "text-success"
-      : delivery.responseCode && delivery.responseCode >= 400
-        ? "text-destructive"
-        : "text-warning";
+function parsedDeliveryPayload(payload: string): string {
+  try {
+    return JSON.stringify(JSON.parse(payload), null, 2);
+  } catch {
+    return payload;
+  }
+}
 
-  const parsedPayload = (() => {
-    try {
-      return JSON.stringify(JSON.parse(delivery.payload), null, 2);
-    } catch {
-      return delivery.payload;
-    }
-  })();
+function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const config = deliveryStatusConfig(delivery.status);
 
   return (
     <div className="relative flex items-start gap-3">
@@ -1160,94 +1323,145 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
         {config.icon}
       </div>
       <div className="flex-1">
-        <button
-          type="button"
-          onClick={() => setIsDetailOpen(!isDetailOpen)}
-          className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
-              {delivery.eventType}
-            </code>
-          </div>
-          <div className="text-muted-foreground flex items-center gap-3 text-xs">
-            {delivery.responseCode && (
-              <span className={cn("font-mono font-medium", responseCodeColor)}>
-                {delivery.responseCode}
-              </span>
-            )}
-            {delivery.responseTimeMs && (
-              <span className="font-mono">{delivery.responseTimeMs}ms</span>
-            )}
-            <span>{formatRelativeTime(delivery.createdAt)}</span>
-            {isDetailOpen ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-          </div>
-        </button>
-
-        {isDetailOpen && (
-          <div className="mt-2 space-y-3 rounded-lg border p-3">
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <span className="text-muted-foreground">Status</span>
-                <div className="mt-0.5 font-medium capitalize">{delivery.status}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Attempts</span>
-                <div className="mt-0.5 font-mono font-medium">{delivery.attemptCount}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Event ID</span>
-                <div className="mt-0.5 truncate font-mono">{delivery.eventId}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Created</span>
-                <div className="mt-0.5">{formatDate(delivery.createdAt)}</div>
-              </div>
-              {delivery.deliveredAt && (
-                <div>
-                  <span className="text-muted-foreground">Delivered</span>
-                  <div className="mt-0.5">{formatDate(delivery.deliveredAt)}</div>
-                </div>
-              )}
-              {delivery.nextRetryAt && (
-                <div>
-                  <span className="text-muted-foreground">Next Retry</span>
-                  <div className="mt-0.5">{formatDate(delivery.nextRetryAt)}</div>
-                </div>
-              )}
-            </div>
-
-            {delivery.errorMessage && (
-              <div>
-                <span className="text-muted-foreground text-xs">Error</span>
-                <div className="bg-destructive/10 border-destructive/30 text-destructive mt-1 rounded border p-2 font-mono text-xs">
-                  {delivery.errorMessage}
-                </div>
-              </div>
-            )}
-
-            {delivery.responseBody && (
-              <div>
-                <span className="text-muted-foreground text-xs">Response Body</span>
-                <pre className="bg-muted mt-1 max-h-24 overflow-auto rounded border p-2 font-mono text-xs">
-                  {delivery.responseBody}
-                </pre>
-              </div>
-            )}
-
-            <div>
-              <span className="text-muted-foreground text-xs">Payload</span>
-              <pre className="bg-muted mt-1 max-h-48 overflow-auto rounded border p-2 font-mono text-xs">
-                {parsedPayload}
-              </pre>
-            </div>
-          </div>
-        )}
+        <DeliverySummaryButton
+          delivery={delivery}
+          isDetailOpen={isDetailOpen}
+          setIsDetailOpen={setIsDetailOpen}
+        />
+        {isDetailOpen && <DeliveryDetails delivery={delivery} />}
       </div>
+    </div>
+  );
+}
+
+function DeliverySummaryButton({
+  delivery,
+  isDetailOpen,
+  setIsDetailOpen,
+}: {
+  readonly delivery: WebhookDelivery;
+  readonly isDetailOpen: boolean;
+  readonly setIsDetailOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => setIsDetailOpen(!isDetailOpen)}
+      className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
+          {delivery.eventType}
+        </code>
+      </div>
+      <div className="text-muted-foreground flex items-center gap-3 text-xs">
+        {delivery.responseCode && (
+          <span className={cn("font-mono font-medium", responseCodeColor(delivery.responseCode))}>
+            {delivery.responseCode}
+          </span>
+        )}
+        {delivery.responseTimeMs && <span className="font-mono">{delivery.responseTimeMs}ms</span>}
+        <span>{formatRelativeTime(delivery.createdAt)}</span>
+        {isDetailOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </div>
+    </button>
+  );
+}
+
+function DeliveryDetails({ delivery }: { readonly delivery: WebhookDelivery }) {
+  return (
+    <div className="mt-2 space-y-3 rounded-lg border p-3">
+      <DeliveryMetadataGrid delivery={delivery} />
+      {delivery.errorMessage && (
+        <DeliveryCodeBlock label="Error" tone="error" value={delivery.errorMessage} />
+      )}
+      {delivery.responseBody && (
+        <DeliveryCodeBlock
+          label="Response Body"
+          maxHeightClassName="max-h-24"
+          value={delivery.responseBody}
+        />
+      )}
+      <DeliveryCodeBlock
+        label="Payload"
+        maxHeightClassName="max-h-48"
+        value={parsedDeliveryPayload(delivery.payload)}
+      />
+    </div>
+  );
+}
+
+function DeliveryMetadataGrid({ delivery }: { readonly delivery: WebhookDelivery }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 text-xs">
+      <DeliveryMetadata
+        label="Status"
+        value={delivery.status}
+        valueClassName="font-medium capitalize"
+      />
+      <DeliveryMetadata
+        label="Attempts"
+        value={delivery.attemptCount}
+        valueClassName="font-mono font-medium"
+      />
+      <DeliveryMetadata
+        label="Event ID"
+        value={delivery.eventId}
+        valueClassName="truncate font-mono"
+      />
+      <DeliveryMetadata label="Created" value={formatDate(delivery.createdAt)} />
+      {delivery.deliveredAt && (
+        <DeliveryMetadata label="Delivered" value={formatDate(delivery.deliveredAt)} />
+      )}
+      {delivery.nextRetryAt && (
+        <DeliveryMetadata label="Next Retry" value={formatDate(delivery.nextRetryAt)} />
+      )}
+    </div>
+  );
+}
+
+function DeliveryMetadata({
+  label,
+  value,
+  valueClassName,
+}: {
+  readonly label: string;
+  readonly value: number | string;
+  readonly valueClassName?: string;
+}) {
+  return (
+    <div>
+      <span className="text-muted-foreground">{label}</span>
+      <div className={cn("mt-0.5", valueClassName)}>{value}</div>
+    </div>
+  );
+}
+
+function DeliveryCodeBlock({
+  label,
+  maxHeightClassName = "",
+  tone = "default",
+  value,
+}: {
+  readonly label: string;
+  readonly maxHeightClassName?: string;
+  readonly tone?: "default" | "error";
+  readonly value: string;
+}) {
+  return (
+    <div>
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <pre
+        className={cn(
+          "mt-1 overflow-auto rounded border p-2 font-mono text-xs",
+          maxHeightClassName,
+          tone === "error"
+            ? "bg-destructive/10 border-destructive/30 text-destructive"
+            : "bg-muted",
+        )}
+      >
+        {value}
+      </pre>
     </div>
   );
 }

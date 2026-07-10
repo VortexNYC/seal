@@ -20,16 +20,36 @@ import type { TerminalService } from "../../application/terminal/service";
 import type { HttpRequestEnvelope, HttpResponseEnvelope } from "./billing";
 
 export interface TerminalHttpHandlers {
-  createTerminalLocation(request: HttpRequestEnvelope<CreateTerminalLocationCommand>): Promise<HttpResponseEnvelope<TerminalLocationSnapshot>>;
-  listTerminalLocations(request: HttpRequestEnvelope<ListTerminalLocationsQuery>): Promise<HttpResponseEnvelope<readonly TerminalLocationSnapshot[]>>;
-  registerTerminalReader(request: HttpRequestEnvelope<RegisterTerminalReaderCommand>): Promise<HttpResponseEnvelope<TerminalReaderSnapshot>>;
-  listTerminalReaders(request: HttpRequestEnvelope<ListTerminalReadersQuery>): Promise<HttpResponseEnvelope<readonly TerminalReaderSnapshot[]>>;
-  createTerminalConnectionSession(request: HttpRequestEnvelope<CreateTerminalConnectionSessionCommand>): Promise<HttpResponseEnvelope<TerminalConnectionSessionSnapshot>>;
-  createCardPresentPaymentIntent(request: HttpRequestEnvelope<CreateCardPresentPaymentIntentCommand>): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot>>;
-  getCardPresentPaymentIntent(request: HttpRequestEnvelope<GetCardPresentPaymentIntentQuery>): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot | null>>;
-  listCardPresentPaymentIntents(request: HttpRequestEnvelope<ListCardPresentPaymentIntentsQuery>): Promise<HttpResponseEnvelope<readonly CardPresentPaymentIntentSnapshot[]>>;
-  captureCardPresentPaymentIntent(request: HttpRequestEnvelope<CaptureCardPresentPaymentIntentCommand>): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot>>;
-  cancelCardPresentPaymentIntent(request: HttpRequestEnvelope<CancelCardPresentPaymentIntentCommand>): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot>>;
+  createTerminalLocation(
+    request: HttpRequestEnvelope<CreateTerminalLocationCommand>,
+  ): Promise<HttpResponseEnvelope<TerminalLocationSnapshot>>;
+  listTerminalLocations(
+    request: HttpRequestEnvelope<ListTerminalLocationsQuery>,
+  ): Promise<HttpResponseEnvelope<readonly TerminalLocationSnapshot[]>>;
+  registerTerminalReader(
+    request: HttpRequestEnvelope<RegisterTerminalReaderCommand>,
+  ): Promise<HttpResponseEnvelope<TerminalReaderSnapshot>>;
+  listTerminalReaders(
+    request: HttpRequestEnvelope<ListTerminalReadersQuery>,
+  ): Promise<HttpResponseEnvelope<readonly TerminalReaderSnapshot[]>>;
+  createTerminalConnectionSession(
+    request: HttpRequestEnvelope<CreateTerminalConnectionSessionCommand>,
+  ): Promise<HttpResponseEnvelope<TerminalConnectionSessionSnapshot>>;
+  createCardPresentPaymentIntent(
+    request: HttpRequestEnvelope<CreateCardPresentPaymentIntentCommand>,
+  ): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot>>;
+  getCardPresentPaymentIntent(
+    request: HttpRequestEnvelope<GetCardPresentPaymentIntentQuery>,
+  ): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot | null>>;
+  listCardPresentPaymentIntents(
+    request: HttpRequestEnvelope<ListCardPresentPaymentIntentsQuery>,
+  ): Promise<HttpResponseEnvelope<readonly CardPresentPaymentIntentSnapshot[]>>;
+  captureCardPresentPaymentIntent(
+    request: HttpRequestEnvelope<CaptureCardPresentPaymentIntentCommand>,
+  ): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot>>;
+  cancelCardPresentPaymentIntent(
+    request: HttpRequestEnvelope<CancelCardPresentPaymentIntentCommand>,
+  ): Promise<HttpResponseEnvelope<CardPresentPaymentIntentSnapshot>>;
 }
 
 export interface TerminalHttpHandlerDependencies {
@@ -90,88 +110,94 @@ function toSuccessResponse<TBody>(
   };
 }
 
-export function createTerminalHttpHandlers(dependencies: TerminalHttpHandlerDependencies): TerminalHttpHandlers {
+async function handleTerminalRequest<TCommand, TBody>(
+  request: HttpRequestEnvelope<TCommand>,
+  createRequestId: () => string,
+  run: (command: TCommand) => Promise<TBody>,
+  status = 200,
+): Promise<HttpResponseEnvelope<TBody>> {
+  const requestId = request.requestId ?? createRequestId();
+  try {
+    return toSuccessResponse(await run(request.body), requestId, status);
+  } catch (error) {
+    return toErrorResponse(error, requestId);
+  }
+}
+
+export function createTerminalHttpHandlers(
+  dependencies: TerminalHttpHandlerDependencies,
+): TerminalHttpHandlers {
   const createRequestId = dependencies.createRequestId ?? createDefaultRequestId;
+  const service = dependencies.service;
+
   return {
     async createTerminalLocation(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.createTerminalLocation(request.body), requestId, 201);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(
+        request,
+        createRequestId,
+        (body) => service.createTerminalLocation(body),
+        201,
+      );
     },
     async listTerminalLocations(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.listTerminalLocations(request.body), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(request, createRequestId, (body) =>
+        service.listTerminalLocations(body),
+      );
     },
     async registerTerminalReader(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.registerTerminalReader(request.body), requestId, 201);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(
+        request,
+        createRequestId,
+        (body) => service.registerTerminalReader(body),
+        201,
+      );
     },
     async listTerminalReaders(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.listTerminalReaders(request.body), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(request, createRequestId, (body) =>
+        service.listTerminalReaders(body),
+      );
     },
     async createTerminalConnectionSession(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.createTerminalConnectionSession(request.body), requestId, 201);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(
+        request,
+        createRequestId,
+        (body) => service.createTerminalConnectionSession(body),
+        201,
+      );
     },
     async createCardPresentPaymentIntent(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.createCardPresentPaymentIntent(request.body), requestId, 201);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(
+        request,
+        createRequestId,
+        (body) => service.createCardPresentPaymentIntent(body),
+        201,
+      );
     },
     async getCardPresentPaymentIntent(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.getCardPresentPaymentIntent(request.body), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(request, createRequestId, (body) =>
+        service.getCardPresentPaymentIntent(body),
+      );
     },
     async listCardPresentPaymentIntents(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.listCardPresentPaymentIntents(request.body), requestId);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(request, createRequestId, (body) =>
+        service.listCardPresentPaymentIntents(body),
+      );
     },
     async captureCardPresentPaymentIntent(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.captureCardPresentPaymentIntent(request.body), requestId, 202);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(
+        request,
+        createRequestId,
+        (body) => service.captureCardPresentPaymentIntent(body),
+        202,
+      );
     },
     async cancelCardPresentPaymentIntent(request) {
-      const requestId = request.requestId ?? createRequestId();
-      try {
-        return toSuccessResponse(await dependencies.service.cancelCardPresentPaymentIntent(request.body), requestId, 202);
-      } catch (error) {
-        return toErrorResponse(error, requestId);
-      }
+      return handleTerminalRequest(
+        request,
+        createRequestId,
+        (body) => service.cancelCardPresentPaymentIntent(body),
+        202,
+      );
     },
   };
 }

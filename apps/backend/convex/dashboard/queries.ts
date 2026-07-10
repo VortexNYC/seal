@@ -260,11 +260,15 @@ function buildDailyTrendStats(
  * Get recent activity/audit logs for the dashboard
  * Returns recent actions in the workspace
  */
-export const getRecentActivity = permissionQuery("audit:view")({
+export const getRecentActivity = permissionQuery("documents:view")({
   args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    if (!ctx.auth.hasPermission("audit:view") && !ctx.auth.hasPermission("audit:read")) {
+      return [];
+    }
+
     const organizationId = ctx.auth.organization._id;
     const limit = args.limit ?? 20;
 

@@ -51,8 +51,8 @@ const lineItemValidator = v.object({
   description: v.string(),
   quantity: v.number(),
   unitPrice: v.number(), // cents
-  stripeProductId: v.optional(v.string()),
-  stripePriceId: v.optional(v.string()),
+  providerProductId: v.optional(v.string()),
+  providerPriceId: v.optional(v.string()),
 });
 
 const lateFeeValidator = v.object({
@@ -118,10 +118,10 @@ export const paymentFieldConfigsTable = defineTable({
   // Denormalized total for display
   totalAmountCents: v.number(),
 
-  // Stripe references (populated when document is sent)
-  stripeInvoiceId: v.optional(v.string()),
-  stripeSubscriptionId: v.optional(v.string()),
-  stripePaymentIntentId: v.optional(v.string()),
+  // Provider references (populated when document is sent)
+  providerInvoiceId: v.optional(v.string()),
+  providerSubscriptionId: v.optional(v.string()),
+  providerPaymentIntentId: v.optional(v.string()),
   hostedInvoiceUrl: v.optional(v.string()),
   vortexPayableId: v.optional(v.string()),
   vortexDepositBalancePayableId: v.optional(v.string()),
@@ -139,6 +139,6 @@ export const paymentFieldConfigsTable = defineTable({
   .index("by_field", ["fieldId"])
   .index("by_document", ["documentId"])
   .index("by_organization", ["organizationId"])
-  .index("by_stripe_invoice", ["stripeInvoiceId"])
-  .index("by_stripe_subscription", ["stripeSubscriptionId"])
+  .index("by_provider_invoice", ["providerInvoiceId"])
+  .index("by_provider_subscription", ["providerSubscriptionId"])
   .index("by_vortex_payable", ["vortexPayableId"]);

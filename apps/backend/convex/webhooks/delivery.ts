@@ -62,7 +62,7 @@ type DeliveryProcessingResult = {
 /**
  * Generate HMAC-SHA256 signature for a webhook payload.
  *
- * Signature format matches industry standard (Stripe, Svix):
+ * Signature format matches industry standard webhook signing:
  * `v1=<hex-encoded-hmac>`
  *
  * The signed content is: `{eventId}.{timestamp}.{payload}`

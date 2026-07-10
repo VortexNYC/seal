@@ -42,8 +42,8 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32),
 
   // API Keys
-  STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
-  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
+  PAYMENT_PROVIDER_SECRET_KEY: z.string().min(1),
+  PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1),
 
   // Optional with defaults
   NODE_ENV: z.enum(["development", "staging", "production"]).default("development"),
@@ -72,7 +72,7 @@ export const env = validateEnv();
 
 // Usage in server functions
 export const getPaymentIntent = createServerFn({ method: "POST" }).handler(async () => {
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+  const paymentProvider = createPaymentProvider(env.PAYMENT_PROVIDER_SECRET_KEY);
   // Type-safe, validated access
 });
 ```
@@ -84,13 +84,13 @@ export const getPaymentIntent = createServerFn({ method: "POST" }).handler(async
 export const serverEnv = {
   databaseUrl: process.env.DATABASE_URL!,
   sessionSecret: process.env.SESSION_SECRET!,
-  stripeSecretKey: process.env.STRIPE_SECRET_KEY!,
+  paymentProviderSecretKey: process.env.PAYMENT_PROVIDER_SECRET_KEY!,
 };
 
 // lib/env.ts - Public config (safe for client)
 export const publicEnv = {
   appUrl: process.env.VITE_APP_URL ?? "http://localhost:3000",
-  stripePublicKey: process.env.VITE_STRIPE_PUBLIC_KEY!,
+  paymentProviderPublicKey: process.env.VITE_PAYMENT_PROVIDER_PUBLIC_KEY!,
   sentryDsn: process.env.VITE_SENTRY_DSN,
 };
 
@@ -182,20 +182,20 @@ declare namespace NodeJS {
 
     // Vite public vars
     VITE_APP_URL?: string;
-    VITE_STRIPE_PUBLIC_KEY: string;
+    VITE_PAYMENT_PROVIDER_PUBLIC_KEY: string;
   }
 }
 ```
 
 ## Environment Variable Checklist
 
-| Variable                 | Prefix  | Accessible On   |
-| ------------------------ | ------- | --------------- |
-| `DATABASE_URL`           | None    | Server only     |
-| `SESSION_SECRET`         | None    | Server only     |
-| `STRIPE_SECRET_KEY`      | None    | Server only     |
-| `VITE_APP_URL`           | `VITE_` | Server + Client |
-| `VITE_STRIPE_PUBLIC_KEY` | `VITE_` | Server + Client |
+| Variable                           | Prefix  | Accessible On   |
+| ---------------------------------- | ------- | --------------- |
+| `DATABASE_URL`                     | None    | Server only     |
+| `SESSION_SECRET`                   | None    | Server only     |
+| `PAYMENT_PROVIDER_SECRET_KEY`      | None    | Server only     |
+| `VITE_APP_URL`                     | `VITE_` | Server + Client |
+| `VITE_PAYMENT_PROVIDER_PUBLIC_KEY` | `VITE_` | Server + Client |
 
 ## Context
 

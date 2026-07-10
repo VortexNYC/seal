@@ -2,16 +2,15 @@
  * Dunning Email Action
  *
  * Sends payment recovery emails at each step of the dunning sequence.
- * Uses the hosted invoice URL so recipients can pay directly via Stripe.
+ * Uses the hosted invoice URL so recipients can pay directly through the hosted payment URL.
  */
 
 import { v } from "convex/values";
-import { Resend } from "resend";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalQuery } from "../_generated/server";
-import { sendEmailManuallyFromAction } from "../emails/resend_component";
+import { sendEmailManuallyFromAction, sendResendEmail } from "../emails/resend_component";
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present.",
@@ -23,10 +22,6 @@ function sealAssertPresent<T>(
 }
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
-
-function getResendSdk(): Resend {
-  return new Resend(process.env.RESEND_API_KEY);
-}
 
 function escapeHtml(str: string): string {
   return str
@@ -179,15 +174,14 @@ export const sendDunningEmail = internalAction({
         ctx,
         { from: FROM_EMAIL, to: [invoice.customerEmail], subject: content.subject },
         async (idempotencyKey: string) => {
-          const resendSdk = getResendSdk();
-          const { data, error } = await resendSdk.emails.send({
+          const { data, error } = await sendResendEmail({
             from: FROM_EMAIL,
             to: [invoice.customerEmail],
             subject: content.subject,
             html,
             headers: { "Idempotency-Key": idempotencyKey },
           });
-          if (error) throw new Error(error.message);
+          if (error) throw new Error(error.message ?? "Resend request failed");
           return sealAssertPresent(data).id;
         },
       );

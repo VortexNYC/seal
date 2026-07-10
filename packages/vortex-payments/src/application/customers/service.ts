@@ -6,13 +6,7 @@ import type {
 } from "./contracts";
 
 export interface CustomersService {
-  createCustomerProfile(
-    command: CreateCustomerProfileCommand,
-  ): Promise<CustomerProfileSnapshot>;
-  getCustomerProfile(
-    query: GetCustomerProfileQuery,
-  ): Promise<CustomerProfileSnapshot | null>;
-  updateCustomerProfile(
-    command: UpdateCustomerProfileCommand,
-  ): Promise<CustomerProfileSnapshot>;
+  createCustomerProfile(command: CreateCustomerProfileCommand): Promise<CustomerProfileSnapshot>;
+  getCustomerProfile(query: GetCustomerProfileQuery): Promise<CustomerProfileSnapshot | null>;
+  updateCustomerProfile(command: UpdateCustomerProfileCommand): Promise<CustomerProfileSnapshot>;
 }

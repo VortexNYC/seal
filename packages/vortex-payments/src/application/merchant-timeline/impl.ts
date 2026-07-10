@@ -1,7 +1,11 @@
 import { canonicalEventCatalog } from "../../events/catalog";
 import type { CanonicalDomainEvent } from "../../events/types";
 import type { PaymentsUnitOfWork } from "../../storage/unit-of-work";
-import type { ListMerchantTimelineQuery, MerchantTimelineItem, MerchantTimelineList } from "./contracts";
+import type {
+  ListMerchantTimelineQuery,
+  MerchantTimelineItem,
+  MerchantTimelineList,
+} from "./contracts";
 import type { MerchantTimelineService } from "./service";
 
 export class MerchantTimelineServiceError extends Error {

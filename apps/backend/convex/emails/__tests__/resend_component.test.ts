@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
+import { sendResendEmail } from "../resend_component";
 import { createTestContext } from "../../test.setup";
 
 describe("emails/resend_component", () => {
@@ -10,6 +11,8 @@ describe("emails/resend_component", () => {
   let userId: Id<"users">;
   let documentId: Id<"documents">;
   let recipientId: Id<"document_recipients">;
+  const originalFetch = globalThis.fetch;
+  const originalResendApiKey = process.env.RESEND_API_KEY;
 
   beforeEach(async () => {
     t = createTestContext();
@@ -65,6 +68,58 @@ describe("emails/resend_component", () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+    });
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    if (originalResendApiKey === undefined) {
+      delete process.env.RESEND_API_KEY;
+    } else {
+      process.env.RESEND_API_KEY = originalResendApiKey;
+    }
+    vi.restoreAllMocks();
+  });
+
+  describe("sendResendEmail", () => {
+    test("sends direct Resend HTTP request with auth and idempotency headers", async () => {
+      process.env.RESEND_API_KEY = "re_test_direct";
+
+      const fetchMock = vi.fn(
+        async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+          expect(String(input)).toBe("https://api.resend.com/emails");
+          expect(init?.method).toBe("POST");
+
+          const headers = new Headers(init?.headers);
+          expect(headers.get("Authorization")).toBe("Bearer re_test_direct");
+          expect(headers.get("Content-Type")).toBe("application/json");
+          expect(headers.get("Idempotency-Key")).toBe("email_key_123");
+
+          expect(JSON.parse(String(init?.body))).toEqual({
+            from: "Seal <no-reply@seal.nyc>",
+            headers: { "Idempotency-Key": "email_key_123" },
+            html: "<p>Hello</p>",
+            reply_to: "reply@seal.nyc",
+            subject: "Hello",
+            to: ["user@example.com"],
+          });
+
+          return new Response(JSON.stringify({ id: "email_123" }), { status: 200 });
+        },
+      );
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+      const result = await sendResendEmail({
+        from: "Seal <no-reply@seal.nyc>",
+        to: ["user@example.com"],
+        subject: "Hello",
+        html: "<p>Hello</p>",
+        replyTo: "reply@seal.nyc",
+        headers: { "Idempotency-Key": "email_key_123" },
+      });
+
+      expect(result).toEqual({ data: { id: "email_123" }, error: null });
+      expect(fetchMock).toHaveBeenCalledOnce();
     });
   });
 

@@ -3,7 +3,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Code2,
   CreditCard,
@@ -383,9 +383,12 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const { user } = useCurrentUser();
   const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
+  const organizationStatus = useQuery(api.check_membership.hasOrganization);
   const organizations = useQuery(api.check_membership.listUserOrganizations);
+  const setActiveOrganization = useMutation(api.check_membership.setActiveOrganizationBySlug);
+  const merchantAccountSlug = organizationStatus?.activeOrganizationSlug ?? slug;
   const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
-    slug,
+    slug: merchantAccountSlug,
   });
   const hasMerchantAccount = merchantAccount?.status === "connected";
   const { isPro } = useSubscriptionLimits();
@@ -448,24 +451,30 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   };
 
   const handleTeamSelect = React.useCallback(
-    (nextSlug: string) => {
+    async (nextSlug: string) => {
       if (!nextSlug || nextSlug === slug) {
         return;
       }
 
-      let relativePath = location.pathname;
-      if (relativePath.startsWith(`/${slug}`)) {
-        relativePath = relativePath.slice(slug.length + 1);
+      try {
+        await setActiveOrganization({ organizationSlug: nextSlug });
+
+        let relativePath = location.pathname;
+        if (relativePath.startsWith(`/${slug}`)) {
+          relativePath = relativePath.slice(slug.length + 1);
+        }
+
+        const target = buildOrganizationPath(
+          nextSlug,
+          relativePath.length > 0 ? relativePath : "/home",
+        );
+
+        navigate({ to: target });
+      } catch (error) {
+        console.error("Failed to switch workspace:", error);
       }
-
-      const target = buildOrganizationPath(
-        nextSlug,
-        relativePath.length > 0 ? relativePath : "/home",
-      );
-
-      navigate({ to: target });
     },
-    [location.pathname, navigate, slug],
+    [location.pathname, navigate, setActiveOrganization, slug],
   );
 
   if (!organization) {

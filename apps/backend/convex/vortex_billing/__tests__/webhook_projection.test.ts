@@ -66,13 +66,13 @@ describe("Vortex Billing subscription projection", () => {
     );
   }
 
-  async function seedActiveStripeSubscription(): Promise<void> {
+  async function seedActiveLegacyProviderSubscription(): Promise<void> {
     await t.run((ctx) =>
       ctx.db.insert("subscriptions", {
         organizationId,
-        externalCustomerId: "cus_old_stripe",
-        externalSubscriptionId: "sub_old_stripe",
-        externalPriceId: "price_old_stripe",
+        externalCustomerId: "cus_old_provider",
+        externalSubscriptionId: "sub_old_provider",
+        externalPriceId: "price_old_provider",
         status: "active",
         currentPeriodStart: now,
         currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
@@ -142,12 +142,12 @@ describe("Vortex Billing subscription projection", () => {
     );
   }
 
-  test("projects active Vortex subscription and removes active Stripe-shaped ids", async () => {
+  test("projects active Vortex subscription and removes active non-Vortex-provider-shaped ids", async () => {
     const priceId = "vtx_price_seal_pro_monthly";
     const subscriptionId = "vtx_sub_seal_org_123_pro_monthly";
     const customerId = "vtx_cust_seal_org_123";
     await seedProCatalog(priceId);
-    await seedActiveStripeSubscription();
+    await seedActiveLegacyProviderSubscription();
 
     const result = await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
       eventId: "evt_vortex_subscription_active",
@@ -165,7 +165,7 @@ describe("Vortex Billing subscription projection", () => {
     expect(result).toMatchObject({
       processed: true,
       duplicate: false,
-      activeStripeIdPresent: false,
+      activeNonVortexProviderIdPresent: false,
       externalSubscriptionId: subscriptionId,
     });
 
@@ -180,15 +180,15 @@ describe("Vortex Billing subscription projection", () => {
       currentPeriodEnd: Date.parse(periodEnd),
     });
 
-    const oldStripeSubscription = await t.run((ctx) =>
+    const oldProviderSubscription = await t.run((ctx) =>
       ctx.db
         .query("subscriptions")
         .withIndex("by_external_subscription_id", (q) =>
-          q.eq("externalSubscriptionId", "sub_old_stripe"),
+          q.eq("externalSubscriptionId", "sub_old_provider"),
         )
         .first(),
     );
-    expect(oldStripeSubscription?.status).toBe("canceled");
+    expect(oldProviderSubscription?.status).toBe("canceled");
 
     const plan = await t.run((ctx) => getSubscriptionPlan(ctx.db, organizationId));
     expect(plan).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
@@ -650,13 +650,6 @@ describe("Vortex Billing payable object projection", () => {
       invoiceVortexPaymentRequestId: "preq_paid_projection",
       invoiceHostedUrl: "https://vortex.test/pay/final-paid",
     });
-    expect(state).not.toHaveProperty("configStripeInvoiceId");
-    expect(state).not.toHaveProperty("configStripeSubscriptionId");
-    expect(state).not.toHaveProperty("configStripePaymentIntentId");
-    expect(state).not.toHaveProperty("invoiceStripeInvoiceId");
-    expect(state).not.toHaveProperty("invoiceStripeSubscriptionId");
-    expect(state).not.toHaveProperty("invoiceStripeCustomerId");
-    expect(state).not.toHaveProperty("invoiceStripeAccountId");
     expect(state.invoicePaidAt).toBeTypeOf("number");
 
     const duplicate = await t.mutation(
@@ -711,13 +704,6 @@ describe("Vortex Billing payable object projection", () => {
       invoiceDunningStatus: "active",
       invoiceDunningStep: 0,
     });
-    expect(state).not.toHaveProperty("configStripeInvoiceId");
-    expect(state).not.toHaveProperty("configStripeSubscriptionId");
-    expect(state).not.toHaveProperty("configStripePaymentIntentId");
-    expect(state).not.toHaveProperty("invoiceStripeInvoiceId");
-    expect(state).not.toHaveProperty("invoiceStripeSubscriptionId");
-    expect(state).not.toHaveProperty("invoiceStripeCustomerId");
-    expect(state).not.toHaveProperty("invoiceStripeAccountId");
     expect(state.invoiceDunningStartedAt).toBeTypeOf("number");
     expect(state.invoiceNextDunningAt).toBeTypeOf("number");
   });

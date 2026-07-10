@@ -62,9 +62,7 @@ function TermsOfService() {
             <li>Promptly notify us of any unauthorized use of your account</li>
             <li>Accept responsibility for all activity that occurs under your account</li>
           </ul>
-          <p>
-            Authentication is managed by Seal on our own infrastructure.
-          </p>
+          <p>Authentication is managed by Seal on our own infrastructure.</p>
 
           <h2>4. Service Description</h2>
           <p>Seal is an intelligent document platform that provides:</p>
@@ -75,7 +73,7 @@ function TermsOfService() {
             </li>
             <li>
               <strong>Payment collection</strong> — Collect payments from document recipients
-              through integrated Stripe payment processing
+              through integrated Vortex Payments processing
             </li>
             <li>
               <strong>REST API</strong> — Programmatic access to create documents, manage
@@ -144,9 +142,9 @@ function TermsOfService() {
             </li>
           </ul>
           <p>
-            Payments are processed through Stripe. By subscribing to a paid plan, you authorize
-            recurring charges to your payment method. You may cancel your subscription at any time;
-            cancellation takes effect at the end of the current billing period.
+            Payments are processed through Vortex Payments. By subscribing to a paid plan, you
+            authorize recurring charges to your payment method. You may cancel your subscription at
+            any time; cancellation takes effect at the end of the current billing period.
           </p>
           <p>
             We reserve the right to modify pricing with 30 days&apos; notice. Price changes do not

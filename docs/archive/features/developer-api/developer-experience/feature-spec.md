@@ -60,7 +60,7 @@
 
 #### Super Simple API Documentation (Resend-Style)
 
-- [ ] **"Send in 2 lines" examples**: Ultra-simple integration like Stripe/Resend
+- [ ] **"Send in 2 lines" examples**: Ultra-simple integration like retired provider/Resend
   ```bash
   curl -X POST https://your-app.convex.site/sendDocument \
     -H "Authorization: Bearer YOUR_API_KEY" \
@@ -108,7 +108,7 @@
   - Simple verification example code
   - Clear security best practices
 
-#### Integration Examples (Stripe-Style)
+#### Integration Examples (retired provider-Style)
 
 - [ ] **"No Code" option**: Simple webhook-to-external-service integration
   - Zapier/Make.com webhook examples

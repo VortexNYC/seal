@@ -36,7 +36,9 @@ function deriveCanAcceptPayments(
     return true;
   }
 
-  const processingCapability = capabilities.find((capability) => capability.capabilityKey === "card_payments");
+  const processingCapability = capabilities.find(
+    (capability) => capability.capabilityKey === "card_payments",
+  );
   if (!processingCapability) {
     return true;
   }
@@ -74,7 +76,9 @@ function derivePayoutReadiness(
     };
   }
 
-  const payoutCapability = (capabilities ?? []).find((capability) => capability.capabilityKey === "payouts");
+  const payoutCapability = (capabilities ?? []).find(
+    (capability) => capability.capabilityKey === "payouts",
+  );
   if (payoutCapability && payoutCapability.status !== "active") {
     return {
       readiness: payoutCapability.status === "restricted" ? "paused" : "blocked",
@@ -102,7 +106,9 @@ export function deriveMerchantAccountState(
     ["pending", "failed"].includes(requirement.status),
   );
   const activeCapabilities = capabilities.filter((capability) => capability.status === "active");
-  const restrictedCapabilities = capabilities.filter((capability) => capability.status !== "active");
+  const restrictedCapabilities = capabilities.filter(
+    (capability) => capability.status !== "active",
+  );
   const payoutReadiness = derivePayoutReadiness(
     input.merchant,
     input.onboardingSession,

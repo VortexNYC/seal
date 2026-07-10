@@ -13,7 +13,7 @@
 
 ## Technology Stack Integration
 
-- **Stripe**: Payment processing and subscription management
+- **retired provider**: Payment processing and subscription management
 - **Clerk**: Workspace owner billing access control
 - **Convex**: Usage tracking and billing data storage
 - **React Email + Resend**: Billing notification emails
@@ -55,14 +55,14 @@
   - Status: "Pro Trial - 12 days remaining"
   - Action: Add payment method to continue Pro after trial
 
-### Payment Method Management Edge Cases (Stripe Integration)
+### Payment Method Management Edge Cases (retired provider Integration)
 
-- [ ] **Add Payment Method**: Connect credit card via Stripe
-  - Form: Standard credit card form with Stripe Elements secure processing
+- [ ] **Add Payment Method**: Connect credit card via retired provider
+  - Form: Standard credit card form with retired provider Elements secure processing
   - Validation: Real-time card validation
   - Success: Payment method saved, subscription activated
 - [ ] **Update Payment Method**: Edit existing payment information
-  - Process: Update existing Stripe payment method
+  - Process: Update existing retired provider payment method
   - Validation: New card verification
   - Effect: Next billing uses updated payment method
 - [ ] **Remove Payment Method**: Delete payment method
@@ -102,9 +102,9 @@
   - Timing: Reset on billing date each month
   - Display: Clear indication of next reset date
 
-### Billing History Edge Cases (Stripe Invoice Management)
+### Billing History Edge Cases (retired provider Invoice Management)
 
-- [ ] **Invoice Generation**: Monthly invoice creation via Stripe
+- [ ] **Invoice Generation**: Monthly invoice creation via retired provider
   - Content: Workspace name, billing period, itemized charges
   - Delivery: Automatic email to workspace owner
   - Format: PDF download available
@@ -133,21 +133,21 @@
   - Email: 7 days before trial ends, day of expiration
   - Content: Add payment method to continue Pro features
 
-### Stripe Integration Edge Cases
+### retired provider Integration Edge Cases
 
-- [ ] **Stripe Subscription Creation**: New Pro subscription setup
-  - Process: Create Stripe subscription with workspace context
+- [ ] **retired provider Subscription Creation**: New Pro subscription setup
+  - Process: Create retired provider subscription with workspace context
   - Webhook: Handle subscription created webhook
   - State: Update workspace to Pro plan status
-- [ ] **Stripe Payment Processing**: Handle payment events
+- [ ] **retired provider Payment Processing**: Handle payment events
   - Success: Payment succeeded webhook updates billing status
   - Failure: Payment failed webhook triggers recovery flow
-  - Retry: Automatic retry handling via Stripe
-- [ ] **Stripe Subscription Updates**: Plan changes via Stripe
+  - Retry: Automatic retry handling via retired provider
+- [ ] **retired provider Subscription Updates**: Plan changes via retired provider
   - Upgrade: Update subscription tier and billing amount
   - Downgrade: Schedule downgrade for next billing cycle
   - Cancellation: Cancel subscription but maintain access until period end
-- [ ] **Stripe Webhook Handling**: Process Stripe webhook events
-  - Authentication: Verify Stripe webhook signatures
+- [ ] **retired provider Webhook Handling**: Process retired provider webhook events
+  - Authentication: Verify retired provider webhook signatures
   - Processing: Update Convex database based on webhook events
   - Errors: Handle webhook processing failures with retry

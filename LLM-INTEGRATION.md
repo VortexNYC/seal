@@ -36,6 +36,7 @@ bun run format:changed:check
 bun run check:preferred-stack
 bun run build
 bun run test
+bun run verify:seal-vortex-migration
 bun run auth:check
 bun run auth:preflight
 ```
@@ -122,5 +123,5 @@ Core owns:
 ## Cloud Notes
 
 - Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.
-- Use staging for Stripe Connect, subscriptions, webhooks, billing, and payment verification.
+- Use staging for Vortex payments, subscriptions, webhooks, billing, and payment verification.
 - Do not target the retired self-hosted Convex URLs.

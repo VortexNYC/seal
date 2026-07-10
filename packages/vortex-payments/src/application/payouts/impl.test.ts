@@ -55,13 +55,15 @@ function createMerchant(overrides: Partial<MerchantAccount> = {}): MerchantAccou
     defaultCurrency: "USD",
     status: "active",
     capabilityStatus: "active",
-    processorAccountRefs: [{
-      provider: "finix",
-      objectType: "merchant",
-      objectId: "MU123",
-      relationship: "merchant_account",
-      recordedAt: "2026-05-14T12:00:00.000Z",
-    }],
+    processorAccountRefs: [
+      {
+        provider: "finix",
+        objectType: "merchant",
+        objectId: "MU123",
+        relationship: "merchant_account",
+        recordedAt: "2026-05-14T12:00:00.000Z",
+      },
+    ],
     createdAt: "2026-05-14T12:00:00.000Z",
     updatedAt: "2026-05-14T12:00:00.000Z",
     ...overrides,
@@ -91,41 +93,129 @@ function createUow(
   merchantStates: readonly MerchantAccountState[] = [],
 ): PaymentsUnitOfWork {
   const records = new Map(payouts.map((payout) => [`${payout.environment}:${payout.id}`, payout]));
-  const settlementRecords = new Map(settlements.map((settlement) => [`${settlement.environment}:${settlement.id}`, settlement]));
-  const merchantRecords = new Map(merchants.map((merchant) => [`${merchant.environment}:${merchant.id}`, merchant]));
-  const stateRecords = new Map(merchantStates.map((state) => [`${state.environment}:${state.merchantAccountId}`, state]));
+  const settlementRecords = new Map(
+    settlements.map((settlement) => [`${settlement.environment}:${settlement.id}`, settlement]),
+  );
+  const merchantRecords = new Map(
+    merchants.map((merchant) => [`${merchant.environment}:${merchant.id}`, merchant]),
+  );
+  const stateRecords = new Map(
+    merchantStates.map((state) => [`${state.environment}:${state.merchantAccountId}`, state]),
+  );
   return {
     merchants: {
-      async getById(id, options) { return merchantRecords.get(`${options.environment}:${id}`) ?? null; },
-      async listByTenant() { return []; },
-      async getByProcessorRef() { return null; },
+      async getById(id, options) {
+        return merchantRecords.get(`${options.environment}:${id}`) ?? null;
+      },
+      async listByTenant() {
+        return [];
+      },
+      async getByProcessorRef() {
+        return null;
+      },
       async save() {},
     },
-    customers: { async getById() { return null; }, async save() {} },
+    customers: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
     onboarding: {
-      async getSessionById() { return null; },
-      async getLatestSessionByMerchantAccountId() { return null; },
-      async listRequirementsForSession() { return []; },
-      async listDocumentsForRequirement() { return []; },
+      async getSessionById() {
+        return null;
+      },
+      async getLatestSessionByMerchantAccountId() {
+        return null;
+      },
+      async listRequirementsForSession() {
+        return [];
+      },
+      async listDocumentsForRequirement() {
+        return [];
+      },
       async saveSession() {},
       async saveRequirement() {},
       async saveRequirementDocument() {},
     },
     merchantStates: {
-      async getByMerchantAccountId(merchantAccountId, options) { return stateRecords.get(`${options.environment}:${merchantAccountId}`) ?? null; },
+      async getByMerchantAccountId(merchantAccountId, options) {
+        return stateRecords.get(`${options.environment}:${merchantAccountId}`) ?? null;
+      },
       async save() {},
     },
-    customerStates: { async getByMerchantAndCustomer() { return null; }, async save() {} },
-    paymentMethods: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByOwner() { return []; }, async save() {} },
-    paymentMethodSetupSessions: { async getById() { return null; }, async save() {} },
-    paymentIntents: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async listByCustomerProfile() { return []; }, async save() {} },
-    payments: { async getById() { return null; }, async getByPaymentIntentId() { return null; }, async save() {} },
-    refunds: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByPayment() { return []; }, async save() {} },
+    customerStates: {
+      async getByMerchantAndCustomer() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentMethods: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByOwner() {
+        return [];
+      },
+      async save() {},
+    },
+    paymentMethodSetupSessions: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+    },
+    paymentIntents: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async listByCustomerProfile() {
+        return [];
+      },
+      async save() {},
+    },
+    payments: {
+      async getById() {
+        return null;
+      },
+      async getByPaymentIntentId() {
+        return null;
+      },
+      async save() {},
+    },
+    refunds: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByPayment() {
+        return [];
+      },
+      async save() {},
+    },
     settlements: {
-      async getById(id, options) { return settlementRecords.get(`${options.environment}:${id}`) ?? null; },
-      async getByProcessorRef() { return null; },
+      async getById(id, options) {
+        return settlementRecords.get(`${options.environment}:${id}`) ?? null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
       async listByMerchant(environment, merchantAccountId) {
-        return Array.from(settlementRecords.values()).filter((record) => record.environment === environment && record.merchantAccountId === merchantAccountId);
+        return Array.from(settlementRecords.values()).filter(
+          (record) =>
+            record.environment === environment && record.merchantAccountId === merchantAccountId,
+        );
       },
       async save() {},
     },
@@ -137,29 +227,67 @@ function createUow(
         return null;
       },
       async listByMerchant(environment, merchantAccountId) {
-        return Array.from(records.values()).filter((record) => record.environment === environment && record.merchantAccountId === merchantAccountId);
+        return Array.from(records.values()).filter(
+          (record) =>
+            record.environment === environment && record.merchantAccountId === merchantAccountId,
+        );
       },
       async save(record) {
         records.set(`${record.environment}:${record.id}`, record);
       },
     },
-    disputes: { async getById() { return null; }, async getByProcessorRef() { return null; }, async listByMerchant() { return []; }, async save() {} },
+    disputes: {
+      async getById() {
+        return null;
+      },
+      async getByProcessorRef() {
+        return null;
+      },
+      async listByMerchant() {
+        return [];
+      },
+      async save() {},
+    },
     events: {
-      async getRawWebhookById() { return null; },
-      async getRawWebhookByDeliveryKey() { return null; },
+      async getRawWebhookById() {
+        return null;
+      },
+      async getRawWebhookByDeliveryKey() {
+        return null;
+      },
       async saveRawWebhook() {},
-      async getProcessorEventById() { return null; },
+      async getProcessorEventById() {
+        return null;
+      },
       async saveProcessorEvent() {},
       async saveCanonicalEvent() {},
-      async getCanonicalEventById() { return null; },
-      async getWebhookEndpointById() { return null; },
+      async getCanonicalEventById() {
+        return null;
+      },
+      async getWebhookEndpointById() {
+        return null;
+      },
       async saveWebhookEndpoint() {},
       async saveWebhookDelivery() {},
       async saveEventSubscription() {},
     },
-    cases: { async getById() { return null; }, async save() {}, async saveActivity() {}, async saveNote() {} },
-    idempotency: { async getByScopeAndKey() { return null; }, async save() {} },
-    async runInTransaction(work) { return await work(this); },
+    cases: {
+      async getById() {
+        return null;
+      },
+      async save() {},
+      async saveActivity() {},
+      async saveNote() {},
+    },
+    idempotency: {
+      async getByScopeAndKey() {
+        return null;
+      },
+      async save() {},
+    },
+    async runInTransaction(work) {
+      return await work(this);
+    },
   };
 }
 
@@ -206,11 +334,13 @@ describe("createPayoutsService", () => {
     });
     expect(payout).not.toHaveProperty("processorRefs");
 
-    expect(await service.getMerchantPayout({
-      environment: "sandbox",
-      merchantAccountId: "merchant_999",
-      payoutId: "po_123",
-    })).toBeNull();
+    expect(
+      await service.getMerchantPayout({
+        environment: "sandbox",
+        merchantAccountId: "merchant_999",
+        payoutId: "po_123",
+      }),
+    ).toBeNull();
   });
 
   test("derives settlement payout readiness without creating payout writes", async () => {
@@ -241,9 +371,12 @@ describe("createPayoutsService", () => {
 
   test("marks settlement readiness paid when funding transfer succeeded", async () => {
     const service = createPayoutsService({
-      uow: createUow([
-        createPayout({ settlementId: "settlement_123", status: "succeeded" }),
-      ], [createSettlement()], [], [createMerchantState()]),
+      uow: createUow(
+        [createPayout({ settlementId: "settlement_123", status: "succeeded" })],
+        [createSettlement()],
+        [],
+        [createMerchantState()],
+      ),
       now: () => "2026-05-14T16:00:00.000Z",
     });
 
@@ -253,22 +386,29 @@ describe("createPayoutsService", () => {
       settlementId: "settlement_123",
     });
 
-    expect(result).toEqual(expect.objectContaining({
-      status: "paid",
-      nextAction: "funding_transfer_succeeded",
-      payoutIds: ["po_123"],
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: "paid",
+        nextAction: "funding_transfer_succeeded",
+        payoutIds: ["po_123"],
+      }),
+    );
   });
 
   test("builds settlement funding timeline", async () => {
     const service = createPayoutsService({
-      uow: createUow([
-        createPayout({
-          settlementId: "settlement_123",
-          updatedAt: "2026-05-14T15:00:00.000Z",
-          expectedArrivalAt: "2026-05-15T15:00:00.000Z",
-        }),
-      ], [createSettlement()], [], [createMerchantState()]),
+      uow: createUow(
+        [
+          createPayout({
+            settlementId: "settlement_123",
+            updatedAt: "2026-05-14T15:00:00.000Z",
+            expectedArrivalAt: "2026-05-15T15:00:00.000Z",
+          }),
+        ],
+        [createSettlement()],
+        [],
+        [createMerchantState()],
+      ),
       now: () => "2026-05-14T16:00:00.000Z",
     });
 
@@ -292,8 +432,12 @@ describe("createPayoutsService", () => {
       uow: {
         ...uow,
         sellerPayoutProfileSnapshots: {
-          async listByMerchant() { return savedSnapshots; },
-          async save(record) { savedSnapshots.push(record); },
+          async listByMerchant() {
+            return savedSnapshots;
+          },
+          async save(record) {
+            savedSnapshots.push(record);
+          },
         },
       },
       providers: {
@@ -333,7 +477,9 @@ describe("createPayoutsService", () => {
             },
           };
         },
-        listAdapters() { return []; },
+        listAdapters() {
+          return [];
+        },
       },
       resolveProviderContext: () => ({ provider: "finix", environment: "sandbox" }),
     });
@@ -343,23 +489,25 @@ describe("createPayoutsService", () => {
       merchantAccountId: "merchant_123",
     });
 
-	    expect(result).toEqual(expect.objectContaining({
-	      environment: "sandbox",
-	      merchantAccountId: "merchant_123",
-	      mode: "net",
-	      payoutRail: "next_day_ach",
-	      payoutSchedule: "daily",
-      capabilities: expect.arrayContaining([
-        expect.objectContaining({ key: "standard_next_day_ach", status: "enabled" }),
-        expect.objectContaining({ key: "same_day_ach", status: "disabled" }),
-        expect.objectContaining({ key: "instant_card_push", status: "disabled" }),
-        expect.objectContaining({ key: "gross_payout", status: "disabled" }),
-        expect.objectContaining({ key: "sub_merchant_payee_payment", status: "disabled" }),
-      ]),
-	    }));
-	    expect(result).not.toHaveProperty("provider");
-	    expect(result).not.toHaveProperty("merchantRef");
-	    expect(result).not.toHaveProperty("profileRef");
-	    expect(savedSnapshots).toHaveLength(1);
+    expect(result).toEqual(
+      expect.objectContaining({
+        environment: "sandbox",
+        merchantAccountId: "merchant_123",
+        mode: "net",
+        payoutRail: "next_day_ach",
+        payoutSchedule: "daily",
+        capabilities: expect.arrayContaining([
+          expect.objectContaining({ key: "standard_next_day_ach", status: "enabled" }),
+          expect.objectContaining({ key: "same_day_ach", status: "disabled" }),
+          expect.objectContaining({ key: "instant_card_push", status: "disabled" }),
+          expect.objectContaining({ key: "gross_payout", status: "disabled" }),
+          expect.objectContaining({ key: "sub_merchant_payee_payment", status: "disabled" }),
+        ]),
+      }),
+    );
+    expect(result).not.toHaveProperty("provider");
+    expect(result).not.toHaveProperty("merchantRef");
+    expect(result).not.toHaveProperty("profileRef");
+    expect(savedSnapshots).toHaveLength(1);
   });
 });

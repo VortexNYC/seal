@@ -275,9 +275,42 @@ Do not call Seal document payments sandbox launch-ready until this exact sequenc
 2. Re-run the Seal paid-state proof with `--require-settled`.
 3. Confirm `fullySettled: true` and at least one settlement id for `pay_mrayujpd_uha1hffh`.
 4. Only then promote this sandbox document-payment proof from captured to settled.
-5. Production real-money launch still requires production credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and Stripe webhook retirement.
+5. Production real-money launch still requires production credentials, a production Seal merchant, one real small document payment, real settlement/payout visibility, then the allowlist flip and retired provider webhook retirement.
 
 Current sandbox launch answer: SaaS is green, document payable creation is green, real hosted document payment capture and Seal projection are green, failed-payment recovery is green, and settled document-payment money movement is still waiting on provider settlement readiness.
+
+The non-mutating Seal launch audit now preserves the same human-only boundary in machine-readable output:
+
+```bash
+cd /home/debian/Projects/Seal
+bun run audit:seal-vortex-launch-boundary
+```
+
+Expected until settlement and production proof are complete:
+
+```text
+launchReady=false
+waitingOn=human_settlement_proof,production_config,production_live_money_proof
+earliestHumanReconcileAt=2026-07-08T18:12:06.10Z
+```
+
+The launch audit also reads `docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md` if it exists. Until that checked-in artifact proves the production money path and post-proof retirement, production proof remains incomplete.
+
+Agents may run the audit and record non-secret proof state. Agents must not run reconciliation, settlement, payout, live card, production env mutation, allowlist widening, or production webhook retirement.
+
+## Proof Harness Contract
+
+Future `prove:seal-document-payment-vortex-live` runs seed the document-payment-specific Seal env contract, not the shared SaaS maps:
+
+```text
+VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS
+VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP
+VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP
+VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP
+VORTEX_BILLING_DOCUMENT_PRICE_MAP
+```
+
+This is intentional. Document-payment real money must not silently reuse SaaS billing maps.
 
 ## Production Gate Audit
 
@@ -310,9 +343,10 @@ VORTEX_BILLING_SAAS_PRICE_MAP=set
 VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP=empty
 VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP=empty
 VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP=empty
+VORTEX_BILLING_DOCUMENT_PRICE_MAP=empty
 ```
 
-Meaning: Seal production has the SaaS Vortex config, but document-payment production routing is not configured. Before flipping document payments, production needs an explicit document-payment allowlist plus document billing account, customer, and merchant maps for the target organization.
+Meaning: Seal production has the SaaS Vortex config, but document-payment production routing is not configured. Before flipping document payments, production needs an explicit document-payment allowlist plus document billing account, customer, merchant, and price maps for the target organization.
 
 Production go-live work left after sandbox settlement proof:
 
@@ -322,4 +356,35 @@ Production go-live work left after sandbox settlement proof:
 4. Run one real small production document payment.
 5. Wait for real settlement/payout visibility.
 6. Run the paid-state proof with `--require-settled` against production ids.
-7. Only then widen the allowlist and retire Stripe webhooks.
+7. Only then widen the allowlist and retire retired provider webhooks.
+
+The production readiness audit is intentionally non-mutating:
+
+```bash
+cd /home/debian/Projects/Seal
+bun run audit:seal-vortex-production-readiness
+```
+
+Expected until production is configured: it exits nonzero, lists only missing/invalid production config names, prints no secret values, and emits:
+
+- `agentAllowedActions`
+- `humanOnlyActions`
+- `successCriteria`
+
+The aggregate launch audit fails if remediation commands omit missing env names or include non-missing env names.
+
+The production proof boundary is intentionally static:
+
+```bash
+cd /home/debian/Projects/Seal
+bun run audit:seal-vortex-production-proof-boundary
+```
+
+Expected until the human production proof sequence is recorded:
+
+```text
+productionMoneyProofComplete=false
+postProofRetirementComplete=false
+goLiveProofComplete=false
+proofDoc=docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md
+```

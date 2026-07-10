@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 
+import { resolve } from "node:path";
+
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
@@ -20,7 +22,10 @@ type ProofConfig = {
 };
 
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
-const vortexConvexCwd = new URL("../../vortex-payments/apps/backend", import.meta.url).pathname;
+const localVortexRepoRoot =
+  readEnv("VORTEX_PAYMENTS_REPO_ROOT") ??
+  new URL("../../vortex-payments", import.meta.url).pathname;
+const vortexConvexCwd = resolve(localVortexRepoRoot, "apps/backend");
 const defaultVortexDeployment = "dev:notable-leopard-969";
 const defaultVortexBaseUrl = "https://notable-leopard-969.convex.site";
 const lookupKey = "pro:monthly:v2";
@@ -207,7 +212,10 @@ function readStringArray(value: string | undefined, label: string): readonly str
   const parsed = JSON.parse(value) as Json;
   assert(Array.isArray(parsed), `Expected ${label} to be a JSON string array`);
   const entries = parsed.map((entry, index) => {
-    assert(typeof entry === "string" && entry.length > 0, `Expected ${label}[${index}] to be a string`);
+    assert(
+      typeof entry === "string" && entry.length > 0,
+      `Expected ${label}[${index}] to be a string`,
+    );
     return entry;
   });
   return entries;
@@ -415,19 +423,18 @@ async function readProofConfig(): Promise<ProofConfig> {
   const priceId = priceMap[lookupKey];
   assert(priceId !== undefined, `VORTEX_BILLING_SAAS_PRICE_MAP is missing ${lookupKey}`);
 
-  const selected =
-    selectMappedProofOrganization({
+  const selected = selectMappedProofOrganization({
+    explicitOrganizationId,
+    allowlistedOrganizationIds,
+    accountMap,
+    defaultBillingAccountId,
+  }) ?? {
+    organizationId: selectOrganizationForProvisioning({
       explicitOrganizationId,
       allowlistedOrganizationIds,
-      accountMap,
-      defaultBillingAccountId,
-    }) ?? {
-      organizationId: selectOrganizationForProvisioning({
-        explicitOrganizationId,
-        allowlistedOrganizationIds,
-      }),
-      billingAccountId: "",
-    };
+    }),
+    billingAccountId: "",
+  };
   const billingAccountId =
     selected.billingAccountId.length > 0
       ? selected.billingAccountId
@@ -500,7 +507,7 @@ async function main(): Promise<void> {
 
   const checkoutUrl = stringField(checkout, "checkoutUrl");
   assert(checkoutUrl.startsWith("https://"), "Expected hosted checkout URL");
-  assert(!/stripe\.com/i.test(checkoutUrl), "Expected Vortex checkout URL, got Stripe");
+  assert(checkoutUrl.startsWith(config.vortexBaseUrl), "Expected checkout URL from Vortex");
   assert(
     numberField(checkout, "amountTotal") === expectedUnitAmount,
     "Expected checkout amountTotal to match Seal Professional monthly price",

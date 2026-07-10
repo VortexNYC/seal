@@ -3,10 +3,12 @@ import { validateDisputeEvidenceUploadBatch, type UploadDisputeEvidenceRequest }
 
 describe("dispute evidence upload preflight", () => {
   test("accepts Finix-supported evidence files", () => {
-    expect(validateDisputeEvidenceUploadBatch([
-      { fileName: "receipt.jpg", contentType: "image/jpeg", sizeBytes: 900_000 },
-      { fileName: "terms.pdf", contentType: "application/pdf", sizeBytes: 900_000 },
-    ])).toEqual({ ok: true, errors: [] });
+    expect(
+      validateDisputeEvidenceUploadBatch([
+        { fileName: "receipt.jpg", contentType: "image/jpeg", sizeBytes: 900_000 },
+        { fileName: "terms.pdf", contentType: "application/pdf", sizeBytes: 900_000 },
+      ]),
+    ).toEqual({ ok: true, errors: [] });
   });
 
   test("rejects Finix evidence limit violations", () => {

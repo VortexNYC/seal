@@ -15,10 +15,23 @@ export const Route = createFileRoute("/_authenticated/onboarding/choose-organiza
 function RouteComponent() {
   const navigate = useNavigate();
   const organizations = useQuery(api.check_membership.listUserOrganizations);
+  const setActiveOrganization = useMutation(api.check_membership.setActiveOrganizationBySlug);
   const ensurePersonalOrganization = useMutation(
     api.organizations.mutations.ensurePersonalOrganization,
   );
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleSelectOrganization = async (organizationSlug: string) => {
+    try {
+      await setActiveOrganization({ organizationSlug });
+      navigate({
+        to: buildOrganizationPath(organizationSlug, "/home"),
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Failed to switch workspace:", error);
+    }
+  };
 
   const handleCreate = () => {
     setIsCreating(true);
@@ -55,12 +68,7 @@ function RouteComponent() {
               key={org.organizationId}
               variant="outline"
               className="w-full justify-start"
-              onClick={() =>
-                navigate({
-                  to: buildOrganizationPath(org.organizationSlug, "/home"),
-                  replace: true,
-                })
-              }
+              onClick={() => void handleSelectOrganization(org.organizationSlug)}
             >
               {org.organizationName}
             </Button>

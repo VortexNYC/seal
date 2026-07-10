@@ -19,13 +19,13 @@
     ├─ Show: Pro plan benefits and pricing
     └─ Action: "Upgrade to Pro - $10/month per user"
     ↓
-○ Payment Method Setup (Stripe Integration)
-    ├─ Form: Credit card details via Stripe
+○ Payment Method Setup (retired provider Integration)
+    ├─ Form: Credit card details via retired provider
     ├─ Validation: Real-time card validation
     └─ Security: PCI-compliant processing
     ↓
 □ Subscription Creation
-    ├─ Stripe: Create Pro subscription
+    ├─ retired provider: Create Pro subscription
     ├─ Billing: Immediate Pro activation
     ├─ Features: Unlock unlimited documents
     └─ Notification: Email confirmation sent
@@ -48,7 +48,7 @@
     └─ Primary: Mark primary payment method
     ↓
 ○ Add New Payment Method
-    ├─ Form: Credit card form via Stripe
+    ├─ Form: Credit card form via retired provider
     ├─ Validation: Card number, expiry, CVC
     └─ Save: Store payment method securely
     ↓
@@ -61,7 +61,7 @@
 ### Failed Payment Recovery Flow
 
 ```
-○ Payment Failure Occurs (Stripe Webhook)
+○ Payment Failure Occurs (retired provider Webhook)
     ↓
 □ Payment Failed Notification
     ├─ Email: Immediate notification to workspace owner
@@ -75,7 +75,7 @@
     └─ Validate: Test new payment method
     ↓
 □ Payment Retry Process
-    ├─ Stripe: Retry failed payment with new method
+    ├─ retired provider: Retry failed payment with new method
     ├─ Success: Clear failed payment status
     ├─ Failure: Continue grace period countdown
     └─ Notification: Email confirmation of payment status
@@ -99,7 +99,7 @@
     ↓
 ○ Invoice Download
     ├─ Click: "Download PDF" for specific invoice
-    ├─ Generate: PDF invoice via Stripe
+    ├─ Generate: PDF invoice via retired provider
     ├─ Content: Workspace details, billing period, charges
     └─ Download: Automatic PDF download to browser
 ```
@@ -126,7 +126,7 @@
 □ Billing Cycle End
     ├─ Automatic: Downgrade to Free plan
     ├─ Limits: Enforce Free plan restrictions
-    ├─ Payment: Cancel Pro subscription via Stripe
+    ├─ Payment: Cancel Pro subscription via retired provider
     └─ Notification: Downgrade completion email
 ```
 
@@ -141,7 +141,7 @@
     └─ Display: "Adding member will increase billing to $20/month"
     ↓
 ○ Member Addition Confirmed
-    ├─ Stripe: Update subscription quantity
+    ├─ retired provider: Update subscription quantity
     ├─ Prorated: Calculate mid-month billing adjustment
     ├─ Billing: Next invoice reflects new member count
     └─ Notification: Billing update confirmation
@@ -164,7 +164,7 @@
     └─ Confirm: "Are you sure you want to cancel?"
     ↓
 ○ Cancellation Processed
-    ├─ Stripe: Cancel subscription at period end
+    ├─ retired provider: Cancel subscription at period end
     ├─ Status: "Cancelled - expires [date]"
     ├─ Access: Maintain Pro features until expiration
     └─ Notification: Cancellation confirmation email
@@ -198,7 +198,7 @@
 □ Error Handling
     ├─ Card Declined: "Your card was declined. Please try a different card."
     ├─ Expired Card: "Your card has expired. Please update your payment method."
-    ├─ Stripe Error: "Payment processing temporarily unavailable. Please try again."
+    ├─ retired provider Error: "Payment processing temporarily unavailable. Please try again."
     └─ Network Error: "Connection error. Please check your internet and retry."
     ↓
 ○ Recovery Options

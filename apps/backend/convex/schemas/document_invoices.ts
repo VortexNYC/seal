@@ -17,19 +17,16 @@ export const dunningStatusTuple = v.union(
   v.literal("cancelled"),
 );
 
-export const documentInvoiceProviderTuple = v.union(
-  v.literal("stripe"),
-  v.literal("vortex_billing"),
-);
+export const documentInvoiceProviderTuple = v.literal("vortex_billing");
 
 export const documentInvoicesTable = defineTable({
   documentId: v.id("documents"),
   organizationId: v.id("organizations"),
   provider: v.optional(documentInvoiceProviderTuple),
-  stripeAccountId: v.optional(v.string()),
-  stripeInvoiceId: v.optional(v.string()),
-  stripeCustomerId: v.optional(v.string()),
-  stripeSubscriptionId: v.optional(v.string()),
+  providerAccountId: v.optional(v.string()),
+  providerInvoiceId: v.optional(v.string()),
+  providerCustomerId: v.optional(v.string()),
+  providerSubscriptionId: v.optional(v.string()),
   vortexPayableId: v.optional(v.string()),
   vortexPaymentRequestId: v.optional(v.string()),
   status: documentInvoiceStatusTuple,
@@ -54,8 +51,8 @@ export const documentInvoicesTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_document", ["documentId"])
-  .index("by_stripe_invoice", ["stripeInvoiceId"])
+  .index("by_provider_invoice", ["providerInvoiceId"])
   .index("by_vortex_payable", ["vortexPayableId"])
   .index("by_organization", ["organizationId"])
-  .index("by_stripe_subscription", ["stripeSubscriptionId"])
+  .index("by_provider_subscription", ["providerSubscriptionId"])
   .index("by_dunning_status", ["dunningStatus", "nextDunningAt"]);

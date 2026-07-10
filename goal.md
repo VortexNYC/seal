@@ -1,145 +1,194 @@
 # Seal Vortex Payments Goal
 
-Date: 2026-07-07
-Host: herdr
-Repo: /home/debian/Projects/Seal
-Base: origin/staging
-Active branch: codex/seal-vortex-document-payment-proof
+Date: 2026-07-08
+Repo: `/Users/shlomokabareti/Projects/Seal`
+Base: `origin/staging`
+Active branch: `codex/sea-557-provider-neutral-data-contracts`
+Latest code cleanup commit: inspect with `git log --oneline -1 -- scripts apps packages docs goal.md`.
+Latest launch-boundary commit: inspect with `git log --oneline -1 -- scripts/audit-seal-vortex-launch-boundary.ts scripts/audit-seal-vortex-production-proof-boundary.ts goal.md`.
+Latest proof-state doc commit: inspect with `git log --oneline -1 -- goal.md` before acting.
+Current head: inspect with `git rev-parse --short HEAD` before acting.
+Linear control: `SEA-555`
+Current lane: `SEA-562`
 
-## What We Are Shipping
+## Objective
 
-Seal is moving off Stripe in two distinct slices:
+Remove the legacy payment provider from Seal top down and leave Vortex Payments as the only active payment path.
 
-1. SaaS subscription billing for Seal plans through Vortex Billing.
-2. Document payments and merchant money movement through Vortex Payments.
+This has two separate gates:
 
-The SaaS slice is through staging. The next shipping target is the document-payment proof that makes the full Stripe replacement credible.
+1. Code deletion gate: no tracked code, packages, scripts, config, product copy, or docs contain the legacy provider token.
+2. Launch-readiness gate: Vortex Payments proves the active Seal paths end to end, including hosted payment outcomes, settlement visibility, and production routing boundaries.
+
+Do not collapse these gates. Code deletion can be green while launch readiness is still proof-gated.
 
 ## Current Truth
 
-- PR #468 is merged to `staging`.
-- Merged commit: `10ef7f27 feat(billing): prove Seal SaaS checkout through Vortex`.
-- Staging web deploy succeeded: `https://staging-app.seal.nyc`.
-- Worker version: `ba8b236f-7c24-47c9-a41e-1476712f2abc`.
-- CI on PR #468 was green: 4 passed, 0 failed, 3 skipped.
-- Human live proofs passed on `dev:clever-goose-484`.
-- Proof artifact committed: `docs/test-sessions/session-2026-07-07-seal-saas-vortex-billing.json`.
-- Active document-payment proof branch: `codex/seal-vortex-document-payment-proof`.
+- SEA-556 through SEA-561 are complete locally on `codex/sea-557-provider-neutral-data-contracts`.
+- The strict residue guard scans every tracked path/content for the raw legacy-provider token, including archive docs, scans owned hidden env/config content, and separately blocks old-provider alias wording in active guidance/config/current-plan files.
+- `git ls-files | rg -i "<legacy-provider-token>"` returns no matches when the placeholder is replaced with the actual legacy provider word.
+- Raw owned working-tree scan, including hidden env/config and excluding generated/install/cache outputs, returns no matches.
+- Active raw legacy-provider token scan outside `.git`, installs, generated output, and caches returns no matches; legacy-provider-named path scan returns no paths.
+- Non-archive old-provider alias scan is intentionally down to exact proof command names and the residue guard script.
+- Obsolete/completed provider-migration docs and tracked local skill examples that taught old-provider patterns were archived or neutralized in `a282d9c2`.
+- The Vortex catalog live proof no longer seeds non-Vortex-provider-shaped entitlement safety IDs; its safety organization now uses Vortex-shaped customer, subscription, product, and price ids, and the local migration gate statically blocks the old control from returning.
+- Active Vortex proof/projection contracts now use provider-neutral wording (`activeNonVortexProviderIdPresent`) instead of stale old-provider field names, so future work does not confuse the Vortex migration proof with a retained legacy implementation.
+- Active subscription coupon and promo-code mirror schemas now name Vortex Billing as the source of truth, and the strict residue guard fails if those active schemas drift back to generic payment-provider wording.
+- `bun run prove:seal-vortex-migration-local` is the local non-mutating migration gate that composes residue, account/onboarding guards, settings, SaaS checkout/catalog/coupon/portal proofs, webhook projection, backend adapter, operational surface, document-payment local proofs, sandbox settlement handoff, and launch-boundary drift detection.
+- `bun run audit:seal-vortex-launch-boundary` now surfaces sandbox settlement readiness, production config readiness, production proof readiness, and fails if production remediation commands do not exactly match missing production env names.
+- `bun run audit:seal-vortex-production-proof-boundary` keeps production live-money proof and post-proof external residue retirement as explicit launch blockers until a checked-in production proof artifact exists.
+- `bun run prove:seal-vortex-production-proof-boundary` proves the production proof boundary fails closed on incomplete production proof artifacts, distinguishes money-proof-only from full go-live evidence, and requires post-proof retirement markers.
+- `bun run audit:seal-vortex-launch-boundary` cannot report `launchReady: true` from production config alone; it now also requires production money proof and post-proof retirement evidence.
+- `bun run prove:seal-saas-webhook-billing-state` now pushes the current checkout to the Seal dev deployment before running, so the live/dev SaaS billing-state proof cannot pass against stale deployed functions.
+- `bun run prove:seal-coupons-vortex` now merges its temporary proof price into `VORTEX_BILLING_SAAS_PRICE_MAP` instead of replacing the whole map; this preserves the `pro:monthly:v2` checkout mapping when coupon proofs run before SaaS checkout proofs.
+- The Seal dev `organizations` table was cleaned from stale old-provider customer-field residue on 2026-07-08 by replacing the table with the same 85 rows minus the retired field; document ids and creation times were preserved.
+- Non-production Convex data cleanup on 2026-07-08 emptied old provider account/webhook tables in local dev (`dev:aware-buzzard-568`) and staging/dev (`dev:clever-goose-484`), and cleaned the same retired customer field from 6 local-dev organization rows while preserving ids and creation times. Backups were saved under `/tmp` on this machine.
+- Latest local proof refresh has passed on this branch, including root quality gates; rerun the root gates after any non-doc runtime change:
+  - `bun run prove:zero-retired-provider-residue`
+  - explicit hidden/no-ignore owned working-tree legacy-provider token scan
+  - `bun run verify`
+  - `bun run test`
+  - `bun run typecheck`
+  - `bun run lint -f json > /tmp/webhooks-endpoint-row-lint.json`
+  - `bun run build`
+  - `git diff --check`
+  - `bun run audit:seal-vortex-hosted-outcomes-boundary`
+  - `bun run audit:seal-vortex-sandbox-settlement-boundary`
+  - `bun run audit:seal-vortex-launch-boundary`
+- No git push has been performed from this branch. Remote push still requires explicit human confirmation.
+- Remote review is not open yet: inspect the current local-vs-staging count with `git rev-list --left-right --count origin/staging...HEAD`; `origin/codex/sea-557-provider-neutral-data-contracts` does not exist, and there is no open PR for this branch. PR #480 is merged historical work and does not contain the current proof-boundary branch head.
 
-## Proven For SaaS Billing
+## Replacement Proof State
 
-- `prove:seal-saas-checkout-vortex`
-  - Vortex hosted checkout URL returned.
-  - Seal Pro monthly resolved to `vtx_price_seal_pro_monthly_v2`.
-  - Amount was 1900 USD cents.
+- Account and organization creation is anchored in Vortex Auth and does not create legacy payment-provider state.
+- `bun run prove:seal-account-onboarding-vortex-local` proves account creation, Vortex Auth anchoring, retired merchant-surface blocking, charges-ready merchant resolution, and Vortex payable request mapping without live mutation.
+- Merchant onboarding and settings paths route through Vortex-owned actions for Vortex document-payment organizations.
+- SaaS checkout, subscription webhook projection, catalog, and coupon paths are Vortex-backed.
+- `bun run prove:seal-saas-vortex-local` proves the non-mutating SaaS checkout, catalog-price resolver, coupon, portal, and lifecycle guard replacement paths.
+- Document payable creation through Vortex is proven locally and in sandbox for the current supported path.
+- Hosted Vortex payment capture has projected into Seal as paid and completed the waiting document.
+- Failed hosted payment recovery is proven: failed outcome marks the invoice uncollectible, starts dunning once, ignores duplicate failures, and cancels dunning after a later paid event.
+- `bun run audit:seal-vortex-hosted-outcomes-boundary` statically preserves the checked-in paid capture, failed recovery, dunning, idempotency, and settlement-boundary proof artifact without calling live systems.
 
-- `prove:seal-saas-webhook-billing-state`
-  - Vortex subscription webhook projection processed.
-  - Billing settings show active Pro.
-  - `activeStripeIdPresent` is false.
+## Not Done
 
-- `prove:seal-saas-stripe-lifecycle-guard`
-  - Stripe org-created lifecycle skipped under `vortex_billing`.
-  - Stripe seat sync skipped.
-  - No Stripe customer/subscription was created.
+- The local branch has not been pushed or merged; it is currently local-only with no remote branch and no open PR. Inspect the current ahead count with `git rev-list --left-right --count origin/staging...HEAD`.
+- Sandbox document-payment settlement is not proven fully settled yet.
+- `bun run audit:seal-vortex-sandbox-settlement-boundary` preserves the captured sandbox payment ids, earliest reconciliation timestamp, the Vortex final sandbox launch gate, and settlement commands without calling Convex, Finix, or reconciliation. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
+- Production Seal Vortex document-payment routing is configured for the MCP production workspace only.
+- Production real-money proof is not complete.
+- Widening the document-payment allowlist and retiring external production webhooks is blocked until production proof passes.
+- Read-only production data audit on 2026-07-08 found the old provider webhook-events table still has 22 rows; the old provider account table is empty, and checked active tables had no retired-token docs or were empty. Agents must not retire this production residue until production proof passes.
+- New live document-payment proof runs seed `VORTEX_BILLING_DOCUMENT_*` maps instead of shared SaaS maps.
+- Vortex proof scripts that call the Vortex Payments checkout accept `VORTEX_PAYMENTS_REPO_ROOT` when the sibling checkout is not at `../vortex-payments`.
+- `bun run prove:seal-vortex-migration-local` statically fails if known live or env-mutating proof commands are added to the local non-mutating gate.
+- `bun run prove:seal-vortex-migration-local` statically fails if live/dev Vortex proof scripts replace existing Vortex map env values instead of merging updates into those maps.
+- `bun run prove:seal-vortex-migration-local` now includes the production proof boundary audit, so launch readiness stays false until production proof and post-proof retirement evidence are checked in.
+- `bun run prove:seal-vortex-migration-local` now includes the production proof boundary self-proof, so malformed production proof notes cannot silently satisfy launch readiness.
 
-- Staging browser check:
-  - Billing settings page rendered on staging.
-  - `getAvailablePlans` returned the Vortex-backed Seal Professional catalog.
+## Production Readiness Audit
 
-## Newly Proven For Document Payments
+Latest production config audit command:
 
-- Targeted backend proof:
-  - Command: `cd apps/backend && bun run test convex/vortex_billing/__tests__/webhook_projection.test.ts`
-  - Result: 16 tests passed.
-  - New coverage: Vortex `payable_object.updated` paid projection updates Seal payment state, patches Vortex lineage, marks the document invoice paid, and completes a waiting document.
-  - New coverage: failed projection marks the Seal payment failed, marks the invoice uncollectible, and starts invoice dunning.
-  - New coverage: unknown payable IDs are ignored without writing a webhook dedupe row.
+```bash
+bun run audit:seal-vortex-production-readiness
+```
 
-- Adoption proofs still pass:
-  - `bun run prove:vortex-payments-backend-adapter-adoption`
-  - `bun run prove:vortex-operational-payments-adoption`
+Current result from the latest agent refresh: failing only on missing Vortex Finix production credentials, without printing secret values.
+The audit checks required production names plus safe value shape/runtime expectations for any values that are present. It prints remediation commands with exact deployment-scoped `convex env set` shapes and placeholders for missing values, plus machine-readable `agentAllowedActions`, `operatorControlledActions`, and `successCriteria`. If the sibling Vortex checkout is not at `../vortex-payments`, set `VORTEX_PAYMENTS_REPO_ROOT`.
 
-- First-class local document-payment proof now exists:
-  - `bun run prove:seal-document-payment-vortex-local`
-  - Boundary: local Seal-side document payment proof only; live sandbox card payment, platform-fee movement, settlements, and payouts still require live proof.
+Non-mutating launch-boundary wrapper:
 
-- Live payable-creation harness now exists:
-  - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
-  - Boundary: creates a live Vortex-hosted document payment link and verifies Seal stores awaiting Vortex invoice state. It still does not pay the card or prove settlement/payout reconciliation.
-  - Status: passed by Shlomo on 2026-07-07.
-  - Current proof run: `mrapd8pd_plvbr7`.
-  - Seal organization: `nh786p4dd411z53axac9yvmzdd8a2x7e`.
-  - Seal document: `m17dg8d6ed374e579nqk0n59en8a3sky`.
-  - Vortex payable: `payable_mrapdlpe_1o2l1to3`.
-  - Hosted payment URL: `https://notable-leopard-969.convex.site/pay/pay_Ndq_9H6WHLF28px1beIF5LIbz9mHJCUAMFLz4LEPjXI`.
-  - Amount: 4200 USD cents.
-  - Seal state after creation: payment `awaiting`, invoice `open`, provider `vortex_billing`, document workflow `waiting_for_payment`.
+```bash
+bun run audit:seal-vortex-launch-boundary
+```
 
-## Not Proven Yet
+This wrapper passes only when the sandbox settlement handoff is intact and production readiness is either green or blocked only by the known production configuration names listed below. It fails on invalid present production config, unexpected missing env names, remediation commands that omit missing env names, or remediation commands that include non-missing env names.
+It also includes the production proof boundary and cannot become launch-ready until production money proof and post-proof external residue retirement evidence are recorded in `docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md`.
 
-Do not call full Stripe replacement done until this exists:
+Configured Seal production document-payment names:
 
-1. Seal creates document-payment Vortex payables for all real payment types:
-   - one-time
-   - recurring
-   - installments
-   - deposit/balance
-2. Recurring, installments, and deposit/balance get the same live creation proof as one-time.
-3. A sandbox Vortex payment is actually paid, not only projected through a seeded webhook state.
-4. Platform fee handling is proven on the payable request and through the resulting money movement.
-5. The merchant operational surface reads real Vortex public settlements, payouts, and payout profile data for the same merchant path.
-6. The proof stays inside Seal to Vortex public APIs. No direct Finix dependency from Seal.
+- `VORTEX_BILLING_PAYMENTS_ENVIRONMENT=production`
+- `VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS=["jd79vzsynmb6absn1f9adpa4t987x1tz"]`
+- `VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP={"jd79vzsynmb6absn1f9adpa4t987x1tz":"bacc_seal_prod_mcp_org_saas_dry_run"}`
+- `VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP={"jd79vzsynmb6absn1f9adpa4t987x1tz":"vtx_cust_seal_org_jd79vzsynmb6absn1f9adpa4t987x1tz"}`
+- `VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP={"jd79vzsynmb6absn1f9adpa4t987x1tz":"ma_seal_prod_mcp_saas_dry_run"}`
+- `VORTEX_BILLING_DOCUMENT_PRICE_ID=vtx_price_seal_prod_mcp_document_one_time_20260708`
 
-## Single Biggest Limiter
+Missing Vortex production names:
 
-The biggest limiter is not more SaaS billing polish.
+- `FINIX_PRODUCTION_USERNAME`
+- `FINIX_PRODUCTION_PASSWORD`
+- `FINIX_PRODUCTION_APPLICATION_ID`
+- `FINIX_PRODUCTION_WEBHOOK_SECRET`
 
-The biggest limiter is one end-to-end document-payment money-path proof: pay the Vortex-hosted document payment, verify the real webhook projection back into Seal, and verify payout/settlement visibility for the merchant path.
+Configured Vortex production setup:
 
-Current code now proves the Seal-side webhook state transition locally and one-time live Vortex payable creation. That is progress, but it is still not enough for launch because the card payment, platform-fee movement, and settlement/payout visibility are not tied together in one proof.
+- `VORTEX_PAYMENTS_RUNTIME_MODE=finix`
+- Product `vtx_prod_seal_prod_mcp_document_payments_20260708`
+- Price `vtx_price_seal_prod_mcp_document_one_time_20260708`
 
-Paid-state checks failed because both Seal and Vortex still showed the proof payable as unpaid:
+Latest non-mutating refresh results recorded on this branch:
 
-- Seal payment state: `awaiting`
-- Vortex payable state: `awaiting_payment`
-- Vortex amount paid: 0
-- Vortex amount remaining: 4200
+- `bun run prove:zero-retired-provider-residue` passed and scans owned hidden env/config content.
+- Explicit hidden/no-ignore owned working-tree legacy-provider token scan returned no matches.
+- `bun run verify` passed.
+- `bun run test` passed with 74 test files and 1370 tests.
+- `bun run typecheck` passed.
+- `bun run lint -f json > /tmp/webhooks-endpoint-row-lint.json` passed; parsed diagnostics total: `0`.
+- `bun run build` passed.
+- `git diff --check` passed.
+- `bun run prove:seal-account-onboarding-vortex-local` passed with 4 files and 13 tests.
+- `bun run prove:seal-vortex-onboarding-wiring` passed against `dev:clever-goose-484` and `dev:notable-leopard-969`; hosted onboarding reconciled to Vortex, `chargesEnabled: true`, the Seal resolver returned the Vortex merchant account, and the payout profile reported net daily next-day ACH.
+- `bun run prove:vortex-billing-settings-adoption` passed.
+- `bun run prove:vortex-payments-settings-adoption` passed.
+- `bun run prove:vortex-merchant-settings-adoption` passed.
+- `bun run prove:seal-saas-vortex-local` passed with 2 files and 23 tests.
+- `bun run prove:seal-catalog-from-vortex` passed against `dev:clever-goose-484` and Vortex `https://notable-leopard-969.convex.site`; synced 16 products and 22 prices and preserved Vortex-shaped entitlement safety.
+- `bun run prove:seal-coupons-vortex` passed against Vortex public catalog/customer/checkout/coupon APIs; discounted checkout total was 3750 from a 5000 price, invalid promo code created no checkout, and no-code checkout stayed at 5000.
+- `bun run prove:seal-saas-checkout-vortex` passed against `dev:clever-goose-484` and `dev:notable-leopard-969`; checkout used `pro:monthly:v2`, Vortex price `vtx_price_seal_pro_monthly_v2`, and returned a hosted Vortex `/pay/` URL for 1900.
+- A 2026-07-08 live-proof rerun caught and fixed coupon-proof environment drift: the coupon proof temporarily clobbered `VORTEX_BILLING_SAAS_PRICE_MAP`, the non-production `dev:clever-goose-484` map was repaired to include `pro:monthly:v2`, and the patched coupon proof was rerun immediately before `bun run prove:seal-saas-checkout-vortex`; both passed, proving coupons no longer break SaaS checkout.
+- `bun run prove:vortex-saas-webhook-projection` passed with 3 files and 22 tests.
+- `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-saas-webhook-billing-state` passed after syncing current Convex code; result projected Vortex-shaped customer/subscription/price ids and reported `activeNonVortexProviderIdPresent: false`.
+- `bun run prove:seal-document-payment-vortex-local` passed.
+- `bun run prove:vortex-operational-payments-adoption` passed.
+- `bun run prove:vortex-payments-backend-adapter-adoption` passed.
+- `bun run prove:seal-vortex-migration-local` passed.
+- `bun run prove:seal-vortex-migration-local` now includes the Vortex-shaped catalog entitlement safety guard.
+- `bun run prove:seal-vortex-migration-local` now includes the Vortex proof env-map merge guard, preventing the coupon/checkout/document-payment proof scripts from clobbering existing Vortex map values.
+- `bun run audit:seal-vortex-hosted-outcomes-boundary` passed.
+- `bun run audit:seal-vortex-sandbox-settlement-boundary` passed with readiness window still reported as `waiting` and `earliestReconcileAt` preserved as `2026-07-08T18:12:06.10Z`.
+- `bun run audit:seal-vortex-production-proof-boundary` passed as a non-mutating guard and reported `productionMoneyProofComplete: false`, `postProofRetirementComplete: false`, and `goLiveProofComplete: false` because the checked-in production go-live proof artifact does not exist yet.
+- `bun run prove:seal-vortex-production-proof-boundary` passed and proved missing, incomplete, money-proof-only, and full go-live proof artifact cases.
+- `bun run audit:seal-vortex-launch-boundary` passed as a non-mutating guard and now reports `launchReady: false`, waiting on `settlement_proof`, `production_config`, and `production_live_money_proof`, while surfacing the sandbox, production config, production proof, and post-proof retirement boundaries.
+- `bun run audit:seal-vortex-production-readiness` failed only on the known missing production names listed above and prints the agent-allowed actions, operator-controlled actions, and production success criteria without secret values.
+- Branch worktree was clean after the latest recorded verification.
 
-That is not a webhook bug yet. The checkout has to be paid first.
+## Current Proof Boundary
 
-Browser payment attempt exposed one more proof-harness bug: the document-payment live proof created the Vortex billing account with `collectionMode: "manual"` and `autoCollectionEnabled: false`, so the hosted pay page refused to collect. The SaaS checkout proof already used `automatic`/`true`. The document-payment proof must do the same for the hosted-card money path.
+Agents may prepare commands, audits, proof harnesses, production config, and non-money Vortex/Seal setup records.
 
-## Immediate Execution Plan
+Agents must not run:
 
-1. Keep the document-payment proof scripts under `scripts/`.
-2. Reuse existing Convex proof helpers in `apps/backend/convex/vortex_billing/proof_actions.ts`.
-3. One-time live creation passed with:
-   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-live`
-4. Extend the live harness to recurring/installments/deposit-balance.
-5. Generate a fresh hosted checkout after the automatic-collection proof fix.
-6. Pay the fresh hosted checkout.
-7. Assert the resulting webhook projection with:
-   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state`
-   - Or explicitly:
-   - `SEAL_CONVEX_DEPLOYMENT=dev:clever-goose-484 bun run prove:seal-document-payment-vortex-paid-state -- --vortex-payable-id payable_mrapdlpe_1o2l1to3 --hosted-invoice-url https://notable-leopard-969.convex.site/pay/pay_Ndq_9H6WHLF28px1beIF5LIbz9mHJCUAMFLz4LEPjXI`
-8. Prove platform-fee settlement and merchant payout visibility for the same merchant path.
-9. Assert Stripe absence explicitly where the state shape exposes it.
-10. Keep local proof green:
-   - `bun run prove:seal-document-payment-vortex-local`
+- live card payment commands,
+- production money movement,
+- settlement or payout proof commands that reconcile live money state,
+- production document-payment allowlist widening,
+- external production webhook retirement,
+- remote git push without explicit confirmation.
 
-## Guardrails
+## Next Action
 
-- Do not broaden back into SaaS subscription work unless a regression appears.
-- Do not claim document payments are launch-ready from static adoption checks alone.
-- Do not use direct Finix reads from Seal.
-- Do not reintroduce public Stripe actions or Stripe-shaped browser state.
-- Do not run production Convex deploy from this thread.
+Work SEA-562:
 
-## Status
-
-SaaS subscription billing via Vortex: staging-ready.
-
-Full Seal Stripe replacement: not launch-ready.
-
-Next proof target: paid Vortex-hosted document checkout plus merchant payout/settlement visibility.
+1. Keep this repo doc and Linear synchronized with current proof.
+2. Preserve the exact sandbox settlement command from `docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md`.
+3. Run non-mutating local proof gates only:
+   - `bun run prove:seal-vortex-migration-local`
+   - `bun run audit:seal-vortex-hosted-outcomes-boundary`
+   - `bun run audit:seal-vortex-sandbox-settlement-boundary`
+   - `bun run audit:seal-vortex-production-readiness`
+   - `bun run audit:seal-vortex-production-proof-boundary`
+   - `bun run prove:seal-vortex-production-proof-boundary`
+   - `bun run audit:seal-vortex-launch-boundary`
+4. Do not mark launch readiness complete until settled sandbox proof and production proof both pass.

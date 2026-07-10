@@ -2,22 +2,13 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { createCheckoutSession, createCustomerPortalSession } from "./subscription_actions";
-
-const stripeProcessorMocks = vi.hoisted(() => ({
-  cancelProcessorSubscription: vi.fn(),
-  createCustomerPortalUrl: vi.fn(
-    async (): Promise<string> => "https://billing.stripe.test/session",
-  ),
-  createHostedCheckoutSession: vi.fn(
-    async (): Promise<string> => "https://checkout.stripe.test/session",
-  ),
-  getOrCreateBillingCustomerId: vi.fn(async (): Promise<string> => "cus_created"),
-  pauseProcessorSubscription: vi.fn(),
-  resumeProcessorSubscription: vi.fn(),
-}));
-
-vi.mock("../stripe/subscription_processor", () => stripeProcessorMocks);
+import {
+  cancelSubscription,
+  createCheckoutSession,
+  createCustomerPortalSession,
+  pauseSubscription,
+  resumeSubscription,
+} from "./subscription_actions";
 
 type CheckoutArgs = {
   readonly lookupKey: string;
@@ -38,6 +29,18 @@ type PortalHandler = (
 const portalHandler = (
   createCustomerPortalSession as unknown as { readonly _handler: PortalHandler }
 )._handler;
+
+type LifecycleHandler = (
+  ctx: ActionCtx,
+  args: { readonly slug: string; readonly subscriptionId: string },
+) => Promise<unknown>;
+
+const pauseHandler = (pauseSubscription as unknown as { readonly _handler: LifecycleHandler })
+  ._handler;
+const resumeHandler = (resumeSubscription as unknown as { readonly _handler: LifecycleHandler })
+  ._handler;
+const cancelHandler = (cancelSubscription as unknown as { readonly _handler: LifecycleHandler })
+  ._handler;
 
 const organizationId = "org_seal_123" as Id<"organizations">;
 const baseCheckoutArgs = {
@@ -65,8 +68,7 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     vi.restoreAllMocks();
   });
 
-  test("lets Vortex Billing checkout use the synced Vortex catalog without a local Stripe price row", async () => {
-    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+  test("uses the synced Vortex catalog without a local legacy price row", async () => {
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
@@ -125,7 +127,6 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
   });
 
   test("fails closed on Vortex Billing when the local catalog price is missing", async () => {
-    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
@@ -140,17 +141,7 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
 
-  test("keeps Stripe checkout closed when the local price row is missing", async () => {
-    const ctx = createCheckoutActionCtx({ priceLookupResult: null });
-
-    await expect(checkoutHandler(ctx, baseCheckoutArgs)).rejects.toThrow(
-      "Price not found for lookup key: pro:monthly:v2",
-    );
-    expect(ctx.runMutation).toHaveBeenCalledOnce();
-  });
-
   test("fails closed on Vortex Billing when the lookup key is not in the Vortex price map", async () => {
-    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
@@ -235,8 +226,7 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
     vi.restoreAllMocks();
   });
 
-  test("returns a Vortex billing portal for Vortex-billed orgs without a stray Stripe customer", async () => {
-    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+  test("returns a Vortex billing portal without a local legacy customer", async () => {
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_CUSTOMER_MAP = JSON.stringify({
@@ -263,26 +253,65 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
     await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({
       url: "https://pay.vortex.test/portal/plink_123",
     });
-    // The Stripe-customer resolution mutation must never run for a Vortex org.
     expect(ctx.runMutation).not.toHaveBeenCalled();
-    expect(stripeProcessorMocks.getOrCreateBillingCustomerId).not.toHaveBeenCalled();
-    expect(stripeProcessorMocks.createCustomerPortalUrl).not.toHaveBeenCalled();
   });
 
-  test("keeps non-allowlisted orgs on the Stripe billing portal path", async () => {
+  test("uses Vortex portal even when no billing allowlist is configured", async () => {
+    process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
+    process.env.VORTEX_BILLING_API_KEY = "vb_test";
+    process.env.VORTEX_BILLING_CUSTOMER_MAP = JSON.stringify({
+      [organizationId]: "vtx_cust_mapped",
+    });
+    const mockFetch: typeof fetch = Object.assign(
+      async (): Promise<Response> =>
+        new Response(
+          JSON.stringify({
+            data: {
+              link: {
+                url: "https://pay.vortex.test/portal/default",
+              },
+            },
+          }),
+          { status: 201, headers: { "content-type": "application/json" } },
+        ),
+      { preconnect: fetch.preconnect },
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
     const ctx = createCheckoutActionCtx({
       priceLookupResult: null,
-      organizationOverrides: { stripeCustomerId: "cus_existing" },
+      organizationOverrides: { billingCustomerId: "cus_existing" },
     });
 
     await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({
-      url: "https://billing.stripe.test/session",
+      url: "https://pay.vortex.test/portal/default",
     });
-    expect(stripeProcessorMocks.createCustomerPortalUrl).toHaveBeenCalledWith({
-      customerId: "cus_existing",
-      returnUrl: "https://seal.test/billing",
-    });
-    expect(stripeProcessorMocks.getOrCreateBillingCustomerId).not.toHaveBeenCalled();
     expect(ctx.runMutation).not.toHaveBeenCalled();
+  });
+});
+
+describe("payments/subscription_actions Vortex lifecycle guards", () => {
+  const lifecycleCtx = {} as ActionCtx;
+  const lifecycleArgs = {
+    slug: "seal-test-org",
+    subscriptionId: "vtx_sub_seal_org_org_seal_123_pro_monthly_v2",
+  };
+
+  test("blocks pause locally until Vortex Billing owns the lifecycle action", async () => {
+    await expect(pauseHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
+      "Subscription pause must be handled by Vortex Billing",
+    );
+  });
+
+  test("blocks resume locally until Vortex Billing owns the lifecycle action", async () => {
+    await expect(resumeHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
+      "Subscription resume must be handled by Vortex Billing",
+    );
+  });
+
+  test("blocks cancellation locally until Vortex Billing owns the lifecycle action", async () => {
+    await expect(cancelHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
+      "Subscription cancellation must be handled by Vortex Billing",
+    );
   });
 });

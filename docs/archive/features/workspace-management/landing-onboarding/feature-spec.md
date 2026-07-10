@@ -24,7 +24,7 @@
 
 ## Design Philosophy
 
-- Stripe-inspired minimalist aesthetic
+- retired provider-inspired minimalist aesthetic
 - Focus on getting users to success quickly
 - Progressive disclosure of features
 - Clear progress indicators
@@ -52,9 +52,9 @@
 
 ### Core Edge Cases
 
-#### Marketing Landing Page (Stripe-Style)
+#### Marketing Landing Page (retired provider-Style)
 
-- [ ] **Clean, developer-focused design**: Minimalist aesthetic like Stripe
+- [ ] **Clean, developer-focused design**: Minimalist aesthetic like retired provider
   - Clean typography and generous white space
   - Monochromatic palette with subtle accent colors
   - Developer-friendly messaging and code examples

@@ -53,7 +53,9 @@ export type CollectTaxedInvoiceResult = {
 
 export function createVortexBillingFacade(client: VortexBillingTaxCollectionClient) {
   return {
-    async collectTaxedInvoice(command: CollectTaxedInvoiceCommand): Promise<CollectTaxedInvoiceResult> {
+    async collectTaxedInvoice(
+      command: CollectTaxedInvoiceCommand,
+    ): Promise<CollectTaxedInvoiceResult> {
       const idempotencyKeyPrefix = command.idempotencyKeyPrefix ?? `invoice:${command.invoiceId}`;
       const params = { invoiceId: command.invoiceId };
       const taxQuote = await client.quoteInvoiceTax(

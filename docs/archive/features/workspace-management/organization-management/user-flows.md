@@ -30,7 +30,7 @@
     ↓
 □ Workspace Creation Success
     ├─ Organization created
-    ├─ Stripe subscription initialized
+    ├─ retired provider subscription initialized
     ├─ User granted owner permissions
     └─ Redirect to workspace dashboard
 ```
@@ -170,7 +170,7 @@
     ↓
 □ Transfer Execution
     ├─ Role updates (atomic)
-    ├─ Stripe billing ownership transfer
+    ├─ retired provider billing ownership transfer
     ├─ Convex updates all workspace data instantly
     └─ Comprehensive audit log entry
     ↓
@@ -334,7 +334,7 @@
 - **Context Switching**: Permission refresh when changing workspaces
 - **Audit Integration**: All role changes logged for compliance
 
-### Stripe Billing Integration
+### retired provider Billing Integration
 
 - **Per-Workspace Billing**: Independent subscriptions for each workspace
 - **Seat-Based Pricing**: $10/month per member seat model

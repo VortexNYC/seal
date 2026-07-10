@@ -1,9 +1,4 @@
-import type {
-  Environment,
-  IsoTimestamp,
-  Metadata,
-  RawProcessorWebhookId,
-} from "./common";
+import type { Environment, IsoTimestamp, Metadata, RawProcessorWebhookId } from "./common";
 
 export type WebhookEndpointId = string;
 export type WebhookDeliveryId = string;
@@ -24,11 +19,7 @@ export interface WebhookEndpoint {
   readonly updatedAt: IsoTimestamp;
 }
 
-export type WebhookDeliveryStatus =
-  | "pending"
-  | "delivered"
-  | "failed"
-  | "discarded";
+export type WebhookDeliveryStatus = "pending" | "delivered" | "failed" | "discarded";
 
 export interface WebhookDelivery {
   readonly id: WebhookDeliveryId;

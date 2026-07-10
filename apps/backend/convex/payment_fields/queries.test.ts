@@ -277,11 +277,11 @@ describe("Payment field queries", () => {
     });
   });
 
-  describe("by_stripe_subscription index", () => {
-    test("can look up config by stripeSubscriptionId", async () => {
+  describe("by_provider_subscription index", () => {
+    test("can look up config by providerSubscriptionId", async () => {
       const subscriptionId = "sub_index_test_456";
 
-      // Insert a config with a stripeSubscriptionId
+      // Insert a config with a providerSubscriptionId
       const configId = await t.run(async (ctx) => {
         return await ctx.db.insert("payment_field_configs", {
           fieldId: paymentFieldId,
@@ -301,7 +301,7 @@ describe("Payment field queries", () => {
           taxEnabled: false,
           totalAmountCents: 10000,
           paymentStatus: "awaiting",
-          stripeSubscriptionId: subscriptionId,
+          providerSubscriptionId: subscriptionId,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         });
@@ -311,13 +311,15 @@ describe("Payment field queries", () => {
       const result = await t.run(async (ctx) => {
         return await ctx.db
           .query("payment_field_configs")
-          .withIndex("by_stripe_subscription", (q) => q.eq("stripeSubscriptionId", subscriptionId))
+          .withIndex("by_provider_subscription", (q) =>
+            q.eq("providerSubscriptionId", subscriptionId),
+          )
           .first();
       });
 
       expect(result).toBeDefined();
       expect(result?._id).toBe(configId);
-      expect(result?.stripeSubscriptionId).toBe(subscriptionId);
+      expect(result?.providerSubscriptionId).toBe(subscriptionId);
       expect(result?.paymentType).toBe("recurring");
     });
 
@@ -325,8 +327,8 @@ describe("Payment field queries", () => {
       const result = await t.run(async (ctx) => {
         return await ctx.db
           .query("payment_field_configs")
-          .withIndex("by_stripe_subscription", (q) =>
-            q.eq("stripeSubscriptionId", "sub_nonexistent"),
+          .withIndex("by_provider_subscription", (q) =>
+            q.eq("providerSubscriptionId", "sub_nonexistent"),
           )
           .first();
       });

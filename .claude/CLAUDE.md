@@ -81,6 +81,7 @@ bun run format:changed:check
 bun run check:preferred-stack
 bun run build
 bun run test
+bun run verify:seal-vortex-migration
 bun run auth:check
 bun run auth:preflight
 ```
@@ -104,7 +105,7 @@ No generated commands. Add `instructions.verificationCommands` to `vortex.projec
 Cloud agents clone only this repo. Assume there is no sibling checkout, no global Codex or Claude config, no local secrets file, no 1Password, no Touch ID, and no interactive browser login unless the environment explicitly provides it.
 
 - Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.
-- Use staging for Stripe Connect, subscriptions, webhooks, billing, and payment verification.
+- Use staging for Vortex payments, subscriptions, webhooks, billing, and payment verification.
 - Do not target the retired self-hosted Convex URLs.
 
 ## Local Sessions

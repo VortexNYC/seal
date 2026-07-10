@@ -1,4 +1,9 @@
-import type { Environment, MerchantAccountId, PlatformTenantId, ProcessorRef } from "../../domain/common";
+import type {
+  Environment,
+  MerchantAccountId,
+  PlatformTenantId,
+  ProcessorRef,
+} from "../../domain/common";
 import type {
   MerchantRateAssignment,
   MerchantRateAssignmentId,
@@ -39,13 +44,23 @@ export interface AssignMerchantRatePlanInput {
 
 export interface PaymentRatePlanRepository {
   getById(id: PaymentRatePlanId, environment: Environment): Promise<PaymentRatePlan | null>;
-  getLatestByCode(environment: Environment, tenantId: PlatformTenantId, code: string): Promise<PaymentRatePlan | null>;
+  getLatestByCode(
+    environment: Environment,
+    tenantId: PlatformTenantId,
+    code: string,
+  ): Promise<PaymentRatePlan | null>;
   save(record: PaymentRatePlan): Promise<void>;
 }
 
 export interface MerchantRateAssignmentRepository {
-  getById(id: MerchantRateAssignmentId, environment: Environment): Promise<MerchantRateAssignment | null>;
-  getActiveByMerchant(environment: Environment, merchantAccountId: MerchantAccountId): Promise<MerchantRateAssignment | null>;
+  getById(
+    id: MerchantRateAssignmentId,
+    environment: Environment,
+  ): Promise<MerchantRateAssignment | null>;
+  getActiveByMerchant(
+    environment: Environment,
+    merchantAccountId: MerchantAccountId,
+  ): Promise<MerchantRateAssignment | null>;
   save(record: MerchantRateAssignment): Promise<void>;
 }
 
@@ -61,7 +76,10 @@ export interface ProviderMerchantRateAssignmentResult {
 }
 
 export interface PaymentRatesProviderPort {
-  createFeeProfile(plan: PaymentRatePlan, input?: { readonly idempotencyKey?: string }): Promise<ProviderRatePlanSyncResult>;
+  createFeeProfile(
+    plan: PaymentRatePlan,
+    input?: { readonly idempotencyKey?: string },
+  ): Promise<ProviderRatePlanSyncResult>;
   assignMerchantFeeProfile(input: {
     readonly assignment: MerchantRateAssignment;
     readonly plan: PaymentRatePlan;

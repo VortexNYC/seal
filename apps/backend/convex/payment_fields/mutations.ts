@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, mutation, type MutationCtx } from "../_generated/server";
 import {
   dueDateTermsTuple,
@@ -31,8 +31,8 @@ const lineItemArg = v.object({
   description: v.string(),
   quantity: v.number(),
   unitPrice: v.number(),
-  stripeProductId: v.optional(v.string()),
-  stripePriceId: v.optional(v.string()),
+  providerProductId: v.optional(v.string()),
+  providerPriceId: v.optional(v.string()),
 });
 
 const lateFeeArg = v.object({
@@ -207,15 +207,15 @@ export const deletePaymentConfig = mutation({
 });
 
 /**
- * Update payment status (called by Stripe webhook handlers).
+ * Update payment status (called by Vortex Billing webhook handlers).
  */
 export const updatePaymentStatus = mutation({
   args: {
     configId: v.id("payment_field_configs"),
     paymentStatus: paymentStatusTuple,
-    stripeInvoiceId: v.optional(v.string()),
-    stripeSubscriptionId: v.optional(v.string()),
-    stripePaymentIntentId: v.optional(v.string()),
+    providerInvoiceId: v.optional(v.string()),
+    providerSubscriptionId: v.optional(v.string()),
+    providerPaymentIntentId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config = await ctx.db.get(args.configId);
@@ -225,12 +225,12 @@ export const updatePaymentStatus = mutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
-      ...(args.stripeInvoiceId !== undefined && { stripeInvoiceId: args.stripeInvoiceId }),
-      ...(args.stripeSubscriptionId !== undefined && {
-        stripeSubscriptionId: args.stripeSubscriptionId,
+      ...(args.providerInvoiceId !== undefined && { providerInvoiceId: args.providerInvoiceId }),
+      ...(args.providerSubscriptionId !== undefined && {
+        providerSubscriptionId: args.providerSubscriptionId,
       }),
-      ...(args.stripePaymentIntentId !== undefined && {
-        stripePaymentIntentId: args.stripePaymentIntentId,
+      ...(args.providerPaymentIntentId !== undefined && {
+        providerPaymentIntentId: args.providerPaymentIntentId,
       }),
       updatedAt: Date.now(),
     });
@@ -240,13 +240,13 @@ export const updatePaymentStatus = mutation({
 });
 
 /**
- * Internal mutation to update payment status from Stripe webhook handlers.
- * Looks up the config by stripeInvoiceId (set during the send flow).
+ * Internal mutation to update payment status from Vortex Billing webhook handlers.
+ * Looks up the config by providerInvoiceId (set during the send flow).
  * Returns the config ID and documentId if found, or null if not found.
  */
-export const updatePaymentStatusFromWebhook = internalMutation({
+export const updatePaymentStatusFromProviderInvoice = internalMutation({
   args: {
-    stripeInvoiceId: v.string(),
+    providerInvoiceId: v.string(),
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
@@ -261,14 +261,14 @@ export const updatePaymentStatusFromWebhook = internalMutation({
 
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
       .first();
 
     // Always look up document_invoices — cycle 2+ invoices may exist here
     // even when config doesn't match (config stores the initial invoice ID)
     const invoiceRecord = await ctx.db
       .query("document_invoices")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
       .first();
 
     if (config) {
@@ -309,6 +309,22 @@ type PaymentWebhookUpdateResult = {
   readonly configId: Id<"payment_field_configs"> | undefined;
   readonly documentId: Id<"documents"> | undefined;
   readonly invoiceRecordId: Id<"document_invoices"> | undefined;
+};
+
+type PaymentFieldConfig = Doc<"payment_field_configs">;
+type DocumentInvoice = Doc<"document_invoices">;
+
+type VortexPaymentWebhookRecords = {
+  readonly config: PaymentFieldConfig | null;
+  readonly invoiceRecord: DocumentInvoice | null;
+};
+
+type DocumentInvoicePatch = {
+  readonly status: DocumentInvoiceWebhookStatus;
+  readonly paidAt?: number;
+  readonly voidedAt?: number;
+  readonly finalizedAt?: number;
+  readonly updatedAt: number;
 };
 
 const documentInvoiceStatusByPaymentStatus: Partial<
@@ -363,83 +379,132 @@ export async function updateVortexPaymentStatusFromWebhookInDb(
 ): Promise<PaymentWebhookUpdateResult | null> {
   const now = Date.now();
   const invoiceStatus = documentInvoiceStatusByPaymentStatus[args.paymentStatus];
+  const { config, invoiceRecord } = await getVortexPaymentWebhookRecords(ctx, args.vortexPayableId);
 
-  // Correlate strictly by vortexPayableId. The by_vortex_payable indexes are not unique, so a
-  // money webhook must FAIL CLOSED on any ambiguity rather than "join by hope": refuse if a payable
-  // id maps to more than one config/invoice, or if the config and invoice disagree on the document
-  // (a document belongs to exactly one org, so a documentId match is the tenant/correlation guard).
+  if (!config && !invoiceRecord) return null;
+  assertVortexWebhookDocumentMatch(config, invoiceRecord, args.vortexPayableId);
+  if (shouldSkipInvoiceWebhookUpdate(invoiceRecord, invoiceStatus)) {
+    return paymentWebhookUpdateResult(config, invoiceRecord);
+  }
+  if (shouldSkipConfigWebhookUpdate(config, invoiceRecord, args.paymentStatus)) {
+    return paymentWebhookUpdateResult(config, invoiceRecord);
+  }
+
+  if (config) await patchPaymentConfigStatus(ctx, config, args.paymentStatus, now);
+  if (invoiceRecord && invoiceStatus !== undefined) {
+    await patchDocumentInvoiceStatus(ctx, invoiceRecord, invoiceStatus, now);
+  }
+
+  return paymentWebhookUpdateResult(config, invoiceRecord);
+}
+
+async function getVortexPaymentWebhookRecords(
+  ctx: Pick<MutationCtx, "db">,
+  vortexPayableId: string,
+): Promise<VortexPaymentWebhookRecords> {
   const configMatches = await ctx.db
     .query("payment_field_configs")
-    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
     .collect();
-  if (configMatches.length > 1) {
-    throw new Error(`ambiguous vortexPayableId across payment_field_configs: ${args.vortexPayableId}`);
-  }
-  const config = configMatches[0] ?? null;
+  assertUniqueVortexPayableMatch("payment_field_configs", vortexPayableId, configMatches.length);
 
   const invoiceMatches = await ctx.db
     .query("document_invoices")
-    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
     .collect();
-  if (invoiceMatches.length > 1) {
-    throw new Error(`ambiguous vortexPayableId across document_invoices: ${args.vortexPayableId}`);
-  }
-  const invoiceRecord = invoiceMatches[0] ?? null;
 
-  if (!config && !invoiceRecord) {
-    return null;
-  }
+  assertUniqueVortexPayableMatch("document_invoices", vortexPayableId, invoiceMatches.length);
 
+  return {
+    config: configMatches[0] ?? null,
+    invoiceRecord: invoiceMatches[0] ?? null,
+  };
+}
+
+function assertUniqueVortexPayableMatch(
+  tableName: "payment_field_configs" | "document_invoices",
+  vortexPayableId: string,
+  matchCount: number,
+) {
+  if (matchCount > 1) {
+    throw new Error(`ambiguous vortexPayableId across ${tableName}: ${vortexPayableId}`);
+  }
+}
+
+function assertVortexWebhookDocumentMatch(
+  config: PaymentFieldConfig | null,
+  invoiceRecord: DocumentInvoice | null,
+  vortexPayableId: string,
+) {
   if (config && invoiceRecord && config.documentId !== invoiceRecord.documentId) {
     throw new Error(
-      `vortexPayableId ${args.vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`,
+      `vortexPayableId ${vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`,
     );
   }
+}
 
-  if (
-    invoiceRecord &&
+function shouldSkipInvoiceWebhookUpdate(
+  invoiceRecord: DocumentInvoice | null,
+  invoiceStatus: DocumentInvoiceWebhookStatus | undefined,
+): boolean {
+  return (
+    invoiceRecord !== null &&
     invoiceStatus !== undefined &&
     shouldSkipTerminalInvoiceUpdate(invoiceRecord.status, invoiceStatus)
-  ) {
-    return {
-      configId: config?._id,
-      documentId: config?.documentId ?? invoiceRecord.documentId,
-      invoiceRecordId: invoiceRecord._id,
-    };
-  }
+  );
+}
 
-  if (
-    !invoiceRecord &&
-    config &&
-    shouldSkipTerminalConfigUpdate(config.paymentStatus, args.paymentStatus)
-  ) {
-    return {
-      configId: config._id,
-      documentId: config.documentId,
-      invoiceRecordId: undefined,
-    };
-  }
+function shouldSkipConfigWebhookUpdate(
+  config: PaymentFieldConfig | null,
+  invoiceRecord: DocumentInvoice | null,
+  paymentStatus: PaymentStatus,
+): boolean {
+  return (
+    invoiceRecord === null &&
+    config !== null &&
+    shouldSkipTerminalConfigUpdate(config.paymentStatus, paymentStatus)
+  );
+}
 
-  if (config) {
-    await ctx.db.patch(config._id, {
-      paymentStatus: args.paymentStatus,
-      updatedAt: now,
-    });
-  }
+async function patchPaymentConfigStatus(
+  ctx: Pick<MutationCtx, "db">,
+  config: PaymentFieldConfig,
+  paymentStatus: PaymentStatus,
+  now: number,
+) {
+  await ctx.db.patch(config._id, { paymentStatus, updatedAt: now });
+}
 
-  if (invoiceRecord && invoiceStatus !== undefined) {
-    await ctx.db.patch(invoiceRecord._id, {
-      status: invoiceStatus,
-      ...(invoiceStatus === "paid" && { paidAt: now }),
-      ...(invoiceStatus === "void" && { voidedAt: now }),
-      ...(invoiceStatus === "open" &&
-        invoiceRecord.finalizedAt === undefined && {
-          finalizedAt: now,
-        }),
-      updatedAt: now,
-    });
-  }
+async function patchDocumentInvoiceStatus(
+  ctx: Pick<MutationCtx, "db">,
+  invoiceRecord: DocumentInvoice,
+  invoiceStatus: DocumentInvoiceWebhookStatus,
+  now: number,
+) {
+  await ctx.db.patch(invoiceRecord._id, documentInvoicePatch(invoiceRecord, invoiceStatus, now));
+}
 
+function documentInvoicePatch(
+  invoiceRecord: DocumentInvoice,
+  invoiceStatus: DocumentInvoiceWebhookStatus,
+  now: number,
+): DocumentInvoicePatch {
+  return {
+    status: invoiceStatus,
+    ...(invoiceStatus === "paid" && { paidAt: now }),
+    ...(invoiceStatus === "void" && { voidedAt: now }),
+    ...(invoiceStatus === "open" &&
+      invoiceRecord.finalizedAt === undefined && {
+        finalizedAt: now,
+      }),
+    updatedAt: now,
+  };
+}
+
+function paymentWebhookUpdateResult(
+  config: PaymentFieldConfig | null,
+  invoiceRecord: DocumentInvoice | null,
+): PaymentWebhookUpdateResult {
   return {
     configId: config?._id,
     documentId: config?.documentId ?? invoiceRecord?.documentId,
@@ -458,20 +523,20 @@ export const updateVortexPaymentStatusFromWebhook = internalMutation({
 });
 
 /**
- * Internal mutation to update payment status from Stripe subscription webhooks.
- * Looks up the config by stripeSubscriptionId.
+ * Internal mutation to update payment status from Vortex Billing subscription webhooks.
+ * Looks up the config by providerSubscriptionId.
  * Returns the config ID if found and updated, or null if not found.
  */
-export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
+export const updatePaymentStatusFromProviderSubscription = internalMutation({
   args: {
-    stripeSubscriptionId: v.string(),
+    providerSubscriptionId: v.string(),
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_subscription", (q) =>
-        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      .withIndex("by_provider_subscription", (q) =>
+        q.eq("providerSubscriptionId", args.providerSubscriptionId),
       )
       .first();
 
@@ -489,20 +554,20 @@ export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
 });
 
 /**
- * Internal mutation to store Stripe IDs back on a payment config
- * after Stripe objects are created during the send flow.
+ * Internal mutation to store provider IDs back on a payment config
+ * after provider objects are created during the send flow.
  * Also creates a document_invoices record for revenue tracking.
  */
-export const storeStripeIds = internalMutation({
+export const storeProviderPaymentIds = internalMutation({
   args: {
     configId: v.id("payment_field_configs"),
     paymentStatus: paymentStatusTuple,
-    stripeInvoiceId: v.optional(v.string()),
-    stripeSubscriptionId: v.optional(v.string()),
-    stripePaymentIntentId: v.optional(v.string()),
+    providerInvoiceId: v.optional(v.string()),
+    providerSubscriptionId: v.optional(v.string()),
+    providerPaymentIntentId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
     // Fields for document_invoices record
-    stripeAccountId: v.optional(v.string()),
+    providerAccountId: v.optional(v.string()),
     customerEmail: v.optional(v.string()),
     customerName: v.optional(v.string()),
   },
@@ -516,24 +581,24 @@ export const storeStripeIds = internalMutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
-      ...(args.stripeInvoiceId !== undefined && { stripeInvoiceId: args.stripeInvoiceId }),
-      ...(args.stripeSubscriptionId !== undefined && {
-        stripeSubscriptionId: args.stripeSubscriptionId,
+      ...(args.providerInvoiceId !== undefined && { providerInvoiceId: args.providerInvoiceId }),
+      ...(args.providerSubscriptionId !== undefined && {
+        providerSubscriptionId: args.providerSubscriptionId,
       }),
-      ...(args.stripePaymentIntentId !== undefined && {
-        stripePaymentIntentId: args.stripePaymentIntentId,
+      ...(args.providerPaymentIntentId !== undefined && {
+        providerPaymentIntentId: args.providerPaymentIntentId,
       }),
       ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
       updatedAt: now,
     });
 
     // Create document_invoices record for revenue tracking
-    if (args.stripeInvoiceId && args.stripeAccountId && args.customerEmail) {
+    if (args.providerInvoiceId && args.providerAccountId && args.customerEmail) {
       // Check if record already exists (idempotent)
       const existing = await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) =>
-          q.eq("stripeInvoiceId", sealAssertPresent(args.stripeInvoiceId)),
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", sealAssertPresent(args.providerInvoiceId)),
         )
         .first();
 
@@ -541,10 +606,10 @@ export const storeStripeIds = internalMutation({
         await ctx.db.insert("document_invoices", {
           documentId: config.documentId,
           organizationId: config.organizationId,
-          stripeAccountId: args.stripeAccountId,
-          stripeInvoiceId: args.stripeInvoiceId,
-          stripeSubscriptionId: args.stripeSubscriptionId,
-          stripeCustomerId: undefined,
+          providerAccountId: args.providerAccountId,
+          providerInvoiceId: args.providerInvoiceId,
+          providerSubscriptionId: args.providerSubscriptionId,
+          providerCustomerId: undefined,
           status: "open",
           customerEmail: args.customerEmail,
           customerName: args.customerName,
@@ -669,21 +734,21 @@ function documentInvoiceStatusForPaymentStatus(
 }
 
 /**
- * Internal mutation to upsert a document_invoices record from a Stripe
+ * Internal mutation to upsert a document_invoices record from a Vortex Billing
  * subscription invoice webhook (invoice.created / invoice.finalized).
  *
- * For recurring payments, Stripe generates new invoices each billing cycle.
+ * For recurring payments, Vortex Billing generates new invoices each billing cycle.
  * This mutation links those subsequent invoices back to the original document
- * by looking up the payment_field_config via stripeSubscriptionId.
+ * by looking up the payment_field_config via providerSubscriptionId.
  *
- * Idempotent — won't create duplicates for the same stripeInvoiceId.
+ * Idempotent — won't create duplicates for the same providerInvoiceId.
  */
 export const upsertRecurringInvoice = internalMutation({
   args: {
-    stripeInvoiceId: v.string(),
-    stripeSubscriptionId: v.string(),
-    stripeCustomerId: v.optional(v.string()),
-    stripeAccountId: v.string(),
+    providerInvoiceId: v.string(),
+    providerSubscriptionId: v.string(),
+    providerCustomerId: v.optional(v.string()),
+    providerAccountId: v.string(),
     status: v.union(
       v.literal("draft"),
       v.literal("open"),
@@ -702,8 +767,8 @@ export const upsertRecurringInvoice = internalMutation({
     // Look up payment_field_config by subscription to get documentId/organizationId
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_subscription", (q) =>
-        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      .withIndex("by_provider_subscription", (q) =>
+        q.eq("providerSubscriptionId", args.providerSubscriptionId),
       )
       .first();
 
@@ -716,7 +781,7 @@ export const upsertRecurringInvoice = internalMutation({
     // Check if record already exists (idempotent)
     const existing = await ctx.db
       .query("document_invoices")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
       .first();
 
     if (existing) {
@@ -726,7 +791,7 @@ export const upsertRecurringInvoice = internalMutation({
         return { invoiceId: existing._id, created: false };
       }
 
-      // Update existing record with latest data from Stripe
+      // Update existing record with latest data from Vortex Billing
       await ctx.db.patch(existing._id, {
         status: args.status,
         amountDue: args.amountDue,
@@ -742,10 +807,10 @@ export const upsertRecurringInvoice = internalMutation({
     const invoiceId = await ctx.db.insert("document_invoices", {
       documentId: config.documentId,
       organizationId: config.organizationId,
-      stripeAccountId: args.stripeAccountId,
-      stripeInvoiceId: args.stripeInvoiceId,
-      stripeSubscriptionId: args.stripeSubscriptionId,
-      stripeCustomerId: args.stripeCustomerId,
+      providerAccountId: args.providerAccountId,
+      providerInvoiceId: args.providerInvoiceId,
+      providerSubscriptionId: args.providerSubscriptionId,
+      providerCustomerId: args.providerCustomerId,
       status: args.status,
       customerEmail: args.customerEmail,
       customerName: args.customerName,

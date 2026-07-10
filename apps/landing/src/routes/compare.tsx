@@ -198,7 +198,7 @@ const alternativesData = [
     weaknesses: [
       "Per-envelope fees on most plans",
       "API access requires Enterprise contract",
-      "No payment collection — you'll need Stripe separately",
+      "No payment collection without another billing tool",
       "AI features cost 4× more than Seal Pro",
     ],
   },

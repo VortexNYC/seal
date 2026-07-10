@@ -87,7 +87,7 @@ export function TeamSwitcher({
             <DropdownMenuLabel className="text-muted-foreground text-xs">Teams</DropdownMenuLabel>
             {teams.map((team, index) => (
               <DropdownMenuItem
-                key={team.name}
+                key={team.slug}
                 onSelect={() => {
                   setActiveTeam(team);
                   onTeamSelect?.(team.slug);

@@ -6,7 +6,11 @@ import type {
   PaymentIntentId,
   PaymentMethodId,
 } from "../../domain/common";
-import type { CaptureMode, PaymentIntentNextStep, PaymentIntentStatus } from "../../domain/payments";
+import type {
+  CaptureMode,
+  PaymentIntentNextStep,
+  PaymentIntentStatus,
+} from "../../domain/payments";
 import type { MetadataCarrier } from "./common";
 
 export interface CreatePaymentIntentRequest extends MetadataCarrier {

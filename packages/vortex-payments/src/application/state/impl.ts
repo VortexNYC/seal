@@ -51,21 +51,25 @@ function toMerchantAccountStateSnapshot(state: MerchantAccountState): MerchantAc
   };
 }
 
-export function createStateReader(
-  dependencies: StateReaderDependencies,
-): PaymentsStateReader {
-	  return {
-	    async getMerchantAccountState(query: GetMerchantAccountStateQuery) {
-	      const state = await dependencies.uow.merchantStates.getByMerchantAccountId(query.merchantAccountId, {
-	        environment: query.environment,
-	      });
-	      return state ? toMerchantAccountStateSnapshot(state) : null;
-	    },
+export function createStateReader(dependencies: StateReaderDependencies): PaymentsStateReader {
+  return {
+    async getMerchantAccountState(query: GetMerchantAccountStateQuery) {
+      const state = await dependencies.uow.merchantStates.getByMerchantAccountId(
+        query.merchantAccountId,
+        {
+          environment: query.environment,
+        },
+      );
+      return state ? toMerchantAccountStateSnapshot(state) : null;
+    },
 
     async getMerchantAccountCapabilities(query: GetMerchantAccountCapabilitiesQuery) {
-      const state = await dependencies.uow.merchantStates.getByMerchantAccountId(query.merchantAccountId, {
-        environment: query.environment,
-      });
+      const state = await dependencies.uow.merchantStates.getByMerchantAccountId(
+        query.merchantAccountId,
+        {
+          environment: query.environment,
+        },
+      );
       if (!state) {
         return null;
       }
@@ -74,7 +78,7 @@ export function createStateReader(
         environment: state.environment,
         activeCapabilityKeys: state.activeCapabilityKeys,
         restrictedCapabilityKeys: state.restrictedCapabilityKeys,
-	        capabilities: state.capabilitySnapshots.map(toCapabilitySnapshot),
+        capabilities: state.capabilitySnapshots.map(toCapabilitySnapshot),
         generatedAt: state.generatedAt,
       };
     },

@@ -18,7 +18,13 @@ export type TerminalReaderRegistrationStatus = "registered" | "unregistered" | "
 export type TerminalReaderHealthStatus = "healthy" | "unhealthy" | "unknown";
 export type TerminalReaderConnectivityStatus = "online" | "offline" | "unknown";
 export type TerminalConnectionSessionStatus = "issued" | "expired" | "revoked";
-export type CardPresentIntentStatus = "requires_reader" | "processing" | "authorized" | "captured" | "canceled" | "failed";
+export type CardPresentIntentStatus =
+  | "requires_reader"
+  | "processing"
+  | "authorized"
+  | "captured"
+  | "canceled"
+  | "failed";
 export type CardPresentCaptureMode = "automatic" | "manual";
 
 export interface TerminalAddress {

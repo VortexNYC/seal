@@ -38,7 +38,7 @@ We're using a **Turborepo + Bun workspaces** monorepo for code organization and 
 - **Frontend**: Vercel (web app only)
 - **Backend**: Convex (completely independent deployment with own CLI)
 - **Auth**: Clerk (hosted service)
-- **Payments**: Stripe (hosted service)
+- **Payments**: retired provider (hosted service)
 - **Email**: Resend (hosted service)
 
 ## 🛠 Technology Stack
@@ -62,7 +62,7 @@ We're using a **Turborepo + Bun workspaces** monorepo for code organization and 
 
 - **Convex**: Real-time backend with TypeScript (independent deployment)
 - **Clerk**: Production-ready authentication and organization management
-- **Stripe**: Payment processing and subscription management
+- **retired provider**: Payment processing and subscription management
 - **Resend**: Email delivery with React Email templates
 
 ### Deployment & Hosting
@@ -230,9 +230,9 @@ _Security & compliance features extracted to /feature-specs/authentication/26-se
 
 ---
 
-## 🎨 Brand Positioning Strategy ("The Stripe Effect")
+## 🎨 Brand Positioning Strategy ("The retired provider Effect")
 
-### Visual Design Principles (Inspired by Stripe.com)
+### Visual Design Principles (Inspired by retired provider.com)
 
 - **Minimalist Aesthetic**: Clean, uncluttered layouts with generous white space
 - **Monochromatic Palette**: Primarily black and white with subtle accent colors

@@ -12,7 +12,7 @@ function sealAssertPresent<T>(
   return value;
 }
 
-describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromWebhook", () => {
+describe("document_invoices sync via storeProviderPaymentIds and updatePaymentStatusFromProviderInvoice", () => {
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
   let documentId: Id<"documents">;
@@ -98,15 +98,15 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     });
   });
 
-  test("storeStripeIds creates document_invoices record", async () => {
+  test("storeProviderPaymentIds creates document_invoices record", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, {
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId,
       paymentStatus: "awaiting",
-      stripeInvoiceId: "in_test_123",
-      hostedInvoiceUrl: "https://invoice.stripe.com/test",
-      stripeAccountId: "acct_test_456",
+      providerInvoiceId: "in_test_123",
+      hostedInvoiceUrl: "https://billing.vortex.test/test",
+      providerAccountId: "acct_test_456",
       customerEmail: "customer@example.com",
       customerName: "Jane Doe",
     });
@@ -119,17 +119,19 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     });
 
     expect(invoices).toHaveLength(1);
-    expect(sealAssertPresent(invoices[0]).stripeInvoiceId).toBe("in_test_123");
-    expect(sealAssertPresent(invoices[0]).stripeAccountId).toBe("acct_test_456");
+    expect(sealAssertPresent(invoices[0]).providerInvoiceId).toBe("in_test_123");
+    expect(sealAssertPresent(invoices[0]).providerAccountId).toBe("acct_test_456");
     expect(sealAssertPresent(invoices[0]).customerEmail).toBe("customer@example.com");
     expect(sealAssertPresent(invoices[0]).customerName).toBe("Jane Doe");
     expect(sealAssertPresent(invoices[0]).amountDue).toBe(50000);
     expect(sealAssertPresent(invoices[0]).currency).toBe("usd");
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
-    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe("https://invoice.stripe.com/test");
+    expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
+      "https://billing.vortex.test/test",
+    );
   });
 
-  test("document_invoices accepts Vortex Billing invoice records without Stripe IDs", async () => {
+  test("document_invoices accepts Vortex Billing invoice records without provider IDs", async () => {
     const now = Date.now();
 
     const invoiceId = await t.run(async (ctx) => {
@@ -157,43 +159,43 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     });
 
     expect(invoice?.provider).toBe("vortex_billing");
-    expect(invoice?.stripeAccountId).toBeUndefined();
-    expect(invoice?.stripeInvoiceId).toBeUndefined();
+    expect(invoice?.providerAccountId).toBeUndefined();
+    expect(invoice?.providerInvoiceId).toBeUndefined();
     expect(invoice?.vortexPayableId).toBe("payable_test");
     expect(invoice?.vortexPaymentRequestId).toBe("preq_test");
   });
 
-  test("storeStripeIds is idempotent — does not create duplicate invoices", async () => {
+  test("storeProviderPaymentIds is idempotent — does not create duplicate invoices", async () => {
     const { internal } = await import("../../_generated/api");
 
     const storeArgs = {
       configId,
       paymentStatus: "awaiting" as const,
-      stripeInvoiceId: "in_test_idempotent",
-      stripeAccountId: "acct_test_456",
+      providerInvoiceId: "in_test_idempotent",
+      providerAccountId: "acct_test_456",
       customerEmail: "customer@example.com",
     };
 
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, storeArgs);
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, storeArgs);
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, storeArgs);
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, storeArgs);
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_test_idempotent"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_idempotent"))
         .collect();
     });
 
     expect(invoices).toHaveLength(1);
   });
 
-  test("storeStripeIds without stripeAccountId does not create invoice record", async () => {
+  test("storeProviderPaymentIds without providerAccountId does not create invoice record", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, {
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId,
       paymentStatus: "awaiting",
-      stripeInvoiceId: "in_test_no_account",
+      providerInvoiceId: "in_test_no_account",
     });
 
     const invoices = await t.run(async (ctx) => {
@@ -203,23 +205,23 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     expect(invoices).toHaveLength(0);
   });
 
-  test("updatePaymentStatusFromWebhook syncs paid status to document_invoices", async () => {
+  test("updatePaymentStatusFromProviderInvoice syncs paid status to document_invoices", async () => {
     const { internal } = await import("../../_generated/api");
 
-    // First create the invoice record via storeStripeIds
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, {
+    // First create the invoice record via storeProviderPaymentIds
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId,
       paymentStatus: "awaiting",
-      stripeInvoiceId: "in_test_paid",
-      stripeAccountId: "acct_test_456",
+      providerInvoiceId: "in_test_paid",
+      providerAccountId: "acct_test_456",
       customerEmail: "payer@example.com",
     });
 
-    // Now simulate Stripe webhook updating to paid
+    // Now simulate Vortex Billing webhook updating to paid
     const result = await t.mutation(
-      internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
+      internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
       {
-        stripeInvoiceId: "in_test_paid",
+        providerInvoiceId: "in_test_paid",
         paymentStatus: "paid",
       },
     );
@@ -230,7 +232,7 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_test_paid"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_paid"))
         .collect();
     });
 
@@ -239,52 +241,52 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     expect(sealAssertPresent(invoices[0]).paidAt).toBeDefined();
   });
 
-  test("updatePaymentStatusFromWebhook syncs failed status as uncollectible", async () => {
+  test("updatePaymentStatusFromProviderInvoice syncs failed status as uncollectible", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, {
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId,
       paymentStatus: "awaiting",
-      stripeInvoiceId: "in_test_failed",
-      stripeAccountId: "acct_test_456",
+      providerInvoiceId: "in_test_failed",
+      providerAccountId: "acct_test_456",
       customerEmail: "payer@example.com",
     });
 
-    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromWebhook, {
-      stripeInvoiceId: "in_test_failed",
+    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice, {
+      providerInvoiceId: "in_test_failed",
       paymentStatus: "failed",
     });
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_test_failed"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_failed"))
         .collect();
     });
 
     expect(sealAssertPresent(invoices[0]).status).toBe("uncollectible");
   });
 
-  test("updatePaymentStatusFromWebhook syncs cancelled status as void", async () => {
+  test("updatePaymentStatusFromProviderInvoice syncs cancelled status as void", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeStripeIds, {
+    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
       configId,
       paymentStatus: "awaiting",
-      stripeInvoiceId: "in_test_void",
-      stripeAccountId: "acct_test_456",
+      providerInvoiceId: "in_test_void",
+      providerAccountId: "acct_test_456",
       customerEmail: "payer@example.com",
     });
 
-    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromWebhook, {
-      stripeInvoiceId: "in_test_void",
+    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice, {
+      providerInvoiceId: "in_test_void",
       paymentStatus: "cancelled",
     });
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_test_void"))
+        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_void"))
         .collect();
     });
 

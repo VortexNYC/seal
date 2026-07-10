@@ -1,4 +1,9 @@
-import type { CurrencyCode, Environment, MerchantAccountId, SettlementId } from "../../domain/common";
+import type {
+  CurrencyCode,
+  Environment,
+  MerchantAccountId,
+  SettlementId,
+} from "../../domain/common";
 import type { SettlementListResponse } from "../../api/contract/payouts";
 import type { SettlementSnapshot } from "../payouts/contracts";
 

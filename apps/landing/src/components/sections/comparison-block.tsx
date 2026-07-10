@@ -15,7 +15,7 @@ const painPoints: ComparisonItem[] = [
 
 const benefits: ComparisonItem[] = [
   { text: "Flat monthly pricing, unlimited signatures on Pro" },
-  { text: "Built-in payments with auto-generated Stripe invoices" },
+  { text: "Built-in payments with auto-generated Vortex invoices" },
   { text: "Full REST API from day one" },
   { text: "AI field detection on every plan" },
   { text: "Recurring billing and installments built in" },

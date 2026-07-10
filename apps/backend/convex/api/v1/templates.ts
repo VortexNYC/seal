@@ -116,9 +116,7 @@ export const listTemplates = internalQuery({
       resultTemplates.map(async (template) => {
         const lastField = await ctx.db
           .query("template_fields")
-          .withIndex("by_template_order", (q) =>
-            q.eq("templateId", template._id),
-          )
+          .withIndex("by_template_order", (q) => q.eq("templateId", template._id))
           .order("desc")
           .take(1);
 
@@ -175,9 +173,7 @@ export const getTemplate = internalQuery({
     // Get field count using highest order value
     const lastField = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) =>
-        q.eq("templateId", args.templateId),
-      )
+      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
       .order("desc")
       .take(1);
 

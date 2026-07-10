@@ -12,7 +12,9 @@ import {
 type BuildPayableInput = Parameters<typeof buildCreatePayableRequest>[0];
 type BuildRecurringPayableInput = Parameters<typeof buildCreateRecurringPayableRequest>[0];
 type BuildInstallmentPayableInput = Parameters<typeof buildCreateInstallmentPayableRequest>[0];
-type BuildDepositBalancePayableInput = Parameters<typeof buildCreateDepositBalancePayableRequest>[0];
+type BuildDepositBalancePayableInput = Parameters<
+  typeof buildCreateDepositBalancePayableRequest
+>[0];
 
 const baseConfig: BuildPayableInput["config"] = {
   _id: "seal_config_123",
@@ -38,8 +40,8 @@ const baseConfig: BuildPayableInput["config"] = {
 };
 
 describe("Vortex Billing document payable bridge", () => {
-  test("selects Vortex only for allowlisted supported document payments", () => {
-    expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("stripe");
+  test("selects Vortex for every document payment configuration", () => {
+    expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
         VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify(["org_seal_123"]),
@@ -75,8 +77,12 @@ describe("Vortex Billing document payable bridge", () => {
       }),
     ).toBe("vortex_billing");
     expect(
-      selectDocumentPaymentProvider("org_not_allowlisted", [{ ...baseConfig, taxEnabled: true }], {}),
-    ).toBe("stripe");
+      selectDocumentPaymentProvider(
+        "org_not_allowlisted",
+        [{ ...baseConfig, taxEnabled: true }],
+        {},
+      ),
+    ).toBe("vortex_billing");
   });
 
   test("builds a Vortex payable request from a Seal one-time payment config", () => {
@@ -136,6 +142,32 @@ describe("Vortex Billing document payable bridge", () => {
       source: {
         scope: "document_payment_field",
         scopeId: "seal_config_123",
+      },
+    });
+  });
+
+  test("uses the default document price when no line-item override exists", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://payments.vortex.test",
+      apiKey: "vb_test",
+      customerMapJson: JSON.stringify({ org_seal_123: "cust_seal_org_default" }),
+      billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
+      merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
+      defaultPriceId: "price_document_default",
+    });
+
+    const request = buildCreatePayableRequest({
+      config: baseConfig,
+      recipient: { email: "buyer@seal.test", name: "Seal Buyer" },
+      env,
+      now: Date.UTC(2026, 0, 1),
+    });
+
+    expect(request.customerExternalId).toBe("cust_seal_org_default");
+    expect(request.lineItems[0]).toMatchObject({
+      priceId: "price_document_default",
+      metadata: {
+        sealLineItemId: "seal_line_1",
       },
     });
   });

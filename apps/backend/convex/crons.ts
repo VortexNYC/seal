@@ -9,7 +9,7 @@ import { internal } from "./_generated/api";
 // Pipeline-verified cron scheduler (T2-SEAL-1777056416545)
 const crons = cronJobs();
 
-// Clean up old email records from the resend component hourly [BETA] [SIGMA] [CONFLICT-B]
+// Clean up old email records from the direct Resend transport hourly [BETA] [SIGMA] [CONFLICT-B]
 crons.interval(
   "cleanup-resend-emails",
   { hours: 1 },
@@ -28,20 +28,6 @@ crons.interval(
   "process-webhook-deliveries",
   { minutes: 1 },
   internal.webhooks.delivery.processWebhookDeliveries,
-);
-
-// Clean up old webhook events daily (idempotency records older than 7 days)
-crons.daily(
-  "cleanup-stripe-webhook-events",
-  { hourUTC: 2, minuteUTC: 0 },
-  internal.stripe.webhook_idempotency.cleanupOldEvents,
-);
-
-// Verify subscription states are in sync with Stripe (catches missed webhooks)
-crons.daily(
-  "check-stripe-subscription-status",
-  { hourUTC: 6, minuteUTC: 0 },
-  internal.stripe.handlers.checkSubscriptionStatus,
 );
 
 // Sync Seal's SaaS catalog projection from Vortex Billing daily

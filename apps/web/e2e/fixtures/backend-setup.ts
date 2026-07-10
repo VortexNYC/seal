@@ -147,62 +147,11 @@ export async function seedProSubscription(): Promise<void> {
   }
 }
 
-/**
- * Provision a Stripe sandbox customer on `organizations.stripeCustomerId`
- * for the E2E workspace. Required for any test that exercises a Stripe
- * action that looks up the real customer record (e.g. portal sessions).
- *
- * Calls `seedStripeCustomerForE2E` (a Convex action — needs external HTTP
- * to Stripe). Idempotent on the backend: returns `already_seeded` if the
- * org already has a customer id.
- */
-export async function seedStripeCustomer(): Promise<void> {
-  const { convexUrl, deployKey, organizationSlug } = getConvexSetupContext();
-  if (!deployKey) {
-    console.warn("[setup] CONVEX_DEPLOY_KEY not set — skipping Stripe customer seed");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${convexUrl}/api/action`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Convex ${deployKey}`,
-      },
-      body: JSON.stringify({
-        path: "test_e2e_helpers:seedStripeCustomerForE2E",
-        args: { organizationSlug },
-        format: "json",
-      }),
-    });
-    if (!res.ok) {
-      console.warn("[setup] seedStripeCustomerForE2E HTTP error:", res.status, await res.text());
-      return;
-    }
-
-    const data = (await res.json()) as {
-      status: string;
-      value?: { seeded?: boolean; stripeCustomerId?: string; reason?: string };
-    };
-    if (data.value?.seeded) {
-      console.info(`[setup] Stripe customer seeded: ${data.value.stripeCustomerId}`);
-    } else if (data.value?.reason === "already_seeded") {
-      // Quiet: idempotent re-runs are normal.
-    } else if (data.value?.reason) {
-      console.warn(`[setup] seedStripeCustomerForE2E: ${data.value.reason}`);
-    }
-  } catch (err) {
-    console.warn("[setup] seedStripeCustomerForE2E failed:", err);
-  }
-}
-
 export async function prepareBackendState(): Promise<void> {
   await assertConvexE2eHelperAvailability();
   await cleanupPendingInvitations();
   await purgeE2eDocuments();
   await seedProSubscription();
-  await seedStripeCustomer();
 
   try {
     const storageId = await ensurePdfStorageId(sampleDocumentPath);

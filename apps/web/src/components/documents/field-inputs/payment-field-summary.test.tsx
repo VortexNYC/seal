@@ -80,22 +80,22 @@ describe("PaymentFieldSummary", () => {
     mockUseQuery.mockReturnValue(
       makeConfig({
         paymentStatus: "awaiting",
-        hostedInvoiceUrl: "https://invoice.stripe.com/test",
+        hostedInvoiceUrl: "https://billing.vortex.test/test",
       }),
     );
 
     render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />);
 
     const payNowLink = screen.getByRole("link");
-    expect(payNowLink).toHaveAttribute("href", "https://invoice.stripe.com/test");
+    expect(payNowLink).toHaveAttribute("href", "https://billing.vortex.test/test");
     expect(payNowLink).toHaveTextContent("Pay with Vortex Payments");
   });
 
-  test("shows Vortex Payments handoff in signing mode instead of inline Stripe form", () => {
+  test("shows Vortex Payments handoff in signing mode", () => {
     mockUseQuery.mockReturnValue(
       makeConfig({
         paymentStatus: "awaiting",
-        hostedInvoiceUrl: "https://invoice.stripe.com/test",
+        hostedInvoiceUrl: "https://billing.vortex.test/test",
       }),
     );
 
@@ -113,7 +113,7 @@ describe("PaymentFieldSummary", () => {
     mockUseQuery.mockReturnValue(
       makeConfig({
         paymentStatus: "paid",
-        hostedInvoiceUrl: "https://invoice.stripe.com/test",
+        hostedInvoiceUrl: "https://billing.vortex.test/test",
       }),
     );
 

@@ -1,4 +1,9 @@
-import type { IsoTimestamp, MerchantAccountId, ProcessorRef, SettlementId } from "../../domain/common";
+import type {
+  IsoTimestamp,
+  MerchantAccountId,
+  ProcessorRef,
+  SettlementId,
+} from "../../domain/common";
 import type {
   FundingTransferTimelineItem,
   Payout,
@@ -43,81 +48,122 @@ function defaultNow(): IsoTimestamp {
 }
 
 function findMerchantProcessorRef(merchant: MerchantAccount): ProcessorRef | null {
-  return merchant.processorAccountRefs.find((ref) => ref.objectType === "merchant")
-    ?? merchant.processorAccountRefs[0]
-    ?? null;
+  return (
+    merchant.processorAccountRefs.find((ref) => ref.objectType === "merchant") ??
+    merchant.processorAccountRefs[0] ??
+    null
+  );
 }
 
-function buildDefaultSellerPayoutCapabilities(snapshot: Omit<SellerPayoutProfileSnapshot, "capabilities">): readonly SellerPayoutCapability[] {
-  return [{
-    key: "standard_next_day_ach",
-    status: snapshot.payoutRail === "next_day_ach" ? "enabled" : "unknown",
-    reason: snapshot.payoutRail === "next_day_ach"
-      ? "Seller payout profile uses next-day ACH."
-      : "Seller payout profile does not prove next-day ACH availability.",
-    source: "payout_profile",
-  }, {
-    key: "same_day_ach",
-    status: snapshot.sameDayAchEligible === true ? "enabled" : "disabled",
-    reason: snapshot.sameDayAchEligible === true
-      ? "Merchant payout profile enables same-day ACH."
-      : "Merchant payout profile does not enable same-day ACH; separate approval and prefunding are required.",
-    source: "payout_profile",
-  }, {
-    key: "instant_card_push",
-    status: snapshot.instantPayoutEligible === true ? "enabled" : "disabled",
-    reason: snapshot.instantPayoutEligible === true
-      ? "Merchant payout profile enables instant card-push payouts."
-      : "Merchant payout profile does not enable instant card-push payouts; the rail is separately enabled and limitable.",
-    source: "payout_profile",
-  }, {
-    key: "gross_payout",
-    status: snapshot.grossPayoutEnabled === true ? "enabled" : "disabled",
-    reason: snapshot.grossPayoutEnabled === true
-      ? "Merchant payout profile enables gross payouts."
-      : "Merchant payout profile does not enable gross payouts; written approval is required.",
-    source: "payout_profile",
-  }, {
-    key: "sub_merchant_payee_payment",
-    status: "disabled",
-    reason: "Sub-merchant payee payments are a separate settlement-funded service requiring payee verification and risk/compliance acceptance.",
-    source: "agreement_guardrail",
-  }];
+function buildDefaultSellerPayoutCapabilities(
+  snapshot: Omit<SellerPayoutProfileSnapshot, "capabilities">,
+): readonly SellerPayoutCapability[] {
+  return [
+    {
+      key: "standard_next_day_ach",
+      status: snapshot.payoutRail === "next_day_ach" ? "enabled" : "unknown",
+      reason:
+        snapshot.payoutRail === "next_day_ach"
+          ? "Seller payout profile uses next-day ACH."
+          : "Seller payout profile does not prove next-day ACH availability.",
+      source: "payout_profile",
+    },
+    {
+      key: "same_day_ach",
+      status: snapshot.sameDayAchEligible === true ? "enabled" : "disabled",
+      reason:
+        snapshot.sameDayAchEligible === true
+          ? "Merchant payout profile enables same-day ACH."
+          : "Merchant payout profile does not enable same-day ACH; separate approval and prefunding are required.",
+      source: "payout_profile",
+    },
+    {
+      key: "instant_card_push",
+      status: snapshot.instantPayoutEligible === true ? "enabled" : "disabled",
+      reason:
+        snapshot.instantPayoutEligible === true
+          ? "Merchant payout profile enables instant card-push payouts."
+          : "Merchant payout profile does not enable instant card-push payouts; the rail is separately enabled and limitable.",
+      source: "payout_profile",
+    },
+    {
+      key: "gross_payout",
+      status: snapshot.grossPayoutEnabled === true ? "enabled" : "disabled",
+      reason:
+        snapshot.grossPayoutEnabled === true
+          ? "Merchant payout profile enables gross payouts."
+          : "Merchant payout profile does not enable gross payouts; written approval is required.",
+      source: "payout_profile",
+    },
+    {
+      key: "sub_merchant_payee_payment",
+      status: "disabled",
+      reason:
+        "Sub-merchant payee payments are a separate settlement-funded service requiring payee verification and risk/compliance acceptance.",
+      source: "agreement_guardrail",
+    },
+  ];
+}
+
+function getFailedFundingTransferBlocker(payouts: readonly Payout[]): string | null {
+  const terminalFailedPayout = payouts.find(
+    (payout) => payout.status === "failed" || payout.status === "returned",
+  );
+  return terminalFailedPayout ? `funding_transfer_${terminalFailedPayout.status}` : null;
+}
+
+function getMerchantPayoutReadinessBlocker(readiness: string | undefined): string | null {
+  if (readiness === "blocked" || readiness === "paused") {
+    return `merchant_payout_${readiness}`;
+  }
+  if (readiness === undefined || readiness === "unknown") {
+    return "merchant_payout_readiness_unknown";
+  }
+  return null;
+}
+
+function getSettlementAmountBlockers(settlement: Settlement): readonly string[] {
+  const blockers: string[] = [];
+  if (settlement.direction === "debit") {
+    blockers.push("negative_or_debit_settlement");
+  }
+  if (settlement.netAmount <= 0) {
+    blockers.push("non_positive_net_amount");
+  }
+  return blockers;
+}
+
+function buildPayoutReadinessBlockers(args: {
+  readonly settlement: Settlement;
+  readonly payouts: readonly Payout[];
+  readonly merchantPayoutReadiness?: string;
+}): readonly string[] {
+  return [
+    getFailedFundingTransferBlocker(args.payouts),
+    getMerchantPayoutReadinessBlocker(args.merchantPayoutReadiness),
+    ...getSettlementAmountBlockers(args.settlement),
+  ].filter((blocker): blocker is string => blocker !== null);
 }
 
 function deriveReadinessStatus(args: {
   readonly settlement: Settlement;
   readonly payouts: readonly Payout[];
   readonly merchantPayoutReadiness?: string;
-}): { readonly status: SettlementPayoutReadinessStatus; readonly blockers: readonly string[]; readonly nextAction: string } {
-  const blockers: string[] = [];
+}): {
+  readonly status: SettlementPayoutReadinessStatus;
+  readonly blockers: readonly string[];
+  readonly nextAction: string;
+} {
   const terminalSucceededPayout = args.payouts.find((payout) => payout.status === "succeeded");
   if (terminalSucceededPayout) {
     return {
       status: "paid",
-      blockers,
+      blockers: [],
       nextAction: "funding_transfer_succeeded",
     };
   }
 
-  const terminalFailedPayout = args.payouts.find((payout) => payout.status === "failed" || payout.status === "returned");
-  if (terminalFailedPayout) {
-    blockers.push(`funding_transfer_${terminalFailedPayout.status}`);
-  }
-
-  if (args.merchantPayoutReadiness === "blocked" || args.merchantPayoutReadiness === "paused") {
-    blockers.push(`merchant_payout_${args.merchantPayoutReadiness}`);
-  }
-  if (args.merchantPayoutReadiness === undefined || args.merchantPayoutReadiness === "unknown") {
-    blockers.push("merchant_payout_readiness_unknown");
-  }
-
-  if (args.settlement.direction === "debit") {
-    blockers.push("negative_or_debit_settlement");
-  }
-  if (args.settlement.netAmount <= 0) {
-    blockers.push("non_positive_net_amount");
-  }
+  const blockers = buildPayoutReadinessBlockers(args);
 
   switch (args.settlement.status) {
     case "accruing":
@@ -137,13 +183,15 @@ function deriveReadinessStatus(args: {
       return {
         status: blockers.length > 0 ? "unknown" : "paid",
         blockers,
-        nextAction: blockers.length > 0 ? "inspect_funding_transfer_history" : "settlement_paid_out",
+        nextAction:
+          blockers.length > 0 ? "inspect_funding_transfer_history" : "settlement_paid_out",
       };
     case "closed":
       return {
         status: blockers.length > 0 ? "blocked" : "ready",
         blockers,
-        nextAction: blockers.length > 0 ? "resolve_blockers" : "await_finix_approval_or_funding_transfer",
+        nextAction:
+          blockers.length > 0 ? "resolve_blockers" : "await_finix_approval_or_funding_transfer",
       };
     case "approved":
       return {
@@ -162,7 +210,11 @@ function buildSettlementTimelineItem(settlement: Settlement): FundingTransferTim
     amount: settlement.netAmount,
     currency: settlement.currency,
     direction: settlement.direction,
-    occurredAt: settlement.approvedAt ?? settlement.closedAt ?? settlement.accrualEndAt ?? settlement.updatedAt,
+    occurredAt:
+      settlement.approvedAt ??
+      settlement.closedAt ??
+      settlement.accrualEndAt ??
+      settlement.updatedAt,
     processorRefs: settlement.processorRefs,
   };
 }
@@ -200,7 +252,9 @@ function toPayoutSnapshot(payout: Payout): PayoutSnapshot {
   };
 }
 
-function toFundingTimelineItemSnapshot(item: FundingTransferTimelineItem): FundingTransferTimelineItemSnapshot {
+function toFundingTimelineItemSnapshot(
+  item: FundingTransferTimelineItem,
+): FundingTransferTimelineItemSnapshot {
   return {
     id: item.id,
     kind: item.kind,
@@ -213,7 +267,9 @@ function toFundingTimelineItemSnapshot(item: FundingTransferTimelineItem): Fundi
   };
 }
 
-function toSellerPayoutProfileSnapshot(snapshot: SellerPayoutProfileSnapshot): MerchantSellerPayoutProfileSnapshot {
+function toSellerPayoutProfileSnapshot(
+  snapshot: SellerPayoutProfileSnapshot,
+): MerchantSellerPayoutProfileSnapshot {
   return {
     environment: snapshot.environment,
     merchantAccountId: snapshot.merchantAccountId,
@@ -234,7 +290,11 @@ function toSellerPayoutProfileSnapshot(snapshot: SellerPayoutProfileSnapshot): M
 
 async function getScopedSettlement(
   uow: PaymentsUnitOfWork,
-  query: { readonly environment: "sandbox" | "production"; readonly merchantAccountId: MerchantAccountId; readonly settlementId: SettlementId },
+  query: {
+    readonly environment: "sandbox" | "production";
+    readonly merchantAccountId: MerchantAccountId;
+    readonly settlementId: SettlementId;
+  },
 ): Promise<Settlement | null> {
   const settlement = await uow.settlements.getById(query.settlementId, {
     environment: query.environment,
@@ -245,9 +305,48 @@ async function getScopedSettlement(
   return settlement;
 }
 
-export function createPayoutsService(
+async function getMerchantSellerPayoutProfileDetail(
   dependencies: PayoutsServiceDependencies,
-): PayoutsService {
+  query: GetMerchantSellerPayoutProfileQuery,
+): Promise<MerchantSellerPayoutProfileDetail> {
+  const merchant = await dependencies.uow.merchants.getById(query.merchantAccountId, {
+    environment: query.environment,
+  });
+  if (!merchant || !dependencies.providers || !dependencies.resolveProviderContext) {
+    return null;
+  }
+  const merchantRef = findMerchantProcessorRef(merchant);
+  if (!merchantRef) {
+    return null;
+  }
+  const providerContext = dependencies.resolveProviderContext(merchant);
+  const adapter = dependencies.providers.getAdapter(providerContext.provider);
+  if (!adapter.getSellerPayoutProfile) {
+    return null;
+  }
+  const result = await adapter.getSellerPayoutProfile(providerContext, {
+    merchantAccountId: query.merchantAccountId,
+    merchantRef,
+  });
+  if (!result.ok || !result.value) {
+    return null;
+  }
+  const { capabilities, ...providerSnapshot } = result.value;
+  const snapshotWithoutCapabilities = {
+    environment: query.environment,
+    merchantAccountId: query.merchantAccountId,
+    provider: providerContext.provider,
+    ...providerSnapshot,
+  };
+  const snapshot: SellerPayoutProfileSnapshot = {
+    ...snapshotWithoutCapabilities,
+    capabilities: capabilities ?? buildDefaultSellerPayoutCapabilities(snapshotWithoutCapabilities),
+  };
+  await dependencies.uow.sellerPayoutProfileSnapshots?.save(snapshot);
+  return toSellerPayoutProfileSnapshot(snapshot);
+}
+
+export function createPayoutsService(dependencies: PayoutsServiceDependencies): PayoutsService {
   const now = dependencies.now ?? defaultNow;
 
   return {
@@ -279,41 +378,7 @@ export function createPayoutsService(
     async getMerchantSellerPayoutProfile(
       query: GetMerchantSellerPayoutProfileQuery,
     ): Promise<MerchantSellerPayoutProfileDetail> {
-      const merchant = await dependencies.uow.merchants.getById(query.merchantAccountId, {
-        environment: query.environment,
-      });
-      if (!merchant || !dependencies.providers || !dependencies.resolveProviderContext) {
-        return null;
-      }
-      const merchantRef = findMerchantProcessorRef(merchant);
-      if (!merchantRef) {
-        return null;
-      }
-      const providerContext = dependencies.resolveProviderContext(merchant);
-      const adapter = dependencies.providers.getAdapter(providerContext.provider);
-      if (!adapter.getSellerPayoutProfile) {
-        return null;
-      }
-      const result = await adapter.getSellerPayoutProfile(providerContext, {
-        merchantAccountId: query.merchantAccountId,
-        merchantRef,
-      });
-      if (!result.ok || !result.value) {
-        return null;
-      }
-      const { capabilities, ...providerSnapshot } = result.value;
-      const snapshotWithoutCapabilities = {
-        environment: query.environment,
-        merchantAccountId: query.merchantAccountId,
-        provider: providerContext.provider,
-        ...providerSnapshot,
-      };
-      const snapshot: SellerPayoutProfileSnapshot = {
-        ...snapshotWithoutCapabilities,
-        capabilities: capabilities ?? buildDefaultSellerPayoutCapabilities(snapshotWithoutCapabilities),
-      };
-      await dependencies.uow.sellerPayoutProfileSnapshots?.save(snapshot);
-      return toSellerPayoutProfileSnapshot(snapshot);
+      return getMerchantSellerPayoutProfileDetail(dependencies, query);
     },
 
     async getSettlementPayoutReadiness(
@@ -357,8 +422,9 @@ export function createPayoutsService(
       if (!settlement) {
         return null;
       }
-      const payouts = (await dependencies.uow.payouts.listByMerchant(query.environment, query.merchantAccountId))
-        .filter((payout) => payout.settlementId === query.settlementId);
+      const payouts = (
+        await dependencies.uow.payouts.listByMerchant(query.environment, query.merchantAccountId)
+      ).filter((payout) => payout.settlementId === query.settlementId);
       const items = [
         buildSettlementTimelineItem(settlement),
         ...payouts.map((payout) => buildPayoutTimelineItem(payout)),

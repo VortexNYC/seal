@@ -9,18 +9,9 @@ import type {
   TerminalSessionId,
 } from "./common";
 
-export type DisputeStage =
-  | "inquiry"
-  | "chargeback"
-  | "review"
-  | "won"
-  | "lost";
+export type DisputeStage = "inquiry" | "chargeback" | "review" | "won" | "lost";
 
-export type DisputeResponseState =
-  | "needs_response"
-  | "responded"
-  | "accepted"
-  | "closed";
+export type DisputeResponseState = "needs_response" | "responded" | "accepted" | "closed";
 
 export interface Dispute {
   readonly id: DisputeId;

@@ -19,7 +19,11 @@ export interface PaymentHardwareService {
   previewOrder(command: PreviewPaymentHardwareOrderCommand): Promise<PaymentHardwareOrderPreview>;
   createOrder(command: CreatePaymentHardwareOrderCommand): Promise<PaymentHardwareOrderSnapshot>;
   getOrder(query: GetPaymentHardwareOrderQuery): Promise<PaymentHardwareOrderSnapshot | null>;
-  listOrders(query: ListPaymentHardwareOrdersQuery): Promise<readonly PaymentHardwareOrderSnapshot[]>;
+  listOrders(
+    query: ListPaymentHardwareOrdersQuery,
+  ): Promise<readonly PaymentHardwareOrderSnapshot[]>;
   cancelOrder(command: CancelPaymentHardwareOrderCommand): Promise<PaymentHardwareOrderSnapshot>;
-  requestReturn(command: RequestPaymentHardwareReturnCommand): Promise<PaymentHardwareReturnSnapshot>;
+  requestReturn(
+    command: RequestPaymentHardwareReturnCommand,
+  ): Promise<PaymentHardwareReturnSnapshot>;
 }

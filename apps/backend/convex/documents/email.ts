@@ -1,9 +1,9 @@
 /**
- * Email sending utilities using @convex-dev/resend component and @seal/email templates.
+ * Email sending utilities using Seal's direct Resend transport and @seal/email templates.
  *
  * Each function accepts an ActionCtx as first parameter to integrate with the
- * resend component's `sendEmailManually` for tracking, idempotency, and webhook
- * correlation. The raw Resend SDK is instantiated per-call to support org branding.
+ * direct transport's `sendEmailManuallyFromAction` for idempotency and webhook
+ * correlation.
  */
 
 import {
@@ -18,12 +18,11 @@ import {
   renderTeamInvitation,
   renderWelcome,
 } from "@seal/transactional";
-import { Resend } from "resend";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { sendEmailManuallyFromAction } from "../emails/resend_component";
+import { sendEmailManuallyFromAction, sendResendEmail } from "../emails/resend_component";
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present.",
@@ -58,11 +57,6 @@ async function logEmailQueuedSafe(
   } catch (error) {
     console.warn("[email] failed to write email.queued audit entry:", error);
   }
-}
-
-/** Create a Resend SDK instance (lazily, per-call). */
-function getResendSdk(): Resend {
-  return new Resend(process.env.RESEND_API_KEY);
 }
 
 export interface EmailBrandingParams {
@@ -136,8 +130,7 @@ export async function sendDocumentInvitation(
         ...(branding?.emailReplyTo ? { replyTo: [branding.emailReplyTo] } : {}),
       },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: fromEmail,
           to: [to],
           subject,
@@ -145,7 +138,7 @@ export async function sendDocumentInvitation(
           ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -206,15 +199,14 @@ export async function sendSigningComplete(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -279,15 +271,14 @@ export async function sendDocumentCompleted(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -367,8 +358,7 @@ export async function sendReminder(
         ...(branding?.emailReplyTo ? { replyTo: [branding.emailReplyTo] } : {}),
       },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: fromEmail,
           to: [to],
           subject,
@@ -376,7 +366,7 @@ export async function sendReminder(
           ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -419,15 +409,14 @@ export async function sendWelcome(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -478,15 +467,14 @@ export async function sendTeamInvitation(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -534,15 +522,14 @@ export async function sendCancellationNotification(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -600,15 +587,14 @@ export async function sendExpirationAlert(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -659,15 +645,14 @@ export async function sendDocumentViewed(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -726,15 +711,14 @@ export async function sendDocumentShared(
       ctx,
       { from: FROM_EMAIL, to: [to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );
@@ -780,15 +764,14 @@ export async function sendDocumentExpiredNotification(
       ctx,
       { from: FROM_EMAIL, to: [params.to], subject },
       async (idempotencyKey: string) => {
-        const resendSdk = getResendSdk();
-        const { data, error } = await resendSdk.emails.send({
+        const { data, error } = await sendResendEmail({
           from: FROM_EMAIL,
           to: [params.to],
           subject,
           html,
           headers: { "Idempotency-Key": idempotencyKey },
         });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
       },
     );

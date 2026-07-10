@@ -71,8 +71,12 @@ export function getCustomerPaymentReadinessReasons(
   }
 
   if (state.readiness === "blocked") {
-    const disabledMethods = paymentMethods.filter((paymentMethod) => paymentMethod.status === "disabled");
-    const archivedMethods = paymentMethods.filter((paymentMethod) => paymentMethod.status === "archived");
+    const disabledMethods = paymentMethods.filter(
+      (paymentMethod) => paymentMethod.status === "disabled",
+    );
+    const archivedMethods = paymentMethods.filter(
+      (paymentMethod) => paymentMethod.status === "archived",
+    );
     if (disabledMethods.length > 0) {
       reasons.push("payment_methods_disabled");
     }

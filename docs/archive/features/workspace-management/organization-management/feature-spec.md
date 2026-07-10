@@ -8,13 +8,13 @@
 - [ ] **Invite team members** via email
 - [ ] **Role-based permissions** (Owner, Admin, Member)
 - [ ] **Organization switching** for users in multiple orgs
-- [ ] **Basic billing per organization** (via Stripe)
+- [ ] **Basic billing per organization** (via retired provider)
 
 ## Technology Stack Integration
 
 - **Clerk Organizations**: Workspace creation and member management
 - **Clerk Roles & Permissions**: Role-based permissions (Owner, Admin, Member)
-- **Stripe**: Billing integration with per-organization subscription management
+- **retired provider**: Billing integration with per-organization subscription management
 - **React Email + Resend**: Email invitations and notifications
 - **Convex**: Real-time organization data and member presence
 
@@ -35,7 +35,7 @@
 - **Member Management**: Built-in invitation system with email verification
 - **Role Assignment**: RBAC plugin provides Owner/Admin/Member roles
 - **Multi-workspace Support**: Users can belong to multiple workspaces
-- **Billing Association**: Each workspace has separate Stripe subscription
+- **Billing Association**: Each workspace has separate retired provider subscription
 
 ### Workspace Creation States & Edge Cases
 
@@ -162,7 +162,7 @@
   - Detection: Real-time permission update via Convex
   - Action: Immediate context switch, show notification
 
-### Billing Integration Edge Cases (Stripe)
+### Billing Integration Edge Cases (retired provider)
 
 #### Simplified Billing Model
 
@@ -170,9 +170,9 @@
   - Free Plan: No payment required, 10 docs/month limit
   - Pro Trial: Payment info required, 2-week trial then $10/month per seat
   - Billing: Independent subscription per workspace
-- [ ] **Billing Setup Success**: Stripe subscription active
+- [ ] **Billing Setup Success**: retired provider subscription active
   - State: Workspace enabled, full feature access
-- [ ] **Pro Trial Billing Setup Failure**: Payment info declined, Stripe API error
+- [ ] **Pro Trial Billing Setup Failure**: Payment info declined, retired provider API error
   - State: Fallback to Free plan with limitations
   - Action: Fix payment method to activate Pro features
 - [ ] **Trial Expiration**: 2-week trial ends without payment
@@ -182,7 +182,7 @@
 #### Multi-Workspace Billing Edge Cases
 
 - [ ] **User in Multiple Paid Workspaces**: Each workspace pays for user's seat independently
-  - Behavior: Each workspace has independent Stripe subscription and pays for their own seats
+  - Behavior: Each workspace has independent retired provider subscription and pays for their own seats
   - UI: Clear billing context when switching workspaces, user sees features based on current workspace plan
 - [ ] **Payment Method Update**: Payment info expires or changes
   - Notification: Email all workspace admins via React Email + Resend
@@ -209,7 +209,7 @@
   - Audit: All admin actions logged for compliance
 - [ ] **Force User Removal**: Remove problematic users from workspaces
   - Process: Admin plugin user management interface
-- [ ] **Billing Override**: Admin can modify billing without Stripe
+- [ ] **Billing Override**: Admin can modify billing without retired provider
   - Use case: Customer service, refunds, special arrangements
   - Audit: Financial override actions logged
 
@@ -230,4 +230,4 @@
 - **Example**: User in 3 workspaces = 3 workspaces each pay for their own seats independently
 - **User Experience**: John joins Acme Corp workspace → Acme Corp pays for John's seat, John gets Pro features
 - **Rationale**: Freemium drives adoption, workspace owners control billing for Pro features
-- **Implementation**: Each workspace has independent Stripe subscription or Free tier, users inherit workspace plan features
+- **Implementation**: Each workspace has independent retired provider subscription or Free tier, users inherit workspace plan features

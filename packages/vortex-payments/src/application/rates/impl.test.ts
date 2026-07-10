@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import type { Environment, MerchantAccountId, PlatformTenantId, ProcessorRef } from "../../domain/common";
+import type {
+  Environment,
+  MerchantAccountId,
+  PlatformTenantId,
+  ProcessorRef,
+} from "../../domain/common";
 import type { MerchantRateAssignment, PaymentRatePlan } from "../../domain/rates";
 import type {
   MerchantRateAssignmentRepository,
@@ -22,7 +27,9 @@ function ref(objectType: string, objectId: string, relationship: string): Proces
   };
 }
 
-function createMemoryRatePlanRepository(seed: readonly PaymentRatePlan[] = []): PaymentRatePlanRepository {
+function createMemoryRatePlanRepository(
+  seed: readonly PaymentRatePlan[] = [],
+): PaymentRatePlanRepository {
   const records = new Map(seed.map((record) => [record.id, record]));
   return {
     async getById(id, requestedEnvironment) {
@@ -31,7 +38,12 @@ function createMemoryRatePlanRepository(seed: readonly PaymentRatePlan[] = []): 
     },
     async getLatestByCode(requestedEnvironment, requestedTenantId, code) {
       const matching = [...records.values()]
-        .filter((record) => record.environment === requestedEnvironment && record.tenantId === requestedTenantId && record.code === code)
+        .filter(
+          (record) =>
+            record.environment === requestedEnvironment &&
+            record.tenantId === requestedTenantId &&
+            record.code === code,
+        )
         .sort((left, right) => right.version - left.version);
       return matching[0] ?? null;
     },
@@ -41,7 +53,9 @@ function createMemoryRatePlanRepository(seed: readonly PaymentRatePlan[] = []): 
   };
 }
 
-function createMemoryAssignmentRepository(seed: readonly MerchantRateAssignment[] = []): MerchantRateAssignmentRepository {
+function createMemoryAssignmentRepository(
+  seed: readonly MerchantRateAssignment[] = [],
+): MerchantRateAssignmentRepository {
   const records = new Map(seed.map((record) => [record.id, record]));
   return {
     async getById(id, requestedEnvironment) {
@@ -49,9 +63,14 @@ function createMemoryAssignmentRepository(seed: readonly MerchantRateAssignment[
       return record?.environment === requestedEnvironment ? record : null;
     },
     async getActiveByMerchant(requestedEnvironment, requestedMerchantAccountId) {
-      return [...records.values()].find(
-        (record) => record.environment === requestedEnvironment && record.merchantAccountId === requestedMerchantAccountId && record.status === "active",
-      ) ?? null;
+      return (
+        [...records.values()].find(
+          (record) =>
+            record.environment === requestedEnvironment &&
+            record.merchantAccountId === requestedMerchantAccountId &&
+            record.status === "active",
+        ) ?? null
+      );
     },
     async save(record) {
       records.set(record.id, record);
@@ -78,7 +97,10 @@ function createProvider(): PaymentRatesProviderPort {
   };
 }
 
-function createService(seed?: { readonly ratePlans?: readonly PaymentRatePlan[]; readonly assignments?: readonly MerchantRateAssignment[] }) {
+function createService(seed?: {
+  readonly ratePlans?: readonly PaymentRatePlan[];
+  readonly assignments?: readonly MerchantRateAssignment[];
+}) {
   let idCounter = 0;
   return createPaymentRatesService({
     ratePlans: createMemoryRatePlanRepository(seed?.ratePlans),
@@ -143,7 +165,9 @@ describe("createPaymentRatesService", () => {
       rates: { cardBasisPoints: 290, cardFixedFee: 30, achBasisPoints: 0, achFixedFee: 0 },
     });
 
-    await expect(service.activateRatePlan({ environment, ratePlanId: draft.id })).rejects.toMatchObject({
+    await expect(
+      service.activateRatePlan({ environment, ratePlanId: draft.id }),
+    ).rejects.toMatchObject({
       code: "conflict",
     } satisfies Partial<PaymentRatesServiceError>);
   });
@@ -151,16 +175,19 @@ describe("createPaymentRatesService", () => {
   test("rejects Finix fee profiles without explicit ACH pricing fields", async () => {
     const service = createService();
 
-    await expect(service.createDraftRatePlan({
-      environment,
-      tenantId,
-      code: "missing-ach",
-      displayName: "Missing ACH",
-      pricingStrategy: "blended",
-      rates: { cardBasisPoints: 290, cardFixedFee: 30 },
-    })).rejects.toMatchObject({
+    await expect(
+      service.createDraftRatePlan({
+        environment,
+        tenantId,
+        code: "missing-ach",
+        displayName: "Missing ACH",
+        pricingStrategy: "blended",
+        rates: { cardBasisPoints: 290, cardFixedFee: 30 },
+      }),
+    ).rejects.toMatchObject({
       code: "invalid_request",
-      message: "achBasisPoints is required for Finix fee profile sync; use 0 when the rail should be priced at zero",
+      message:
+        "achBasisPoints is required for Finix fee profile sync; use 0 when the rail should be priced at zero",
     } satisfies Partial<PaymentRatesServiceError>);
   });
 

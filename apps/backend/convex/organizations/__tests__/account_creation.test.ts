@@ -4,7 +4,7 @@ import { api, components, internal } from "../../_generated/api";
 import { createTestContext } from "../../test.setup";
 
 describe("account creation", () => {
-  test("creates a personal organization anchored in Vortex Auth without Stripe records", async () => {
+  test("creates a personal organization anchored in Vortex Auth without billing records", async () => {
     const t = createTestContext();
     const authSubject = "account_creation_owner";
 
@@ -18,13 +18,12 @@ describe("account creation", () => {
       });
     });
 
-    const result = await t.withIdentity({ subject: authSubject }).mutation(
-      api.organizations.mutations.ensurePersonalOrganization,
-      {
+    const result = await t
+      .withIdentity({ subject: authSubject })
+      .mutation(api.organizations.mutations.ensurePersonalOrganization, {
         organizationName: "Account Creation Owner Workspace",
         organizationSlug: "account-creation-owner-workspace",
-      },
-    );
+      });
 
     const proof = await t.run(async (ctx) => {
       const user = await ctx.db
@@ -67,8 +66,10 @@ describe("account creation", () => {
         subscriptionCount: (await ctx.db.query("subscriptions").collect()).length,
         subscriptionProductCount: (await ctx.db.query("subscription_products").collect()).length,
         subscriptionPriceCount: (await ctx.db.query("subscription_prices").collect()).length,
-        stripeAccountCount: (await ctx.db.query("stripe_accounts").collect()).length,
-        stripeWebhookEventCount: (await ctx.db.query("stripe_webhook_events").collect()).length,
+        merchantAccountCount: (await ctx.db.query("merchant_accounts").collect()).length,
+        vortexBillingWebhookEventCount: (
+          await ctx.db.query("vortex_billing_webhook_events").collect()
+        ).length,
       };
     });
 
@@ -89,7 +90,7 @@ describe("account creation", () => {
     expect(proof.subscriptionCount).toBe(0);
     expect(proof.subscriptionProductCount).toBe(0);
     expect(proof.subscriptionPriceCount).toBe(0);
-    expect(proof.stripeAccountCount).toBe(0);
-    expect(proof.stripeWebhookEventCount).toBe(0);
+    expect(proof.merchantAccountCount).toBe(0);
+    expect(proof.vortexBillingWebhookEventCount).toBe(0);
   });
 });

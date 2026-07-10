@@ -173,21 +173,23 @@ describe("createPaymentIntentsHttpHandlers", () => {
         return null;
       },
       async listPaymentIntents() {
-        return [{
-          id: "pi_123",
-          paymentId: "pay_123",
-          merchantAccountId: "merchant_123",
-          customerProfileId: "customer_123",
-          paymentMethodId: "pm_123",
-          status: "authorized",
-          amount: 500,
-          currency: "USD",
-          requiresAction: false,
-          canCapture: true,
-          canCancel: true,
-          canRetry: false,
-          nextStep: "capture",
-        }];
+        return [
+          {
+            id: "pi_123",
+            paymentId: "pay_123",
+            merchantAccountId: "merchant_123",
+            customerProfileId: "customer_123",
+            paymentMethodId: "pm_123",
+            status: "authorized",
+            amount: 500,
+            currency: "USD",
+            requiresAction: false,
+            canCapture: true,
+            canCancel: true,
+            canRetry: false,
+            nextStep: "capture",
+          },
+        ];
       },
       async capturePaymentIntent() {
         throw new Error("not used");
@@ -218,21 +220,23 @@ describe("createPaymentIntentsHttpHandlers", () => {
     expect(response).toEqual({
       status: 200,
       body: {
-        data: [{
-          id: "pi_123",
-          paymentId: "pay_123",
-          merchantAccountId: "merchant_123",
-          customerProfileId: "customer_123",
-          paymentMethodId: "pm_123",
-          status: "authorized",
-          amount: 500,
-          currency: "USD",
-          requiresAction: false,
-          canCapture: true,
-          canCancel: true,
-          canRetry: false,
-          nextStep: "capture",
-        }],
+        data: [
+          {
+            id: "pi_123",
+            paymentId: "pay_123",
+            merchantAccountId: "merchant_123",
+            customerProfileId: "customer_123",
+            paymentMethodId: "pm_123",
+            status: "authorized",
+            amount: 500,
+            currency: "USD",
+            requiresAction: false,
+            canCapture: true,
+            canCancel: true,
+            canRetry: false,
+            nextStep: "capture",
+          },
+        ],
         requestId: "req_list_123",
       },
     });

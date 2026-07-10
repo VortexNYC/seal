@@ -140,7 +140,9 @@ function handleCatalogResult(result: CatalogMutationResult, label: string): void
 
   if (error !== undefined || response === undefined || !response.ok) {
     const status = response?.status ?? "no-response";
-    throw new Error(`Vortex Billing seed failed for ${label} (${status}): ${summarize(error ?? data)}`);
+    throw new Error(
+      `Vortex Billing seed failed for ${label} (${status}): ${summarize(error ?? data)}`,
+    );
   }
 }
 

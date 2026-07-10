@@ -4,7 +4,9 @@ import type { MerchantAccountsService } from "../../application/merchant-account
 import { MerchantAccountsServiceError } from "../../application/merchant-accounts/impl";
 import { createMerchantAccountsHttpHandlers } from "./merchant-accounts";
 
-function merchantSnapshot(overrides: Partial<MerchantAccountSnapshot> = {}): MerchantAccountSnapshot {
+function merchantSnapshot(
+  overrides: Partial<MerchantAccountSnapshot> = {},
+): MerchantAccountSnapshot {
   return {
     id: "ma_123",
     environment: "sandbox",

@@ -207,7 +207,7 @@
   - Warning: "X active documents will be cancelled"
 - [ ] **Team Ownership**: User owns team workspace
   - Requirement: Transfer ownership or delete team first
-- [ ] **Subscription Active**: Billing via Stripe
+- [ ] **Subscription Active**: Billing via retired provider
   - Requirement: Cancel subscription first
 - [ ] **Grace Period**: 90-day recovery window
 - [ ] **Legal Compliance**: Preserve audit trails and signed documents
@@ -228,7 +228,7 @@
 - [ ] **Convex Real-time**: User presence, live updates
 - [ ] **Email Templates**: Clerk for auth emails, React Email for transactional
 - [ ] **Resend Delivery**: Email delivery and tracking
-- [ ] **Stripe Billing**: Subscription status affects auth flow
+- [ ] **retired provider Billing**: Subscription status affects auth flow
 - [ ] **Admin Dashboard**: Multi-tenant management interface
 - [ ] **RBAC Permissions**: Role-based access throughout app
 - [ ] **Cross-Workspace Access**: Secure document access across workspace boundaries

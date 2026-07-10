@@ -36,9 +36,7 @@ export interface BillingPaymentsEmbeddedBridge {
 
 let embeddedBridge: BillingPaymentsEmbeddedBridge | null = null;
 
-export function registerBillingPaymentsEmbeddedBridge(
-  bridge: BillingPaymentsEmbeddedBridge,
-): void {
+export function registerBillingPaymentsEmbeddedBridge(bridge: BillingPaymentsEmbeddedBridge): void {
   embeddedBridge = bridge;
 }
 

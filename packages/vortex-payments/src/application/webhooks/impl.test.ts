@@ -1,9 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type {
-  CanonicalDomainEvent,
-  ProcessorEvent,
-  RawProcessorWebhook,
-} from "../../events/types";
+import type { CanonicalDomainEvent, ProcessorEvent, RawProcessorWebhook } from "../../events/types";
 import type { CustomerPaymentState, MerchantAccountState } from "../../domain/state";
 import type { PaymentMethod } from "../../domain/payment-methods";
 import type { IdempotencyRecord } from "../../storage/repositories";
@@ -40,7 +36,9 @@ function createMemoryUnitOfWork(): PaymentsUnitOfWork {
       async save() {},
     },
     customers: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     onboarding: {
@@ -70,10 +68,15 @@ function createMemoryUnitOfWork(): PaymentsUnitOfWork {
     },
     customerStates: {
       async getByMerchantAndCustomer(environment, merchantAccountId, customerProfileId) {
-        return customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null;
+        return (
+          customerStates.get(`${environment}:${merchantAccountId}:${customerProfileId}`) ?? null
+        );
       },
       async save(record) {
-        customerStates.set(`${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`, record);
+        customerStates.set(
+          `${record.environment}:${record.merchantAccountId}:${record.customerProfileId}`,
+          record,
+        );
       },
     },
     paymentMethods: {
@@ -84,14 +87,21 @@ function createMemoryUnitOfWork(): PaymentsUnitOfWork {
         return null;
       },
       async listByOwner(environment, ownerType, ownerId) {
-        return Array.from(paymentMethodsStore.values()).filter((record) => record.environment === environment && record.ownerType === ownerType && record.ownerId === ownerId);
+        return Array.from(paymentMethodsStore.values()).filter(
+          (record) =>
+            record.environment === environment &&
+            record.ownerType === ownerType &&
+            record.ownerId === ownerId,
+        );
       },
       async save(record) {
         paymentMethodsStore.set(`${record.environment}:${record.id}`, record);
       },
     },
     paymentMethodSetupSessions: {
-      async getById() { return null; },
+      async getById() {
+        return null;
+      },
       async save() {},
     },
     paymentIntents: {
@@ -300,10 +310,18 @@ describe("createWebhooksService", () => {
           receivedAt: "2026-04-23T12:00:00.000Z",
         };
       },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createWebhooksService({
@@ -312,13 +330,18 @@ describe("createWebhooksService", () => {
       webhookMappers: {} as never,
     });
 
-    await expect(service.ingestProviderWebhook({
-      environment: "sandbox",
-      provider: "finix",
-      headers: {},
-      rawBody: "{}",
-      receivedAt: "2026-04-23T12:00:00.000Z",
-    })).rejects.toMatchObject({ name: "WebhooksServiceError", code: "not_found" } satisfies Partial<WebhooksServiceError>);
+    await expect(
+      service.ingestProviderWebhook({
+        environment: "sandbox",
+        provider: "finix",
+        headers: {},
+        rawBody: "{}",
+        receivedAt: "2026-04-23T12:00:00.000Z",
+      }),
+    ).rejects.toMatchObject({
+      name: "WebhooksServiceError",
+      code: "not_found",
+    } satisfies Partial<WebhooksServiceError>);
   });
 
   test("stores invalid signature webhook as rejected", async () => {
@@ -334,10 +357,18 @@ describe("createWebhooksService", () => {
           receivedAt: "2026-04-23T12:00:00.000Z",
         };
       },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const service = createWebhooksService({
@@ -387,10 +418,18 @@ describe("createWebhooksService", () => {
           receivedAt: "2026-04-23T12:00:00.000Z",
         };
       },
-      async createMerchantOnboarding() { throw new Error("not used"); },
-      async createPaymentIntent() { throw new Error("not used"); },
-      async createRefund() { throw new Error("not used"); },
-      async fetchObjectSnapshot() { throw new Error("not used"); },
+      async createMerchantOnboarding() {
+        throw new Error("not used");
+      },
+      async createPaymentIntent() {
+        throw new Error("not used");
+      },
+      async createRefund() {
+        throw new Error("not used");
+      },
+      async fetchObjectSnapshot() {
+        throw new Error("not used");
+      },
     };
 
     const canonicalEvents: CanonicalEventsService = {
@@ -421,15 +460,20 @@ describe("createWebhooksService", () => {
       signatureStatus: "valid",
     });
 
-    const storedEvent = await uow.events.getProcessorEventById("proc_evt_123", { environment: "sandbox" });
+    const storedEvent = await uow.events.getProcessorEventById("proc_evt_123", {
+      environment: "sandbox",
+    });
     expect(storedEvent).toMatchObject({
       normalizationStatus: "normalized",
       rawWebhookId: "raw_fixed",
     });
 
-    const storedCanonical = await uow.events.getCanonicalEventById("proc_evt_123:payment.captured", {
-      environment: "sandbox",
-    });
+    const storedCanonical = await uow.events.getCanonicalEventById(
+      "proc_evt_123:payment.captured",
+      {
+        environment: "sandbox",
+      },
+    );
     expect(storedCanonical).toMatchObject({
       eventType: "payment.captured",
       aggregateId: "tr_123",

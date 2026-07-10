@@ -10,11 +10,13 @@ While server functions are ideal for internal RPC, server routes provide traditi
 
 ```tsx
 // Using server functions for webhook endpoints
-export const stripeWebhook = createServerFn({ method: "POST" }).handler(async ({ request }) => {
-  // Server functions aren't designed for raw request handling
-  // No easy access to raw body for signature verification
-  // Response format is JSON by default
-});
+export const paymentProviderWebhook = createServerFn({ method: "POST" }).handler(
+  async ({ request }) => {
+    // Server functions aren't designed for raw request handling
+    // No easy access to raw body for signature verification
+    // Response format is JSON by default
+  },
+);
 
 // Or exposing internal functions to external consumers
 export const getUsers = createServerFn().handler(async () => {
@@ -65,17 +67,15 @@ export const Route = createFileRoute("/api/users")({
 ## Good Example: Webhook Handler
 
 ```tsx
-// routes/api/webhooks/stripe.ts
+// routes/api/webhooks/payment-provider.ts
 import { createFileRoute } from "@tanstack/react-router";
-import Stripe from "stripe";
+import { paymentProvider } from "@/lib/payment-provider.server";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-export const Route = createFileRoute("/api/webhooks/stripe")({
+export const Route = createFileRoute("/api/webhooks/payment-provider")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const signature = request.headers.get("stripe-signature");
+        const signature = request.headers.get("payment-provider-signature");
         if (!signature) {
           return new Response("Missing signature", { status: 400 });
         }
@@ -83,12 +83,12 @@ export const Route = createFileRoute("/api/webhooks/stripe")({
         // Get raw body for signature verification
         const rawBody = await request.text();
 
-        let event: Stripe.Event;
+        let event: PaymentProviderEvent;
         try {
-          event = stripe.webhooks.constructEvent(
+          event = paymentProvider.webhooks.constructEvent(
             rawBody,
             signature,
-            process.env.STRIPE_WEBHOOK_SECRET!,
+            process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET!,
           );
         } catch (err) {
           console.error("Webhook signature verification failed:", err);

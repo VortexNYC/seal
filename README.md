@@ -15,23 +15,23 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 
 ## Workspace Overview
 
-| Path                     | Purpose                                     | Stack                                          |
-| ------------------------ | ------------------------------------------- | ---------------------------------------------- |
+| Path                     | Purpose                                     | Stack                                                |
+| ------------------------ | ------------------------------------------- | ---------------------------------------------------- |
 | `apps/web`               | Main product app                            | React 19, TanStack Router, Vite, Better-Auth, Convex |
-| `apps/landing`           | Marketing site and published developer docs | TanStack Start, Fumadocs, local content        |
-| `apps/backend`           | Convex backend, REST API, webhooks, jobs    | Convex, TypeScript                             |
-| `apps/mcp-server`        | MCP server for Seal tools/resources         | Bun, Express, MCP SDK                          |
-| `packages/transactional` | Transactional email templates               | React Email                                    |
-| `packages/react-sdk`     | Embeddable React SDK                        | TypeScript                                     |
-| `packages/tokens`        | Shared theme/font tokens                    | CSS, TypeScript                                |
-| `tooling/typescript`     | Shared TS config                            | TypeScript                                     |
+| `apps/landing`           | Marketing site and published developer docs | TanStack Start, Fumadocs, local content              |
+| `apps/backend`           | Convex backend, REST API, webhooks, jobs    | Convex, TypeScript                                   |
+| `apps/mcp-server`        | MCP server for Seal tools/resources         | Bun, Express, MCP SDK                                |
+| `packages/transactional` | Transactional email templates               | React Email                                          |
+| `packages/react-sdk`     | Embeddable React SDK                        | TypeScript                                           |
+| `packages/tokens`        | Shared theme/font tokens                    | CSS, TypeScript                                      |
+| `tooling/typescript`     | Shared TS config                            | TypeScript                                           |
 
 ## Prerequisites
 
 - Bun `1.3.0` or newer
 - A Convex deployment for backend-backed local work
 - Better-Auth (via @vortexnyc/vortex-auth) is the auth provider; no external auth credentials needed for local work
-- Optional: Stripe, Resend, and other integration secrets for billing/email flows
+- Optional: Vortex Payments, Resend, and other integration secrets for billing/email flows
 
 Install dependencies once from the repo root:
 
@@ -89,7 +89,6 @@ Required for boot:
 Common optional vars:
 
 - `VITE_PUBLIC_POSTHOG_KEY`
-- `VITE_STRIPE_PUBLISHABLE_KEY`
 - `VITE_APP_URL`
 
 ### Backend (`apps/backend`)
@@ -97,9 +96,11 @@ Common optional vars:
 Common vars used by the Convex backend include:
 
 - `BETTER_AUTH_SECRET`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_CONNECT_WEBHOOK_SECRET`
+- `VORTEX_BILLING_API_KEY`
+- `VORTEX_BILLING_BASE_URL`
+- `VORTEX_BILLING_WEBHOOK_SECRET`
+- `VORTEX_PAYMENTS_API_KEY`
+- `VORTEX_PAYMENTS_BASE_URL`
 - `SIGNATURE_ENCRYPTION_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`

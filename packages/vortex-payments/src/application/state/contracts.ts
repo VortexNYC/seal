@@ -1,5 +1,9 @@
 import type { CustomerProfileId, Environment, MerchantAccountId } from "../../domain/common";
-import type { MerchantAccountStatus, MerchantCapability, MerchantOnboardingSessionStatus } from "../../domain/merchant";
+import type {
+  MerchantAccountStatus,
+  MerchantCapability,
+  MerchantOnboardingSessionStatus,
+} from "../../domain/merchant";
 import type { CustomerPaymentState, MerchantAccountState } from "../../domain/state";
 
 export interface GetMerchantAccountStateQuery {
@@ -50,9 +54,13 @@ export interface GetCustomerPaymentStateQuery {
 }
 
 export interface MerchantStateReader {
-  getMerchantAccountState(query: GetMerchantAccountStateQuery): Promise<MerchantAccountStateSnapshot | null>;
+  getMerchantAccountState(
+    query: GetMerchantAccountStateQuery,
+  ): Promise<MerchantAccountStateSnapshot | null>;
   getMerchantAccountCapabilities(
     query: GetMerchantAccountCapabilitiesQuery,
   ): Promise<MerchantAccountCapabilitiesSnapshot | null>;
-  getCustomerPaymentState(query: GetCustomerPaymentStateQuery): Promise<CustomerPaymentState | null>;
+  getCustomerPaymentState(
+    query: GetCustomerPaymentStateQuery,
+  ): Promise<CustomerPaymentState | null>;
 }

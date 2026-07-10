@@ -44,7 +44,7 @@ type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
     _id: string;
-    provider?: "stripe" | "vortex";
+    provider?: "vortex";
     processorAccountId: string;
     vortexMerchantAccountId?: string;
     accountType: "standard" | "express";
@@ -229,7 +229,8 @@ const derivedBalanceWalletCopy = {
   title: "Derived balance ledger",
   readyDescription:
     "Derived from Vortex settlement and payout snapshots. This is not a provider balance.",
-  emptyDescription: "No Vortex settlement or payout rows are available for this derived balance yet.",
+  emptyDescription:
+    "No Vortex settlement or payout rows are available for this derived balance yet.",
   errorTitle: "Unable to load Vortex settlement and payout data.",
   availableBalanceLabel: "Available for payout (derived)",
   pendingBalanceLabel: "Pending settlement / payout flight",
@@ -259,7 +260,11 @@ export function VortexMerchantOperationalSurface({
   }) as MerchantAccountResult | undefined;
   const orgId = organization?._id as Id<"organizations"> | undefined;
   const account = merchantAccountResult?.account ?? null;
-  const payoutDataState = useVortexMerchantPayoutData(orgId, account, merchantAccountResult?.status);
+  const payoutDataState = useVortexMerchantPayoutData(
+    orgId,
+    account,
+    merchantAccountResult?.status,
+  );
 
   if (organization === undefined || merchantAccountResult === undefined) {
     return null;
@@ -576,7 +581,7 @@ function buildMerchantState(
       connectionStatus:
         account.requirements?.disabledReason === undefined ? undefined : "restricted",
       routeStatus: status,
-      }),
+    }),
     onboardingStatus: account.detailsSubmitted ? "approved" : "action_required",
     openRequirementIds,
     activeCapabilityKeys: buildActiveCapabilityKeys(account.capabilities),
@@ -607,7 +612,10 @@ function buildRestrictedCapabilityKeys(
   return compactCapabilities([
     capabilityWhenRestricted(capabilities?.cardPayments, "card_payments"),
     capabilityWhenRestricted(capabilities?.transfers, "transfers"),
-    capabilityWhenRestricted(capabilities?.usBankAccountAchPayments, "us_bank_account_ach_payments"),
+    capabilityWhenRestricted(
+      capabilities?.usBankAccountAchPayments,
+      "us_bank_account_ach_payments",
+    ),
   ]);
 }
 
@@ -676,7 +684,9 @@ function buildBalanceWalletEntries(input: {
     ...input.settlements
       .filter((settlement) => settlement.currency === input.currency)
       .map(toSettlementWalletEntry),
-    ...input.payouts.filter((payout) => payout.currency === input.currency).map(toPayoutWalletEntry),
+    ...input.payouts
+      .filter((payout) => payout.currency === input.currency)
+      .map(toPayoutWalletEntry),
   ].sort((left, right) => right.effectiveAt.localeCompare(left.effectiveAt));
 }
 

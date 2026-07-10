@@ -233,7 +233,7 @@ describe("subscription_guards", () => {
       expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
-    test("treats Vortex subscription rows as historical after rollback to Stripe", async () => {
+    test("treats Vortex subscription rows as historical after provider rollback", async () => {
       const now = Date.now();
       const productId = await t.run(async (ctx) => {
         return await ctx.db.insert("subscription_products", {
@@ -279,16 +279,10 @@ describe("subscription_guards", () => {
         });
       });
 
-      const rolledBackResult = await t.run(async (ctx) => {
+      const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(rolledBackResult).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
-
-      process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
-      const allowlistedResult = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, organizationId);
-      });
-      expect(allowlistedResult).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
+      expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
     test("returns pro plan for trialing subscription", async () => {

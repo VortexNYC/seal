@@ -23,7 +23,7 @@ export const subscriptionProductPriceStatusTuple = v.union(
 export type SubscriptionProductPriceStatusTuple = Infer<typeof subscriptionProductPriceStatusTuple>;
 
 export const subscriptionPricesTable = defineTable({
-  externalPriceId: v.string(), // Stripe price ID (price_xxx)
+  externalPriceId: v.string(), // Billing price ID (price_xxx)
   vortexPriceId: v.optional(v.string()),
 
   externalProductId: v.string(), // Link to product
@@ -47,7 +47,7 @@ export const subscriptionPricesTable = defineTable({
   // Metered fields
   usageType: v.optional(v.string()), // "metered" | "licensed"
 
-  // Status of price in Stripe: 'active' | 'archived' | 'deleted'
+  // Provider price status: 'active' | 'archived' | 'deleted'
   status: subscriptionProductPriceStatusTuple,
   lookupKey: v.optional(v.string()), // Lookup key: {tier}:{useType}:{interval}:v{version}
 

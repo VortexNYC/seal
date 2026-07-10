@@ -75,7 +75,8 @@ function toErrorResponse(error: unknown, requestId: string): HttpResponseEnvelop
     body: {
       code: "internal_error",
       category: "payment_methods_service",
-      message: error instanceof Error ? error.message : "unexpected payment methods handler failure",
+      message:
+        error instanceof Error ? error.message : "unexpected payment methods handler failure",
       requestId,
     },
   };

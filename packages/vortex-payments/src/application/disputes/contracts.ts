@@ -1,5 +1,11 @@
 import type { CursorPage } from "../../api/contract/common";
-import type { DisputeId, Environment, MerchantAccountId, Metadata, ProcessorRef } from "../../domain/common";
+import type {
+  DisputeId,
+  Environment,
+  MerchantAccountId,
+  Metadata,
+  ProcessorRef,
+} from "../../domain/common";
 import type { DisputeResponseState, DisputeStage } from "../../domain/disputes";
 import type { ProviderDisputeEvidenceSummary, ProviderDisputeSummary } from "../../providers/types";
 

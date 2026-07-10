@@ -46,10 +46,6 @@ export default defineConfig(() => {
       return "vendor-analytics";
     }
 
-    if (moduleId.includes("@stripe")) {
-      return "vendor-stripe";
-    }
-
     if (
       moduleId.includes("/convex/") &&
       !moduleId.includes("_generated") &&
@@ -71,8 +67,9 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "./src"),
+        "pdfjs-dist": path.resolve(import.meta.dirname, "./node_modules/pdfjs-dist"),
       },
-      dedupe: ["react", "react-dom"],
+      dedupe: ["react", "react-dom", "pdfjs-dist"],
     },
 
     // PostHog reverse proxy to bypass ad blockers
@@ -94,7 +91,7 @@ export default defineConfig(() => {
     },
 
     build: {
-      sourcemap: "hidden" as const,
+      sourcemap: false,
       chunkSizeWarningLimit: 1600,
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {

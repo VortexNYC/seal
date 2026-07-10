@@ -37,6 +37,19 @@ type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected"
 type FeeHandling = "absorb" | "pass_to_recipient";
 type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
 type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
+type MerchantAccountRecord = NonNullable<MerchantAccountResult["account"]>;
+
+type PaymentsSettingsState = {
+  readonly canManage: boolean;
+  readonly feeHandling: FeeHandling;
+  readonly feePolicy: VortexFeePolicyState | null;
+  readonly hasMerchantAccount: boolean;
+  readonly merchantAccount: VortexMerchantAccount | null;
+  readonly merchantChargesEnabled: boolean;
+  readonly merchantState: VortexMerchantState | null;
+  readonly orgId: Id<"organizations"> | undefined;
+  readonly status: ConnectionStatus;
+};
 
 const vortexPaymentsClassNames = {
   description: "text-muted-foreground text-sm text-pretty",
@@ -87,15 +100,11 @@ type MerchantAccountResult = {
 
 function PaymentsSettingsPage() {
   const { slug } = Route.useParams();
-
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
-
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-
   const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
     slug,
   }) as MerchantAccountResult | undefined;
-
   const createMerchantAccount = useAction(
     api.payments.merchant_account_actions.createMerchantAccount,
   );
@@ -107,61 +116,30 @@ function PaymentsSettingsPage() {
   );
 
   const updateFeeHandling = useMutation(api.payments.merchant_account_mutations.updateFeeHandling);
-
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isCreatingOnboardingLink, setIsCreatingOnboardingLink] = useState(false);
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
-
-  const orgId = organization?._id as Id<"organizations"> | undefined;
-
-  const status = merchantAccountResult?.status ?? "not_connected";
-  const canManage = merchantAccountResult?.canManage ?? false;
-  const hasMerchantAccount =
-    merchantAccountResult?.account !== null && merchantAccountResult?.account !== undefined;
-  const merchantChargesEnabled = merchantAccountResult?.account?.chargesEnabled ?? false;
-
-  const feeHandling = merchantAccountResult?.account?.feeHandling ?? "absorb";
-  const feePolicy =
-    merchantAccountResult?.account === undefined || merchantAccountResult.account === null
-      ? null
-      : buildFeePolicy(merchantAccountResult.account.processorAccountId, feeHandling);
-  const merchantAccount =
-    merchantAccountResult?.account === undefined || merchantAccountResult.account === null
-      ? null
-      : buildMerchantAccount(merchantAccountResult.account, organization?.name ?? slug, orgId);
-  const merchantState =
-    merchantAccountResult?.account === undefined || merchantAccountResult.account === null
-      ? null
-      : buildMerchantState(merchantAccountResult.account, status);
+  const settingsState = buildPaymentsSettingsState({
+    merchantAccountResult,
+    organizationId: organization?._id as Id<"organizations"> | undefined,
+    organizationName: organization?.name ?? slug,
+    slug,
+  });
 
   useEffect(() => {
-    if (!orgId || !canManage) return;
-
-    async function refresh() {
-      if (!orgId) return;
-      try {
-        await refreshMerchantAccount({ organizationId: orgId });
-      } catch (error) {
-        console.warn("Failed to refresh merchant account", error);
-      }
-    }
-
-    void refresh();
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [canManage, orgId, refreshMerchantAccount]);
+    return subscribeToMerchantRefresh({
+      canManage: settingsState.canManage,
+      orgId: settingsState.orgId,
+      refreshMerchantAccount,
+    });
+  }, [refreshMerchantAccount, settingsState.canManage, settingsState.orgId]);
 
   async function handleCreateAccount() {
-    if (!orgId) return;
+    if (!settingsState.orgId) return;
 
     setIsCreatingAccount(true);
     try {
-      await createMerchantAccount({ organizationId: orgId });
+      await createMerchantAccount({ organizationId: settingsState.orgId });
       toast.success("Vortex Connect account created. Review onboarding status below.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create merchant account");
@@ -171,26 +149,16 @@ function PaymentsSettingsPage() {
   }
 
   async function handleCreateOnboardingLink() {
-    if (!orgId) return;
+    if (!settingsState.orgId) return;
 
-    const popup = window.open("", "_blank");
     setIsCreatingOnboardingLink(true);
     try {
-      const currentUrl = window.location.href;
-      const result = await createMerchantOnboardingLink({
-        organizationId: orgId,
-        returnUrl: currentUrl,
-        refreshUrl: currentUrl,
+      await openMerchantOnboardingLink({
+        createMerchantOnboardingLink,
+        organizationId: settingsState.orgId,
       });
-      if (popup) {
-        popup.opener = null;
-        popup.location.href = result.url;
-      } else {
-        window.open(result.url, "_blank", "noopener,noreferrer");
-      }
       toast.success("Verification opened in a new tab.");
     } catch (error) {
-      popup?.close();
       toast.error(error instanceof Error ? error.message : "Failed to start verification");
     } finally {
       setIsCreatingOnboardingLink(false);
@@ -223,126 +191,451 @@ function PaymentsSettingsPage() {
 
   return (
     <PageWrapper title="Vortex Connect">
-      <div className="space-y-6">
-        <p className="text-muted-foreground text-sm">
-          Configure the Vortex Payments merchant account that accepts document payments. Only
-          workspace owners and admins can manage payment settings.
-          {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">
-              Merchant payment collection requires a Professional plan.
-            </span>
-          )}
-        </p>
-
-        {hasMerchantAccount && merchantAccount !== null && merchantState !== null ? (
-          <VortexPaymentsProvider
-            config={{
-              baseUrl: window.location.origin,
-              environment: "test",
-              organizationId: String(orgId ?? slug),
-              branding: { brandName: "Seal", showVortexBrand: true },
-            }}
-          >
-            <VortexMerchantAccountPanel
-              merchantAccount={merchantAccount}
-              merchantState={merchantState}
-              classNames={vortexPaymentsClassNames}
-              copy={{ title: "Vortex Connect" }}
-              disabled={!canManage}
-            />
-            <VortexMerchantActionQueue
-              merchantState={merchantState}
-              classNames={vortexPaymentsClassNames}
-              copy={{ title: "Vortex Connect actions" }}
-              disabled={!canManage}
-            />
-            {!merchantChargesEnabled && isPro && (
-              <div className="mt-4 flex flex-col gap-3 rounded-md border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Verification required</p>
-                  <p className="text-muted-foreground text-sm">
-                    Complete verification before document payments route to this merchant.
-                  </p>
-                </div>
-                <Button
-                  onClick={handleCreateOnboardingLink}
-                  disabled={!canManage || isCreatingOnboardingLink}
-                  className="shrink-0"
-                >
-                  {isCreatingOnboardingLink ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : (
-                    <ExternalLink className="mr-2 size-4" />
-                  )}
-                  Complete verification
-                </Button>
-              </div>
-            )}
-          </VortexPaymentsProvider>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Vortex Connect</CardTitle>
-              <CardDescription>
-                Manage onboarding status, required actions, and payment readiness.
-                {!isPro && !isLoadingPlan && (
-                  <span className="text-warning mt-1 block">
-                    Upgrade to Professional to accept document payments.
-                  </span>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!canManage && (
-                <div className="bg-muted text-muted-foreground rounded-md p-3 text-sm">
-                  You can view payment status, but only owners and admins can update payment
-                  settings.
-                </div>
-              )}
-
-              {status === "not_connected" && isPro && (
-                <div className="space-y-3">
-                  <p className="text-sm">
-                    No Vortex Connect account is ready. Create one to start accepting payments
-                    through your documents.
-                  </p>
-                  <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
-                    {isCreatingAccount ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <PlugZap className="mr-2 size-4" />
-                    )}
-                    Create Vortex Connect account
-                  </Button>
-                </div>
-              )}
-
-              {status === "not_connected" && !isPro && !isLoadingPlan && (
-                <div className="space-y-4">
-                  <p className="text-sm">
-                    Vortex Connect payment collection is available on the Professional plan.
-                  </p>
-                  <Button asChild>
-                    <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {status === "connected" && isPro && feePolicy !== null && (
-          <VortexFeePolicyPanel
-            feePolicy={feePolicy}
-            classNames={vortexPaymentsClassNames}
-            disabled={!canManage || isSavingFeeHandling}
-            loading={isSavingFeeHandling}
-            onPolicyChange={handleVortexFeePolicyChange}
-          />
-        )}
-      </div>
+      <PaymentsSettingsContent
+        isCreatingAccount={isCreatingAccount}
+        isCreatingOnboardingLink={isCreatingOnboardingLink}
+        isLoadingPlan={isLoadingPlan}
+        isPro={isPro}
+        isSavingFeeHandling={isSavingFeeHandling}
+        settingsState={settingsState}
+        slug={slug}
+        onCreateAccount={handleCreateAccount}
+        onCreateOnboardingLink={handleCreateOnboardingLink}
+        onFeePolicyChange={handleVortexFeePolicyChange}
+      />
     </PageWrapper>
   );
+}
+
+function subscribeToMerchantRefresh({
+  canManage,
+  orgId,
+  refreshMerchantAccount,
+}: {
+  readonly canManage: boolean;
+  readonly orgId: Id<"organizations"> | undefined;
+  readonly refreshMerchantAccount: (args: {
+    readonly organizationId: Id<"organizations">;
+  }) => Promise<unknown>;
+}): (() => void) | undefined {
+  if (!orgId || !canManage) return undefined;
+  const organizationId = orgId;
+
+  async function refresh() {
+    try {
+      await refreshMerchantAccount({ organizationId });
+    } catch (error) {
+      console.warn("Failed to refresh merchant account", error);
+    }
+  }
+
+  void refresh();
+  window.addEventListener("focus", refresh);
+  document.addEventListener("visibilitychange", refresh);
+
+  return () => {
+    window.removeEventListener("focus", refresh);
+    document.removeEventListener("visibilitychange", refresh);
+  };
+}
+
+async function openMerchantOnboardingLink({
+  createMerchantOnboardingLink,
+  organizationId,
+}: {
+  readonly createMerchantOnboardingLink: (args: {
+    readonly organizationId: Id<"organizations">;
+    readonly returnUrl: string;
+    readonly refreshUrl: string;
+  }) => Promise<{ readonly url: string }>;
+  readonly organizationId: Id<"organizations">;
+}) {
+  const popup = window.open("", "_blank");
+  try {
+    const currentUrl = window.location.href;
+    const result = await createMerchantOnboardingLink({
+      organizationId,
+      returnUrl: currentUrl,
+      refreshUrl: currentUrl,
+    });
+    openOnboardingPopup(popup, result.url);
+  } catch (error) {
+    popup?.close();
+    throw error;
+  }
+}
+
+function openOnboardingPopup(popup: Window | null, url: string) {
+  if (popup) {
+    popup.opener = null;
+    popup.location.href = url;
+    return;
+  }
+
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function PaymentsSettingsContent({
+  isCreatingAccount,
+  isCreatingOnboardingLink,
+  isLoadingPlan,
+  isPro,
+  isSavingFeeHandling,
+  settingsState,
+  slug,
+  onCreateAccount,
+  onCreateOnboardingLink,
+  onFeePolicyChange,
+}: {
+  readonly isCreatingAccount: boolean;
+  readonly isCreatingOnboardingLink: boolean;
+  readonly isLoadingPlan: boolean;
+  readonly isPro: boolean;
+  readonly isSavingFeeHandling: boolean;
+  readonly settingsState: PaymentsSettingsState;
+  readonly slug: string;
+  readonly onCreateAccount: () => void;
+  readonly onCreateOnboardingLink: () => void;
+  readonly onFeePolicyChange: (ownerMode: VortexFeePolicyOwnerMode) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <PaymentsIntro isLoadingPlan={isLoadingPlan} isPro={isPro} />
+      <MerchantAccountSection
+        isCreatingAccount={isCreatingAccount}
+        isCreatingOnboardingLink={isCreatingOnboardingLink}
+        isLoadingPlan={isLoadingPlan}
+        isPro={isPro}
+        settingsState={settingsState}
+        slug={slug}
+        onCreateAccount={onCreateAccount}
+        onCreateOnboardingLink={onCreateOnboardingLink}
+      />
+      <FeePolicySection
+        isPro={isPro}
+        isSavingFeeHandling={isSavingFeeHandling}
+        settingsState={settingsState}
+        onFeePolicyChange={onFeePolicyChange}
+      />
+    </div>
+  );
+}
+
+function PaymentsIntro({
+  isLoadingPlan,
+  isPro,
+}: {
+  readonly isLoadingPlan: boolean;
+  readonly isPro: boolean;
+}) {
+  return (
+    <p className="text-muted-foreground text-sm">
+      Configure the Vortex Payments merchant account that accepts document payments. Only workspace
+      owners and admins can manage payment settings.
+      {!isPro && !isLoadingPlan && (
+        <span className="text-warning mt-1 block">
+          Merchant payment collection requires a Professional plan.
+        </span>
+      )}
+    </p>
+  );
+}
+
+function MerchantAccountSection({
+  isCreatingAccount,
+  isCreatingOnboardingLink,
+  isLoadingPlan,
+  isPro,
+  settingsState,
+  slug,
+  onCreateAccount,
+  onCreateOnboardingLink,
+}: {
+  readonly isCreatingAccount: boolean;
+  readonly isCreatingOnboardingLink: boolean;
+  readonly isLoadingPlan: boolean;
+  readonly isPro: boolean;
+  readonly settingsState: PaymentsSettingsState;
+  readonly slug: string;
+  readonly onCreateAccount: () => void;
+  readonly onCreateOnboardingLink: () => void;
+}) {
+  if (
+    settingsState.hasMerchantAccount &&
+    settingsState.merchantAccount &&
+    settingsState.merchantState
+  ) {
+    return (
+      <ConnectedMerchantAccountSection
+        isCreatingOnboardingLink={isCreatingOnboardingLink}
+        isPro={isPro}
+        settingsState={settingsState}
+        slug={slug}
+        onCreateOnboardingLink={onCreateOnboardingLink}
+      />
+    );
+  }
+
+  return (
+    <CreateMerchantAccountCard
+      isCreatingAccount={isCreatingAccount}
+      isLoadingPlan={isLoadingPlan}
+      isPro={isPro}
+      settingsState={settingsState}
+      slug={slug}
+      onCreateAccount={onCreateAccount}
+    />
+  );
+}
+
+function ConnectedMerchantAccountSection({
+  isCreatingOnboardingLink,
+  isPro,
+  settingsState,
+  slug,
+  onCreateOnboardingLink,
+}: {
+  readonly isCreatingOnboardingLink: boolean;
+  readonly isPro: boolean;
+  readonly settingsState: PaymentsSettingsState;
+  readonly slug: string;
+  readonly onCreateOnboardingLink: () => void;
+}) {
+  if (!settingsState.merchantAccount || !settingsState.merchantState) return null;
+
+  return (
+    <VortexPaymentsProvider
+      config={{
+        baseUrl: window.location.origin,
+        environment: "test",
+        organizationId: String(settingsState.orgId ?? slug),
+        branding: { brandName: "Seal", showVortexBrand: true },
+      }}
+    >
+      <VortexMerchantAccountPanel
+        merchantAccount={settingsState.merchantAccount}
+        merchantState={settingsState.merchantState}
+        classNames={vortexPaymentsClassNames}
+        copy={{ title: "Vortex Connect" }}
+        disabled={!settingsState.canManage}
+      />
+      <VortexMerchantActionQueue
+        merchantState={settingsState.merchantState}
+        classNames={vortexPaymentsClassNames}
+        copy={{ title: "Vortex Connect actions" }}
+        disabled={!settingsState.canManage}
+      />
+      {!settingsState.merchantChargesEnabled && isPro && (
+        <VerificationRequiredCallout
+          canManage={settingsState.canManage}
+          isCreatingOnboardingLink={isCreatingOnboardingLink}
+          onCreateOnboardingLink={onCreateOnboardingLink}
+        />
+      )}
+    </VortexPaymentsProvider>
+  );
+}
+
+function VerificationRequiredCallout({
+  canManage,
+  isCreatingOnboardingLink,
+  onCreateOnboardingLink,
+}: {
+  readonly canManage: boolean;
+  readonly isCreatingOnboardingLink: boolean;
+  readonly onCreateOnboardingLink: () => void;
+}) {
+  return (
+    <div className="mt-4 flex flex-col gap-3 rounded-md border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">Verification required</p>
+        <p className="text-muted-foreground text-sm">
+          Complete verification before document payments route to this merchant.
+        </p>
+      </div>
+      <Button
+        onClick={onCreateOnboardingLink}
+        disabled={!canManage || isCreatingOnboardingLink}
+        className="shrink-0"
+      >
+        {isCreatingOnboardingLink ? (
+          <Loader2 className="mr-2 size-4 animate-spin" />
+        ) : (
+          <ExternalLink className="mr-2 size-4" />
+        )}
+        Complete verification
+      </Button>
+    </div>
+  );
+}
+
+function CreateMerchantAccountCard({
+  isCreatingAccount,
+  isLoadingPlan,
+  isPro,
+  settingsState,
+  slug,
+  onCreateAccount,
+}: {
+  readonly isCreatingAccount: boolean;
+  readonly isLoadingPlan: boolean;
+  readonly isPro: boolean;
+  readonly settingsState: PaymentsSettingsState;
+  readonly slug: string;
+  readonly onCreateAccount: () => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Vortex Connect</CardTitle>
+        <CardDescription>
+          Manage onboarding status, required actions, and payment readiness.
+          {!isPro && !isLoadingPlan && (
+            <span className="text-warning mt-1 block">
+              Upgrade to Professional to accept document payments.
+            </span>
+          )}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!settingsState.canManage && (
+          <div className="bg-muted text-muted-foreground rounded-md p-3 text-sm">
+            You can view payment status, but only owners and admins can update payment settings.
+          </div>
+        )}
+
+        {settingsState.status === "not_connected" && isPro && (
+          <CreateMerchantAccountPrompt
+            canManage={settingsState.canManage}
+            isCreatingAccount={isCreatingAccount}
+            onCreateAccount={onCreateAccount}
+          />
+        )}
+
+        {settingsState.status === "not_connected" && !isPro && !isLoadingPlan && (
+          <PlanUpgradePrompt slug={slug} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CreateMerchantAccountPrompt({
+  canManage,
+  isCreatingAccount,
+  onCreateAccount,
+}: {
+  readonly canManage: boolean;
+  readonly isCreatingAccount: boolean;
+  readonly onCreateAccount: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm">
+        No Vortex Connect account is ready. Create one to start accepting payments through your
+        documents.
+      </p>
+      <Button onClick={onCreateAccount} disabled={!canManage || isCreatingAccount}>
+        {isCreatingAccount ? (
+          <Loader2 className="mr-2 size-4 animate-spin" />
+        ) : (
+          <PlugZap className="mr-2 size-4" />
+        )}
+        Create Vortex Connect account
+      </Button>
+    </div>
+  );
+}
+
+function PlanUpgradePrompt({ slug }: { readonly slug: string }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm">
+        Vortex Connect payment collection is available on the Professional plan.
+      </p>
+      <Button asChild>
+        <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
+      </Button>
+    </div>
+  );
+}
+
+function FeePolicySection({
+  isPro,
+  isSavingFeeHandling,
+  settingsState,
+  onFeePolicyChange,
+}: {
+  readonly isPro: boolean;
+  readonly isSavingFeeHandling: boolean;
+  readonly settingsState: PaymentsSettingsState;
+  readonly onFeePolicyChange: (ownerMode: VortexFeePolicyOwnerMode) => void;
+}) {
+  if (settingsState.status !== "connected" || !isPro || settingsState.feePolicy === null) {
+    return null;
+  }
+
+  return (
+    <VortexFeePolicyPanel
+      feePolicy={settingsState.feePolicy}
+      classNames={vortexPaymentsClassNames}
+      disabled={!settingsState.canManage || isSavingFeeHandling}
+      loading={isSavingFeeHandling}
+      onPolicyChange={onFeePolicyChange}
+    />
+  );
+}
+
+function buildPaymentsSettingsState({
+  merchantAccountResult,
+  organizationId,
+  organizationName,
+  slug,
+}: {
+  readonly merchantAccountResult: MerchantAccountResult | undefined;
+  readonly organizationId: Id<"organizations"> | undefined;
+  readonly organizationName: string;
+  readonly slug: string;
+}): PaymentsSettingsState {
+  const account = merchantAccountResult?.account ?? null;
+  const status = merchantAccountResult?.status ?? "not_connected";
+
+  return {
+    canManage: merchantAccountResult?.canManage ?? false,
+    feeHandling: account?.feeHandling ?? "absorb",
+    feePolicy: buildNullableFeePolicy(account),
+    hasMerchantAccount: account !== null,
+    merchantAccount: buildNullableMerchantAccount(account, organizationName, organizationId, slug),
+    merchantChargesEnabled: account?.chargesEnabled ?? false,
+    merchantState: buildNullableMerchantState(account, status),
+    orgId: organizationId,
+    status,
+  };
+}
+
+function buildNullableFeePolicy(
+  account: MerchantAccountRecord | null,
+): VortexFeePolicyState | null {
+  if (account === null) return null;
+  return buildFeePolicy(account.processorAccountId, account.feeHandling);
+}
+
+function buildNullableMerchantAccount(
+  account: MerchantAccountRecord | null,
+  organizationName: string,
+  organizationId: Id<"organizations"> | undefined,
+  slug: string,
+): VortexMerchantAccount | null {
+  if (account === null) return null;
+  return buildMerchantAccount(account, organizationName || slug, organizationId);
+}
+
+function buildNullableMerchantState(
+  account: MerchantAccountRecord | null,
+  status: ConnectionStatus,
+): VortexMerchantState | null {
+  if (account === null) return null;
+  return buildMerchantState(account, status);
 }
 
 function buildMerchantAccount(
@@ -381,26 +674,6 @@ function buildMerchantState(
   account: NonNullable<MerchantAccountResult["account"]>,
   status: ConnectionStatus,
 ): VortexMerchantState {
-  const openRequirementIds = [
-    ...(account.requirements?.currentlyDue ?? []),
-    ...(account.requirements?.pastDue ?? []),
-  ];
-  const activeCapabilityKeys = [
-    account.capabilities?.cardPayments === "active" ? "card_payments" : null,
-    account.capabilities?.transfers === "active" ? "transfers" : null,
-    account.capabilities?.usBankAccountAchPayments === "active"
-      ? "us_bank_account_ach_payments"
-      : null,
-  ].filter((capability): capability is string => capability !== null);
-  const restrictedCapabilityKeys = [
-    account.capabilities?.cardPayments !== "active" ? "card_payments" : null,
-    account.capabilities?.transfers !== "active" ? "transfers" : null,
-    account.capabilities?.usBankAccountAchPayments !== undefined &&
-    account.capabilities.usBankAccountAchPayments !== "active"
-      ? "us_bank_account_ach_payments"
-      : null,
-  ].filter((capability): capability is string => capability !== null);
-
   return {
     merchantAccountId: account.processorAccountId,
     environment: "sandbox",
@@ -412,15 +685,50 @@ function buildMerchantState(
       routeStatus: status,
     }),
     onboardingStatus: account.detailsSubmitted ? "approved" : "action_required",
-    openRequirementIds,
-    activeCapabilityKeys,
-    restrictedCapabilityKeys,
+    openRequirementIds: buildOpenRequirementIds(account),
+    activeCapabilityKeys: buildActiveCapabilityKeys(account),
+    restrictedCapabilityKeys: buildRestrictedCapabilityKeys(account),
     canAcceptPayments: account.chargesEnabled,
     payoutReadiness: account.payoutsEnabled ? "ready" : "blocked",
     payoutBlockReason: account.payoutsEnabled ? undefined : account.requirements?.disabledReason,
     capabilitySnapshots: [],
     generatedAt: toIsoTimestamp(account.updatedAt),
   };
+}
+
+function buildOpenRequirementIds(account: MerchantAccountRecord): readonly string[] {
+  return [...(account.requirements?.currentlyDue ?? []), ...(account.requirements?.pastDue ?? [])];
+}
+
+function buildActiveCapabilityKeys(account: MerchantAccountRecord): readonly string[] {
+  return [
+    capabilityKeyWhenActive("card_payments", account.capabilities?.cardPayments),
+    capabilityKeyWhenActive("transfers", account.capabilities?.transfers),
+    capabilityKeyWhenActive(
+      "us_bank_account_ach_payments",
+      account.capabilities?.usBankAccountAchPayments,
+    ),
+  ].filter((capability): capability is string => capability !== null);
+}
+
+function buildRestrictedCapabilityKeys(account: MerchantAccountRecord): readonly string[] {
+  return [
+    capabilityKeyWhenRestricted("card_payments", account.capabilities?.cardPayments),
+    capabilityKeyWhenRestricted("transfers", account.capabilities?.transfers),
+    capabilityKeyWhenRestricted(
+      "us_bank_account_ach_payments",
+      account.capabilities?.usBankAccountAchPayments,
+    ),
+  ].filter((capability): capability is string => capability !== null);
+}
+
+function capabilityKeyWhenActive(key: string, status: string | undefined): string | null {
+  return status === "active" ? key : null;
+}
+
+function capabilityKeyWhenRestricted(key: string, status: string | undefined): string | null {
+  if (status === undefined || status === "active") return null;
+  return key;
 }
 
 function buildFeePolicy(merchantAccountId: string, feeHandling: FeeHandling): VortexFeePolicyState {

@@ -190,15 +190,19 @@ function selectCatalogPrice(catalog: JsonObject): {
   assert(products.length > 0, "Expected Vortex catalog to include at least one active product");
   assert(prices.length > 0, "Expected Vortex catalog to include at least one active price");
 
-  const vortexShaped = findLinkedCatalogPrice(products, prices, (productId, priceId) =>
-    productId.startsWith("vtx_") && priceId.startsWith("vtx_"),
+  const vortexShaped = findLinkedCatalogPrice(
+    products,
+    prices,
+    (productId, priceId) => productId.startsWith("vtx_") && priceId.startsWith("vtx_"),
   );
   if (vortexShaped !== null) {
     return vortexShaped;
   }
 
-  return findLinkedCatalogPrice(products, prices, () => true) ??
-    fail("Expected at least one Vortex catalog price to reference an active product");
+  return (
+    findLinkedCatalogPrice(products, prices, () => true) ??
+    fail("Expected at least one Vortex catalog price to reference an active product")
+  );
 }
 
 function findLinkedCatalogPrice(
@@ -223,8 +227,8 @@ function findLinkedCatalogPrice(
 
 function assertPlanPro(state: JsonObject, context: string): void {
   const plan = objectField(state, "plan");
-  assert(plan.plan === "pro", `${context}: expected Stripe control plan to remain pro`);
-  assert(plan.isPro === true, `${context}: expected Stripe control isPro true`);
+  assert(plan.plan === "pro", `${context}: expected Vortex entitlement control plan to remain pro`);
+  assert(plan.isPro === true, `${context}: expected Vortex entitlement control isPro true`);
 }
 
 async function main(): Promise<void> {
@@ -250,13 +254,13 @@ async function main(): Promise<void> {
   const expectedUnitAmount = numberField(selected.price, "unitAmount");
   const expectedBillingInterval = optionalStringField(selected.price, "billingInterval");
 
-  const stripeSafety = await runConvex<JsonObject>({
+  const vortexEntitlementSafety = await runConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:seedStripeEntitlementSafetyProof",
+    functionName: "vortex_billing/proof_actions:seedVortexEntitlementSafetyProof",
     args: { proofRunId },
   });
-  const safetyOrganizationId = stringField(stripeSafety, "organizationId");
-  const safetyExternalPriceId = stringField(stripeSafety, "externalPriceId");
+  const safetyOrganizationId = stringField(vortexEntitlementSafety, "organizationId");
+  const safetyVortexPriceId = stringField(vortexEntitlementSafety, "vortexPriceId");
 
   const beforeState = await runConvex<JsonObject>({
     deployment: sealDeployment,
@@ -319,14 +323,14 @@ async function main(): Promise<void> {
   });
   assertPlanPro(afterState, "after Vortex catalog sync");
   const safetyPrice = nullableObjectField(afterState, "price");
-  assert(safetyPrice !== null, "Expected Stripe safety price after sync");
+  assert(safetyPrice !== null, "Expected Vortex entitlement safety price after sync");
   assert(
-    stringField(safetyPrice, "externalPriceId") === safetyExternalPriceId,
-    "Expected Stripe safety subscription to stay on externalPriceId",
+    stringField(safetyPrice, "externalPriceId") === safetyVortexPriceId,
+    "Expected Vortex entitlement safety subscription to stay on its Vortex price id",
   );
   assert(
-    afterState.activeStripeIdPresent === true,
-    "Expected Stripe-shaped control IDs to remain active",
+    afterState.activeNonVortexProviderIdPresent === false,
+    "Expected Vortex entitlement control to contain no non-Vortex-provider-shaped IDs",
   );
 
   console.log(
@@ -350,11 +354,11 @@ async function main(): Promise<void> {
           unitAmount: expectedUnitAmount,
           billingInterval: expectedBillingInterval,
         },
-        stripeEntitlementSafety: {
+        vortexEntitlementSafety: {
           organizationId: safetyOrganizationId,
-          externalPriceId: safetyExternalPriceId,
+          vortexPriceId: safetyVortexPriceId,
           plan: "pro",
-          activeStripeIdPresent: true,
+          activeNonVortexProviderIdPresent: false,
         },
       },
       null,

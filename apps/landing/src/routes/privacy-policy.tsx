@@ -64,9 +64,8 @@ function PrivacyPolicy() {
 
           <h3>Payment Information</h3>
           <p>
-            Payment processing is handled by Stripe. We do not store your full credit card number or
-            banking details. Stripe may collect payment information directly in accordance with
-            their privacy policy.
+            Payment processing is handled by Vortex Payments. We do not store your full credit card
+            number or banking details in Seal.
           </p>
 
           <h3>Usage Data</h3>
@@ -100,7 +99,7 @@ function PrivacyPolicy() {
               <strong>Convex</strong> — Backend infrastructure, authentication, and data storage
             </li>
             <li>
-              <strong>Stripe</strong> — Payment processing and subscription management
+              <strong>Vortex Payments</strong> — Payment processing and subscription management
             </li>
             <li>
               <strong>Resend</strong> — Transactional email delivery

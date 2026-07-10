@@ -12,7 +12,8 @@ function normalizeCustomerDefaultPaymentMethod(
   const customerMethods = paymentMethods.filter(
     (paymentMethod) =>
       paymentMethod.ownerType === "customer" &&
-      (paymentMethod.merchantAccountId === undefined || paymentMethod.merchantAccountId === merchantAccountId),
+      (paymentMethod.merchantAccountId === undefined ||
+        paymentMethod.merchantAccountId === merchantAccountId),
   );
   const activeDefaults = customerMethods.filter(
     (paymentMethod) => paymentMethod.status === "active" && paymentMethod.isDefault,
@@ -22,18 +23,21 @@ function normalizeCustomerDefaultPaymentMethod(
     return paymentMethods;
   }
 
-  const fallbackDefaultId = activeDefaults[0]?.id
-    ?? customerMethods.find((paymentMethod) => paymentMethod.status === "active")?.id;
+  const fallbackDefaultId =
+    activeDefaults[0]?.id ??
+    customerMethods.find((paymentMethod) => paymentMethod.status === "active")?.id;
 
   return paymentMethods.map((paymentMethod) => {
     if (
-      paymentMethod.ownerType !== "customer"
-      || (paymentMethod.merchantAccountId !== undefined && paymentMethod.merchantAccountId !== merchantAccountId)
+      paymentMethod.ownerType !== "customer" ||
+      (paymentMethod.merchantAccountId !== undefined &&
+        paymentMethod.merchantAccountId !== merchantAccountId)
     ) {
       return paymentMethod;
     }
 
-    const nextIsDefault = paymentMethod.status === "active" && paymentMethod.id === fallbackDefaultId;
+    const nextIsDefault =
+      paymentMethod.status === "active" && paymentMethod.id === fallbackDefaultId;
     if (paymentMethod.isDefault === nextIsDefault) {
       return paymentMethod;
     }

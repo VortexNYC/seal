@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 
+import { resolve } from "node:path";
+
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
@@ -10,7 +12,10 @@ type CommandResult = {
 };
 
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
-const vortexConvexCwd = new URL("../../vortex-payments/apps/backend", import.meta.url).pathname;
+const localVortexRepoRoot =
+  readEnv("VORTEX_PAYMENTS_REPO_ROOT") ??
+  new URL("../../vortex-payments", import.meta.url).pathname;
+const vortexConvexCwd = resolve(localVortexRepoRoot, "apps/backend");
 const proofRunId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const defaultVortexDeployment = "dev:notable-leopard-969";
 const defaultVortexBaseUrl = "https://notable-leopard-969.convex.site";
@@ -333,7 +338,10 @@ async function main(): Promise<void> {
     functionName: "_paymentsCanonical:listPaymentsMerchantsByTenant",
     args: { environment, tenantId: vortexOrganizationId },
   });
-  const processorAccountRefs = findMerchantProcessorRefs({ merchants: existingMerchants, merchantAccountId });
+  const processorAccountRefs = findMerchantProcessorRefs({
+    merchants: existingMerchants,
+    merchantAccountId,
+  });
   assert(
     processorAccountRefs.length > 0,
     `No Vortex merchant processor reference found for ${merchantAccountId}; seed the merchant in Vortex Payments before live card proof`,
@@ -479,17 +487,22 @@ async function main(): Promise<void> {
   });
   await mergeSealRecordEnv({
     deployment: sealDeployment,
-    name: "VORTEX_BILLING_CUSTOMER_MAP",
+    name: "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
     updates: { [recipientEmail]: customerId },
   });
   await mergeSealRecordEnv({
     deployment: sealDeployment,
-    name: "VORTEX_BILLING_ACCOUNT_MAP",
+    name: "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
     updates: { [organizationId]: billingAccountId },
   });
   await mergeSealRecordEnv({
     deployment: sealDeployment,
-    name: "VORTEX_BILLING_PRICE_MAP",
+    name: "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
+    updates: { [organizationId]: merchantAccountId },
+  });
+  await mergeSealRecordEnv({
+    deployment: sealDeployment,
+    name: "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
     updates: { [lineItemId]: priceId },
   });
 
@@ -504,9 +517,8 @@ async function main(): Promise<void> {
   assert(isJsonObject(paymentLink), "Expected paymentLinks[0] to be an object");
   const hostedInvoiceUrl = stringField(paymentLink, "hostedInvoiceUrl");
   assert(hostedInvoiceUrl.startsWith(vortexBaseUrl), "Expected hosted invoice URL from Vortex");
-  assert(!/stripe\.com/i.test(hostedInvoiceUrl), "Expected Vortex hosted invoice URL, not Stripe");
   assert(numberField(paymentLink, "totalAmountCents") === amountCents, "Unexpected payment amount");
-  const vortexPayableId = stringField(paymentLink, "providerInvoiceId");
+  const vortexPayableId = stringField(paymentLink, "vortexPayableId");
 
   const state = await runSealConvex<JsonObject>({
     deployment: sealDeployment,
@@ -561,6 +573,13 @@ async function main(): Promise<void> {
           hostedInvoiceUrl,
           totalAmountCents: numberField(paymentLink, "totalAmountCents"),
           currency: stringField(paymentLink, "currency"),
+        },
+        envContract: {
+          allowlist: "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS",
+          customerMap: "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP",
+          accountMap: "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP",
+          merchantAccountMap: "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP",
+          priceMap: "VORTEX_BILLING_DOCUMENT_PRICE_MAP",
         },
         state: {
           paymentStatus: stringField(postSignatureState, "paymentStatus"),

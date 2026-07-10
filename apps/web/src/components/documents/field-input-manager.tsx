@@ -375,30 +375,30 @@ export function FieldInputManager({
         <div className="py-4">
           <FieldInputContent
             fieldId={fieldId}
-              fieldType={fieldType}
-              label={label}
-              value={fieldState.value}
-              isRequired={isRequired}
-              properties={properties}
-              validationRules={validationRules}
-              signingToken={signingToken}
-              recipientName={recipientName}
-              onValueChange={fieldState.setValue}
-              onValidationChange={fieldState.handleValidationChange}
-              onSignatureCapture={fieldState.handleSignatureCapture}
-              onCancelSignature={() => onOpenChange(false)}
-            />
-          </div>
-
-          <FieldInputFooter
             fieldType={fieldType}
-            isSaving={fieldState.isSaving}
-            isValid={fieldState.isValid}
+            label={label}
+            value={fieldState.value}
             isRequired={isRequired}
-            onCancel={fieldState.handleCancel}
-            onSave={fieldState.handleSave}
-            onClose={() => onOpenChange(false)}
+            properties={properties}
+            validationRules={validationRules}
+            signingToken={signingToken}
+            recipientName={recipientName}
+            onValueChange={fieldState.setValue}
+            onValidationChange={fieldState.handleValidationChange}
+            onSignatureCapture={fieldState.handleSignatureCapture}
+            onCancelSignature={() => onOpenChange(false)}
           />
+        </div>
+
+        <FieldInputFooter
+          fieldType={fieldType}
+          isSaving={fieldState.isSaving}
+          isValid={fieldState.isValid}
+          isRequired={isRequired}
+          onCancel={fieldState.handleCancel}
+          onSave={fieldState.handleSave}
+          onClose={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -1,8 +1,8 @@
 /**
  * SUBSCRIPTION COUPONS TABLE
- * Coupons synced from payment provider - READ-ONLY mirror for fast queries.
- * Source of truth: Payment provider (Stripe).
- * NEVER modify directly - only via payment provider API + webhooks.
+ * Coupons synced from Vortex Billing - READ-ONLY mirror for fast queries.
+ * Source of truth: Vortex Billing.
+ * NEVER modify directly - only via Vortex Billing API + webhooks.
  */
 
 import { defineTable } from "convex/server";
@@ -20,8 +20,8 @@ export const subscriptionCouponDuration = v.union(
 export type SubscriptionCouponDuration = Infer<typeof subscriptionCouponDuration>;
 
 export const subscriptionCouponsTable = defineTable({
-  // Stripe ID (source of truth)
-  stripeCouponId: v.string(),
+  // Provider coupon ID
+  providerCouponId: v.string(),
 
   // Discount details
   couponType: subscriptionCouponType,
@@ -37,7 +37,7 @@ export const subscriptionCouponsTable = defineTable({
   durationInMonths: v.optional(v.number()), // For "repeating" duration
 
   // Product restrictions (which products can use this coupon)
-  appliesToProducts: v.optional(v.array(v.string())), // Stripe product IDs
+  appliesToProducts: v.optional(v.array(v.string())), // Vortex product IDs
 
   // Metadata
   metadata: v.optional(
@@ -52,5 +52,5 @@ export const subscriptionCouponsTable = defineTable({
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()), // Soft delete
 })
-  .index("by_stripe_coupon_id", ["stripeCouponId"])
+  .index("by_provider_coupon", ["providerCouponId"])
   .index("by_deleted_at", ["deletedAt"]);

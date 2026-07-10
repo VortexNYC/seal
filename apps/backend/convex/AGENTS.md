@@ -15,7 +15,7 @@ apps/backend/convex/
 ├── api/                 # REST API (v1)
 ├── documents/           # Document workflows
 ├── organizations/       # Org management
-├── stripe/              # Billing integration
+├── vortex_billing/      # Billing integration
 ├── webhooks/            # Webhook endpoints/logs
 └── _generated/          # Convex-generated types (commit)
 ```
@@ -28,7 +28,7 @@ apps/backend/convex/
 | Permissions   | `apps/backend/convex/auth.utils.ts` | Role hierarchy + permission strings |
 | Schemas       | `apps/backend/convex/schemas/`      | One table per file                  |
 | REST API      | `apps/backend/convex/api/v1/`       | Public endpoints                    |
-| Webhooks      | `apps/backend/convex/http.ts`       | Stripe + auth HTTP router           |
+| Webhooks      | `apps/backend/convex/http.ts`       | Vortex Billing + auth HTTP router   |
 | RLS rules     | `apps/backend/convex/rls.ts`        | Access control                      |
 
 ## CONVENTIONS
@@ -42,7 +42,7 @@ apps/backend/convex/
 
 - Raw Convex `query`/`mutation` without wrappers.
 - Modify `apps/backend/convex/schemas/subscription_coupons.ts` or `apps/backend/convex/schemas/subscription_promo_codes.ts` directly.
-- Update `creditsUsed` in `apps/backend/convex/stripe/handlers.ts` (preserve usage history).
+- Update usage accounting through the Vortex Billing projection path (preserve usage history).
 - Edit `apps/backend/convex/_generated/*` manually.
 
 ## See Also

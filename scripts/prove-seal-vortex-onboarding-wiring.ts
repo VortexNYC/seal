@@ -117,7 +117,10 @@ async function runCommand(input: {
     cwd: input.cwd,
     // Pin CONVEX_DEPLOYMENT per call: the parent process inherits a CONVEX_DEPLOYMENT that would
     // otherwise override each call's cwd/.env.local and send every call to the same project.
-    env: input.deployment === undefined ? undefined : { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
+    env:
+      input.deployment === undefined
+        ? undefined
+        : { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -166,19 +169,13 @@ async function getConvexEnv(input: {
   readonly deployment: string;
   readonly name: string;
 }): Promise<string | undefined> {
-  const child = Bun.spawn(
-    ["bunx", "convex", "env", "get", input.name],
-    {
-      cwd: input.cwd,
-      env: { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
-      stdout: "pipe",
-      stderr: "pipe",
-    },
-  );
-  const [stdout, exitCode] = await Promise.all([
-    new Response(child.stdout).text(),
-    child.exited,
-  ]);
+  const child = Bun.spawn(["bunx", "convex", "env", "get", input.name], {
+    cwd: input.cwd,
+    env: { ...process.env, CONVEX_DEPLOYMENT: input.deployment },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
   if (exitCode !== 0) {
     return undefined;
   }
@@ -193,14 +190,7 @@ async function setConvexEnv(input: {
   readonly value: string;
 }): Promise<void> {
   await runCommand({
-    command: [
-      "bunx",
-      "convex",
-      "env",
-      "set",
-      input.name,
-      input.value,
-    ],
+    command: ["bunx", "convex", "env", "set", input.name, input.value],
     cwd: input.cwd,
     label: `convex env set ${input.name}`,
     deployment: input.deployment,
@@ -239,7 +229,9 @@ async function requestVortexJson(input: {
     `${input.method} ${input.path} response`,
   );
   if (response.status < 200 || response.status >= 300) {
-    fail(`${input.method} ${input.path} failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`);
+    fail(
+      `${input.method} ${input.path} failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`,
+    );
   }
   return parsed;
 }
@@ -260,7 +252,10 @@ async function requestHostedForm(input: {
   if (response.status < 200 || response.status >= 300) {
     fail(`${input.label} failed: ${response.status}\n${text}`);
   }
-  assert(response.headers.get("content-type")?.includes("text/html") === true, `${input.label} must return HTML`);
+  assert(
+    response.headers.get("content-type")?.includes("text/html") === true,
+    `${input.label} must return HTML`,
+  );
   return text;
 }
 
@@ -358,17 +353,21 @@ function assertNoOpenRequirements(input: {
   readonly context: string;
 }): void {
   const openRequirementIds = arrayField(input.snapshot, "openRequirementIds");
-  const openRequirements = (input.requirements ?? [])
-    .filter(isJsonObject)
-    .filter((requirement) => {
-      const status = requirement.status;
-      return status === "pending" || status === "submitted" || status === "failed";
-    });
+  const openRequirements = (input.requirements ?? []).filter(isJsonObject).filter((requirement) => {
+    const status = requirement.status;
+    return status === "pending" || status === "submitted" || status === "failed";
+  });
   if (openRequirementIds.length > 0 || openRequirements.length > 0) {
-    fail(`${input.context} returned open requirements:\n${JSON.stringify({
-      openRequirementIds,
-      requirements: openRequirements,
-    }, null, 2)}`);
+    fail(
+      `${input.context} returned open requirements:\n${JSON.stringify(
+        {
+          openRequirementIds,
+          requirements: openRequirements,
+        },
+        null,
+        2,
+      )}`,
+    );
   }
 }
 
@@ -380,8 +379,14 @@ async function refreshUntilApproved(input: {
 }): Promise<JsonObject> {
   const timeoutMs = Number(readEnv("FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS") ?? "600000");
   const pollMs = Number(readEnv("FINIX_SMOKE_MERCHANT_READY_POLL_MS") ?? "3000");
-  assert(Number.isInteger(timeoutMs) && timeoutMs > 0, "FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS must be positive");
-  assert(Number.isInteger(pollMs) && pollMs > 0, "FINIX_SMOKE_MERCHANT_READY_POLL_MS must be positive");
+  assert(
+    Number.isInteger(timeoutMs) && timeoutMs > 0,
+    "FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS must be positive",
+  );
+  assert(
+    Number.isInteger(pollMs) && pollMs > 0,
+    "FINIX_SMOKE_MERCHANT_READY_POLL_MS must be positive",
+  );
 
   const deadline = Date.now() + timeoutMs;
   let latest: JsonObject | null = null;
@@ -402,11 +407,15 @@ async function refreshUntilApproved(input: {
       return latest;
     }
     if (status === "rejected" || status === "action_required") {
-      fail(`Vortex onboarding reached blocking state "${status}":\n${JSON.stringify(latest, null, 2)}`);
+      fail(
+        `Vortex onboarding reached blocking state "${status}":\n${JSON.stringify(latest, null, 2)}`,
+      );
     }
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
-  fail(`Timed out after ${timeoutMs}ms waiting for onboarding approval:\n${JSON.stringify(latest, null, 2)}`);
+  fail(
+    `Timed out after ${timeoutMs}ms waiting for onboarding approval:\n${JSON.stringify(latest, null, 2)}`,
+  );
 }
 
 function mergeAllowlist(current: string | undefined, organizationId: string): string {
@@ -419,7 +428,10 @@ function mergeAllowlist(current: string | undefined, organizationId: string): st
   }
   if (normalized.startsWith("[")) {
     const parsed = JSON.parse(normalized) as Json;
-    assert(Array.isArray(parsed), "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS must be an array");
+    assert(
+      Array.isArray(parsed),
+      "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS must be an array",
+    );
     const values = parsed.filter((entry): entry is string => typeof entry === "string");
     return JSON.stringify([...new Set([...values, organizationId])]);
   }
@@ -601,7 +613,10 @@ async function main(): Promise<void> {
     stringField(sealMerchantState, "vortexMerchantAccountId") === merchantAccountId,
     "Expected Seal to store the Vortex merchant account id",
   );
-  assert(booleanField(sealMerchantState, "chargesEnabled") === true, "Expected Seal chargesEnabled true");
+  assert(
+    booleanField(sealMerchantState, "chargesEnabled") === true,
+    "Expected Seal chargesEnabled true",
+  );
 
   const resolvedMerchantAccountId = await runConvex<string | null>({
     cwd: sealConvexCwd,
@@ -623,25 +638,31 @@ async function main(): Promise<void> {
   const payoutProfile = nullableObjectField(payoutProfileBody, "data");
   assert(payoutProfile !== null, "Expected Vortex payout profile");
 
-  console.log(JSON.stringify({
-    ok: true,
-    check: "seal_vortex_onboarding_wiring",
-    sealDeployment,
-    vortexDeployment,
-    vortexBaseUrl,
-    environment,
-    organizationId,
-    merchantAccountId,
-    preSubmitOnboardingSessionId,
-    onboardingSessionId: actualOnboardingSessionId,
-    chargesEnabled: booleanField(sealMerchantState, "chargesEnabled"),
-    resolvedMerchantAccountId,
-    payoutProfile: {
-      mode: stringField(payoutProfile, "mode"),
-      payoutRail: stringField(payoutProfile, "payoutRail"),
-      payoutSchedule: stringField(payoutProfile, "payoutSchedule"),
-    },
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        check: "seal_vortex_onboarding_wiring",
+        sealDeployment,
+        vortexDeployment,
+        vortexBaseUrl,
+        environment,
+        organizationId,
+        merchantAccountId,
+        preSubmitOnboardingSessionId,
+        onboardingSessionId: actualOnboardingSessionId,
+        chargesEnabled: booleanField(sealMerchantState, "chargesEnabled"),
+        resolvedMerchantAccountId,
+        payoutProfile: {
+          mode: stringField(payoutProfile, "mode"),
+          payoutRail: stringField(payoutProfile, "payoutRail"),
+          payoutSchedule: stringField(payoutProfile, "payoutSchedule"),
+        },
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 await main();

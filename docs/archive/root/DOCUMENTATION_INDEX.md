@@ -148,9 +148,9 @@ This project has comprehensive documentation covering the authentication, author
 1. Go to: **QUICK_START_ROLES.md** → "Two-Level Document Access"
 2. Deep dive: **ROLES_AND_PERMISSIONS.md** → "Document Access Control"
 
-### I need to understand Stripe invoice flow
+### I need to understand retired provider invoice flow
 
-1. Read: **features/payments/stripe-invoices.md** → Stripe Invoices (Document Send Flow)
+1. Read: **features/payments/retired_provider-invoices.md** → retired provider Invoices (Document Send Flow)
 
 ---
 
@@ -171,7 +171,7 @@ This project has comprehensive documentation covering the authentication, author
 - **Org-level**: Role determines if you can create docs (member can, viewer cannot)
 - **Doc-level**: Sharing mode (private, workspace, specific) + permission level (view, edit, manage)
 
-### Payments (Stripe Invoices)
+### Payments (retired provider Invoices)
 
 - **Draft first**: Invoices are created as drafts for preview (no hosted link yet).
 - **Finalize on send**: Finalization generates `hosted_invoice_url` used in emails.
@@ -253,7 +253,7 @@ These topics are outside the scope of the documentation but are important:
 
 - **Clerk Setup & Configuration** - See Clerk documentation
 - **Convex Deployment** - See Convex documentation
-- **Stripe Integration** - See Stripe documentation
+- **retired provider Integration** - See retired provider documentation
 - **Database Migrations** - Not applicable (Convex handles schema)
 - **Frontend Component Library** - See Shadcn UI documentation
 - **Styling** - See Tailwind CSS documentation

@@ -167,7 +167,7 @@
 │    │                    Start Pro Trial                                  │  │
 │    └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│              🔒 Secure billing powered by Stripe                             │
+│              🔒 Secure billing powered by retired provider                             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -460,7 +460,7 @@
 │ │Create & Start Trial │ │
 │ └─────────────────────┘ │
 │                         │
-│ 🔒 Secure via Stripe     │
+│ 🔒 Secure via retired provider     │
 │                         │
 └─────────────────────────┘
 ```
@@ -478,7 +478,7 @@
 
 ### Billing Integration
 
-- **Stripe Integration**: Plan-based payment processing (Pro Trial only)
+- **retired provider Integration**: Plan-based payment processing (Pro Trial only)
 - **Free Plan**: No payment collection required
 - **Pro Trial Management**: Automatic 2-week trial activation with payment info
 - **Error Handling**: Clear payment error messages with Free plan fallback
@@ -509,7 +509,7 @@
 - **Member Management**: Prepares invitation infrastructure
 - **Multi-workspace Support**: User can belong to multiple organizations
 
-### Stripe Billing Integration
+### retired provider Billing Integration
 
 - **Subscription Creation**: Per-workspace subscription model (Pro plans only)
 - **Free Plan**: No payment processing required

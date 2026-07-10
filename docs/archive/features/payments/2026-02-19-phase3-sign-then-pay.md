@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace the redirect-based "Pay Now" link (to Stripe hosted invoice URL) with an inline `PaymentElement` on the signing page, introducing a `waiting_for_payment` workflow status so that documents don't complete until payment is collected.
+**Goal:** Replace the redirect-based "Pay Now" link (to retired provider hosted invoice URL) with an inline `PaymentElement` on the signing page, introducing a `waiting_for_payment` workflow status so that documents don't complete until payment is collected.
 
-**Architecture:** Sign-then-Pay model — all signers sign first, then the designated payer sees an inline `PaymentElement` powered by Stripe's `confirmation_secret` expansion on finalized invoices. The `invoice.paid` webhook triggers the final `waiting_for_payment → completed` transition.
+**Architecture:** Sign-then-Pay model — all signers sign first, then the designated payer sees an inline `PaymentElement` powered by retired provider's `confirmation_secret` expansion on finalized invoices. The `invoice.paid` webhook triggers the final `waiting_for_payment → completed` transition.
 
-**Tech Stack:** Stripe PaymentElement (`@stripe/react-stripe-js`), Convex actions/mutations/queries, Stripe `confirmation_secret` API, existing Connect webhook pipeline.
+**Tech Stack:** retired provider PaymentElement (`@retired_provider/react-retired_provider-js`), Convex actions/mutations/queries, retired provider `confirmation_secret` API, existing Connect webhook pipeline.
 
 ---
 
@@ -23,13 +23,13 @@
 | 5. Signing page auth for `client_secret` | New public action `getPaymentSecret` with token auth  | A      |
 | 6. Multi-signer timing                   | Payment after ALL signers complete                    | A      |
 
-### Key Stripe API Facts (validated via Stripe MCP)
+### Key retired provider API Facts (validated via retired provider MCP)
 
-- When an invoice is finalized, Stripe creates a PaymentIntent automatically
-- Use `expand: ['confirmation_secret']` on `stripe.invoices.retrieve()` to get the PI's `client_secret`
-- The `client_secret` is NOT stored in the DB — retrieved on-demand per Stripe's security guidance
+- When an invoice is finalized, retired provider creates a PaymentIntent automatically
+- Use `expand: ['confirmation_secret']` on `retired_provider.invoices.retrieve()` to get the PI's `client_secret`
+- The `client_secret` is NOT stored in the DB — retrieved on-demand per retired provider's security guidance
 - `invoice.paid` webhook fires for all payment types (preferred over `invoice.payment_succeeded`)
-- PaymentElement works with connected accounts via `stripeAccount` header
+- PaymentElement works with connected accounts via `retired_providerAccount` header
 
 ### Files Overview
 
@@ -44,8 +44,8 @@
 | `apps/backend/convex/schemas/document_workflow_status.ts` | Add `waiting_for_payment` to enum, transitions, labels |
 | `apps/backend/convex/documents/workflow_helpers.ts` | Update `canCompleteDocument`, `isTerminalWorkflowStatus` |
 | `apps/backend/convex/documents/workflow_mutations.ts` | Check payment fields before completing → route to `waiting_for_payment` |
-| `apps/backend/convex/stripe/payment_field_actions.ts` | Extract `retrieveClientSecret` helper |
-| `apps/backend/convex/stripe/connect_webhook_handlers.ts` | Add document completion check after `invoice.paid` |
+| `apps/backend/convex/retired_provider/payment_field_actions.ts` | Extract `retrieveClientSecret` helper |
+| `apps/backend/convex/retired_provider/connect_webhook_handlers.ts` | Add document completion check after `invoice.paid` |
 | `apps/backend/convex/payment_fields/mutations.ts` | Return `documentId` from `updatePaymentStatusFromWebhook` |
 | `apps/backend/convex/payment_fields/queries.ts` | Add `getPaymentSecret` public action (or new action file) |
 | `apps/web/src/components/documents/workflow-status-badge.tsx` | Add `waiting_for_payment` badge config |
@@ -333,9 +333,9 @@ git commit -m "feat: route to waiting_for_payment when document has unpaid payme
 
 **Files:**
 
-- Create or modify: `apps/backend/convex/stripe/payment_field_actions.ts`
+- Create or modify: `apps/backend/convex/retired_provider/payment_field_actions.ts`
 
-This is the critical action that retrieves the `client_secret` on-demand from Stripe for the PaymentElement. It uses token-based authentication (same as the signing page) rather than requiring a logged-in user.
+This is the critical action that retrieves the `client_secret` on-demand from retired provider for the PaymentElement. It uses token-based authentication (same as the signing page) rather than requiring a logged-in user.
 
 **Step 1: Add the `getPaymentSecret` public action**
 
@@ -346,8 +346,8 @@ Add to `payment_field_actions.ts` (or a new `payment_field_public_actions.ts` to
  * Retrieve the payment client_secret for an invoice, authenticated by recipient token.
  *
  * Called from the signing page when a signer needs to pay inline.
- * Uses Stripe's `confirmation_secret` expansion to get the PI's client_secret
- * without storing it in the DB (per Stripe's security guidance).
+ * Uses retired provider's `confirmation_secret` expansion to get the PI's client_secret
+ * without storing it in the DB (per retired provider's security guidance).
  */
 export const getPaymentSecret = action({
   args: {
@@ -382,29 +382,29 @@ export const getPaymentSecret = action({
       throw new ConvexError("Payment is already completed or cancelled");
     }
 
-    if (!config.stripeInvoiceId) {
+    if (!config.retired_providerInvoiceId) {
       throw new ConvexError("Invoice not yet created");
     }
 
-    // 5. Get the connected account's Stripe account ID
-    const stripeAccount = await ctx.runQuery(internal.stripe.connect_mutations.getAccountByOrgId, {
+    // 5. Get the connected account's retired provider account ID
+    const retired_providerAccount = await ctx.runQuery(internal.retired_provider.connect_mutations.getAccountByOrgId, {
       organizationId: config.organizationId,
     });
-    if (!stripeAccount?.stripeAccountId) {
-      throw new ConvexError("Stripe account not found for this organization");
+    if (!retired_providerAccount?.retired_providerAccountId) {
+      throw new ConvexError("retired provider account not found for this organization");
     }
 
     // 6. Retrieve the invoice with confirmation_secret expansion
-    const stripe = initializeStripe();
-    const invoice = await stripe.invoices.retrieve(
-      config.stripeInvoiceId,
+    const retired_provider = initializeretired provider();
+    const invoice = await retired_provider.invoices.retrieve(
+      config.retired_providerInvoiceId,
       { expand: ["confirmation_secret"] },
-      { stripeAccount: stripeAccount.stripeAccountId },
+      { retired_providerAccount: retired_providerAccount.retired_providerAccountId },
     );
 
     // The confirmation_secret contains the PaymentIntent's client_secret
     const clientSecret = (
-      invoice as Stripe.Invoice & { confirmation_secret?: { client_secret: string } }
+      invoice as retired provider.Invoice & { confirmation_secret?: { client_secret: string } }
     ).confirmation_secret?.client_secret;
 
     if (!clientSecret) {
@@ -413,7 +413,7 @@ export const getPaymentSecret = action({
 
     return {
       clientSecret,
-      stripeAccountId: stripeAccount.stripeAccountId,
+      retired_providerAccountId: retired_providerAccount.retired_providerAccountId,
     };
   },
 });
@@ -434,7 +434,7 @@ export const getPaymentConfigByFieldInternal = internalQuery({
 });
 ```
 
-**Step 3: Add internal query for Stripe account by org**
+**Step 3: Add internal query for retired provider account by org**
 
 Check if `getAccountByOrgId` already exists in `connect_mutations.ts`. If not, add it:
 
@@ -445,7 +445,7 @@ export const getAccountByOrgId = internalQuery({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("stripe_accounts")
+      .query("retired_provider_accounts")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
       .first();
   },
@@ -459,7 +459,7 @@ Run: `cd /Users/shlomokabareti/Projects/Seal && bun --bun run typecheck`
 **Step 5: Commit**
 
 ```bash
-git add apps/backend/convex/stripe/payment_field_actions.ts apps/backend/convex/payment_fields/queries.ts
+git add apps/backend/convex/retired_provider/payment_field_actions.ts apps/backend/convex/payment_fields/queries.ts
 # Also add connect_mutations.ts if modified
 git commit -m "feat: add getPaymentSecret action for inline payment on signing page"
 ```
@@ -470,7 +470,7 @@ git commit -m "feat: add getPaymentSecret action for inline payment on signing p
 
 **Files:**
 
-- Modify: `apps/backend/convex/stripe/connect_webhook_handlers.ts`
+- Modify: `apps/backend/convex/retired_provider/connect_webhook_handlers.ts`
 - Modify: `apps/backend/convex/payment_fields/mutations.ts`
 
 When `invoice.paid` fires:
@@ -486,13 +486,15 @@ In `apps/backend/convex/payment_fields/mutations.ts`, modify the return to inclu
 ```typescript
 export const updatePaymentStatusFromWebhook = internalMutation({
   args: {
-    stripeInvoiceId: v.string(),
+    retired_providerInvoiceId: v.string(),
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .withIndex("by_retired_provider_invoice", (q) =>
+        q.eq("retired_providerInvoiceId", args.retired_providerInvoiceId),
+      )
       .first();
 
     if (!config) {
@@ -514,10 +516,10 @@ export const updatePaymentStatusFromWebhook = internalMutation({
 In `connect_webhook_handlers.ts`, after updating the payment status, check if the document should now complete:
 
 ```typescript
-async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
+async function handleInvoicePaid(ctx: HttpActionCtx, invoice: retired provider.Invoice): Promise<void> {
   console.info("Processing invoice.paid webhook", {
-    operation: "stripeConnect.invoicePaid",
-    stripeInvoiceId: invoice.id,
+    operation: "retired_providerConnect.invoicePaid",
+    retired_providerInvoiceId: invoice.id,
     status: invoice.status,
     amountPaid: invoice.amount_paid,
   });
@@ -541,21 +543,21 @@ The helper currently returns `string | null`. Update it to return `{ configId: s
 ```typescript
 async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
-  invoice: Stripe.Invoice,
+  invoice: retired provider.Invoice,
   paymentStatus: PaymentStatus,
 ): Promise<{ configId: string; documentId: string } | null> {
   const result = await ctx.runMutation(
     internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
     {
-      stripeInvoiceId: invoice.id,
+      retired_providerInvoiceId: invoice.id,
       paymentStatus,
     },
   );
 
   if (result) {
     console.info("Payment field config status updated", {
-      operation: "stripeConnect.paymentFieldUpdate",
-      stripeInvoiceId: invoice.id,
+      operation: "retired_providerConnect.paymentFieldUpdate",
+      retired_providerInvoiceId: invoice.id,
       paymentStatus,
       configId: result.configId,
       documentId: result.documentId,
@@ -634,7 +636,7 @@ Run: `cd /Users/shlomokabareti/Projects/Seal && bun --bun run typecheck`
 **Step 6: Commit**
 
 ```bash
-git add apps/backend/convex/stripe/connect_webhook_handlers.ts apps/backend/convex/payment_fields/mutations.ts apps/backend/convex/documents/workflow_mutations.ts
+git add apps/backend/convex/retired_provider/connect_webhook_handlers.ts apps/backend/convex/payment_fields/mutations.ts apps/backend/convex/documents/workflow_mutations.ts
 git commit -m "feat: complete document when all payments collected via invoice.paid webhook"
 ```
 
@@ -653,13 +655,13 @@ git commit -m "feat: complete document when all payments collected via invoice.p
 This component:
 
 1. Fetches the `client_secret` from `getPaymentSecret` action
-2. Initializes Stripe.js with the connected account
+2. Initializes retired provider.js with the connected account
 3. Renders PaymentElement
-4. Handles `stripe.confirmPayment()` on submit
+4. Handles `retired_provider.confirmPayment()` on submit
 
 ```typescript
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { type Stripe as StripeType, loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useElements, useretired provider } from "@retired_provider/react-retired_provider-js";
+import { type retired provider as retired providerType, loadretired provider } from "@retired_provider/retired_provider-js";
 import { useAction } from "convex/react";
 import { CreditCardIcon, Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -677,7 +679,7 @@ interface PaymentFieldInlineProps {
 }
 
 /**
- * Inline payment form using Stripe PaymentElement.
+ * Inline payment form using retired provider PaymentElement.
  * Fetches client_secret on-demand and renders payment UI.
  */
 export function PaymentFieldInline({
@@ -686,8 +688,8 @@ export function PaymentFieldInline({
   totalAmountCents,
   currency,
 }: PaymentFieldInlineProps) {
-  const getPaymentSecret = useAction(api.stripe.payment_field_actions.getPaymentSecret);
-  const [stripePromise, setStripePromise] = useState<Promise<StripeType | null> | null>(null);
+  const getPaymentSecret = useAction(api.retired_provider.payment_field_actions.getPaymentSecret);
+  const [retired_providerPromise, setretired providerPromise] = useState<Promise<retired providerType | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -701,10 +703,10 @@ export function PaymentFieldInline({
       try {
         const result = await getPaymentSecret({ token, configId });
         setClientSecret(result.clientSecret);
-        // Initialize Stripe with connected account
-        setStripePromise(
-          loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string, {
-            stripeAccount: result.stripeAccountId,
+        // Initialize retired provider with connected account
+        setretired providerPromise(
+          loadretired provider(import.meta.env.VITE_RETIRED_PROVIDER_PUBLISHABLE_KEY as string, {
+            retired_providerAccount: result.retired_providerAccountId,
           }),
         );
       } catch (err) {
@@ -733,7 +735,7 @@ export function PaymentFieldInline({
     );
   }
 
-  if (!clientSecret || !stripePromise) {
+  if (!clientSecret || !retired_providerPromise) {
     return null;
   }
 
@@ -744,11 +746,11 @@ export function PaymentFieldInline({
 
   return (
     <Elements
-      stripe={stripePromise}
+      retired_provider={retired_providerPromise}
       options={{
         clientSecret,
         appearance: {
-          theme: "stripe",
+          theme: "retired_provider",
           variables: {
             borderRadius: "8px",
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -762,18 +764,18 @@ export function PaymentFieldInline({
 }
 
 function PaymentForm({ amount }: { amount: string }) {
-  const stripe = useStripe();
+  const retired_provider = useretired provider();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!stripe || !elements) return;
+      if (!retired_provider || !elements) return;
 
       setIsSubmitting(true);
       try {
-        const { error: stripeError } = await stripe.confirmPayment({
+        const { error: retired_providerError } = await retired_provider.confirmPayment({
           elements,
           confirmParams: {
             return_url: window.location.href,
@@ -781,8 +783,8 @@ function PaymentForm({ amount }: { amount: string }) {
           redirect: "if_required",
         });
 
-        if (stripeError) {
-          toast.error(stripeError.message ?? "Payment failed");
+        if (retired_providerError) {
+          toast.error(retired_providerError.message ?? "Payment failed");
         } else {
           toast.success("Payment successful!");
         }
@@ -793,7 +795,7 @@ function PaymentForm({ amount }: { amount: string }) {
         setIsSubmitting(false);
       }
     },
-    [stripe, elements],
+    [retired_provider, elements],
   );
 
   return (
@@ -801,7 +803,7 @@ function PaymentForm({ amount }: { amount: string }) {
       <PaymentElement />
       <Button
         type="submit"
-        disabled={!stripe || !elements || isSubmitting}
+        disabled={!retired_provider || !elements || isSubmitting}
         className="w-full bg-emerald-600 hover:bg-emerald-700"
       >
         {isSubmitting ? (
@@ -960,8 +962,8 @@ git add -A && git commit -m "chore: Phase 3 cleanup and formatting"
 ## Manual Testing Checklist
 
 1. **Free plan user**: Verify payment settings page shows "Pro Required" (unchanged)
-2. **Pro plan with Stripe Connect**: Create a document with a payment field
-3. **Send document**: Verify invoices are created on Stripe (unchanged)
+2. **Pro plan with retired provider Connect**: Create a document with a payment field
+3. **Send document**: Verify invoices are created on retired provider (unchanged)
 4. **Sign document (all signers)**: After last signer completes, document should transition to `waiting_for_payment` (NOT `completed`)
 5. **Signing page for payer**: Should show "Awaiting Payment" banner + inline PaymentElement
 6. **Complete payment**: Enter test card `4242424242424242`, complete payment inline

@@ -141,12 +141,14 @@ export function createCustomersService(
         updatedAt: createdAt,
       };
       await dependencies.uow.customers.save(customer);
-      await dependencies.uow.events.saveCanonicalEvent(createCustomerEvent({
-        id: `${customer.id}:customer.created:${createdAt}`,
-        eventType: "customer.created",
-        customer,
-        occurredAt: createdAt,
-      }));
+      await dependencies.uow.events.saveCanonicalEvent(
+        createCustomerEvent({
+          id: `${customer.id}:customer.created:${createdAt}`,
+          eventType: "customer.created",
+          customer,
+          occurredAt: createdAt,
+        }),
+      );
       return toSnapshot(customer);
     },
 
@@ -181,12 +183,14 @@ export function createCustomersService(
         updatedAt: now(),
       };
       await dependencies.uow.customers.save(updated);
-      await dependencies.uow.events.saveCanonicalEvent(createCustomerEvent({
-        id: `${updated.id}:customer.updated:${updated.updatedAt}`,
-        eventType: "customer.updated",
-        customer: updated,
-        occurredAt: updated.updatedAt,
-      }));
+      await dependencies.uow.events.saveCanonicalEvent(
+        createCustomerEvent({
+          id: `${updated.id}:customer.updated:${updated.updatedAt}`,
+          eventType: "customer.updated",
+          customer: updated,
+          occurredAt: updated.updatedAt,
+        }),
+      );
       return toSnapshot(updated);
     },
   };

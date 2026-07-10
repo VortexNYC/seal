@@ -40,18 +40,18 @@ function requirePresent<T>(value: T | null | undefined, label: string): NonNulla
   return value;
 }
 
-function expectNoStripeConfigIds(config: Doc<"payment_field_configs">): void {
-  expect(config.stripeInvoiceId).toBeUndefined();
-  expect(config.stripeSubscriptionId).toBeUndefined();
-  expect(config.stripePaymentIntentId).toBeUndefined();
+function expectNoLegacyProviderConfigIds(config: Doc<"payment_field_configs">): void {
+  expect(config.providerInvoiceId).toBeUndefined();
+  expect(config.providerSubscriptionId).toBeUndefined();
+  expect(config.providerPaymentIntentId).toBeUndefined();
 }
 
-function expectNoStripeInvoiceIds(invoice: Doc<"document_invoices">): void {
-  expect(invoice.stripeAccountId).toBeUndefined();
-  expect(invoice.stripeInvoiceId).toBeUndefined();
-  expect(invoice.stripeSubscriptionId).toBeUndefined();
-  expect(invoice.stripeCustomerId).toBeUndefined();
-  expect("stripePaymentIntentId" in invoice).toBe(false);
+function expectNoLegacyProviderInvoiceIds(invoice: Doc<"document_invoices">): void {
+  expect(invoice.providerAccountId).toBeUndefined();
+  expect(invoice.providerInvoiceId).toBeUndefined();
+  expect(invoice.providerSubscriptionId).toBeUndefined();
+  expect(invoice.providerCustomerId).toBeUndefined();
+  expect("providerPaymentIntentId" in invoice).toBe(false);
 }
 
 function parentMutationArgs(
@@ -125,7 +125,7 @@ describe("Vortex Billing document payable local proof", () => {
   });
 
   for (const proofCase of documentPayableProofCases) {
-    test(`${proofCase.paymentType} stores Vortex document payment ids and no Stripe ids`, async () => {
+    test(`${proofCase.paymentType} stores Vortex document payment ids and no non-Vortex provider ids`, async () => {
       const proofRunId = `local-${proofCase.proofSlug}`;
       const recipientEmail = `${proofCase.proofSlug}@seal-vortex-proof.test`;
       const slugForId = proofCase.proofSlug.replace("-", "_");
@@ -176,7 +176,7 @@ describe("Vortex Billing document payable local proof", () => {
       expect(config.vortexPayableId).toBe(vortexPayableId);
       expect(config.vortexPaymentRequestId).toBe(vortexPaymentRequestId);
       expect(config.hostedInvoiceUrl).toBe(hostedInvoiceUrl);
-      expectNoStripeConfigIds(config);
+      expectNoLegacyProviderConfigIds(config);
 
       if (proofCase.parentField === undefined) {
         expect(config.vortexRecurringPayableId).toBeUndefined();
@@ -198,7 +198,7 @@ describe("Vortex Billing document payable local proof", () => {
         currency: "usd",
         hostedInvoiceUrl,
       });
-      expectNoStripeInvoiceIds(invoice);
+      expectNoLegacyProviderInvoiceIds(invoice);
     });
   }
 });

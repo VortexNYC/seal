@@ -46,7 +46,7 @@ export const backfillOrganizationComponentAnchors = migrations.define({
  *
  * Before the org-scoped refactor, subscriptions had a userId field but no
  * organizationId. This migration looks up the organization by matching
- * externalCustomerId → organizations.stripeCustomerId.
+ * externalCustomerId → organizations.billingCustomerId.
  *
  * After running, narrow the schema back to v.id("organizations").
  */
@@ -57,7 +57,7 @@ export const backfillSubscriptionOrganizationId = migrations.define({
 
     const org = await ctx.db
       .query("organizations")
-      .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", doc.externalCustomerId))
+      .withIndex("by_billing_customer", (q) => q.eq("billingCustomerId", doc.externalCustomerId))
       .unique();
 
     if (!org) {
@@ -69,22 +69,5 @@ export const backfillSubscriptionOrganizationId = migrations.define({
 
     await ctx.db.patch(doc._id, { organizationId: org._id, userId: undefined });
     console.info(`[migration] Backfilled subscription ${doc._id} → org ${org._id} (${org.name})`);
-  },
-});
-
-/**
- * Remove legacy stripeCustomerId from user documents.
- *
- * Stripe customer IDs were moved to the organizations table during the
- * org-scoped refactor. This clears the leftover field from users.
- *
- * After running, remove stripeCustomerId from the users schema.
- */
-export const removeUserStripeCustomerId = migrations.define({
-  table: "users",
-  migrateOne: async (ctx, doc) => {
-    if (!doc.stripeCustomerId) return;
-    await ctx.db.patch(doc._id, { stripeCustomerId: undefined });
-    console.info(`[migration] Cleared stripeCustomerId from user ${doc._id}`);
   },
 });

@@ -29,7 +29,13 @@ export type CasePriority = "critical" | "high" | "normal" | "low";
 export interface LinkedObjectRef {
   readonly objectType: string;
   readonly objectId: string;
-  readonly relationship: "primary" | "related" | "caused_by" | "blocks" | "evidence_for" | "resolved_by";
+  readonly relationship:
+    | "primary"
+    | "related"
+    | "caused_by"
+    | "blocks"
+    | "evidence_for"
+    | "resolved_by";
 }
 
 export interface CaseAssignment {
