@@ -1023,6 +1023,9 @@ async function createVortexPayable(
   idempotencyKey: string,
   fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<CreatePayableResult> {
+  // NOTE: still bespoke — the published SDK's postV1PayablesExact declares `body?: never`
+  // (the OpenAPI spec is missing the payable request-body schemas). Cut over once the spec is
+  // fixed + SDK republished. Tracked for vortex-payments.
   const responseBody = await requestVortexBillingJson(
     {
       apiBaseUrl: env.apiBaseUrl,
