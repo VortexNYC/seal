@@ -293,7 +293,7 @@ function resolveVortexBillingApiConfig(env: Env): VortexBillingApiConfig {
   };
 }
 
-function resolveVortexBillingCustomerExternalId(organizationId: string, env: Env): string {
+export function resolveVortexBillingCustomerExternalId(organizationId: string, env: Env): string {
   const organizationKey = String(organizationId);
   const customerMap = parseOptionalStringRecord(env[CUSTOMER_MAP_ENV], CUSTOMER_MAP_ENV);
   return readVortexBillingCustomerExternalId(organizationKey, customerMap);
