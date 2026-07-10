@@ -67,8 +67,9 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "./src"),
+        "pdfjs-dist": path.resolve(import.meta.dirname, "./node_modules/pdfjs-dist"),
       },
-      dedupe: ["react", "react-dom"],
+      dedupe: ["react", "react-dom", "pdfjs-dist"],
     },
 
     // PostHog reverse proxy to bypass ad blockers
