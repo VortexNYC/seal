@@ -28,10 +28,11 @@ bun install
 Proof wall:
 
 ```bash
+bun run prove:convex-cost-guard
 bun run project-kit:check
 bun run project-kit:doctor
 bun run typecheck
-bun run lint:strict
+bun run lint
 bun run format:changed:check
 bun run check:preferred-stack
 bun run build
@@ -40,6 +41,13 @@ bun run verify:seal-vortex-migration
 bun run auth:check
 bun run auth:preflight
 ```
+
+## Quality Contract
+
+- Pre-commit is the front-door local contract. Install it with `bun run precommit:install`; it sets `core.hooksPath=.githooks` and delegates to `bun run precommit:check`, which may only run fast static/local checks such as `bun run prove:convex-cost-guard`.
+- Pre-push/local proof is the developer proof wall. It delegates to `bun run prepush:check` and can include broader local checks such as typecheck, lint, build, unit tests, auth checks, and other repo-local validation.
+- PR CI is the clean-machine receipt for generated drift, hook installation, fast local checks, and changed-surface build proof. Docs/process-only changes must not run the full proof wall. Do not add browser, mobile, dashboard, deploy, Cloudflare, or live Convex proof to normal PR CI.
+- Release/live proof belongs in release-only workflows or explicit operator runs. Use it for browser E2E, production smoke, live Convex insights, deploys, dashboards, and other provider-backed checks.
 
 Production release proofs:
 

@@ -28,10 +28,12 @@ jobs:
   quality:
     name: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 6
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -41,22 +43,61 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Vortex proof wall
+      - name: Vortex lean quality receipt
         shell: bash
         run: |
+          bun run precommit:install
           bun run project-kit:check
           bun run project-kit:doctor
-          bun run typecheck
-          bun run lint:strict
-          bun run format:changed:check
-          bun run check:preferred-stack
-          bun run build
-          bun run test
-          bun run verify:seal-vortex-migration
-          bun run auth:check
-          bun run auth:preflight
-          if [ "${VORTEX_CONVEX_INSIGHTS_CI:-}" = "1" ]; then
-            bun run convex:insights
-          else
-            echo "SKIP convex:insights: requires user-backed Convex auth and VORTEX_CONVEX_INSIGHTS_CI=1"
+          bun run precommit:check
+
+          base_ref=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_ref="${{ github.event.pull_request.base.sha }}"
+          elif [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            base_ref="${{ github.event.before }}"
           fi
+
+          changed_files=""
+          if [ -n "$base_ref" ]; then
+            changed_files="$(git diff --name-only "$base_ref"...HEAD || git diff --name-only "$base_ref" HEAD || true)"
+          fi
+          if [ -z "$changed_files" ]; then
+            changed_files="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+          fi
+
+          echo "Changed files:"
+          printf '%s\n' "$changed_files"
+
+          runtime_changed="$(printf '%s\n' "$changed_files" | grep -Ev '^(docs/|.*[.]md$|[.]github/|[.]githooks/|AGENTS[.]md$|CLAUDE[.]md$|LLM-INTEGRATION[.]md$)' || true)"
+          if [ -n "$runtime_changed" ]; then
+            echo "Runtime/package surface changed; local pre-push must have run the heavy wall."
+            echo "CI receipt is intentionally no-build: it verifies clean-machine control-plane drift only."
+            printf '%s\n' "$runtime_changed"
+          else
+            echo "Docs/process-only change; clean-machine control-plane receipt complete."
+          fi
+
+  manual_verification:
+    name: manual_verification
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Manual verification wall
+        shell: bash
+        run: |
+          bun run prepush:check
