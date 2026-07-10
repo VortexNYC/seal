@@ -2,9 +2,17 @@
 
 import { ConvexError, v } from "convex/values";
 
+import {
+  createDepositBalancePayable,
+  createInstallmentPayable,
+  createPayable,
+  createRecurringPayable,
+} from "@vortexnyc/payments-sdk";
+
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
+import { createVortexBillingClient } from "../payments/vortex_billing_processor";
 
 type Env = {
   readonly [key: string]: string | undefined;
@@ -1021,79 +1029,76 @@ async function createVortexPayable(
   request: CreatePayableRequest,
   env: VortexBillingEnv,
   idempotencyKey: string,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<CreatePayableResult> {
-  // NOTE: still bespoke — the published SDK's postV1PayablesExact declares `body?: never`
-  // (the OpenAPI spec is missing the payable request-body schemas). Cut over once the spec is
-  // fixed + SDK republished. Tracked for vortex-payments.
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: env.apiBaseUrl,
-      apiKey: env.apiKey,
-      path: "/v1/payables",
-      idempotencyKey,
-      body: request as unknown as JsonObject,
-    },
-    fetcher,
-  );
-  return readCreatePayableResult(responseBody);
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const { data, error, response } = await createPayable({
+    client,
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: request as unknown as Parameters<typeof createPayable>[0]["body"],
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing payable create failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  return readCreatePayableResult(data);
 }
 
 async function createVortexRecurringPayable(
   request: CreateRecurringPayableRequest,
   env: VortexBillingEnv,
   idempotencyKey: string,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<CreateRecurringPayableResult> {
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: env.apiBaseUrl,
-      apiKey: env.apiKey,
-      path: "/v1/recurring-payables",
-      idempotencyKey,
-      body: request as unknown as JsonObject,
-    },
-    fetcher,
-  );
-  return readCreateRecurringPayableResult(responseBody);
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const { data, error, response } = await createRecurringPayable({
+    client,
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: request as unknown as Parameters<typeof createRecurringPayable>[0]["body"],
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing recurring payable create failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  return readCreateRecurringPayableResult(data);
 }
 
 async function createVortexInstallmentPayable(
   request: CreateInstallmentPayableRequest,
   env: VortexBillingEnv,
   idempotencyKey: string,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<CreateInstallmentPayableResult> {
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: env.apiBaseUrl,
-      apiKey: env.apiKey,
-      path: "/v1/installment-payables",
-      idempotencyKey,
-      body: request as unknown as JsonObject,
-    },
-    fetcher,
-  );
-  return readCreateInstallmentPayableResult(responseBody);
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const { data, error, response } = await createInstallmentPayable({
+    client,
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: request as unknown as Parameters<typeof createInstallmentPayable>[0]["body"],
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing installment payable create failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  return readCreateInstallmentPayableResult(data);
 }
 
 async function createVortexDepositBalancePayable(
   request: CreateDepositBalancePayableRequest,
   env: VortexBillingEnv,
   idempotencyKey: string,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<CreateDepositBalancePayableResult> {
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: env.apiBaseUrl,
-      apiKey: env.apiKey,
-      path: "/v1/deposit-balance-payables",
-      idempotencyKey,
-      body: request as unknown as JsonObject,
-    },
-    fetcher,
-  );
-  return readCreateDepositBalancePayableResult(responseBody);
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const { data, error, response } = await createDepositBalancePayable({
+    client,
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: request as unknown as Parameters<typeof createDepositBalancePayable>[0]["body"],
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing deposit-balance payable create failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  return readCreateDepositBalancePayableResult(data);
 }
 
 export async function requestVortexBillingJson(

@@ -44,7 +44,7 @@
         "@signpdf/signpdf": "^3.3.0",
         "@vortexnyc/auth": "0.6.0",
         "@vortexnyc/observability": "0.1.2",
-        "@vortexnyc/payments-sdk": "^0.1.0",
+        "@vortexnyc/payments-sdk": "0.1.1",
         "ai": "^6.0.146",
         "better-auth": "1.6.9",
         "convex": "catalog:",
@@ -1950,7 +1950,7 @@
 
     "@vortexnyc/observability": ["@vortexnyc/observability@0.1.2", "https://npm.pkg.github.com/download/@VortexNYC/observability/0.1.2/c642511b5592f3af1f646c8b3bcce5c85abf2d2a", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-LUIv4CxvA5ululXmIaGIyvukK5qYodJYy7fkbRMlBCxBbidkxJx49GC8p9BXXkgy/eDG6M7X0TZycP+wFuKP7w=="],
 
-    "@vortexnyc/payments-sdk": ["@vortexnyc/payments-sdk@0.1.0", "https://npm.pkg.github.com/download/@vortexnyc/payments-sdk/0.1.0/cb9396cd1e076c19c99dfc29ab44848dbb075764", {}, "sha512-L6/78DMKD6syYbwxYFBKrvT58TZfVt8pEE4t70BpE32l7+ozqn2Ar6GD/LBAlY7Qz16ib8jCQq/LJW9tFzOXBQ=="],
+    "@vortexnyc/payments-sdk": ["@vortexnyc/payments-sdk@0.1.1", "https://npm.pkg.github.com/download/@vortexnyc/payments-sdk/0.1.1/b172f91b1b35015f687a895085ae362127545df2", {}, "sha512-So+9+tRxQ0BMeIgKyW/XCihwFqRFdoA/GkB3B94jii6LKPx1EeFk4dfK2inibUkpjTeOcpvQwM5zp7QK192Hcg=="],
 
     "@vortexnyc/tooling": ["@vortexnyc/tooling@0.3.2", "https://npm.pkg.github.com/download/@VortexNYC/tooling/0.3.2/8b28b28f27682383232707329fc1685b5dc2724d", { "peerDependencies": { "oxfmt": "^0.44.0", "oxlint": "^1.59.0", "turbo": "^2.5.0" }, "bin": { "vortex-adoption-matrix": "bin/vortex-adoption-matrix.ts", "vortex-content-push": "bin/vortex-content-push.ts", "vortex-convex-cost-guard": "bin/vortex-convex-cost-guard.ts", "vortex-format": "bin/vortex-format.ts", "vortex-lint": "bin/vortex-lint.ts", "vortex-migrate": "bin/vortex-migrate.ts", "vortex-project-kit": "bin/vortex-project-kit.ts", "vortex-react-doctor": "bin/vortex-react-doctor.ts", "vortex-repo-check": "bin/vortex-repo-check.ts", "vortex-stack-check": "bin/vortex-stack-check.ts", "vortex-ui-conformance": "bin/vortex-ui-conformance.ts" } }, "sha512-6fwJdo9+rOe5tWTbHq8xrl4ZltaDVALGJ+WE4WmFDBnpRoeevaor1s6IsyeYnewsdw7BM/QhHPBRKw3G0qyDQA=="],
 
