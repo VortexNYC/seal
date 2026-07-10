@@ -39,6 +39,9 @@ TEST_LANDING_URL=http://seal-landing.localhost:1355
 CONVEX_URL=https://aware-buzzard-568.convex.cloud
 CONVEX_SITE_URL=https://aware-buzzard-568.convex.site
 CONVEX_DEPLOYMENT=dev:aware-buzzard-568
+# Convex usage log streams — required for billing attribution (function_execution, storage, bandwidth).
+CONVEX_USAGE_LOG_STREAM_REQUIRED=true
+CONVEX_USAGE_LOG_STREAM_TOPICS=function_execution,current_storage_usage,storage_api_bandwidth
 VITE_CONVEX_URL=https://aware-buzzard-568.convex.cloud
 VITE_BETTER_AUTH_URL=https://aware-buzzard-568.convex.site/api/auth
 BETTER_AUTH_URL=https://aware-buzzard-568.convex.site/api/auth
