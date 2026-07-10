@@ -61,7 +61,7 @@ for (const routePath of fallbackRoutePaths) {
 }
 
 for (const requiredSurfaceFragment of [
-  'from "@vortex/payments/react"',
+  'from "@vortexnyc/payments-react"',
   "VortexPaymentsProvider",
   "VortexMerchantAccountPanel",
   "VortexMerchantActionQueue",
@@ -87,7 +87,9 @@ if (failures.length > 0) {
 
 console.log("Vortex operational payments adoption proof passed:");
 console.log("- Non-Vortex embeds are removed from Seal operational payment routes.");
-console.log("- Balances, payouts, and history render through @vortex/payments/react components.");
+console.log(
+  "- Balances, payouts, and history render through @vortexnyc/payments-react components.",
+);
 console.log("- Disputes and tax documents render explicit Vortex-owned replacement states.");
 console.log(
   "- Non-Vortex Connect packages, theme helpers, and shared wrapper components stay deleted.",

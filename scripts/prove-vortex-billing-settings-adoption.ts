@@ -9,7 +9,7 @@ const billingRoutePath = join(
 const webPackagePath = join(repoRoot, "apps/web/package.json");
 const vortexComponentsPath = join(
   repoRoot,
-  "apps/web/node_modules/@vortex/payments/src/react/components.ts",
+  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js",
 );
 
 const billingRoute = readFileSync(billingRoutePath, "utf8");
@@ -18,12 +18,12 @@ const webPackage = parseJsonObject(readFileSync(webPackagePath, "utf8"));
 const dependencies = getObject(webPackage, "dependencies");
 const failures: string[] = [];
 
-if (dependencies["@vortex/payments"] === undefined) {
-  failures.push("apps/web must depend on @vortex/payments.");
+if (dependencies["@vortexnyc/payments-react"] === undefined) {
+  failures.push("apps/web must depend on @vortexnyc/payments-react.");
 }
 
 for (const requiredFragment of [
-  'from "@vortex/payments/react"',
+  'from "@vortexnyc/payments-react"',
   "VortexPaymentsProvider",
   "VortexSubscriptionActionSummary",
   "VortexPlanComparison",
@@ -41,7 +41,7 @@ for (const requiredPackageFragment of [
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
-      `@vortex/payments missing required selector fragment: ${requiredPackageFragment}`,
+      `@vortexnyc/payments-react missing required selector fragment: ${requiredPackageFragment}`,
     );
   }
 }
@@ -88,7 +88,7 @@ if (failures.length > 0) {
 }
 
 console.log("Vortex billing settings adoption proof passed:");
-console.log("- Seal billing settings imports @vortex/payments/react.");
+console.log("- Seal billing settings imports @vortexnyc/payments-react.");
 console.log("- Subscription and plan UI render through Vortex package components.");
 console.log("- Local plan comparison and subscription summary fragments stay deleted.");
 

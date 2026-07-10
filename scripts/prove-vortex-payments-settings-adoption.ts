@@ -9,7 +9,7 @@ const paymentsRoutePath = join(
 const webPackagePath = join(repoRoot, "apps/web/package.json");
 const vortexComponentsPath = join(
   repoRoot,
-  "apps/web/node_modules/@vortex/payments/src/react/components.ts",
+  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js",
 );
 
 const paymentsRoute = readFileSync(paymentsRoutePath, "utf8");
@@ -18,12 +18,12 @@ const webPackage = parseJsonObject(readFileSync(webPackagePath, "utf8"));
 const dependencies = getObject(webPackage, "dependencies");
 const failures: string[] = [];
 
-if (dependencies["@vortex/payments"] === undefined) {
-  failures.push("apps/web must depend on @vortex/payments.");
+if (dependencies["@vortexnyc/payments-react"] === undefined) {
+  failures.push("apps/web must depend on @vortexnyc/payments-react.");
 }
 
 for (const requiredFragment of [
-  'from "@vortex/payments/react"',
+  'from "@vortexnyc/payments-react"',
   "VortexFeePolicyPanel",
   "VortexFeePolicyOwnerMode",
   "VortexFeePolicyState",
@@ -55,7 +55,7 @@ for (const requiredPackageFragment of [
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
-      `@vortex/payments missing required fee-policy selector fragment: ${requiredPackageFragment}`,
+      `@vortexnyc/payments-react missing required fee-policy selector fragment: ${requiredPackageFragment}`,
     );
   }
 }
@@ -83,7 +83,7 @@ if (failures.length > 0) {
 }
 
 console.log("Vortex payments settings adoption proof passed:");
-console.log("- Seal payments settings imports @vortex/payments/react.");
+console.log("- Seal payments settings imports @vortexnyc/payments-react.");
 console.log("- Merchant fee ownership renders through VortexFeePolicyPanel.");
 console.log("- Local fee policy radio/card fragments stay deleted.");
 
