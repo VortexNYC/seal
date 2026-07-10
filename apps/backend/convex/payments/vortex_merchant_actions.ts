@@ -2,19 +2,26 @@
 
 import { ConvexError, v } from "convex/values";
 
+import {
+  createMerchantAccount,
+  createMerchantOnboardingLink,
+  getMerchantAccountCapabilities,
+  getMerchantAccountPayoutProfile,
+  getMerchantAccountPayouts,
+  getMerchantAccountSettlements,
+  getMerchantAccountState,
+} from "@vortexnyc/payments-sdk";
+
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { action, internalAction } from "../_generated/server";
 import { isAdmin } from "../auth.utils";
-import {
-  readVortexBillingEnvFromProcess,
-  requestVortexBillingJson,
-} from "../vortex_billing/payable_actions";
+import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_actions";
+import { createVortexBillingClient } from "./vortex_billing_processor";
 
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
-type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
 
 type VortexMerchantState = {
   readonly chargesEnabled: boolean;
@@ -761,74 +768,64 @@ function mapVortexState(input: {
 
 async function readRemoteVortexMerchantState(
   merchantAccountId: string,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<VortexMerchantState> {
   const env = readVortexBillingEnvFromProcess();
-  const environment = encodeURIComponent(env.paymentsEnvironment);
-  const [stateBody, capabilitiesBody] = await Promise.all([
-    requestVortexBillingJson(
-      {
-        apiBaseUrl: env.apiBaseUrl,
-        apiKey: env.apiKey,
-        method: "GET",
-        path: `/v1/merchant-accounts/${encodeURIComponent(merchantAccountId)}/state?environment=${environment}`,
-        failureLabel: "Vortex merchant state refresh",
-      },
-      fetcher,
-    ),
-    requestVortexBillingJson(
-      {
-        apiBaseUrl: env.apiBaseUrl,
-        apiKey: env.apiKey,
-        method: "GET",
-        path: `/v1/merchant-accounts/${encodeURIComponent(merchantAccountId)}/capabilities?environment=${environment}`,
-        failureLabel: "Vortex merchant capabilities refresh",
-      },
-      fetcher,
-    ),
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const environment = env.paymentsEnvironment;
+  const [stateResult, capabilitiesResult] = await Promise.all([
+    getMerchantAccountState({ client, path: { merchantAccountId }, query: { environment } }),
+    getMerchantAccountCapabilities({ client, path: { merchantAccountId }, query: { environment } }),
   ]);
-  return mapVortexState({ stateBody, capabilitiesBody });
+  if (
+    stateResult.error !== undefined ||
+    stateResult.response === undefined ||
+    !stateResult.response.ok
+  ) {
+    throw new ConvexError(
+      `Vortex merchant state refresh failed (${stateResult.response?.status ?? "no-response"})`,
+    );
+  }
+  if (
+    capabilitiesResult.error !== undefined ||
+    capabilitiesResult.response === undefined ||
+    !capabilitiesResult.response.ok
+  ) {
+    throw new ConvexError(
+      `Vortex merchant capabilities refresh failed (${capabilitiesResult.response?.status ?? "no-response"})`,
+    );
+  }
+  return mapVortexState({ stateBody: stateResult.data, capabilitiesBody: capabilitiesResult.data });
 }
 
 async function readRemoteVortexMerchantPayoutData(
   merchantAccountId: string,
-  fetcher: Fetcher = (input, init) => fetch(input, init),
 ): Promise<VortexMerchantPayoutDataResult> {
   const env = readVortexBillingEnvFromProcess();
-  const environment = encodeURIComponent(env.paymentsEnvironment);
-  const merchantPathSegment = encodeURIComponent(merchantAccountId);
-  const [settlementsBody, payoutsBody, payoutProfileBody] = await Promise.all([
-    requestVortexBillingJson(
-      {
-        apiBaseUrl: env.apiBaseUrl,
-        apiKey: env.apiKey,
-        method: "GET",
-        path: `/v1/merchant-accounts/${merchantPathSegment}/settlements?environment=${environment}`,
-        failureLabel: "Vortex merchant settlements read",
-      },
-      fetcher,
-    ),
-    requestVortexBillingJson(
-      {
-        apiBaseUrl: env.apiBaseUrl,
-        apiKey: env.apiKey,
-        method: "GET",
-        path: `/v1/merchant-accounts/${merchantPathSegment}/payouts?environment=${environment}`,
-        failureLabel: "Vortex merchant payouts read",
-      },
-      fetcher,
-    ),
-    requestVortexBillingJson(
-      {
-        apiBaseUrl: env.apiBaseUrl,
-        apiKey: env.apiKey,
-        method: "GET",
-        path: `/v1/merchant-accounts/${merchantPathSegment}/payout-profile?environment=${environment}`,
-        failureLabel: "Vortex merchant payout profile read",
-      },
-      fetcher,
-    ),
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const environment = env.paymentsEnvironment;
+  const [settlementsResult, payoutsResult, payoutProfileResult] = await Promise.all([
+    getMerchantAccountSettlements({ client, path: { merchantAccountId }, query: { environment } }),
+    getMerchantAccountPayouts({ client, path: { merchantAccountId }, query: { environment } }),
+    getMerchantAccountPayoutProfile({
+      client,
+      path: { merchantAccountId },
+      query: { environment },
+    }),
   ]);
+  for (const [label, result] of [
+    ["settlements", settlementsResult],
+    ["payouts", payoutsResult],
+    ["payout profile", payoutProfileResult],
+  ] as const) {
+    if (result.error !== undefined || result.response === undefined || !result.response.ok) {
+      throw new ConvexError(
+        `Vortex merchant ${label} read failed (${result.response?.status ?? "no-response"})`,
+      );
+    }
+  }
+  const settlementsBody = settlementsResult.data;
+  const payoutsBody = payoutsResult.data;
+  const payoutProfileBody = payoutProfileResult.data;
   const settlements = readListItems(
     settlementsBody,
     "Vortex merchant settlements",
@@ -927,18 +924,16 @@ async function createVortexMerchantAccountForOrganization(
       sealOrganizationId: organizationId,
     },
   };
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: env.apiBaseUrl,
-      apiKey: env.apiKey,
-      path: "/v1/merchant-accounts",
-      idempotencyKey: `seal-vortex-merchant:${organizationId}`,
-      body,
-      failureLabel: "Vortex merchant create",
-    },
-    (input, init) => fetch(input, init),
-  );
-  const merchantAccountId = readVortexMerchantAccountId(responseBody);
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const { data, error, response } = await createMerchantAccount({
+    client,
+    headers: { "Idempotency-Key": `seal-vortex-merchant:${organizationId}` },
+    body: body as unknown as Parameters<typeof createMerchantAccount>[0]["body"],
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(`Vortex merchant create failed (${response?.status ?? "no-response"})`);
+  }
+  const merchantAccountId = readVortexMerchantAccountId(data);
   const state: VortexMerchantState = {
     chargesEnabled: false,
     payoutsEnabled: false,
@@ -1007,20 +1002,19 @@ async function createVortexOnboardingLinkForOrganization(
     environment: env.paymentsEnvironment,
     createdByRef: `seal:${organizationId}`,
   };
-  const responseBody = await requestVortexBillingJson(
-    {
-      apiBaseUrl: env.apiBaseUrl,
-      apiKey: env.apiKey,
-      path: `/v1/merchant-accounts/${encodeURIComponent(
-        existing.providerAccountId,
-      )}/onboarding-link`,
-      body,
-      failureLabel: "Vortex merchant onboarding link create",
-    },
-    (input, init) => fetch(input, init),
-  );
+  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const { data, error, response } = await createMerchantOnboardingLink({
+    client,
+    path: { merchantAccountId: existing.providerAccountId },
+    body: body as unknown as Parameters<typeof createMerchantOnboardingLink>[0]["body"],
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex merchant onboarding link create failed (${response?.status ?? "no-response"})`,
+    );
+  }
 
-  return readVortexOnboardingLink(responseBody);
+  return readVortexOnboardingLink(data);
 }
 
 export const createVortexMerchantAccount = internalAction({

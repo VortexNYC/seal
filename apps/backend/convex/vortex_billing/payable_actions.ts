@@ -21,8 +21,6 @@ type Env = {
 type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
-type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
-
 export type DocumentPaymentProvider = "vortex_billing";
 
 export type VortexBillingEnvInput = {
@@ -1101,50 +1099,6 @@ async function createVortexDepositBalancePayable(
   return readCreateDepositBalancePayableResult(data);
 }
 
-export async function requestVortexBillingJson(
-  input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
-    readonly method?: "GET" | "POST";
-    readonly path: string;
-    readonly idempotencyKey?: string;
-    readonly body?: JsonObject;
-    readonly failureLabel?: string;
-  },
-  fetcher: Fetcher,
-): Promise<unknown> {
-  const headers: Record<string, string> = {
-    authorization: `Bearer ${input.apiKey}`,
-    "x-vortex-service": "billing",
-  };
-  if (input.body !== undefined) {
-    headers["content-type"] = "application/json";
-  }
-  if (input.idempotencyKey !== undefined) {
-    headers["idempotency-key"] = input.idempotencyKey;
-  }
-
-  const init: RequestInit = {
-    method: input.method ?? "POST",
-    headers,
-    ...(input.body !== undefined ? { body: JSON.stringify(input.body) } : {}),
-  };
-  const response = await fetcher(`${trimTrailingSlash(input.apiBaseUrl)}${input.path}`, {
-    ...init,
-  });
-
-  const text = await response.text();
-  const responseBody = text.length > 0 ? parseJson(text, "Vortex Billing response") : null;
-
-  if (!response.ok) {
-    throw new ConvexError(
-      `${input.failureLabel ?? "Vortex Billing payable"} failed (${response.status}): ${summarizeJson(responseBody)}`,
-    );
-  }
-
-  return responseBody;
-}
-
 function readCreatePayableResult(body: unknown): CreatePayableResult {
   const root = readObject(body, "Vortex Billing payable response");
   const data = readObject(root.data, "Vortex Billing payable response data");
@@ -1584,25 +1538,9 @@ function readOptionalString(value: unknown, label: string): string | undefined {
   return value;
 }
 
-function trimTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
-}
-
 function normalizeExternalIdPart(value: string): string {
   return value
     .replace(/[^a-zA-Z0-9]+/gu, "_")
     .replace(/^_+|_+$/gu, "")
     .toLowerCase();
-}
-
-function summarizeJson(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return "unreadable response";
-  }
 }
