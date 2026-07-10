@@ -8,7 +8,7 @@ const paymentsRoutePath = join(
 );
 const vortexComponentsPath = join(
   repoRoot,
-  "apps/web/node_modules/@vortex/payments/src/react/components.ts",
+  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js",
 );
 
 const paymentsRoute = readFileSync(paymentsRoutePath, "utf8");
@@ -16,7 +16,7 @@ const vortexComponents = readFileSync(vortexComponentsPath, "utf8");
 const failures: string[] = [];
 
 for (const requiredFragment of [
-  'from "@vortex/payments/react"',
+  'from "@vortexnyc/payments-react"',
   "VortexPaymentsProvider",
   "VortexMerchantAccountPanel",
   "VortexMerchantActionQueue",
@@ -43,7 +43,7 @@ for (const requiredPackageFragment of [
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
-      `@vortex/payments missing required merchant selector fragment: ${requiredPackageFragment}`,
+      `@vortexnyc/payments-react missing required merchant selector fragment: ${requiredPackageFragment}`,
     );
   }
 }

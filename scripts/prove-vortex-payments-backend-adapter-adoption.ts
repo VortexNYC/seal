@@ -20,43 +20,44 @@ const forbiddenRuntimeFragments = [
   "payments-provider",
 ] as const;
 
+// Adapter boundary is now the published typed SDK: assert each backend module drives Vortex
+// Billing through @vortexnyc/payments-sdk functions, not a bespoke HTTP wrapper or literal paths.
 const requiredFragments: readonly RequiredFragment[] = [
   {
     path: "apps/backend/convex/vortex_billing/payable_actions.ts",
     fragments: [
-      "export async function requestVortexBillingJson",
-      '"x-vortex-service": "billing"',
-      'path: "/v1/payables"',
-      'path: "/v1/recurring-payables"',
-      'path: "/v1/installment-payables"',
-      'path: "/v1/deposit-balance-payables"',
+      'from "@vortexnyc/payments-sdk"',
+      "createPayable",
+      "createRecurringPayable",
+      "createInstallmentPayable",
+      "createDepositBalancePayable",
     ],
   },
   {
     path: "apps/backend/convex/payments/vortex_billing_processor.ts",
     fragments: [
       'from "@vortexnyc/payments-sdk"',
+      "createClient",
       "createCheckoutSession",
-      'url: "/v1/customers/{customerExternalId}/portal-links"',
-      'path: "/v1/coupons?status=active"',
-      "path: `/v1/coupons/${encodeURIComponent(input.couponId)}/apply`",
-      "path: `/v1/applied-coupons/${encodeURIComponent(input.appliedCouponId)}/terminate`",
+      "listCoupons",
+      "applyCoupon",
+      "getCustomerEntitlements",
     ],
   },
   {
     path: "apps/backend/convex/payments/vortex_merchant_actions.ts",
     fragments: [
-      'from "../vortex_billing/payable_actions"',
-      "/v1/merchant-accounts",
-      "/settlements?environment=",
-      "/payouts?environment=",
-      "/payout-profile?environment=",
+      'from "@vortexnyc/payments-sdk"',
+      "createMerchantAccount",
+      "getMerchantAccountState",
+      "getMerchantAccountSettlements",
+      "createMerchantOnboardingLink",
       "readRemoteVortexMerchantPayoutData",
     ],
   },
   {
     path: "apps/backend/convex/vortex_billing/catalog_sync.ts",
-    fragments: ['from "./payable_actions"', 'path: "/v1/catalog"'],
+    fragments: ['from "@vortexnyc/payments-sdk"', "getV1CatalogExact"],
   },
   {
     path: "apps/backend/scripts/seed-vortex-saas-catalog.ts",
