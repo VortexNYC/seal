@@ -14,7 +14,7 @@ import {
   type VortexMerchantAccountPanelProps,
   type VortexPaymentTimelineState,
   type VortexPayoutReadinessPanelProps,
-} from "@vortex/payments/react";
+} from "@vortexnyc/payments-react";
 import { useAction, useQuery } from "convex/react";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, ArrowRight, FileText, WalletCards } from "lucide-react";
