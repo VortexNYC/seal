@@ -216,7 +216,7 @@ describe("Vortex Billing SaaS processor", () => {
         const request = input instanceof Request ? input : new Request(String(input), init);
         capturedRequests.push(request);
 
-        if (request.url === "https://billing.vortex.test/v1/coupons?status=active") {
+        if (request.url === "https://billing.vortex.test/v1/coupons") {
           return jsonResponse({
             data: [
               {
@@ -276,7 +276,7 @@ describe("Vortex Billing SaaS processor", () => {
 
     expect(checkoutUrl).toBe("https://pay.vortex.test/discounted");
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
       "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
       "POST https://billing.vortex.test/v1/checkout/sessions",
     ]);
@@ -333,7 +333,7 @@ describe("Vortex Billing SaaS processor", () => {
       ),
     ).rejects.toThrow("Vortex Billing coupon code is invalid or inactive");
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
     ]);
   });
 
@@ -362,7 +362,7 @@ describe("Vortex Billing SaaS processor", () => {
     ).rejects.toThrow(/Vortex Billing checkout failed \(500\):/);
 
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
       "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
       "POST https://billing.vortex.test/v1/checkout/sessions",
       "POST https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate",
@@ -403,7 +403,7 @@ describe("Vortex Billing SaaS processor", () => {
     ).rejects.toThrow("Vortex Billing checkout did not reflect applied coupon");
 
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
       "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
       "POST https://billing.vortex.test/v1/checkout/sessions",
       "POST https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate",
@@ -618,7 +618,7 @@ function createCouponCheckoutMock(
       const request = input instanceof Request ? input : new Request(String(input), init);
       capturedRequests.push(request);
 
-      if (request.url === "https://billing.vortex.test/v1/coupons?status=active") {
+      if (request.url === "https://billing.vortex.test/v1/coupons") {
         return jsonResponse({
           data: [
             {
