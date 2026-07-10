@@ -1,9 +1,31 @@
 "use node";
 
-import { createClient, createCheckoutSession } from "@vortexnyc/payments-sdk";
+import {
+  applyCoupon,
+  createClient,
+  createCheckoutSession,
+  getCustomerEntitlements,
+  listCoupons,
+  terminateAppliedCoupon,
+} from "@vortexnyc/payments-sdk";
+
+type VortexBillingClient = ReturnType<typeof createClient>;
+
+/** Build the Vortex Billing SDK client from resolved API config (Bearer auth + billing service header). */
+export function createVortexBillingClient(config: {
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
+}): VortexBillingClient {
+  return createClient({
+    baseUrl: trimTrailingSlash(config.apiBaseUrl),
+    headers: {
+      authorization: `Bearer ${config.apiKey}`,
+      "x-vortex-service": "billing",
+    },
+  });
+}
 import { ConvexError } from "convex/values";
 
-import { requestVortexBillingJson } from "../vortex_billing/payable_actions";
 import type { Env } from "./saas_billing_provider";
 
 export { selectSaasBillingProvider } from "./saas_billing_provider";
@@ -86,7 +108,6 @@ export async function createVortexBillingCheckoutSessionDetails(
   fetchImpl?: typeof fetch,
 ): Promise<VortexCheckoutSession> {
   const config = resolveVortexBillingConfig(args, env);
-  const fetcher = createVortexBillingFetcher(fetchImpl);
   const billingClient = createClient({
     baseUrl: trimTrailingSlash(config.apiBaseUrl),
     headers: {
@@ -101,29 +122,21 @@ export async function createVortexBillingCheckoutSessionDetails(
   assertCouponCheckoutHasPrice(args, config, promoCode);
 
   if (promoCode !== undefined) {
-    const coupon = await resolveActiveVortexCoupon(
-      {
-        apiBaseUrl: config.apiBaseUrl,
-        apiKey: config.apiKey,
-        promoCode,
-        priceId: config.priceId,
-      },
-      fetcher,
-    );
+    const coupon = await resolveActiveVortexCoupon({
+      client: billingClient,
+      promoCode,
+      priceId: config.priceId,
+    });
     const appliedCouponId = buildAppliedCouponId(args, coupon.couponId);
-    appliedCoupon = await applyVortexCoupon(
-      {
-        apiBaseUrl: config.apiBaseUrl,
-        apiKey: config.apiKey,
-        couponId: coupon.couponId,
-        appliedCouponId,
-        customerExternalId: config.customerExternalId,
-        billingAccountId: config.billingAccountId,
-        organizationId: args.organizationId,
-        lookupKey: args.lookupKey,
-      },
-      fetcher,
-    );
+    appliedCoupon = await applyVortexCoupon({
+      client: billingClient,
+      couponId: coupon.couponId,
+      appliedCouponId,
+      customerExternalId: config.customerExternalId,
+      billingAccountId: config.billingAccountId,
+      organizationId: args.organizationId,
+      lookupKey: args.lookupKey,
+    });
   }
 
   try {
@@ -169,13 +182,11 @@ export async function createVortexBillingCheckoutSessionDetails(
     if (appliedCoupon !== undefined) {
       await terminateAppliedCouponAfterCheckoutFailure(
         {
-          apiBaseUrl: config.apiBaseUrl,
-          apiKey: config.apiKey,
+          client: billingClient,
           appliedCoupon,
           organizationId: args.organizationId,
           lookupKey: args.lookupKey,
         },
-        fetcher,
         error,
       );
     }
@@ -306,26 +317,18 @@ function readVortexBillingCustomerExternalId(
   return customerMap[organizationKey] ?? `vtx_cust_seal_org_${organizationKey}`;
 }
 
-export async function resolveActiveVortexCoupon(
-  input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
-    readonly promoCode: string;
-    readonly priceId: string;
-  },
-  fetcher: (input: string, init: RequestInit) => Promise<Response>,
-): Promise<VortexCoupon> {
-  const body = await requestVortexBillingJson(
-    {
-      apiBaseUrl: input.apiBaseUrl,
-      apiKey: input.apiKey,
-      method: "GET",
-      path: "/v1/coupons?status=active",
-      failureLabel: "Vortex Billing coupon resolution",
-    },
-    fetcher,
-  );
-  const coupon = readCouponList(body).find((candidate) => candidate.code === input.promoCode);
+export async function resolveActiveVortexCoupon(input: {
+  readonly client: VortexBillingClient;
+  readonly promoCode: string;
+  readonly priceId: string;
+}): Promise<VortexCoupon> {
+  const { data, error, response } = await listCoupons({ client: input.client });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing coupon resolution failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  const coupon = readCouponList(data).find((candidate) => candidate.code === input.promoCode);
   if (coupon === undefined) {
     throw new ConvexError("Vortex Billing coupon code is invalid or inactive");
   }
@@ -344,27 +347,22 @@ export async function resolveActiveVortexCoupon(
  */
 export async function readVortexProductAccess(
   input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
+    readonly client: VortexBillingClient;
     readonly customerExternalId: string;
     readonly product: string;
   },
-  fetcher: (input: string, init: RequestInit) => Promise<Response>,
 ): Promise<{ readonly product: string; readonly entitlementKey: string; readonly entitled: boolean }> {
   const entitlementKey = `vortex.${input.product}`;
-  const body = await requestVortexBillingJson(
-    {
-      apiBaseUrl: input.apiBaseUrl,
-      apiKey: input.apiKey,
-      method: "GET",
-      path: `/v1/customers/${encodeURIComponent(input.customerExternalId)}/entitlements?key=${encodeURIComponent(
-        entitlementKey,
-      )}`,
-      failureLabel: "Vortex Billing product-access read",
-    },
-    fetcher,
-  );
-  return { product: input.product, entitlementKey, entitled: isVortexEntitlementKeyActive(body, entitlementKey) };
+  const { data, error, response } = await getCustomerEntitlements({
+    client: input.client,
+    path: { customerId: input.customerExternalId },
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing product-access read failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  return { product: input.product, entitlementKey, entitled: isVortexEntitlementKeyActive(data, entitlementKey) };
 }
 
 /** Defensive parse: entitled iff the key appears in the response's active entitlement keys. */
@@ -380,8 +378,7 @@ function isVortexEntitlementKeyActive(body: unknown, entitlementKey: string): bo
 
 export async function applyVortexCoupon(
   input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
+    readonly client: VortexBillingClient;
     readonly couponId: string;
     readonly appliedCouponId: string;
     readonly customerExternalId: string;
@@ -389,31 +386,32 @@ export async function applyVortexCoupon(
     readonly organizationId: string;
     readonly lookupKey: string;
   },
-  fetcher: (input: string, init: RequestInit) => Promise<Response>,
 ): Promise<AppliedVortexCoupon> {
-  const body = await requestVortexBillingJson(
-    {
-      apiBaseUrl: input.apiBaseUrl,
-      apiKey: input.apiKey,
-      path: `/v1/coupons/${encodeURIComponent(input.couponId)}/apply`,
-      idempotencyKey: `seal-saas-coupon-apply:${input.organizationId}:${normalizeExternalIdPart(
+  const { data: responseBody, error, response } = await applyCoupon({
+    client: input.client,
+    path: { couponId: input.couponId },
+    headers: {
+      "Idempotency-Key": `seal-saas-coupon-apply:${input.organizationId}:${normalizeExternalIdPart(
         input.lookupKey,
       )}:${normalizeExternalIdPart(input.couponId)}`,
-      body: {
-        appliedCouponId: input.appliedCouponId,
-        customerExternalId: input.customerExternalId,
-        billingAccountId: input.billingAccountId,
-        metadata: {
-          sourceSystem: "seal",
-          sealOrganizationId: input.organizationId,
-          lookupKey: input.lookupKey,
-        },
-      },
-      failureLabel: "Vortex Billing coupon apply",
     },
-    fetcher,
-  );
-  const root = readObject(body, "Vortex Billing coupon apply response");
+    body: {
+      appliedCouponId: input.appliedCouponId,
+      customerExternalId: input.customerExternalId,
+      billingAccountId: input.billingAccountId,
+      metadata: {
+        sourceSystem: "seal",
+        sealOrganizationId: input.organizationId,
+        lookupKey: input.lookupKey,
+      },
+    },
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing coupon apply failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  const root = readObject(responseBody, "Vortex Billing coupon apply response");
   const data = readObject(root.data, "Vortex Billing coupon apply response data");
   const appliedCouponBody = readObject(
     data.appliedCoupon,
@@ -436,29 +434,27 @@ export async function applyVortexCoupon(
   };
 }
 
-export async function terminateVortexAppliedCoupon(
-  input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
-    readonly appliedCouponId: string;
-    readonly organizationId: string;
-    readonly lookupKey: string;
-  },
-  fetcher: (input: string, init: RequestInit) => Promise<Response>,
-): Promise<void> {
-  await requestVortexBillingJson(
-    {
-      apiBaseUrl: input.apiBaseUrl,
-      apiKey: input.apiKey,
-      path: `/v1/applied-coupons/${encodeURIComponent(input.appliedCouponId)}/terminate`,
-      idempotencyKey: `seal-saas-coupon-terminate:${input.organizationId}:${normalizeExternalIdPart(
+export async function terminateVortexAppliedCoupon(input: {
+  readonly client: VortexBillingClient;
+  readonly appliedCouponId: string;
+  readonly organizationId: string;
+  readonly lookupKey: string;
+}): Promise<void> {
+  const { error, response } = await terminateAppliedCoupon({
+    client: input.client,
+    path: { appliedCouponId: input.appliedCouponId },
+    headers: {
+      "Idempotency-Key": `seal-saas-coupon-terminate:${input.organizationId}:${normalizeExternalIdPart(
         input.lookupKey,
       )}:${normalizeExternalIdPart(input.appliedCouponId)}`,
-      body: { terminatedAt: new Date().toISOString() },
-      failureLabel: "Vortex Billing applied coupon cleanup",
     },
-    fetcher,
-  );
+    body: { terminatedAt: new Date().toISOString() },
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing applied coupon cleanup failed (${response?.status ?? "no-response"})`,
+    );
+  }
 }
 
 function readCheckoutSession(body: unknown): VortexCheckoutSession {
@@ -547,7 +543,15 @@ function readCouponList(body: unknown): readonly VortexCoupon[] {
     throw new ConvexError("Vortex Billing coupon list response data must be an array");
   }
 
-  return data.map(readVortexCoupon);
+  // The SDK's GET /v1/coupons exposes no status filter (bespoke used ?status=active), so it
+  // returns all coupons; keep only active ones before strict parsing to preserve behavior.
+  return data
+    .filter(
+      (entry) =>
+        (readObject(entry, "Vortex Billing coupon") as { readonly status?: unknown }).status ===
+        "active",
+    )
+    .map(readVortexCoupon);
 }
 
 function readVortexCoupon(value: unknown): VortexCoupon {
@@ -613,26 +617,20 @@ function assertCheckoutDiscountReflected(
 
 async function terminateAppliedCouponAfterCheckoutFailure(
   input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
+    readonly client: VortexBillingClient;
     readonly appliedCoupon: AppliedVortexCoupon;
     readonly organizationId: string;
     readonly lookupKey: string;
   },
-  fetcher: (input: string, init: RequestInit) => Promise<Response>,
   originalError: unknown,
 ): Promise<void> {
   try {
-    await terminateVortexAppliedCoupon(
-      {
-        apiBaseUrl: input.apiBaseUrl,
-        apiKey: input.apiKey,
-        appliedCouponId: input.appliedCoupon.appliedCouponId,
-        organizationId: input.organizationId,
-        lookupKey: input.lookupKey,
-      },
-      fetcher,
-    );
+    await terminateVortexAppliedCoupon({
+      client: input.client,
+      appliedCouponId: input.appliedCoupon.appliedCouponId,
+      organizationId: input.organizationId,
+      lookupKey: input.lookupKey,
+    });
   } catch (cleanupError) {
     throw new ConvexError(
       `Vortex Billing checkout failed and applied coupon cleanup failed for ${input.appliedCoupon.appliedCouponId}: cleanup=${summarizeJson(
@@ -675,13 +673,6 @@ function readStringArray(value: unknown, label: string): readonly string[] {
     throw new ConvexError(`${label} must be an array`);
   }
   return value.map((entry) => readString(entry, label));
-}
-
-function createVortexBillingFetcher(
-  fetchImpl: typeof fetch | undefined,
-): (input: string, init: RequestInit) => Promise<Response> {
-  const resolvedFetch = fetchImpl ?? fetch;
-  return (input, init) => resolvedFetch(input, init);
 }
 
 function trimTrailingSlash(value: string): string {

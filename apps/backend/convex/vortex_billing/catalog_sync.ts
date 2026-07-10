@@ -5,7 +5,9 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
-import { requestVortexBillingJson } from "./payable_actions";
+import { getV1CatalogExact } from "@vortexnyc/payments-sdk";
+
+import { createVortexBillingClient } from "../payments/vortex_billing_processor";
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
 type ProductStatus = "active" | "archived";
@@ -223,17 +225,17 @@ export const syncCatalogFromVortex = internalAction({
     archivedPrices: v.number(),
   }),
   handler: async (ctx): Promise<SyncCatalogFromVortexResult> => {
-    const body = await requestVortexBillingJson(
-      {
-        apiBaseUrl: readRequiredEnv(API_BASE_URL_ENV),
-        apiKey: readRequiredEnv(API_KEY_ENV),
-        method: "GET",
-        path: "/v1/catalog",
-        failureLabel: "Vortex Billing catalog sync",
-      },
-      (input, init) => fetch(input, init),
-    );
-    const catalog = readCatalogResponse(body);
+    const client = createVortexBillingClient({
+      apiBaseUrl: readRequiredEnv(API_BASE_URL_ENV),
+      apiKey: readRequiredEnv(API_KEY_ENV),
+    });
+    const { data, error, response } = await getV1CatalogExact({ client });
+    if (error !== undefined || response === undefined || !response.ok) {
+      throw new ConvexError(
+        `Vortex Billing catalog sync failed (${response?.status ?? "no-response"})`,
+      );
+    }
+    const catalog = readCatalogResponse(data);
     const productIdsByVortexId = new Map<string, Id<"subscription_products">>();
     let archivedProducts = 0;
     let archivedPrices = 0;

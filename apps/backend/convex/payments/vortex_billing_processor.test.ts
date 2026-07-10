@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+import { createClient } from "@vortexnyc/payments-sdk";
+
 import {
   createVortexBillingCheckoutSession,
   createVortexBillingPortalSession,
@@ -216,7 +218,7 @@ describe("Vortex Billing SaaS processor", () => {
         const request = input instanceof Request ? input : new Request(String(input), init);
         capturedRequests.push(request);
 
-        if (request.url === "https://billing.vortex.test/v1/coupons?status=active") {
+        if (request.url === "https://billing.vortex.test/v1/coupons") {
           return jsonResponse({
             data: [
               {
@@ -276,7 +278,7 @@ describe("Vortex Billing SaaS processor", () => {
 
     expect(checkoutUrl).toBe("https://pay.vortex.test/discounted");
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
       "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
       "POST https://billing.vortex.test/v1/checkout/sessions",
     ]);
@@ -333,7 +335,7 @@ describe("Vortex Billing SaaS processor", () => {
       ),
     ).rejects.toThrow("Vortex Billing coupon code is invalid or inactive");
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
     ]);
   });
 
@@ -362,7 +364,7 @@ describe("Vortex Billing SaaS processor", () => {
     ).rejects.toThrow(/Vortex Billing checkout failed \(500\):/);
 
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
       "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
       "POST https://billing.vortex.test/v1/checkout/sessions",
       "POST https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate",
@@ -403,7 +405,7 @@ describe("Vortex Billing SaaS processor", () => {
     ).rejects.toThrow("Vortex Billing checkout did not reflect applied coupon");
 
     expect(capturedRequests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET https://billing.vortex.test/v1/coupons?status=active",
+      "GET https://billing.vortex.test/v1/coupons",
       "POST https://billing.vortex.test/v1/coupons/coupon_25/apply",
       "POST https://billing.vortex.test/v1/checkout/sessions",
       "POST https://billing.vortex.test/v1/applied-coupons/seal-saas-coupon%3Aorg_seal_123%3Apro_monthly_v2%3Acoupon_25/terminate",
@@ -555,43 +557,59 @@ describe("Vortex Billing SaaS processor", () => {
 });
 
 describe("readVortexProductAccess (VOR-67)", () => {
-  const input = {
-    apiBaseUrl: "https://payments.vortex.test",
-    apiKey: "vb_test",
-    customerExternalId: "vtx_cust_seal_org_org_seal_123",
-  } as const;
+  const customerExternalId = "vtx_cust_seal_org_org_seal_123";
+  const clientReturning = (body: unknown, onUrl?: (url: string) => void) => {
+    const mockFetch: typeof fetch = Object.assign(
+      async (input: RequestInfo | URL): Promise<Response> => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        onUrl?.(url);
+        return jsonResponse(body);
+      },
+      { preconnect: fetch.preconnect },
+    );
+    return createClient({ baseUrl: "https://payments.vortex.test", fetch: mockFetch });
+  };
 
   test("entitled=true when the namespaced key is in the customer's active keys", async () => {
-    const result = await readVortexProductAccess({ ...input, product: "invoice" }, async () =>
-      jsonResponse({ data: { entitlements: { activeKeys: ["vortex.invoice", "vortex.sign"] } } }),
-    );
+    const result = await readVortexProductAccess({
+      client: clientReturning({ data: { entitlements: { activeKeys: ["vortex.invoice", "vortex.sign"] } } }),
+      customerExternalId,
+      product: "invoice",
+    });
     expect(result).toEqual({ product: "invoice", entitlementKey: "vortex.invoice", entitled: true });
   });
 
   test("entitled=false when the key is absent from active keys", async () => {
-    const result = await readVortexProductAccess({ ...input, product: "finance" }, async () =>
-      jsonResponse({ data: { entitlements: { activeKeys: ["vortex.sign"] } } }),
-    );
+    const result = await readVortexProductAccess({
+      client: clientReturning({ data: { entitlements: { activeKeys: ["vortex.sign"] } } }),
+      customerExternalId,
+      product: "finance",
+    });
     expect(result).toEqual({ product: "finance", entitlementKey: "vortex.finance", entitled: false });
   });
 
   test("entitled=false (fail-closed) on a malformed/empty response body", async () => {
     for (const body of [{}, { data: {} }, { data: { entitlements: {} } }, null]) {
-      const result = await readVortexProductAccess({ ...input, product: "invoice" }, async () =>
-        jsonResponse(body),
-      );
+      const result = await readVortexProductAccess({
+        client: clientReturning(body),
+        customerExternalId,
+        product: "invoice",
+      });
       expect(result.entitled).toBe(false);
     }
   });
 
-  test("namespaces the product into the entitlements request path", async () => {
+  test("requests the customer entitlements path (namespaced key resolved client-side)", async () => {
     let capturedUrl = "";
-    await readVortexProductAccess({ ...input, product: "invoice" }, async (url) => {
-      capturedUrl = url;
-      return jsonResponse({ data: { entitlements: { activeKeys: [] } } });
+    await readVortexProductAccess({
+      client: clientReturning({ data: { entitlements: { activeKeys: [] } } }, (url) => {
+        capturedUrl = url;
+      }),
+      customerExternalId,
+      product: "invoice",
     });
     expect(capturedUrl).toBe(
-      "https://payments.vortex.test/v1/customers/vtx_cust_seal_org_org_seal_123/entitlements?key=vortex.invoice",
+      "https://payments.vortex.test/v1/customers/vtx_cust_seal_org_org_seal_123/entitlements",
     );
   });
 });
@@ -618,7 +636,7 @@ function createCouponCheckoutMock(
       const request = input instanceof Request ? input : new Request(String(input), init);
       capturedRequests.push(request);
 
-      if (request.url === "https://billing.vortex.test/v1/coupons?status=active") {
+      if (request.url === "https://billing.vortex.test/v1/coupons") {
         return jsonResponse({
           data: [
             {
