@@ -17,7 +17,7 @@ import {
   type VortexSubscriptionActionSummaryAction,
   type VortexSubscriptionActionSummaryState,
   type VortexSubscriptionActionSummaryStatus,
-} from "@vortex/payments/react";
+} from "@vortexnyc/payments-react";
 import { useAction, useQuery } from "convex/react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";

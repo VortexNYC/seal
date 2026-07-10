@@ -160,9 +160,9 @@
         "@tanstack/react-router-devtools": "^1.154.13",
         "@tanstack/react-virtual": "^3.13.18",
         "@tanstack/router-plugin": "^1.154.13",
-        "@vortex/payments": "workspace:*",
         "@vortexnyc/auth": "0.6.0",
         "@vortexnyc/observability": "0.1.2",
+        "@vortexnyc/payments-react": "0.1.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -241,17 +241,6 @@
       "devDependencies": {
         "@types/react": "catalog:",
         "typescript": "catalog:",
-      },
-    },
-    "packages/vortex-payments": {
-      "name": "@vortex/payments",
-      "version": "0.0.1",
-      "devDependencies": {
-        "@types/react": "catalog:",
-        "react": "catalog:",
-      },
-      "peerDependencies": {
-        "react": ">=18.0.0",
       },
     },
     "tooling/typescript": {
@@ -1944,11 +1933,11 @@
 
     "@vitest/utils": ["@vitest/utils@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-xw2/TiX82lQHA06cgbqRKFb5lCAy3axQ4H4SoUFhUsg+wztiet+co86IAMDtF6Vm1hc7J6j09oh/rgDn+JdKIQ=="],
 
-    "@vortex/payments": ["@vortex/payments@workspace:packages/vortex-payments"],
-
     "@vortexnyc/auth": ["@vortexnyc/auth@0.6.0", "https://npm.pkg.github.com/download/@VortexNYC/auth/0.6.0/75b3c98f1aae8d608b91ddabbf20f34103cd8613", { "dependencies": { "@react-email/components": "^1.0.12", "@react-email/render": "^2.0.8", "jose": "^6.2.2" }, "peerDependencies": { "@better-auth/expo": ">=1.6.9", "@convex-dev/better-auth": ">=0.12.2", "better-auth": ">=1.6.9", "convex": ">=1.39.0", "expo-constants": ">=17.0.0", "expo-linking": ">=7.0.0", "expo-network": ">=8.0.7", "expo-secure-store": ">=14.0.0", "expo-web-browser": ">=14.0.0", "react": ">=19.0.0", "react-dom": ">=19.0.0", "react-native": ">=0.79.0", "react-native-css-interop": ">=0.2.0", "uniwind": ">=1.5.0" }, "bin": { "vortex-auth": "scripts/cli.ts" } }, "sha512-7I8PAH2EQ4fEkMA8ucPOIxaqStqCeUgX7aJ2ruhMK6mZfZEizjO6LqUzu5tqNyOpQNjqwjWAD4Zd9g7kC4ItJg=="],
 
     "@vortexnyc/observability": ["@vortexnyc/observability@0.1.2", "https://npm.pkg.github.com/download/@VortexNYC/observability/0.1.2/c642511b5592f3af1f646c8b3bcce5c85abf2d2a", { "dependencies": { "@posthog/convex": "^2.0.28" }, "peerDependencies": { "convex": ">=1.39.0", "posthog-js": ">=1.315.0", "posthog-react-native": ">=4.35.0" } }, "sha512-LUIv4CxvA5ululXmIaGIyvukK5qYodJYy7fkbRMlBCxBbidkxJx49GC8p9BXXkgy/eDG6M7X0TZycP+wFuKP7w=="],
+
+    "@vortexnyc/payments-react": ["@vortexnyc/payments-react@0.1.0", "https://npm.pkg.github.com/download/@vortexnyc/payments-react/0.1.0/f9b781f390b3a0304aad54691a4ed4401189963a", { "peerDependencies": { "react": ">=18.0.0" } }, "sha512-4jwTMvNzb7CE77XzDJETwt2Y5Sjy3OgCZ4ziRSI9HdgAa7KMfWA/q5lBa+0yISAcrcdVT0Bw57/WdCSgpNgSkg=="],
 
     "@vortexnyc/payments-sdk": ["@vortexnyc/payments-sdk@0.1.2", "https://npm.pkg.github.com/download/@vortexnyc/payments-sdk/0.1.2/aa024b7ea3b566192cf3e72b8dbf8c3688fc224b", {}, "sha512-1pg9tUeED7H09FIYW18MGia9+Zd5Y+JGFoCSZT9l0lwKM9ZnYCqQZBlQMy3j98RIi+2xQbvGnz4clOeF+QovGQ=="],
 
@@ -4575,6 +4564,8 @@
     "@seal/web/@convex-dev/agent": ["@convex-dev/agent@0.3.2", "", { "optionalDependencies": { "@ungap/structured-clone": "^1.3.0" }, "peerDependencies": { "@ai-sdk/provider-utils": "^3.0.7", "ai": "^5.0.29", "convex": "^1.24.8", "convex-helpers": "^0.1.103", "react": "^18.3.1 || ^19.0.0" }, "optionalPeers": ["react"] }, "sha512-TMFReXejAIUE22OOn8PYvoOseAqwVOPm4WZU554GFk0lJ9kcNCGRJP/T1NTZfSBXrSaSUjETMFv2vEfXbG+4Qg=="],
 
     "@seal/web/lucide-react": ["lucide-react@0.563.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-8dXPB2GI4dI8jV4MgUDGBeLdGk8ekfqVZ0BdLcrRzocGgG75ltNEmWS+gE7uokKF/0oSUuczNDT+g9hFJ23FkA=="],
+
+    "@seal/web/tailwindcss": ["tailwindcss@4.3.0", "", {}, "sha512-y6nxMGB1nMW9R6k96e5gdIFzcfL/gTJRNaqGes1YvkLnPVXzWgbqFF2yLC0T8G774n24cx3Pe8XrKoniCOAH+Q=="],
 
     "@seal/web/wrangler": ["wrangler@4.100.0", "", { "dependencies": { "@cloudflare/kv-asset-handler": "0.5.0", "@cloudflare/unenv-preset": "2.16.1", "blake3-wasm": "2.1.5", "esbuild": "0.27.3", "miniflare": "4.20260611.0", "path-to-regexp": "6.3.0", "unenv": "2.0.0-rc.24", "workerd": "1.20260611.1" }, "optionalDependencies": { "fsevents": "2.3.3" }, "peerDependencies": { "@cloudflare/workers-types": "^4.20260611.1" }, "optionalPeers": ["@cloudflare/workers-types"], "bin": { "cf-wrangler": "bin/cf-wrangler.js", "wrangler": "bin/wrangler.js", "wrangler2": "bin/wrangler.js" } }, "sha512-dSQO7DO+mD6XDzkVWIWBoGLO3yw+lacWSc/KhFvd7pgfpth+kX98qb5SGRHZN8ACCDhhfwzDLXwB6qHsIHhfBg=="],
 

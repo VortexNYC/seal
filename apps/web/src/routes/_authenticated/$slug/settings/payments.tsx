@@ -17,7 +17,7 @@ import {
   type VortexFeePolicyOwnerMode,
   type VortexFeePolicyState,
   type VortexMerchantAccountPanelProps,
-} from "@vortex/payments/react";
+} from "@vortexnyc/payments-react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { ExternalLink, Loader2, PlugZap } from "lucide-react";
 import { useEffect, useState } from "react";
