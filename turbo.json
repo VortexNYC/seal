@@ -3,9 +3,20 @@
   "ui": "tui",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", ".output/**", ".vercel/output/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        ".output/**",
+        ".vercel/output/**",
+        "dist/**"
+      ]
     },
     "start": {
       "cache": false
@@ -73,6 +84,18 @@
       "outputs": []
     },
     "auth:preflight": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "precommit:check": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "prepush:check": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "prove:convex-cost-guard": {
       "dependsOn": [],
       "outputs": []
     }

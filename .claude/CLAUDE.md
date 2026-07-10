@@ -73,10 +73,11 @@ bun install
 Run from the repo root before committing meaningful changes:
 
 ```bash
+bun run prove:convex-cost-guard
 bun run project-kit:check
 bun run project-kit:doctor
 bun run typecheck
-bun run lint:strict
+bun run lint
 bun run format:changed:check
 bun run check:preferred-stack
 bun run build
@@ -85,6 +86,13 @@ bun run verify:seal-vortex-migration
 bun run auth:check
 bun run auth:preflight
 ```
+
+## Quality Contract
+
+- Pre-commit is the front-door local contract. Install it with `bun run precommit:install`; it sets `core.hooksPath=.githooks` and delegates to `bun run precommit:check`, which may only run fast static/local checks such as `bun run prove:convex-cost-guard`.
+- Pre-push/local proof is the developer proof wall. It delegates to `bun run prepush:check` and can include broader local checks such as typecheck, lint, build, unit tests, auth checks, and other repo-local validation.
+- PR CI is the clean-machine receipt for generated drift, hook installation, fast local checks, and changed-surface build proof. Docs/process-only changes must not run the full proof wall. Do not add browser, mobile, dashboard, deploy, Cloudflare, or live Convex proof to normal PR CI.
+- Release/live proof belongs in release-only workflows or explicit operator runs. Use it for browser E2E, production smoke, live Convex insights, deploys, dashboards, and other provider-backed checks.
 
 ## Production Release Proofs
 
@@ -99,6 +107,13 @@ No generated commands. Add `instructions.verificationCommands` to `vortex.projec
 - Run `bun run auth:check` before changing auth-owned org/member/role/invitation data.
 - Run `bun run auth:preflight` after install/env/runtime changes and before auth UI or rollout work.
 - Do not build an app-local auth engine. The consumer owns adapter glue; Core owns auth semantics.
+
+## Convex Provider Cost
+
+- Convex deployment: `dev:aware-buzzard-568`
+- Static guard: `bun run prove:convex-cost-guard`
+- Live health: `bun run convex:insights`
+- Billing attribution requires Convex Log Streams for `function_execution`, `current_storage_usage`, and `storage_api_bandwidth`; insights and static scans are not invoice proof.
 
 ## Cloud Sessions
 

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   createVortexBillingCheckoutSession,
   createVortexBillingPortalSession,
+  readVortexProductAccess,
   resolveVortexBillingConfig,
   resolveVortexBillingPortalConfig,
   selectSaasBillingProvider,
@@ -550,6 +551,48 @@ describe("Vortex Billing SaaS processor", () => {
         mockFetch,
       ),
     ).rejects.toThrow("Vortex Billing portal response did not include link.url");
+  });
+});
+
+describe("readVortexProductAccess (VOR-67)", () => {
+  const input = {
+    apiBaseUrl: "https://payments.vortex.test",
+    apiKey: "vb_test",
+    customerExternalId: "vtx_cust_seal_org_org_seal_123",
+  } as const;
+
+  test("entitled=true when the namespaced key is in the customer's active keys", async () => {
+    const result = await readVortexProductAccess({ ...input, product: "invoice" }, async () =>
+      jsonResponse({ data: { entitlements: { activeKeys: ["vortex.invoice", "vortex.sign"] } } }),
+    );
+    expect(result).toEqual({ product: "invoice", entitlementKey: "vortex.invoice", entitled: true });
+  });
+
+  test("entitled=false when the key is absent from active keys", async () => {
+    const result = await readVortexProductAccess({ ...input, product: "finance" }, async () =>
+      jsonResponse({ data: { entitlements: { activeKeys: ["vortex.sign"] } } }),
+    );
+    expect(result).toEqual({ product: "finance", entitlementKey: "vortex.finance", entitled: false });
+  });
+
+  test("entitled=false (fail-closed) on a malformed/empty response body", async () => {
+    for (const body of [{}, { data: {} }, { data: { entitlements: {} } }, null]) {
+      const result = await readVortexProductAccess({ ...input, product: "invoice" }, async () =>
+        jsonResponse(body),
+      );
+      expect(result.entitled).toBe(false);
+    }
+  });
+
+  test("namespaces the product into the entitlements request path", async () => {
+    let capturedUrl = "";
+    await readVortexProductAccess({ ...input, product: "invoice" }, async (url) => {
+      capturedUrl = url;
+      return jsonResponse({ data: { entitlements: { activeKeys: [] } } });
+    });
+    expect(capturedUrl).toBe(
+      "https://payments.vortex.test/v1/customers/vtx_cust_seal_org_org_seal_123/entitlements?key=vortex.invoice",
+    );
   });
 });
 

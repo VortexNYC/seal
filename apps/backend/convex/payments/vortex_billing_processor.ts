@@ -293,7 +293,7 @@ function resolveVortexBillingApiConfig(env: Env): VortexBillingApiConfig {
   };
 }
 
-function resolveVortexBillingCustomerExternalId(organizationId: string, env: Env): string {
+export function resolveVortexBillingCustomerExternalId(organizationId: string, env: Env): string {
   const organizationKey = String(organizationId);
   const customerMap = parseOptionalStringRecord(env[CUSTOMER_MAP_ENV], CUSTOMER_MAP_ENV);
   return readVortexBillingCustomerExternalId(organizationKey, customerMap);
@@ -331,6 +331,51 @@ export async function resolveActiveVortexCoupon(
   }
   validateActiveVortexCoupon(coupon, input.priceId);
   return coupon;
+}
+
+/**
+ * Read a Vortex product entitlement for a customer (VOR-67).
+ *
+ * Product access is owned by Vortex Payments (billing-derived), not auth. Seal — like
+ * any Vortex Connect consumer — reads it through the same dev surface. Keys are namespaced
+ * `vortex.<product>` to avoid collision with merchants' own entitlement catalogs. This is
+ * the product-entitlement dimension only; money-in readiness (sub-merchant onboarding) is a
+ * separate read gated as `entitled AND moneyInReady`.
+ */
+export async function readVortexProductAccess(
+  input: {
+    readonly apiBaseUrl: string;
+    readonly apiKey: string;
+    readonly customerExternalId: string;
+    readonly product: string;
+  },
+  fetcher: (input: string, init: RequestInit) => Promise<Response>,
+): Promise<{ readonly product: string; readonly entitlementKey: string; readonly entitled: boolean }> {
+  const entitlementKey = `vortex.${input.product}`;
+  const body = await requestVortexBillingJson(
+    {
+      apiBaseUrl: input.apiBaseUrl,
+      apiKey: input.apiKey,
+      method: "GET",
+      path: `/v1/customers/${encodeURIComponent(input.customerExternalId)}/entitlements?key=${encodeURIComponent(
+        entitlementKey,
+      )}`,
+      failureLabel: "Vortex Billing product-access read",
+    },
+    fetcher,
+  );
+  return { product: input.product, entitlementKey, entitled: isVortexEntitlementKeyActive(body, entitlementKey) };
+}
+
+/** Defensive parse: entitled iff the key appears in the response's active entitlement keys. */
+function isVortexEntitlementKeyActive(body: unknown, entitlementKey: string): boolean {
+  if (typeof body !== "object" || body === null) return false;
+  const data = (body as { readonly data?: unknown }).data;
+  if (typeof data !== "object" || data === null) return false;
+  const entitlements = (data as { readonly entitlements?: unknown }).entitlements;
+  if (typeof entitlements !== "object" || entitlements === null) return false;
+  const activeKeys = (entitlements as { readonly activeKeys?: unknown }).activeKeys;
+  return Array.isArray(activeKeys) && activeKeys.includes(entitlementKey);
 }
 
 export async function applyVortexCoupon(

@@ -48,8 +48,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Verify
-        run: bun --bun run verify
+      - name: Verify (clean-machine)
+        # PR/CI runs the clean-machine-safe gate only: lint, format, typecheck, knip,
+        # and the static retired-provider residue proof. The full `verify` additionally
+        # runs `verify:seal-vortex-migration`, whose launch/production-readiness and
+        # `-live` proofs require Vortex Billing prod secrets that are intentionally NOT
+        # in CI. Per Seal's doctrine, that launch/live proof is a local/operator and
+        # release-time gate, not a per-PR gate. Run `bun run verify` locally / at release.
+        run: bun --bun run verify:clean
 
   test-backend:
     name: Backend Tests
