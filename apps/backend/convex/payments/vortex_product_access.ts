@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
 import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_actions";
 import {
+  createVortexBillingClient,
   readVortexProductAccess,
   resolveVortexBillingCustomerExternalId,
 } from "./vortex_billing_processor";
@@ -26,9 +27,7 @@ export const readOrganizationVortexProductAccess = internalAction({
   handler: async (_ctx, { organizationId, product }) => {
     const env = readVortexBillingEnvFromProcess();
     const customerExternalId = resolveVortexBillingCustomerExternalId(organizationId, process.env);
-    return await readVortexProductAccess(
-      { apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey, customerExternalId, product },
-      (input, init) => fetch(input, init),
-    );
+    const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+    return await readVortexProductAccess({ client, customerExternalId, product });
   },
 });

@@ -4,14 +4,28 @@ import {
   applyCoupon,
   createClient,
   createCheckoutSession,
+  getCustomerEntitlements,
   listCoupons,
   terminateAppliedCoupon,
 } from "@vortexnyc/payments-sdk";
 
 type VortexBillingClient = ReturnType<typeof createClient>;
+
+/** Build the Vortex Billing SDK client from resolved API config (Bearer auth + billing service header). */
+export function createVortexBillingClient(config: {
+  readonly apiBaseUrl: string;
+  readonly apiKey: string;
+}): VortexBillingClient {
+  return createClient({
+    baseUrl: trimTrailingSlash(config.apiBaseUrl),
+    headers: {
+      authorization: `Bearer ${config.apiKey}`,
+      "x-vortex-service": "billing",
+    },
+  });
+}
 import { ConvexError } from "convex/values";
 
-import { requestVortexBillingJson } from "../vortex_billing/payable_actions";
 import type { Env } from "./saas_billing_provider";
 
 export { selectSaasBillingProvider } from "./saas_billing_provider";
@@ -333,27 +347,22 @@ export async function resolveActiveVortexCoupon(input: {
  */
 export async function readVortexProductAccess(
   input: {
-    readonly apiBaseUrl: string;
-    readonly apiKey: string;
+    readonly client: VortexBillingClient;
     readonly customerExternalId: string;
     readonly product: string;
   },
-  fetcher: (input: string, init: RequestInit) => Promise<Response>,
 ): Promise<{ readonly product: string; readonly entitlementKey: string; readonly entitled: boolean }> {
   const entitlementKey = `vortex.${input.product}`;
-  const body = await requestVortexBillingJson(
-    {
-      apiBaseUrl: input.apiBaseUrl,
-      apiKey: input.apiKey,
-      method: "GET",
-      path: `/v1/customers/${encodeURIComponent(input.customerExternalId)}/entitlements?key=${encodeURIComponent(
-        entitlementKey,
-      )}`,
-      failureLabel: "Vortex Billing product-access read",
-    },
-    fetcher,
-  );
-  return { product: input.product, entitlementKey, entitled: isVortexEntitlementKeyActive(body, entitlementKey) };
+  const { data, error, response } = await getCustomerEntitlements({
+    client: input.client,
+    path: { customerId: input.customerExternalId },
+  });
+  if (error !== undefined || response === undefined || !response.ok) {
+    throw new ConvexError(
+      `Vortex Billing product-access read failed (${response?.status ?? "no-response"})`,
+    );
+  }
+  return { product: input.product, entitlementKey, entitled: isVortexEntitlementKeyActive(data, entitlementKey) };
 }
 
 /** Defensive parse: entitled iff the key appears in the response's active entitlement keys. */
