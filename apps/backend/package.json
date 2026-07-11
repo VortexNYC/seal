@@ -34,7 +34,7 @@
     "@vortexnyc/auth": "0.6.0",
     "@vortexnyc/observability": "0.1.2",
     "@vortexnyc/payments-sdk": "0.1.2",
-    "ai": "^6.0.146",
+    "ai": "^7.0.0",
     "better-auth": "1.6.9",
     "convex": "catalog:",
     "convex-helpers": "^0.1.114",
