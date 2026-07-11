@@ -103,7 +103,7 @@
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "knip": "^6.3.0",
-    "oxfmt": "0.44.0",
+    "oxfmt": "0.58.0",
     "oxlint": "1.59.0",
     "promptfoo": "^0.121.3",
     "turbo": "^2.9.3",
