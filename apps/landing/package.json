@@ -58,7 +58,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@playwright/test": "1.59.1",
+    "@playwright/test": "1.61.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
