@@ -20,7 +20,7 @@
     "@convex-dev/action-retrier": "^0.3.0",
     "@convex-dev/agent": "^0.6.3",
     "@convex-dev/aggregate": "^0.2.1",
-    "@convex-dev/better-auth": "0.12.2",
+    "@convex-dev/better-auth": "0.12.5",
     "@convex-dev/migrations": "^0.3.3",
     "@convex-dev/presence": "^0.3.0",
     "@convex-dev/rag": "^0.7.5",
