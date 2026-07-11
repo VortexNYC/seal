@@ -92,7 +92,7 @@
     "prepush:check": "bun run precommit:check && bun run typecheck && bun run lint && bun run build && bun run test"
   },
   "dependencies": {
-    "@tanstack/router-core": "1.168.9"
+    "@tanstack/router-core": "1.171.14"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
