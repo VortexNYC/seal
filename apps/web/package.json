@@ -30,7 +30,7 @@
     "cf:types": "bun run cf:types:mkdir && wrangler types .wrangler/types/cloudflare-env.d.ts --include-runtime false"
   },
   "dependencies": {
-    "@convex-dev/agent": "^0.3.2",
+    "@convex-dev/agent": "^0.6.0",
     "@convex-dev/presence": "^0.3.0",
     "@convex-dev/react-query": "0.1.0",
     "@hookform/resolvers": "^5.2.2",
