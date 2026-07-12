@@ -39,7 +39,7 @@
     "convex": "catalog:",
     "convex-helpers": "^0.1.114",
     "convex-timeline": "^0.1.2",
-    "nanoid": "^5.1.7",
+    "nanoid": "^6.0.0",
     "node-forge": "^1.4.0",
     "pdf-lib": "^1.17.1",
     "standardwebhooks": "1.0.0",
