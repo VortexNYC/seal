@@ -13,9 +13,11 @@
   "instructions": {
     "name": "seal",
     "displayName": "Seal",
-    "baseBranch": "main",
+    "baseBranch": "staging",
     "packageManager": "bun@1.3.11",
-    "setupCommands": ["bun install"],
+    "setupCommands": [
+      "bun install"
+    ],
     "verificationCommands": [
       "bun run project-kit:check",
       "bun run project-kit:doctor",

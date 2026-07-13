@@ -28,7 +28,7 @@ Seal is a Vortex company repo. Ship the active limiter, delete stale process, an
 - Never add `eslint-disable`, `biome-ignore`, Ultracite, or other stale local lint bypasses.
 - Use Core-owned tooling through repo scripts: `bun run lint`, `bun run format:check`, `bun run check:preferred-stack`, and `bun run repo:check` when available.
 - No AI attribution in commits, PRs, generated files, or release notes.
-- No worktrees. Branch from `main` and PR back to `main`.
+- No worktrees. Branch from `staging` and PR back to `staging`.
 - Do not release or version-bump for refactors. Release only for a closed gate or named consumer need.
 - Browser E2E is release-only. Do not run Playwright, `test:e2e`, `agent-browser`, or `vb` from routine PR/push CI.
 
@@ -45,7 +45,7 @@ Seal is a Vortex company repo. Ship the active limiter, delete stale process, an
 ## Repo Shape
 
 Package: `seal`
-Base branch: `main`
+Base branch: `staging`
 Convex deployment: `dev:aware-buzzard-568`
 
 Apps:
