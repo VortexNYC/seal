@@ -85,11 +85,12 @@
     "auth:preflight": "vortex-auth preflight --repo-root . --convex-dir ./apps/backend/convex --",
     "lint:strict": "vortex-lint --strict .",
     "lint:advisory": "vortex-lint --strict --advisory .",
-    "prove:convex-cost-guard": "vortex-convex-cost-guard --root .",
+    "prove:convex-cost-guard": "vortex-convex-cost-guard --root . --fail-on-warnings",
     "check:ui-conformance": "vortex-ui-conformance .",
     "precommit:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/pre-push",
     "precommit:check": "bun run prove:convex-cost-guard",
-    "prepush:check": "bun run precommit:check && bun run typecheck && bun run lint && bun run build && bun run test"
+    "prepush:check": "bun run precommit:check && bun run typecheck && bun run lint && bun run lint:convex && bun run build && bun run test",
+    "lint:convex": "vortex-lint --convex-only --advisory-convex ."
   },
   "dependencies": {
     "@tanstack/router-core": "1.168.9"
@@ -98,16 +99,19 @@
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "@vortexnyc/auth": "0.6.0",
-    "@vortexnyc/tooling": "0.3.2",
+    "@vortexnyc/auth": "0.7.0",
+    "@vortexnyc/tooling": "0.5.0",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "knip": "^6.3.0",
     "oxfmt": "0.44.0",
-    "oxlint": "1.59.0",
+    "oxlint": "1.73.0",
     "promptfoo": "^0.121.3",
     "turbo": "^2.9.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@convex-dev/eslint-plugin": "2.0.0",
+    "eslint": "10.7.0",
+    "typescript-eslint": "8.63.0"
   },
   "packageManager": "bun@1.3.11"
 }

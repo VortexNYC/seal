@@ -6,7 +6,7 @@
 
 - Project: `seal`
 - Package: `seal`
-- Base branch: `staging`
+- Base branch: `main`
 - Package manager: `bun@1.3.11`
 - Convex deployment: `dev:aware-buzzard-568`
 
