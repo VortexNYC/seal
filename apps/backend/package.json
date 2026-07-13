@@ -32,7 +32,7 @@
     "@signpdf/placeholder-pdf-lib": "^3.3.0",
     "@signpdf/signpdf": "^3.3.0",
     "@vortexnyc/auth": "0.6.0",
-    "@vortexnyc/observability": "0.1.2",
+    "@vortexnyc/observability": "0.1.4",
     "@vortexnyc/payments-sdk": "0.1.2",
     "ai": "^6.0.146",
     "better-auth": "1.6.9",
