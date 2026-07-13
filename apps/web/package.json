@@ -81,7 +81,7 @@
     "react": "catalog:",
     "react-day-picker": "^9.13.0",
     "react-dom": "catalog:",
-    "react-dropzone": "^14.3.8",
+    "react-dropzone": "^17.0.0",
     "react-hook-form": "^7.71.2",
     "react-konva": "^19.2.1",
     "react-pdf": "^10.3.0",
