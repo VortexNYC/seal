@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "convex dev",
-    "deploy": "convex deploy",
+    "dev": "bun run prove:convex-cost-guard && convex dev",
+    "deploy": "bun run prove:convex-cost-guard && convex deploy",
     "test": "vitest run --maxWorkers=1",
     "test:watch": "vitest",
     "lint": "oxlint",
@@ -13,7 +13,8 @@
     "typecheck": "bunx tsc -p convex/tsconfig.json --noEmit",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files",
-    "clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
+    "clean": "git clean -xdf .cache .turbo node_modules convex/_generated",
+    "prove:convex-cost-guard": "bun $(bun pm bin)/../@vortexnyc/tooling/bin/vortex-convex-cost-guard.ts --root . --fail-on-warnings"
   },
   "dependencies": {
     "@convex-dev/action-cache": "^0.3.0",
