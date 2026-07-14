@@ -19,6 +19,7 @@ export const getRevenueStats = memberQuery({
   handler: async (ctx, args) => {
     const organizationId = assertActiveOrganization(ctx.auth, args.slug);
 
+    // convex-cost-guard-allow: convex-broad-organization-collect — revenue stats require scanning all invoices for the org to compute accurate totals
     const invoices = await ctx.db
       .query("document_invoices")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))

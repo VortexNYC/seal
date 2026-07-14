@@ -49,21 +49,6 @@
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/api/v1/contacts.ts",
-      "fingerprint": "087b3e19"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/api/v1/contacts.ts",
-      "fingerprint": "3a452346"
-    },
-    {
-      "rule": "convex-broad-organization-collect",
-      "path": "apps/backend/convex/api/v1/contacts.ts",
-      "fingerprint": "6f815da4"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/api/v1/documents.ts",
       "fingerprint": "08b9bff5"
     },
@@ -96,11 +81,6 @@
       "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/api/v1/signatures.ts",
       "fingerprint": "5d1e991f"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/api/v1/signatures.ts",
-      "fingerprint": "8f84dc50"
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
@@ -170,37 +150,7 @@
     {
       "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "00113dba"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "03b86db3"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "2b5e3416"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
       "fingerprint": "73ff18a6"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "7f1a0f1f"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "7f1a0f20"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "cd76f872"
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
@@ -360,11 +310,6 @@
     {
       "rule": "convex-broad-organization-collect",
       "path": "apps/backend/convex/dashboard/queries.ts",
-      "fingerprint": "9e3582ac"
-    },
-    {
-      "rule": "convex-broad-organization-collect",
-      "path": "apps/backend/convex/dashboard/queries.ts",
       "fingerprint": "9e3582ad"
     },
     {
@@ -495,17 +440,7 @@
     {
       "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "228868e1"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
       "fingerprint": "2436725b"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "51b218c6"
     },
     {
       "rule": "convex-query-filter-before-collect",
@@ -784,21 +719,6 @@
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/notifications/index.ts",
-      "fingerprint": "b84d9e12"
-    },
-    {
-      "rule": "convex-low-cardinality-index-collect",
-      "path": "apps/backend/convex/organization_roles/migrations.ts",
-      "fingerprint": "86d339ad"
-    },
-    {
-      "rule": "convex-low-cardinality-index-collect",
-      "path": "apps/backend/convex/organization_roles/migrations.ts",
-      "fingerprint": "ce90c462"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/payment_fields/dunning.ts",
       "fingerprint": "0e6ce3d6"
     },
@@ -851,11 +771,6 @@
       "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/payments/queries.ts",
       "fingerprint": "028c1b2a"
-    },
-    {
-      "rule": "convex-broad-organization-collect",
-      "path": "apps/backend/convex/payments/queries.ts",
-      "fingerprint": "03c18048"
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
@@ -1161,11 +1076,6 @@
       "rule": "convex-query-filter-before-collect",
       "path": "apps/backend/convex/webhooks/delivery.ts",
       "fingerprint": "888015ae"
-    },
-    {
-      "rule": "convex-low-cardinality-index-collect",
-      "path": "apps/backend/convex/webhooks/delivery.ts",
-      "fingerprint": "91ce6d94"
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",

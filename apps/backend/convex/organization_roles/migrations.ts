@@ -18,10 +18,12 @@ import { ensureVortexAuthSystemRoles } from "../lib/vortexAuthOrganizations";
 export const seedAllOrganizations = internalMutation({
   args: {},
   handler: async (ctx) => {
+    // convex-cost-guard-allow: convex-low-cardinality-index-collect — one-time migration script, bounded by total org count
     const activeOrganizations = await ctx.db
       .query("organizations")
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .collect();
+    // convex-cost-guard-allow: convex-low-cardinality-index-collect — one-time migration script, bounded by total org count
     const inactiveOrganizations = await ctx.db
       .query("organizations")
       .withIndex("by_active", (q) => q.eq("isActive", false))

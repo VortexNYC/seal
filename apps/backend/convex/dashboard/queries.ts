@@ -26,6 +26,7 @@ export const getDocumentStats = permissionQuery("documents:view")({
     // Non-admins are forced to personal scope regardless of what they request
     const scope = isAdmin ? (args.scope ?? "team") : "personal";
 
+    // convex-cost-guard-allow: convex-broad-organization-collect — dashboard stats require all non-deleted documents for the org to compute accurate counts
     let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))

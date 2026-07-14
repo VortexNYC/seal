@@ -266,6 +266,7 @@ export const getDocumentWithAuditTrail = authQuery({
     const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
     const auditLogs = await ctx.db
+      // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
       .query("audit_logs")
       .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
       .order("desc")
@@ -291,6 +292,7 @@ export const getDocumentComplete = authQuery({
     const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
     // Get all related data in parallel for performance
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient/field count
     const [signatures, fields, recipients, auditLogs] = await Promise.all([
       ctx.db
         .query("signatures")

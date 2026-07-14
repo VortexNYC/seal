@@ -43,18 +43,22 @@ async function getAuditExportData(
   auditLogs: AuditExportLogs;
 }> {
   const [signatures, recipients, fields, auditLogs] = await Promise.all([
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count
     ctx.db
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
       .collect(),
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count
     ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
       .collect(),
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count
     ctx.db
       .query("signature_fields")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
       .collect(),
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
     ctx.db
       .query("audit_logs")
       .withIndex("by_document_created", (q) => q.eq("documentId", documentId))
@@ -199,6 +203,7 @@ export const getDocumentAuditLogs = authQuery({
     }
 
     // 3. Get audit trail
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
     const auditLogs = await ctx.db
       .query("audit_logs")
       .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
@@ -291,6 +296,7 @@ export const getDocumentAuditTrailInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
     return await ctx.db
+      // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
       .query("audit_logs")
       .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
       .order("desc")
