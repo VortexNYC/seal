@@ -2,7 +2,7 @@
   "project": "seal",
   "app": "web",
   "type": "exploratory-testing",
-  "branch": "staging",
+  "branch": "main",
   "lastUpdated": "2026-02-26",
   "browser": {
     "tool": "playwright-cli",

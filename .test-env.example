@@ -2,7 +2,7 @@
 # Copy to .test-env and fill with local-safe test values. Do not commit secrets.
 
 PROJECT_NAME=seal
-BASE_BRANCH=staging
+BASE_BRANCH=main
 PACKAGE_MANAGER=bun@1.3.11
 PUBLIC_CONVEX_URL=
 
