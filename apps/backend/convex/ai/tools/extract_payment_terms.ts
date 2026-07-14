@@ -12,7 +12,7 @@ import type { SealAICtx } from "../types";
 // while letting tests import without side effects).
 export { PaymentExtractionSchema, type PaymentExtractionResult } from "./paymentExtractionSchema";
 
-import { type PaymentExtractionResult, PaymentExtractionSchema } from "./paymentExtractionSchema";
+import type { PaymentExtractionResult } from "./paymentExtractionSchema";
 
 // ---------------------------------------------------------------------------
 // Cacheable internal action — keyed on storageId so same PDF = same result
