@@ -81,17 +81,23 @@ export const listContacts = internalQuery({
         .withIndex("by_org_status", (q) =>
           q.eq("organizationId", args.organizationId).eq("status", sealAssertPresent(args.status)),
         )
-        .order("desc")
-        .take(fetchLimit);
+        .order("desc");
     } else {
       query = ctx.db
         .query("contacts")
         .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-        .order("desc")
-        .take(fetchLimit);
+        .order("desc");
     }
 
-    const raw = await query;
+    // Apply cursor if provided (use _creationTime for index-based pagination)
+    if (args.cursor) {
+      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      if (cursorDoc) {
+        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+      }
+    }
+
+    const raw = await query.take(fetchLimit);
 
     // Client-side search filter
     const filtered = args.search
