@@ -9,11 +9,19 @@ import { internal } from "./_generated/api";
 // Pipeline-verified cron scheduler (T2-SEAL-1777056416545)
 const crons = cronJobs();
 
-// Scheduled workloads run ONLY on the production deployment. Non-prod
-// deployments set no CRONS_ENABLED and register ZERO crons (they must not run
-// 24/7 on dev/preview/staging and burn Convex I/O with no users). Set
-// CRONS_ENABLED=true on the prod deployment only.
-if (process.env.CRONS_ENABLED === "true") {
+// Scheduled workloads run ONLY on the production deployment. Require every
+// deployment to choose explicitly so a prod deploy cannot silently unregister all
+// crons because CRONS_ENABLED was forgotten. Set CRONS_ENABLED=true on the prod
+// deployment and CRONS_ENABLED=false everywhere else.
+const cronsEnabled = process.env.CRONS_ENABLED;
+
+if (cronsEnabled !== "true" && cronsEnabled !== "false") {
+  throw new Error(
+    'CRONS_ENABLED must be set to either "true" (production only) or "false" (all non-production deployments) before deploying Convex crons.',
+  );
+}
+
+if (cronsEnabled === "true") {
   // Clean up old email records from the resend component hourly [BETA] [SIGMA] [CONFLICT-B]
   crons.interval(
     "cleanup-resend-emails",
