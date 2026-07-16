@@ -138,6 +138,12 @@ export default defineConfig(async ({ command }) => ({
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
+    // Vite-node executes TSX-based content tooling (for example
+    // tools/generate-content-manifests.ts) through Vite's dependency optimizer.
+    // Pre-bundle React's automatic JSX runtimes so generated MDX/TSX modules do
+    // not try to import a missing .vite/deps/react_jsx-dev-runtime.js file on
+    // a cold quality-check run.
+    include: ["react", "react/jsx-runtime", "react/jsx-dev-runtime"],
     // Force a single version of router-core — avoids "invariant" missing-export
     // errors caused by bun resolving multiple semver-incompatible copies.
     exclude: ["@tanstack/router-core"],
