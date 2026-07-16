@@ -437,6 +437,7 @@ export const sendDocument = permissionMutation("documents:edit")({
 
     // 4. If re-sending an expired document, reset expired recipients
     if (currentStatus === "expired") {
+      // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — sendDocument must visit every recipient for this single expired documentId so all expired recipients are reset; no caller receives fewer rows.
       const recipients = await ctx.db
         .query("document_recipients")
         .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
