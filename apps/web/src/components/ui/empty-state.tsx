@@ -59,7 +59,7 @@ export function EmptyState({
       role="status"
       aria-live="polite"
     >
-      // vortex-allow-color: subtle hairline over dark illustration; alpha-white reads as neutral in both themes
+      {/* vortex-allow-color: subtle hairline over dark illustration; alpha-white reads as neutral in both themes */}
       <div className="border-border/60 bg-muted/80 relative mx-auto mb-4 flex size-14 items-center justify-center rounded-full border shadow-sm ring-1 ring-white/10 dark:ring-white/5">
         <Icon className="text-muted-foreground h-8 w-8" />
       </div>
