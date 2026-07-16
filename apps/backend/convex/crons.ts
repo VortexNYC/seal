@@ -9,95 +9,109 @@ import { internal } from "./_generated/api";
 // Pipeline-verified cron scheduler (T2-SEAL-1777056416545)
 const crons = cronJobs();
 
-// Clean up old email records from the resend component hourly [BETA] [SIGMA] [CONFLICT-B]
-crons.interval(
-  "cleanup-resend-emails",
-  { hours: 1 },
-  internal.emails.resend_component.cleanupResendEmails,
-);
+// Scheduled workloads run ONLY on the production deployment. Require every
+// deployment to choose explicitly so a prod deploy cannot silently unregister all
+// crons because CRONS_ENABLED was forgotten. Set CRONS_ENABLED=true on the prod
+// deployment and CRONS_ENABLED=false everywhere else.
+const cronsEnabled = process.env.CRONS_ENABLED;
 
-// Clean up expired organization invitations daily at midnight UTC
-crons.daily(
-  "cleanup-expired-invitations",
-  { hourUTC: 0, minuteUTC: 0 },
-  internal.organizations.mutations.cleanupExpiredInvitations,
-);
+if (cronsEnabled !== "true" && cronsEnabled !== "false") {
+  throw new Error(
+    'CRONS_ENABLED must be set to either "true" (production only) or "false" (all non-production deployments) before deploying Convex crons.',
+  );
+}
 
-// Process pending webhook deliveries every minute
-crons.interval(
-  "process-webhook-deliveries",
-  { minutes: 1 },
-  internal.webhooks.delivery.processWebhookDeliveries,
-);
+if (cronsEnabled === "true") {
+  // Clean up old email records from the resend component hourly [BETA] [SIGMA] [CONFLICT-B]
+  crons.interval(
+    "cleanup-resend-emails",
+    { hours: 1 },
+    internal.emails.resend_component.cleanupResendEmails,
+  );
 
-// Clean up old webhook events daily (idempotency records older than 7 days)
-crons.daily(
-  "cleanup-stripe-webhook-events",
-  { hourUTC: 2, minuteUTC: 0 },
-  internal.stripe.webhook_idempotency.cleanupOldEvents,
-);
+  // Clean up expired organization invitations daily at midnight UTC
+  crons.daily(
+    "cleanup-expired-invitations",
+    { hourUTC: 0, minuteUTC: 0 },
+    internal.organizations.mutations.cleanupExpiredInvitations,
+  );
 
-// Verify subscription states are in sync with Stripe (catches missed webhooks)
-crons.daily(
-  "check-stripe-subscription-status",
-  { hourUTC: 6, minuteUTC: 0 },
-  internal.stripe.handlers.checkSubscriptionStatus,
-);
+  // Process pending webhook deliveries every minute
+  crons.interval(
+    "process-webhook-deliveries",
+    { minutes: 1 },
+    internal.webhooks.delivery.processWebhookDeliveries,
+  );
 
-// Clean up expired download tokens weekly
-crons.weekly(
-  "cleanup-expired-download-tokens",
-  { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 },
-  internal.documents.download_tokens.cleanupExpiredTokens,
-);
+  // Clean up old webhook events daily (idempotency records older than 7 days)
+  crons.daily(
+    "cleanup-stripe-webhook-events",
+    { hourUTC: 2, minuteUTC: 0 },
+    internal.stripe.webhook_idempotency.cleanupOldEvents,
+  );
 
-// Clean up old AI usage logs weekly (entries older than 90 days)
-crons.weekly(
-  "cleanup-ai-usage-logs",
-  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 0 },
-  internal.ai.cleanup.cleanupOldUsageLogs,
-);
+  // Verify subscription states are in sync with Stripe (catches missed webhooks)
+  crons.daily(
+    "check-stripe-subscription-status",
+    { hourUTC: 6, minuteUTC: 0 },
+    internal.stripe.handlers.checkSubscriptionStatus,
+  );
 
-// Clean up dismissed AI suggestions weekly (dismissed >30 days ago)
-crons.weekly(
-  "cleanup-ai-dismissed-suggestions",
-  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 15 },
-  internal.ai.cleanup.cleanupDismissedSuggestions,
-);
+  // Clean up expired download tokens weekly
+  crons.weekly(
+    "cleanup-expired-download-tokens",
+    { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 },
+    internal.documents.download_tokens.cleanupExpiredTokens,
+  );
 
-// Clean up dismissed AI annotations weekly (dismissed >30 days ago)
-crons.weekly(
-  "cleanup-ai-dismissed-annotations",
-  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 30 },
-  internal.ai.cleanup.cleanupDismissedAnnotations,
-);
+  // Clean up old AI usage logs weekly (entries older than 90 days)
+  crons.weekly(
+    "cleanup-ai-usage-logs",
+    { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 0 },
+    internal.ai.cleanup.cleanupOldUsageLogs,
+  );
 
-// Process automated reminders daily at 9am UTC (based on org reminderSchedule)
-crons.daily(
-  "process-automated-reminders",
-  { hourUTC: 9, minuteUTC: 0 },
-  internal.documents.automated_reminders.processAutomatedReminders,
-);
+  // Clean up dismissed AI suggestions weekly (dismissed >30 days ago)
+  crons.weekly(
+    "cleanup-ai-dismissed-suggestions",
+    { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 15 },
+    internal.ai.cleanup.cleanupDismissedSuggestions,
+  );
 
-// Send expiration alerts daily at 10am UTC (based on org expirationAlertDays)
-crons.daily(
-  "process-expiration-alerts",
-  { hourUTC: 10, minuteUTC: 0 },
-  internal.documents.expiration_alerts.processExpirationAlerts,
-);
+  // Clean up dismissed AI annotations weekly (dismissed >30 days ago)
+  crons.weekly(
+    "cleanup-ai-dismissed-annotations",
+    { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 30 },
+    internal.ai.cleanup.cleanupDismissedAnnotations,
+  );
 
-// Sweep expired recipients every 15 minutes
-crons.interval(
-  "sweep-expired-recipients",
-  { minutes: 15 },
-  internal.documents.expiration_sweep.sweepExpiredRecipients,
-);
+  // Process automated reminders daily at 9am UTC (based on org reminderSchedule)
+  crons.daily(
+    "process-automated-reminders",
+    { hourUTC: 9, minuteUTC: 0 },
+    internal.documents.automated_reminders.processAutomatedReminders,
+  );
 
-// Process dunning (payment recovery) emails daily at 11am UTC
-crons.daily(
-  "process-dunning-emails",
-  { hourUTC: 11, minuteUTC: 0 },
-  internal.payment_fields.dunning.processDunningEmails,
-);
+  // Send expiration alerts daily at 10am UTC (based on org expirationAlertDays)
+  crons.daily(
+    "process-expiration-alerts",
+    { hourUTC: 10, minuteUTC: 0 },
+    internal.documents.expiration_alerts.processExpirationAlerts,
+  );
+
+  // Sweep expired recipients every 15 minutes
+  crons.interval(
+    "sweep-expired-recipients",
+    { minutes: 15 },
+    internal.documents.expiration_sweep.sweepExpiredRecipients,
+  );
+
+  // Process dunning (payment recovery) emails daily at 11am UTC
+  crons.daily(
+    "process-dunning-emails",
+    { hourUTC: 11, minuteUTC: 0 },
+    internal.payment_fields.dunning.processDunningEmails,
+  );
+}
 
 export default crons;
