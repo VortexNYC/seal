@@ -101,7 +101,7 @@ export const listRecipients = internalQuery({
     }
 
     // Get recipients. The list endpoint returns the complete ordered recipient set for this document.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and does not truncate rows
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and does not truncate rows bound=global
     const recipients = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))

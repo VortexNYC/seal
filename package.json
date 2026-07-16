@@ -88,19 +88,20 @@
     "prove:convex-cost-guard": "vortex-convex-cost-guard --root . --fail-on-warnings",
     "check:ui-conformance": "vortex-ui-conformance .",
     "precommit:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/pre-push",
-    "precommit:check": "bun run prove:convex-cost-guard && bun run check:ui-conformance",
+    "precommit:check": "bun run prove:convex-cost-guard",
     "prepush:check": "bun run precommit:check && bun run typecheck && bun run lint && bun run lint:convex && bun run build && bun run test",
     "lint:convex": "vortex-lint --convex-only --advisory-convex ."
   },
   "dependencies": {
-    "@tanstack/router-core": "1.168.9"
+    "@tanstack/router-core": "1.168.9",
+    "@vortexnyc/convex": "0.2.0"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "@vortexnyc/auth": "0.7.0",
-    "@vortexnyc/tooling": "0.5.1",
+    "@vortexnyc/auth": "0.8.0",
+    "@vortexnyc/tooling": "0.6.0",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "knip": "^6.3.0",

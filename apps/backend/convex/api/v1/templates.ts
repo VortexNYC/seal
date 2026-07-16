@@ -91,7 +91,7 @@ export const listTemplates = internalQuery({
   }> => {
     const limit = args.limit ?? 20;
 
-    // convex-cost-guard-allow: convex-aliased-db-handle — the aliased builder is consumed exclusively by .take(limit + 1) below (bounded page read); no unbounded collect flows through this alias.
+    // convex-cost-guard-allow: convex-aliased-db-handle — the aliased builder is consumed exclusively by .take(limit + 1) below (bounded page read); no unbounded collect flows through this alias. bound=per-tenant
     let query = ctx.db.query("templates").withIndex("by_organization_status", (q) => {
       const base = q.eq("organizationId", args.organizationId);
       if (args.status === "active" || args.status === "archived") {
@@ -195,7 +195,7 @@ export const getTemplate = internalQuery({
 
     if (args.includeFields) {
       // Include all fields for the requested template; API callers explicitly requested the complete field list.
-      // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows
+      // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows bound=global
       const fields = await ctx.db
         .query("template_fields")
         .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
@@ -249,7 +249,7 @@ export const getTemplateFields = internalQuery({
     }
 
     // Return all fields for the requested template; callers need the complete ordered template definition.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows bound=global
     const fields = await ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
@@ -313,7 +313,7 @@ export const createFromDocument = internalMutation({
     }
 
     // Get signature fields from document. Template creation must copy every source field, so pagination/truncation would change the result.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count and required for a complete template copy
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count and required for a complete template copy bound=global
     const fields = await ctx.db
       .query("signature_fields")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -499,7 +499,7 @@ export const useTemplate = internalMutation({
     }
 
     // Get template fields. Template use must copy every template field, so pagination/truncation would change the result.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and required for a complete document copy
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and required for a complete document copy bound=global
     const templateFields = await ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))

@@ -863,29 +863,14 @@
       "fingerprint": "9a7681a9"
     },
     {
-      "rule": "convex-unbounded-indexed-collect",
-      "path": "apps/backend/convex/vortex_billing/proof_actions.ts",
-      "fingerprint": "0fec4101"
-    },
-    {
       "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/vortex_billing/proof_actions.ts",
       "fingerprint": "5c2bc4a8"
     },
     {
-      "rule": "convex-unbounded-indexed-collect",
-      "path": "apps/backend/convex/vortex_billing/proof_actions.ts",
-      "fingerprint": "6b6a7049"
-    },
-    {
       "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/vortex_billing/proof_actions.ts",
       "fingerprint": "f206153d"
-    },
-    {
-      "rule": "convex-unbounded-indexed-collect",
-      "path": "apps/backend/convex/vortex_billing/proof_actions.ts",
-      "fingerprint": "fbd1ffbe"
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",

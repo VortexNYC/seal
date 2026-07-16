@@ -73,7 +73,7 @@ export const listDocuments = authQuery({
 
     await requireActiveMembership(ctx, userId, args.organizationId);
 
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — listDocuments must inspect the complete active organization document set so access checks and owned/shared/folder filters do not hide eligible rows; no caller receives fewer rows.
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — listDocuments must inspect the complete active organization document set so access checks and owned/shared/folder filters do not hide eligible rows; no caller receives fewer rows. bound=per-tenant
     const allOrgDocuments = await ctx.db
       .query("documents")
       .withIndex("by_organization_status", (q) =>
@@ -143,8 +143,8 @@ export const getDocumentAccessList = authQuery({
     }
 
     // 3. Get all access records for this document
-    // convex-cost-guard-allow: convex-query-filter-before-collect — getDocumentAccessList must return every non-revoked access row for this document; the by_document equality range bounds the scan and no caller receives fewer rows.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — same read: scoped to a single documentId, bounded by that document's access-grant count.
+    // convex-cost-guard-allow: convex-query-filter-before-collect — getDocumentAccessList must return every non-revoked access row for this document; the by_document equality range bounds the scan and no caller receives fewer rows. bound=global
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — same read: scoped to a single documentId, bounded by that document's access-grant count. bound=global
     const accessRecords = await ctx.db
       .query("document_access")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -189,8 +189,8 @@ export const getDocumentsByWorkflowStatus = authQuery({
 
     await requireActiveMembership(ctx, userId, args.organizationId);
 
-    // convex-cost-guard-allow: convex-query-filter-before-collect — getDocumentsByWorkflowStatus must preserve all active documents for the requested organization/workflow; the organizationId plus workflowStatus index range bounds the read and no caller receives fewer rows.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — same read: the (organizationId, workflowStatus) partition is the required complete set for workflow views.
+    // convex-cost-guard-allow: convex-query-filter-before-collect — getDocumentsByWorkflowStatus must preserve all active documents for the requested organization/workflow; the organizationId plus workflowStatus index range bounds the read and no caller receives fewer rows. bound=per-tenant
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — same read: the (organizationId, workflowStatus) partition is the required complete set for workflow views. bound=per-tenant
     const documents = await ctx.db
       .query("documents")
       .withIndex("by_organization_workflow", (q) =>
@@ -227,13 +227,13 @@ export const getDocumentWithSignatures = authQuery({
     const userId = ctx.auth.user._id;
     const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature for this single documentId for exact signature counts; no caller receives fewer rows.
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature for this single documentId for exact signature counts; no caller receives fewer rows. bound=global
     const signatures = await ctx.db
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature field for this single documentId for exact field counts; no caller receives fewer rows.
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature field for this single documentId for exact field counts; no caller receives fewer rows. bound=global
     const fields = await ctx.db
       .query("signature_fields")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -299,7 +299,7 @@ export const getDocumentComplete = authQuery({
     const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
     // Get all related data in parallel for performance
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentComplete must return all signatures, fields, and recipients for this single documentId for exact document-detail statistics; no caller receives fewer rows.
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentComplete must return all signatures, fields, and recipients for this single documentId for exact document-detail statistics; no caller receives fewer rows. bound=global
     const [signatures, fields, recipients, auditLogs] = await Promise.all([
       ctx.db
         .query("signatures")
@@ -372,7 +372,7 @@ export const getDocumentVersions = authQuery({
     // Access check — ensures user can view this document
     await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentVersions must return the complete version history for this single documentId; no caller receives fewer rows.
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentVersions must return the complete version history for this single documentId; no caller receives fewer rows. bound=global
     const versions = await ctx.db
       .query("document_versions")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))

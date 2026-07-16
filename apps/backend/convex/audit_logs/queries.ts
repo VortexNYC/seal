@@ -43,22 +43,22 @@ async function getAuditExportData(
   auditLogs: AuditExportLogs;
 }> {
   const [signatures, recipients, fields, auditLogs] = await Promise.all([
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count bound=global
     ctx.db
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
       .collect(),
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count bound=global
     ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
       .collect(),
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count bound=global
     ctx.db
       .query("signature_fields")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
       .collect(),
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance bound=global
     ctx.db
       .query("audit_logs")
       .withIndex("by_document_created", (q) => q.eq("documentId", documentId))
@@ -203,7 +203,7 @@ export const getDocumentAuditLogs = authQuery({
     }
 
     // 3. Get audit trail
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance bound=global
     const auditLogs = await ctx.db
       .query("audit_logs")
       .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
@@ -324,7 +324,7 @@ export const getSigningSessionAuditTrail = query({
     }
 
     // 3. Get audit logs for this recipient only (for privacy)
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId before the public action allowlist filter; complete signing-session activity is required, so no caller receives fewer rows
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId before the public action allowlist filter; complete signing-session activity is required, so no caller receives fewer rows bound=global
     const recipientLogs = await ctx.db
       .query("audit_logs")
       .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
