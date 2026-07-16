@@ -294,61 +294,6 @@
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/mutations.ts",
-      "fingerprint": "0a704c60"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "0430bf8e"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "2001f1b9"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "207d6bee"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "21e0bb52"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "2436725b"
-    },
-    {
-      "rule": "convex-query-filter-before-collect",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "6a39e1f6"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "75418a6b"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "7ce0ac96"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "c7d7dd8d"
-    },
-    {
-      "rule": "convex-query-filter-before-collect",
-      "path": "apps/backend/convex/documents/queries.ts",
-      "fingerprint": "f567e38b"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/documents/recipient_helpers.ts",
       "fingerprint": "a01ed0d6"
     },
