@@ -396,14 +396,15 @@ export const getPendingDeliveries = internalQuery({
   handler: async (ctx): Promise<Doc<"webhook_deliveries">[]> => {
     const now = Date.now();
 
-    // Get pending deliveries that are ready (first attempt or retry time reached)
+    // Fetch up to 50 pending deliveries and filter client-side.
+    // The delivery table is bounded by the cron processing loop.
     const deliveries = await ctx.db
       .query("webhook_deliveries")
       .withIndex("by_status_next_retry", (q) => q.eq("status", "pending"))
-      .collect();
+      .take(50);
 
     // Filter to deliveries that are ready to be processed
-    return deliveries.filter((d) => !d.nextRetryAt || d.nextRetryAt <= now).slice(0, 50);
+    return deliveries.filter((d) => !d.nextRetryAt || d.nextRetryAt <= now);
   },
 });
 

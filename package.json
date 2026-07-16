@@ -100,7 +100,7 @@
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "@vortexnyc/auth": "0.7.0",
-    "@vortexnyc/tooling": "0.5.0",
+    "@vortexnyc/tooling": "0.5.1",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "knip": "^6.3.0",

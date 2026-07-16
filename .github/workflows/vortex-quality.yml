@@ -12,8 +12,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The built-in GITHUB_TOKEN reads the private @vortexnyc/* packages. Each package grants
+# Actions access to the consumer repos, which is the documented GitHub Packages path — no PAT
+# to mint, copy into every repo, or silently expire. A repo-level secret also shadows an org
+# one, which is how veil ended up authenticating with a dead token nobody could see.
+permissions:
+  contents: read
+  packages: read
+
 env:
-  NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   CONVEX_OVERRIDE_ACCESS_TOKEN: ${{ secrets.CONVEX_ACCESS_TOKEN }}
   CONVEX_DEPLOYMENT: "dev:aware-buzzard-568"
   VITE_CONVEX_URL: "https://aware-buzzard-568.convex.cloud"

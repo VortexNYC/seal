@@ -124,3 +124,6 @@ apps/web/convex/_generated/
 apps/*/PORT
 apps/landing/.wrangler/
 apps/web/.wrangler/
+
+# opencode tooling
+.opencode/

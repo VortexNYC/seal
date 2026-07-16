@@ -88,7 +88,8 @@ export const listDocuments = internalQuery({
       .query("documents")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", args.organizationId).eq("status", "active"),
-      );
+      )
+      .order("desc");
 
     // Apply cursor if provided (use _creationTime for index-based pagination)
     if (args.cursor) {
@@ -98,7 +99,7 @@ export const listDocuments = internalQuery({
       }
     }
 
-    const documents = await query.order("desc").take(fetchLimit);
+    const documents = await query.take(fetchLimit);
 
     // Apply post-filters
     const createdAfterMs = args.created_after ? new Date(args.created_after).getTime() : undefined;

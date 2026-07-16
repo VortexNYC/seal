@@ -142,6 +142,7 @@ export const listSignatures = internalQuery({
     }
 
     // Get all signatures for the document
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count
     const signatures = await ctx.db
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
