@@ -34,21 +34,6 @@
     },
     {
       "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/helpers.ts",
-      "fingerprint": "354a25f9"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/helpers.ts",
-      "fingerprint": "e43db22e"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
-      "path": "apps/backend/convex/audit_logs/queries.ts",
-      "fingerprint": "73ff18a6"
-    },
-    {
-      "rule": "convex-indexed-collect-unbounded-range",
       "path": "apps/backend/convex/contacts/queries.ts",
       "fingerprint": "24b9de86"
     },

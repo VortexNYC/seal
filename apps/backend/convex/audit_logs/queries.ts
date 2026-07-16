@@ -324,6 +324,7 @@ export const getSigningSessionAuditTrail = query({
     }
 
     // 3. Get audit logs for this recipient only (for privacy)
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId before the public action allowlist filter; complete signing-session activity is required, so no caller receives fewer rows
     const recipientLogs = await ctx.db
       .query("audit_logs")
       .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
