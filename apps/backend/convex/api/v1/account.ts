@@ -71,7 +71,9 @@ export const getAccountInfo = internalQuery({
 
     const activeMembers = allMembers.filter((m) => m.status === "active");
 
-    // Document counts
+    // Document counts. Account summaries need exact all-time workspace totals, so no document rows are dropped.
+    // convex-cost-guard-allow: convex-broad-organization-collect — scoped to one organization and required for exact account counts across statuses
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to one organization and required for exact account counts across statuses
     const allDocuments = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))

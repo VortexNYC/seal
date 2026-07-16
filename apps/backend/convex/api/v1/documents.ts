@@ -10,6 +10,7 @@
 import { v } from "convex/values";
 
 import { internal } from "../../_generated/api";
+import type { Id } from "../../_generated/dataModel";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
 import { publishWebhookEvent } from "../../webhooks/publish";
@@ -83,6 +84,7 @@ export const listDocuments = internalQuery({
     );
     const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
 
+    // convex-cost-guard-allow: convex-aliased-db-handle — the aliased builder is consumed exclusively by .take(fetchLimit) below (bounded, capped at 500); no unbounded collect flows through this alias.
     // Get documents for the organization
     let query = ctx.db
       .query("documents")
@@ -93,7 +95,7 @@ export const listDocuments = internalQuery({
 
     // Apply cursor if provided (use _creationTime for index-based pagination)
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      const cursorDoc = await ctx.db.get(args.cursor as Id<"documents">);
       if (cursorDoc) {
         query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
       }
@@ -122,6 +124,8 @@ export const listDocuments = internalQuery({
     // Get recipient counts for each document
     const apiDocuments: ApiDocument[] = await Promise.all(
       resultDocs.map(async (doc) => {
+        // Complete recipient counts are part of the API response; this document-scoped collection does not truncate rows.
+        // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and required for exact counts
         const recipients = await ctx.db
           .query("document_recipients")
           .withIndex("by_document", (q) => q.eq("documentId", doc._id))
@@ -180,7 +184,8 @@ export const getDocument = internalQuery({
       return null;
     }
 
-    // Get recipients
+    // Get recipients. The document response and optional includeRecipients payload require the complete document recipient set.
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and required for exact counts
     const recipients = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -402,6 +407,7 @@ export const sendDocument = internalMutation({
     }
 
     // Check that document has at least one recipient
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count; recipient completeness is required for send/status correctness.
     const recipients = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -742,6 +748,7 @@ export const bulkSendDocuments = internalMutation({
         continue;
       }
 
+      // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count; recipient completeness is required for send/status correctness.
       const recipients = await ctx.db
         .query("document_recipients")
         .withIndex("by_document", (q) => q.eq("documentId", documentId))
