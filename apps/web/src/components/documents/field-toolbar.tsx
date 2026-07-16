@@ -185,15 +185,9 @@ function FieldButton({
       <div
         className="flex h-7 w-7 items-center justify-center rounded-md border transition-colors"
         style={{
-<<<<<<< ours
           backgroundColor: isHovered ? config.accentColor : "var(--card)",
           borderColor: isHovered ? config.accentColor : "var(--border)",
           color: isHovered ? "var(--primary-foreground)" : "var(--muted-foreground)",
-=======
-          backgroundColor: isHovered ? config.accentColor : "var(--background)",
-          borderColor: isHovered ? config.accentColor : "var(--border)",
-          color: isHovered ? "var(--background)" : "var(--muted-foreground)",
->>>>>>> theirs
         }}
       >
         {icon}

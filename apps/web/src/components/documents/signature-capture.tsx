@@ -241,11 +241,7 @@ export function SignatureCapture({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Style the signature
-<<<<<<< ours
     // vortex-allow-color: Canvas signature rendering requires a concrete ink color.
-=======
-    // vortex-allow-color: signature capture ink must stay physically black on a paper-white pad.
->>>>>>> theirs
     ctx.fillStyle = "#000000";
     ctx.font = `52px ${currentFontFamily}`;
     ctx.textBaseline = "middle";

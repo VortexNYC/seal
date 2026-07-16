@@ -8,11 +8,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
 
   return (
     <section className="relative overflow-hidden py-24 sm:py-32" id="faq">
-<<<<<<< ours
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,transparent_0%,color-mix(in_oklch,var(--foreground)_30%,transparent)_50%,transparent_100%)]" />
-=======
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,transparent_0%,color-mix(in oklch, var(--foreground) 30%, transparent)_50%,transparent_100%)]" />
->>>>>>> theirs
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (

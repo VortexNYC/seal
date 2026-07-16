@@ -523,21 +523,13 @@ function TrendChart({
 }
 
 const STATUS_COLORS: Record<string, string> = {
-<<<<<<< ours
   draft: "var(--muted-foreground)",
-=======
-  draft: "hsl(var(--muted-foreground))",
->>>>>>> theirs
   sent: "var(--info)",
   in_progress: "var(--warning)",
   completed: "var(--success)",
   cancelled: "var(--destructive)",
   declined: "var(--destructive)",
-<<<<<<< ours
   expired: "var(--expired)",
-=======
-  expired: "hsl(var(--expired))",
->>>>>>> theirs
 };
 
 function StatusPieChart() {
@@ -1158,11 +1150,7 @@ function ExportPanel() {
 
 const EMAIL_FUNNEL_COLORS = {
   sent: "var(--info)",
-<<<<<<< ours
   delivered: "var(--primary)",
-=======
-  delivered: "var(--field-signature)",
->>>>>>> theirs
   opened: "var(--success)",
   clicked: "var(--warning)",
 };
@@ -1291,17 +1279,10 @@ function EmailEngagementTab() {
 const TIMING_BUCKET_COLORS: Record<string, string> = {
   "<1h": "var(--success)",
   "1-6h": "var(--info)",
-<<<<<<< ours
   "6-24h": "var(--primary)",
   "1-3d": "var(--warning)",
   "3-7d": "var(--destructive)",
   "7d+": "var(--expired)",
-=======
-  "6-24h": "var(--field-date)",
-  "1-3d": "var(--warning)",
-  "3-7d": "var(--destructive)",
-  "7d+": "var(--destructive)",
->>>>>>> theirs
 };
 
 function RecipientTimingTab() {
