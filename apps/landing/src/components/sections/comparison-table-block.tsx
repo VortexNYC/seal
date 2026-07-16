@@ -10,12 +10,12 @@ export function ComparisonTableBlockComponent({ block }: { block: ComparisonTabl
         {(block.headline || block.description) && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
             {block.headline && (
-              <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+              <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-foreground sm:text-5xl">
                 {block.headline}
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-pretty text-white/50">{block.description}</p>
+              <p className="text-lg text-pretty text-foreground/50">{block.description}</p>
             )}
           </div>
         )}
@@ -23,12 +23,12 @@ export function ComparisonTableBlockComponent({ block }: { block: ComparisonTabl
         <div className="mx-auto max-w-5xl overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="pr-4 pb-4 text-sm font-medium text-white/40">Feature</th>
-                <th className="px-4 pb-4 text-center text-sm font-bold text-teal-400">Seal</th>
+              <tr className="border-b border-foreground/10">
+                <th className="pr-4 pb-4 text-sm font-medium text-foreground/40">Feature</th>
+                <th className="px-4 pb-4 text-center text-sm font-bold text-info">Seal</th>
                 {block.competitors.map((competitor) => (
                   <th
-                    className="px-4 pb-4 text-center text-sm font-medium text-white/40"
+                    className="px-4 pb-4 text-center text-sm font-medium text-foreground/40"
                     key={competitor.name}
                   >
                     {competitor.name}
@@ -38,8 +38,8 @@ export function ComparisonTableBlockComponent({ block }: { block: ComparisonTabl
             </thead>
             <tbody>
               {allFeatureKeys.map((featureKey) => (
-                <tr className="border-b border-white/5" key={featureKey}>
-                  <td className="py-4 pr-4 text-sm text-white/70">{featureKey}</td>
+                <tr className="border-b border-foreground/5" key={featureKey}>
+                  <td className="py-4 pr-4 text-sm text-foreground/70">{featureKey}</td>
                   <td className="px-4 py-4 text-center">
                     <CellValue value={block.sealFeatures[featureKey]} highlight />
                   </td>
@@ -69,15 +69,15 @@ function CellValue({
     return value ? (
       <Check
         aria-label="Yes"
-        className={`mx-auto size-5 ${highlight ? "text-teal-400" : "text-white/60"}`}
+        className={`mx-auto size-5 ${highlight ? "text-info" : "text-foreground/60"}`}
       />
     ) : (
-      <X aria-label="No" className="mx-auto size-5 text-white/20" />
+      <X aria-label="No" className="mx-auto size-5 text-foreground/20" />
     );
   }
 
   return (
-    <span className={`text-sm ${highlight ? "font-medium text-teal-400" : "text-white/60"}`}>
+    <span className={`text-sm ${highlight ? "font-medium text-info" : "text-foreground/60"}`}>
       {value ?? "—"}
     </span>
   );

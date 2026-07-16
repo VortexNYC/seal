@@ -155,12 +155,13 @@ export function ShareDocumentDialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         {/* Overlay with subtle blur */}
+        {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
         <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]" />
 
         {/* Dialog Content */}
         <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 duration-200">
           {/* Card with layered shadow for depth */}
-          <div className="bg-card relative overflow-hidden rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.03)]">
+          <div className="bg-card relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-border/40">
             {/* Decorative top accent - blue for sharing */}
             <div className="from-info/80 via-info/90 to-primary/80 absolute top-0 right-0 left-0 h-1 bg-gradient-to-r" />
 
@@ -238,7 +239,7 @@ export function ShareDocumentDialog({
                             {requiresPro && !documentAccess.canUseTeamSharing && (
                               <Badge
                                 variant="outline"
-                                className="from-info to-primary absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px] text-white"
+                                className="from-info to-primary absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px] text-primary-foreground"
                               >
                                 Pro
                               </Badge>
@@ -343,7 +344,7 @@ export function ShareDocumentDialog({
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback className="from-warning to-warning/70 bg-gradient-to-br text-xs text-white">
+                            <AvatarFallback className="from-warning to-warning/70 bg-gradient-to-br text-xs text-primary-foreground">
                               {getInitials(documentAccess.owner.name ?? documentAccess.owner.email)}
                             </AvatarFallback>
                           </Avatar>
@@ -381,7 +382,7 @@ export function ShareDocumentDialog({
                         >
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarFallback className="from-primary to-primary/70 bg-gradient-to-br text-xs text-white">
+                              <AvatarFallback className="from-primary to-primary/70 bg-gradient-to-br text-xs text-primary-foreground">
                                 {getInitials(access.userName ?? access.userEmail)}
                               </AvatarFallback>
                             </Avatar>

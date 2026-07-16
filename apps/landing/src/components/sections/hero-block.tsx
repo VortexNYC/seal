@@ -26,7 +26,7 @@ export function StaticHero() {
             className="pointer-events-none absolute -inset-12 opacity-50 blur-[100px]"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 40%, #A63D2F 0%, #c4503e 20%, #A63D2F33 60%, transparent 85%)",
+                "radial-gradient(ellipse at 50% 40%, var(--primary) 0%, var(--brand-500) 20%, color-mix(in oklch, var(--primary) 20%, transparent) 60%, transparent 85%)",
             }}
           />
           {/* Mockup card — mask fades the whole card including its clip boundary */}
@@ -35,9 +35,9 @@ export function StaticHero() {
             <div className="border-border bg-muted/40 border-b">
               <div className="flex items-end gap-0 px-3 pt-2.5">
                 <div className="flex items-center gap-1.5 px-3 py-1.5">
-                  <span className="size-2.5 rounded-full bg-red-400/60" />
-                  <span className="size-2.5 rounded-full bg-yellow-400/60" />
-                  <span className="size-2.5 rounded-full bg-green-400/60" />
+                  <span className="size-2.5 rounded-full bg-destructive/60" />
+                  <span className="size-2.5 rounded-full bg-warning/60" />
+                  <span className="size-2.5 rounded-full bg-success/60" />
                 </div>
                 <div className="bg-background/60 border-border/40 flex items-center gap-1.5 rounded-t-md border border-b-0 px-3 py-1.5">
                   <svg

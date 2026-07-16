@@ -1,3 +1,4 @@
+/* vortex-allow-color-file: transactional email template — email clients require literal colors; CSS variables and Tailwind tokens are not supported in email HTML. */
 import { Button, Section, Text } from "@react-email/components";
 
 import { status } from "../styles.js";

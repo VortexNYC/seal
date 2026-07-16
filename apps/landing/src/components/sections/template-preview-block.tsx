@@ -8,12 +8,12 @@ export function TemplatePreviewBlockComponent({ block }: { block: TemplatePrevie
         {(block.headline || block.description) && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
             {block.headline && (
-              <h2 className="mb-4 text-3xl font-bold text-balance text-white sm:text-4xl">
+              <h2 className="mb-4 text-3xl font-bold text-balance text-foreground sm:text-4xl">
                 {block.headline}
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-pretty text-white/60">{block.description}</p>
+              <p className="text-lg text-pretty text-foreground/60">{block.description}</p>
             )}
           </div>
         )}
@@ -21,11 +21,11 @@ export function TemplatePreviewBlockComponent({ block }: { block: TemplatePrevie
         <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {block.templates.map((template) => (
             <div
-              className="group overflow-hidden rounded-xl border border-white/10 bg-white/5"
+              className="group overflow-hidden rounded-xl border border-foreground/10 bg-foreground/5"
               key={template.name}
             >
               {template.image ? (
-                <div className="aspect-[4/3] overflow-hidden border-b border-white/10">
+                <div className="aspect-[4/3] overflow-hidden border-b border-foreground/10">
                   <img
                     alt={template.image.alt || template.name}
                     className="size-full object-cover"
@@ -34,19 +34,19 @@ export function TemplatePreviewBlockComponent({ block }: { block: TemplatePrevie
                   />
                 </div>
               ) : (
-                <div className="flex aspect-[4/3] items-center justify-center border-b border-white/10 bg-white/5">
-                  <FileText className="size-12 text-white/20" />
+                <div className="flex aspect-[4/3] items-center justify-center border-b border-foreground/10 bg-foreground/5">
+                  <FileText className="size-12 text-foreground/20" />
                 </div>
               )}
               <div className="p-5">
                 {template.category && (
-                  <span className="mb-2 inline-block text-xs font-medium tracking-wider text-teal-400 uppercase">
+                  <span className="mb-2 inline-block text-xs font-medium tracking-wider text-info uppercase">
                     {template.category}
                   </span>
                 )}
-                <h3 className="mb-1 text-lg font-semibold text-white">{template.name}</h3>
+                <h3 className="mb-1 text-lg font-semibold text-foreground">{template.name}</h3>
                 {template.description && (
-                  <p className="text-sm text-pretty text-white/50">{template.description}</p>
+                  <p className="text-sm text-pretty text-foreground/50">{template.description}</p>
                 )}
               </div>
             </div>

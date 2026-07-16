@@ -143,7 +143,7 @@ function VortexPaymentCollectionHandoff({
           Payment is collected through Vortex Payments before this document can be completed.
         </p>
       )}
-      <Button asChild className="bg-field-payment hover:bg-field-payment/90 w-full text-white">
+      <Button asChild className="bg-field-payment hover:bg-field-payment/90 w-full text-primary-foreground">
         <a href={hostedInvoiceUrl} target="_blank" rel="noopener noreferrer">
           <CreditCardIcon className="size-4" />
           Pay with Vortex Payments

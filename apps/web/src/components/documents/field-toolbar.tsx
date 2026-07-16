@@ -62,39 +62,39 @@ const FIELD_CONFIG: Record<
 > = {
   signature: {
     label: "Signature",
-    accentColor: "#3b82f6",
+    accentColor: "var(--field-signature)",
   },
   text: {
     label: "Text",
-    accentColor: "#22c55e",
+    accentColor: "var(--field-text)",
   },
   number: {
     label: "Number",
-    accentColor: "#f59e0b",
+    accentColor: "var(--field-number)",
   },
   date: {
     label: "Date",
-    accentColor: "#8b5cf6",
+    accentColor: "var(--field-date)",
   },
   checkbox: {
     label: "Check",
-    accentColor: "#f97316",
+    accentColor: "var(--field-checkbox)",
   },
   dropdown: {
     label: "Select",
-    accentColor: "#06b6d4",
+    accentColor: "var(--field-dropdown)",
   },
   radio: {
     label: "Choice",
-    accentColor: "#ec4899",
+    accentColor: "var(--field-radio)",
   },
   attachment: {
     label: "File",
-    accentColor: "#84cc16",
+    accentColor: "var(--field-attachment)",
   },
   payment: {
     label: "Payment",
-    accentColor: "#10b981",
+    accentColor: "var(--field-payment)",
   },
 };
 
@@ -140,7 +140,7 @@ function FieldButton({
 			font-family: system-ui, sans-serif;
 			font-size: 12px;
 			font-weight: 600;
-			color: #374151;
+			color: var(--foreground);
 			letter-spacing: 0.5px;
 			text-transform: uppercase;
 		`;
@@ -185,9 +185,9 @@ function FieldButton({
       <div
         className="flex h-7 w-7 items-center justify-center rounded-md border transition-colors"
         style={{
-          backgroundColor: isHovered ? config.accentColor : "white",
-          borderColor: isHovered ? config.accentColor : "#e5e7eb",
-          color: isHovered ? "white" : "#4b5563",
+          backgroundColor: isHovered ? config.accentColor : "var(--card)",
+          borderColor: isHovered ? config.accentColor : "var(--border)",
+          color: isHovered ? "var(--primary-foreground)" : "var(--muted-foreground)",
         }}
       >
         {icon}

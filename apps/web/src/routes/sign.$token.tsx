@@ -1619,6 +1619,7 @@ function SigningPage() {
                             })}
                             {/* Page number indicator */}
                             {numPages && numPages > 1 && (
+                              // vortex-allow-color: signing-view scrim dims content uniformly in both themes
                               <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
                                 {pageNumber} / {numPages}
                               </div>

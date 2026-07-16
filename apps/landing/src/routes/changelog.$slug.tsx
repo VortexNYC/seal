@@ -131,7 +131,7 @@ function ChangelogDetailPage() {
           {entry.improvements.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Rocket className="size-6 text-green-600 dark:text-green-400" />
+                <Rocket className="size-6 text-success" />
                 Improvements
               </h2>
               <ul className="space-y-3">
@@ -140,7 +140,7 @@ function ChangelogDetailPage() {
                     className="text-muted-foreground flex items-start gap-3"
                     key={`improvement-${item.slice(0, 30)}`}
                   >
-                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-green-400" />
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-success" />
                     {item}
                   </li>
                 ))}
@@ -151,7 +151,7 @@ function ChangelogDetailPage() {
           {entry.fixes.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Bug className="size-6 text-orange-600 dark:text-orange-400" />
+                <Bug className="size-6 text-warning" />
                 Bug Fixes
               </h2>
               <ul className="space-y-3">
@@ -160,7 +160,7 @@ function ChangelogDetailPage() {
                     className="text-muted-foreground flex items-start gap-3"
                     key={`fix-${item.slice(0, 30)}`}
                   >
-                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-orange-400" />
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-warning" />
                     {item}
                   </li>
                 ))}
@@ -171,7 +171,7 @@ function ChangelogDetailPage() {
           {entry.breakingChanges.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
-                <TriangleAlert className="size-6 text-red-600 dark:text-red-400" />
+                <TriangleAlert className="size-6 text-destructive" />
                 Breaking Changes
               </h2>
               <div className="border-destructive/30 bg-destructive/10 rounded-xl border p-6">
@@ -181,7 +181,7 @@ function ChangelogDetailPage() {
                       className="text-muted-foreground flex items-start gap-3"
                       key={`breaking-${item.slice(0, 30)}`}
                     >
-                      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-red-400" />
+                      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-destructive" />
                       {item}
                     </li>
                   ))}

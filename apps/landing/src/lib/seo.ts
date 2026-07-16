@@ -16,7 +16,8 @@ const siteConfig = {
   ogImage: `${SITE_URL}/favicon/og-image.png`,
   twitterHandle: "@sealhq",
   locale: "en_US",
-  themeColor: "#0d9488",
+  // vortex-allow-color: Browser theme-color meta requires a concrete color value, not a CSS token.
+  themeColor: "#a63d2f",
 } as const;
 
 export { siteConfig };
