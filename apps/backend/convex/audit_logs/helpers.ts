@@ -285,7 +285,7 @@ export async function getDocumentAuditTrail(
   ctx: QueryCtx,
   documentId: Id<"documents">,
 ): Promise<Doc<"audit_logs">[]> {
-  // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId; complete audit trail is required for compliance exports, so no caller receives fewer rows
+  // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId; complete audit trail is required for compliance exports, so no caller receives fewer rows bound=global
   const auditLogs = await ctx.db
     .query("audit_logs")
     .withIndex("by_document_created", (q) => q.eq("documentId", documentId))
@@ -321,7 +321,7 @@ export async function getRecipientAuditTrail(
   ctx: QueryCtx,
   recipientId: Id<"document_recipients">,
 ): Promise<Doc<"audit_logs">[]> {
-  // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId; complete recipient audit history is required, so no caller receives fewer rows
+  // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId; complete recipient audit history is required, so no caller receives fewer rows bound=global
   const auditLogs = await ctx.db
     .query("audit_logs")
     .withIndex("by_recipient", (q) => q.eq("recipientId", recipientId))

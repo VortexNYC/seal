@@ -172,7 +172,7 @@ export const saveFieldSuggestions = internalMutation({
   },
   handler: async (ctx, args) => {
     // Dismiss any existing pending suggestions for this document. This must inspect every pending suggestion for the document; no rows are dropped.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId and status, complete pending-suggestion set is required before inserting the replacement
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId and status, complete pending-suggestion set is required before inserting the replacement bound=global
     const existing = await ctx.db
       .query("ai_field_suggestions")
       .withIndex("by_document_status", (q) =>
@@ -210,8 +210,8 @@ export const applyFieldSuggestions = authMutation({
     if (!document) throw new ConvexError("Document not found");
 
     // Get signer recipients sorted by order for heuristic assignment. This must inspect every document recipient so assignment remains complete.
-    // convex-cost-guard-allow: convex-query-filter-before-collect — scoped to a single documentId, bounded by document recipient count; the role filter cannot drop unchecked recipients before assignment
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and preserves all signers
+    // convex-cost-guard-allow: convex-query-filter-before-collect — scoped to a single documentId, bounded by document recipient count; the role filter cannot drop unchecked recipients before assignment bound=global
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and preserves all signers bound=global
     const signers = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", suggestion.documentId))
@@ -455,7 +455,7 @@ export const saveDocumentAnnotations = internalMutation({
   },
   handler: async (ctx, args) => {
     // Check all existing annotation records for this document. Dismissal semantics require the complete document annotation set.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId; all annotation rows are required to honor prior user dismissals and dismiss active replacements
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId; all annotation rows are required to honor prior user dismissals and dismiss active replacements bound=global
     const existing = await ctx.db
       .query("ai_document_annotations")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))

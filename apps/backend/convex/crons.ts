@@ -2,18 +2,19 @@
  * Scheduled cron jobs for periodic background tasks.
  * Each cron is defined with a unique name and interval.
  */
-import { cronJobs } from "convex/server";
+import { gatedCrons } from "@vortexnyc/convex";
 
 import { internal } from "./_generated/api";
 
 // Pipeline-verified cron scheduler (T2-SEAL-1777056416545)
-const crons = cronJobs();
+
 
 // Scheduled workloads run ONLY on the production deployment. Dev / preview / staging
 // deployments set no CRONS_ENABLED and therefore register ZERO crons — they must never
 // run 24/7 and burn Convex DB I/O with no users. Set CRONS_ENABLED=true on prod only
 // (bunx convex env set CRONS_ENABLED true --prod).
-if (process.env.CRONS_ENABLED === "true") {
+const crons = gatedCrons();
+{
   // Clean up old email records from the direct Resend transport hourly [BETA] [SIGMA] [CONFLICT-B]
   crons.interval(
     "cleanup-resend-emails",

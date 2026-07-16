@@ -142,7 +142,7 @@ export const listSignatures = internalQuery({
     }
 
     // Get all signatures for the document
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count bound=global
     const signatures = await ctx.db
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -240,14 +240,14 @@ export const verifyDocument = internalQuery({
     }
 
     // Get all recipients. Verification requires complete recipient coverage for compliance and exact signed/total counts.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and does not truncate verification inputs
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and does not truncate verification inputs bound=global
     const recipients = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
     // Get all signatures. Verification requires every signature on the document; missing rows would change the result.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count and does not truncate verification inputs
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count and does not truncate verification inputs bound=global
     const signatures = await ctx.db
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))

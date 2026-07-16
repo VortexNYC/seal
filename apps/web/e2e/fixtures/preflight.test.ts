@@ -7,7 +7,7 @@ describe("E2E auth preflight", () => {
     vi.unstubAllEnvs();
   });
 
-  test("accepts the default Vortex Auth smoke user without Clerk-specific validation", () => {
+  test("accepts the default Vortex Auth smoke user without legacy-provider-specific validation", () => {
     vi.stubEnv("E2E_TEST_USER_EMAIL", "seal-e2e@seal.nyc");
     vi.stubEnv("E2E_TEST_USER_PASSWORD", "SealE2ePassword123!");
 
