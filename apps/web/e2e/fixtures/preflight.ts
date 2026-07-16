@@ -2,6 +2,22 @@ import { describeConvexE2eTarget } from "./convex-test-api";
 
 let hasLoggedPreflight = false;
 
+function requireAnyEnv(primaryName: string, fallbackName: string): string {
+  const primaryValue = process.env[primaryName]?.trim();
+  if (primaryValue) {
+    return primaryValue;
+  }
+
+  const fallbackValue = process.env[fallbackName]?.trim();
+  if (fallbackValue) {
+    return fallbackValue;
+  }
+
+  throw new Error(
+    `[E2E preflight] Missing required Vortex Auth test credential: ${primaryName} or ${fallbackName}`,
+  );
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -38,8 +54,8 @@ export function assertAppEnv(): void {
 }
 
 export function assertAuthEnv(): void {
-  requireEnv("E2E_TEST_USER_EMAIL");
-  requireEnv("E2E_TEST_USER_PASSWORD");
+  requireAnyEnv("E2E_TEST_USER_EMAIL", "TEST_USER_EMAIL");
+  requireAnyEnv("E2E_TEST_USER_PASSWORD", "TEST_USER_PASSWORD");
   logResolvedEnvironment("auth");
 }
 

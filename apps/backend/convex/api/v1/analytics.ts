@@ -72,7 +72,9 @@ export const getAnalytics = internalQuery({
     const toMs = args.to ?? now;
     const fromMs = args.from ?? toMs - 30 * 24 * 60 * 60 * 1000; // last 30 days default
 
-    // All org documents
+    // All org documents. Analytics uses complete workspace history for exact snapshots and caller-specified period metrics.
+    // convex-cost-guard-allow: convex-broad-organization-collect — scoped to one organization and required for exact analytics snapshots; no date cutoff is imposed
+    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to one organization and required for exact analytics snapshots; no date cutoff is imposed
     const allDocs = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
