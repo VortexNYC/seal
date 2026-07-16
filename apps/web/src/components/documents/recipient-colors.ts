@@ -19,9 +19,9 @@ export interface RecipientColor {
   border: string;
   /** Tailwind class for text */
   text: string;
-  /** Hex color for canvas/Konva use */
+  /** Hex color for canvas/Konva use. vortex-allow-color: Konva canvas requires concrete colors and cannot resolve CSS custom properties. */
   hex: string;
-  /** Light hex color for canvas fills */
+  /** Light hex color for canvas fills. vortex-allow-color: Konva canvas requires concrete colors and cannot resolve CSS custom properties. */
   hexLight: string;
 }
 

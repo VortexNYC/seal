@@ -218,6 +218,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           </div>
           {absoluteHeight >= 50 && (
             <div
+              // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
               className="flex h-full flex-col justify-center bg-white/90 py-2 pr-2"
               style={{ paddingLeft: sealIconSize + 12 }}
             >
@@ -250,6 +251,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
 
           {absoluteHeight < 50 && absoluteHeight >= 30 && (
             <div
+              // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
               className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
               style={{ paddingLeft: sealIconSize + 10 }}
             >

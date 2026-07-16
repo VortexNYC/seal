@@ -8,12 +8,16 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
 
   return (
     <section className="relative overflow-hidden py-24 sm:py-32" id="faq">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,transparent_0%,rgba(15,23,42,0.3)_50%,transparent_100%)]" />
+<<<<<<< ours
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,transparent_0%,color-mix(in_oklch,var(--foreground)_30%,transparent)_50%,transparent_100%)]" />
+=======
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,transparent_0%,color-mix(in oklch, var(--foreground) 30%, transparent)_50%,transparent_100%)]" />
+>>>>>>> theirs
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
-            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-foreground sm:text-5xl">
               {block.headline}
             </h2>
           </div>
@@ -30,19 +34,19 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
                 <button
                   aria-controls={answerId}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 border-b border-white/10 py-6 text-left transition-colors hover:border-white/20"
+                  className="flex w-full items-center justify-between gap-4 border-b border-foreground/10 py-6 text-left transition-colors hover:border-foreground/20"
                   id={questionId}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   type="button"
                 >
-                  <span className="text-lg font-medium text-white sm:text-xl">{faq.question}</span>
+                  <span className="text-lg font-medium text-foreground sm:text-xl">{faq.question}</span>
                   <div
                     className="shrink-0 transition-transform duration-200"
                     style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
                   >
                     <ChevronDown
                       aria-hidden="true"
-                      className="size-5 text-white/50 transition-colors group-hover:text-teal-400"
+                      className="size-5 text-foreground/50 transition-colors group-hover:text-info"
                     />
                   </div>
                 </button>
@@ -58,7 +62,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
                   }}
                 >
                   <div className="overflow-hidden">
-                    <p className="pt-4 pb-6 text-pretty text-white/60">{faq.answer}</p>
+                    <p className="pt-4 pb-6 text-pretty text-foreground/60">{faq.answer}</p>
                   </div>
                 </div>
               </div>

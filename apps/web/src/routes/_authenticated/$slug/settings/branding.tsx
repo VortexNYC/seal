@@ -146,12 +146,12 @@ function BrandingSettings() {
       // Validate hex colors if provided
       const hexRegex = /^#[0-9a-fA-F]{6}$/;
       if (formData.brandColor && !hexRegex.test(formData.brandColor)) {
-        toast.error("Brand color must be a valid hex color (e.g. #0d9488)");
+        toast.error("Brand color must be a valid hex color (for example, a 6-digit hex value)");
         setIsSubmitting(false);
         return;
       }
       if (formData.accentColor && !hexRegex.test(formData.accentColor)) {
-        toast.error("Accent color must be a valid hex color (e.g. #0d9488)");
+        toast.error("Accent color must be a valid hex color (for example, a 6-digit hex value)");
         setIsSubmitting(false);
         return;
       }
@@ -332,7 +332,7 @@ function BrandingSettings() {
                 <div className="flex items-center gap-2">
                   <Input
                     id="brand-color"
-                    placeholder="#0d9488"
+                    placeholder="6-digit hex value"
                     value={formData.brandColor}
                     onChange={(e) => setFormData({ ...formData, brandColor: e.target.value })}
                     className="font-mono"
@@ -352,7 +352,7 @@ function BrandingSettings() {
                 <div className="flex items-center gap-2">
                   <Input
                     id="accent-color"
-                    placeholder="#0d9488"
+                    placeholder="6-digit hex value"
                     value={formData.accentColor}
                     onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
                     className="font-mono"

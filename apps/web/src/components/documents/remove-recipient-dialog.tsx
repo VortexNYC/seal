@@ -48,6 +48,7 @@ export function RemoveRecipientDialog({
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialogPrimitive.Portal>
+        {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
         <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 duration-150" />
 
         <AlertDialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 -translate-y-1/2 duration-150">
@@ -108,7 +109,7 @@ export function RemoveRecipientDialog({
                 type="button"
                 onClick={handleConfirm}
                 disabled={isRemoving}
-                className="bg-destructive hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-destructive hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium text-primary-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isRemoving ? "Removing..." : hasFields ? "Remove with fields" : "Remove"}
               </button>

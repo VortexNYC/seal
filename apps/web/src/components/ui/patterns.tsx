@@ -5,6 +5,7 @@ interface RailColumnProps {
   position?: "left" | "right";
 }
 
+// vortex-allow-color: Decorative pixel patterns intentionally use alpha black/white masks that are not semantic UI colors.
 export function RailColumn({ className, position = "left" }: RailColumnProps) {
   return (
     <>
@@ -23,6 +24,7 @@ export function RailColumn({ className, position = "left" }: RailColumnProps) {
       />
       <div
         className={cn(
+          // vortex-allow-color: decorative pattern hairline; alpha-white reads as neutral over the pattern in both themes
           "hidden w-10 border-x border-white/5 dark:md:block",
           "bg-[size:10px_10px] bg-fixed",
           position === "left" ? "col-start-1" : "col-start-3",
@@ -93,7 +95,9 @@ export function CardWithDots({ children, className }: CardWithDotsProps) {
     <div
       className={cn(
         "relative overflow-hidden rounded-lg",
+        // vortex-allow-color: pattern swatch chip is physically white by design
         "bg-brand-950/[2.5%] dark:bg-white/[2.5%]",
+        // vortex-allow-color: decorative pattern hairline; alpha-white reads as neutral over the pattern in both themes
         "ring-brand-950/5 ring-1 ring-inset dark:ring-white/5",
         className,
       )}

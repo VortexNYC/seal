@@ -464,12 +464,12 @@ function TrendChart({
             <AreaChart data={chartData} margin={{ left: 0, right: 8 }}>
               <defs>
                 <linearGradient id="analyticsCreated" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="analyticsCompleted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -488,8 +488,8 @@ function TrendChart({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--background)",
+                  border: "1px solid var(--border)",
                   borderRadius: "6px",
                   fontSize: "12px",
                 }}
@@ -497,7 +497,7 @@ function TrendChart({
               <Area
                 type="monotone"
                 dataKey="created"
-                stroke="hsl(var(--primary))"
+                stroke="var(--primary)"
                 fillOpacity={1}
                 fill="url(#analyticsCreated)"
                 name="Created"
@@ -505,7 +505,7 @@ function TrendChart({
               <Area
                 type="monotone"
                 dataKey="completed"
-                stroke="#22c55e"
+                stroke="var(--success)"
                 fillOpacity={1}
                 fill="url(#analyticsCompleted)"
                 name="Completed"
@@ -523,13 +523,21 @@ function TrendChart({
 }
 
 const STATUS_COLORS: Record<string, string> = {
+<<<<<<< ours
+  draft: "var(--muted-foreground)",
+=======
   draft: "hsl(var(--muted-foreground))",
-  sent: "hsl(210, 80%, 55%)",
-  in_progress: "hsl(38, 92%, 50%)",
-  completed: "#22c55e",
-  cancelled: "hsl(0, 70%, 55%)",
-  declined: "hsl(0, 50%, 45%)",
+>>>>>>> theirs
+  sent: "var(--info)",
+  in_progress: "var(--warning)",
+  completed: "var(--success)",
+  cancelled: "var(--destructive)",
+  declined: "var(--destructive)",
+<<<<<<< ours
+  expired: "var(--expired)",
+=======
   expired: "hsl(var(--expired))",
+>>>>>>> theirs
 };
 
 function StatusPieChart() {
@@ -587,8 +595,8 @@ function StatusPieChart() {
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--background)",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
                 fontSize: "12px",
               }}
@@ -645,8 +653,8 @@ function StatusBarChart() {
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--background)",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
                 fontSize: "12px",
               }}
@@ -1149,10 +1157,14 @@ function ExportPanel() {
 // ─── Email Engagement Tab ─────────────────────
 
 const EMAIL_FUNNEL_COLORS = {
-  sent: "#6366f1",
-  delivered: "#3b82f6",
-  opened: "#10b981",
-  clicked: "#f59e0b",
+  sent: "var(--info)",
+<<<<<<< ours
+  delivered: "var(--primary)",
+=======
+  delivered: "var(--field-signature)",
+>>>>>>> theirs
+  opened: "var(--success)",
+  clicked: "var(--warning)",
 };
 
 function EmailEngagementTab() {
@@ -1255,8 +1267,8 @@ function EmailEngagementTab() {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--background)",
+                  border: "1px solid var(--border)",
                   borderRadius: "6px",
                   fontSize: "12px",
                 }}
@@ -1277,12 +1289,19 @@ function EmailEngagementTab() {
 // ─── Recipient Timing Tab ─────────────────────
 
 const TIMING_BUCKET_COLORS: Record<string, string> = {
-  "<1h": "#10b981",
-  "1-6h": "#3b82f6",
-  "6-24h": "#6366f1",
-  "1-3d": "#f59e0b",
-  "3-7d": "#ef4444",
-  "7d+": "#991b1b",
+  "<1h": "var(--success)",
+  "1-6h": "var(--info)",
+<<<<<<< ours
+  "6-24h": "var(--primary)",
+  "1-3d": "var(--warning)",
+  "3-7d": "var(--destructive)",
+  "7d+": "var(--expired)",
+=======
+  "6-24h": "var(--field-date)",
+  "1-3d": "var(--warning)",
+  "3-7d": "var(--destructive)",
+  "7d+": "var(--destructive)",
+>>>>>>> theirs
 };
 
 function RecipientTimingTab() {
@@ -1305,7 +1324,7 @@ function RecipientTimingTab() {
   const distributionData = timing.distribution.map((d) => ({
     name: d.bucket,
     value: d.count,
-    fill: TIMING_BUCKET_COLORS[d.bucket] ?? "#6b7280",
+    fill: TIMING_BUCKET_COLORS[d.bucket] ?? "var(--muted-foreground)",
   }));
 
   return (
@@ -1355,8 +1374,8 @@ function RecipientTimingTab() {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--background)",
+                  border: "1px solid var(--border)",
                   borderRadius: "6px",
                   fontSize: "12px",
                 }}

@@ -110,7 +110,7 @@ export function FeedbackButton() {
                 className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm transition-colors"
                 onClick={() => setMode("suggestion")}
               >
-                <Lightbulb className="size-4 shrink-0 text-yellow-500" />
+                <Lightbulb className="size-4 shrink-0 text-warning" />
                 <span>Make a suggestion</span>
               </button>
             </div>

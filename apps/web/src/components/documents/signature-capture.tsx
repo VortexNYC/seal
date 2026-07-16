@@ -241,6 +241,11 @@ export function SignatureCapture({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Style the signature
+<<<<<<< ours
+    // vortex-allow-color: Canvas signature rendering requires a concrete ink color.
+=======
+    // vortex-allow-color: signature capture ink must stay physically black on a paper-white pad.
+>>>>>>> theirs
     ctx.fillStyle = "#000000";
     ctx.font = `52px ${currentFontFamily}`;
     ctx.textBaseline = "middle";
@@ -517,6 +522,7 @@ export function SignatureCapture({
                         <img
                           src={sig.signatureImageUrl}
                           alt={sig.name}
+                          // vortex-allow-color: signature thumbnails represent white paper in both themes
                           className="h-12 w-24 rounded border bg-white object-contain"
                         />
                         <div className="flex flex-col gap-1">
@@ -568,8 +574,10 @@ export function SignatureCapture({
                 {/* SEA-116: Responsive container for signature canvas */}
                 <div
                   ref={canvasContainerRef}
+                  // vortex-allow-color: signature capture pad represents white paper in both themes
                   className="border-border overflow-hidden rounded-lg border-2 border-dashed bg-white"
                 >
+                  {/* vortex-allow-color: SignatureCanvas forwards colors to canvas and cannot resolve CSS tokens. */}
                   <SignatureCanvas
                     ref={signaturePadRef}
                     canvasProps={{
@@ -578,7 +586,9 @@ export function SignatureCapture({
                       className: "w-full h-[200px] cursor-crosshair touch-none select-none",
                       style: { touchAction: "none" },
                     }}
+                    // vortex-allow-color: signature capture pad represents white paper in both themes
                     backgroundColor="rgb(255, 255, 255)"
+                    // vortex-allow-color: signature capture ink must stay physically black on white paper
                     penColor="rgb(0, 0, 0)"
                   />
                 </div>
@@ -647,7 +657,10 @@ export function SignatureCapture({
                 </Select>
               </div>
               {typedName && (
-                <div className="border-border overflow-hidden rounded-lg border-2 bg-white p-4 sm:p-8">
+                <div
+                  // vortex-allow-color: signature preview represents white paper in both themes
+                  className="border-border overflow-hidden rounded-lg border-2 bg-white p-4 sm:p-8"
+                >
                   {/* SEA-116: Responsive font size for mobile */}
                   <p
                     className="truncate text-center text-3xl sm:text-5xl"
@@ -676,7 +689,10 @@ export function SignatureCapture({
                 />
               </div>
               {uploadedImage && (
-                <div className="border-border rounded-lg border-2 bg-white p-4">
+                <div
+                  // vortex-allow-color: uploaded signature preview represents white paper in both themes
+                  className="border-border rounded-lg border-2 bg-white p-4"
+                >
                   <img
                     src={uploadedImage}
                     alt="Uploaded signature"
@@ -728,7 +744,10 @@ export function SignatureCapture({
           </DialogHeader>
           <div className="space-y-4 py-4">
             {pendingSignatureData && (
-              <div className="rounded-lg border bg-white p-4">
+              <div
+                // vortex-allow-color: signature library preview represents white paper in both themes
+                className="rounded-lg border bg-white p-4"
+              >
                 <img
                   src={pendingSignatureData.data}
                   alt="Signature preview"

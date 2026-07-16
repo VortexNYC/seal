@@ -6,7 +6,7 @@ export function TestimonialsBlockComponent({ block }: { block: TestimonialsSecti
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
-            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-foreground sm:text-5xl">
               {block.headline}
             </h2>
           </div>
@@ -15,9 +15,9 @@ export function TestimonialsBlockComponent({ block }: { block: TestimonialsSecti
         <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3">
           {block.testimonials.map((testimonial) => (
             <div className="group relative" key={testimonial.id}>
-              <div className="relative h-full rounded-3xl border border-white/10 bg-white/5 p-8 transition-colors duration-300 hover:bg-white/10">
+              <div className="relative h-full rounded-3xl border border-foreground/10 bg-foreground/5 p-8 transition-colors duration-300 hover:bg-foreground/10">
                 <blockquote className="mb-8">
-                  <p className="text-lg leading-relaxed text-white/80">
+                  <p className="text-lg leading-relaxed text-foreground/80">
                     &ldquo;{testimonial.quote}&rdquo;
                   </p>
                 </blockquote>
@@ -32,15 +32,16 @@ export function TestimonialsBlockComponent({ block }: { block: TestimonialsSecti
                       width={testimonial.avatar.width || 48}
                     />
                   ) : (
+                    // vortex-allow-color: testimonial avatar placeholder gradient is decorative brand-neutral art, not a status color
                     <div className="flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-400">
-                      <span className="text-lg font-semibold text-white">
+                      <span className="text-lg font-semibold text-foreground">
                         {testimonial.author.charAt(0)}
                       </span>
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-white">{testimonial.author}</div>
-                    <div className="text-sm text-white/50">
+                    <div className="font-semibold text-foreground">{testimonial.author}</div>
+                    <div className="text-sm text-foreground/50">
                       {testimonial.role}
                       {testimonial.company && `, ${testimonial.company}`}
                     </div>

@@ -36,6 +36,7 @@ export function DocumentPresence({ documentId }: DocumentPresenceProps) {
           <TooltipTrigger asChild>
             <Avatar
               className={cn(
+                // vortex-allow-color: presence avatar ring separates from any underlying color; white by design
                 "size-7 ring-2 ring-white dark:ring-stone-950",
                 "transition-transform hover:z-10 hover:scale-110",
               )}

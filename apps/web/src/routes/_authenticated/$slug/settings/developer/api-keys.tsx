@@ -318,7 +318,7 @@ function ApiKeysPage() {
                   }}
                 >
                   <DialogTrigger asChild>
-                    <Button size="sm" className="bg-info hover:bg-info/90 text-white">
+                    <Button size="sm" className="bg-info hover:bg-info/90 text-primary-foreground">
                       <Plus className="mr-1 h-4 w-4" />
                       Create API Key
                     </Button>
@@ -373,7 +373,7 @@ function ApiKeysPage() {
                         <DialogFooter>
                           <Button
                             onClick={handleCloseDialog}
-                            className="bg-info hover:bg-info/90 text-white"
+                            className="bg-info hover:bg-info/90 text-primary-foreground"
                           >
                             Done
                           </Button>
@@ -454,7 +454,7 @@ function ApiKeysPage() {
                           </Button>
                           <Button
                             onClick={handleCreateKey}
-                            className="bg-info hover:bg-info/90 text-white"
+                            className="bg-info hover:bg-info/90 text-primary-foreground"
                           >
                             Create Key
                           </Button>
@@ -483,7 +483,7 @@ function ApiKeysPage() {
                   </p>
                   <Button
                     onClick={() => setIsCreating(true)}
-                    className="bg-info hover:bg-info/90 mt-6 text-white"
+                    className="bg-info hover:bg-info/90 mt-6 text-primary-foreground"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Create your first API key

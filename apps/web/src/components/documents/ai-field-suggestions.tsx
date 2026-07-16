@@ -158,7 +158,7 @@ function SuggestionOverlay({
         {getFieldIcon(field.fieldType)}
       </div>
       {isSelected && (
-        <div className="bg-info absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white shadow-sm">
+        <div className="bg-info absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-primary-foreground shadow-sm">
           <CheckIcon className="h-2.5 w-2.5" />
         </div>
       )}
@@ -315,7 +315,7 @@ export function AIFieldReviewBar({
       className="bg-card/95 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="from-ai-accent to-primary flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-sm">
+        <div className="from-ai-accent to-primary flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br text-primary-foreground shadow-sm">
           <SparklesIcon className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
@@ -362,7 +362,7 @@ export function AIFieldReviewBar({
           size="sm"
           onClick={handleApply}
           disabled={isApplying}
-          className="from-ai-accent to-primary hover:from-ai-accent/90 hover:to-primary/90 h-7 bg-gradient-to-r text-xs text-white shadow-sm"
+          className="from-ai-accent to-primary hover:from-ai-accent/90 hover:to-primary/90 h-7 bg-gradient-to-r text-xs text-primary-foreground shadow-sm"
         >
           <CheckIcon className="mr-1 h-3 w-3" />
           {isApplying

@@ -354,9 +354,9 @@ function DevApiMockup() {
     <div className="border-border bg-card w-full overflow-hidden rounded-xl border font-mono text-xs shadow-lg">
       {/* Terminal tab bar */}
       <div className="border-border bg-muted/30 flex items-center gap-1.5 border-b px-4 py-2.5">
-        <span className="size-2.5 rounded-full bg-red-400/70" />
-        <span className="size-2.5 rounded-full bg-yellow-400/70" />
-        <span className="size-2.5 rounded-full bg-green-400/70" />
+        <span className="size-2.5 rounded-full bg-destructive/70" />
+        <span className="size-2.5 rounded-full bg-warning/70" />
+        <span className="size-2.5 rounded-full bg-success/70" />
         <span className="text-muted-foreground ml-3 text-xs">seal api — zsh</span>
       </div>
 

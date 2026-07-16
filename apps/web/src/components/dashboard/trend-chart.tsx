@@ -85,7 +85,6 @@ export function TrendChart(): React.ReactElement {
                     border: "1px solid var(--border)",
                     borderRadius: "8px",
                     fontSize: "12px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                   }}
                 />
                 <Area

@@ -152,7 +152,7 @@ export function StaticProductShowcase() {
                         className="bg-primary flex size-5 shrink-0 items-center justify-center rounded-full"
                       >
                         <svg
-                          className="size-3 text-white"
+                          className="size-3 text-primary-foreground"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"

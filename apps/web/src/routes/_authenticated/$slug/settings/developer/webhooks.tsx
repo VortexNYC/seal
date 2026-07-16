@@ -216,7 +216,7 @@ function SlackNotificationsSection({
             </p>
             <Button
               onClick={() => setIsCreating(true)}
-              className="bg-ai-accent hover:bg-ai-accent/90 mt-4 text-white"
+              className="bg-ai-accent hover:bg-ai-accent/90 mt-4 text-primary-foreground"
               disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -314,7 +314,7 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-white">
+        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground">
           <Plus className="mr-1 h-4 w-4" />
           Connect Slack
         </Button>
@@ -432,7 +432,7 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
             <Button
               onClick={handleCreate}
               disabled={isSubmitting}
-              className="bg-ai-accent hover:bg-ai-accent/90 text-white"
+              className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground"
             >
               {isSubmitting ? "Connecting..." : "Connect Channel"}
             </Button>
@@ -511,7 +511,7 @@ function WebhookEndpointsSection({
             </p>
             <Button
               onClick={() => setIsCreating(true)}
-              className="bg-ai-accent hover:bg-ai-accent/90 mt-6 text-white"
+              className="bg-ai-accent hover:bg-ai-accent/90 mt-6 text-primary-foreground"
               disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -634,7 +634,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-white">
+        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground">
           <Plus className="mr-1 h-4 w-4" />
           Add Endpoint
         </Button>
@@ -687,7 +687,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
             <DialogFooter>
               <Button
                 onClick={handleClose}
-                className="bg-ai-accent hover:bg-ai-accent/90 text-white"
+                className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground"
               >
                 Done
               </Button>
@@ -799,7 +799,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
               </Button>
               <Button
                 onClick={handleCreate}
-                className="bg-ai-accent hover:bg-ai-accent/90 text-white"
+                className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground"
               >
                 Create Endpoint
               </Button>
@@ -1201,7 +1201,7 @@ function RotateSecretButton({ rotateSecret }: { readonly rotateSecret: () => Pro
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={rotateSecret}
-            className="bg-warning hover:bg-warning/90 text-white"
+            className="bg-warning hover:bg-warning/90 text-primary-foreground"
           >
             Rotate Secret
           </AlertDialogAction>

@@ -15,7 +15,13 @@ const siteConfig = {
   ogImage: "/favicon/og-image.png",
   twitterHandle: "@sealhq",
   locale: "en_US",
+<<<<<<< ours
+  // vortex-allow-color: Browser theme-color meta requires a concrete color value, not a CSS token.
+  themeColor: "#a63d2f",
+=======
+  // vortex-allow-color: browser metadata requires a concrete theme-color value.
   themeColor: "#0d9488",
+>>>>>>> theirs
 } as const;
 
 // Route-specific SEO configuration

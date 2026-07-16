@@ -215,8 +215,9 @@ export function FieldOptionsDialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
+        {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
-        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-card border-border fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border shadow-[0_16px_70px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)]">
+        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-card border-border fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border shadow-2xl">
           {/* Header */}
           <div className="relative px-5 pt-5 pb-4">
             <DialogPrimitive.Title className="text-foreground mb-1 text-base font-semibold tracking-tight">
