@@ -2,39 +2,19 @@
   "name": "seal",
   "version": "0.0.1",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "apps/*",
-      "packages/*",
-      "tooling/*"
-    ],
-    "catalog": {
-      "@types/bun": "1.3.11",
-      "@types/node": "^25.5.2",
-      "@types/react": "^19.2.14",
-      "@types/react-dom": "^19.2.3",
-      "convex": "^1.34.1",
-      "react": "^19.2.4",
-      "react-dom": "^19.2.4",
-      "typescript": "^5.9.3",
-      "vite": "^8.0.3",
-      "vitest": "^4.1.2",
-      "zod": "^4.3.6"
-    }
-  },
   "scripts": {
-    "dev": "turbo run dev --filter=@seal/backend --filter=@seal/web --filter=@seal/landing",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "lint:fix": "oxlint --fix",
-    "format": "oxfmt --write",
-    "format:check": "turbo run format:check",
-    "typecheck": "turbo run typecheck",
-    "knip": "turbo run knip",
-    "knip:fix": "(cd apps/backend && bun run knip:fix) && (cd apps/mcp-server && bun run knip:fix) && (cd packages/react-sdk && bun run knip:fix) && (cd packages/transactional && bun run knip:fix) && (cd apps/web && bun run knip:fix)",
-    "verify": "bun run lint && bun run format:check && bun run typecheck && bun run knip",
-    "test": "turbo run test",
-    "clean": "(cd apps/backend && bun run clean) && (cd apps/mcp-server && bun run clean) && (cd apps/web && bun run clean) && git clean -xdf .cache .turbo dist node_modules",
+    "dev": "vp run -r dev --filter @seal/backend --filter @seal/web --filter @seal/landing",
+    "build": "vp run -r build",
+    "lint": "vp lint && pnpm run lint:convex",
+    "lint:fix": "vp lint --fix && vp fmt",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "typecheck": "vp run -r typecheck",
+    "knip": "vp run -r knip",
+    "knip:fix": "(cd apps/backend && pnpm run knip:fix) && (cd apps/mcp-server && pnpm run knip:fix) && (cd packages/react-sdk && pnpm run knip:fix) && (cd packages/transactional && pnpm run knip:fix) && (cd apps/web && pnpm run knip:fix)",
+    "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
+    "test": "vp run -r test",
+    "clean": "(cd apps/backend && pnpm run clean) && (cd apps/mcp-server && pnpm run clean) && (cd apps/web && pnpm run clean) && git clean -xdf .cache .turbo dist node_modules",
     "eval": "cd evals && npx promptfoo eval",
     "eval:redteam": "cd evals && npx promptfoo eval -c redteam.yaml",
     "eval:all": "cd evals && npx promptfoo eval && npx promptfoo eval -c redteam.yaml",
@@ -46,7 +26,6 @@
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
-    "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
@@ -54,8 +33,9 @@
     "oxfmt": "^0.43.0",
     "oxlint": "^1.58.0",
     "promptfoo": "^0.121.3",
-    "turbo": "^2.9.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "0.2.4",
+    "lefthook": "2.1.10"
   },
-  "packageManager": "bun@1.3.11"
+  "packageManager": "pnpm@11.13.1"
 }
