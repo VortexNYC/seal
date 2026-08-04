@@ -86,7 +86,7 @@
     "lefthook": "2.1.10",
     "promptfoo": "^0.121.3",
     "tsx": "^4.20.5",
-    "typescript": "catalog:",
+    "typescript": "~5.9.3",
     "typescript-eslint": "8.63.0",
     "vite-plus": "0.2.4"
   },

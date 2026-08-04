@@ -16,7 +16,7 @@ env:
 jobs:
   precommit-check:
     name: precommit:check
-    runs-on: [self-hosted, vortex, linux, x64, vortex-light]
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 6
     steps:
       - name: Checkout
