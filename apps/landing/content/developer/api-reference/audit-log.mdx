@@ -124,7 +124,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const { entries, has_more, next_cursor } = await response.json();
@@ -193,9 +193,12 @@ async function exportAuditLog(fromMs: number, toMs: number) {
       ...(cursor ? { cursor } : {}),
     });
 
-    const response = await fetch(`https://seal.convex.site/api/v1/audit-log?${params}`, {
-      headers: { Authorization: "Bearer ak_your_api_key_here" },
-    });
+    const response = await fetch(
+      `https://seal.convex.site/api/v1/audit-log?${params}`,
+      {
+        headers: { Authorization: "Bearer ak_your_api_key_here" },
+      }
+    );
 
     const data = await response.json();
     entries.push(...data.entries);

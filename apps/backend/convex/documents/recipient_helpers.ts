@@ -10,7 +10,7 @@ import { generateStringHash } from "../crypto/helpers";
 import { isRecipientTerminal } from "../schemas/document_recipients";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -27,7 +27,7 @@ type GenericCtx = Pick<MutationCtx | QueryCtx, "db">;
 export async function verifyDocumentOwnership(
   ctx: GenericCtx,
   documentId: Id<"documents">,
-  userId: Id<"users">,
+  userId: Id<"users">
 ): Promise<void> {
   const document = await ctx.db.get(documentId);
   if (!document) {
@@ -48,7 +48,7 @@ export async function verifyDocumentOwnership(
  */
 export async function findRecipientByToken(
   ctx: GenericCtx,
-  signingToken: string,
+  signingToken: string
 ): Promise<Doc<"document_recipients"> | null> {
   const tokenHash = await generateStringHash(signingToken);
 
@@ -74,7 +74,7 @@ export async function findRecipientByToken(
  */
 export async function areAllRecipientsComplete(
   ctx: GenericCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<boolean> {
   const recipients = await ctx.db
     .query("document_recipients")
@@ -105,11 +105,13 @@ export async function areAllRecipientsComplete(
  */
 export async function hasAnyRecipientDeclined(
   ctx: MutationCtx | QueryCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<boolean> {
   const declinedRecipient = await ctx.db
     .query("document_recipients")
-    .withIndex("by_document_status", (q) => q.eq("documentId", documentId).eq("status", "declined"))
+    .withIndex("by_document_status", (q) =>
+      q.eq("documentId", documentId).eq("status", "declined")
+    )
     .first();
 
   return declinedRecipient !== null;
@@ -120,7 +122,7 @@ export async function hasAnyRecipientDeclined(
  * Recipients with undefined/null order are treated as order 0.
  */
 export function groupRecipientsByOrder(
-  recipients: Doc<"document_recipients">[],
+  recipients: Doc<"document_recipients">[]
 ): Map<number, Doc<"document_recipients">[]> {
   const groups = new Map<number, Doc<"document_recipients">[]>();
   for (const r of recipients) {
@@ -135,7 +137,7 @@ export function groupRecipientsByOrder(
  * Find the first order group where not all recipients are in a terminal state.
  */
 export function findFirstIncompleteGroup(
-  recipients: Doc<"document_recipients">[],
+  recipients: Doc<"document_recipients">[]
 ): Doc<"document_recipients">[] {
   const groups = groupRecipientsByOrder(recipients);
   for (const [_order, group] of groups) {
@@ -152,7 +154,7 @@ export function findFirstIncompleteGroup(
  */
 export function isRecipientGroupActive(
   recipient: Doc<"document_recipients">,
-  allRecipients: Doc<"document_recipients">[],
+  allRecipients: Doc<"document_recipients">[]
 ): boolean {
   const myOrder = recipient.order ?? 0;
   return allRecipients
@@ -166,7 +168,7 @@ export function isRecipientGroupActive(
  */
 export function getNextPendingGroup(
   allRecipients: Doc<"document_recipients">[],
-  completedOrder: number,
+  completedOrder: number
 ): Doc<"document_recipients">[] {
   const groups = groupRecipientsByOrder(allRecipients);
   const sortedOrders = [...groups.keys()];
@@ -190,7 +192,7 @@ export function getNextPendingGroup(
  */
 export async function getRecipientCounts(
   ctx: MutationCtx | QueryCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<{
   total: number;
   signers: number;

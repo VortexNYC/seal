@@ -20,7 +20,7 @@ import { getAuthToken } from "../utils/auth";
 class UploadValidationError extends Error {
   constructor(
     message: string,
-    public readonly details?: string,
+    public readonly details?: string
   ) {
     super(message);
     this.name = "UploadValidationError";
@@ -41,11 +41,14 @@ function createToolResponse(payload: unknown, isError = false) {
 
 function toUploadErrorResponse(error: unknown) {
   if (error instanceof UploadValidationError) {
-    return createToolResponse({ error: error.message, details: error.details }, true);
+    return createToolResponse(
+      { error: error.message, details: error.details },
+      true
+    );
   }
   return createToolResponse(
     { error: error instanceof Error ? error.message : String(error) },
-    true,
+    true
   );
 }
 
@@ -60,22 +63,30 @@ function decodeValidatedPdfContent(base64: string): Buffer {
     throw new UploadValidationError("Invalid base64 encoding");
   }
   if (!fileBuffer.subarray(0, 5).toString().startsWith("%PDF-")) {
-    throw new UploadValidationError("Content is not a valid PDF (invalid magic bytes)");
+    throw new UploadValidationError(
+      "Content is not a valid PDF (invalid magic bytes)"
+    );
   }
   return fileBuffer;
 }
 
-async function getUploadUrl(client: SealApiClient, authToken: string | undefined): Promise<string> {
+async function getUploadUrl(
+  client: SealApiClient,
+  authToken: string | undefined
+): Promise<string> {
   const { upload_url } = await client.post<{ upload_url: string }>(
     "/uploads/generate-url",
     {},
     undefined,
-    authToken,
+    authToken
   );
   return upload_url;
 }
 
-function registerUploadFileContentTool(server: McpServer, client: SealApiClient): void {
+function registerUploadFileContentTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_upload_file_content",
     "Upload a PDF file using base64-encoded content. Returns a storage_id for use with create_document.",
@@ -87,7 +98,11 @@ function registerUploadFileContentTool(server: McpServer, client: SealApiClient)
       try {
         const fileBuffer = decodeValidatedPdfContent(content_base64);
         const uploadUrl = await getUploadUrl(client, authToken);
-        const storageId = await client.uploadToStorage(uploadUrl, fileBuffer, "application/pdf");
+        const storageId = await client.uploadToStorage(
+          uploadUrl,
+          fileBuffer,
+          "application/pdf"
+        );
 
         return createToolResponse({
           storage_id: storageId,
@@ -97,7 +112,7 @@ function registerUploadFileContentTool(server: McpServer, client: SealApiClient)
       } catch (error) {
         return toUploadErrorResponse(error);
       }
-    },
+    }
   );
 }
 
@@ -105,6 +120,9 @@ function registerUploadFileContentTool(server: McpServer, client: SealApiClient)
  * Registers upload-related tools with the MCP server.
  * Worker edition: only the base64-content variant (no local-fs).
  */
-export function registerUploadTools(server: McpServer, client: SealApiClient): void {
+export function registerUploadTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   registerUploadFileContentTool(server, client);
 }

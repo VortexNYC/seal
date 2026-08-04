@@ -4,9 +4,11 @@ import { type Infer, v } from "convex/values";
 export const documentVersionChangeTypeTuple = v.union(
   v.literal("created"),
   v.literal("replaced"),
-  v.literal("restored"),
+  v.literal("restored")
 );
-export type DocumentVersionChangeType = Infer<typeof documentVersionChangeTypeTuple>;
+export type DocumentVersionChangeType = Infer<
+  typeof documentVersionChangeTypeTuple
+>;
 
 export const documentVersionsTable = defineTable({
   documentId: v.id("documents"),

@@ -88,8 +88,18 @@ describe("Recipients mutations", () => {
         .mutation(api.documents.recipients_mutations.addRecipients, {
           documentId,
           recipients: [
-            { email: "alice@example.com", name: "Alice", role: "signer", order: 1 },
-            { email: "bob@example.com", name: "Bob", role: "approver", order: 2 },
+            {
+              email: "alice@example.com",
+              name: "Alice",
+              role: "signer",
+              order: 1,
+            },
+            {
+              email: "bob@example.com",
+              name: "Bob",
+              role: "approver",
+              order: 2,
+            },
           ],
         });
 
@@ -121,11 +131,15 @@ describe("Recipients mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.addRecipients, {
           documentId,
-          recipients: [{ email: "Alice@EXAMPLE.COM", name: "Alice", role: "signer" }],
+          recipients: [
+            { email: "Alice@EXAMPLE.COM", name: "Alice", role: "signer" },
+          ],
         });
 
       const recipient = await t.run(async (ctx) => {
-        return await ctx.db.get(result.recipientIds[0] as Id<"document_recipients">);
+        return await ctx.db.get(
+          result.recipientIds[0] as Id<"document_recipients">
+        );
       });
 
       expect(recipient?.email).toBe("alice@example.com");
@@ -141,7 +155,7 @@ describe("Recipients mutations", () => {
               { email: "dup@example.com", role: "signer" },
               { email: "DUP@example.com", role: "approver" },
             ],
-          }),
+          })
       ).rejects.toThrow("Duplicate recipient emails are not allowed");
     });
 
@@ -152,7 +166,7 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.addRecipients, {
             documentId,
             recipients: [],
-          }),
+          })
       ).rejects.toThrow("At least one recipient is required");
     });
 
@@ -168,7 +182,7 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.addRecipients, {
             documentId,
             recipients: [{ email: "new@example.com", role: "signer" }],
-          }),
+          })
       ).rejects.toThrow("Cannot add recipients to deleted document");
     });
 
@@ -177,7 +191,7 @@ describe("Recipients mutations", () => {
         t.mutation(api.documents.recipients_mutations.addRecipients, {
           documentId,
           recipients: [{ email: "new@example.com", role: "signer" }],
-        }),
+        })
       ).rejects.toThrow();
     });
   });
@@ -263,7 +277,9 @@ describe("Recipients mutations", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 }],
+          items: [
+            { id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 },
+          ],
           totalAmountCents: 5000,
           currency: "usd",
           dueDateTerms: "net_30",
@@ -309,7 +325,7 @@ describe("Recipients mutations", () => {
           .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.removeRecipient, {
             recipientId,
-          }),
+          })
       ).rejects.toThrow("Cannot remove recipients from deleted document");
     });
 
@@ -317,7 +333,7 @@ describe("Recipients mutations", () => {
       await expect(
         t.mutation(api.documents.recipients_mutations.removeRecipient, {
           recipientId,
-        }),
+        })
       ).rejects.toThrow();
     });
   });
@@ -335,12 +351,15 @@ describe("Recipients mutations", () => {
       });
 
       const beforeDecline = Date.now();
-      const result = await t.mutation(api.documents.recipients_mutations.submitRecipientSignature, {
-        signingToken: "test-token-recip",
-        status: "declined",
-        declineReason: "Cannot sign this version",
-        ipAddress: "127.0.0.1",
-      });
+      const result = await t.mutation(
+        api.documents.recipients_mutations.submitRecipientSignature,
+        {
+          signingToken: "test-token-recip",
+          status: "declined",
+          declineReason: "Cannot sign this version",
+          ipAddress: "127.0.0.1",
+        }
+      );
 
       expect(result.success).toBe(true);
 
@@ -360,7 +379,9 @@ describe("Recipients mutations", () => {
       expect(state.recipient?.declinedAt).toBeGreaterThanOrEqual(beforeDecline);
       expect(state.document?.workflowStatus).toBe("declined");
       expect(state.document?.declinedAt).toBeGreaterThanOrEqual(beforeDecline);
-      expect(state.auditEntries.map((entry) => entry.action)).toContain("recipient.declined");
+      expect(state.auditEntries.map((entry) => entry.action)).toContain(
+        "recipient.declined"
+      );
     });
   });
 
@@ -427,7 +448,7 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             email: "taken@example.com",
-          }),
+          })
       ).rejects.toThrow("A recipient with this email already exists");
     });
 
@@ -442,8 +463,10 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             name: "Should Fail",
-          }),
-      ).rejects.toThrow("Cannot edit recipient who has already completed their action");
+          })
+      ).rejects.toThrow(
+        "Cannot edit recipient who has already completed their action"
+      );
     });
 
     test("rejects editing completed recipients (status approved)", async () => {
@@ -457,8 +480,10 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             name: "Should Fail",
-          }),
-      ).rejects.toThrow("Cannot edit recipient who has already completed their action");
+          })
+      ).rejects.toThrow(
+        "Cannot edit recipient who has already completed their action"
+      );
     });
 
     test("rejects editing completed recipients (status declined)", async () => {
@@ -472,8 +497,10 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             name: "Should Fail",
-          }),
-      ).rejects.toThrow("Cannot edit recipient who has already completed their action");
+          })
+      ).rejects.toThrow(
+        "Cannot edit recipient who has already completed their action"
+      );
     });
 
     test("rejects unauthenticated requests", async () => {
@@ -481,7 +508,7 @@ describe("Recipients mutations", () => {
         t.mutation(api.documents.recipients_mutations.updateRecipient, {
           recipientId,
           name: "Should Fail",
-        }),
+        })
       ).rejects.toThrow();
     });
   });

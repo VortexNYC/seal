@@ -1,6 +1,6 @@
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -126,10 +126,13 @@ describe("resetExpiredRecipient", () => {
     });
 
     const newExpiresAt = Date.now() + 7 * ONE_DAY;
-    await t.mutation(internal.documents.send_document_action.resetExpiredRecipient, {
-      recipientId,
-      expiresAt: newExpiresAt,
-    });
+    await t.mutation(
+      internal.documents.send_document_action.resetExpiredRecipient,
+      {
+        recipientId,
+        expiresAt: newExpiresAt,
+      }
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -159,9 +162,12 @@ describe("resetExpiredRecipient", () => {
       });
     });
 
-    await t.mutation(internal.documents.send_document_action.resetExpiredRecipient, {
-      recipientId,
-    });
+    await t.mutation(
+      internal.documents.send_document_action.resetExpiredRecipient,
+      {
+        recipientId,
+      }
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -228,9 +234,12 @@ describe("reactivateExpiredDocument", () => {
       });
     });
 
-    await t.mutation(internal.documents.send_document_action.reactivateExpiredDocument, {
-      documentId,
-    });
+    await t.mutation(
+      internal.documents.send_document_action.reactivateExpiredDocument,
+      {
+        documentId,
+      }
+    );
 
     const doc = await t.run(async (ctx) => {
       return await ctx.db.get(documentId);
@@ -241,7 +250,9 @@ describe("reactivateExpiredDocument", () => {
     expect(sealAssertPresent(doc).expiredAt).toBeUndefined();
     expect(sealAssertPresent(doc).sentAt).toBeTypeOf("number");
     // sentAt should be recent (within last second)
-    expect(sealAssertPresent(sealAssertPresent(doc).sentAt)).toBeGreaterThan(Date.now() - 1000);
+    expect(sealAssertPresent(sealAssertPresent(doc).sentAt)).toBeGreaterThan(
+      Date.now() - 1000
+    );
   });
 
   test("does nothing if document is not expired", async () => {
@@ -262,9 +273,12 @@ describe("reactivateExpiredDocument", () => {
       });
     });
 
-    await t.mutation(internal.documents.send_document_action.reactivateExpiredDocument, {
-      documentId,
-    });
+    await t.mutation(
+      internal.documents.send_document_action.reactivateExpiredDocument,
+      {
+        documentId,
+      }
+    );
 
     const doc = await t.run(async (ctx) => {
       return await ctx.db.get(documentId);
@@ -350,10 +364,13 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       });
     });
 
-    await t.mutation(internal.documents.send_document_action.markDocumentAsSent, {
-      documentId,
-      expirationPeriod: { amount: 14, unit: "day" },
-    });
+    await t.mutation(
+      internal.documents.send_document_action.markDocumentAsSent,
+      {
+        documentId,
+        expirationPeriod: { amount: 14, unit: "day" },
+      }
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -365,7 +382,7 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
     // New expiresAt should be ~14 days from now
     expect(sealAssertPresent(recipient).expiresAt).toBeGreaterThan(Date.now());
     expect(sealAssertPresent(recipient).expiresAt).toBeLessThanOrEqual(
-      Date.now() + 14 * ONE_DAY + 1000,
+      Date.now() + 14 * ONE_DAY + 1000
     );
   });
 
@@ -403,10 +420,13 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       });
     });
 
-    await t.mutation(internal.documents.send_document_action.markDocumentAsSent, {
-      documentId,
-      expirationPeriod: { amount: 7, unit: "day" },
-    });
+    await t.mutation(
+      internal.documents.send_document_action.markDocumentAsSent,
+      {
+        documentId,
+        expirationPeriod: { amount: 7, unit: "day" },
+      }
+    );
 
     const doc = await t.run(async (ctx) => {
       return await ctx.db.get(documentId);
@@ -469,10 +489,13 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       return [expired, signed] as const;
     });
 
-    await t.mutation(internal.documents.send_document_action.markDocumentAsSent, {
-      documentId,
-      expirationPeriod: { amount: 7, unit: "day" },
-    });
+    await t.mutation(
+      internal.documents.send_document_action.markDocumentAsSent,
+      {
+        documentId,
+        expirationPeriod: { amount: 7, unit: "day" },
+      }
+    );
 
     const [expired, signed] = await t.run(async (ctx) => {
       return [await ctx.db.get(expiredId), await ctx.db.get(signedId)] as const;

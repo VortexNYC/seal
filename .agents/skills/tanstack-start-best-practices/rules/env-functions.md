@@ -46,7 +46,9 @@ const envSchema = z.object({
   PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1),
 
   // Optional with defaults
-  NODE_ENV: z.enum(["development", "staging", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "staging", "production"])
+    .default("development"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
   // Optional
@@ -71,10 +73,14 @@ function validateEnv(): Env {
 export const env = validateEnv();
 
 // Usage in server functions
-export const getPaymentIntent = createServerFn({ method: "POST" }).handler(async () => {
-  const paymentProvider = createPaymentProvider(env.PAYMENT_PROVIDER_SECRET_KEY);
-  // Type-safe, validated access
-});
+export const getPaymentIntent = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const paymentProvider = createPaymentProvider(
+      env.PAYMENT_PROVIDER_SECRET_KEY
+    );
+    // Type-safe, validated access
+  }
+);
 ```
 
 ## Good Example: Public vs Private Config

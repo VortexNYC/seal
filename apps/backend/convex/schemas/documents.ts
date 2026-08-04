@@ -6,20 +6,20 @@ import { documentWorkflowStatusTuple } from "./document_workflow_status";
 export const documentSharingModeTuple = v.union(
   v.literal("private"), // Owner only
   v.literal("workspace"), // All team members (Pro plan only)
-  v.literal("specific"), // Specific users only (Pro plan only)
+  v.literal("specific") // Specific users only (Pro plan only)
 );
 export type DocumentSharingMode = Infer<typeof documentSharingModeTuple>;
 
 export const signingModeTuple = v.union(
   v.literal("parallel"), // All recipients at once (default)
-  v.literal("sequential"), // Enforce recipient order groups
+  v.literal("sequential") // Enforce recipient order groups
 );
 export type SigningMode = Infer<typeof signingModeTuple>;
 
 export const documentStatusTuple = v.union(
   v.literal("active"),
   v.literal("archived"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
 export type DocumentStatus = Infer<typeof documentStatusTuple>;
 
@@ -60,8 +60,8 @@ export const documentsTable = defineTable({
       v.literal("pending"),
       v.literal("processing"),
       v.literal("completed"),
-      v.literal("failed"),
-    ),
+      v.literal("failed")
+    )
   ),
 
   // Search indexing
@@ -92,7 +92,7 @@ export const documentsTable = defineTable({
     v.object({
       amount: v.number(),
       unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
-    }),
+    })
   ),
   expiredAt: v.optional(v.number()),
 
@@ -119,7 +119,7 @@ export const documentsTable = defineTable({
       allowedOrigins: v.optional(v.array(v.string())),
       hideDeclineButton: v.optional(v.boolean()),
       redirectUrl: v.optional(v.string()),
-    }),
+    })
   ),
 
   // Version tracking

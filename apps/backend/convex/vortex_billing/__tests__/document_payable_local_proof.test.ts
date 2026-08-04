@@ -29,24 +29,31 @@ type DocumentPayableProofCase = {
       readonly proofRunId: string;
       readonly lineItemId: string;
       readonly recipientEmail: string;
-    },
+    }
   ) => Promise<SeededDocumentPayment>;
 };
 
-function requirePresent<T>(value: T | null | undefined, label: string): NonNullable<T> {
+function requirePresent<T>(
+  value: T | null | undefined,
+  label: string
+): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(`${label} missing`);
   }
   return value;
 }
 
-function expectNoLegacyProviderConfigIds(config: Doc<"payment_field_configs">): void {
+function expectNoLegacyProviderConfigIds(
+  config: Doc<"payment_field_configs">
+): void {
   expect(config.providerInvoiceId).toBeUndefined();
   expect(config.providerSubscriptionId).toBeUndefined();
   expect(config.providerPaymentIntentId).toBeUndefined();
 }
 
-function expectNoLegacyProviderInvoiceIds(invoice: Doc<"document_invoices">): void {
+function expectNoLegacyProviderInvoiceIds(
+  invoice: Doc<"document_invoices">
+): void {
   expect(invoice.providerAccountId).toBeUndefined();
   expect(invoice.providerInvoiceId).toBeUndefined();
   expect(invoice.providerSubscriptionId).toBeUndefined();
@@ -56,7 +63,7 @@ function expectNoLegacyProviderInvoiceIds(invoice: Doc<"document_invoices">): vo
 
 function parentMutationArgs(
   parentField: ParentVortexField | undefined,
-  parentPayableId: string,
+  parentPayableId: string
 ): {
   readonly vortexRecurringPayableId?: string;
   readonly vortexInstallmentPayableId?: string;
@@ -81,8 +88,9 @@ const documentPayableProofCases: readonly DocumentPayableProofCase[] = [
     parentField: undefined,
     seed: async (t, args) =>
       await t.mutation(
-        internal.vortex_billing.proof_actions.seedVortexOneTimeDocumentPayableProofDocument,
-        args,
+        internal.vortex_billing.proof_actions
+          .seedVortexOneTimeDocumentPayableProofDocument,
+        args
       ),
   },
   {
@@ -91,8 +99,9 @@ const documentPayableProofCases: readonly DocumentPayableProofCase[] = [
     parentField: "vortexRecurringPayableId",
     seed: async (t, args) =>
       await t.mutation(
-        internal.vortex_billing.proof_actions.seedVortexRecurringDocumentPayableProofDocument,
-        args,
+        internal.vortex_billing.proof_actions
+          .seedVortexRecurringDocumentPayableProofDocument,
+        args
       ),
   },
   {
@@ -101,8 +110,9 @@ const documentPayableProofCases: readonly DocumentPayableProofCase[] = [
     parentField: "vortexInstallmentPayableId",
     seed: async (t, args) =>
       await t.mutation(
-        internal.vortex_billing.proof_actions.seedVortexInstallmentDocumentPayableProofDocument,
-        args,
+        internal.vortex_billing.proof_actions
+          .seedVortexInstallmentDocumentPayableProofDocument,
+        args
       ),
   },
   {
@@ -111,8 +121,9 @@ const documentPayableProofCases: readonly DocumentPayableProofCase[] = [
     parentField: "vortexDepositBalancePayableId",
     seed: async (t, args) =>
       await t.mutation(
-        internal.vortex_billing.proof_actions.seedVortexDepositBalanceDocumentPayableProofDocument,
-        args,
+        internal.vortex_billing.proof_actions
+          .seedVortexDepositBalanceDocumentPayableProofDocument,
+        args
       ),
   },
 ];
@@ -140,23 +151,28 @@ describe("Vortex Billing document payable local proof", () => {
       const hostedInvoiceUrl = `https://payments.vortex.test/pay/${proofCase.proofSlug}/first`;
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
-          configId: seed.configId,
-          paymentStatus: "awaiting",
-          vortexPayableId,
-          ...parentMutationArgs(proofCase.parentField, parentPayableId),
-          vortexPaymentRequestId,
-          hostedInvoiceUrl,
-          customerEmail: seed.recipientEmail,
-          customerName: `${proofCase.paymentType} recipient`,
-        });
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeVortexPayableIds,
+          {
+            configId: seed.configId,
+            paymentStatus: "awaiting",
+            vortexPayableId,
+            ...parentMutationArgs(proofCase.parentField, parentPayableId),
+            vortexPaymentRequestId,
+            hostedInvoiceUrl,
+            customerEmail: seed.recipientEmail,
+            customerName: `${proofCase.paymentType} recipient`,
+          }
+        );
       });
 
       const state = await t.run(async (ctx) => {
         const config = await ctx.db.get(seed.configId);
         const invoices = await ctx.db
           .query("document_invoices")
-          .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
+          .withIndex("by_vortex_payable", (q) =>
+            q.eq("vortexPayableId", vortexPayableId)
+          )
           .collect();
         return { config, invoices };
       });
@@ -167,8 +183,10 @@ describe("Vortex Billing document payable local proof", () => {
       expect(state.invoices).toHaveLength(1);
       expect(
         selectDocumentPaymentProvider(seed.organizationId, [config], {
-          VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify([seed.organizationId]),
-        }),
+          VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify([
+            seed.organizationId,
+          ]),
+        })
       ).toBe("vortex_billing");
       expect(config.documentId).toBe(seed.documentId);
       expect(config.paymentType).toBe(proofCase.paymentType);

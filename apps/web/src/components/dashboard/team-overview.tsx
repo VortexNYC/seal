@@ -22,9 +22,12 @@ export function TeamOverview({
   organizationName,
   organizationId,
 }: TeamOverviewProps): React.ReactElement {
-  const memberCount = useQuery(api.organizations.queries.getOrganizationMemberCount, {
-    organizationId,
-  });
+  const memberCount = useQuery(
+    api.organizations.queries.getOrganizationMemberCount,
+    {
+      organizationId,
+    }
+  );
 
   const activeCount = memberCount?.active ?? 0;
   const totalCount = memberCount?.total ?? 0;
@@ -47,7 +50,9 @@ export function TeamOverview({
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
           <CardTitle>Team Overview</CardTitle>
-          <p className="text-muted-foreground mt-0.5 text-sm">{organizationName}</p>
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            {organizationName}
+          </p>
         </div>
         <div className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg">
           <UsersIcon className="text-muted-foreground h-5 w-5" />
@@ -55,7 +60,10 @@ export function TeamOverview({
       </CardHeader>
       <CardContent>
         <div className="font-serif text-3xl font-normal tracking-tight tabular-nums">
-          {activeCount} <span className="text-muted-foreground font-sans text-lg">active</span>
+          {activeCount}{" "}
+          <span className="text-muted-foreground font-sans text-lg">
+            active
+          </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {memberCount?.byRole && (
@@ -116,7 +124,7 @@ function RolePill({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-        colorClass,
+        colorClass
       )}
     >
       {count} {label}

@@ -15,7 +15,8 @@ export function Welcome({
   userEmail = "user@example.com",
   dashboardUrl = "https://seal.nyc/dashboard",
 }: WelcomeProps) {
-  const previewText = "Welcome to Seal - Your document signing journey starts here";
+  const previewText =
+    "Welcome to Seal - Your document signing journey starts here";
 
   return (
     <EmailLayout
@@ -36,7 +37,9 @@ export function Welcome({
             justifyContent: "center",
           }}
         >
-          <Text style={{ margin: "0", fontSize: "40px", lineHeight: "80px" }}>&#x1F44B;</Text>
+          <Text style={{ margin: "0", fontSize: "40px", lineHeight: "80px" }}>
+            &#x1F44B;
+          </Text>
         </div>
       </Section>
 
@@ -54,8 +57,8 @@ export function Welcome({
         </Heading>
 
         <Text style={{ ...emailStyles.bodyTextSpaced, textAlign: "center" }}>
-          Your account has been created successfully. You&apos;re now ready to start sending
-          documents for signature.
+          Your account has been created successfully. You&apos;re now ready to
+          start sending documents for signature.
         </Text>
 
         {/* Features list */}
@@ -71,21 +74,43 @@ export function Welcome({
             Here&apos;s what you can do with Seal:
           </Text>
           <Text
-            style={{ margin: "0 0 8px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: "14px",
+              lineHeight: "24px",
+              color: "#6b6560",
+            }}
           >
             &#x2713; Upload and prepare documents for signing
           </Text>
           <Text
-            style={{ margin: "0 0 8px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: "14px",
+              lineHeight: "24px",
+              color: "#6b6560",
+            }}
           >
             &#x2713; Add signature fields and assign recipients
           </Text>
           <Text
-            style={{ margin: "0 0 8px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: "14px",
+              lineHeight: "24px",
+              color: "#6b6560",
+            }}
           >
             &#x2713; Track document status in real-time
           </Text>
-          <Text style={{ margin: "0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+          <Text
+            style={{
+              margin: "0",
+              fontSize: "14px",
+              lineHeight: "24px",
+              color: "#6b6560",
+            }}
+          >
             &#x2713; Get notified when documents are signed
           </Text>
         </Section>
@@ -98,9 +123,14 @@ export function Welcome({
         </Section>
 
         <Text
-          style={{ ...emailStyles.smallText, textAlign: "center", color: email.mutedForeground }}
+          style={{
+            ...emailStyles.smallText,
+            textAlign: "center",
+            color: email.mutedForeground,
+          }}
         >
-          If you have any questions, feel free to reply to this email. We&apos;re here to help!
+          If you have any questions, feel free to reply to this email.
+          We&apos;re here to help!
         </Text>
       </Section>
     </EmailLayout>

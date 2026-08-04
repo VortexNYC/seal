@@ -60,7 +60,10 @@ function timelineScope(documentId: Id<"documents">): string {
   return `fields:${documentId}`;
 }
 
-async function getFieldsForDocument(ctx: QueryCtx, documentId: Id<"documents">) {
+async function getFieldsForDocument(
+  ctx: QueryCtx,
+  documentId: Id<"documents">
+) {
   return await ctx.db
     .query("signature_fields")
     .withIndex("by_document", (q) => q.eq("documentId", documentId))
@@ -83,14 +86,15 @@ function needsFieldPatch(existing: CurrentField, data: FieldSnapshot): boolean {
     existing.isMainSignature !== data.isMainSignature ||
     existing.recipientId !== data.recipientId ||
     JSON.stringify(existing.properties) !== JSON.stringify(data.properties) ||
-    JSON.stringify(existing.validationRules) !== JSON.stringify(data.validationRules)
+    JSON.stringify(existing.validationRules) !==
+      JSON.stringify(data.validationRules)
   );
 }
 
 async function deleteFieldIfMissing(
   ctx: MutationCtx,
   field: CurrentField,
-  snapshotMap: Map<string, FieldSnapshot>,
+  snapshotMap: Map<string, FieldSnapshot>
 ): Promise<void> {
   if (snapshotMap.has(field._id as string)) {
     return;
@@ -115,7 +119,7 @@ async function upsertSnapshotField(
   now: number,
   id: string,
   data: FieldSnapshot,
-  currentMap: Map<string, CurrentField>,
+  currentMap: Map<string, CurrentField>
 ): Promise<void> {
   const existing = currentMap.get(id);
   if (!existing) {
@@ -191,7 +195,10 @@ function fieldToSnapshot(field: {
  * Push a snapshot of all fields for a document onto the timeline.
  * Call this AFTER every field mutation (create, update, reposition, delete).
  */
-export async function pushFieldSnapshot(ctx: MutationCtx, documentId: Id<"documents">) {
+export async function pushFieldSnapshot(
+  ctx: MutationCtx,
+  documentId: Id<"documents">
+) {
   const fields = await getFieldsForDocument(ctx, documentId);
   const snapshot: TimelineSnapshot = {
     fields: fields.map(fieldToSnapshot),
@@ -202,15 +209,24 @@ export async function pushFieldSnapshot(ctx: MutationCtx, documentId: Id<"docume
 /**
  * Get the timeline status (canUndo, canRedo) for a document's fields.
  */
-export async function getFieldTimelineStatus(ctx: QueryCtx, documentId: Id<"documents">) {
+export async function getFieldTimelineStatus(
+  ctx: QueryCtx,
+  documentId: Id<"documents">
+) {
   return await timeline.status(ctx, timelineScope(documentId));
 }
 
 /**
  * Undo the last field change. Returns true if undo was applied.
  */
-export async function undoFieldChange(ctx: MutationCtx, documentId: Id<"documents">) {
-  const result = (await timeline.undo(ctx, timelineScope(documentId))) as TimelineSnapshot | null;
+export async function undoFieldChange(
+  ctx: MutationCtx,
+  documentId: Id<"documents">
+) {
+  const result = (await timeline.undo(
+    ctx,
+    timelineScope(documentId)
+  )) as TimelineSnapshot | null;
   if (!result) return false;
   await reconcileFields(ctx, documentId, result);
   return true;
@@ -219,8 +235,14 @@ export async function undoFieldChange(ctx: MutationCtx, documentId: Id<"document
 /**
  * Redo the last undone field change. Returns true if redo was applied.
  */
-export async function redoFieldChange(ctx: MutationCtx, documentId: Id<"documents">) {
-  const result = (await timeline.redo(ctx, timelineScope(documentId))) as TimelineSnapshot | null;
+export async function redoFieldChange(
+  ctx: MutationCtx,
+  documentId: Id<"documents">
+) {
+  const result = (await timeline.redo(
+    ctx,
+    timelineScope(documentId)
+  )) as TimelineSnapshot | null;
   if (!result) return false;
   await reconcileFields(ctx, documentId, result);
   return true;
@@ -235,7 +257,7 @@ export async function redoFieldChange(ctx: MutationCtx, documentId: Id<"document
 async function reconcileFields(
   ctx: MutationCtx,
   documentId: Id<"documents">,
-  snapshot: TimelineSnapshot,
+  snapshot: TimelineSnapshot
 ) {
   const currentFields = await getFieldsForDocument(ctx, documentId);
   const currentMap = new Map(currentFields.map((f) => [f._id as string, f]));

@@ -1,11 +1,24 @@
-import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import {
+  customCtx,
+  customMutation,
+  customQuery,
+} from "convex-helpers/server/customFunctions";
 import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { AuthUtils, type AuthMember } from "./auth.utils";
 import { resolveComponentMembershipForOrganization } from "./lib/componentOrgReads";
-import type { OrganizationMemberRole, OrganizationRole, UserType } from "./schema";
+import type {
+  OrganizationMemberRole,
+  OrganizationRole,
+  UserType,
+} from "./schema";
 
 export type AuthContext = {
   member: AuthMember;
@@ -63,7 +76,7 @@ export class AuthError extends Error {
   constructor(
     type: keyof typeof AuthErrorType,
     message: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ) {
     super(message);
     this.name = "AuthError";
@@ -78,7 +91,7 @@ export class AuthError extends Error {
 export function createAuthError(
   type: keyof typeof AuthErrorType,
   message?: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ): AuthError {
   const defaultMessages: Record<keyof typeof AuthErrorType, string> = {
     NO_IDENTITY: "User identity not found",
@@ -103,13 +116,13 @@ export function createAuthError(
 function throwAuthError(
   type: keyof typeof AuthErrorType,
   message?: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ): never {
   throw new ConvexError(createAuthError(type, message, metadata).message);
 }
 
 async function requireAuthenticatedUser(
-  ctx: QueryCtx | MutationCtx,
+  ctx: QueryCtx | MutationCtx
 ): Promise<{ user: Doc<"users"> }> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -122,9 +135,13 @@ async function requireAuthenticatedUser(
     .first();
 
   if (!user) {
-    throwAuthError("NO_USER_RECORD", "User record not found. Please try refreshing the page.", {
-      authSubject: identity.subject,
-    });
+    throwAuthError(
+      "NO_USER_RECORD",
+      "User record not found. Please try refreshing the page.",
+      {
+        authSubject: identity.subject,
+      }
+    );
   }
 
   return { user };
@@ -138,7 +155,7 @@ function requireActiveOrganizationId(user: Doc<"users">): Id<"organizations"> {
       {
         userId: user._id,
         hint: "CALL_ENSURE_MEMBERSHIP",
-      },
+      }
     );
   }
 
@@ -148,7 +165,7 @@ function requireActiveOrganizationId(user: Doc<"users">): Id<"organizations"> {
 async function getOrganizationOrThrow(
   ctx: QueryCtx | MutationCtx,
   user: Doc<"users">,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<Doc<"organizations">> {
   const organization = await ctx.db.get(organizationId);
   if (!organization) {
@@ -173,7 +190,7 @@ function synthesizeMemberFromComponent(
     role: OrganizationMemberRole;
     status: "active" | "pending" | "suspended";
     roleId: string;
-  },
+  }
 ): AuthMember {
   return {
     userId: user._id,
@@ -193,16 +210,20 @@ function synthesizeMemberFromComponent(
 async function resolveOrganizationMemberFromComponent(
   ctx: QueryCtx | MutationCtx,
   user: Doc<"users">,
-  organization: Doc<"organizations">,
+  organization: Doc<"organizations">
 ): Promise<AuthMember> {
   const componentMembership = await resolveComponentMembershipForOrganization(
     ctx,
     user,
-    organization,
+    organization
   );
 
   if (componentMembership !== null) {
-    return synthesizeMemberFromComponent(user, organization, componentMembership);
+    return synthesizeMemberFromComponent(
+      user,
+      organization,
+      componentMembership
+    );
   }
 
   throwAuthError("NO_MEMBER_RECORD", undefined, {
@@ -223,12 +244,12 @@ function validateMemberStatus(user: Doc<"users">, member: AuthMember): void {
 
 async function getActiveSubscription(
   ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<Doc<"subscriptions"> | undefined> {
   const subscription = await ctx.db
     .query("subscriptions")
     .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active"),
+      q.eq("organizationId", organizationId).eq("status", "active")
     )
     .order("desc")
     .first();
@@ -240,7 +261,7 @@ function buildAuthContext(
   member: AuthMember,
   user: Doc<"users">,
   organization: Doc<"organizations">,
-  subscription?: Doc<"subscriptions">,
+  subscription?: Doc<"subscriptions">
 ): AuthContext {
   return {
     member,
@@ -250,7 +271,8 @@ function buildAuthContext(
     userType: "personal" as UserType,
     hasPermission: (permission) => AuthUtils.hasPermission(member, permission),
     hasRole: (role) => AuthUtils.hasRole(member, role),
-    canAccessOrganization: (orgId) => AuthUtils.canAccessOrganization(member, orgId),
+    canAccessOrganization: (orgId) =>
+      AuthUtils.canAccessOrganization(member, orgId),
     isPersonalUser: () => true,
     isBusinessUser: () => false,
     isOwner: () => AuthUtils.isOwner(member),
@@ -264,13 +286,19 @@ function buildAuthContext(
 /**
  * Get authenticated user context from Convex with optimized queries
  */
-export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthContext> {
+export async function getAuthContext(
+  ctx: QueryCtx | MutationCtx
+): Promise<AuthContext> {
   const { user } = await requireAuthenticatedUser(ctx);
   const organizationId = requireActiveOrganizationId(user);
   // Org resolved first: the dual-read membership resolver needs the org's
   // vortexAuthOrganizationId anchor to query the component.
   const organization = await getOrganizationOrThrow(ctx, user, organizationId);
-  const member = await resolveOrganizationMemberFromComponent(ctx, user, organization);
+  const member = await resolveOrganizationMemberFromComponent(
+    ctx,
+    user,
+    organization
+  );
 
   validateMemberStatus(user, member);
 
@@ -304,7 +332,7 @@ export const authQuery = customQuery(
   customCtx(async (ctx) => {
     const auth = await getAuthContext(ctx);
     return { auth };
-  }),
+  })
 );
 
 export type AuthQueryCtx = Awaited<ReturnType<typeof authQuery>>;
@@ -319,7 +347,7 @@ export const authMutation = customMutation(
   customCtx(async (ctx) => {
     const auth = await getAuthContext(ctx);
     return { auth };
-  }),
+  })
 );
 
 export type AuthMutationCtx = Awaited<ReturnType<typeof authMutation>>;
@@ -335,7 +363,7 @@ export const adminQuery = customQuery(
           userId: auth.user._id,
           userRole: auth.member.role,
           requiredRole: "admin",
-        }).message,
+        }).message
       );
     }
 
@@ -344,7 +372,7 @@ export const adminQuery = customQuery(
       db: ctx.db,
       runQuery: ctx.runQuery,
     };
-  }),
+  })
 );
 
 export type AdminQueryCtx = Awaited<ReturnType<typeof adminQuery>>;
@@ -360,7 +388,7 @@ export const adminMutation = customMutation(
           userId: auth.user._id,
           userRole: auth.member.role,
           requiredRole: "admin",
-        }).message,
+        }).message
       );
     }
 
@@ -370,7 +398,7 @@ export const adminMutation = customMutation(
       runQuery: ctx.runQuery,
       runMutation: ctx.runMutation,
     };
-  }),
+  })
 );
 
 export type AdminMutationCtx = Awaited<ReturnType<typeof adminMutation>>;
@@ -390,7 +418,7 @@ export const memberQuery = customQuery(
           userId: auth.user._id,
           userRole: auth.member.role,
           requiredRole: "member",
-        }).message,
+        }).message
       );
     }
 
@@ -399,7 +427,7 @@ export const memberQuery = customQuery(
       db: ctx.db,
       runQuery: ctx.runQuery,
     };
-  }),
+  })
 );
 
 export type MemberQueryCtx = Awaited<ReturnType<typeof memberQuery>>;
@@ -419,7 +447,7 @@ export const memberMutation = customMutation(
           userId: auth.user._id,
           userRole: auth.member.role,
           requiredRole: "member",
-        }).message,
+        }).message
       );
     }
 
@@ -429,7 +457,7 @@ export const memberMutation = customMutation(
       runQuery: ctx.runQuery,
       runMutation: ctx.runMutation,
     };
-  }),
+  })
 );
 
 export type MemberMutationCtx = Awaited<ReturnType<typeof memberMutation>>;
@@ -462,15 +490,17 @@ export const permissionMutation = (requiredPermission: string) =>
           createAuthError("INSUFFICIENT_PERMISSIONS", undefined, {
             userId: auth.user._id,
             requiredPermission,
-          }).message,
+          }).message
         );
       }
 
       return { auth };
-    }),
+    })
   );
 
-export type PermissionMutationCtx = Awaited<ReturnType<ReturnType<typeof permissionMutation>>>;
+export type PermissionMutationCtx = Awaited<
+  ReturnType<ReturnType<typeof permissionMutation>>
+>;
 
 /**
  * Permission-based query wrapper
@@ -490,12 +520,14 @@ export const permissionQuery = (requiredPermission: string) =>
           createAuthError("INSUFFICIENT_PERMISSIONS", undefined, {
             userId: auth.user._id,
             requiredPermission,
-          }).message,
+          }).message
         );
       }
 
       return { auth };
-    }),
+    })
   );
 
-export type PermissionQueryCtx = Awaited<ReturnType<ReturnType<typeof permissionQuery>>>;
+export type PermissionQueryCtx = Awaited<
+  ReturnType<ReturnType<typeof permissionQuery>>
+>;

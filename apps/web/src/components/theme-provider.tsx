@@ -42,7 +42,9 @@ const readSystemPreference = (): ResolvedTheme => {
     return "light";
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 };
 
 const applyThemeClass = (theme: ResolvedTheme) => {
@@ -56,14 +58,17 @@ const applyThemeClass = (theme: ResolvedTheme) => {
   root.style.colorScheme = theme;
 };
 
-const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const storedTheme = readStoredTheme();
-  const initialResolvedTheme = storedTheme === "system" ? readSystemPreference() : storedTheme;
+  const initialResolvedTheme =
+    storedTheme === "system" ? readSystemPreference() : storedTheme;
 
   const [theme, setThemeState] = useState<Theme>(storedTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(initialResolvedTheme);
+  const [resolvedTheme, setResolvedTheme] =
+    useState<ResolvedTheme>(initialResolvedTheme);
 
   useIsomorphicLayoutEffect(() => {
     if (typeof window === "undefined") {
@@ -106,10 +111,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         setThemeState(nextTheme);
       },
     }),
-    [resolvedTheme, theme],
+    [resolvedTheme, theme]
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 };
 
 export const useTheme = () => {

@@ -5,7 +5,7 @@ import type { DatabaseWriter } from "../_generated/server";
 import { adminMutation } from "../auth";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -21,7 +21,7 @@ const MAX_FOLDER_DEPTH = 10;
 async function getAncestorDepth(
   db: DatabaseWriter,
   parentId: Id<"folders"> | undefined,
-  maxDepth: number,
+  maxDepth: number
 ): Promise<number> {
   let current = parentId;
   let depth = 0;
@@ -41,7 +41,7 @@ async function getAncestorDepth(
 async function detectCircularReference(
   db: DatabaseWriter,
   folderId: Id<"folders">,
-  newParentId: Id<"folders"> | undefined,
+  newParentId: Id<"folders"> | undefined
 ): Promise<void> {
   if (!newParentId) return; // Moving to root is always safe
   let current: Id<"folders"> | undefined = newParentId;
@@ -58,7 +58,10 @@ async function detectCircularReference(
 }
 
 /** Get the maximum depth of a folder's subtree. */
-async function getSubtreeDepth(db: DatabaseWriter, folderId: Id<"folders">): Promise<number> {
+async function getSubtreeDepth(
+  db: DatabaseWriter,
+  folderId: Id<"folders">
+): Promise<number> {
   const children = await db
     .query("folders")
     .withIndex("by_parent", (q) => q.eq("parentId", folderId))
@@ -126,10 +129,13 @@ export const updateFolder = adminMutation({
       throw new ConvexError("Folder not found");
     }
 
-    const updates: Partial<{ name: string; visibility: "everyone" | "admin"; updatedAt: number }> =
-      {
-        updatedAt: Date.now(),
-      };
+    const updates: Partial<{
+      name: string;
+      visibility: "everyone" | "admin";
+      updatedAt: number;
+    }> = {
+      updatedAt: Date.now(),
+    };
     if (args.name !== undefined) {
       const name = args.name.trim();
       if (!name) throw new ConvexError("Folder name cannot be empty");
@@ -212,7 +218,10 @@ export const moveToFolder = adminMutation({
     // Validate new parent
     if (args.newParentId) {
       const newParent = await ctx.db.get(args.newParentId);
-      if (!newParent || newParent.organizationId !== ctx.auth.organization._id) {
+      if (
+        !newParent ||
+        newParent.organizationId !== ctx.auth.organization._id
+      ) {
         throw new ConvexError("Target folder not found");
       }
       if (newParent.type !== folder.type) {
@@ -230,7 +239,9 @@ export const moveToFolder = adminMutation({
 
     const subtreeDepth = await getSubtreeDepth(ctx.db, args.folderId);
     if (newDepth + subtreeDepth + 1 > MAX_FOLDER_DEPTH) {
-      throw new ConvexError(`Move would exceed maximum nesting depth of ${MAX_FOLDER_DEPTH}`);
+      throw new ConvexError(
+        `Move would exceed maximum nesting depth of ${MAX_FOLDER_DEPTH}`
+      );
     }
 
     await ctx.db.patch(args.folderId, {
@@ -258,7 +269,9 @@ export const moveItemsToFolder = adminMutation({
         throw new ConvexError("Target folder not found");
       }
       if (targetFolder.type !== args.itemType) {
-        throw new ConvexError(`Cannot move ${args.itemType}s into a ${targetFolder.type} folder`);
+        throw new ConvexError(
+          `Cannot move ${args.itemType}s into a ${targetFolder.type} folder`
+        );
       }
     }
 

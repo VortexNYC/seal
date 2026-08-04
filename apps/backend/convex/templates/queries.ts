@@ -25,7 +25,7 @@ export const getOrganizationTemplates = permissionQuery("templates:read")({
     const templates = await ctx.db
       .query("templates")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
+        q.eq("organizationId", organizationId).eq("status", "active")
       )
       .order("desc")
       .collect();
@@ -81,13 +81,19 @@ export const getTemplateFields = permissionQuery("templates:read")({
 
     // Verify template access
     const template = await ctx.db.get(args.templateId);
-    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+    if (
+      !template ||
+      template.status === "deleted" ||
+      template.organizationId !== organizationId
+    ) {
       throw new ConvexError("Template not found");
     }
 
     const fields = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
 
     return fields;
@@ -117,7 +123,9 @@ export const getTemplateWithFields = permissionQuery("templates:read")({
 
     const fields = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
 
     return {
@@ -149,7 +157,9 @@ export const getTemplateFieldsInternal = internalQuery({
   handler: async (ctx, args): Promise<Doc<"template_fields">[]> => {
     return await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
   },
 });
@@ -168,7 +178,7 @@ export const searchTemplates = permissionQuery("templates:read")({
     const templates = await ctx.db
       .query("templates")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
+        q.eq("organizationId", organizationId).eq("status", "active")
       )
       .collect();
 
@@ -177,7 +187,7 @@ export const searchTemplates = permissionQuery("templates:read")({
     return templates.filter(
       (t) =>
         t.name.toLowerCase().includes(searchTerm) ||
-        t.description?.toLowerCase().includes(searchTerm),
+        t.description?.toLowerCase().includes(searchTerm)
     );
   },
 });

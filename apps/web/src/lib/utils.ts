@@ -30,7 +30,9 @@ export function parseConvexError(error: unknown): ParsedError {
   const rawMessage = error instanceof Error ? error.message : String(error);
   // Strip the "[CONVEX M(...)] Server Error Uncaught ConvexError: ... at <stack>" prefix
   // to get just the human-readable message for all error types.
-  const convexMatch = rawMessage.match(/ConvexError:\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s);
+  const convexMatch = rawMessage.match(
+    /ConvexError:\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s
+  );
   const message = convexMatch ? convexMatch[1].trim() : rawMessage;
   const lowerMessage = message.toLowerCase();
 
@@ -60,12 +62,16 @@ export function parseConvexError(error: unknown): ParsedError {
       type: "subscription",
       message,
       userFriendlyMessage:
-        message || "This feature requires a Professional plan. Please upgrade to continue.",
+        message ||
+        "This feature requires a Professional plan. Please upgrade to continue.",
     };
   }
 
   // Not found errors
-  if (lowerMessage.includes("not found") || lowerMessage.includes("does not exist")) {
+  if (
+    lowerMessage.includes("not found") ||
+    lowerMessage.includes("does not exist")
+  ) {
     return {
       type: "not_found",
       message,
@@ -91,7 +97,8 @@ export function parseConvexError(error: unknown): ParsedError {
   return {
     type: "unknown",
     message,
-    userFriendlyMessage: message || "An unexpected error occurred. Please try again.",
+    userFriendlyMessage:
+      message || "An unexpected error occurred. Please try again.",
   };
 }
 

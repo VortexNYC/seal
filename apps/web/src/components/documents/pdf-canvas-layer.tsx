@@ -13,7 +13,13 @@ interface PdfCanvasLayerProps {
   fields?: PlacedField[];
   selectedFieldId?: string | null;
   onFieldSelect?: (fieldId: string | null) => void;
-  onFieldUpdate?: (fieldId: string, x: number, y: number, width: number, height: number) => void;
+  onFieldUpdate?: (
+    fieldId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => void;
 }
 
 /**
@@ -65,7 +71,9 @@ export function PdfCanvasLayer({
   }));
 
   // Handle stage click to deselect fields
-  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handleStageClick = (
+    e: Konva.KonvaEventObject<MouseEvent | TouchEvent>
+  ) => {
     // Deselect when clicking on empty area
     if (e.target === e.target.getStage()) {
       onFieldSelect?.(null);
@@ -103,7 +111,13 @@ export function PdfCanvasLayer({
                 const yPercent = (yPixels / pdfHeight) * 100;
                 const widthPercent = (field.width / pdfWidth) * 100;
                 const heightPercent = (field.height / pdfHeight) * 100;
-                onFieldUpdate?.(field.id, xPercent, yPercent, widthPercent, heightPercent);
+                onFieldUpdate?.(
+                  field.id,
+                  xPercent,
+                  yPercent,
+                  widthPercent,
+                  heightPercent
+                );
               }}
               onTransformEnd={(xPixels, yPixels, widthPixels, heightPixels) => {
                 // Convert pixel coordinates back to percentages for database storage
@@ -111,7 +125,13 @@ export function PdfCanvasLayer({
                 const yPercent = (yPixels / pdfHeight) * 100;
                 const widthPercent = (widthPixels / pdfWidth) * 100;
                 const heightPercent = (heightPixels / pdfHeight) * 100;
-                onFieldUpdate?.(field.id, xPercent, yPercent, widthPercent, heightPercent);
+                onFieldUpdate?.(
+                  field.id,
+                  xPercent,
+                  yPercent,
+                  widthPercent,
+                  heightPercent
+                );
               }}
             />
           ))}

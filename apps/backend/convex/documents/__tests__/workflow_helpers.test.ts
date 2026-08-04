@@ -13,7 +13,7 @@ import {
 } from "../workflow_helpers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -60,19 +60,23 @@ describe("canSendDocument", () => {
 });
 
 describe("canCancelDocument", () => {
-  test.each<DocumentWorkflowStatus>(["draft", "sent", "in_progress", "waiting_for_payment"])(
-    "returns true for '%s'",
-    (status) => {
-      expect(canCancelDocument(status)).toBe(true);
-    },
-  );
+  test.each<DocumentWorkflowStatus>([
+    "draft",
+    "sent",
+    "in_progress",
+    "waiting_for_payment",
+  ])("returns true for '%s'", (status) => {
+    expect(canCancelDocument(status)).toBe(true);
+  });
 
-  test.each<DocumentWorkflowStatus>(["completed", "cancelled", "declined", "expired"])(
-    "returns false for terminal status '%s'",
-    (status) => {
-      expect(canCancelDocument(status)).toBe(false);
-    },
-  );
+  test.each<DocumentWorkflowStatus>([
+    "completed",
+    "cancelled",
+    "declined",
+    "expired",
+  ])("returns false for terminal status '%s'", (status) => {
+    expect(canCancelDocument(status)).toBe(false);
+  });
 });
 
 describe("canCompleteDocument", () => {
@@ -80,7 +84,7 @@ describe("canCompleteDocument", () => {
     "returns true for '%s'",
     (status) => {
       expect(canCompleteDocument(status)).toBe(true);
-    },
+    }
   );
 
   test.each<DocumentWorkflowStatus>([
@@ -185,7 +189,7 @@ describe("transitionWorkflowStatus", () => {
     await expect(
       t.run(async (ctx) => {
         await transitionWorkflowStatus(ctx, documentId, "completed");
-      }),
+      })
     ).rejects.toThrow("Invalid workflow transition from draft to completed");
   });
 
@@ -236,7 +240,7 @@ describe("transitionWorkflowStatus", () => {
     await expect(
       t.run(async (ctx) => {
         await transitionWorkflowStatus(ctx, fakeDocumentId, "sent");
-      }),
+      })
     ).rejects.toThrow("Document not found");
   });
 });
@@ -307,7 +311,7 @@ describe("verifyDocumentOwnership", () => {
     await expect(
       t.run(async (ctx) => {
         await verifyDocumentOwnership(ctx, documentId, ownerId);
-      }),
+      })
     ).resolves.not.toThrow();
   });
 
@@ -315,7 +319,7 @@ describe("verifyDocumentOwnership", () => {
     await expect(
       t.run(async (ctx) => {
         await verifyDocumentOwnership(ctx, documentId, otherUserId);
-      }),
+      })
     ).rejects.toThrow("Only the document owner can modify the workflow status");
   });
 
@@ -325,7 +329,7 @@ describe("verifyDocumentOwnership", () => {
     await expect(
       t.run(async (ctx) => {
         await verifyDocumentOwnership(ctx, fakeDocumentId, ownerId);
-      }),
+      })
     ).rejects.toThrow("Document not found");
   });
 });

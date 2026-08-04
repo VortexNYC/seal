@@ -21,8 +21,8 @@ export const getDocumentReminders = authQuery({
         v.literal("pending"),
         v.literal("sent"),
         v.literal("failed"),
-        v.literal("cancelled"),
-      ),
+        v.literal("cancelled")
+      )
     ),
     type: v.optional(v.union(v.literal("manual"), v.literal("automated"))),
   },
@@ -39,7 +39,7 @@ export const getDocumentReminders = authQuery({
       reminders = await ctx.db
         .query("document_reminders")
         .withIndex("by_document_status", (q) =>
-          q.eq("documentId", args.documentId).eq("status", status),
+          q.eq("documentId", args.documentId).eq("status", status)
         )
         .collect();
     } else {
@@ -50,7 +50,9 @@ export const getDocumentReminders = authQuery({
     }
 
     // Filter by type if provided
-    const filteredReminders = args.type ? reminders.filter((r) => r.type === args.type) : reminders;
+    const filteredReminders = args.type
+      ? reminders.filter((r) => r.type === args.type)
+      : reminders;
 
     // Enrich with recipient data
     const enrichedReminders = await Promise.all(
@@ -72,7 +74,7 @@ export const getDocumentReminders = authQuery({
           ...reminder,
           recipient: recipientInfo,
         };
-      }),
+      })
     );
 
     // Sort by scheduled time (most recent first)
@@ -132,7 +134,9 @@ export const getReminderHistory = authQuery({
       .collect();
 
     // Filter to only sent/failed reminders
-    const history = reminders.filter((r) => r.status === "sent" || r.status === "failed");
+    const history = reminders.filter(
+      (r) => r.status === "sent" || r.status === "failed"
+    );
 
     // Sort by sent/failed time (most recent first)
     const sorted = history.sort((a, b) => {
@@ -163,7 +167,7 @@ export const getReminderHistory = authQuery({
           ...reminder,
           recipient: recipientInfo,
         };
-      }),
+      })
     );
   },
 });
@@ -251,7 +255,7 @@ export const canRemindRecipient = authQuery({
     const hasRecentPending = recentReminders.some(
       (r) =>
         (r.status === "pending" || r.status === "scheduled") &&
-        r.scheduledFor > Date.now() - 24 * 60 * 60 * 1000, // Within last 24 hours
+        r.scheduledFor > Date.now() - 24 * 60 * 60 * 1000 // Within last 24 hours
     );
 
     if (hasRecentPending) {

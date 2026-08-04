@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 
+import { parseVortexInvoiceEvent } from "../projection";
 import {
   type VortexWebhookEnvelope,
   handleVortexBillingWebhookRequest,
   parseVortexSubscriptionUpdatedProjection,
 } from "../webhook_handlers";
-import { parseVortexInvoiceEvent } from "../projection";
 import { createVortexWebhookSignature } from "../webhook_signature";
 
 describe("Vortex Billing webhook payload parsing", () => {
@@ -100,11 +100,17 @@ describe("Vortex Billing webhook payload parsing", () => {
     });
     const ctx = {
       runMutation: async (): Promise<never> => {
-        throw new Error("unexpected mutation dispatch for ignored invoice type");
+        throw new Error(
+          "unexpected mutation dispatch for ignored invoice type"
+        );
       },
     } as unknown as Parameters<typeof handleVortexBillingWebhookRequest>[0];
 
-    const response = await handleVortexBillingWebhookRequest(ctx, request, secret);
+    const response = await handleVortexBillingWebhookRequest(
+      ctx,
+      request,
+      secret
+    );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({

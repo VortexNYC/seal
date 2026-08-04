@@ -121,7 +121,9 @@ export const createFromTemplate = permissionMutation("documents:create")({
     // 2. Get template fields
     const templateFields = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
 
     // 3. Create new document with template reference
@@ -208,9 +210,10 @@ export const updateTemplate = permissionMutation("templates:edit")({
       throw new ConvexError("Template not found");
     }
 
-    const updates: { name?: string; description?: string; updatedAt: number } = {
-      updatedAt: Date.now(),
-    };
+    const updates: { name?: string; description?: string; updatedAt: number } =
+      {
+        updatedAt: Date.now(),
+      };
 
     if (args.name !== undefined) {
       updates.name = args.name;
@@ -325,7 +328,7 @@ const templateFieldPropertiesValidator = v.optional(
     options: v.optional(v.array(v.string())),
     placeholder: v.optional(v.string()),
     defaultValue: v.optional(v.string()),
-  }),
+  })
 );
 
 /**
@@ -360,10 +363,14 @@ export const addTemplateField = permissionMutation("templates:edit")({
     // Determine next order value
     const existingFields = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
     const nextOrder =
-      existingFields.length > 0 ? Math.max(...existingFields.map((f) => f.order)) + 1 : 0;
+      existingFields.length > 0
+        ? Math.max(...existingFields.map((f) => f.order)) + 1
+        : 0;
 
     const fieldId = await ctx.db.insert("template_fields", {
       templateId: args.templateId,
@@ -409,7 +416,11 @@ export const updateTemplateField = permissionMutation("templates:edit")({
     }
 
     const template = await ctx.db.get(field.templateId);
-    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+    if (
+      !template ||
+      template.status === "deleted" ||
+      template.organizationId !== organizationId
+    ) {
       throw new ConvexError("Template not found");
     }
 
@@ -449,7 +460,11 @@ export const repositionTemplateField = permissionMutation("templates:edit")({
     }
 
     const template = await ctx.db.get(field.templateId);
-    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+    if (
+      !template ||
+      template.status === "deleted" ||
+      template.organizationId !== organizationId
+    ) {
       throw new ConvexError("Template not found");
     }
 
@@ -486,7 +501,11 @@ export const deleteTemplateField = permissionMutation("templates:edit")({
     }
 
     const template = await ctx.db.get(field.templateId);
-    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+    if (
+      !template ||
+      template.status === "deleted" ||
+      template.organizationId !== organizationId
+    ) {
       throw new ConvexError("Template not found");
     }
 

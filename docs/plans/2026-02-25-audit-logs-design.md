@@ -88,7 +88,7 @@ export const securityAuditActionTuple = v.union(
   v.literal("data.exported"),
 
   // Organization Settings
-  v.literal("settings.updated"),
+  v.literal("settings.updated")
 );
 ```
 
@@ -113,7 +113,16 @@ For actions that happen inside Seal (not via Clerk webhooks), add a `logSecurity
 // Helper function
 async function logSecurityEvent(
   ctx,
-  { organizationId, userId, userName, userEmail, action, ipAddress, userAgent, metadata },
+  {
+    organizationId,
+    userId,
+    userName,
+    userEmail,
+    action,
+    ipAddress,
+    userAgent,
+    metadata,
+  }
 );
 ```
 

@@ -5,19 +5,29 @@ import { useState } from "react";
 
 import Loader from "@/components/loader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
-export const Route = createFileRoute("/_authenticated/onboarding/choose-organization/")({
+export const Route = createFileRoute(
+  "/_authenticated/onboarding/choose-organization/"
+)({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
   const organizations = useQuery(api.check_membership.listUserOrganizations);
-  const setActiveOrganization = useMutation(api.check_membership.setActiveOrganizationBySlug);
+  const setActiveOrganization = useMutation(
+    api.check_membership.setActiveOrganizationBySlug
+  );
   const ensurePersonalOrganization = useMutation(
-    api.organizations.mutations.ensurePersonalOrganization,
+    api.organizations.mutations.ensurePersonalOrganization
   );
   const [isCreating, setIsCreating] = useState(false);
 
@@ -68,12 +78,18 @@ function RouteComponent() {
               key={org.organizationId}
               variant="outline"
               className="w-full justify-start"
-              onClick={() => void handleSelectOrganization(org.organizationSlug)}
+              onClick={() =>
+                void handleSelectOrganization(org.organizationSlug)
+              }
             >
               {org.organizationName}
             </Button>
           ))}
-          <Button className="mt-2 w-full" onClick={handleCreate} disabled={isCreating}>
+          <Button
+            className="mt-2 w-full"
+            onClick={handleCreate}
+            disabled={isCreating}
+          >
             {isCreating ? "Creating..." : "Create a new workspace"}
           </Button>
         </CardContent>

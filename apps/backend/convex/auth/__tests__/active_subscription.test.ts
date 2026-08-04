@@ -4,7 +4,7 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -66,7 +66,7 @@ describe("getActiveSubscription (by_organization_status index)", () => {
       return await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", organizationId).eq("status", "active"),
+          q.eq("organizationId", organizationId).eq("status", "active")
         )
         .first();
     });

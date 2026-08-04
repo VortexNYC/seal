@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import type { HeroBlock } from "~/lib/content/types";
@@ -35,9 +36,9 @@ export function StaticHero() {
             <div className="border-border bg-muted/40 border-b">
               <div className="flex items-end gap-0 px-3 pt-2.5">
                 <div className="flex items-center gap-1.5 px-3 py-1.5">
-                  <span className="size-2.5 rounded-full bg-destructive/60" />
-                  <span className="size-2.5 rounded-full bg-warning/60" />
-                  <span className="size-2.5 rounded-full bg-success/60" />
+                  <span className="bg-destructive/60 size-2.5 rounded-full" />
+                  <span className="bg-warning/60 size-2.5 rounded-full" />
+                  <span className="bg-success/60 size-2.5 rounded-full" />
                 </div>
                 <div className="bg-background/60 border-border/40 flex items-center gap-1.5 rounded-t-md border border-b-0 px-3 py-1.5">
                   <svg
@@ -73,7 +74,9 @@ export function StaticHero() {
               </div>
               <div className="flex items-center gap-2 px-4 py-2">
                 <div className="bg-muted/60 flex-1 rounded px-3 py-1">
-                  <span className="text-muted-foreground text-xs">app.seal.co</span>
+                  <span className="text-muted-foreground text-xs">
+                    app.seal.co
+                  </span>
                 </div>
               </div>
             </div>
@@ -117,7 +120,11 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
           <FadeIn delay={0.2}>
             <div className="flex flex-col gap-4 sm:flex-row">
               {block.primaryCta && (
-                <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+                <Button
+                  asChild
+                  className="group h-12 px-8 text-base font-medium"
+                  size="lg"
+                >
                   <a href={block.primaryCta.link}>
                     {block.primaryCta.text}
                     <ArrowRight
@@ -134,7 +141,9 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
                   size="lg"
                   variant="outline"
                 >
-                  <a href={block.secondaryCta.link}>{block.secondaryCta.text}</a>
+                  <a href={block.secondaryCta.link}>
+                    {block.secondaryCta.text}
+                  </a>
                 </Button>
               )}
             </div>

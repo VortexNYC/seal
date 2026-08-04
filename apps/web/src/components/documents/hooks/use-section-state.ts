@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
  */
 export function useSectionState(hasAnnotations: boolean) {
   const [openSections, setOpenSections] = useState<Set<string>>(
-    new Set(["fields", "recipients", "your-signature", "invoice"]),
+    new Set(["fields", "recipients", "your-signature", "invoice"])
   );
 
   const toggleSection = useCallback((section: string) => {

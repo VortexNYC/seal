@@ -28,16 +28,21 @@ export const annotationCategoryTuple = v.union(
   v.literal("payment"),
   v.literal("risk"),
   v.literal("dates"),
-  v.literal("terms"),
+  v.literal("terms")
 );
 
 export const annotationSeverityTuple = v.union(
   v.literal("informational"),
   v.literal("important"),
-  v.literal("critical"),
+  v.literal("critical")
 );
 
-export type AnnotationCategory = "obligation" | "payment" | "risk" | "dates" | "terms";
+export type AnnotationCategory =
+  | "obligation"
+  | "payment"
+  | "risk"
+  | "dates"
+  | "terms";
 export type AnnotationSeverity = "informational" | "important" | "critical";
 
 export const aiDocumentAnnotationsTable = defineTable({
@@ -54,12 +59,16 @@ export const aiDocumentAnnotationsTable = defineTable({
       severity: annotationSeverityTuple,
       text: v.string(),
       summary: v.string(),
-    }),
+    })
   ),
   modelUsed: v.string(),
   tokensUsed: v.number(),
   processingTimeMs: v.number(),
-  status: v.union(v.literal("pending"), v.literal("active"), v.literal("dismissed")),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("active"),
+    v.literal("dismissed")
+  ),
   createdAt: v.number(),
 })
   .index("by_document", ["documentId"])
@@ -151,32 +160,70 @@ export const DocumentAnalysisSchema = z.object({
         "payment",
       ]),
       page: z.number().int().positive().describe("1-indexed page number"),
-      x: z.number().min(0).max(100).describe("X position as percentage of page width"),
-      y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
-      width: z.number().min(1).max(50).describe("Width as percentage of page width"),
-      height: z.number().min(1).max(20).describe("Height as percentage of page height"),
-      label: z.string().describe("Descriptive label for the field, e.g. 'Buyer Signature'"),
+      x: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("X position as percentage of page width"),
+      y: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("Y position as percentage of page height"),
+      width: z
+        .number()
+        .min(1)
+        .max(50)
+        .describe("Width as percentage of page width"),
+      height: z
+        .number()
+        .min(1)
+        .max(20)
+        .describe("Height as percentage of page height"),
+      label: z
+        .string()
+        .describe("Descriptive label for the field, e.g. 'Buyer Signature'"),
       confidence: z.number().min(0).max(1).describe("Confidence score 0-1"),
-      isRequired: z.boolean().describe("Whether the field appears to be required"),
-    }),
+      isRequired: z
+        .boolean()
+        .describe("Whether the field appears to be required"),
+    })
   ),
   annotations: z.array(
     z.object({
       page: z.number().int().positive().describe("1-indexed page number"),
-      x: z.number().min(0).max(100).describe("X position as percentage of page width"),
-      y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
-      width: z.number().min(1).max(100).describe("Width as percentage of page width"),
-      height: z.number().min(0.5).max(30).describe("Height as percentage of page height"),
+      x: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("X position as percentage of page width"),
+      y: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("Y position as percentage of page height"),
+      width: z
+        .number()
+        .min(1)
+        .max(100)
+        .describe("Width as percentage of page width"),
+      height: z
+        .number()
+        .min(0.5)
+        .max(30)
+        .describe("Height as percentage of page height"),
       category: z
         .enum(["obligation", "payment", "risk", "dates", "terms"])
         .describe("Clause category"),
-      severity: z.enum(["informational", "important", "critical"]).describe("Severity level"),
+      severity: z
+        .enum(["informational", "important", "critical"])
+        .describe("Severity level"),
       text: z.string().describe("The exact clause text being annotated"),
       summary: z
         .string()
         .max(120)
         .describe("One-sentence plain-English explanation of this clause"),
-    }),
+    })
   ),
 });
 ```
@@ -308,13 +355,13 @@ const annotationCategoryTuple = v.union(
   v.literal("payment"),
   v.literal("risk"),
   v.literal("dates"),
-  v.literal("terms"),
+  v.literal("terms")
 );
 
 const annotationSeverityTuple = v.union(
   v.literal("informational"),
   v.literal("important"),
-  v.literal("critical"),
+  v.literal("critical")
 );
 
 export const saveDocumentAnnotations = internalMutation({
@@ -332,7 +379,7 @@ export const saveDocumentAnnotations = internalMutation({
         severity: annotationSeverityTuple,
         text: v.string(),
         summary: v.string(),
-      }),
+      })
     ),
     modelUsed: v.string(),
     tokensUsed: v.number(),
@@ -343,7 +390,12 @@ export const saveDocumentAnnotations = internalMutation({
     const existing = await ctx.db
       .query("ai_document_annotations")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.or(q.eq(q.field("status"), "pending"), q.eq(q.field("status"), "active")))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "active")
+        )
+      )
       .collect();
 
     for (const annotation of existing) {
@@ -486,7 +538,13 @@ interface Annotation {
 
 const CATEGORY_CONFIG: Record<
   AnnotationCategory,
-  { label: string; icon: typeof InfoIcon; bgColor: string; textColor: string; dotColor: string }
+  {
+    label: string;
+    icon: typeof InfoIcon;
+    bgColor: string;
+    textColor: string;
+    dotColor: string;
+  }
 > = {
   obligation: {
     label: "Obligation",
@@ -536,11 +594,15 @@ const SEVERITY_DOT: Record<AnnotationSeverity, string> = {
 // ---------------------------------------------------------------------------
 
 export function useDocumentAnnotations(documentId: Id<"documents">) {
-  const annotations = useQuery(api.ai.queries.getDocumentAnnotations, { documentId });
-  const dismissMutation = useMutation(api.ai.mutations.dismissDocumentAnnotations);
-  const [enabledCategories, setEnabledCategories] = useState<Set<AnnotationCategory>>(
-    new Set(["obligation", "payment", "risk", "dates", "terms"]),
+  const annotations = useQuery(api.ai.queries.getDocumentAnnotations, {
+    documentId,
+  });
+  const dismissMutation = useMutation(
+    api.ai.mutations.dismissDocumentAnnotations
   );
+  const [enabledCategories, setEnabledCategories] = useState<
+    Set<AnnotationCategory>
+  >(new Set(["obligation", "payment", "risk", "dates", "terms"]));
 
   const toggleCategory = useCallback((category: AnnotationCategory) => {
     setEnabledCategories((prev) => {
@@ -598,7 +660,10 @@ function HighlightOverlay({
 
   return (
     <div
-      className={cn("group/highlight absolute rounded-sm transition-opacity", config.bgColor)}
+      className={cn(
+        "group/highlight absolute rounded-sm transition-opacity",
+        config.bgColor
+      )}
       style={{ left, top, width, height }}
     >
       {/* Tooltip on hover */}
@@ -606,7 +671,10 @@ function HighlightOverlay({
         <div className="flex items-center gap-1.5 mb-0.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
           <span
-            className={cn("text-[10px] font-semibold uppercase tracking-wide", config.textColor)}
+            className={cn(
+              "text-[10px] font-semibold uppercase tracking-wide",
+              config.textColor
+            )}
           >
             {config.label}
           </span>
@@ -626,7 +694,9 @@ export function AIAnnotationOverlays({
   pdfPageWidth,
   pdfPageHeight,
 }: {
-  annotations: NonNullable<ReturnType<typeof useDocumentAnnotations>["annotations"]>;
+  annotations: NonNullable<
+    ReturnType<typeof useDocumentAnnotations>["annotations"]
+  >;
   enabledCategories: Set<AnnotationCategory>;
   currentPage: number;
   pdfPageWidth: number;
@@ -637,7 +707,7 @@ export function AIAnnotationOverlays({
     (a) =>
       a.severity !== "informational" &&
       enabledCategories.has(a.category as AnnotationCategory) &&
-      a.page === currentPage,
+      a.page === currentPage
   );
 
   return (
@@ -666,7 +736,9 @@ export function AIInsightsPanel({
   onDismiss,
   onPageJump,
 }: {
-  annotations: NonNullable<ReturnType<typeof useDocumentAnnotations>["annotations"]>;
+  annotations: NonNullable<
+    ReturnType<typeof useDocumentAnnotations>["annotations"]
+  >;
   enabledCategories: Set<AnnotationCategory>;
   toggleCategory: (category: AnnotationCategory) => void;
   onDismiss: () => void;
@@ -674,48 +746,55 @@ export function AIInsightsPanel({
 }) {
   const allAnnotations = annotations.annotations;
   const filtered = allAnnotations.filter((a) =>
-    enabledCategories.has(a.category as AnnotationCategory),
+    enabledCategories.has(a.category as AnnotationCategory)
   );
 
   return (
     <div className="flex flex-col gap-3">
       {/* Category filter chips */}
       <div className="flex flex-wrap gap-1.5">
-        {(Object.keys(CATEGORY_CONFIG) as AnnotationCategory[]).map((category) => {
-          const config = CATEGORY_CONFIG[category];
-          const count = allAnnotations.filter((a) => a.category === category).length;
-          if (count === 0) return null;
-          const isActive = enabledCategories.has(category);
+        {(Object.keys(CATEGORY_CONFIG) as AnnotationCategory[]).map(
+          (category) => {
+            const config = CATEGORY_CONFIG[category];
+            const count = allAnnotations.filter(
+              (a) => a.category === category
+            ).length;
+            if (count === 0) return null;
+            const isActive = enabledCategories.has(category);
 
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => toggleCategory(category)}
-              className={cn(
-                "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all",
-                isActive
-                  ? cn(config.bgColor, config.textColor)
-                  : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
-              )}
-            >
-              <span
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => toggleCategory(category)}
                 className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  isActive ? config.dotColor : "bg-slate-300 dark:bg-slate-600",
+                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all",
+                  isActive
+                    ? cn(config.bgColor, config.textColor)
+                    : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
                 )}
-              />
-              {config.label}
-              <span className="opacity-60">{count}</span>
-            </button>
-          );
-        })}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    isActive
+                      ? config.dotColor
+                      : "bg-slate-300 dark:bg-slate-600"
+                  )}
+                />
+                {config.label}
+                <span className="opacity-60">{count}</span>
+              </button>
+            );
+          }
+        )}
       </div>
 
       {/* Annotation list */}
       <div className="flex flex-col gap-1">
         {filtered.map((annotation, i) => {
-          const config = CATEGORY_CONFIG[annotation.category as AnnotationCategory];
+          const config =
+            CATEGORY_CONFIG[annotation.category as AnnotationCategory];
           return (
             <button
               key={`insight-${i}`}
@@ -727,7 +806,7 @@ export function AIInsightsPanel({
                 className={cn(
                   "mt-1.5 h-2 w-2 shrink-0 rounded-full",
                   config.dotColor,
-                  SEVERITY_DOT[annotation.severity as AnnotationSeverity],
+                  SEVERITY_DOT[annotation.severity as AnnotationSeverity]
                 )}
               />
               <div className="min-w-0 flex-1">
@@ -783,7 +862,9 @@ Add `ScanSearchIcon` to the lucide-react import (for the Insights section header
 **Step 2:** In `DocumentDetailPage()`, add the hook call near the existing AI hooks (around line 363):
 
 ```ts
-const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
+const documentAnnotations = useDocumentAnnotations(
+  documentId as Id<"documents">
+);
 ```
 
 **Step 3:** Add annotation overlays inside TransformComponent, right after the `AIFieldOverlays` block (around line 1169). The overlays must be inside the same container div so they zoom with the PDF:

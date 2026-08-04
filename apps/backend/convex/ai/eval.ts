@@ -36,7 +36,9 @@ type EvalResult = {
 
 type ExecResult = { text?: string; toolCalls?: { toolName: string }[] };
 
-const tier1Opts = { providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } } };
+const tier1Opts = {
+  providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } },
+};
 
 /** Process a single message through the tiered routing pipeline. */
 async function processEvalMessage(
@@ -45,16 +47,18 @@ async function processEvalMessage(
   threadId: string,
   messageId: string,
   prompt: string,
-  systemPrompt: string,
+  systemPrompt: string
 ): Promise<{ result: ExecResult; tierUsed: number }> {
   const tier = classifyLocally(prompt);
   console.info(`[SealAI eval] Route → ${tier} for: "${prompt.slice(0, 60)}"`);
 
   if (tier === "TIER_3") {
-    const { thread } = await sealAgentTier3.continueThread(sealCtx, { threadId });
+    const { thread } = await sealAgentTier3.continueThread(sealCtx, {
+      threadId,
+    });
     const result = await thread.generateText(
       { promptMessageId: messageId, system: systemPrompt },
-      { storageOptions: { saveMessages: "all" } },
+      { storageOptions: { saveMessages: "all" } }
     );
     return { result, tierUsed: 3 };
   }
@@ -63,7 +67,7 @@ async function processEvalMessage(
     const { thread } = await sealAgent.continueThread(sealCtx, { threadId });
     const result = await thread.generateText(
       { promptMessageId: messageId, system: systemPrompt },
-      { storageOptions: { saveMessages: "all" } },
+      { storageOptions: { saveMessages: "all" } }
     );
     return { result, tierUsed: 2 };
   }
@@ -71,10 +75,12 @@ async function processEvalMessage(
   // TIER_1: Flash-Lite with quality check + fallback
   let tier1: ExecResult | null = null;
   try {
-    const { thread } = await sealAgentTier1.continueThread(sealCtx, { threadId });
+    const { thread } = await sealAgentTier1.continueThread(sealCtx, {
+      threadId,
+    });
     tier1 = await thread.generateText(
       { promptMessageId: messageId, system: systemPrompt, ...tier1Opts },
-      { storageOptions: { saveMessages: "none" } },
+      { storageOptions: { saveMessages: "none" } }
     );
   } catch {
     console.warn("[SealAI eval] TIER_1 errored — falling back to TIER_2");
@@ -89,11 +95,13 @@ async function processEvalMessage(
     return { result: tier1, tierUsed: 1 };
   }
 
-  console.warn(`[SealAI eval] TIER_1 failed (${failure}) — falling back to TIER_2`);
+  console.warn(
+    `[SealAI eval] TIER_1 failed (${failure}) — falling back to TIER_2`
+  );
   const { thread } = await sealAgent.continueThread(sealCtx, { threadId });
   const result = await thread.generateText(
     { promptMessageId: messageId, system: systemPrompt },
-    { storageOptions: { saveMessages: "all" } },
+    { storageOptions: { saveMessages: "all" } }
   );
   return { result, tierUsed: 2 };
 }
@@ -106,12 +114,12 @@ export const runEval = internalAction({
   handler: async (ctx, { messages, documentId }): Promise<EvalResult> => {
     const start = Date.now();
 
-    const testOrg: { organizationId: string; userId: string } | null = await ctx.runQuery(
-      internal.ai.eval_helpers.getTestOrganization,
-    );
+    const testOrg: { organizationId: string; userId: string } | null =
+      await ctx.runQuery(internal.ai.eval_helpers.getTestOrganization);
     if (!testOrg) {
       return {
-        response: "[EVAL ERROR] No test organization found. Seed the dev database first.",
+        response:
+          "[EVAL ERROR] No test organization found. Seed the dev database first.",
         toolCalls: [],
         tierUsed: 0,
         threadId: "",
@@ -152,7 +160,7 @@ export const runEval = internalAction({
         thread.threadId,
         messageId,
         prompt,
-        systemPrompt,
+        systemPrompt
       );
       result = step.result;
       tierUsed = step.tierUsed;

@@ -37,8 +37,8 @@ console.log("Secret:", webhook.secret); // Save this securely!
 ```
 
 <Callout type="warn">
-  **Important**: The webhook secret is only shown once during creation. Store it securely in your
-  environment variables or secrets manager.
+  **Important**: The webhook secret is only shown once during creation. Store it
+  securely in your environment variables or secrets manager.
 </Callout>
 
 ## Step 2: Implement Webhook Handler
@@ -62,7 +62,15 @@ app.post("/webhooks/seal", async (req, res) => {
     const timestamp = req.headers["x-seal-timestamp"] as string;
     const payload = req.body.toString("utf8");
 
-    if (!verifySignature(payload, signature, eventId, timestamp, process.env.WEBHOOK_SECRET!)) {
+    if (
+      !verifySignature(
+        payload,
+        signature,
+        eventId,
+        timestamp,
+        process.env.WEBHOOK_SECRET!
+      )
+    ) {
       console.error("Invalid webhook signature");
       return res.status(401).send("Unauthorized");
     }
@@ -89,7 +97,7 @@ function verifySignature(
   signature: string,
   eventId: string,
   timestamp: string,
-  secret: string,
+  secret: string
 ): boolean {
   const signedContent = `${eventId}.${timestamp}.${payload}`;
   const expectedSignature = `v1=${createHmac("sha256", secret)
@@ -100,7 +108,10 @@ function verifySignature(
     return false;
   }
 
-  return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  return timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
 }
 
 async function processEventAsync(event: any) {
@@ -143,12 +154,15 @@ ngrok http 3000
 Trigger a test event to verify your endpoint:
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123/test", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/webhooks/wh_abc123/test",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 ```
 
 ## Event Subscription Patterns
@@ -188,17 +202,20 @@ const webhooks = await response.json();
 ### Update Webhook
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123", {
-  method: "PATCH",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    events: ["document.sent", "document.completed", "recipient.signed"],
-    status: "active",
-  }),
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/webhooks/wh_abc123",
+  {
+    method: "PATCH",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      events: ["document.sent", "document.completed", "recipient.signed"],
+      status: "active",
+    }),
+  }
+);
 ```
 
 ### Pause Webhook
@@ -206,27 +223,33 @@ const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123
 Temporarily stop receiving events without deleting the endpoint:
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123", {
-  method: "PATCH",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    status: "paused",
-  }),
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/webhooks/wh_abc123",
+  {
+    method: "PATCH",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status: "paused",
+    }),
+  }
+);
 ```
 
 ### Delete Webhook
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123", {
-  method: "DELETE",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/webhooks/wh_abc123",
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 ```
 
 ## Webhook Status States
@@ -238,8 +261,8 @@ const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123
 | `disabled` | Webhook failed too many times and was auto-disabled |
 
 <Callout type="info">
-  **Auto-Disable**: Webhooks are automatically disabled after 10 consecutive delivery failures.
-  Re-enable them after fixing the issue.
+  **Auto-Disable**: Webhooks are automatically disabled after 10 consecutive
+  delivery failures. Re-enable them after fixing the issue.
 </Callout>
 
 ## Slack Notifications

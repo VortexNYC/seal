@@ -21,17 +21,38 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { cn } from "@/lib/utils";
 
 // ─── Action label / icon map ──────────────────────────────────────────────
 
-const ACTION_LABELS: Record<string, { label: string; icon: LucideIcon; color?: string }> = {
-  "document.created": { label: "created a document", icon: FilePlusIcon, color: "text-success" },
+const ACTION_LABELS: Record<
+  string,
+  { label: string; icon: LucideIcon; color?: string }
+> = {
+  "document.created": {
+    label: "created a document",
+    icon: FilePlusIcon,
+    color: "text-success",
+  },
   "document.updated": { label: "updated a document", icon: FileEditIcon },
-  "document.deleted": { label: "deleted a document", icon: XCircleIcon, color: "text-destructive" },
-  "document.sent": { label: "sent a document for signing", icon: MailIcon, color: "text-info" },
+  "document.deleted": {
+    label: "deleted a document",
+    icon: XCircleIcon,
+    color: "text-destructive",
+  },
+  "document.sent": {
+    label: "sent a document for signing",
+    icon: MailIcon,
+    color: "text-info",
+  },
   "document.viewed": { label: "viewed a document", icon: FileTextIcon },
   "document.completed": {
     label: "completed a document",
@@ -44,15 +65,27 @@ const ACTION_LABELS: Record<string, { label: string; icon: LucideIcon; color?: s
     color: "text-destructive",
   },
   "recipient.added": { label: "added a recipient", icon: UserPlusIcon },
-  "recipient.signed": { label: "signed a document", icon: PenToolIcon, color: "text-success" },
+  "recipient.signed": {
+    label: "signed a document",
+    icon: PenToolIcon,
+    color: "text-success",
+  },
   "recipient.declined": {
     label: "declined to sign",
     icon: XCircleIcon,
     color: "text-destructive",
   },
   "recipient.viewed": { label: "viewed a document", icon: FileTextIcon },
-  "member.invited": { label: "invited a team member", icon: UserPlusIcon, color: "text-info" },
-  "member.joined": { label: "joined the team", icon: UsersIcon, color: "text-success" },
+  "member.invited": {
+    label: "invited a team member",
+    icon: UserPlusIcon,
+    color: "text-info",
+  },
+  "member.joined": {
+    label: "joined the team",
+    icon: UsersIcon,
+    color: "text-success",
+  },
   "member.removed": {
     label: "removed a team member",
     icon: XCircleIcon,
@@ -60,14 +93,25 @@ const ACTION_LABELS: Record<string, { label: string; icon: LucideIcon; color?: s
   },
 };
 
-function getActionLabel(action: string): { label: string; icon: LucideIcon; color?: string } {
-  return ACTION_LABELS[action] ?? { label: action.replace(".", " "), icon: ActivityIcon };
+function getActionLabel(action: string): {
+  label: string;
+  icon: LucideIcon;
+  color?: string;
+} {
+  return (
+    ACTION_LABELS[action] ?? {
+      label: action.replace(".", " "),
+      icon: ActivityIcon,
+    }
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
 
 export function RecentActivity(): React.ReactElement {
-  const activities = useQuery(api.dashboard.queries.getRecentActivity, { limit: 10 });
+  const activities = useQuery(api.dashboard.queries.getRecentActivity, {
+    limit: 10,
+  });
 
   // Loading skeleton
   if (activities === undefined) {
@@ -83,7 +127,11 @@ export function RecentActivity(): React.ReactElement {
           <CardDescription>Latest actions in your workspace</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3" role="status" aria-label="Loading activity">
+          <div
+            className="space-y-3"
+            role="status"
+            aria-label="Loading activity"
+          >
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex animate-pulse items-center gap-3">
                 <div className="bg-muted h-8 w-8 rounded-full" />
@@ -121,7 +169,11 @@ export function RecentActivity(): React.ReactElement {
         ) : (
           <div className="space-y-1">
             {activities.map((activity) => {
-              const { label, icon: Icon, color } = getActionLabel(activity.action);
+              const {
+                label,
+                icon: Icon,
+                color,
+              } = getActionLabel(activity.action);
               return (
                 <div
                   key={activity._id}
@@ -130,10 +182,15 @@ export function RecentActivity(): React.ReactElement {
                   <div
                     className={cn(
                       "bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-colors duration-[var(--duration-fast)]",
-                      "group-hover:bg-secondary",
+                      "group-hover:bg-secondary"
                     )}
                   >
-                    <Icon className={cn("h-4 w-4", color ?? "text-muted-foreground")} />
+                    <Icon
+                      className={cn(
+                        "h-4 w-4",
+                        color ?? "text-muted-foreground"
+                      )}
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-snug">

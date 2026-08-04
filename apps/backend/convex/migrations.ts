@@ -36,7 +36,7 @@ export const backfillOrganizationComponentAnchors = migrations.define({
   migrateOne: async (ctx, doc) => {
     await ensureVortexAuthSystemRoles(ctx, doc._id);
     console.info(
-      `[migration] Anchored org ${doc._id} (${doc.name}) into vortexAuth component + seeded roles`,
+      `[migration] Anchored org ${doc._id} (${doc.name}) into vortexAuth component + seeded roles`
     );
   },
 });
@@ -57,17 +57,21 @@ export const backfillSubscriptionOrganizationId = migrations.define({
 
     const org = await ctx.db
       .query("organizations")
-      .withIndex("by_billing_customer", (q) => q.eq("billingCustomerId", doc.externalCustomerId))
+      .withIndex("by_billing_customer", (q) =>
+        q.eq("billingCustomerId", doc.externalCustomerId)
+      )
       .unique();
 
     if (!org) {
       console.error(
-        `[migration] No org found for subscription ${doc._id} with customerId ${doc.externalCustomerId}`,
+        `[migration] No org found for subscription ${doc._id} with customerId ${doc.externalCustomerId}`
       );
       return;
     }
 
     await ctx.db.patch(doc._id, { organizationId: org._id, userId: undefined });
-    console.info(`[migration] Backfilled subscription ${doc._id} → org ${org._id} (${org.name})`);
+    console.info(
+      `[migration] Backfilled subscription ${doc._id} → org ${org._id} (${org.name})`
+    );
   },
 });

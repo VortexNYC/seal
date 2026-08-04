@@ -15,7 +15,9 @@ function PostCard({ post }: { post: Post }) {
 
   return (
     <div
-      onClick={() => navigate({ to: "/posts/$postId", params: { postId: post.id } })}
+      onClick={() =>
+        navigate({ to: "/posts/$postId", params: { postId: post.id } })
+      }
       className="post-card"
     >
       <h2>{post.title}</h2>
@@ -37,7 +39,11 @@ import { Link } from "@tanstack/react-router";
 
 function PostCard({ post }: { post: Post }) {
   return (
-    <Link to="/posts/$postId" params={{ postId: post.id }} className="post-card">
+    <Link
+      to="/posts/$postId"
+      params={{ postId: post.id }}
+      className="post-card"
+    >
       <h2>{post.title}</h2>
       <p>{post.excerpt}</p>
     </Link>
@@ -99,11 +105,19 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
 }
 
 // Or use render props for more control
-function CustomNavLink({ to, children }: { to: string; children: React.ReactNode }) {
+function CustomNavLink({
+  to,
+  children,
+}: {
+  to: string;
+  children: React.ReactNode;
+}) {
   return (
     <Link to={to}>
       {({ isActive }) => (
-        <span className={isActive ? "text-blue-600 font-bold" : "text-gray-600"}>
+        <span
+          className={isActive ? "text-blue-600 font-bold" : "text-gray-600"}
+        >
           {children}
           {isActive && <CheckIcon className="ml-2" />}
         </span>

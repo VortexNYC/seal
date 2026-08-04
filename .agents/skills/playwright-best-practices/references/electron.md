@@ -37,7 +37,12 @@ export default defineConfig({
 
 ```typescript
 // fixtures/electron.ts
-import { test as base, _electron as electron, ElectronApplication, Page } from "@playwright/test";
+import {
+  test as base,
+  _electron as electron,
+  ElectronApplication,
+  Page,
+} from "@playwright/test";
 
 type ElectronFixtures = {
   electronApp: ElectronApplication;
@@ -391,7 +396,9 @@ test("application menu", async ({ electronApp }) => {
   await electronApp.evaluate(async ({ Menu }) => {
     const menu = Menu.getApplicationMenu();
     const fileMenu = menu?.items.find((item) => item.label === "File");
-    const newItem = fileMenu?.submenu?.items.find((item) => item.label === "New");
+    const newItem = fileMenu?.submenu?.items.find(
+      (item) => item.label === "New"
+    );
     newItem?.click();
   });
 });
@@ -464,7 +471,14 @@ export const test = base.extend({
 
     let executablePath: string;
     if (process.platform === "darwin") {
-      executablePath = path.join(distPath, "mac", "MyApp.app", "Contents", "MacOS", "MyApp");
+      executablePath = path.join(
+        distPath,
+        "mac",
+        "MyApp.app",
+        "Contents",
+        "MacOS",
+        "MyApp"
+      );
     } else if (process.platform === "win32") {
       executablePath = path.join(distPath, "win-unpacked", "MyApp.exe");
     } else {

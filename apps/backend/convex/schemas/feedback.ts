@@ -1,7 +1,10 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
-export const feedbackTypeTuple = v.union(v.literal("bug"), v.literal("suggestion"));
+export const feedbackTypeTuple = v.union(
+  v.literal("bug"),
+  v.literal("suggestion")
+);
 
 export const feedbackTable = defineTable({
   userId: v.id("users"),

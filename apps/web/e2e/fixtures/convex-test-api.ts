@@ -9,7 +9,8 @@ import { pdfStorageIdPath } from "./paths";
  * Cuts document create/delete from ~15s (UI) to ~300ms.
  */
 
-const CONVEX_URL = process.env.VITE_CONVEX_URL ?? "https://coordinated-lemur-768.convex.cloud";
+const CONVEX_URL =
+  process.env.VITE_CONVEX_URL ?? "https://coordinated-lemur-768.convex.cloud";
 const DEPLOY_KEY = process.env.CONVEX_DEPLOY_KEY ?? "";
 
 function getConvexDeploymentName(convexUrl: string): string {
@@ -31,7 +32,7 @@ const STORAGE_ID_FILE = pdfStorageIdPath;
 
 export async function convexMutation(
   path: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown>
 ): Promise<unknown> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
@@ -45,7 +46,10 @@ export async function convexMutation(
   return res.json();
 }
 
-export async function convexQuery(path: string, args: Record<string, unknown>): Promise<unknown> {
+export async function convexQuery(
+  path: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
     method: "POST",
     headers: getConvexAuthHeaders(),
@@ -58,7 +62,10 @@ export async function convexQuery(path: string, args: Record<string, unknown>): 
   return res.json();
 }
 
-export function describeConvexE2eTarget(): { deploymentName: string; convexUrl: string } {
+export function describeConvexE2eTarget(): {
+  deploymentName: string;
+  convexUrl: string;
+} {
   return {
     deploymentName: getConvexDeploymentName(CONVEX_URL),
     convexUrl: CONVEX_URL,
@@ -68,7 +75,7 @@ export function describeConvexE2eTarget(): { deploymentName: string; convexUrl: 
 export async function assertConvexE2eHelperAvailability(): Promise<void> {
   if (!DEPLOY_KEY) {
     throw new Error(
-      `CONVEX_DEPLOY_KEY is missing for Web E2E preflight. Convex deployment: ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL})`,
+      `CONVEX_DEPLOY_KEY is missing for Web E2E preflight. Convex deployment: ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL})`
     );
   }
 
@@ -85,7 +92,7 @@ export async function assertConvexE2eHelperAvailability(): Promise<void> {
   if (!response.ok) {
     const text = await response.text();
     throw new Error(
-      `Convex E2E helper preflight failed for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}) with HTTP ${response.status}: ${text}`,
+      `Convex E2E helper preflight failed for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}) with HTTP ${response.status}: ${text}`
     );
   }
 
@@ -94,11 +101,12 @@ export async function assertConvexE2eHelperAvailability(): Promise<void> {
     value?: string | { uploadUrl?: string };
     errorMessage?: string;
   };
-  const uploadUrl = typeof data.value === "string" ? data.value : data.value?.uploadUrl;
+  const uploadUrl =
+    typeof data.value === "string" ? data.value : data.value?.uploadUrl;
 
   if (!uploadUrl) {
     throw new Error(
-      `Convex E2E helper preflight failed for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}). Response: ${JSON.stringify(data)}`,
+      `Convex E2E helper preflight failed for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}). Response: ${JSON.stringify(data)}`
     );
   }
 }
@@ -127,17 +135,20 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
     }),
   });
 
-  if (!uploadUrlRes.ok) throw new Error(`generateUploadUrl failed: ${uploadUrlRes.status}`);
+  if (!uploadUrlRes.ok)
+    throw new Error(`generateUploadUrl failed: ${uploadUrlRes.status}`);
   const uploadUrlData = (await uploadUrlRes.json()) as {
     status: string;
     value?: string | { uploadUrl?: string };
   };
   const uploadUrl =
-    typeof uploadUrlData.value === "string" ? uploadUrlData.value : uploadUrlData.value?.uploadUrl;
+    typeof uploadUrlData.value === "string"
+      ? uploadUrlData.value
+      : uploadUrlData.value?.uploadUrl;
 
   if (!uploadUrl) {
     throw new Error(
-      `generateUploadUrl returned no upload URL for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}): ${JSON.stringify(uploadUrlData)}`,
+      `generateUploadUrl returned no upload URL for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}): ${JSON.stringify(uploadUrlData)}`
     );
   }
 

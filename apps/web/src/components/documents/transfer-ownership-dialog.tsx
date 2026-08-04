@@ -45,15 +45,20 @@ export function TransferOwnershipDialog({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    slug,
+  });
   const members = useQuery(
     api.organizations.queries.getOrganizationMembers,
-    organization ? { organizationId: organization._id } : "skip",
+    organization ? { organizationId: organization._id } : "skip"
   );
 
-  const transferOwnership = useMutation(api.documents.mutations.transferDocumentOwnership);
+  const transferOwnership = useMutation(
+    api.documents.mutations.transferDocumentOwnership
+  );
 
-  const eligibleMembers = members?.filter((m) => m.userId !== currentOwnerId) ?? [];
+  const eligibleMembers =
+    members?.filter((m) => m.userId !== currentOwnerId) ?? [];
   const isPrivate = sharingMode === "private";
 
   const handleTransfer = async () => {
@@ -68,7 +73,9 @@ export function TransferOwnershipDialog({
       onOpenChange(false);
       setSelectedUserId("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to transfer ownership");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to transfer ownership"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -83,7 +90,8 @@ export function TransferOwnershipDialog({
           </div>
           <DialogTitle className="text-center">Transfer Ownership</DialogTitle>
           <DialogDescription className="text-center">
-            Transfer ownership of <span className="font-medium">{documentName}</span> to another
+            Transfer ownership of{" "}
+            <span className="font-medium">{documentName}</span> to another
             organization member.
           </DialogDescription>
         </DialogHeader>
@@ -98,7 +106,9 @@ export function TransferOwnershipDialog({
               <SelectContent>
                 {eligibleMembers.map((member) => (
                   <SelectItem key={member.userId} value={member.userId}>
-                    <span className="font-medium">{member.name ?? member.email}</span>
+                    <span className="font-medium">
+                      {member.name ?? member.email}
+                    </span>
                     <span className="text-muted-foreground ml-2 text-xs capitalize">
                       {member.role}
                     </span>
@@ -112,18 +122,25 @@ export function TransferOwnershipDialog({
             <div className="border-warning/30 bg-warning-surface flex gap-2 rounded-lg border p-3">
               <AlertTriangleIcon className="text-warning mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-warning text-sm">
-                This document's sharing mode is <strong>Private</strong>. After transfer, you will
-                lose access to this document.
+                This document's sharing mode is <strong>Private</strong>. After
+                transfer, you will lose access to this document.
               </p>
             </div>
           )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleTransfer} disabled={!selectedUserId || isSubmitting}>
+          <Button
+            onClick={handleTransfer}
+            disabled={!selectedUserId || isSubmitting}
+          >
             {isSubmitting ? "Transferring..." : "Transfer Ownership"}
           </Button>
         </DialogFooter>

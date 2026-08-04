@@ -101,7 +101,10 @@ describe("api/v1/contacts", () => {
       await seedContact({ email: "alice@test.com" });
       await seedContact({ email: "bob@test.com" });
       // Another org's contact — should not appear
-      await seedContact({ email: "carol@other.com", organizationId: otherOrgId });
+      await seedContact({
+        email: "carol@other.com",
+        organizationId: otherOrgId,
+      });
 
       const result = await t.query(internal.api.v1.contacts.listContacts, {
         userId,
@@ -152,8 +155,16 @@ describe("api/v1/contacts", () => {
     });
 
     test("searches by name (case-insensitive)", async () => {
-      await seedContact({ first_name: "Alice", last_name: "Smith", email: "alice@test.com" });
-      await seedContact({ first_name: "Bob", last_name: "Jones", email: "bob@test.com" });
+      await seedContact({
+        first_name: "Alice",
+        last_name: "Smith",
+        email: "alice@test.com",
+      });
+      await seedContact({
+        first_name: "Bob",
+        last_name: "Jones",
+        email: "bob@test.com",
+      });
 
       const result = await t.query(internal.api.v1.contacts.listContacts, {
         userId,
@@ -216,7 +227,9 @@ describe("api/v1/contacts", () => {
       });
 
       expect(page2.contacts).toHaveLength(2);
-      const page1Ids = new Set(page1.contacts.map((c: (typeof page1.contacts)[number]) => c.id));
+      const page1Ids = new Set(
+        page1.contacts.map((c: (typeof page1.contacts)[number]) => c.id)
+      );
       for (const c of page2.contacts) {
         expect(page1Ids.has(c.id)).toBe(false);
       }
@@ -389,7 +402,7 @@ describe("api/v1/contacts", () => {
           userId,
           organizationId,
           contactId,
-        }),
+        })
       ).rejects.toThrow("Contact not found");
     });
   });

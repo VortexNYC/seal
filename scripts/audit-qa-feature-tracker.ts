@@ -3,7 +3,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const trackerPath = resolve(import.meta.dir, "../docs/qa/feature-user-stories.csv");
+const trackerPath = resolve(
+  import.meta.dir,
+  "../docs/qa/feature-user-stories.csv"
+);
 
 const expectedHeader = [
   "feature_id",
@@ -119,7 +122,7 @@ if (header === undefined) {
 
 if (header.join(",") !== expectedHeader.join(",")) {
   fail(
-    `QA tracker header mismatch.\nExpected: ${expectedHeader.join(",")}\nActual:   ${header.join(",")}`,
+    `QA tracker header mismatch.\nExpected: ${expectedHeader.join(",")}\nActual:   ${header.join(",")}`
   );
 }
 
@@ -130,12 +133,14 @@ const entryPointCorpus: string[] = [];
 for (const [index, row] of dataRows.entries()) {
   const line = index + 2;
   if (row.length !== expectedHeader.length) {
-    errors.push(`line ${line}: expected ${expectedHeader.length} columns, found ${row.length}`);
+    errors.push(
+      `line ${line}: expected ${expectedHeader.length} columns, found ${row.length}`
+    );
     continue;
   }
 
   const record = Object.fromEntries(
-    expectedHeader.map((column, columnIndex) => [column, row[columnIndex]]),
+    expectedHeader.map((column, columnIndex) => [column, row[columnIndex]])
   ) as Row;
   if (record.feature_id.length === 0) {
     errors.push(`line ${line}: feature_id is required`);
@@ -180,7 +185,9 @@ for (const hint of requiredEntryPointHints) {
 }
 
 if (errors.length > 0) {
-  fail(`QA feature tracker audit failed:\n${errors.map((error) => `- ${error}`).join("\n")}`);
+  fail(
+    `QA feature tracker audit failed:\n${errors.map((error) => `- ${error}`).join("\n")}`
+  );
 }
 
 console.log(
@@ -194,6 +201,6 @@ console.log(
       requiredEntryPointHints,
     },
     null,
-    2,
-  ),
+    2
+  )
 );

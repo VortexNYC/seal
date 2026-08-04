@@ -6,7 +6,11 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { internalMutation, mutation, type MutationCtx } from "../_generated/server";
+import {
+  internalMutation,
+  mutation,
+  type MutationCtx,
+} from "../_generated/server";
 import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
@@ -39,7 +43,9 @@ async function generateSigningToken(): Promise<{
 }> {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  const token = Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const token = Array.from(array, (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
   const tokenHash = await generateStringHash(token);
   return { token, tokenHash };
 }
@@ -68,7 +74,7 @@ type RecipientStatusUpdate = {
 function ensureRecipientCanUpdateStatus(
   recipient: Doc<"document_recipients">,
   args: RecipientStatusChangeArgs,
-  terminalMessage: string,
+  terminalMessage: string
 ): void {
   if (
     recipient.status === "signed" ||
@@ -84,7 +90,10 @@ function ensureRecipientCanUpdateStatus(
   if (args.status === "approved" && recipient.role !== "approver") {
     throw new ConvexError("Only approvers can have status 'approved'");
   }
-  if (args.status === "signed" && (!args.signatureData || !args.signatureType)) {
+  if (
+    args.status === "signed" &&
+    (!args.signatureData || !args.signatureType)
+  ) {
     throw new ConvexError("Signature data and type are required for signing");
   }
   if (args.status === "declined" && !args.declineReason) {
@@ -95,7 +104,7 @@ function ensureRecipientCanUpdateStatus(
 async function ensureRecipientPaymentsAreComplete(
   ctx: MutationCtx,
   recipient: Doc<"document_recipients">,
-  status: RecipientStatusChangeArgs["status"],
+  status: RecipientStatusChangeArgs["status"]
 ): Promise<void> {
   if (status !== "signed" && status !== "approved") {
     return;
@@ -127,7 +136,7 @@ async function ensureSequentialRecipientIsActive(
   recipient: Doc<"document_recipients">,
   documentId: Doc<"documents">["_id"],
   signingMode: Doc<"documents">["signingMode"] | undefined,
-  status: RecipientStatusChangeArgs["status"],
+  status: RecipientStatusChangeArgs["status"]
 ): Promise<void> {
   if (signingMode !== "sequential" || status === "viewed") {
     return;
@@ -139,14 +148,16 @@ async function ensureSequentialRecipientIsActive(
     .collect();
 
   if (!isRecipientGroupActive(recipient, allRecipients)) {
-    throw new ConvexError("Previous recipients must complete their action first");
+    throw new ConvexError(
+      "Previous recipients must complete their action first"
+    );
   }
 }
 
 function buildRecipientStatusUpdate(
   recipient: Doc<"document_recipients">,
   args: RecipientStatusChangeArgs,
-  ipAddress?: string,
+  ipAddress?: string
 ): { updateData: RecipientStatusUpdate; viewedAt?: number } {
   const now = Date.now();
   const updateData: RecipientStatusUpdate = {
@@ -206,27 +217,35 @@ function getRecipientAuditAction(status: RecipientStatusChangeArgs["status"]) {
 async function maybeSendViewedNotification(
   ctx: MutationCtx,
   recipient: Doc<"document_recipients">,
-  viewedAt: number | undefined,
+  viewedAt: number | undefined
 ): Promise<void> {
   if (!recipient.viewedAt && viewedAt) {
-    await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
-      recipientId: recipient._id,
-      documentId: recipient.documentId,
-      viewedAt,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.viewed_notification_action.sendViewedNotification,
+      {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+        viewedAt,
+      }
+    );
   }
 }
 
 export async function maybeStartPostSignatureWorkflow(
   ctx: MutationCtx,
   recipient: Doc<"document_recipients">,
-  status: RecipientStatusChangeArgs["status"],
+  status: RecipientStatusChangeArgs["status"]
 ): Promise<void> {
   if (isRecipientComplete(recipient.role, status)) {
-    await workflow.start(ctx, internal.workflows.document_completion.postSignatureWorkflow, {
-      recipientId: recipient._id,
-      documentId: recipient.documentId,
-    });
+    await workflow.start(
+      ctx,
+      internal.workflows.document_completion.postSignatureWorkflow,
+      {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+      }
+    );
   }
 }
 
@@ -234,7 +253,7 @@ async function maybePublishRecipientWebhook(
   ctx: MutationCtx,
   document: Doc<"documents"> | null,
   recipient: Doc<"document_recipients">,
-  args: RecipientStatusChangeArgs,
+  args: RecipientStatusChangeArgs
 ): Promise<void> {
   if (!document) {
     return;
@@ -270,7 +289,9 @@ async function maybePublishRecipientWebhook(
   }
 }
 
-function getDocumentWorkflowStatus(document: Doc<"documents">): DocumentWorkflowStatus {
+function getDocumentWorkflowStatus(
+  document: Doc<"documents">
+): DocumentWorkflowStatus {
   return document.workflowStatus ?? "draft";
 }
 
@@ -278,9 +299,13 @@ async function maybeMarkDocumentDeclined(
   ctx: Pick<MutationCtx, "db">,
   document: Doc<"documents"> | null,
   recipient: Doc<"document_recipients">,
-  args: RecipientStatusChangeArgs,
+  args: RecipientStatusChangeArgs
 ): Promise<void> {
-  if (args.status !== "declined" || !document || document.status === "deleted") {
+  if (
+    args.status !== "declined" ||
+    !document ||
+    document.status === "deleted"
+  ) {
     return;
   }
 
@@ -290,7 +315,9 @@ async function maybeMarkDocumentDeclined(
   }
 
   if (!isValidWorkflowTransition(currentStatus, "declined")) {
-    throw new ConvexError(`Cannot decline a document in ${currentStatus} status`);
+    throw new ConvexError(
+      `Cannot decline a document in ${currentStatus} status`
+    );
   }
 
   const declinedAt = Date.now();
@@ -316,7 +343,7 @@ async function maybeMarkDocumentDeclined(
 
 async function loadTokenRecipientStatusContext(
   ctx: MutationCtx,
-  signingToken: string,
+  signingToken: string
 ): Promise<{
   recipient: Doc<"document_recipients">;
   document: Doc<"documents"> | null;
@@ -337,12 +364,12 @@ async function applyRecipientStatusChange(
   ctx: MutationCtx,
   recipient: Doc<"document_recipients">,
   document: Doc<"documents"> | null,
-  args: RecipientStatusChangeArgs,
+  args: RecipientStatusChangeArgs
 ): Promise<number | undefined> {
   ensureRecipientCanUpdateStatus(
     recipient,
     args,
-    `Cannot update status - recipient has already ${recipient.status}`,
+    `Cannot update status - recipient has already ${recipient.status}`
   );
   await ensureRecipientPaymentsAreComplete(ctx, recipient, args.status);
   await ensureSequentialRecipientIsActive(
@@ -350,13 +377,13 @@ async function applyRecipientStatusChange(
     recipient,
     recipient.documentId,
     document?.signingMode,
-    args.status,
+    args.status
   );
 
   const { updateData, viewedAt } = buildRecipientStatusUpdate(
     recipient,
     args,
-    args.ipAddress ?? "0.0.0.0",
+    args.ipAddress ?? "0.0.0.0"
   );
   await ctx.db.patch(recipient._id, updateData);
   return viewedAt;
@@ -366,7 +393,7 @@ async function logRecipientStatusChange(
   ctx: MutationCtx,
   document: Doc<"documents"> | null,
   recipient: Doc<"document_recipients">,
-  args: RecipientStatusChangeArgs,
+  args: RecipientStatusChangeArgs
 ): Promise<void> {
   if (!document) {
     return;
@@ -404,7 +431,7 @@ export const addRecipients = permissionMutation("documents:edit")({
         role: recipientRoleTuple,
         order: v.optional(v.number()),
         isPlaceholder: v.optional(v.boolean()),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -579,7 +606,7 @@ export const updateRecipientStatus = authMutation({
     status: recipientStatusTuple,
     signatureData: v.optional(v.string()),
     signatureType: v.optional(
-      v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded")),
+      v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded"))
     ),
     declineReason: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
@@ -587,16 +614,24 @@ export const updateRecipientStatus = authMutation({
   handler: async (ctx, args) => {
     const { recipient } = await loadTokenRecipientStatusContext(
       ctx as unknown as MutationCtx,
-      args.signingToken,
+      args.signingToken
     );
     ensureRecipientCanUpdateStatus(
       recipient,
       args,
-      `Cannot update status - recipient has already ${recipient.status}`,
+      `Cannot update status - recipient has already ${recipient.status}`
     );
-    const { updateData, viewedAt } = buildRecipientStatusUpdate(recipient, args, args.ipAddress);
+    const { updateData, viewedAt } = buildRecipientStatusUpdate(
+      recipient,
+      args,
+      args.ipAddress
+    );
     await ctx.db.patch(recipient._id, updateData);
-    await maybeSendViewedNotification(ctx as unknown as MutationCtx, recipient, viewedAt);
+    await maybeSendViewedNotification(
+      ctx as unknown as MutationCtx,
+      recipient,
+      viewedAt
+    );
     return { success: true, recipientId: recipient._id };
   },
 });
@@ -611,14 +646,22 @@ export const submitRecipientSignature = mutation({
     status: recipientStatusTuple,
     signatureData: v.optional(v.string()),
     signatureType: v.optional(
-      v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded")),
+      v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded"))
     ),
     declineReason: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { recipient, document } = await loadTokenRecipientStatusContext(ctx, args.signingToken);
-    const viewedAt = await applyRecipientStatusChange(ctx, recipient, document, args);
+    const { recipient, document } = await loadTokenRecipientStatusContext(
+      ctx,
+      args.signingToken
+    );
+    const viewedAt = await applyRecipientStatusChange(
+      ctx,
+      recipient,
+      document,
+      args
+    );
     await maybeMarkDocumentDeclined(ctx, document, recipient, args);
     await logRecipientStatusChange(ctx, document, recipient, args);
     await maybeSendViewedNotification(ctx, recipient, viewedAt);
@@ -639,7 +682,7 @@ export const submitSignatureAuthenticated = authMutation({
     status: recipientStatusTuple,
     signatureData: v.optional(v.string()),
     signatureType: v.optional(
-      v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded")),
+      v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded"))
     ),
     declineReason: v.optional(v.string()),
   },
@@ -681,18 +724,26 @@ export const submitSignatureAuthenticated = authMutation({
     ensureRecipientCanUpdateStatus(
       recipient,
       args,
-      `Cannot update status - you have already ${recipient.status}`,
+      `Cannot update status - you have already ${recipient.status}`
     );
-    await ensureRecipientPaymentsAreComplete(ctx as unknown as MutationCtx, recipient, args.status);
+    await ensureRecipientPaymentsAreComplete(
+      ctx as unknown as MutationCtx,
+      recipient,
+      args.status
+    );
     await ensureSequentialRecipientIsActive(
       ctx as unknown as MutationCtx,
       recipient,
       args.documentId,
       document.signingMode,
-      args.status,
+      args.status
     );
 
-    const { updateData, viewedAt } = buildRecipientStatusUpdate(recipient, args, "authenticated");
+    const { updateData, viewedAt } = buildRecipientStatusUpdate(
+      recipient,
+      args,
+      "authenticated"
+    );
 
     await ctx.db.patch(recipient._id, updateData);
     await maybeMarkDocumentDeclined(ctx, document, recipient, args);
@@ -712,8 +763,16 @@ export const submitSignatureAuthenticated = authMutation({
       });
     }
 
-    await maybeSendViewedNotification(ctx as unknown as MutationCtx, recipient, viewedAt);
-    await maybeStartPostSignatureWorkflow(ctx as unknown as MutationCtx, recipient, args.status);
+    await maybeSendViewedNotification(
+      ctx as unknown as MutationCtx,
+      recipient,
+      viewedAt
+    );
+    await maybeStartPostSignatureWorkflow(
+      ctx as unknown as MutationCtx,
+      recipient,
+      args.status
+    );
 
     return { success: true, recipientId: recipient._id };
   },
@@ -751,8 +810,13 @@ export const updateRecipient = permissionMutation("documents:edit")({
     }
 
     // 4. Verify document is editable (not deleted or workflow completed)
-    if (document.status === "deleted" || document.workflowStatus === "completed") {
-      throw new ConvexError("Cannot edit recipients on deleted or completed documents");
+    if (
+      document.status === "deleted" ||
+      document.workflowStatus === "completed"
+    ) {
+      throw new ConvexError(
+        "Cannot edit recipients on deleted or completed documents"
+      );
     }
 
     // 5. Check recipient hasn't already completed their action
@@ -761,7 +825,9 @@ export const updateRecipient = permissionMutation("documents:edit")({
       recipient.status === "approved" ||
       recipient.status === "declined"
     ) {
-      throw new ConvexError("Cannot edit recipient who has already completed their action");
+      throw new ConvexError(
+        "Cannot edit recipient who has already completed their action"
+      );
     }
 
     // 6. Validate email if changing
@@ -770,11 +836,13 @@ export const updateRecipient = permissionMutation("documents:edit")({
       // Check for duplicate email among other recipients
       const existingRecipients = await ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
+        .withIndex("by_document", (q) =>
+          q.eq("documentId", recipient.documentId)
+        )
         .collect();
 
       const duplicateEmail = existingRecipients.find(
-        (r) => r._id !== args.recipientId && r.email === newEmail,
+        (r) => r._id !== args.recipientId && r.email === newEmail
       );
       if (duplicateEmail) {
         throw new ConvexError("A recipient with this email already exists");
@@ -853,13 +921,14 @@ export const regenerateSigningToken = permissionMutation("documents:edit")({
       recipient.status === "declined"
     ) {
       throw new ConvexError(
-        "Cannot regenerate token for recipients who have already completed their action",
+        "Cannot regenerate token for recipients who have already completed their action"
       );
     }
 
     // 4. Generate new token with extended expiration
     const now = Date.now();
-    const { token: newToken, tokenHash: newTokenHash } = await generateSigningToken();
+    const { token: newToken, tokenHash: newTokenHash } =
+      await generateSigningToken();
     const newExpiration = now + 30 * 24 * 60 * 60 * 1000; // 30 days from now
 
     await ctx.db.patch(args.recipientId, {
@@ -1009,7 +1078,9 @@ export const dictateNextRecipient = mutation({
 
     // 2. Must have just signed and be awaiting dictation
     if (recipient.status !== "signed" && recipient.status !== "approved") {
-      throw new ConvexError("Only completed signers can designate the next recipient");
+      throw new ConvexError(
+        "Only completed signers can designate the next recipient"
+      );
     }
     if (!recipient.awaitingDictation) {
       throw new ConvexError("No dictation required for this recipient");
@@ -1040,7 +1111,9 @@ export const dictateNextRecipient = mutation({
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
 
     if (!placeholder) {
-      throw new ConvexError("No placeholder recipient found in the next signing group");
+      throw new ConvexError(
+        "No placeholder recipient found in the next signing group"
+      );
     }
 
     // 6. Generate a new signing token for the newly-identified recipient
@@ -1086,7 +1159,7 @@ export const dictateNextRecipient = mutation({
       {
         documentId: recipient.documentId,
         recipientId: placeholder._id,
-      },
+      }
     );
 
     return { success: true };

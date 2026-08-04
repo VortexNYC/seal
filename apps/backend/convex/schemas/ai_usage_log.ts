@@ -7,7 +7,7 @@ export const aiActionValidator = v.union(
   v.literal("redlining"),
   v.literal("search"),
   v.literal("chat"),
-  v.literal("ocr_fallback"),
+  v.literal("ocr_fallback")
 );
 
 export const aiUsageLogTable = defineTable({

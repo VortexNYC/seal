@@ -2,7 +2,13 @@
 
 import { resolve } from "node:path";
 
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly Json[]
+  | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
 type CommandResult = {
@@ -67,13 +73,19 @@ function isJson(value: unknown): value is Json {
 
 function stringField(value: JsonObject, field: string): string {
   const child = value[field];
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
 function numberField(value: JsonObject, field: string): number {
   const child = value[field];
-  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a number`);
+  assert(
+    typeof child === "number" && Number.isFinite(child),
+    `Expected ${field} to be a number`
+  );
   return child;
 }
 
@@ -149,7 +161,9 @@ async function setConvexEnv(input: {
     label: `convex env set ${input.name}`,
   });
   if (result.exitCode !== 0) {
-    fail(`convex env set ${input.name} failed\n${result.stderr}\n${result.stdout}`);
+    fail(
+      `convex env set ${input.name} failed\n${result.stderr}\n${result.stdout}`
+    );
   }
 }
 
@@ -201,7 +215,9 @@ async function runVortexConvexVoid(input: {
     label: `vortex convex run ${input.functionName}`,
   });
   if (result.exitCode !== 0) {
-    fail(`vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`);
+    fail(
+      `vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`
+    );
   }
 }
 
@@ -231,11 +247,17 @@ async function runConvex<T extends Json>(input: {
   }
   const trimmed = result.stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
-  assert(jsonStart >= 0, `No JSON returned from ${input.functionName}: ${trimmed}`);
+  assert(
+    jsonStart >= 0,
+    `No JSON returned from ${input.functionName}: ${trimmed}`
+  );
   return parseJson(trimmed.slice(jsonStart), input.functionName) as T;
 }
 
-function readStringRecord(value: string | undefined, label: string): Record<string, string> {
+function readStringRecord(
+  value: string | undefined,
+  label: string
+): Record<string, string> {
   if (value === undefined || value.trim().length === 0) {
     return {};
   }
@@ -243,14 +265,24 @@ function readStringRecord(value: string | undefined, label: string): Record<stri
   assert(isJsonObject(parsed), `Expected ${label} to be a JSON object`);
   const record: Record<string, string> = {};
   for (const [key, entry] of Object.entries(parsed)) {
-    assert(typeof entry === "string", `Expected ${label}.${key} to be a string`);
+    assert(
+      typeof entry === "string",
+      `Expected ${label}.${key} to be a string`
+    );
     record[key] = entry;
   }
   return record;
 }
 
-function mergeAllowlist(current: string | undefined, organizationId: string): string {
-  if (current === undefined || current.trim() === "" || current.trim() === "[]") {
+function mergeAllowlist(
+  current: string | undefined,
+  organizationId: string
+): string {
+  if (
+    current === undefined ||
+    current.trim() === "" ||
+    current.trim() === "[]"
+  ) {
     return JSON.stringify([organizationId]);
   }
   const normalized = current.trim();
@@ -260,7 +292,10 @@ function mergeAllowlist(current: string | undefined, organizationId: string): st
   const entries = normalized.startsWith("[")
     ? parseJson(normalized, "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS")
     : normalized.split(",").map((entry) => entry.trim());
-  assert(Array.isArray(entries), "Expected document payment allowlist to be an array");
+  assert(
+    Array.isArray(entries),
+    "Expected document payment allowlist to be an array"
+  );
   return JSON.stringify([
     ...new Set([
       ...entries.filter((entry): entry is string => typeof entry === "string"),
@@ -276,7 +311,7 @@ async function mergeSealRecordEnv(input: {
 }): Promise<void> {
   const existing = readStringRecord(
     await getConvexEnv({ deployment: input.deployment, name: input.name }),
-    input.name,
+    input.name
   );
   await setConvexEnv({
     deployment: input.deployment,
@@ -286,15 +321,23 @@ async function mergeSealRecordEnv(input: {
 }
 
 async function main(): Promise<void> {
-  const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
-  const vortexDeployment = readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
+  const sealDeployment =
+    readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
+  const vortexDeployment =
+    readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
   const vortexBaseUrl =
     readEnv("VORTEX_BILLING_API_BASE_URL") ??
-    (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_API_BASE_URL" })) ??
+    (await getConvexEnv({
+      deployment: sealDeployment,
+      name: "VORTEX_BILLING_API_BASE_URL",
+    })) ??
     defaultVortexBaseUrl;
   const vortexApiKey =
     readEnv("VORTEX_BILLING_API_KEY") ??
-    (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_API_KEY" }));
+    (await getConvexEnv({
+      deployment: sealDeployment,
+      name: "VORTEX_BILLING_API_KEY",
+    }));
   assert(vortexApiKey !== undefined, "VORTEX_BILLING_API_KEY is missing");
 
   const vortexContext = await runVortexConvex<JsonObject>({
@@ -306,14 +349,17 @@ async function main(): Promise<void> {
   const environment = stringField(vortexContext, "environment");
   assert(
     environment === "sandbox" || environment === "production",
-    `Unexpected environment ${environment}`,
+    `Unexpected environment ${environment}`
   );
   const vortexOrganization = await runVortexConvex<JsonObject>({
     deployment: vortexDeployment,
     functionName: "billingEngine:getOrganization",
     args: { organizationId: vortexOrganizationId },
   });
-  const vortexOrganizationMerchantAccountId = stringField(vortexOrganization, "merchantAccountId");
+  const vortexOrganizationMerchantAccountId = stringField(
+    vortexOrganization,
+    "merchantAccountId"
+  );
 
   const recipientEmail = `seal-document-payment-proof+${proofRunId}@seal.test`;
   const lineItemId = `seal_document_payment_line_${proofRunId}`;
@@ -322,7 +368,9 @@ async function main(): Promise<void> {
   const customerId = `vtx_cust_seal_document_payment_${proofRunId}`;
   const customerProfileId = `cust_profile_seal_document_payment_${proofRunId}`;
   const billingAccountId = `bacc_seal_document_payment_${proofRunId}`;
-  const merchantAccountId = readEnv("SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID");
+  const merchantAccountId = readEnv(
+    "SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID"
+  );
   assert(
     merchantAccountId !== undefined,
     [
@@ -330,7 +378,7 @@ async function main(): Promise<void> {
       `Do not reuse the Vortex organization merchant (${vortexOrganizationMerchantAccountId});`,
       "this proof must use a dedicated Seal merchant/provider account so settlement ownership is unambiguous.",
       "Run prove:seal-vortex-onboarding-wiring first and pass its merchantAccountId.",
-    ].join(" "),
+    ].join(" ")
   );
   const canonicalSeededAt = new Date().toISOString();
   const existingMerchants = await runVortexConvex<readonly Json[]>({
@@ -344,7 +392,7 @@ async function main(): Promise<void> {
   });
   assert(
     processorAccountRefs.length > 0,
-    `No Vortex merchant processor reference found for ${merchantAccountId}; seed the merchant in Vortex Payments before live card proof`,
+    `No Vortex merchant processor reference found for ${merchantAccountId}; seed the merchant in Vortex Payments before live card proof`
   );
 
   await runVortexConvexVoid({
@@ -467,7 +515,8 @@ async function main(): Promise<void> {
 
   const seeded = await runSealConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:seedVortexOneTimeDocumentPayableProofDocument",
+    functionName:
+      "vortex_billing/proof_actions:seedVortexOneTimeDocumentPayableProofDocument",
     args: { proofRunId, lineItemId, recipientEmail },
   });
   const organizationId = stringField(seeded, "organizationId");
@@ -482,7 +531,7 @@ async function main(): Promise<void> {
         deployment: sealDeployment,
         name: "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS",
       }),
-      organizationId,
+      organizationId
     ),
   });
   await mergeSealRecordEnv({
@@ -508,7 +557,8 @@ async function main(): Promise<void> {
 
   const payable = await runSealConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:createVortexDocumentPayableProofObjects",
+    functionName:
+      "vortex_billing/proof_actions:createVortexDocumentPayableProofObjects",
     args: { documentId, organizationId, userId: ownerId },
   });
   const paymentLinks = arrayField(payable, "paymentLinks");
@@ -516,37 +566,50 @@ async function main(): Promise<void> {
   const paymentLink = paymentLinks[0];
   assert(isJsonObject(paymentLink), "Expected paymentLinks[0] to be an object");
   const hostedInvoiceUrl = stringField(paymentLink, "hostedInvoiceUrl");
-  assert(hostedInvoiceUrl.startsWith(vortexBaseUrl), "Expected hosted invoice URL from Vortex");
-  assert(numberField(paymentLink, "totalAmountCents") === amountCents, "Unexpected payment amount");
+  assert(
+    hostedInvoiceUrl.startsWith(vortexBaseUrl),
+    "Expected hosted invoice URL from Vortex"
+  );
+  assert(
+    numberField(paymentLink, "totalAmountCents") === amountCents,
+    "Unexpected payment amount"
+  );
   const vortexPayableId = stringField(paymentLink, "vortexPayableId");
 
   const state = await runSealConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:getVortexWebhookProofPaymentState",
+    functionName:
+      "vortex_billing/proof_actions:getVortexWebhookProofPaymentState",
     args: { vortexPayableId },
   });
-  assert(stringField(state, "paymentStatus") === "awaiting", "Expected awaiting payment status");
+  assert(
+    stringField(state, "paymentStatus") === "awaiting",
+    "Expected awaiting payment status"
+  );
   assert(
     stringField(state, "invoiceProvider") === "vortex_billing",
-    "Expected Vortex invoice provider",
+    "Expected Vortex invoice provider"
   );
   const waitingState = await runSealConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:markVortexDocumentPayableProofWaitingForPayment",
+    functionName:
+      "vortex_billing/proof_actions:markVortexDocumentPayableProofWaitingForPayment",
     args: { documentId },
   });
   assert(
     stringField(waitingState, "workflowStatus") === "waiting_for_payment",
-    "Expected proof document to wait for payment",
+    "Expected proof document to wait for payment"
   );
   const postSignatureState = await runSealConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:getVortexWebhookProofPaymentState",
+    functionName:
+      "vortex_billing/proof_actions:getVortexWebhookProofPaymentState",
     args: { vortexPayableId },
   });
   assert(
-    stringField(postSignatureState, "documentWorkflowStatus") === "waiting_for_payment",
-    "Expected post-signature proof document to wait for payment",
+    stringField(postSignatureState, "documentWorkflowStatus") ===
+      "waiting_for_payment",
+    "Expected post-signature proof document to wait for payment"
   );
 
   console.log(
@@ -567,7 +630,8 @@ async function main(): Promise<void> {
         billingAccountId,
         customerId,
         merchantAccountId,
-        merchantAccountIdSource: "env:SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID",
+        merchantAccountIdSource:
+          "env:SEAL_VORTEX_DOCUMENT_PROOF_MERCHANT_ACCOUNT_ID",
         payment: {
           vortexPayableId,
           hostedInvoiceUrl,
@@ -585,12 +649,15 @@ async function main(): Promise<void> {
           paymentStatus: stringField(postSignatureState, "paymentStatus"),
           invoiceStatus: stringField(postSignatureState, "invoiceStatus"),
           invoiceProvider: stringField(postSignatureState, "invoiceProvider"),
-          documentWorkflowStatus: stringField(postSignatureState, "documentWorkflowStatus"),
+          documentWorkflowStatus: stringField(
+            postSignatureState,
+            "documentWorkflowStatus"
+          ),
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

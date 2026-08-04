@@ -66,8 +66,10 @@ export const MCP_OAUTH_ISSUER_PATH = MCP_OAUTH_PATHS.issuerPath;
 
 export const MCP_OAUTH_CODE_CHALLENGE_METHODS =
   MCP_OAUTH_PROTOCOL_CONFIG.codeChallengeMethodsSupported;
-export const MCP_OAUTH_GRANT_TYPES = MCP_OAUTH_PROTOCOL_CONFIG.grantTypesSupported;
-export const MCP_OAUTH_RESPONSE_TYPES = MCP_OAUTH_PROTOCOL_CONFIG.responseTypesSupported;
+export const MCP_OAUTH_GRANT_TYPES =
+  MCP_OAUTH_PROTOCOL_CONFIG.grantTypesSupported;
+export const MCP_OAUTH_RESPONSE_TYPES =
+  MCP_OAUTH_PROTOCOL_CONFIG.responseTypesSupported;
 export const MCP_OAUTH_TOKEN_ENDPOINT_AUTH_METHODS =
   MCP_OAUTH_PROTOCOL_CONFIG.tokenEndpointAuthMethodsSupported;
 
@@ -97,12 +99,20 @@ export const MCP_OAUTH_CLIENTS = [
   MCP_OAUTH_SECONDARY_CLIENT,
 ] as const satisfies readonly McpOAuthClientFixture[];
 
-export function getMcpOAuthClient(clientId: string): McpOAuthClientFixture | null {
-  return MCP_OAUTH_CLIENTS.find((client) => client.clientId === clientId) ?? null;
+export function getMcpOAuthClient(
+  clientId: string
+): McpOAuthClientFixture | null {
+  return (
+    MCP_OAUTH_CLIENTS.find((client) => client.clientId === clientId) ?? null
+  );
 }
 
 export { buildEmptyJwks, createPkcePair, derivePkceChallenge };
-export type { OAuthAuthorizationServerMetadata, OAuthProtectedResourceMetadata, PkcePair };
+export type {
+  OAuthAuthorizationServerMetadata,
+  OAuthProtectedResourceMetadata,
+  PkcePair,
+};
 
 export function buildMcpOAuthIssuer(origin: string): string {
   return buildIssuer(origin, MCP_OAUTH_PROTOCOL_CONFIG);
@@ -112,10 +122,14 @@ export function resolveMcpOAuthOrigin(request: Request): string {
   return resolveRequestOrigin(request);
 }
 
-export function buildAuthorizationServerMetadata(origin: string): OAuthAuthorizationServerMetadata {
+export function buildAuthorizationServerMetadata(
+  origin: string
+): OAuthAuthorizationServerMetadata {
   return buildMetadata(origin, MCP_OAUTH_PROTOCOL_CONFIG);
 }
 
-export function buildProtectedResourceMetadata(origin: string): OAuthProtectedResourceMetadata {
+export function buildProtectedResourceMetadata(
+  origin: string
+): OAuthProtectedResourceMetadata {
   return buildResourceMetadata(origin, MCP_OAUTH_PROTOCOL_CONFIG);
 }

@@ -26,9 +26,12 @@ export function usePdfViewer(documentId: Id<"documents">) {
   useEffect(() => {
     const fetchPdfUrl = async () => {
       try {
-        const url = await convexClient.query(api.documents.queries.getDocumentUrl, {
-          documentId,
-        });
+        const url = await convexClient.query(
+          api.documents.queries.getDocumentUrl,
+          {
+            documentId,
+          }
+        );
         setPdfUrl(url);
       } catch (_error) {
         toast.error("Failed to load PDF");
@@ -72,7 +75,11 @@ export function usePdfViewer(documentId: Id<"documents">) {
   }, []);
 
   // Capture first-page height for percentage-based field coordinate conversion
-  const handlePageDimensions = (pageNumber: number, _width: number, height: number) => {
+  const handlePageDimensions = (
+    pageNumber: number,
+    _width: number,
+    height: number
+  ) => {
     if (pageNumber === 1) {
       setPdfHeight(height);
     }

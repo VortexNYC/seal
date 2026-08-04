@@ -18,11 +18,20 @@ import {
 import type { ReactNode } from "react";
 
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
-import { formatDate, formatFileSize, formatRelativeTime, getInitials } from "@/lib/formatting";
+import {
+  formatDate,
+  formatFileSize,
+  formatRelativeTime,
+  getInitials,
+} from "@/lib/formatting";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { AIInsightsPanel } from "./ai-annotation-overlays";
@@ -106,7 +115,7 @@ interface DocumentSidebarProps {
   onAddRecipient: () => void;
   onAddMyself: () => void;
   onRecipientOptions: (
-    recipient: FieldListRecipient & { status: string; signingToken?: string },
+    recipient: FieldListRecipient & { status: string; signingToken?: string }
   ) => void;
 
   // Activity
@@ -219,7 +228,8 @@ function RecipientRow({
   recipient: FieldListRecipient;
   onRecipientOptions: DocumentSidebarProps["onRecipientOptions"];
 }) {
-  const status = "status" in recipient ? (recipient.status as string) : "pending";
+  const status =
+    "status" in recipient ? (recipient.status as string) : "pending";
   const statusColorClass =
     status === "viewed"
       ? "bg-info-surface text-info"
@@ -234,7 +244,7 @@ function RecipientRow({
       <div
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9 sm:text-[0.8125rem]",
-          statusColorClass,
+          statusColorClass
         )}
       >
         {getInitials(recipient.name ?? undefined, recipient.email)}
@@ -252,7 +262,7 @@ function RecipientRow({
       <span
         className={cn(
           "rounded-full px-2.5 py-1 font-sans text-[0.6875rem] font-semibold whitespace-nowrap sm:px-2 sm:py-0.5 sm:text-[0.625rem]",
-          statusColorClass,
+          statusColorClass
         )}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -265,7 +275,7 @@ function RecipientRow({
             recipient as FieldListRecipient & {
               status: string;
               signingToken?: string;
-            },
+            }
           )
         }
         title="Recipient options"
@@ -322,14 +332,19 @@ function RecipientsSection({
           <ChevronDownIcon
             className={cn(
               "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180",
+              open && "rotate-180"
             )}
           />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         {canEdit && !isUserAlreadyRecipient && (
-          <Button variant="outline" size="sm" className="mt-3 mb-3 w-full" onClick={onAddMyself}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 mb-3 w-full"
+            onClick={onAddMyself}
+          >
             <UserIcon className="mr-2 h-4 w-4" />
             Add myself as signer
           </Button>
@@ -405,7 +420,7 @@ function DocumentSettingsSection({
           <ChevronDownIcon
             className={cn(
               "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180",
+              open && "rotate-180"
             )}
           />
         </button>
@@ -418,8 +433,8 @@ function DocumentSettingsSection({
               Redirect after signing
             </Label>
             <p className="text-muted-foreground text-xs">
-              Recipients are sent to this URL after signing. Leave empty for the default thank-you
-              page.
+              Recipients are sent to this URL after signing. Leave empty for the
+              default thank-you page.
             </p>
             <div className="flex gap-2">
               <Input
@@ -444,7 +459,9 @@ function DocumentSettingsSection({
                 )}
               </Button>
             </div>
-            {redirectUrlError && <p className="text-destructive text-xs">{redirectUrlError}</p>}
+            {redirectUrlError && (
+              <p className="text-destructive text-xs">{redirectUrlError}</p>
+            )}
           </div>
         </div>
       </CollapsibleContent>
@@ -468,12 +485,17 @@ function AIChatSection({
   onCloseAIChat: () => void;
 }) {
   if (!canEdit || !aiEnabled || !showAIChat) return null;
-  if (threadId) return <AIChatPanel threadId={threadId} slug={slug} onClose={onCloseAIChat} />;
+  if (threadId)
+    return (
+      <AIChatPanel threadId={threadId} slug={slug} onClose={onCloseAIChat} />
+    );
 
   return (
     <div className="border-border bg-card flex flex-col items-center gap-3 rounded-2xl border p-8 shadow-sm sm:rounded-xl">
       <Loader2Icon className="text-ai-accent h-5 w-5 animate-spin" />
-      <p className="text-muted-foreground font-sans text-sm">Starting AI assistant...</p>
+      <p className="text-muted-foreground font-sans text-sm">
+        Starting AI assistant...
+      </p>
     </div>
   );
 }
@@ -500,7 +522,9 @@ function AIInsightsSection({
     return (
       <div className="border-border bg-muted/30 flex items-center gap-3 rounded-2xl border border-dashed px-5 py-4 sm:rounded-xl">
         <Loader2Icon className="text-muted-foreground/60 h-4 w-4 animate-spin" />
-        <span className="text-muted-foreground font-sans text-xs">Scanning for insights...</span>
+        <span className="text-muted-foreground font-sans text-xs">
+          Scanning for insights...
+        </span>
       </div>
     );
   }
@@ -531,7 +555,7 @@ function AIInsightsSection({
           <ChevronDownIcon
             className={cn(
               "text-muted-foreground h-4 w-4 transition-transform duration-200",
-              open && "rotate-180",
+              open && "rotate-180"
             )}
           />
         </button>
@@ -611,7 +635,7 @@ function SignatureFieldsSection({
           <ChevronDownIcon
             className={cn(
               "text-muted-foreground h-4 w-4 transition-transform duration-200",
-              open && "rotate-180",
+              open && "rotate-180"
             )}
           />
         </button>
@@ -704,7 +728,7 @@ function DocumentDetailsSection({
           <ChevronDownIcon
             className={cn(
               "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180",
+              open && "rotate-180"
             )}
           />
         </button>
@@ -731,10 +755,19 @@ function DocumentDetailsSection({
   );
 }
 
-function ActivityEventRow({ event, index }: { event: ActivityEvent; index: number }) {
+function ActivityEventRow({
+  event,
+  index,
+}: {
+  event: ActivityEvent;
+  index: number;
+}) {
   return (
     <div
-      className={cn("relative flex gap-4 py-3 first:pt-0 last:pb-0", activityDotClass(event.type))}
+      className={cn(
+        "relative flex gap-4 py-3 first:pt-0 last:pb-0",
+        activityDotClass(event.type)
+      )}
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       <div className="activity-dot relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 sm:h-7 sm:w-7">
@@ -788,7 +821,7 @@ function ActivitySection({
           <ChevronDownIcon
             className={cn(
               "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180",
+              open && "rotate-180"
             )}
           />
         </button>
@@ -819,18 +852,23 @@ function ActivitySection({
 export function DocumentSidebar(props: DocumentSidebarProps) {
   // Normalize null → undefined for components that don't accept null
   const normalizedWorkflowStatus = props.workflowStatus ?? undefined;
-  const visibleProgress = normalizedWorkflowStatus !== "draft" ? props.progress : null;
+  const visibleProgress =
+    normalizedWorkflowStatus !== "draft" ? props.progress : null;
   const signingRecipient =
     props.currentUserRecipient !== null &&
     normalizedWorkflowStatus !== "draft" &&
     normalizedWorkflowStatus !== "completed" &&
-    (props.currentUserRecipient.role === "signer" || props.currentUserRecipient.role === "approver")
+    (props.currentUserRecipient.role === "signer" ||
+      props.currentUserRecipient.role === "approver")
       ? props.currentUserRecipient
       : null;
 
   return (
     <div className="flex flex-col gap-5 sm:gap-4">
-      <DocumentStatusHero workflowStatus={normalizedWorkflowStatus} createdAt={props.createdAt} />
+      <DocumentStatusHero
+        workflowStatus={normalizedWorkflowStatus}
+        createdAt={props.createdAt}
+      />
       {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
       {signingRecipient && (
         <InAppSigningSection

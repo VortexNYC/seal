@@ -1,7 +1,12 @@
-import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
+import {
+  expect,
+  type Locator,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -13,7 +18,7 @@ export type ViewportKind = "desktop" | "mobile" | "tablet";
 
 function requireBox(
   locator: Locator,
-  name: string,
+  name: string
 ): Promise<NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>> {
   return locator.boundingBox().then((box) => {
     expect(box, `${name} should have a bounding box`).not.toBeNull();
@@ -27,22 +32,31 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
     return Math.max(0, root.scrollWidth - root.clientWidth);
   });
 
-  expect(overflow, "page should not overflow horizontally").toBeLessThanOrEqual(1);
+  expect(overflow, "page should not overflow horizontally").toBeLessThanOrEqual(
+    1
+  );
 }
 
-export async function expectStacked(top: Locator, bottom: Locator): Promise<void> {
+export async function expectStacked(
+  top: Locator,
+  bottom: Locator
+): Promise<void> {
   await expect(top).toBeVisible();
   await expect(bottom).toBeVisible();
 
   const topBox = await requireBox(top, "top element");
   const bottomBox = await requireBox(bottom, "bottom element");
 
-  expect(bottomBox.y, "second element should render below the first").toBeGreaterThan(
-    topBox.y + topBox.height / 2,
-  );
+  expect(
+    bottomBox.y,
+    "second element should render below the first"
+  ).toBeGreaterThan(topBox.y + topBox.height / 2);
 }
 
-export async function expectInline(left: Locator, right: Locator): Promise<void> {
+export async function expectInline(
+  left: Locator,
+  right: Locator
+): Promise<void> {
   await expect(left).toBeVisible();
   await expect(right).toBeVisible();
 
@@ -51,11 +65,12 @@ export async function expectInline(left: Locator, right: Locator): Promise<void>
 
   expect(
     Math.abs(leftBox.y - rightBox.y),
-    "inline elements should share roughly the same vertical origin",
+    "inline elements should share roughly the same vertical origin"
   ).toBeLessThan(Math.max(leftBox.height, rightBox.height));
-  expect(rightBox.x, "second element should render to the right of the first").toBeGreaterThan(
-    leftBox.x + 16,
-  );
+  expect(
+    rightBox.x,
+    "second element should render to the right of the first"
+  ).toBeGreaterThan(leftBox.x + 16);
 }
 
 export function getViewportKind(testInfo: TestInfo): ViewportKind {

@@ -22,7 +22,7 @@ export const documentWorkflowStatusTuple = v.union(
   v.literal("completed"),
   v.literal("cancelled"),
   v.literal("declined"),
-  v.literal("expired"),
+  v.literal("expired")
 );
 
 export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
@@ -30,10 +30,19 @@ export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
 /**
  * Valid status transitions for document workflow
  */
-export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkflowStatus[]> = {
+export const WORKFLOW_TRANSITIONS: Record<
+  DocumentWorkflowStatus,
+  DocumentWorkflowStatus[]
+> = {
   draft: ["sent", "cancelled"],
   sent: ["in_progress", "cancelled", "declined", "expired"],
-  in_progress: ["completed", "waiting_for_payment", "cancelled", "declined", "expired"],
+  in_progress: [
+    "completed",
+    "waiting_for_payment",
+    "cancelled",
+    "declined",
+    "expired",
+  ],
   waiting_for_payment: ["completed", "cancelled"],
   completed: [], // Terminal state
   cancelled: [], // Terminal state
@@ -46,7 +55,7 @@ export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkfl
  */
 export function isValidWorkflowTransition(
   from: DocumentWorkflowStatus,
-  to: DocumentWorkflowStatus,
+  to: DocumentWorkflowStatus
 ): boolean {
   return WORKFLOW_TRANSITIONS[from].includes(to);
 }

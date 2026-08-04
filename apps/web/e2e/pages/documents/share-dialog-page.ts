@@ -30,16 +30,28 @@ export class ShareDialogPage {
       .filter({ has: page.locator("svg.lucide-x") })
       .first();
     this.doneButton = this.dialogRoot.getByRole("button", { name: "Done" });
-    this.privateModeButton = this.dialogRoot.locator("button", { hasText: "Private" }).first();
-    this.workspaceModeButton = this.dialogRoot.locator("button", { hasText: "Workspace" }).first();
-    this.specificModeButton = this.dialogRoot.locator("button", { hasText: "Specific" }).first();
-    this.memberSelect = this.dialogRoot.locator('[data-testid="member-select"]');
-    this.permissionSelect = this.dialogRoot.locator('[data-testid="permission-select"]');
+    this.privateModeButton = this.dialogRoot
+      .locator("button", { hasText: "Private" })
+      .first();
+    this.workspaceModeButton = this.dialogRoot
+      .locator("button", { hasText: "Workspace" })
+      .first();
+    this.specificModeButton = this.dialogRoot
+      .locator("button", { hasText: "Specific" })
+      .first();
+    this.memberSelect = this.dialogRoot.locator(
+      '[data-testid="member-select"]'
+    );
+    this.permissionSelect = this.dialogRoot.locator(
+      '[data-testid="permission-select"]'
+    );
     this.addButton = this.dialogRoot.getByRole("button", { name: "Add" });
     this.accessList = this.dialogRoot.locator('[data-testid="access-list"]');
     this.ownerBadge = this.dialogRoot.locator("text=Owner");
     this.ownerRow = this.dialogRoot.locator('[data-testid="owner-row"]');
-    this.subscriptionWarning = this.dialogRoot.locator('[data-testid="subscription-warning"]');
+    this.subscriptionWarning = this.dialogRoot.locator(
+      '[data-testid="subscription-warning"]'
+    );
     this.proBadges = this.dialogRoot.locator("text=Pro");
   }
 
@@ -109,7 +121,10 @@ export class ShareDialogPage {
     );
   }
 
-  private async waitForSharingModeSelected(mode: SharingMode, timeoutMs = 10000): Promise<void> {
+  private async waitForSharingModeSelected(
+    mode: SharingMode,
+    timeoutMs = 10000
+  ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
@@ -120,7 +135,9 @@ export class ShareDialogPage {
       await this.page.waitForTimeout(250);
     }
 
-    throw new Error(`Timed out waiting for sharing mode to become selected: ${mode}`);
+    throw new Error(
+      `Timed out waiting for sharing mode to become selected: ${mode}`
+    );
   }
 
   async getCurrentSharingMode(): Promise<SharingMode | null> {
@@ -155,12 +172,17 @@ export class ShareDialogPage {
     return null;
   }
 
-  async addTeamMember(memberName: string, permission: PermissionLevel = "view"): Promise<void> {
+  async addTeamMember(
+    memberName: string,
+    permission: PermissionLevel = "view"
+  ): Promise<void> {
     await this.memberSelect.click();
     await this.page.getByRole("option", { name: memberName }).click();
 
     await this.permissionSelect.click();
-    await this.page.getByRole("option", { name: new RegExp(permission, "i") }).click();
+    await this.page
+      .getByRole("option", { name: new RegExp(permission, "i") })
+      .click();
 
     await this.addButton.click();
     await waitForConvexMutation(this.page, "grantAccess");
@@ -171,7 +193,10 @@ export class ShareDialogPage {
     const count = await items.count();
     const names: string[] = [];
     for (let i = 0; i < count; i++) {
-      const name = await items.nth(i).locator('[data-testid="access-name"]').textContent();
+      const name = await items
+        .nth(i)
+        .locator('[data-testid="access-name"]')
+        .textContent();
       if (name) names.push(name);
     }
     return names;
@@ -182,13 +207,20 @@ export class ShareDialogPage {
     return await sharedUsers.count();
   }
 
-  async changeUserPermission(userName: string, newPermission: PermissionLevel): Promise<void> {
+  async changeUserPermission(
+    userName: string,
+    newPermission: PermissionLevel
+  ): Promise<void> {
     const userRow = this.dialogRoot.locator('[data-testid="shared-user"]', {
       hasText: userName,
     });
-    const permissionDropdown = userRow.locator('[data-testid="permission-dropdown"]');
+    const permissionDropdown = userRow.locator(
+      '[data-testid="permission-dropdown"]'
+    );
     await permissionDropdown.click();
-    await this.page.getByRole("option", { name: new RegExp(newPermission, "i") }).click();
+    await this.page
+      .getByRole("option", { name: new RegExp(newPermission, "i") })
+      .click();
     await waitForConvexMutation(this.page, "updateAccessLevel");
   }
 
@@ -196,7 +228,9 @@ export class ShareDialogPage {
     const userRow = this.dialogRoot.locator('[data-testid="shared-user"]', {
       hasText: userName,
     });
-    const revokeButton = userRow.locator('[data-testid="revoke-access-button"]');
+    const revokeButton = userRow.locator(
+      '[data-testid="revoke-access-button"]'
+    );
     await revokeButton.click();
     await waitForConvexMutation(this.page, "revokeAccess");
   }
@@ -214,7 +248,9 @@ export class ShareDialogPage {
     });
     if (!(await userRow.isVisible())) return null;
 
-    const permissionDropdown = userRow.locator('[data-testid="permission-dropdown"]');
+    const permissionDropdown = userRow.locator(
+      '[data-testid="permission-dropdown"]'
+    );
     const text = await permissionDropdown.textContent();
 
     if (text?.toLowerCase().includes("view")) return "view";
@@ -244,7 +280,9 @@ export class ShareDialogPage {
 
   async showsEmptyState(): Promise<boolean> {
     const emptyState = this.dialogRoot.getByText("No one else has access yet");
-    await emptyState.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+    await emptyState
+      .waitFor({ state: "visible", timeout: 5000 })
+      .catch(() => {});
     return await emptyState.isVisible();
   }
 }

@@ -62,7 +62,14 @@ function SuccessBanner() {
       }}
     >
       <Text style={{ margin: "0 0 8px 0", fontSize: "32px" }}>&#x2713;</Text>
-      <Text style={{ margin: "0", fontSize: "18px", fontWeight: "600", color: status.success }}>
+      <Text
+        style={{
+          margin: "0",
+          fontSize: "18px",
+          fontWeight: "600",
+          color: status.success,
+        }}
+      >
         All Signatures Collected
       </Text>
     </Section>
@@ -94,7 +101,9 @@ function RecipientActivitySection({
           style={{
             padding: "12px 0",
             borderBottom:
-              index < recipientsSummary.length - 1 ? `1px solid ${email.border}` : undefined,
+              index < recipientsSummary.length - 1
+                ? `1px solid ${email.border}`
+                : undefined,
           }}
         >
           <Text
@@ -107,11 +116,24 @@ function RecipientActivitySection({
           >
             {recipient.name}
           </Text>
-          <Text style={{ margin: "2px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
+          <Text
+            style={{
+              margin: "2px 0 0 0",
+              fontSize: "12px",
+              color: email.mutedForeground,
+            }}
+          >
             {recipient.email}
           </Text>
-          <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: status.success }}>
-            {getRoleLabel(recipient.role)} &bull; {formatRecipientDate(recipient.completedAt)}
+          <Text
+            style={{
+              margin: "4px 0 0 0",
+              fontSize: "12px",
+              color: status.success,
+            }}
+          >
+            {getRoleLabel(recipient.role)} &bull;{" "}
+            {formatRecipientDate(recipient.completedAt)}
           </Text>
         </Section>
       ))}
@@ -141,14 +163,16 @@ export function DocumentCompleted({
         <Text style={emailStyles.bodyText}>Hello {senderName},</Text>
 
         <Text style={emailStyles.bodyTextSpaced}>
-          Great news! All recipients have completed their actions on your document. Here&apos;s the
-          summary:
+          Great news! All recipients have completed their actions on your
+          document. Here&apos;s the summary:
         </Text>
 
         {/* Document card */}
         <Section style={emailStyles.documentCard}>
           <Text style={emailStyles.documentTitle}>{documentName}</Text>
-          <Text style={emailStyles.documentMeta}>Completed on: {formattedDate}</Text>
+          <Text style={emailStyles.documentMeta}>
+            Completed on: {formattedDate}
+          </Text>
         </Section>
 
         <RecipientActivitySection recipientsSummary={recipientsSummary} />
@@ -161,8 +185,8 @@ export function DocumentCompleted({
         </Section>
 
         <Text style={emailStyles.infoText}>
-          The signed document is now available in your Seal dashboard. You can download it at any
-          time.
+          The signed document is now available in your Seal dashboard. You can
+          download it at any time.
         </Text>
       </Section>
     </EmailLayout>

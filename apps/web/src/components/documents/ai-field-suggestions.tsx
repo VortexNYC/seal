@@ -135,7 +135,9 @@ function SuggestionOverlay({
         "absolute flex items-center gap-1 rounded-[3px] border-[1.5px] border-dashed transition-[color,background-color,border-color] duration-200",
         colors.bg,
         colors.border,
-        isSelected ? "ring-info/30 opacity-100 ring-2" : "opacity-70 hover:opacity-100",
+        isSelected
+          ? "ring-info/30 opacity-100 ring-2"
+          : "opacity-70 hover:opacity-100"
       )}
       style={{
         left: absoluteX,
@@ -147,18 +149,20 @@ function SuggestionOverlay({
       <div
         className={cn(
           "absolute -top-5 left-0 flex items-center gap-1 rounded-t-sm px-1.5 py-0.5 font-sans text-[11px] font-medium whitespace-nowrap",
-          colors.badge,
+          colors.badge
         )}
       >
         <SparklesIcon className="h-2.5 w-2.5" />
         {field.label}
-        <span className="ml-0.5 opacity-75">{Math.round(field.confidence * 100)}%</span>
+        <span className="ml-0.5 opacity-75">
+          {Math.round(field.confidence * 100)}%
+        </span>
       </div>
       <div className="flex h-full w-full items-center justify-center">
         {getFieldIcon(field.fieldType)}
       </div>
       {isSelected && (
-        <div className="bg-info absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-primary-foreground shadow-sm">
+        <div className="bg-info text-primary-foreground absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full shadow-sm">
           <CheckIcon className="h-2.5 w-2.5" />
         </div>
       )}
@@ -171,11 +175,15 @@ function SuggestionOverlay({
  * Used by both AIFieldOverlays (inside TransformComponent) and AIFieldReviewBar (outside it).
  */
 export function useAIFieldSuggestions(documentId: Id<"documents">) {
-  const suggestions = useQuery(api.ai.queries.getFieldSuggestions, { documentId });
+  const suggestions = useQuery(api.ai.queries.getFieldSuggestions, {
+    documentId,
+  });
   const applyMutation = useMutation(api.ai.mutations.applyFieldSuggestions);
   const dismissMutation = useMutation(api.ai.mutations.dismissFieldSuggestions);
 
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+    new Set()
+  );
   const [isApplying, setIsApplying] = useState(false);
 
   const toggleField = useCallback((index: number) => {
@@ -207,13 +215,14 @@ export function useAIFieldSuggestions(documentId: Id<"documents">) {
     if (!suggestions) return;
     setIsApplying(true);
     try {
-      const indices = selectedIndices.size > 0 ? [...selectedIndices] : undefined;
+      const indices =
+        selectedIndices.size > 0 ? [...selectedIndices] : undefined;
       const result = await applyMutation({
         suggestionId: suggestions._id,
         selectedFieldIndices: indices,
       });
       toast.success(
-        `Applied ${result.count} field${result.count === 1 ? "" : "s"} from AI suggestions`,
+        `Applied ${result.count} field${result.count === 1 ? "" : "s"} from AI suggestions`
       );
     } catch {
       toast.error("Failed to apply suggestions");
@@ -256,14 +265,18 @@ export function AIFieldOverlays({
   pdfPageWidth,
   pdfPageHeight,
 }: {
-  suggestions: NonNullable<ReturnType<typeof useAIFieldSuggestions>["suggestions"]>;
+  suggestions: NonNullable<
+    ReturnType<typeof useAIFieldSuggestions>["suggestions"]
+  >;
   selectedIndices: Set<number>;
   toggleField: (index: number) => void;
   currentPage: number;
   pdfPageWidth: number;
   pdfPageHeight: number;
 }) {
-  const fieldsOnCurrentPage = suggestions.fields.filter((f) => f.page === currentPage);
+  const fieldsOnCurrentPage = suggestions.fields.filter(
+    (f) => f.page === currentPage
+  );
 
   return (
     <>
@@ -298,7 +311,9 @@ export function AIFieldReviewBar({
   handleApply,
   handleDismiss,
 }: {
-  suggestions: NonNullable<ReturnType<typeof useAIFieldSuggestions>["suggestions"]>;
+  suggestions: NonNullable<
+    ReturnType<typeof useAIFieldSuggestions>["suggestions"]
+  >;
   selectedIndices: Set<number>;
   isApplying: boolean;
   selectAll: () => void;
@@ -306,7 +321,9 @@ export function AIFieldReviewBar({
   handleApply: () => void;
   handleDismiss: () => void;
 }) {
-  const highConfidenceCount = suggestions.fields.filter((f) => f.confidence >= 0.8).length;
+  const highConfidenceCount = suggestions.fields.filter(
+    (f) => f.confidence >= 0.8
+  ).length;
 
   return (
     <div
@@ -315,12 +332,13 @@ export function AIFieldReviewBar({
       className="bg-card/95 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="from-ai-accent to-primary flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br text-primary-foreground shadow-sm">
+        <div className="from-ai-accent to-primary text-primary-foreground flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm">
           <SparklesIcon className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
           <span className="text-foreground font-semibold">
-            {suggestions.fields.length} field{suggestions.fields.length === 1 ? "" : "s"} detected
+            {suggestions.fields.length} field
+            {suggestions.fields.length === 1 ? "" : "s"} detected
           </span>
           <span className="text-muted-foreground ml-1.5 text-xs">
             {selectedIndices.size > 0 && `(${selectedIndices.size} selected)`}
@@ -329,17 +347,32 @@ export function AIFieldReviewBar({
       </div>
 
       <div className="flex items-center gap-2">
-        {highConfidenceCount > 0 && highConfidenceCount < suggestions.fields.length && (
-          <Button variant="ghost" size="sm" onClick={selectHighConfidence} className="h-7 text-xs">
-            High confidence ({highConfidenceCount})
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" onClick={selectAll} className="h-7 text-xs">
+        {highConfidenceCount > 0 &&
+          highConfidenceCount < suggestions.fields.length && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={selectHighConfidence}
+              className="h-7 text-xs"
+            >
+              High confidence ({highConfidenceCount})
+            </Button>
+          )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={selectAll}
+          className="h-7 text-xs"
+        >
           Select all
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground h-7 text-xs">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground h-7 text-xs"
+            >
               <XIcon className="mr-1 h-3 w-3" />
               Dismiss
             </Button>
@@ -348,13 +381,15 @@ export function AIFieldReviewBar({
             <AlertDialogHeader>
               <AlertDialogTitle>Dismiss AI suggestions?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will remove all {suggestions.fields.length} field suggestions. You can
-                re-analyze the document later if needed.
+                This will remove all {suggestions.fields.length} field
+                suggestions. You can re-analyze the document later if needed.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDismiss}>Dismiss</AlertDialogAction>
+              <AlertDialogAction onClick={handleDismiss}>
+                Dismiss
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -362,7 +397,7 @@ export function AIFieldReviewBar({
           size="sm"
           onClick={handleApply}
           disabled={isApplying}
-          className="from-ai-accent to-primary hover:from-ai-accent/90 hover:to-primary/90 h-7 bg-gradient-to-r text-xs text-primary-foreground shadow-sm"
+          className="from-ai-accent to-primary hover:from-ai-accent/90 hover:to-primary/90 text-primary-foreground h-7 bg-gradient-to-r text-xs shadow-sm"
         >
           <CheckIcon className="mr-1 h-3 w-3" />
           {isApplying

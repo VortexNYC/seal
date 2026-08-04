@@ -19,7 +19,7 @@ const fakeUserId = "user123" as Id<"users">;
 const fakeOrgId = "org123" as Id<"organizations">;
 
 function createMockAuth(
-  overrides: Partial<AuthContextWithPermissions> = {},
+  overrides: Partial<AuthContextWithPermissions> = {}
 ): AuthContextWithPermissions {
   const permissions = overrides.permissions ?? [];
   return {
@@ -30,8 +30,10 @@ function createMockAuth(
     isOwner: false,
     isAdmin: false,
     hasPermission: (p: string) => permissions.includes(p),
-    hasAnyPermission: (perms: string[]) => perms.some((p) => permissions.includes(p)),
-    hasAllPermissions: (perms: string[]) => perms.every((p) => permissions.includes(p)),
+    hasAnyPermission: (perms: string[]) =>
+      perms.some((p) => permissions.includes(p)),
+    hasAllPermissions: (perms: string[]) =>
+      perms.every((p) => permissions.includes(p)),
     user: {} as AuthContextWithPermissions["user"],
     member: {} as AuthContextWithPermissions["member"],
     organization: {} as AuthContextWithPermissions["organization"],
@@ -72,7 +74,9 @@ describe("ensureOrganizationScope", () => {
   test("throws ConvexError when organization IDs differ", () => {
     const auth = createMockAuth({ organizationId: fakeOrgId });
     const differentOrgId = "org456" as Id<"organizations">;
-    expect(() => ensureOrganizationScope(auth, differentOrgId)).toThrow(ConvexError);
+    expect(() => ensureOrganizationScope(auth, differentOrgId)).toThrow(
+      ConvexError
+    );
   });
 
   test("passes silently when targetOrgId is undefined", () => {
@@ -107,21 +111,25 @@ describe("ensurePermission", () => {
 
   test("throws ConvexError when user lacks the required permission", () => {
     const auth = createMockAuth({ permissions: [] });
-    expect(() => ensurePermission(auth, "documents:delete")).toThrow(ConvexError);
+    expect(() => ensurePermission(auth, "documents:delete")).toThrow(
+      ConvexError
+    );
   });
 });
 
 describe("ensureAnyPermission", () => {
   test("passes when user has at least one of the required permissions", () => {
     const auth = createMockAuth({ permissions: ["documents:edit"] });
-    expect(() => ensureAnyPermission(auth, ["documents:edit", "documents:delete"])).not.toThrow();
+    expect(() =>
+      ensureAnyPermission(auth, ["documents:edit", "documents:delete"])
+    ).not.toThrow();
   });
 
   test("throws ConvexError when user has none of the required permissions", () => {
     const auth = createMockAuth({ permissions: ["documents:view"] });
-    expect(() => ensureAnyPermission(auth, ["documents:edit", "documents:delete"])).toThrow(
-      ConvexError,
-    );
+    expect(() =>
+      ensureAnyPermission(auth, ["documents:edit", "documents:delete"])
+    ).toThrow(ConvexError);
   });
 });
 
@@ -130,14 +138,16 @@ describe("ensureAllPermissions", () => {
     const auth = createMockAuth({
       permissions: ["documents:edit", "documents:delete"],
     });
-    expect(() => ensureAllPermissions(auth, ["documents:edit", "documents:delete"])).not.toThrow();
+    expect(() =>
+      ensureAllPermissions(auth, ["documents:edit", "documents:delete"])
+    ).not.toThrow();
   });
 
   test("throws ConvexError when user is missing one permission", () => {
     const auth = createMockAuth({ permissions: ["documents:edit"] });
-    expect(() => ensureAllPermissions(auth, ["documents:edit", "documents:delete"])).toThrow(
-      ConvexError,
-    );
+    expect(() =>
+      ensureAllPermissions(auth, ["documents:edit", "documents:delete"])
+    ).toThrow(ConvexError);
   });
 });
 
@@ -150,7 +160,9 @@ describe("ensureResourceOwner", () => {
   test("throws ConvexError when userId does not match resourceOwnerId", () => {
     const auth = createMockAuth({ userId: fakeUserId });
     const differentUserId = "user456" as Id<"users">;
-    expect(() => ensureResourceOwner(auth, differentUserId)).toThrow(ConvexError);
+    expect(() => ensureResourceOwner(auth, differentUserId)).toThrow(
+      ConvexError
+    );
   });
 });
 
@@ -163,12 +175,16 @@ describe("ensureResourceOwnerOrAdmin", () => {
   test("passes when user is an admin but not the resource owner", () => {
     const differentUserId = "user456" as Id<"users">;
     const auth = createMockAuth({ userId: fakeUserId, isAdmin: true });
-    expect(() => ensureResourceOwnerOrAdmin(auth, differentUserId)).not.toThrow();
+    expect(() =>
+      ensureResourceOwnerOrAdmin(auth, differentUserId)
+    ).not.toThrow();
   });
 
   test("throws ConvexError when user is neither the resource owner nor an admin", () => {
     const differentUserId = "user456" as Id<"users">;
     const auth = createMockAuth({ userId: fakeUserId, isAdmin: false });
-    expect(() => ensureResourceOwnerOrAdmin(auth, differentUserId)).toThrow(ConvexError);
+    expect(() => ensureResourceOwnerOrAdmin(auth, differentUserId)).toThrow(
+      ConvexError
+    );
   });
 });

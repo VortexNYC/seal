@@ -7,7 +7,7 @@ export function extractOrganizationSlugFromUrl(url: string): string | null {
   try {
     const pathname = new URL(url).pathname;
     const match = pathname.match(
-      /^\/([\w-]+)\/(?:home|documents|settings|templates|analytics|onboarding)(?:\/|$)/,
+      /^\/([\w-]+)\/(?:home|documents|settings|templates|analytics|onboarding)(?:\/|$)/
     );
     return match?.[1] ?? null;
   } catch {

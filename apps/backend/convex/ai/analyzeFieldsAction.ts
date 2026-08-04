@@ -18,10 +18,16 @@ import { getModel } from "./model";
 
 // Re-export types and schema from the standalone module (keeps imports stable
 // for consumers while letting tests import without side effects).
-export type { AnnotationResult, FieldAnalysisResult } from "./analyzeFieldsSchema";
+export type {
+  AnnotationResult,
+  FieldAnalysisResult,
+} from "./analyzeFieldsSchema";
 export { DocumentAnalysisSchema } from "./analyzeFieldsSchema";
 
-import { DocumentAnalysisSchema, type FieldAnalysisResult } from "./analyzeFieldsSchema";
+import {
+  DocumentAnalysisSchema,
+  type FieldAnalysisResult,
+} from "./analyzeFieldsSchema";
 
 const DOCUMENT_ANALYSIS_PROMPT = `You are analyzing a PDF document for a document signing platform. You have two jobs:
 
@@ -147,7 +153,7 @@ export const fieldAnalysisCache: ActionCache<AnalyzeAction> = new ActionCache(
     action: internal.ai.analyzeFieldsAction.analyzeFieldsInternal,
     name: "documentAnalysis-v2",
     ttl: 24 * 60 * 60 * 1000, // 24 hours
-  } as ActionCacheConfig<AnalyzeAction>,
+  } as ActionCacheConfig<AnalyzeAction>
 );
 
 // ---------------------------------------------------------------------------
@@ -162,20 +168,23 @@ const RETRY_CONFIG = {
 
 export async function fetchFieldAnalysisWithRetry(
   ctx: Parameters<typeof fieldAnalysisCache.fetch>[0],
-  storageId: Id<"_storage">,
+  storageId: Id<"_storage">
 ): Promise<FieldAnalysisResult> {
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
-      return (await fieldAnalysisCache.fetch(ctx, { storageId })) as FieldAnalysisResult;
+      return (await fieldAnalysisCache.fetch(ctx, {
+        storageId,
+      })) as FieldAnalysisResult;
     } catch (error) {
       lastError = error;
       if (attempt < RETRY_CONFIG.maxRetries) {
-        const delayMs = RETRY_CONFIG.initialDelayMs * RETRY_CONFIG.backoffBase ** attempt;
+        const delayMs =
+          RETRY_CONFIG.initialDelayMs * RETRY_CONFIG.backoffBase ** attempt;
         console.warn(
           `[AI Pipeline] Field analysis attempt ${attempt + 1} failed, retrying in ${delayMs}ms`,
-          error,
+          error
         );
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }

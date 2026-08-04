@@ -4,9 +4,15 @@ const ignoredConsoleErrorPatterns = [/\/favicon\.ico(?:\?|$)/i];
 const ignoredConsoleMessages = [
   "Failed to load resource: the server responded with a status of 404 ()",
 ];
-const ignoredRequestFailurePatterns = [/ERR_ABORTED/i, /NS_BINDING_ABORTED/i, /cancelled/i];
+const ignoredRequestFailurePatterns = [
+  /ERR_ABORTED/i,
+  /NS_BINDING_ABORTED/i,
+  /cancelled/i,
+];
 
-export function trackBrowserErrors(page: Page): { assertNoErrors: () => Promise<void> } {
+export function trackBrowserErrors(page: Page): {
+  assertNoErrors: () => Promise<void>;
+} {
   const errors: string[] = [];
 
   page.on("console", (message) => {
@@ -36,7 +42,11 @@ export function trackBrowserErrors(page: Page): { assertNoErrors: () => Promise<
       return;
     }
 
-    if (ignoredRequestFailurePatterns.some((pattern) => pattern.test(failure.errorText))) {
+    if (
+      ignoredRequestFailurePatterns.some((pattern) =>
+        pattern.test(failure.errorText)
+      )
+    ) {
       return;
     }
 
@@ -45,7 +55,9 @@ export function trackBrowserErrors(page: Page): { assertNoErrors: () => Promise<
       return;
     }
 
-    errors.push(`requestfailed: ${request.method()} ${url} ${failure.errorText}`);
+    errors.push(
+      `requestfailed: ${request.method()} ${url} ${failure.errorText}`
+    );
   });
 
   return {

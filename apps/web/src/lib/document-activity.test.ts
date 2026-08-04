@@ -6,7 +6,10 @@ const BASE_TIME = 1_700_000_000_000; // fixed reference point
 
 describe("buildActivityEvents", () => {
   test("returns a 'created' event from document data", () => {
-    const events = buildActivityEvents({ name: "NDA", createdAt: BASE_TIME }, []);
+    const events = buildActivityEvents(
+      { name: "NDA", createdAt: BASE_TIME },
+      []
+    );
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("created");
     expect(events[0].description).toContain("NDA");
@@ -15,8 +18,18 @@ describe("buildActivityEvents", () => {
 
   test("adds recipient_added event for each recipient", () => {
     const events = buildActivityEvents({ name: "NDA", createdAt: BASE_TIME }, [
-      { email: "alice@test.com", name: "Alice", role: "signer", createdAt: BASE_TIME + 1000 },
-      { email: "bob@test.com", name: "Bob", role: "viewer", createdAt: BASE_TIME + 2000 },
+      {
+        email: "alice@test.com",
+        name: "Alice",
+        role: "signer",
+        createdAt: BASE_TIME + 1000,
+      },
+      {
+        email: "bob@test.com",
+        name: "Bob",
+        role: "viewer",
+        createdAt: BASE_TIME + 2000,
+      },
     ]);
     const added = events.filter((e) => e.type === "recipient_added");
     expect(added).toHaveLength(2);
@@ -28,7 +41,12 @@ describe("buildActivityEvents", () => {
 
   test("falls back to email when name is null/undefined", () => {
     const events = buildActivityEvents({ name: "Doc", createdAt: BASE_TIME }, [
-      { email: "noname@test.com", name: null, role: "signer", createdAt: BASE_TIME + 1000 },
+      {
+        email: "noname@test.com",
+        name: null,
+        role: "signer",
+        createdAt: BASE_TIME + 1000,
+      },
     ]);
     const added = events.find((e) => e.type === "recipient_added");
     expect(added?.description).toContain("noname@test.com");
@@ -130,24 +148,27 @@ describe("buildActivityEvents", () => {
   });
 
   test("full lifecycle produces correct event count and order", () => {
-    const events = buildActivityEvents({ name: "Contract", createdAt: BASE_TIME }, [
-      {
-        email: "alice@test.com",
-        name: "Alice",
-        role: "signer",
-        createdAt: BASE_TIME + 1000,
-        viewedAt: BASE_TIME + 5000,
-        signedAt: BASE_TIME + 10000,
-      },
-      {
-        email: "bob@test.com",
-        name: "Bob",
-        role: "signer",
-        createdAt: BASE_TIME + 2000,
-        viewedAt: BASE_TIME + 7000,
-        signedAt: BASE_TIME + 15000,
-      },
-    ]);
+    const events = buildActivityEvents(
+      { name: "Contract", createdAt: BASE_TIME },
+      [
+        {
+          email: "alice@test.com",
+          name: "Alice",
+          role: "signer",
+          createdAt: BASE_TIME + 1000,
+          viewedAt: BASE_TIME + 5000,
+          signedAt: BASE_TIME + 10000,
+        },
+        {
+          email: "bob@test.com",
+          name: "Bob",
+          role: "signer",
+          createdAt: BASE_TIME + 2000,
+          viewedAt: BASE_TIME + 7000,
+          signedAt: BASE_TIME + 15000,
+        },
+      ]
+    );
     // 1 created + 2 recipient_added + 2 viewed + 2 signed = 7
     expect(events).toHaveLength(7);
     // Most recent event should be Bob's signing

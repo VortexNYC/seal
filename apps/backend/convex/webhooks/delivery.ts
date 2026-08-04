@@ -29,7 +29,7 @@ import { getSubscriptionPlan } from "../auth/subscription_guards";
 import { formatSlackMessage } from "./slack_formatter";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -71,7 +71,7 @@ async function signPayload(
   secret: string,
   eventId: string,
   timestamp: number,
-  payload: string,
+  payload: string
 ): Promise<string> {
   const encoder = new TextEncoder();
   const signedContent = `${eventId}.${timestamp}.${payload}`;
@@ -81,10 +81,14 @@ async function signPayload(
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
 
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(signedContent));
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(signedContent)
+  );
   const hexSignature = Array.from(new Uint8Array(signature))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -104,7 +108,9 @@ function getNextRetryAt(attemptCount: number): number | undefined {
   );
 }
 
-async function getResponseBody(response: Response): Promise<string | undefined> {
+async function getResponseBody(
+  response: Response
+): Promise<string | undefined> {
   try {
     const text = await response.text();
     return text.slice(0, 1024);
@@ -117,7 +123,7 @@ async function markDeliveryInactiveEndpoint(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
   endpoint: Doc<"webhook_endpoints"> | null,
-  attemptCount: number,
+  attemptCount: number
 ): Promise<DeliveryProcessingResult> {
   await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
     deliveryId: delivery._id,
@@ -132,7 +138,7 @@ async function markDeliveryInactiveEndpoint(
 async function markSignatureFailure(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
-  attemptCount: number,
+  attemptCount: number
 ): Promise<DeliveryProcessingResult> {
   await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
     deliveryId: delivery._id,
@@ -151,7 +157,7 @@ async function markHttpDeliveryResult(
   attemptCount: number,
   response: Response,
   responseBody: string | undefined,
-  responseTimeMs: number,
+  responseTimeMs: number
 ): Promise<DeliveryProcessingResult> {
   if (response.ok) {
     await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
@@ -196,7 +202,7 @@ async function markNetworkFailure(
   endpoint: Doc<"webhook_endpoints">,
   attemptCount: number,
   responseTimeMs: number,
-  error: unknown,
+  error: unknown
 ): Promise<DeliveryProcessingResult> {
   const nextRetryAt = getNextRetryAt(attemptCount);
   const errorMessage =
@@ -226,13 +232,18 @@ async function deliverJsonWebhook(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
   endpoint: Doc<"webhook_endpoints">,
-  attemptCount: number,
+  attemptCount: number
 ): Promise<DeliveryProcessingResult> {
   const timestamp = Math.floor(Date.now() / 1000);
   let signature: string;
 
   try {
-    signature = await signPayload(endpoint.secret, delivery.eventId, timestamp, delivery.payload);
+    signature = await signPayload(
+      endpoint.secret,
+      delivery.eventId,
+      timestamp,
+      delivery.payload
+    );
   } catch {
     return markSignatureFailure(ctx, delivery, attemptCount);
   }
@@ -268,10 +279,17 @@ async function deliverJsonWebhook(
       attemptCount,
       response,
       responseBody,
-      responseTimeMs,
+      responseTimeMs
     );
   } catch (error) {
-    return markNetworkFailure(ctx, delivery, endpoint, attemptCount, Date.now() - startTime, error);
+    return markNetworkFailure(
+      ctx,
+      delivery,
+      endpoint,
+      attemptCount,
+      Date.now() - startTime,
+      error
+    );
   }
 }
 
@@ -279,7 +297,7 @@ async function deliverSlackWebhook(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
   endpoint: Doc<"webhook_endpoints">,
-  attemptCount: number,
+  attemptCount: number
 ): Promise<DeliveryProcessingResult> {
   const parsed = JSON.parse(delivery.payload) as {
     id: string;
@@ -318,10 +336,17 @@ async function deliverSlackWebhook(
       attemptCount,
       response,
       responseBody,
-      responseTimeMs,
+      responseTimeMs
     );
   } catch (error) {
-    return markNetworkFailure(ctx, delivery, endpoint, attemptCount, Date.now() - startTime, error);
+    return markNetworkFailure(
+      ctx,
+      delivery,
+      endpoint,
+      attemptCount,
+      Date.now() - startTime,
+      error
+    );
   }
 }
 
@@ -329,7 +354,7 @@ async function deliverWebhook(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
   endpoint: Doc<"webhook_endpoints">,
-  attemptCount: number,
+  attemptCount: number
 ): Promise<DeliveryProcessingResult> {
   if (endpoint.format === "slack") {
     return deliverSlackWebhook(ctx, delivery, endpoint, attemptCount);
@@ -340,7 +365,7 @@ async function deliverWebhook(
 async function markDeliverySuspended(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
-  attemptCount: number,
+  attemptCount: number
 ): Promise<DeliveryProcessingResult> {
   await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
     deliveryId: delivery._id,
@@ -357,7 +382,7 @@ async function markDeliverySuspended(
       organizationId: delivery.organizationId,
       eventType: delivery.eventType,
       timestamp: Date.now(),
-    }),
+    })
   );
 
   return { delivered: false };
@@ -365,12 +390,15 @@ async function markDeliverySuspended(
 
 async function processPendingDelivery(
   ctx: ActionCtx,
-  delivery: Doc<"webhook_deliveries">,
+  delivery: Doc<"webhook_deliveries">
 ): Promise<DeliveryProcessingResult> {
   const attemptCount = delivery.attemptCount + 1;
-  const endpoint = await ctx.runQuery(internal.webhooks.delivery.getEndpointById, {
-    endpointId: delivery.endpointId,
-  });
+  const endpoint = await ctx.runQuery(
+    internal.webhooks.delivery.getEndpointById,
+    {
+      endpointId: delivery.endpointId,
+    }
+  );
 
   if (!endpoint || endpoint.status !== "active") {
     return markDeliveryInactiveEndpoint(ctx, delivery, endpoint, attemptCount);
@@ -418,7 +446,7 @@ export const updateDeliveryResult = internalMutation({
       v.literal("pending"),
       v.literal("delivered"),
       v.literal("failed"),
-      v.literal("abandoned"),
+      v.literal("abandoned")
     ),
     attemptCount: v.number(),
     responseCode: v.optional(v.number()),
@@ -478,10 +506,12 @@ export const updateEndpointStatus = internalMutation({
  */
 export const processWebhookDeliveries = internalAction({
   args: {},
-  handler: async (ctx): Promise<{ processed: number; delivered: number; failed: number }> => {
+  handler: async (
+    ctx
+  ): Promise<{ processed: number; delivered: number; failed: number }> => {
     const pendingDeliveries: Doc<"webhook_deliveries">[] = await ctx.runQuery(
       internal.webhooks.delivery.getPendingDeliveries,
-      {},
+      {}
     );
 
     let processed = 0;
@@ -529,14 +559,17 @@ export const abandonPendingDeliveriesForOrg = internalMutation({
   handler: async (ctx, args): Promise<number> => {
     const pending = await ctx.db
       .query("webhook_deliveries")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
     for (const delivery of pending) {
       await ctx.db.patch(delivery._id, {
         status: "abandoned",
-        errorMessage: "Webhooks suspended — organization downgraded to Free tier",
+        errorMessage:
+          "Webhooks suspended — organization downgraded to Free tier",
       });
     }
 

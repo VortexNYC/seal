@@ -15,14 +15,14 @@ export const merchantAccountsTable = defineTable({
       eventuallyDue: v.array(v.string()),
       pastDue: v.array(v.string()),
       disabledReason: v.optional(v.string()),
-    }),
+    })
   ),
   capabilities: v.optional(
     v.object({
       cardPayments: v.string(),
       transfers: v.string(),
       usBankAccountAchPayments: v.optional(v.string()),
-    }),
+    })
   ),
   feeHandling: v.union(v.literal("absorb"), v.literal("pass_to_recipient")),
   defaultCurrency: v.optional(v.string()),

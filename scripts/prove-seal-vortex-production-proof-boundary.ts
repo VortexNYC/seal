@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
 
 type ProductionProofBoundaryAudit = {
   readonly ok: boolean;
@@ -58,15 +58,19 @@ try {
   writeFileSync(incompletePath, "environment: production\n", "utf8");
   const incomplete = runAudit(incompletePath);
   assertEqual(incomplete.status, 1, "incomplete proof doc exits 1");
-  assertEqual(incomplete.audit.ok, false, "incomplete proof doc reports ok false");
+  assertEqual(
+    incomplete.audit.ok,
+    false,
+    "incomplete proof doc reports ok false"
+  );
   assertEqual(
     incomplete.audit.status,
     "invalid_production_proof_artifact",
-    "incomplete proof doc reports invalid status",
+    "incomplete proof doc reports invalid status"
   );
   assert(
     incomplete.audit.missingMoneyProofMarkers.length > 0,
-    "incomplete proof doc lists missing markers",
+    "incomplete proof doc lists missing markers"
   );
 
   const moneyOnlyPath = join(tempDir, "money-only.md");
@@ -82,14 +86,14 @@ try {
   });
   assert(
     moneyOnly.audit.missingPostProofRetirementMarkers.length > 0,
-    "money-proof-only doc lists post-proof retirement markers",
+    "money-proof-only doc lists post-proof retirement markers"
   );
 
   const completePath = join(tempDir, "complete.md");
   writeFileSync(
     completePath,
     `${productionMoneyProofOnlyFixture}\n${postProofRetirementFixture}`,
-    "utf8",
+    "utf8"
   );
   const complete = runAudit(completePath);
   assertEqual(complete.status, 0, "complete proof doc exits 0");
@@ -103,11 +107,15 @@ try {
 
   console.log("Seal Vortex production proof boundary self-proof passed:");
   console.log(
-    "- missing proof artifact keeps launch proof incomplete without failing local audits",
+    "- missing proof artifact keeps launch proof incomplete without failing local audits"
   );
   console.log("- incomplete proof artifact fails closed");
-  console.log("- production money proof alone waits for post-proof retirement evidence");
-  console.log("- full money proof plus retirement evidence proves go-live boundary");
+  console.log(
+    "- production money proof alone waits for post-proof retirement evidence"
+  );
+  console.log(
+    "- full money proof plus retirement evidence proves go-live boundary"
+  );
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }
@@ -118,15 +126,22 @@ function runAudit(proofDoc: string): {
 } {
   const result = spawnSync(
     "bun",
-    ["run", "scripts/audit-seal-vortex-production-proof-boundary.ts", "--proof-doc", proofDoc],
+    [
+      "run",
+      "scripts/audit-seal-vortex-production-proof-boundary.ts",
+      "--proof-doc",
+      proofDoc,
+    ],
     {
       cwd: repoRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-    },
+    }
   );
   if (result.error !== undefined) {
-    throw new Error(`Failed to start production proof boundary audit: ${result.error.message}`);
+    throw new Error(
+      `Failed to start production proof boundary audit: ${result.error.message}`
+    );
   }
   const audit = parseAudit(result.stdout);
   return {
@@ -167,7 +182,9 @@ function isAudit(value: unknown): value is ProductionProofBoundaryAudit {
 }
 
 function isStringArray(value: unknown): value is readonly string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
 }
 
 function assertAudit(
@@ -178,31 +195,37 @@ function assertAudit(
     readonly postProofRetirementComplete: boolean;
     readonly goLiveProofComplete: boolean;
     readonly status: string;
-  },
+  }
 ): void {
   assertEqual(audit.ok, true, `${expected.status} reports ok true`);
-  assertEqual(audit.proofDocExists, expected.proofDocExists, `${expected.status} proofDocExists`);
+  assertEqual(
+    audit.proofDocExists,
+    expected.proofDocExists,
+    `${expected.status} proofDocExists`
+  );
   assertEqual(
     audit.productionMoneyProofComplete,
     expected.productionMoneyProofComplete,
-    `${expected.status} productionMoneyProofComplete`,
+    `${expected.status} productionMoneyProofComplete`
   );
   assertEqual(
     audit.postProofRetirementComplete,
     expected.postProofRetirementComplete,
-    `${expected.status} postProofRetirementComplete`,
+    `${expected.status} postProofRetirementComplete`
   );
   assertEqual(
     audit.goLiveProofComplete,
     expected.goLiveProofComplete,
-    `${expected.status} goLiveProofComplete`,
+    `${expected.status} goLiveProofComplete`
   );
   assertEqual(audit.status, expected.status, `${expected.status} status`);
 }
 
 function assertEqual<T>(actual: T, expected: T, label: string): void {
   if (actual !== expected) {
-    throw new Error(`${label}: expected ${String(expected)}, received ${String(actual)}`);
+    throw new Error(
+      `${label}: expected ${String(expected)}, received ${String(actual)}`
+    );
   }
 }
 

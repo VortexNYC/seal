@@ -16,12 +16,20 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/notifications")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/notifications"
+)({
   component: NotificationSettings,
   pendingComponent: FormSkeleton,
 });
@@ -29,15 +37,17 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/notificatio
 function NotificationSettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    slug,
+  });
 
   const notificationSettings = useQuery(
     api.organizations.queries.getNotificationSettings,
-    organization ? { organizationId: organization._id } : "skip",
+    organization ? { organizationId: organization._id } : "skip"
   );
 
   const updateNotificationSettings = useMutation(
-    api.organizations.mutations.updateNotificationSettings,
+    api.organizations.mutations.updateNotificationSettings
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,7 +112,9 @@ function NotificationSettings() {
       toast.success("Notification settings updated");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update notification settings",
+        error instanceof Error
+          ? error.message
+          : "Failed to update notification settings"
       );
     } finally {
       setIsSubmitting(false);
@@ -123,14 +135,18 @@ function NotificationSettings() {
               <CardTitle>Reminder Schedule</CardTitle>
             </div>
             <CardDescription>
-              Send automatic reminders to recipients who haven't signed. Specify the number of days
-              after the document is sent.
+              Send automatic reminders to recipients who haven't signed. Specify
+              the number of days after the document is sent.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {formData.reminderSchedule.map((day) => (
-                <Badge key={day} variant="secondary" className="gap-1 px-3 py-1.5">
+                <Badge
+                  key={day}
+                  variant="secondary"
+                  className="gap-1 px-3 py-1.5"
+                >
                   Day {day}
                   <button
                     type="button"
@@ -143,7 +159,9 @@ function NotificationSettings() {
                 </Badge>
               ))}
               {formData.reminderSchedule.length === 0 && (
-                <p className="text-muted-foreground text-sm">No reminders configured</p>
+                <p className="text-muted-foreground text-sm">
+                  No reminders configured
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -161,7 +179,12 @@ function NotificationSettings() {
                 }}
                 className="w-32"
               />
-              <Button type="button" variant="outline" size="sm" onClick={addReminderDay}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addReminderDay}
+              >
                 Add
               </Button>
             </div>
@@ -190,7 +213,9 @@ function NotificationSettings() {
                 }
                 className="w-24"
               />
-              <span className="text-muted-foreground text-sm">days before expiry</span>
+              <span className="text-muted-foreground text-sm">
+                days before expiry
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -205,7 +230,10 @@ function NotificationSettings() {
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between gap-4">
               <div className="space-y-1">
-                <Label htmlFor="completion-email" className="text-sm font-medium">
+                <Label
+                  htmlFor="completion-email"
+                  className="text-sm font-medium"
+                >
                   Send completion email
                 </Label>
                 <p className="text-muted-foreground text-xs">
@@ -223,7 +251,10 @@ function NotificationSettings() {
             <div className="border-t pt-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="viewed-notification" className="text-sm font-medium">
+                  <Label
+                    htmlFor="viewed-notification"
+                    className="text-sm font-medium"
+                  >
                     Send viewed notification
                   </Label>
                   <p className="text-muted-foreground text-xs">
@@ -234,7 +265,10 @@ function NotificationSettings() {
                   id="viewed-notification"
                   checked={formData.sendViewedNotification}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, sendViewedNotification: checked })
+                    setFormData({
+                      ...formData,
+                      sendViewedNotification: checked,
+                    })
                   }
                 />
               </div>

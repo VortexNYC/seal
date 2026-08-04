@@ -11,6 +11,9 @@ apps/web/src/routeTree.gen.ts
 apps/landing/src/routeTree.gen.ts
 apps/landing/.source
 
+# Binary/non-UTF8 design-phase archive docs (carried from prior oxfmtignore).
+docs/archive/design-phase/**
+
 # BEGIN VORTEX TOOLING MANAGED — generated docs (do not edit)
 AGENTS.md
 CLAUDE.md

@@ -59,7 +59,10 @@ const createContactSchema = z.object({
 
 type CreateContactFormValues = z.infer<typeof createContactSchema>;
 
-export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogProps) {
+export function CreateContactDialog({
+  open,
+  onOpenChange,
+}: CreateContactDialogProps) {
   const createContact = useMutation(api.contacts.mutations.create);
   const [emailToCheck, setEmailToCheck] = useState("");
 
@@ -79,7 +82,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
 
   const existingContact = useQuery(
     api.contacts.queries.getByEmail,
-    emailToCheck ? { email: emailToCheck } : "skip",
+    emailToCheck ? { email: emailToCheck } : "skip"
   );
 
   const duplicateWarning = emailToCheck && existingContact;
@@ -106,14 +109,17 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
       });
 
       if (result.isDuplicate) {
-        toast.warning("A contact with this email already exists. A duplicate was created.");
+        toast.warning(
+          "A contact with this email already exists. A duplicate was created."
+        );
       } else {
         toast.success("Contact created");
       }
 
       onOpenChange(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create contact";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create contact";
       toast.error(errorMessage);
     }
   };
@@ -123,11 +129,16 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Contact</DialogTitle>
-          <DialogDescription>Create a new contact for your organization.</DialogDescription>
+          <DialogDescription>
+            Create a new contact for your organization.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -178,7 +189,10 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
                       onBlur={(e) => {
                         field.onBlur();
                         const trimmed = e.target.value.trim();
-                        const valid = createContactSchema.shape.email.safeParse(trimmed).success;
+                        const valid =
+                          createContactSchema.shape.email.safeParse(
+                            trimmed
+                          ).success;
                         setEmailToCheck(valid ? trimmed : "");
                       }}
                     />
@@ -200,7 +214,11 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
                 <FormItem>
                   <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="+1 (555) 000-0000" {...field} />
+                    <Input
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -243,7 +261,10 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />

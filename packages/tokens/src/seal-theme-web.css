@@ -39,7 +39,9 @@
   --sidebar-foreground: oklch(0.138 0.01 65);
   --sidebar-primary: oklch(0.441 0.148 30);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.972 0.012 30); /* #FEF5F4 — brand tint per board 17 */
+  --sidebar-accent: oklch(
+    0.972 0.012 30
+  ); /* #FEF5F4 — brand tint per board 17 */
   --sidebar-accent-foreground: oklch(0.138 0.01 65);
   --sidebar-border: oklch(0.912 0.008 75);
   --sidebar-ring: oklch(0.513 0.156 30);
@@ -69,7 +71,9 @@
   --info: oklch(0.489 0.22 254); /* #2563EB — per board 02 */
   --info-foreground: oklch(1 0 0);
   --info-surface: oklch(0.96 0.035 255);
-  --expired: oklch(0.441 0.148 30); /* Wax Red — same as primary — expired docs */
+  --expired: oklch(
+    0.441 0.148 30
+  ); /* Wax Red — same as primary — expired docs */
   --expired-foreground: oklch(1 0 0);
 
   /* ── Signer color slots (10 recipients) ────────────────────────────────── */
@@ -214,7 +218,9 @@
   --sidebar-foreground: oklch(0.95 0.008 75);
   --sidebar-primary: oklch(0.513 0.156 30);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.155 0.035 30); /* #2A1410 — brand tint per board 17 */
+  --sidebar-accent: oklch(
+    0.155 0.035 30
+  ); /* #2A1410 — brand tint per board 17 */
   --sidebar-accent-foreground: oklch(0.95 0.008 75);
   --sidebar-border: oklch(0.197 0 0);
   --sidebar-ring: oklch(0.513 0.156 30);
@@ -343,7 +349,9 @@
   /* Fonts */
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
+    monospace;
 
   /* Semantic colors */
   --color-background: var(--background);

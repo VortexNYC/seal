@@ -54,20 +54,26 @@ type GenerateResponseArgs = {
 
 async function getDocumentNameForPrompt(
   ctx: ActionCtx,
-  documentId: GenerateResponseArgs["documentId"],
+  documentId: GenerateResponseArgs["documentId"]
 ): Promise<string | undefined> {
   if (!documentId) {
     return undefined;
   }
 
-  const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-    documentId,
-  });
+  const document = await ctx.runQuery(
+    internal.documents.queries.getDocumentInternal,
+    {
+      documentId,
+    }
+  );
 
   return document?.name;
 }
 
-function createSealContext(ctx: ActionCtx, args: GenerateResponseArgs): SealAICtx {
+function createSealContext(
+  ctx: ActionCtx,
+  args: GenerateResponseArgs
+): SealAICtx {
   return {
     ...ctx,
     organizationId: args.organizationId,
@@ -86,7 +92,7 @@ async function logChatUsage(
   ctx: ActionCtx,
   args: GenerateResponseArgs,
   totalTokens: number,
-  tierUsed: number,
+  tierUsed: number
 ): Promise<void> {
   if (!args.internalUserId || totalTokens <= 0) {
     return;
@@ -113,7 +119,7 @@ async function streamWithAgent(
   ctx: ActionCtx,
   args: GenerateResponseArgs,
   sealCtx: SealAICtx,
-  system: string,
+  system: string
 ): Promise<number> {
   const { thread } = await agent.continueThread(sealCtx, {
     threadId: args.threadId,
@@ -149,7 +155,7 @@ async function streamWithAgent(
     },
     {
       saveStreamDeltas: true,
-    },
+    }
   );
 
   await result.text;
@@ -162,7 +168,7 @@ async function executeResponseGeneration(
   ctx: ActionCtx,
   args: GenerateResponseArgs,
   sealCtx: SealAICtx,
-  documentName?: string,
+  documentName?: string
 ): Promise<number> {
   const system = buildSystemPrompt(args.documentId, documentName);
   const tier = classifyLocally(args.prompt ?? "");
@@ -174,7 +180,13 @@ async function executeResponseGeneration(
 
   if (tier === "TIER_3") {
     // Expert query → Pro model
-    totalTokens = await streamWithAgent(sealAgentTier3, ctx, args, sealCtx, system);
+    totalTokens = await streamWithAgent(
+      sealAgentTier3,
+      ctx,
+      args,
+      sealCtx,
+      system
+    );
     tierUsed = 3;
   } else if (tier === "TIER_2") {
     // Write intent → Flash (full tools)
@@ -182,7 +194,10 @@ async function executeResponseGeneration(
     tierUsed = 2;
   } else {
     // TIER_1: Flash-Lite with saveMessages: "none" + quality check
-    let tier1Result: { text?: string; toolCalls?: { toolName: string }[] } | null = null;
+    let tier1Result: {
+      text?: string;
+      toolCalls?: { toolName: string }[];
+    } | null = null;
     try {
       const { thread } = await sealAgentTier1.continueThread(sealCtx, {
         threadId: args.threadId,
@@ -192,9 +207,11 @@ async function executeResponseGeneration(
         {
           promptMessageId: args.promptMessageId,
           system,
-          providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } },
+          providerOptions: {
+            google: { thinkingConfig: { thinkingLevel: "low" } },
+          },
         },
-        { storageOptions: { saveMessages: "none" } },
+        { storageOptions: { saveMessages: "none" } }
       );
     } catch {
       console.warn("[SealAI] TIER_1 errored — falling back to TIER_2");
@@ -211,8 +228,16 @@ async function executeResponseGeneration(
       tierUsed = 1;
     } else {
       // Tier 1 failed — fall back to Tier 2 streaming
-      console.warn(`[SealAI] TIER_1 failed (${failure}) — falling back to TIER_2`);
-      totalTokens = await streamWithAgent(sealAgent, ctx, args, sealCtx, system);
+      console.warn(
+        `[SealAI] TIER_1 failed (${failure}) — falling back to TIER_2`
+      );
+      totalTokens = await streamWithAgent(
+        sealAgent,
+        ctx,
+        args,
+        sealCtx,
+        system
+      );
       tierUsed = 2;
       wasFallback = true;
     }
@@ -243,10 +268,11 @@ async function handleResponseGenerationError(
   ctx: ActionCtx,
   args: GenerateResponseArgs,
   sealCtx: SealAICtx,
-  error: unknown,
+  error: unknown
 ): Promise<never> {
   const isAbort = error instanceof Error && error.name === "AbortError";
-  const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+  const errorMessage =
+    error instanceof Error ? error.message : "Unknown error occurred";
 
   if (isAbort) {
     await ctx.runMutation(internal.ai.progress.abort, {
@@ -339,7 +365,7 @@ export const getOrCreateSearchThread = authMutation({
     const existing = await ctx.db
       .query("ai_threads")
       .withIndex("by_organization_user", (q) =>
-        q.eq("organizationId", organizationId).eq("userId", userId.toString()),
+        q.eq("organizationId", organizationId).eq("userId", userId.toString())
       )
       .filter((q) => q.eq(q.field("threadType"), "search"))
       .first();
@@ -619,8 +645,12 @@ export const getRoutingDistribution = internalQuery({
   handler: async (ctx) => {
     const logs = await ctx.db.query("ai_routing_logs").order("desc").take(1000);
     const tier1 = logs.filter((l) => l.tier === 1).length;
-    const tier2Direct = logs.filter((l) => l.tier === 2 && !l.wasFallback).length;
-    const tier2Fallback = logs.filter((l) => l.tier === 2 && l.wasFallback).length;
+    const tier2Direct = logs.filter(
+      (l) => l.tier === 2 && !l.wasFallback
+    ).length;
+    const tier2Fallback = logs.filter(
+      (l) => l.tier === 2 && l.wasFallback
+    ).length;
     const tier3 = logs.filter((l) => l.tier === 3).length;
     const tier1Total = tier1 + tier2Fallback;
     return {
@@ -629,7 +659,8 @@ export const getRoutingDistribution = internalQuery({
       tier2Fallback,
       tier3,
       total: logs.length,
-      tier1SuccessRate: tier1Total > 0 ? Math.round((tier1 / tier1Total) * 100) : null,
+      tier1SuccessRate:
+        tier1Total > 0 ? Math.round((tier1 / tier1Total) * 100) : null,
     };
   },
 });

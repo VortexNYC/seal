@@ -376,7 +376,9 @@ test("handles push notification", async ({ context, page }) => {
   await sw.evaluate(async () => {
     // Dispatch push event
     const pushEvent = new PushEvent("push", {
-      data: new PushMessageData(JSON.stringify({ title: "Test", body: "Push message" })),
+      data: new PushMessageData(
+        JSON.stringify({ title: "Test", body: "Push message" })
+      ),
     });
     self.dispatchEvent(pushEvent);
   });
@@ -416,7 +418,7 @@ test("notification click opens page", async ({ context, page }) => {
     self.dispatchEvent(
       new NotificationEvent("notificationclick", {
         notification: { data: { url: "/notification-target" } } as any,
-      }),
+      })
     );
   });
 

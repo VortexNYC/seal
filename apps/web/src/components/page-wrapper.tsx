@@ -44,7 +44,7 @@ export function PageWrapper({
     <div
       className={cn(
         "bg-muted dark:bg-background flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
-        className,
+        className
       )}
     >
       <div className="sticky top-0 z-10 border-b bg-inherit">
@@ -53,30 +53,38 @@ export function PageWrapper({
             "flex min-h-16 flex-col gap-3 px-4 py-3 sm:px-6",
             headerCenter
               ? "lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center lg:gap-4"
-              : "sm:flex-row sm:items-center sm:gap-4 sm:py-0",
+              : "sm:flex-row sm:items-center sm:gap-4 sm:py-0"
           )}
         >
           <div
             className={cn(
               "flex min-w-0 items-center gap-4",
-              headerCenter ? "lg:min-w-0" : "flex-1",
+              headerCenter ? "lg:min-w-0" : "flex-1"
             )}
           >
             <SidebarTrigger aria-label="Toggle Sidebar" />
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-base font-semibold sm:text-lg">{title}</h1>
+              <h1 className="truncate text-base font-semibold sm:text-lg">
+                {title}
+              </h1>
               {description && (
-                <p className="text-muted-foreground truncate text-xs sm:text-sm">{description}</p>
+                <p className="text-muted-foreground truncate text-xs sm:text-sm">
+                  {description}
+                </p>
               )}
             </div>
           </div>
-          {headerCenter && <div className="min-w-0 lg:justify-self-center">{headerCenter}</div>}
+          {headerCenter && (
+            <div className="min-w-0 lg:justify-self-center">{headerCenter}</div>
+          )}
           {(allActions.length > 0 || headerActions) && (
             <div
               className={cn(
                 "flex flex-wrap items-center gap-2",
-                headerCenter ? "lg:justify-end lg:justify-self-end" : "sm:flex-nowrap",
+                headerCenter
+                  ? "lg:justify-end lg:justify-self-end"
+                  : "sm:flex-nowrap"
               )}
             >
               {headerActions}

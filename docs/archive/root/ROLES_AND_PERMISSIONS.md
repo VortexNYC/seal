@@ -237,7 +237,7 @@ export const authQuery = customQuery(
   customCtx(async (ctx) => {
     const auth = await getAuthContext(ctx);
     return { auth };
-  }),
+  })
 );
 
 // Admin+ required
@@ -249,7 +249,7 @@ export const adminQuery = customQuery(
       throw new ConvexError("Insufficient role");
     }
     return { auth, db: ctx.db, runQuery: ctx.runQuery };
-  }),
+  })
 );
 
 // Member+ required
@@ -261,7 +261,7 @@ export const memberQuery = customQuery(
       throw new ConvexError("Insufficient role");
     }
     return { auth, db: ctx.db, runQuery: ctx.runQuery };
-  }),
+  })
 );
 ```
 
@@ -275,12 +275,14 @@ In workspace layout (`_authenticated/$slug.tsx`):
 function WorkspaceLayout() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    slug,
+  });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   const permissions = useQuery(
     api.organizations.queries.getUserPermissions,
-    orgId ? { organizationId: orgId } : "skip",
+    orgId ? { organizationId: orgId } : "skip"
   );
 
   // Returns object with:
@@ -357,7 +359,12 @@ export const addMember = adminMutation({
 export const createInvitation = adminMutation({
   handler: async (ctx, args) => {
     // Optional explicit permission check
-    if (!hasPermission(ctx.auth.member, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
+    if (
+      !hasPermission(
+        ctx.auth.member,
+        DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE
+      )
+    ) {
       throw new ConvexError("Cannot invite members");
     }
     // ...
@@ -379,7 +386,7 @@ export const grantAccess = authMutation({
       const access = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", document._id).eq("userId", currentUserId),
+          q.eq("documentId", document._id).eq("userId", currentUserId)
         )
         .first();
       canManage = access?.permissionLevel === "manage" && !access.revokedAt;
@@ -445,7 +452,12 @@ In your mutation:
 ```typescript
 export const performNewFeature = authMutation({
   handler: async (ctx, args) => {
-    if (!hasPermission(ctx.auth.member, DOCUMENT_SIGNING_PERMISSIONS.MY_NEW_FEATURE)) {
+    if (
+      !hasPermission(
+        ctx.auth.member,
+        DOCUMENT_SIGNING_PERMISSIONS.MY_NEW_FEATURE
+      )
+    ) {
       throw new ConvexError("Insufficient permissions for this feature");
     }
     // Feature logic...
@@ -606,7 +618,9 @@ if (!hasAccess) {
   } else if (document.sharingMode === "specific") {
     const access = await ctx.db
       .query("document_access")
-      .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+      .withIndex("by_document_user", (q) =>
+        q.eq("documentId", document._id).eq("userId", userId)
+      )
       .first();
     hasAccess = access !== null && !access.revokedAt; // Check explicit grant
   }

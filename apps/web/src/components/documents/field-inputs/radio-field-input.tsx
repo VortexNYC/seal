@@ -25,7 +25,9 @@ export function RadioFieldInput({
   const [selectedValue, setSelectedValue] = useState(value);
   const [error, setError] = useState<string | undefined>();
 
-  const validateValue = (val?: string): { isValid: boolean; error?: string } => {
+  const validateValue = (
+    val?: string
+  ): { isValid: boolean; error?: string } => {
     if (isRequired && !val) {
       return { isValid: false, error: "This field is required" };
     }
@@ -52,13 +54,18 @@ export function RadioFieldInput({
         {options.map((option) => (
           <div key={option} className="flex items-center space-x-2">
             <RadioGroupItem value={option} id={`radio-${option}`} />
-            <Label htmlFor={`radio-${option}`} className="cursor-pointer font-normal">
+            <Label
+              htmlFor={`radio-${option}`}
+              className="cursor-pointer font-normal"
+            >
               {option}
             </Label>
           </div>
         ))}
       </RadioGroup>
-      {helpText && !error && <p className="text-muted-foreground text-xs">{helpText}</p>}
+      {helpText && !error && (
+        <p className="text-muted-foreground text-xs">{helpText}</p>
+      )}
       {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );

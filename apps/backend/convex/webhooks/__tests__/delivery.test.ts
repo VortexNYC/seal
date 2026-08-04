@@ -5,7 +5,7 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -20,7 +20,10 @@ describe("Webhook delivery", () => {
   let endpointId: Id<"webhook_endpoints">;
   let deliveryId: Id<"webhook_deliveries">;
 
-  const testPayload = JSON.stringify({ event: "document.sent", data: { id: "test" } });
+  const testPayload = JSON.stringify({
+    event: "document.sent",
+    data: { id: "test" },
+  });
 
   beforeEach(async () => {
     t = createTestContext();
@@ -85,7 +88,10 @@ describe("Webhook delivery", () => {
   describe("getPendingDeliveries", () => {
     test("returns deliveries with status pending and no nextRetryAt", async () => {
       const results = await t.run(async (ctx) => {
-        return await ctx.runQuery(internal.webhooks.delivery.getPendingDeliveries, {});
+        return await ctx.runQuery(
+          internal.webhooks.delivery.getPendingDeliveries,
+          {}
+        );
       });
 
       expect(results).toHaveLength(1);
@@ -99,7 +105,10 @@ describe("Webhook delivery", () => {
       });
 
       const results = await t.run(async (ctx) => {
-        return await ctx.runQuery(internal.webhooks.delivery.getPendingDeliveries, {});
+        return await ctx.runQuery(
+          internal.webhooks.delivery.getPendingDeliveries,
+          {}
+        );
       });
 
       expect(results).toHaveLength(1);
@@ -112,7 +121,10 @@ describe("Webhook delivery", () => {
       });
 
       const results = await t.run(async (ctx) => {
-        return await ctx.runQuery(internal.webhooks.delivery.getPendingDeliveries, {});
+        return await ctx.runQuery(
+          internal.webhooks.delivery.getPendingDeliveries,
+          {}
+        );
       });
 
       expect(results).toHaveLength(0);
@@ -124,7 +136,10 @@ describe("Webhook delivery", () => {
       });
 
       const results = await t.run(async (ctx) => {
-        return await ctx.runQuery(internal.webhooks.delivery.getPendingDeliveries, {});
+        return await ctx.runQuery(
+          internal.webhooks.delivery.getPendingDeliveries,
+          {}
+        );
       });
 
       expect(results).toHaveLength(0);
@@ -136,7 +151,10 @@ describe("Webhook delivery", () => {
       });
 
       const results = await t.run(async (ctx) => {
-        return await ctx.runQuery(internal.webhooks.delivery.getPendingDeliveries, {});
+        return await ctx.runQuery(
+          internal.webhooks.delivery.getPendingDeliveries,
+          {}
+        );
       });
 
       expect(results).toHaveLength(0);
@@ -160,7 +178,10 @@ describe("Webhook delivery", () => {
       });
 
       const results = await t.run(async (ctx) => {
-        return await ctx.runQuery(internal.webhooks.delivery.getPendingDeliveries, {});
+        return await ctx.runQuery(
+          internal.webhooks.delivery.getPendingDeliveries,
+          {}
+        );
       });
 
       expect(results).toHaveLength(50);
@@ -223,7 +244,9 @@ describe("Webhook delivery", () => {
       expect(sealAssertPresent(delivery).status).toBe("pending");
       expect(sealAssertPresent(delivery).attemptCount).toBe(1);
       expect(sealAssertPresent(delivery).nextRetryAt).toBe(nextRetry);
-      expect(sealAssertPresent(delivery).errorMessage).toBe("HTTP 500: Internal Server Error");
+      expect(sealAssertPresent(delivery).errorMessage).toBe(
+        "HTTP 500: Internal Server Error"
+      );
     });
 
     test("updates delivery to abandoned with error message", async () => {
@@ -243,7 +266,9 @@ describe("Webhook delivery", () => {
       expect(delivery).not.toBeNull();
       expect(sealAssertPresent(delivery).status).toBe("abandoned");
       expect(sealAssertPresent(delivery).attemptCount).toBe(5);
-      expect(sealAssertPresent(delivery).errorMessage).toBe("Max retry attempts exceeded");
+      expect(sealAssertPresent(delivery).errorMessage).toBe(
+        "Max retry attempts exceeded"
+      );
     });
   });
 
@@ -374,7 +399,9 @@ describe("Webhook delivery", () => {
       expect(endpoint).not.toBeNull();
       expect(sealAssertPresent(endpoint)._id).toBe(endpointId);
       expect(sealAssertPresent(endpoint).name).toBe("Test Endpoint");
-      expect(sealAssertPresent(endpoint).url).toBe("https://example.com/webhook");
+      expect(sealAssertPresent(endpoint).url).toBe(
+        "https://example.com/webhook"
+      );
       expect(sealAssertPresent(endpoint).status).toBe("active");
     });
 

@@ -17,9 +17,14 @@
  */
 export async function generateStringHash(data: string): Promise<string> {
   const encoder = new TextEncoder();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(data));
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(data)
+  );
   const hashArray = new Uint8Array(hashBuffer);
-  return Array.from(hashArray, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return Array.from(hashArray, (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
 }
 
 /**
@@ -38,11 +43,15 @@ export async function generateSignatureHash(
   recipientId: string,
   fieldId: string,
   documentHash: string,
-  timestamp: number,
+  timestamp: number
 ): Promise<string> {
-  const dataToHash = [signatureData, recipientId, fieldId, documentHash, timestamp.toString()].join(
-    "|",
-  );
+  const dataToHash = [
+    signatureData,
+    recipientId,
+    fieldId,
+    documentHash,
+    timestamp.toString(),
+  ].join("|");
 
   return generateStringHash(dataToHash);
 }
@@ -65,14 +74,14 @@ export async function verifySignatureHash(
   fieldId: string,
   documentHash: string,
   timestamp: number,
-  storedHash: string,
+  storedHash: string
 ): Promise<boolean> {
   const calculatedHash = await generateSignatureHash(
     signatureData,
     recipientId,
     fieldId,
     documentHash,
-    timestamp,
+    timestamp
   );
   return calculatedHash === storedHash;
 }
@@ -86,12 +95,14 @@ export async function verifySignatureHash(
  * @returns Hexadecimal hash string, or undefined if no image data
  */
 export async function generateSignatureImageHash(
-  imageData: string | undefined,
+  imageData: string | undefined
 ): Promise<string | undefined> {
   if (!imageData) return undefined;
 
   // Strip data URL prefix (e.g., "data:image/png;base64,") to hash only the raw image bytes
-  const rawData = imageData.includes(",") ? (imageData.split(",")[1] ?? imageData) : imageData;
+  const rawData = imageData.includes(",")
+    ? (imageData.split(",")[1] ?? imageData)
+    : imageData;
 
   return generateStringHash(rawData);
 }
@@ -103,7 +114,10 @@ export async function generateSignatureImageHash(
  * @param originalHash - Original document hash stored at upload
  * @returns True if document has not been tampered with
  */
-export function verifyDocumentIntegrity(currentHash: string, originalHash: string): boolean {
+export function verifyDocumentIntegrity(
+  currentHash: string,
+  originalHash: string
+): boolean {
   return currentHash === originalHash;
 }
 
@@ -132,7 +146,7 @@ export function generateSignatureCertificate(
   document: {
     name: string;
     documentHash?: string | null;
-  },
+  }
 ): {
   certificateVersion: string;
   documentName: string;

@@ -4,7 +4,7 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -84,7 +84,14 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
         documentId,
         organizationId,
         paymentType: "recurring",
-        items: [{ id: "item1", description: "Monthly Service", quantity: 1, unitPrice: 10000 }],
+        items: [
+          {
+            id: "item1",
+            description: "Monthly Service",
+            quantity: 1,
+            unitPrice: 10000,
+          },
+        ],
         currency: "usd",
         dueDateTerms: "on_receipt",
         allowedPaymentMethods: ["card"],
@@ -108,17 +115,20 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
   test("creates document_invoices record for a new subscription invoice", async () => {
     const { internal } = await import("../../_generated/api");
 
-    const result = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      providerInvoiceId: "in_cycle2_456",
-      providerSubscriptionId: "sub_recurring_123",
-      providerCustomerId: "cus_test_789",
-      providerAccountId: "acct_test_001",
-      status: "draft",
-      customerEmail: "customer@example.com",
-      customerName: "Jane Doe",
-      amountDue: 10000,
-      currency: "usd",
-    });
+    const result = await t.mutation(
+      internal.payment_fields.mutations.upsertRecurringInvoice,
+      {
+        providerInvoiceId: "in_cycle2_456",
+        providerSubscriptionId: "sub_recurring_123",
+        providerCustomerId: "cus_test_789",
+        providerAccountId: "acct_test_001",
+        status: "draft",
+        customerEmail: "customer@example.com",
+        customerName: "Jane Doe",
+        amountDue: 10000,
+        currency: "usd",
+      }
+    );
 
     expect(result).not.toBeNull();
     expect(sealAssertPresent(result).created).toBe(true);
@@ -126,16 +136,24 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_cycle2_456"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_cycle2_456")
+        )
         .collect();
     });
 
     expect(invoices).toHaveLength(1);
     expect(sealAssertPresent(invoices[0]).documentId).toBe(documentId);
     expect(sealAssertPresent(invoices[0]).organizationId).toBe(organizationId);
-    expect(sealAssertPresent(invoices[0]).providerSubscriptionId).toBe("sub_recurring_123");
-    expect(sealAssertPresent(invoices[0]).providerCustomerId).toBe("cus_test_789");
-    expect(sealAssertPresent(invoices[0]).customerEmail).toBe("customer@example.com");
+    expect(sealAssertPresent(invoices[0]).providerSubscriptionId).toBe(
+      "sub_recurring_123"
+    );
+    expect(sealAssertPresent(invoices[0]).providerCustomerId).toBe(
+      "cus_test_789"
+    );
+    expect(sealAssertPresent(invoices[0]).customerEmail).toBe(
+      "customer@example.com"
+    );
     expect(sealAssertPresent(invoices[0]).amountDue).toBe(10000);
     expect(sealAssertPresent(invoices[0]).status).toBe("draft");
     // Draft invoices should not have finalizedAt
@@ -155,8 +173,14 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       currency: "usd",
     };
 
-    const first = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, args);
-    const second = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, args);
+    const first = await t.mutation(
+      internal.payment_fields.mutations.upsertRecurringInvoice,
+      args
+    );
+    const second = await t.mutation(
+      internal.payment_fields.mutations.upsertRecurringInvoice,
+      args
+    );
 
     expect(sealAssertPresent(first).created).toBe(true);
     expect(sealAssertPresent(second).created).toBe(false);
@@ -164,7 +188,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_idempotent_test"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_idempotent_test")
+        )
         .collect();
     });
 
@@ -201,17 +227,19 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_finalize_test"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_finalize_test")
+        )
         .collect();
     });
 
     expect(invoices).toHaveLength(1);
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
     expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
-      "https://billing.vortex.test/finalized",
+      "https://billing.vortex.test/finalized"
     );
     expect(sealAssertPresent(invoices[0]).invoicePdf).toBe(
-      "https://billing.vortex.test/finalized.pdf",
+      "https://billing.vortex.test/finalized.pdf"
     );
     expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
   });
@@ -219,15 +247,18 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
   test("returns null for unknown subscription", async () => {
     const { internal } = await import("../../_generated/api");
 
-    const result = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
-      providerInvoiceId: "in_unknown_sub",
-      providerSubscriptionId: "sub_nonexistent_999",
-      providerAccountId: "acct_test_001",
-      status: "open",
-      customerEmail: "nobody@example.com",
-      amountDue: 5000,
-      currency: "usd",
-    });
+    const result = await t.mutation(
+      internal.payment_fields.mutations.upsertRecurringInvoice,
+      {
+        providerInvoiceId: "in_unknown_sub",
+        providerSubscriptionId: "sub_nonexistent_999",
+        providerAccountId: "acct_test_001",
+        status: "open",
+        customerEmail: "nobody@example.com",
+        amountDue: 5000,
+        currency: "usd",
+      }
+    );
 
     expect(result).toBeNull();
   });
@@ -249,7 +280,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_open_direct"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_open_direct")
+        )
         .collect();
     });
 
@@ -257,7 +290,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
     expect(sealAssertPresent(invoices[0]).finalizedAt).toBeDefined();
     expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
-      "https://billing.vortex.test/open",
+      "https://billing.vortex.test/open"
     );
   });
 
@@ -319,7 +352,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       {
         providerInvoiceId: "in_cycle2_paid",
         paymentStatus: "paid",
-      },
+      }
     );
 
     expect(result).not.toBeNull();
@@ -329,7 +362,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_cycle2_paid"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_cycle2_paid")
+        )
         .collect();
     });
 
@@ -352,10 +387,13 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     // Mark as paid via webhook
-    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice, {
-      providerInvoiceId: "in_regress_test",
-      paymentStatus: "paid",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
+      {
+        providerInvoiceId: "in_regress_test",
+        paymentStatus: "paid",
+      }
+    );
 
     // Replay invoice.created or invoice.finalized (Vortex Billing retried the event)
     await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
@@ -371,7 +409,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_regress_test"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_regress_test")
+        )
         .collect();
     });
 

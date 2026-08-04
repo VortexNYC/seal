@@ -11,7 +11,7 @@ import type { Id } from "../_generated/dataModel";
  */
 export async function seedSystemRoles(
   _db: unknown,
-  _organizationId: Id<"organizations">,
+  _organizationId: Id<"organizations">
 ): Promise<void> {
   // Local organization_roles no longer exists. Role seeding is handled by
   // vortexAuthOrganizations.ensureVortexAuthSystemRoles.

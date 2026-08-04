@@ -28,15 +28,18 @@ export function DocumentThumbnail({
   className = "w-12 h-16 sm:w-16 sm:h-20",
 }: DocumentThumbnailProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [localThumbnail, setLocalThumbnail] = useState<string | null>(thumbnailDataUrl ?? null);
+  const [localThumbnail, setLocalThumbnail] = useState<string | null>(
+    thumbnailDataUrl ?? null
+  );
   const [generationFailed, setGenerationFailed] = useState(false);
   const hasAttemptedGeneration = useRef(false);
 
   // Get the storage URL for fetching PDF - only query if we need to generate
-  const shouldFetchUrl = !thumbnailDataUrl && !localThumbnail && !generationFailed;
+  const shouldFetchUrl =
+    !thumbnailDataUrl && !localThumbnail && !generationFailed;
   const storageUrl = useQuery(
     api.documents.queries.getStorageUrl,
-    shouldFetchUrl ? { storageId } : "skip",
+    shouldFetchUrl ? { storageId } : "skip"
   );
 
   // Mutation to save the generated thumbnail
@@ -88,7 +91,13 @@ export function DocumentThumbnail({
     };
 
     generateThumbnail();
-  }, [storageUrl, thumbnailDataUrl, localThumbnail, documentId, updateThumbnail]);
+  }, [
+    storageUrl,
+    thumbnailDataUrl,
+    localThumbnail,
+    documentId,
+    updateThumbnail,
+  ]);
 
   // Update local thumbnail if prop changes (e.g., from refetch)
   useEffect(() => {
@@ -103,7 +112,7 @@ export function DocumentThumbnail({
     <div
       className={cn(
         "bg-muted border-border flex items-center justify-center overflow-hidden rounded border",
-        className,
+        className
       )}
     >
       {thumbnail ? (

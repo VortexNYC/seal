@@ -75,7 +75,7 @@ export const documentWorkflowStatusTuple = v.union(
   v.literal("waiting_for_payment"),
   v.literal("completed"),
   v.literal("cancelled"),
-  v.literal("declined"),
+  v.literal("declined")
 );
 ```
 
@@ -87,7 +87,10 @@ Add `waiting_for_payment` transitions:
 - `waiting_for_payment` can transition to `completed` or `cancelled`
 
 ```typescript
-export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkflowStatus[]> = {
+export const WORKFLOW_TRANSITIONS: Record<
+  DocumentWorkflowStatus,
+  DocumentWorkflowStatus[]
+> = {
   draft: ["sent", "cancelled"],
   sent: ["in_progress", "cancelled", "declined"],
   in_progress: ["completed", "waiting_for_payment", "cancelled", "declined"],
@@ -137,8 +140,12 @@ Expected: Compile errors in other files that reference `DocumentWorkflowStatus` 
 `waiting_for_payment` is NOT terminal — it can transition to `completed`:
 
 ```typescript
-export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolean {
-  return status === "completed" || status === "cancelled" || status === "declined";
+export function isTerminalWorkflowStatus(
+  status: DocumentWorkflowStatus
+): boolean {
+  return (
+    status === "completed" || status === "cancelled" || status === "declined"
+  );
 }
 ```
 
@@ -283,7 +290,8 @@ const paymentConfigs = await ctx.db
   .collect();
 
 const hasUnpaidPayments = paymentConfigs.some(
-  (config) => config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled",
+  (config) =>
+    config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled"
 );
 
 if (hasUnpaidPayments) {
@@ -446,7 +454,9 @@ export const getAccountByOrgId = internalQuery({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("retired_provider_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .first();
   },
 });
@@ -493,7 +503,7 @@ export const updatePaymentStatusFromWebhook = internalMutation({
     const config = await ctx.db
       .query("payment_field_configs")
       .withIndex("by_retired_provider_invoice", (q) =>
-        q.eq("retired_providerInvoiceId", args.retired_providerInvoiceId),
+        q.eq("retired_providerInvoiceId", args.retired_providerInvoiceId)
       )
       .first();
 
@@ -599,7 +609,8 @@ export const checkPaymentCompletionAndFinalize = internalMutation({
       .collect();
 
     const allPaid = paymentConfigs.every(
-      (config) => config.paymentStatus === "paid" || config.paymentStatus === "cancelled",
+      (config) =>
+        config.paymentStatus === "paid" || config.paymentStatus === "cancelled"
     );
 
     if (!allPaid) {

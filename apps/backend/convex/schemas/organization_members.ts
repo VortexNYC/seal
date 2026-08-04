@@ -7,7 +7,7 @@ export const organizationMemberRoleTuple = v.union(
   v.literal("admin"),
   v.literal("owner"),
   v.literal("member"),
-  v.literal("viewer"),
+  v.literal("viewer")
 );
 export type OrganizationMemberRole = Infer<typeof organizationMemberRoleTuple>;
 

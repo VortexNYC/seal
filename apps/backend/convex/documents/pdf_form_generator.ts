@@ -1,4 +1,10 @@
-import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
+import {
+  PDFDocument,
+  type PDFFont,
+  type PDFPage,
+  rgb,
+  StandardFonts,
+} from "pdf-lib";
 
 import type { Doc } from "../_generated/dataModel";
 
@@ -17,7 +23,7 @@ interface FieldLayout {
 }
 
 function groupFieldsByPage(
-  fields: Doc<"signature_fields">[],
+  fields: Doc<"signature_fields">[]
 ): Map<number, Doc<"signature_fields">[]> {
   const fieldsByPage = new Map<number, Doc<"signature_fields">[]>();
   for (const field of fields) {
@@ -28,7 +34,10 @@ function groupFieldsByPage(
   return fieldsByPage;
 }
 
-function getFieldLayout(page: PDFPage, field: Doc<"signature_fields">): FieldLayout {
+function getFieldLayout(
+  page: PDFPage,
+  field: Doc<"signature_fields">
+): FieldLayout {
   const { width: pageWidth, height: pageHeight } = page.getSize();
   const x = (field.x / 100) * pageWidth;
   const y = (field.y / 100) * pageHeight;
@@ -48,17 +57,33 @@ async function addFormField(
   field: Doc<"signature_fields">,
   layout: FieldLayout,
   font: PDFFont,
-  recipient: RecipientInfo | undefined,
+  recipient: RecipientInfo | undefined
 ): Promise<void> {
   const fieldName = `${field.fieldType}_${field._id}`;
 
   switch (field.fieldType) {
     case "text":
     case "date":
-      addTextField(form, page, fieldName, layout.x, layout.pdfY, layout.width, layout.height);
+      addTextField(
+        form,
+        page,
+        fieldName,
+        layout.x,
+        layout.pdfY,
+        layout.width,
+        layout.height
+      );
       return;
     case "checkbox":
-      addCheckboxField(form, page, fieldName, layout.x, layout.pdfY, layout.width, layout.height);
+      addCheckboxField(
+        form,
+        page,
+        fieldName,
+        layout.x,
+        layout.pdfY,
+        layout.width,
+        layout.height
+      );
       return;
     case "signature":
       await addSignaturePlaceholder(
@@ -68,7 +93,7 @@ async function addFormField(
         layout.width,
         layout.height,
         font,
-        recipient,
+        recipient
       );
       return;
     case "dropdown":
@@ -80,7 +105,7 @@ async function addFormField(
         layout.pdfY,
         layout.width,
         layout.height,
-        field.properties?.options ?? [],
+        field.properties?.options ?? []
       );
       return;
     case "radio":
@@ -92,11 +117,18 @@ async function addFormField(
         layout.pdfY,
         layout.width,
         layout.height,
-        field.properties?.options ?? [],
+        field.properties?.options ?? []
       );
       return;
     case "attachment":
-      addAttachmentPlaceholder(page, layout.x, layout.pdfY, layout.width, layout.height, font);
+      addAttachmentPlaceholder(
+        page,
+        layout.x,
+        layout.pdfY,
+        layout.width,
+        layout.height,
+        font
+      );
       return;
   }
 }
@@ -107,7 +139,7 @@ async function addFormField(
 export async function generateFillablePdf(
   originalPdfBytes: ArrayBuffer,
   fields: Doc<"signature_fields">[],
-  recipients: Map<string, RecipientInfo>,
+  recipients: Map<string, RecipientInfo>
 ): Promise<Uint8Array> {
   // Load the original PDF
   const pdfDoc = await PDFDocument.load(originalPdfBytes);
@@ -127,7 +159,9 @@ export async function generateFillablePdf(
 
     // Add form fields for each signature field
     for (const field of pageFields) {
-      const recipient = field.recipientId ? recipients.get(field.recipientId) : undefined;
+      const recipient = field.recipientId
+        ? recipients.get(field.recipientId)
+        : undefined;
       const fieldName = `${field.fieldType}_${field._id}`;
       const layout = getFieldLayout(page, field);
 
@@ -154,7 +188,7 @@ function addTextField(
   x: number,
   y: number,
   width: number,
-  height: number,
+  height: number
 ) {
   const textField = form.createTextField(fieldName);
   textField.addToPage(page, {
@@ -184,7 +218,7 @@ function addCheckboxField(
   x: number,
   y: number,
   width: number,
-  height: number,
+  height: number
 ) {
   const checkBox = form.createCheckBox(fieldName);
   checkBox.addToPage(page, {
@@ -208,7 +242,7 @@ async function addSignaturePlaceholder(
   width: number,
   height: number,
   font: PDFFont,
-  recipient: RecipientInfo | undefined,
+  recipient: RecipientInfo | undefined
 ) {
   // Draw a rectangle border for the signature field
   page.drawRectangle({
@@ -236,7 +270,10 @@ async function addSignaturePlaceholder(
   if (recipient) {
     const recipientText = recipient.name || recipient.email;
     const recipientTextSize = 8;
-    const recipientTextWidth = font.widthOfTextAtSize(recipientText, recipientTextSize);
+    const recipientTextWidth = font.widthOfTextAtSize(
+      recipientText,
+      recipientTextSize
+    );
     page.drawText(recipientText, {
       x: x + (width - recipientTextWidth) / 2,
       y: y + 8,
@@ -262,7 +299,7 @@ function addDropdownField(
   y: number,
   width: number,
   height: number,
-  options: string[],
+  options: string[]
 ) {
   const dropdown = form.createDropdown(fieldName);
   dropdown.addOptions(options.length > 0 ? options : ["Select an option"]);
@@ -290,7 +327,7 @@ function addRadioField(
   y: number,
   _width: number,
   height: number,
-  options: string[],
+  options: string[]
 ) {
   if (options.length === 0) {
     options = ["Option 1", "Option 2"];
@@ -326,7 +363,7 @@ async function addAttachmentPlaceholder(
   y: number,
   width: number,
   height: number,
-  font: PDFFont,
+  font: PDFFont
 ) {
   // Draw a dashed rectangle border for the attachment field
   page.drawRectangle({

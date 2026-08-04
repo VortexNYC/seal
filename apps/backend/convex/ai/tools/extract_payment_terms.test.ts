@@ -4,7 +4,9 @@ import { PaymentExtractionSchema } from "./paymentExtractionSchema";
 
 describe("PaymentExtractionSchema", () => {
   const validExtraction = {
-    lineItems: [{ description: "Consulting fee", quantity: 1, unitPriceCents: 500000 }],
+    lineItems: [
+      { description: "Consulting fee", quantity: 1, unitPriceCents: 500000 },
+    ],
     currency: "usd",
     paymentType: "one_time" as const,
     dueDateTerms: "net_30" as const,
@@ -23,7 +25,11 @@ describe("PaymentExtractionSchema", () => {
       lineItems: [
         { description: "Design work", quantity: 10, unitPriceCents: 15000 },
         { description: "Development", quantity: 20, unitPriceCents: 20000 },
-        { description: "Project management", quantity: 5, unitPriceCents: 10000 },
+        {
+          description: "Project management",
+          quantity: 5,
+          unitPriceCents: 10000,
+        },
       ],
     });
     expect(result.success).toBe(true);
@@ -33,7 +39,12 @@ describe("PaymentExtractionSchema", () => {
   });
 
   test("accepts all payment types", () => {
-    const types = ["one_time", "recurring", "installments", "deposit_balance"] as const;
+    const types = [
+      "one_time",
+      "recurring",
+      "installments",
+      "deposit_balance",
+    ] as const;
     for (const paymentType of types) {
       const result = PaymentExtractionSchema.safeParse({
         ...validExtraction,
@@ -44,7 +55,13 @@ describe("PaymentExtractionSchema", () => {
   });
 
   test("accepts all due date terms", () => {
-    const terms = ["on_receipt", "net_15", "net_30", "net_60", "custom"] as const;
+    const terms = [
+      "on_receipt",
+      "net_15",
+      "net_30",
+      "net_60",
+      "custom",
+    ] as const;
     for (const dueDateTerms of terms) {
       const result = PaymentExtractionSchema.safeParse({
         ...validExtraction,
@@ -231,7 +248,7 @@ describe("PaymentExtractionSchema", () => {
     if (result.success) {
       const total = result.data.lineItems.reduce(
         (sum, item) => sum + item.quantity * item.unitPriceCents,
-        0,
+        0
       );
       expect(total).toBe(900000); // $9,000
     }

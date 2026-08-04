@@ -81,7 +81,8 @@ type ProofCommand = {
 
 const proofCommands: readonly ProofCommand[] = [
   {
-    label: "No retired-provider package, path, or provider-shaped content residue",
+    label:
+      "No retired-provider package, path, or provider-shaped content residue",
     command: "bun",
     args: ["run", "prove:zero-retired-provider-residue"],
   },
@@ -111,7 +112,8 @@ const proofCommands: readonly ProofCommand[] = [
     args: ["run", "prove:vortex-saas-webhook-projection"],
   },
   {
-    label: "Vortex SaaS checkout, catalog, coupon, portal, and lifecycle local proof",
+    label:
+      "Vortex SaaS checkout, catalog, coupon, portal, and lifecycle local proof",
     command: "bun",
     args: ["run", "prove:seal-saas-vortex-local"],
   },
@@ -153,47 +155,75 @@ function escapeRegExp(value: string): string {
 
 function callBlocks(contents: string, callName: string): readonly string[] {
   return [
-    ...contents.matchAll(new RegExp(`${escapeRegExp(callName)}[\\s\\S]*?\\n\\s*\\}\\);`, "g")),
+    ...contents.matchAll(
+      new RegExp(`${escapeRegExp(callName)}[\\s\\S]*?\\n\\s*\\}\\);`, "g")
+    ),
   ].map((match) => match[0]);
 }
 
-function hasCallForEnv(contents: string, callName: string, envName: string): boolean {
+function hasCallForEnv(
+  contents: string,
+  callName: string,
+  envName: string
+): boolean {
   return callBlocks(contents, callName).some((block) =>
-    new RegExp(`name:\\s*"${escapeRegExp(envName)}"`).test(block),
+    new RegExp(`name:\\s*"${escapeRegExp(envName)}"`).test(block)
   );
 }
 
 console.log("\n[proof] Vortex proof scripts are checkout-path portable");
 for (const relativePath of portableVortexProofScripts) {
-  const contents = readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  const contents = readFileSync(
+    new URL(`../${relativePath}`, import.meta.url),
+    "utf8"
+  );
   if (!contents.includes("VORTEX_PAYMENTS_REPO_ROOT")) {
-    console.error(`[proof] ${relativePath} does not support VORTEX_PAYMENTS_REPO_ROOT`);
+    console.error(
+      `[proof] ${relativePath} does not support VORTEX_PAYMENTS_REPO_ROOT`
+    );
     process.exit(1);
   }
 }
-console.log("[proof] VORTEX_PAYMENTS_REPO_ROOT support is present on Vortex proof scripts.");
+console.log(
+  "[proof] VORTEX_PAYMENTS_REPO_ROOT support is present on Vortex proof scripts."
+);
 
-console.log("\n[proof] Local migration gate excludes live and env-mutating proof commands");
-const localGateCommands = proofCommands.map((proofCommand) => proofCommand.args.join(" "));
+console.log(
+  "\n[proof] Local migration gate excludes live and env-mutating proof commands"
+);
+const localGateCommands = proofCommands.map((proofCommand) =>
+  proofCommand.args.join(" ")
+);
 for (const forbiddenScript of localGateForbiddenProofScripts) {
-  const included = localGateCommands.some((command) => command.includes(forbiddenScript));
+  const included = localGateCommands.some((command) =>
+    command.includes(forbiddenScript)
+  );
   if (included) {
-    console.error(`[proof] ${forbiddenScript} must stay out of prove:seal-vortex-migration-local`);
+    console.error(
+      `[proof] ${forbiddenScript} must stay out of prove:seal-vortex-migration-local`
+    );
     process.exit(1);
   }
 }
-console.log("[proof] Live and env-mutating proof commands stay outside the local gate.");
+console.log(
+  "[proof] Live and env-mutating proof commands stay outside the local gate."
+);
 
-console.log("\n[proof] Catalog live proof uses Vortex-shaped entitlement safety controls");
+console.log(
+  "\n[proof] Catalog live proof uses Vortex-shaped entitlement safety controls"
+);
 for (const relativePath of [
   "scripts/prove-seal-catalog-from-vortex.ts",
   "apps/backend/convex/vortex_billing/proof_actions.ts",
 ] as const) {
-  const contents = readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  const contents = readFileSync(
+    new URL(`../${relativePath}`, import.meta.url),
+    "utf8"
+  );
   for (const forbiddenPattern of catalogProofForbiddenPatterns) {
     if (contents.includes(forbiddenPattern)) {
       console.error(
-        `[proof] ${relativePath} still contains catalog safety non-Vortex-provider fragment: ${forbiddenPattern}`,
+        `[proof] ${relativePath} still contains catalog safety non-Vortex-provider fragment: ${forbiddenPattern}`
       );
       process.exit(1);
     }
@@ -203,17 +233,20 @@ console.log("[proof] Catalog safety controls are Vortex-shaped.");
 
 console.log("\n[proof] Env-mutating Vortex proof scripts merge map values");
 for (const guard of proofEnvMapMergeGuards) {
-  const contents = readFileSync(new URL(`../${guard.relativePath}`, import.meta.url), "utf8");
+  const contents = readFileSync(
+    new URL(`../${guard.relativePath}`, import.meta.url),
+    "utf8"
+  );
   if (hasCallForEnv(contents, "setConvexEnv({", guard.envName)) {
     console.error(
-      `[proof] ${guard.relativePath} directly replaces ${guard.envName}; use a merge helper instead.`,
+      `[proof] ${guard.relativePath} directly replaces ${guard.envName}; use a merge helper instead.`
     );
     process.exit(1);
   }
 
   if (!hasCallForEnv(contents, guard.mergeCall, guard.envName)) {
     console.error(
-      `[proof] ${guard.relativePath} does not merge updates into ${guard.envName} with ${guard.mergeCall}`,
+      `[proof] ${guard.relativePath} does not merge updates into ${guard.envName} with ${guard.mergeCall}`
     );
     process.exit(1);
   }
@@ -231,7 +264,9 @@ for (const proofCommand of proofCommands) {
   });
 
   if (result.error !== undefined) {
-    console.error(`[proof] ${proofCommand.label} failed to start: ${result.error.message}`);
+    console.error(
+      `[proof] ${proofCommand.label} failed to start: ${result.error.message}`
+    );
     process.exit(1);
   }
 
@@ -269,6 +304,6 @@ console.log(
       ],
     },
     null,
-    2,
-  ),
+    2
+  )
 );

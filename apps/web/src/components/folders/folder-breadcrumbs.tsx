@@ -27,19 +27,28 @@ interface FolderBreadcrumbsProps {
   onNavigate: (folderId?: Id<"folders">) => void;
 }
 
-export function FolderBreadcrumbs({ folderId, type, onNavigate }: FolderBreadcrumbsProps) {
+export function FolderBreadcrumbs({
+  folderId,
+  type,
+  onNavigate,
+}: FolderBreadcrumbsProps) {
   const breadcrumbs = useQuery(
     api.folders.queries.getFolderBreadcrumbs,
-    folderId ? { folderId } : "skip",
+    folderId ? { folderId } : "skip"
   );
 
   const rootLabel = type === "document" ? "All Documents" : "All Templates";
   const breadcrumbItems = breadcrumbs ?? [];
-  const breadcrumbSignature = [rootLabel, ...breadcrumbItems.map((crumb) => crumb.id)].join("/");
+  const breadcrumbSignature = [
+    rootLabel,
+    ...breadcrumbItems.map((crumb) => crumb.id),
+  ].join("/");
   const previousDepthRef = useRef(breadcrumbItems.length);
   const previousSignatureRef = useRef(breadcrumbSignature);
   const hasMountedRef = useRef(false);
-  const [motionOffset, setMotionOffset] = useState<"idle" | "from-left" | "from-right">("idle");
+  const [motionOffset, setMotionOffset] = useState<
+    "idle" | "from-left" | "from-right"
+  >("idle");
 
   useLayoutEffect(() => {
     if (!hasMountedRef.current) {

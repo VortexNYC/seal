@@ -16,9 +16,12 @@ export const documentCancellationWorkflow = workflow.define({
     reason: v.optional(v.string()),
   },
   handler: async (step, args): Promise<void> => {
-    await step.runAction(internal.documents.cancellation_email_action.sendCancellationEmails, {
-      documentId: args.documentId,
-      reason: args.reason,
-    });
+    await step.runAction(
+      internal.documents.cancellation_email_action.sendCancellationEmails,
+      {
+        documentId: args.documentId,
+        reason: args.reason,
+      }
+    );
   },
 });

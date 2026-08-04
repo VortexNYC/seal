@@ -36,11 +36,16 @@ interface PendingInvitationsListProps {
   invitations: Invitation[];
 }
 
-export function PendingInvitationsList({ invitations }: PendingInvitationsListProps) {
+export function PendingInvitationsList({
+  invitations,
+}: PendingInvitationsListProps) {
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const revokeInvitation = useMutation(api.invitations.revokeInvitation);
 
-  const handleRevokeInvitation = async (invitationId: string, email: string) => {
+  const handleRevokeInvitation = async (
+    invitationId: string,
+    email: string
+  ) => {
     setRevokingId(invitationId);
     try {
       await revokeInvitation({ invitationId });
@@ -48,7 +53,9 @@ export function PendingInvitationsList({ invitations }: PendingInvitationsListPr
         description: `The invitation for ${email} has been revoked`,
       });
     } catch (error) {
-      toast.error("Failed to revoke invitation", { description: getErrorMessage(error) });
+      toast.error("Failed to revoke invitation", {
+        description: getErrorMessage(error),
+      });
     } finally {
       setRevokingId(null);
     }
@@ -86,13 +93,17 @@ export function PendingInvitationsList({ invitations }: PendingInvitationsListPr
             <TableCell>
               <Badge variant="secondary">{invitation.role}</Badge>
             </TableCell>
-            <TableCell>{new Date(invitation.expiresAt).toLocaleDateString()}</TableCell>
+            <TableCell>
+              {new Date(invitation.expiresAt).toLocaleDateString()}
+            </TableCell>
             <TableCell className="text-right">
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={revokingId === invitation.id}
-                onClick={() => handleRevokeInvitation(invitation.id, invitation.email)}
+                onClick={() =>
+                  handleRevokeInvitation(invitation.id, invitation.email)
+                }
               >
                 <Ban className="mr-1 h-4 w-4" />
                 {revokingId === invitation.id ? "Revoking..." : "Revoke"}

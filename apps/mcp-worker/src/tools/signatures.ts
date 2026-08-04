@@ -21,7 +21,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers all signature-related tools with the MCP server.
  */
-export function registerSignatureTools(server: McpServer, client: SealApiClient): void {
+export function registerSignatureTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // List signatures
   server.tool(
     "seal_list_signatures",
@@ -33,7 +36,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
       const response = await client.get<{ signatures: ApiSignature[] }>(
         "/signatures",
         { document_id },
-        authToken,
+        authToken
       );
 
       return {
@@ -44,7 +47,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
           },
         ],
       };
-    },
+    }
   );
 
   // Get signature
@@ -61,7 +64,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
           document_id,
           id,
         },
-        authToken,
+        authToken
       );
 
       return {
@@ -72,7 +75,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
           },
         ],
       };
-    },
+    }
   );
 
   // Verify document
@@ -86,7 +89,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
       const response = await client.get<ApiVerificationResult>(
         "/signatures/verify",
         { document_id },
-        authToken,
+        authToken
       );
 
       return {
@@ -97,7 +100,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
           },
         ],
       };
-    },
+    }
   );
 
   // Get audit trail
@@ -111,7 +114,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
       const response = await client.get<{ entries: ApiAuditEntry[] }>(
         "/signatures/audit",
         { document_id, limit },
-        authToken,
+        authToken
       );
 
       return {
@@ -122,6 +125,6 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
           },
         ],
       };
-    },
+    }
   );
 }

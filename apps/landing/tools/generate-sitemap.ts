@@ -16,10 +16,25 @@ async function generateSitemap(): Promise<void> {
   const landingPages = getAllPageSlugs();
   const changelogEntries = getChangelogEntries();
 
-  const urls: Array<{ path: string; lastmod: string; changefreq: string; priority: string }> = [];
+  const urls: Array<{
+    path: string;
+    lastmod: string;
+    changefreq: string;
+    priority: string;
+  }> = [];
 
-  urls.push({ path: "/", lastmod: today, changefreq: "weekly", priority: "1.0" });
-  urls.push({ path: "/changelog", lastmod: today, changefreq: "weekly", priority: "0.7" });
+  urls.push({
+    path: "/",
+    lastmod: today,
+    changefreq: "weekly",
+    priority: "1.0",
+  });
+  urls.push({
+    path: "/changelog",
+    lastmod: today,
+    changefreq: "weekly",
+    priority: "0.7",
+  });
 
   for (const page of landingPages) {
     urls.push({
@@ -40,7 +55,12 @@ async function generateSitemap(): Promise<void> {
   }
 
   for (const page of docsPages) {
-    urls.push({ path: page.url, lastmod: today, changefreq: "weekly", priority: "0.8" });
+    urls.push({
+      path: page.url,
+      lastmod: today,
+      changefreq: "weekly",
+      priority: "0.8",
+    });
   }
 
   const urlEntries = urls
@@ -50,7 +70,7 @@ async function generateSitemap(): Promise<void> {
     <lastmod>${u.lastmod}</lastmod>
     <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
-  </url>`,
+  </url>`
     )
     .join("\n");
 

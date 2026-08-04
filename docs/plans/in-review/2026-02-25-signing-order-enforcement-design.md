@@ -121,7 +121,9 @@ if (document.signingMode === "sequential") {
     .then((rs) => rs.filter((r) => (r.order ?? 0) < myOrder));
 
   if (!previousRecipients.every((r) => isRecipientTerminal(r.status))) {
-    throw new ConvexError("Previous recipients must complete their action first");
+    throw new ConvexError(
+      "Previous recipients must complete their action first"
+    );
   }
 }
 ```
@@ -140,15 +142,19 @@ if (document.signingMode === "sequential") {
   // Is my entire group now complete?
   if (myGroup.every((r) => isRecipientTerminal(r.status))) {
     const nextGroup = allRecipients.filter(
-      (r) => (r.order ?? 0) === myOrder + 1 && r.status === "pending",
+      (r) => (r.order ?? 0) === myOrder + 1 && r.status === "pending"
     );
 
     if (nextGroup.length > 0) {
       // Notify next group
-      await ctx.scheduler.runAfter(0, internal.documents.email.sendGroupNotification, {
-        documentId: document._id,
-        recipientIds: nextGroup.map((r) => r._id),
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.email.sendGroupNotification,
+        {
+          documentId: document._id,
+          recipientIds: nextGroup.map((r) => r._id),
+        }
+      );
     }
   }
 }
@@ -184,7 +190,7 @@ function findFirstIncompleteGroup(recipients: Doc<"document_recipients">[]) {
 // Check if a specific recipient's group is active
 function isGroupActive(
   recipient: Doc<"document_recipients">,
-  allRecipients: Doc<"document_recipients">[],
+  allRecipients: Doc<"document_recipients">[]
 ) {
   const myOrder = recipient.order ?? 0;
   return allRecipients

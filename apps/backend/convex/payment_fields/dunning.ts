@@ -15,7 +15,7 @@ import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -57,7 +57,8 @@ export const startDunning = internalMutation({
     }
 
     // Only dun open or uncollectible invoices
-    if (invoice.status !== "open" && invoice.status !== "uncollectible") return null;
+    if (invoice.status !== "open" && invoice.status !== "uncollectible")
+      return null;
 
     const now = Date.now();
 
@@ -177,7 +178,7 @@ export const processDunningEmails = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.payment_fields.dunning_email_action.sendDunningEmail,
-        { invoiceId: invoice._id, step },
+        { invoiceId: invoice._id, step }
       );
 
       emailsScheduled++;

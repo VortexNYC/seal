@@ -7,12 +7,19 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { type ErrorComponentProps, createFileRoute, Outlet } from "@tanstack/react-router";
+import {
+  type ErrorComponentProps,
+  createFileRoute,
+  Outlet,
+} from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 
 import { AppSidebar } from "@/components/app-sidebar";
-import { CommandPalette, useCommandPalette } from "@/components/command-palette";
+import {
+  CommandPalette,
+  useCommandPalette,
+} from "@/components/command-palette";
 import { FeedbackButton } from "@/components/feedback-button";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PostHogIdentify } from "@/components/posthog-identify";
@@ -62,7 +69,7 @@ function WorkspaceLayout() {
 
   const permissions = useQuery(
     api.organizations.queries.getUserPermissions,
-    orgId ? { organizationId: orgId } : "skip",
+    orgId ? { organizationId: orgId } : "skip"
   );
 
   // Still loading — pendingComponent handles initial load, but useQuery
@@ -88,7 +95,11 @@ function WorkspaceLayout() {
       <PostHogIdentify organization={orgData} />
       <DotPattern className="fixed inset-0 z-0" />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
-        <AppSidebar slug={slug} organization={orgData} permissions={permissions} />
+        <AppSidebar
+          slug={slug}
+          organization={orgData}
+          permissions={permissions}
+        />
         <main className="h-full min-h-0 flex-1 overflow-hidden">
           <Outlet />
         </main>

@@ -26,7 +26,8 @@ export function useDocumentState(initialRedirectUrl: string) {
   const [addRecipientOpen, setAddRecipientOpen] = useState(false);
   const [addMyselfOpen, setAddMyselfOpen] = useState(false);
   const [removeRecipientOpen, setRemoveRecipientOpen] = useState(false);
-  const [recipientToRemove, setRecipientToRemove] = useState<RecipientToRemove>(null);
+  const [recipientToRemove, setRecipientToRemove] =
+    useState<RecipientToRemove>(null);
   const [recipientOptionsOpen, setRecipientOptionsOpen] = useState(false);
   const [selectedRecipientForOptions, setSelectedRecipientForOptions] =
     useState<RecipientForOptions>(null);

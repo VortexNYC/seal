@@ -68,7 +68,7 @@ interface FieldInputContentProps {
   onValidationChange: (valid: boolean, error?: string) => void;
   onSignatureCapture: (
     signatureData: string,
-    signatureType: "drawn" | "typed" | "uploaded",
+    signatureType: "drawn" | "typed" | "uploaded"
   ) => Promise<void>;
   onCancelSignature: () => void;
 }
@@ -86,7 +86,10 @@ type FieldRendererProps = FieldInputContentProps & {
   commonProps: CommonFieldInputProps;
 };
 
-const FIELD_INPUT_RENDERERS: Record<FieldType, (props: FieldRendererProps) => ReactNode> = {
+const FIELD_INPUT_RENDERERS: Record<
+  FieldType,
+  (props: FieldRendererProps) => ReactNode
+> = {
   text: ({ commonProps, properties }) => (
     <TextFieldInput
       {...commonProps}
@@ -262,7 +265,9 @@ function useFieldInputState({
   onSave,
 }: UseFieldInputStateArgs) {
   const [value, setValue] = useState(currentValue || defaultValue || "");
-  const [signatureImageUrl, setSignatureImageUrl] = useState(currentSignatureImageUrl);
+  const [signatureImageUrl, setSignatureImageUrl] = useState(
+    currentSignatureImageUrl
+  );
   const [isValid, setIsValid] = useState(!isRequired);
   const [validationError, setValidationError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);

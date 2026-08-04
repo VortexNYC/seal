@@ -16,7 +16,7 @@ import { internalMutation } from "../_generated/server";
 async function performCleanup(
   ctx: MutationCtx,
   storageId: string,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<{ deleted: boolean; reason?: string }> {
   // 1. Verify document is still marked as deleted
   const document = await ctx.db.get(documentId);
@@ -26,13 +26,17 @@ async function performCleanup(
     // 2. Delete the file from Convex Storage
     await ctx.storage.delete(storageId);
 
-    console.info(`Storage cleanup: Deleted file ${storageId} for document ${documentId}`);
+    console.info(
+      `Storage cleanup: Deleted file ${storageId} for document ${documentId}`
+    );
 
     return { deleted: true };
   }
 
   // Document was restored, don't delete storage
-  console.info(`Storage cleanup: Skipped deletion for ${storageId} - document was restored`);
+  console.info(
+    `Storage cleanup: Skipped deletion for ${storageId} - document was restored`
+  );
   return { deleted: false, reason: "document_restored" };
 }
 
@@ -67,7 +71,7 @@ export const batchCleanupDocumentStorage = internalMutation({
       v.object({
         storageId: v.string(),
         documentId: v.id("documents"),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -80,7 +84,11 @@ export const batchCleanupDocumentStorage = internalMutation({
 
     for (const item of args.items) {
       try {
-        const result = await performCleanup(ctx, item.storageId, item.documentId);
+        const result = await performCleanup(
+          ctx,
+          item.storageId,
+          item.documentId
+        );
 
         if (result.deleted) {
           results.deleted++;
@@ -94,7 +102,7 @@ export const batchCleanupDocumentStorage = internalMutation({
     }
 
     console.info(
-      `Batch cleanup completed: ${results.deleted} deleted, ${results.skipped} skipped, ${results.errors} errors`,
+      `Batch cleanup completed: ${results.deleted} deleted, ${results.skipped} skipped, ${results.errors} errors`
     );
 
     return results;

@@ -27,21 +27,27 @@ export const postSignatureWorkflow = workflow.define({
   },
   handler: async (step, args): Promise<void> => {
     // Step 1: Send confirmation email to the signer
-    await step.runAction(internal.workflows.document_completion_steps.sendSignerConfirmation, {
-      recipientId: args.recipientId,
-      documentId: args.documentId,
-    });
+    await step.runAction(
+      internal.workflows.document_completion_steps.sendSignerConfirmation,
+      {
+        recipientId: args.recipientId,
+        documentId: args.documentId,
+      }
+    );
 
     // Step 2: If sequential mode, notify the next group
-    await step.runAction(internal.workflows.document_completion_steps.notifyNextSequentialGroup, {
-      recipientId: args.recipientId,
-      documentId: args.documentId,
-    });
+    await step.runAction(
+      internal.workflows.document_completion_steps.notifyNextSequentialGroup,
+      {
+        recipientId: args.recipientId,
+        documentId: args.documentId,
+      }
+    );
 
     // Step 3: Check if all recipients are complete
     const { allComplete } = await step.runQuery(
       internal.workflows.document_completion_steps.checkAllRecipientsComplete,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!allComplete) return;
@@ -49,15 +55,18 @@ export const postSignatureWorkflow = workflow.define({
     // Step 4: Guard against duplicate completion triggers
     const { shouldComplete } = await step.runMutation(
       internal.workflows.document_completion_steps.triggerDocumentCompletion,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!shouldComplete) return;
 
     // Step 5: Run the full completion chain as a nested workflow
-    await step.runWorkflow(internal.workflows.document_completion.documentCompletionWorkflow, {
-      documentId: args.documentId,
-    });
+    await step.runWorkflow(
+      internal.workflows.document_completion.documentCompletionWorkflow,
+      {
+        documentId: args.documentId,
+      }
+    );
   },
 });
 
@@ -73,18 +82,27 @@ export const documentCompletionWorkflow = workflow.define({
   },
   handler: async (step, args): Promise<void> => {
     // Step 1: Mark document as completed
-    await step.runMutation(internal.documents.recipient_email_action.markDocumentAsCompleted, {
-      documentId: args.documentId,
-    });
+    await step.runMutation(
+      internal.documents.recipient_email_action.markDocumentAsCompleted,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     // Step 2: Generate certificate and send completion emails in parallel
     await Promise.all([
-      step.runAction(internal.documents.certificate_of_completion.generateCertificate, {
-        documentId: args.documentId,
-      }),
-      step.runAction(internal.workflows.document_completion_steps.sendCompletionEmails, {
-        documentId: args.documentId,
-      }),
+      step.runAction(
+        internal.documents.certificate_of_completion.generateCertificate,
+        {
+          documentId: args.documentId,
+        }
+      ),
+      step.runAction(
+        internal.workflows.document_completion_steps.sendCompletionEmails,
+        {
+          documentId: args.documentId,
+        }
+      ),
     ]);
   },
 });

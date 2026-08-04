@@ -21,18 +21,19 @@ const { data, fetchNextPage } = useInfiniteQuery({
 ## Good Example: Offset-Based Pagination
 
 ```tsx
-const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-  queryKey: ["posts"],
-  queryFn: ({ pageParam }) => fetchPosts({ page: pageParam, limit: 20 }),
-  initialPageParam: 1,
-  getNextPageParam: (lastPage, allPages) => {
-    // Return next page number, or undefined if no more pages
-    if (lastPage.length < 20) {
-      return undefined; // No more pages
-    }
-    return allPages.length + 1;
-  },
-});
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  useInfiniteQuery({
+    queryKey: ["posts"],
+    queryFn: ({ pageParam }) => fetchPosts({ page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // Return next page number, or undefined if no more pages
+      if (lastPage.length < 20) {
+        return undefined; // No more pages
+      }
+      return allPages.length + 1;
+    },
+  });
 ```
 
 ## Good Example: Cursor-Based Pagination
@@ -45,7 +46,8 @@ interface PostsResponse {
 
 const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
   queryKey: ["posts"],
-  queryFn: ({ pageParam }): Promise<PostsResponse> => fetchPosts({ cursor: pageParam }),
+  queryFn: ({ pageParam }): Promise<PostsResponse> =>
+    fetchPosts({ cursor: pageParam }),
   initialPageParam: undefined as string | undefined,
   getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
 });
@@ -54,15 +56,20 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
 ## Good Example: Bi-directional Pagination
 
 ```tsx
-const { data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage } = useInfiniteQuery({
-  queryKey: ["messages", chatId],
-  queryFn: ({ pageParam }) => fetchMessages({ chatId, cursor: pageParam }),
-  initialPageParam: { direction: "initial" } as PageParam,
-  getNextPageParam: (lastPage) =>
-    lastPage.hasMore ? { cursor: lastPage.nextCursor, direction: "next" } : undefined,
-  getPreviousPageParam: (firstPage) =>
-    firstPage.hasPrevious ? { cursor: firstPage.prevCursor, direction: "prev" } : undefined,
-});
+const { data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage } =
+  useInfiniteQuery({
+    queryKey: ["messages", chatId],
+    queryFn: ({ pageParam }) => fetchMessages({ chatId, cursor: pageParam }),
+    initialPageParam: { direction: "initial" } as PageParam,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore
+        ? { cursor: lastPage.nextCursor, direction: "next" }
+        : undefined,
+    getPreviousPageParam: (firstPage) =>
+      firstPage.hasPrevious
+        ? { cursor: firstPage.prevCursor, direction: "prev" }
+        : undefined,
+  });
 ```
 
 ## Good Example: With Total Count
@@ -77,7 +84,8 @@ interface PaginatedResponse<T> {
 
 const { data, hasNextPage } = useInfiniteQuery({
   queryKey: ["products", filters],
-  queryFn: ({ pageParam }) => fetchProducts({ ...filters, page: pageParam, pageSize: 20 }),
+  queryFn: ({ pageParam }) =>
+    fetchProducts({ ...filters, page: pageParam, pageSize: 20 }),
   initialPageParam: 1,
   getNextPageParam: (lastPage) => {
     const totalPages = Math.ceil(lastPage.total / lastPage.pageSize);

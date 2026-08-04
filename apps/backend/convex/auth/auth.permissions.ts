@@ -46,7 +46,9 @@ function throwPermissionAuthError(code: string, message: string): never {
   throw new ConvexError({ code, message });
 }
 
-async function requireAuthenticatedUser(ctx: QueryCtx | MutationCtx): Promise<Doc<"users">> {
+async function requireAuthenticatedUser(
+  ctx: QueryCtx | MutationCtx
+): Promise<Doc<"users">> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throwPermissionAuthError("UNAUTHORIZED", "Authentication required");
@@ -68,7 +70,7 @@ async function getMembershipOrThrow(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
   organizationId: Id<"organizations">,
-  notFoundMessage: string,
+  notFoundMessage: string
 ): Promise<AuthMember> {
   const user = await ctx.db.get(userId);
   if (!user) {
@@ -78,7 +80,7 @@ async function getMembershipOrThrow(
   const componentMembership = await resolveComponentMembershipForOrganization(
     ctx,
     user,
-    organization,
+    organization
   );
 
   if (!componentMembership) {
@@ -97,7 +99,7 @@ async function getMembershipOrThrow(
 
 async function getOrganizationOrThrow(
   ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<Doc<"organizations">> {
   const organization = await ctx.db.get(organizationId);
   if (!organization) {
@@ -110,7 +112,7 @@ function buildSuperAdminContext(
   user: Doc<"users">,
   member: AuthMember,
   organization: Doc<"organizations">,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): AuthContextWithPermissions {
   return {
     userId: user._id,
@@ -132,7 +134,7 @@ function buildSuperAdminContext(
 
 async function buildActiveMembershipContext(
   ctx: QueryCtx | MutationCtx,
-  user: Doc<"users">,
+  user: Doc<"users">
 ): Promise<{
   membership: AuthMember;
   organization: Doc<"organizations">;
@@ -147,7 +149,7 @@ async function buildActiveMembershipContext(
     ctx,
     user._id,
     organizationId,
-    "Not a member of active organization",
+    "Not a member of active organization"
   );
 
   if (membership.status !== "active") {
@@ -157,7 +159,10 @@ async function buildActiveMembershipContext(
   const organization = await getOrganizationOrThrow(ctx, organizationId);
   const organizationStatus = organization.status ?? "active";
   if (organizationStatus !== "active") {
-    throwPermissionAuthError("FORBIDDEN", `Organization is ${organizationStatus}`);
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      `Organization is ${organizationStatus}`
+    );
   }
 
   return { membership, organization, organizationId };
@@ -170,26 +175,39 @@ function isPermissionKey(permission: string): permission is PermissionKey {
 async function resolvePermissions(
   ctx: QueryCtx | MutationCtx,
   membership: AuthMember,
-  organization: Doc<"organizations">,
+  organization: Doc<"organizations">
 ): Promise<PermissionKey[]> {
-  let permissions: PermissionKey[] = getExpandedPermissions(membership.role as RoleTemplate);
+  let permissions: PermissionKey[] = getExpandedPermissions(
+    membership.role as RoleTemplate
+  );
 
   if (membership.roleId && organization.vortexAuthOrganizationId) {
-    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
-      roleId: membership.roleId as GenericId<"organization_roles">,
-      organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
-    });
+    const role = await ctx.runQuery(
+      components.vortexAuth.organizations.getRole,
+      {
+        roleId: membership.roleId as GenericId<"organization_roles">,
+        organizationId:
+          organization.vortexAuthOrganizationId as GenericId<"organizations">,
+      }
+    );
     permissions = role
       ? role.permissions.filter(isPermissionKey)
       : getExpandedPermissions(membership.role as RoleTemplate);
   }
 
   if (membership.permissionOverrides?.add) {
-    permissions = [...permissions, ...membership.permissionOverrides.add.filter(isPermissionKey)];
+    permissions = [
+      ...permissions,
+      ...membership.permissionOverrides.add.filter(isPermissionKey),
+    ];
   }
   if (membership.permissionOverrides?.remove) {
-    const removeSet = new Set(membership.permissionOverrides.remove.filter(isPermissionKey));
-    permissions = permissions.filter((permission) => !removeSet.has(permission));
+    const removeSet = new Set(
+      membership.permissionOverrides.remove.filter(isPermissionKey)
+    );
+    permissions = permissions.filter(
+      (permission) => !removeSet.has(permission)
+    );
   }
 
   return Array.from(new Set(permissions)).sort();
@@ -200,7 +218,7 @@ function buildPermissionContext(
   membership: AuthMember,
   organization: Doc<"organizations">,
   organizationId: Id<"organizations">,
-  permissions: string[],
+  permissions: string[]
 ): AuthContextWithPermissions {
   const isOwner = membership.role === "owner";
   const isAdmin = ["owner", "admin"].includes(membership.role);
@@ -214,9 +232,11 @@ function buildPermissionContext(
     permissions,
     isOwner,
     isAdmin,
-    hasPermission: (permission: string) => hasPermission(permissions, permission),
+    hasPermission: (permission: string) =>
+      hasPermission(permissions, permission),
     hasAnyPermission: (perms: string[]) => hasAnyPermission(permissions, perms),
-    hasAllPermissions: (perms: string[]) => hasAllPermissions(permissions, perms),
+    hasAllPermissions: (perms: string[]) =>
+      hasAllPermissions(permissions, perms),
     user,
     member: membership,
     organization,
@@ -238,13 +258,16 @@ function buildPermissionContext(
  * 7. Return context with permission helpers
  */
 export async function getAuthContextWithPermissions(
-  ctx: QueryCtx | MutationCtx,
+  ctx: QueryCtx | MutationCtx
 ): Promise<AuthContextWithPermissions> {
   const user = await requireAuthenticatedUser(ctx);
 
   if (user.isSuperAdmin) {
     if (!user.activeOrganizationId) {
-      throwPermissionAuthError("FORBIDDEN", "Super admin must have an active organization");
+      throwPermissionAuthError(
+        "FORBIDDEN",
+        "Super admin must have an active organization"
+      );
     }
 
     const organizationId = user.activeOrganizationId;
@@ -253,17 +276,21 @@ export async function getAuthContextWithPermissions(
       ctx,
       user._id,
       organizationId,
-      "No membership found for super admin",
+      "No membership found for super admin"
     );
 
     return buildSuperAdminContext(user, member, organization, organizationId);
   }
 
-  const { membership, organization, organizationId } = await buildActiveMembershipContext(
-    ctx,
-    user,
-  );
+  const { membership, organization, organizationId } =
+    await buildActiveMembershipContext(ctx, user);
   const permissions = await resolvePermissions(ctx, membership, organization);
 
-  return buildPermissionContext(user, membership, organization, organizationId, permissions);
+  return buildPermissionContext(
+    user,
+    membership,
+    organization,
+    organizationId,
+    permissions
+  );
 }

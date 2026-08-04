@@ -220,14 +220,15 @@ curl -X PATCH "https://seal.convex.site/api/v1/settings" \
 ```
 
 <Callout type="info">
-  **Partial updates**: You can update a single field inside a category without specifying the rest.
-  For example, setting only `signing.default_deadline_days` leaves `allowed_signature_types` and
-  `esign_consent_text` unchanged.
+  **Partial updates**: You can update a single field inside a category without
+  specifying the rest. For example, setting only `signing.default_deadline_days`
+  leaves `allowed_signature_types` and `esign_consent_text` unchanged.
 </Callout>
 
 <Callout type="warn">
-  **Clearing a field**: To clear `esign_consent_text` or `session_timeout_minutes`, pass `null`
-  explicitly. Omitting the field preserves the current value.
+  **Clearing a field**: To clear `esign_consent_text` or
+  `session_timeout_minutes`, pass `null` explicitly. Omitting the field
+  preserves the current value.
 </Callout>
 
 ## Next Steps

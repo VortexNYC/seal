@@ -11,7 +11,11 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
   ArrowDownIcon,
@@ -50,7 +54,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -139,7 +149,7 @@ function TemplatesList({
     convexQuery(api.templates.queries.getOrganizationTemplates, {
       folderId,
       rootOnly: !folderId,
-    }),
+    })
   );
 
   // Query subfolders at the current level for inline folder rows
@@ -154,7 +164,9 @@ function TemplatesList({
     if (!searchQuery) return templates;
     const query = searchQuery.toLowerCase();
     return templates.filter(
-      (t) => t.name.toLowerCase().includes(query) || t.description?.toLowerCase().includes(query),
+      (t) =>
+        t.name.toLowerCase().includes(query) ||
+        t.description?.toLowerCase().includes(query)
     );
   }, [templates, searchQuery]);
 
@@ -205,7 +217,13 @@ function TemplatesList({
   };
 
   // Sort header component
-  const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
+  const SortHeader = ({
+    field,
+    label,
+  }: {
+    field: SortField;
+    label: string;
+  }) => (
     <Button
       variant="ghost"
       onClick={() => onSortChange(field)}
@@ -224,7 +242,8 @@ function TemplatesList({
   return (
     <>
       {/* SEA-140: Enhanced empty state with helpful CTAs */}
-      {sortedTemplates.length === 0 && (!subfolders || subfolders.length === 0) ? (
+      {sortedTemplates.length === 0 &&
+      (!subfolders || subfolders.length === 0) ? (
         searchQuery ? (
           <EmptyState
             icon={SearchIcon}
@@ -286,7 +305,9 @@ function TemplatesList({
                         </TableCell>
                         <TableCell>
                           <p className="font-medium">{folder.name}</p>
-                          <p className="text-muted-foreground text-xs">Folder</p>
+                          <p className="text-muted-foreground text-xs">
+                            Folder
+                          </p>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
@@ -324,21 +345,27 @@ function TemplatesList({
                               {template.description}
                             </p>
                           )}
-                          {template.pageCount !== undefined && template.pageCount > 0 && (
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              {template.pageCount} {template.pageCount === 1 ? "page" : "pages"}
-                            </p>
-                          )}
+                          {template.pageCount !== undefined &&
+                            template.pageCount > 0 && (
+                              <p className="text-muted-foreground mt-1 text-xs">
+                                {template.pageCount}{" "}
+                                {template.pageCount === 1 ? "page" : "pages"}
+                              </p>
+                            )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <p>{formatDate(template.createdAt)}</p>
-                          <p className="text-muted-foreground">{formatBytes(template.fileSize)}</p>
+                          <p className="text-muted-foreground">
+                            {formatBytes(template.fileSize)}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-medium">{template.useCount}</span>
+                        <span className="text-sm font-medium">
+                          {template.useCount}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -353,15 +380,21 @@ function TemplatesList({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onUseTemplate(template)}>
+                            <DropdownMenuItem
+                              onClick={() => onUseTemplate(template)}
+                            >
                               <CopyIcon className="mr-2 h-4 w-4" />
                               Use Template
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onEditTemplate(template)}>
+                            <DropdownMenuItem
+                              onClick={() => onEditTemplate(template)}
+                            >
                               <PencilIcon className="mr-2 h-4 w-4" />
                               Edit Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onMoveToFolder(template._id)}>
+                            <DropdownMenuItem
+                              onClick={() => onMoveToFolder(template._id)}
+                            >
                               <FolderInputIcon className="mr-2 h-4 w-4" />
                               Move to Folder
                             </DropdownMenuItem>
@@ -421,7 +454,9 @@ function TemplatesList({
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <FileTextIcon className="text-muted-foreground h-5 w-5" />
-                        <CardTitle className="truncate text-base">{template.name}</CardTitle>
+                        <CardTitle className="truncate text-base">
+                          {template.name}
+                        </CardTitle>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -435,15 +470,21 @@ function TemplatesList({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onUseTemplate(template)}>
+                          <DropdownMenuItem
+                            onClick={() => onUseTemplate(template)}
+                          >
                             <CopyIcon className="mr-2 h-4 w-4" />
                             Use Template
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onEditTemplate(template)}>
+                          <DropdownMenuItem
+                            onClick={() => onEditTemplate(template)}
+                          >
                             <PencilIcon className="mr-2 h-4 w-4" />
                             Edit Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onMoveToFolder(template._id)}>
+                          <DropdownMenuItem
+                            onClick={() => onMoveToFolder(template._id)}
+                          >
                             <FolderInputIcon className="mr-2 h-4 w-4" />
                             Move to Folder
                           </DropdownMenuItem>
@@ -470,7 +511,9 @@ function TemplatesList({
                         <span>{formatDate(template.createdAt)}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Times Used</span>
+                        <span className="text-muted-foreground">
+                          Times Used
+                        </span>
                         <span className="font-medium">{template.useCount}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
@@ -478,7 +521,10 @@ function TemplatesList({
                         <span>{template.pageCount ?? "-"}</span>
                       </div>
                     </div>
-                    <Button className="mt-4 w-full" onClick={() => onUseTemplate(template)}>
+                    <Button
+                      className="mt-4 w-full"
+                      onClick={() => onUseTemplate(template)}
+                    >
                       <CopyIcon className="mr-2 h-4 w-4" />
                       Use Template
                     </Button>
@@ -493,36 +539,42 @@ function TemplatesList({
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-sm">
                 Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                {Math.min(currentPage * ITEMS_PER_PAGE, sortedTemplates.length)} of{" "}
-                {sortedTemplates.length} templates
+                {Math.min(currentPage * ITEMS_PER_PAGE, sortedTemplates.length)}{" "}
+                of {sortedTemplates.length} templates
               </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   <ChevronLeftIcon className="h-4 w-4" />
                   Previous
                 </Button>
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={page === currentPage ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {page}
-                    </Button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    )
+                  )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   Next
@@ -553,8 +605,12 @@ function TemplatesPage() {
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveTemplateId, setMoveTemplateId] = useState<Id<"templates"> | null>(null);
-  const moveItemsToFolder = useMutation(api.folders.mutations.moveItemsToFolder);
+  const [moveTemplateId, setMoveTemplateId] = useState<Id<"templates"> | null>(
+    null
+  );
+  const moveItemsToFolder = useMutation(
+    api.folders.mutations.moveItemsToFolder
+  );
 
   // Cast folderId string from URL to Id<"folders"> if present
   const folderId = folderIdParam ? (folderIdParam as Id<"folders">) : undefined;
@@ -583,7 +639,9 @@ function TemplatesPage() {
   const [isEditing, setIsEditing] = useState(false);
 
   // Mutations
-  const createFromTemplate = useMutation(api.templates.mutations.createFromTemplate);
+  const createFromTemplate = useMutation(
+    api.templates.mutations.createFromTemplate
+  );
   const updateTemplate = useMutation(api.templates.mutations.updateTemplate);
   const deleteTemplate = useMutation(api.templates.mutations.deleteTemplate);
 
@@ -620,7 +678,8 @@ function TemplatesPage() {
       toast.success("Template moved successfully");
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Failed to move template";
+      const msg =
+        error instanceof Error ? error.message : "Failed to move template";
       toast.error(msg);
     } finally {
       setMoveDialogOpen(false);
@@ -667,7 +726,9 @@ function TemplatesPage() {
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to create document from template";
+        error instanceof Error
+          ? error.message
+          : "Failed to create document from template";
       toast.error(errorMessage);
     } finally {
       setIsCreating(false);
@@ -693,7 +754,8 @@ function TemplatesPage() {
       setEditTemplateDialog({ open: false, template: null });
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update template";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update template";
       toast.error(errorMessage);
     } finally {
       setIsEditing(false);
@@ -716,13 +778,14 @@ function TemplatesPage() {
       setDeleteConfirmDialog({ open: false, template: null });
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete template";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete template";
       toast.error(errorMessage);
     }
   };
 
   const { data: organization } = useSuspenseQuery(
-    convexQuery(api.organizations.queries.getOrganization, { slug }),
+    convexQuery(api.organizations.queries.getOrganization, { slug })
   );
 
   return (
@@ -730,7 +793,11 @@ function TemplatesPage() {
       title="Templates"
       headerActions={<CreateFolderDialog type="template" parentId={folderId} />}
       headerCenter={
-        <FolderBreadcrumbs folderId={folderId} type="template" onNavigate={handleFolderSelect} />
+        <FolderBreadcrumbs
+          folderId={folderId}
+          type="template"
+          onNavigate={handleFolderSelect}
+        />
       }
     >
       <div className="space-y-6">
@@ -776,10 +843,13 @@ function TemplatesPage() {
             <div className="flex items-start gap-3">
               <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <p className="text-sm font-medium">Templates save time on recurring documents</p>
+                <p className="text-sm font-medium">
+                  Templates save time on recurring documents
+                </p>
                 <p className="text-muted-foreground text-sm">
-                  To create a template, prepare a document with signature fields, then click "Save
-                  as Template" from the document actions menu.
+                  To create a template, prepare a document with signature
+                  fields, then click "Save as Template" from the document
+                  actions menu.
                 </p>
               </div>
             </div>
@@ -836,7 +906,8 @@ function TemplatesPage() {
             <DialogTitle>Create Document from Template</DialogTitle>
             <DialogDescription>
               Create a new document using "{useTemplateDialog.template?.name}
-              ". The new document will have all the signature fields from the template.
+              ". The new document will have all the signature fields from the
+              template.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -853,7 +924,9 @@ function TemplatesPage() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setUseTemplateDialog({ open: false, template: null })}
+              onClick={() =>
+                setUseTemplateDialog({ open: false, template: null })
+              }
               disabled={isCreating}
             >
               Cancel
@@ -873,7 +946,9 @@ function TemplatesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Template</DialogTitle>
-            <DialogDescription>Update the template name and description.</DialogDescription>
+            <DialogDescription>
+              Update the template name and description.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -899,12 +974,17 @@ function TemplatesPage() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setEditTemplateDialog({ open: false, template: null })}
+              onClick={() =>
+                setEditTemplateDialog({ open: false, template: null })
+              }
               disabled={isEditing}
             >
               Cancel
             </Button>
-            <Button onClick={handleConfirmEditTemplate} disabled={isEditing || !editName.trim()}>
+            <Button
+              onClick={handleConfirmEditTemplate}
+              disabled={isEditing || !editName.trim()}
+            >
               {isEditing ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
@@ -914,14 +994,17 @@ function TemplatesPage() {
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteConfirmDialog.open}
-        onOpenChange={(open) => setDeleteConfirmDialog({ open, template: null })}
+        onOpenChange={(open) =>
+          setDeleteConfirmDialog({ open, template: null })
+        }
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteConfirmDialog.template?.name}"? This action
-              cannot be undone. Documents created from this template will not be affected.
+              Are you sure you want to delete "
+              {deleteConfirmDialog.template?.name}"? This action cannot be
+              undone. Documents created from this template will not be affected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -2,7 +2,14 @@ import { AlertTriangleIcon, HomeIcon, RefreshCwIcon } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -19,7 +26,10 @@ interface ErrorBoundaryState {
  * React Error Boundary component that catches JavaScript errors anywhere
  * in the child component tree, logs errors, and displays a fallback UI.
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -81,7 +91,11 @@ interface ErrorFallbackProps {
 /**
  * Default error fallback UI component
  */
-export function ErrorFallback({ error, onReset, onGoHome }: ErrorFallbackProps) {
+export function ErrorFallback({
+  error,
+  onReset,
+  onGoHome,
+}: ErrorFallbackProps) {
   const isDev = import.meta.env.DEV;
 
   return (
@@ -93,8 +107,8 @@ export function ErrorFallback({ error, onReset, onGoHome }: ErrorFallbackProps) 
           </div>
           <CardTitle className="text-2xl">Something went wrong</CardTitle>
           <CardDescription className="text-base">
-            We're sorry, but something unexpected happened. Please try again or return to the home
-            page.
+            We're sorry, but something unexpected happened. Please try again or
+            return to the home page.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -103,7 +117,9 @@ export function ErrorFallback({ error, onReset, onGoHome }: ErrorFallbackProps) 
               <p className="text-destructive mb-2 text-sm font-medium">
                 Error Details (Development Only):
               </p>
-              <pre className="text-muted-foreground overflow-auto text-xs">{error.message}</pre>
+              <pre className="text-muted-foreground overflow-auto text-xs">
+                {error.message}
+              </pre>
               {error.stack && (
                 <details className="mt-2">
                   <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs">
@@ -118,11 +134,19 @@ export function ErrorFallback({ error, onReset, onGoHome }: ErrorFallbackProps) 
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={onReset} variant="default" className="w-full sm:w-auto">
+          <Button
+            onClick={onReset}
+            variant="default"
+            className="w-full sm:w-auto"
+          >
             <RefreshCwIcon className="size-4" />
             Try Again
           </Button>
-          <Button onClick={onGoHome} variant="outline" className="w-full sm:w-auto">
+          <Button
+            onClick={onGoHome}
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
             <HomeIcon className="size-4" />
             Go to Home
           </Button>

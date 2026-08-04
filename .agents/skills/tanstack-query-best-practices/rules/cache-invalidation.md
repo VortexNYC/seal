@@ -67,7 +67,9 @@ const mutation = useMutation({
   onSuccess: (data, { postId }) => {
     // Invalidate all comment-related queries for this post
     queryClient.invalidateQueries({ queryKey: ["posts", postId, "comments"] });
-    queryClient.invalidateQueries({ queryKey: ["posts", postId, "comment-count"] });
+    queryClient.invalidateQueries({
+      queryKey: ["posts", postId, "comment-count"],
+    });
     // Optionally invalidate the post itself if it shows comment count
     queryClient.invalidateQueries({ queryKey: ["posts", postId] });
   },
@@ -75,7 +77,8 @@ const mutation = useMutation({
 
 // Predicate-based invalidation for complex scenarios
 queryClient.invalidateQueries({
-  predicate: (query) => query.queryKey[0] === "todos" && query.state.data?.userId === currentUserId,
+  predicate: (query) =>
+    query.queryKey[0] === "todos" && query.state.data?.userId === currentUserId,
 });
 ```
 

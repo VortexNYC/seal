@@ -21,7 +21,8 @@ interface DocumentProgressRingProps {
 export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
   const ringRadius = 52;
   const ringCircumference = 2 * Math.PI * ringRadius;
-  const progressOffset = ringCircumference - (progress.percentComplete / 100) * ringCircumference;
+  const progressOffset =
+    ringCircumference - (progress.percentComplete / 100) * ringCircumference;
 
   return (
     <div className="border-border bg-card flex animate-[fadeInUp_0.3s_ease-out_forwards] flex-col items-center gap-4 rounded-2xl border p-6 shadow-sm sm:rounded-xl sm:p-4">
@@ -62,15 +63,29 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
           <span className="text-foreground font-serif text-[1.75rem] leading-none font-semibold sm:text-xl">
             {progress.percentComplete}%
           </span>
-          <span className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">Complete</span>
+          <span className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
+            Complete
+          </span>
         </div>
       </div>
 
       {/* Status Grid */}
       <div className="grid w-full grid-cols-2 gap-3 sm:gap-2">
-        <StatusBox value={progress.byStatus.signed} label="Signed" colorClass="text-success" />
-        <StatusBox value={progress.byStatus.pending} label="Pending" colorClass="text-warning" />
-        <StatusBox value={progress.byStatus.viewed} label="Viewed" colorClass="text-foreground" />
+        <StatusBox
+          value={progress.byStatus.signed}
+          label="Signed"
+          colorClass="text-success"
+        />
+        <StatusBox
+          value={progress.byStatus.pending}
+          label="Pending"
+          colorClass="text-warning"
+        />
+        <StatusBox
+          value={progress.byStatus.viewed}
+          label="Viewed"
+          colorClass="text-foreground"
+        />
         {progress.byStatus.declined > 0 && (
           <StatusBox
             value={progress.byStatus.declined}
@@ -92,8 +107,17 @@ interface StatusBoxProps {
 function StatusBox({ value, label, colorClass }: StatusBoxProps) {
   return (
     <div className="bg-muted rounded-[10px] px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
-      <div className={cn("font-sans text-xl font-semibold sm:text-base", colorClass)}>{value}</div>
-      <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">{label}</div>
+      <div
+        className={cn(
+          "font-sans text-xl font-semibold sm:text-base",
+          colorClass
+        )}
+      >
+        {value}
+      </div>
+      <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
+        {label}
+      </div>
     </div>
   );
 }

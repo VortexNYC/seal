@@ -11,7 +11,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -23,7 +23,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -35,7 +35,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
-      }),
+      })
     ).toBe(true);
   });
 
@@ -47,7 +47,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasOrganization: true,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
-      }),
+      })
     ).toBe(true);
   });
 
@@ -59,7 +59,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasOrganization: true,
         activeOrganizationSlug: "acme",
         hasAttemptedRecovery: false,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -71,7 +71,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: true,
-      }),
+      })
     ).toBe(false);
   });
 });

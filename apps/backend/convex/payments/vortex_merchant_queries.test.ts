@@ -5,7 +5,7 @@ import type { Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
 
 async function insertOrganization(
-  t: ReturnType<typeof createTestContext>,
+  t: ReturnType<typeof createTestContext>
 ): Promise<Id<"organizations">> {
   return await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -25,9 +25,13 @@ describe("Vortex merchant resolver", () => {
     const organizationId = await insertOrganization(t);
 
     await expect(
-      t.query(internal.payments.vortex_merchant_queries.getVortexMerchantAccountIdForOrg, {
-        organizationId,
-      }),
+      t.query(
+        internal.payments.vortex_merchant_queries
+          .getVortexMerchantAccountIdForOrg,
+        {
+          organizationId,
+        }
+      )
     ).resolves.toBeNull();
 
     await t.run(async (ctx) => {
@@ -46,15 +50,21 @@ describe("Vortex merchant resolver", () => {
     });
 
     await expect(
-      t.query(internal.payments.vortex_merchant_queries.getVortexMerchantAccountIdForOrg, {
-        organizationId,
-      }),
+      t.query(
+        internal.payments.vortex_merchant_queries
+          .getVortexMerchantAccountIdForOrg,
+        {
+          organizationId,
+        }
+      )
     ).resolves.toBeNull();
 
     await t.run(async (ctx) => {
       const account = await ctx.db
         .query("merchant_accounts")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId)
+        )
         .first();
       if (!account) {
         throw new Error("Expected resolver account");
@@ -66,9 +76,13 @@ describe("Vortex merchant resolver", () => {
     });
 
     await expect(
-      t.query(internal.payments.vortex_merchant_queries.getVortexMerchantAccountIdForOrg, {
-        organizationId,
-      }),
+      t.query(
+        internal.payments.vortex_merchant_queries
+          .getVortexMerchantAccountIdForOrg,
+        {
+          organizationId,
+        }
+      )
     ).resolves.toBe("ma_not_ready");
   });
 });

@@ -2,7 +2,10 @@ import { expect, test } from "../fixtures/auth";
 import { DashboardPage } from "../pages/dashboard/dashboard-page";
 
 test.describe("Dashboard", () => {
-  test("should display dashboard with metrics", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display dashboard with metrics", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     test.setTimeout(45000);
     const dashboardPage = new DashboardPage(authenticatedPage);
 
@@ -18,7 +21,10 @@ test.describe("Dashboard", () => {
     await expect(dashboardPage.completionRateCard).toBeVisible();
   });
 
-  test("should display correct metric values", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display correct metric values", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     test.setTimeout(45000);
     const dashboardPage = new DashboardPage(authenticatedPage);
 
@@ -53,10 +59,15 @@ test.describe("Dashboard", () => {
 
     await dashboardPage.goto(organizationSlug);
 
-    await expect(dashboardPage.documentActivitySection).toBeVisible({ timeout: 10000 });
+    await expect(dashboardPage.documentActivitySection).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test("should toggle sidebar", async ({ authenticatedPage, organizationSlug }) => {
+  test("should toggle sidebar", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     // aria-label="Toggle Sidebar" added to SidebarTrigger in page-wrapper.tsx
     const dashboardPage = new DashboardPage(authenticatedPage);
 

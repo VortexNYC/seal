@@ -54,7 +54,7 @@ export function EmptyState({
     <div
       className={cn(
         "flex w-full max-w-xl flex-col items-center justify-center px-4 py-12 text-center",
-        className,
+        className
       )}
       role="status"
       aria-live="polite"
@@ -70,7 +70,10 @@ export function EmptyState({
       {(action || secondaryAction) && (
         <div className="mt-6 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
           {action && (
-            <Button onClick={action.onClick} variant={action.variant ?? "default"}>
+            <Button
+              onClick={action.onClick}
+              variant={action.variant ?? "default"}
+            >
               {action.icon && <action.icon className="mr-2 h-4 w-4" />}
               {action.label}
             </Button>
@@ -80,7 +83,9 @@ export function EmptyState({
               onClick={secondaryAction.onClick}
               variant={secondaryAction.variant ?? "outline"}
             >
-              {secondaryAction.icon && <secondaryAction.icon className="mr-2 h-4 w-4" />}
+              {secondaryAction.icon && (
+                <secondaryAction.icon className="mr-2 h-4 w-4" />
+              )}
               {secondaryAction.label}
             </Button>
           )}

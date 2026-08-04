@@ -95,7 +95,10 @@ type UploadController = {
   readonly showCancelConfirm: boolean;
   readonly usageStats: UsageStats | null | undefined;
   readonly atDocumentLimit: boolean;
-  readonly handleDrop: (acceptedFiles: File[], rejectedFiles: FileRejection[]) => Promise<void>;
+  readonly handleDrop: (
+    acceptedFiles: File[],
+    rejectedFiles: FileRejection[]
+  ) => Promise<void>;
   readonly handleSubmit: (event: React.FormEvent) => Promise<void>;
   readonly removeFile: (index: number) => void;
   readonly requestClose: () => void;
@@ -124,10 +127,20 @@ const INITIAL_RETRY_DELAY = 1000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getRetryDelay = (retryCount: number): number => INITIAL_RETRY_DELAY * 2 ** retryCount;
+const getRetryDelay = (retryCount: number): number =>
+  INITIAL_RETRY_DELAY * 2 ** retryCount;
 
-export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: UploadDialogProps) {
-  const controller = useUploadController({ organizationId, onOpenChange, onSuccess });
+export function UploadDialog({
+  organizationId,
+  open,
+  onOpenChange,
+  onSuccess,
+}: UploadDialogProps) {
+  const controller = useUploadController({
+    organizationId,
+    onOpenChange,
+    onSuccess,
+  });
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: controller.handleDrop,
     accept: DROPZONE_ACCEPT_TYPES,
@@ -140,7 +153,10 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-[625px]">
-          <form onSubmit={controller.handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <form
+            onSubmit={controller.handleSubmit}
+            className="flex min-h-0 flex-1 flex-col"
+          >
             <UploadDialogHeader />
             <UsageLimitNotice
               atDocumentLimit={controller.atDocumentLimit}
@@ -182,7 +198,9 @@ function useDocumentLimit(): {
   readonly atDocumentLimit: boolean;
 } {
   const usageStats = useQuery(api.user_profiles.queries.getUsageStatistics);
-  const isTestDeployment = import.meta.env.VITE_CONVEX_URL?.includes("coordinated-lemur");
+  const isTestDeployment = import.meta.env.VITE_CONVEX_URL?.includes(
+    "coordinated-lemur"
+  );
   const atDocumentLimit =
     !isTestDeployment &&
     usageStats !== undefined &&
@@ -196,11 +214,16 @@ function useUploadController({
   organizationId,
   onOpenChange,
   onSuccess,
-}: Pick<UploadDialogProps, "organizationId" | "onOpenChange" | "onSuccess">): UploadController {
+}: Pick<
+  UploadDialogProps,
+  "organizationId" | "onOpenChange" | "onSuccess"
+>): UploadController {
   const state = useUploadState();
   const { track } = useAnalytics();
   const { usageStats, atDocumentLimit } = useDocumentLimit();
-  const generateUploadUrl = useMutation(api.documents.mutations.generateUploadUrl);
+  const generateUploadUrl = useMutation(
+    api.documents.mutations.generateUploadUrl
+  );
   const createDocument = useMutation(api.documents.mutations.createDocument);
 
   const clearAndClose = () => {
@@ -212,12 +235,15 @@ function useUploadController({
   const updateFile = (index: number, patch: Partial<FileWithStatus>) => {
     state.setFiles((prev) =>
       prev.map((fileWithStatus, fileIndex) =>
-        fileIndex === index ? { ...fileWithStatus, ...patch } : fileWithStatus,
-      ),
+        fileIndex === index ? { ...fileWithStatus, ...patch } : fileWithStatus
+      )
     );
   };
 
-  const handleDrop = async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+  const handleDrop = async (
+    acceptedFiles: File[],
+    rejectedFiles: FileRejection[]
+  ) => {
     showRejectedFileErrors(rejectedFiles);
     const validatedFiles = await buildUploadFiles(acceptedFiles);
     state.setFiles((prev) => [...prev, ...validatedFiles]);
@@ -266,8 +292,11 @@ function useUploadController({
     handleDrop,
     handleSubmit,
     removeFile: (index) =>
-      state.setFiles((prev) => prev.filter((_, fileIndex) => fileIndex !== index)),
-    requestClose: () => (state.uploading ? state.setShowCancelConfirm(true) : clearAndClose()),
+      state.setFiles((prev) =>
+        prev.filter((_, fileIndex) => fileIndex !== index)
+      ),
+    requestClose: () =>
+      state.uploading ? state.setShowCancelConfirm(true) : clearAndClose(),
     confirmCancel: () => {
       clearAndClose();
       state.setShowCancelConfirm(false);
@@ -282,8 +311,9 @@ function UploadDialogHeader() {
     <DialogHeader>
       <DialogTitle>Upload Documents</DialogTitle>
       <DialogDescription>
-        Drag and drop files here or click to browse. Maximum file size: {getMaxFileSizeDisplay()}.
-        Supported types: {getSupportedFileTypesDisplay()}.
+        Drag and drop files here or click to browse. Maximum file size:{" "}
+        {getMaxFileSizeDisplay()}. Supported types:{" "}
+        {getSupportedFileTypesDisplay()}.
       </DialogDescription>
     </DialogHeader>
   );
@@ -305,11 +335,14 @@ function UsageLimitNotice({
 }
 
 function UsageCounter({ usageStats }: { readonly usageStats: UsageStats }) {
-  const isOverLimit = usageStats.documentsThisMonth >= usageStats.documentsLimit;
+  const isOverLimit =
+    usageStats.documentsThisMonth >= usageStats.documentsLimit;
   return (
     <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
       <span className="text-muted-foreground">Documents this month</span>
-      <span className={isOverLimit ? "text-destructive font-medium" : "font-medium"}>
+      <span
+        className={isOverLimit ? "text-destructive font-medium" : "font-medium"}
+      >
         {usageStats.documentsThisMonth} / {usageStats.documentsLimit}
       </span>
     </div>
@@ -375,7 +408,7 @@ function DropzoneArea({
         isDragActive
           ? "border-primary bg-primary/5"
           : "border-muted-foreground/25 hover:border-primary/50",
-        uploading && "cursor-not-allowed opacity-50",
+        uploading && "cursor-not-allowed opacity-50"
       )}
     >
       <input {...getInputProps()} />
@@ -387,14 +420,20 @@ function DropzoneArea({
           <p className="mb-1 text-sm font-medium">
             Drag & drop a PDF file here, or click to select
           </p>
-          <p className="text-muted-foreground text-xs">PDF files only, one at a time</p>
+          <p className="text-muted-foreground text-xs">
+            PDF files only, one at a time
+          </p>
         </>
       )}
     </div>
   );
 }
 
-function DescriptionField({ controller }: { readonly controller: UploadController }) {
+function DescriptionField({
+  controller,
+}: {
+  readonly controller: UploadController;
+}) {
   if (controller.files.length === 0) return null;
 
   return (
@@ -412,7 +451,11 @@ function DescriptionField({ controller }: { readonly controller: UploadControlle
   );
 }
 
-function SelectedFileList({ controller }: { readonly controller: UploadController }) {
+function SelectedFileList({
+  controller,
+}: {
+  readonly controller: UploadController;
+}) {
   if (controller.files.length === 0) return null;
 
   return (
@@ -464,7 +507,11 @@ function SelectedFileRow({
   );
 }
 
-function FilePreview({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
+function FilePreview({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
   if (!fileWithStatus.thumbnail) return getStatusIcon(fileWithStatus.status);
 
   return (
@@ -478,11 +525,17 @@ function FilePreview({ fileWithStatus }: { readonly fileWithStatus: FileWithStat
   );
 }
 
-function FileDetails({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
+function FileDetails({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
   return (
     <div className="min-w-0 flex-1">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <p className="truncate text-sm font-medium">{fileWithStatus.file.name}</p>
+        <p className="truncate text-sm font-medium">
+          {fileWithStatus.file.name}
+        </p>
         <UploadProgressText fileWithStatus={fileWithStatus} />
       </div>
       <FileMetadata fileWithStatus={fileWithStatus} />
@@ -494,12 +547,28 @@ function FileDetails({ fileWithStatus }: { readonly fileWithStatus: FileWithStat
   );
 }
 
-function UploadProgressText({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
-  if (fileWithStatus.status !== "uploading" || fileWithStatus.progress === undefined) return null;
-  return <span className="text-primary text-xs font-medium">{fileWithStatus.progress}%</span>;
+function UploadProgressText({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
+  if (
+    fileWithStatus.status !== "uploading" ||
+    fileWithStatus.progress === undefined
+  )
+    return null;
+  return (
+    <span className="text-primary text-xs font-medium">
+      {fileWithStatus.progress}%
+    </span>
+  );
 }
 
-function FileMetadata({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
+function FileMetadata({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
   return (
     <p className="text-muted-foreground mb-2 text-xs">
       {formatFileSize(fileWithStatus.file.size)}
@@ -509,17 +578,28 @@ function FileMetadata({ fileWithStatus }: { readonly fileWithStatus: FileWithSta
   );
 }
 
-function PageCountText({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
-  if (fileWithStatus.pageCount === undefined || fileWithStatus.pageCount <= 0) return null;
+function PageCountText({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
+  if (fileWithStatus.pageCount === undefined || fileWithStatus.pageCount <= 0)
+    return null;
   return (
     <span className="ml-2">
-      - {fileWithStatus.pageCount} {fileWithStatus.pageCount === 1 ? "page" : "pages"}
+      - {fileWithStatus.pageCount}{" "}
+      {fileWithStatus.pageCount === 1 ? "page" : "pages"}
     </span>
   );
 }
 
-function RetryCountText({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
-  if (fileWithStatus.retryCount === undefined || fileWithStatus.retryCount <= 0) return null;
+function RetryCountText({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
+  if (fileWithStatus.retryCount === undefined || fileWithStatus.retryCount <= 0)
+    return null;
   return (
     <span className="text-warning ml-2">
       (Retry {fileWithStatus.retryCount}/{MAX_RETRIES})
@@ -527,12 +607,24 @@ function RetryCountText({ fileWithStatus }: { readonly fileWithStatus: FileWithS
   );
 }
 
-function UploadProgressBar({ fileWithStatus }: { readonly fileWithStatus: FileWithStatus }) {
-  if (fileWithStatus.status !== "uploading" || fileWithStatus.progress === undefined) return null;
+function UploadProgressBar({
+  fileWithStatus,
+}: {
+  readonly fileWithStatus: FileWithStatus;
+}) {
+  if (
+    fileWithStatus.status !== "uploading" ||
+    fileWithStatus.progress === undefined
+  )
+    return null;
   return <Progress value={fileWithStatus.progress} className="h-1.5" />;
 }
 
-function UploadDialogFooter({ controller }: { readonly controller: UploadController }) {
+function UploadDialogFooter({
+  controller,
+}: {
+  readonly controller: UploadController;
+}) {
   return (
     <DialogFooter>
       <Button type="button" variant="outline" onClick={controller.requestClose}>
@@ -541,7 +633,9 @@ function UploadDialogFooter({ controller }: { readonly controller: UploadControl
       <Button
         type="submit"
         disabled={
-          controller.uploading || controller.files.length === 0 || controller.atDocumentLimit
+          controller.uploading ||
+          controller.files.length === 0 ||
+          controller.atDocumentLimit
         }
       >
         {controller.uploading ? "Uploading..." : "Upload PDF"}
@@ -550,9 +644,16 @@ function UploadDialogFooter({ controller }: { readonly controller: UploadControl
   );
 }
 
-function CancelUploadDialog({ controller }: { readonly controller: UploadController }) {
+function CancelUploadDialog({
+  controller,
+}: {
+  readonly controller: UploadController;
+}) {
   return (
-    <AlertDialog open={controller.showCancelConfirm} onOpenChange={controller.setShowCancelConfirm}>
+    <AlertDialog
+      open={controller.showCancelConfirm}
+      onOpenChange={controller.setShowCancelConfirm}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Cancel upload?</AlertDialogTitle>
@@ -562,14 +663,18 @@ function CancelUploadDialog({ controller }: { readonly controller: UploadControl
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Continue uploading</AlertDialogCancel>
-          <AlertDialogAction onClick={controller.confirmCancel}>Cancel upload</AlertDialogAction>
+          <AlertDialogAction onClick={controller.confirmCancel}>
+            Cancel upload
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-async function buildUploadFiles(files: readonly File[]): Promise<FileWithStatus[]> {
+async function buildUploadFiles(
+  files: readonly File[]
+): Promise<FileWithStatus[]> {
   const validatedFiles: FileWithStatus[] = [];
   for (const file of files) {
     const uploadFile = await buildUploadFile(file);
@@ -603,7 +708,9 @@ function showRejectedFileErrors(rejectedFiles: readonly FileRejection[]) {
   toast.error(`Some files were rejected: ${errorMessages.join("; ")}`);
 }
 
-async function uploadSingleFileWithRetry(input: UploadSingleFileInput): Promise<boolean> {
+async function uploadSingleFileWithRetry(
+  input: UploadSingleFileInput
+): Promise<boolean> {
   let retryCount = 0;
   while (retryCount <= MAX_RETRIES) {
     const outcome = await uploadSingleFileAttempt(input, retryCount);
@@ -620,7 +727,7 @@ async function uploadSingleFileWithRetry(input: UploadSingleFileInput): Promise<
 
 async function uploadSingleFileAttempt(
   input: UploadSingleFileInput,
-  retryCount: number,
+  retryCount: number
 ): Promise<"success" | "retry" | "failure"> {
   try {
     await createUploadedDocument(input, retryCount);
@@ -631,9 +738,16 @@ async function uploadSingleFileAttempt(
   }
 }
 
-async function createUploadedDocument(input: UploadSingleFileInput, retryCount: number) {
+async function createUploadedDocument(
+  input: UploadSingleFileInput,
+  retryCount: number
+) {
   const { file } = input.fileWithStatus;
-  input.updateFile(input.index, { status: "uploading", progress: 0, retryCount });
+  input.updateFile(input.index, {
+    status: "uploading",
+    progress: 0,
+    retryCount,
+  });
   input.updateFile(input.index, { progress: 10 });
   const uploadUrl = await input.generateUploadUrl();
   input.updateFile(input.index, { progress: 20 });
@@ -644,7 +758,9 @@ async function createUploadedDocument(input: UploadSingleFileInput, retryCount: 
     body: file,
   });
   if (!result.ok) {
-    throw new Error(`Upload failed with status ${result.status}: ${result.statusText}`);
+    throw new Error(
+      `Upload failed with status ${result.status}: ${result.statusText}`
+    );
   }
 
   input.updateFile(input.index, { progress: 70 });
@@ -655,7 +771,7 @@ async function createUploadedDocument(input: UploadSingleFileInput, retryCount: 
 
 function buildCreateDocumentInput(
   input: UploadSingleFileInput,
-  storageId: Id<"_storage">,
+  storageId: Id<"_storage">
 ): CreateDocumentInput {
   const { file, pageCount, thumbnail } = input.fileWithStatus;
   return {
@@ -673,18 +789,24 @@ function buildCreateDocumentInput(
 function markUploadSuccess(input: UploadSingleFileInput) {
   const { file, pageCount } = input.fileWithStatus;
   input.updateFile(input.index, { status: "success", progress: 100 });
-  input.trackDocumentUploaded({ fileSize: file.size, pageCount, fileType: file.type });
+  input.trackDocumentUploaded({
+    fileSize: file.size,
+    pageCount,
+    fileType: file.type,
+  });
 }
 
 function handleUploadError(
   input: UploadSingleFileInput,
   error: unknown,
-  retryCount: number,
+  retryCount: number
 ): "retry" | "failure" {
   const errorMessage = error instanceof Error ? error.message : "Upload failed";
   if (isRetryableUploadError(error, errorMessage) && retryCount < MAX_RETRIES) {
     const nextRetryCount = retryCount + 1;
-    toast.info(`Network error. Retrying upload (${nextRetryCount}/${MAX_RETRIES})...`);
+    toast.info(
+      `Network error. Retrying upload (${nextRetryCount}/${MAX_RETRIES})...`
+    );
     input.updateFile(input.index, {
       status: "uploading",
       progress: 0,
@@ -693,7 +815,11 @@ function handleUploadError(
     return "retry";
   }
 
-  input.updateFile(input.index, { status: "error", error: errorMessage, progress: 0 });
+  input.updateFile(input.index, {
+    status: "error",
+    error: errorMessage,
+    progress: 0,
+  });
   return "failure";
 }
 
@@ -706,12 +832,14 @@ function isRetryableUploadError(error: unknown, errorMessage: string): boolean {
   );
 }
 
-function summarizeUploadResults(results: readonly PromiseSettledResult<boolean>[]): {
+function summarizeUploadResults(
+  results: readonly PromiseSettledResult<boolean>[]
+): {
   readonly successCount: number;
   readonly failureCount: number;
 } {
   const successCount = results.filter(
-    (result) => result.status === "fulfilled" && result.value,
+    (result) => result.status === "fulfilled" && result.value
   ).length;
   return { successCount, failureCount: results.length - successCount };
 }
@@ -725,12 +853,12 @@ function showUploadSummary({
 }) {
   if (successCount > 0) {
     toast.success(
-      `${successCount} ${successCount === 1 ? "document" : "documents"} uploaded successfully`,
+      `${successCount} ${successCount === 1 ? "document" : "documents"} uploaded successfully`
     );
   }
   if (failureCount > 0) {
     toast.error(
-      `${failureCount} ${failureCount === 1 ? "document" : "documents"} failed to upload`,
+      `${failureCount} ${failureCount === 1 ? "document" : "documents"} failed to upload`
     );
   }
 }

@@ -10,7 +10,7 @@ import { v } from "convex/values";
 import { internalQuery } from "../../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -62,8 +62,12 @@ export const listAuditLog = internalQuery({
   },
   handler: async (
     ctx,
-    args,
-  ): Promise<{ entries: ApiAuditLogEntry[]; has_more: boolean; next_cursor?: string }> => {
+    args
+  ): Promise<{
+    entries: ApiAuditLogEntry[];
+    has_more: boolean;
+    next_cursor?: string;
+  }> => {
     const limit = args.limit ?? 20;
 
     // When post-filters are active, fetch more to ensure we can fill the page
@@ -79,22 +83,28 @@ export const listAuditLog = internalQuery({
         .withIndex("by_document_created", (q) =>
           q
             .eq("documentId", sealAssertPresent(args.document_id))
-            .gte("createdAt", args.created_after ?? 0),
+            .gte("createdAt", args.created_after ?? 0)
         );
     } else {
       // Org-wide filter
       query = ctx.db
         .query("audit_logs")
         .withIndex("by_organization_created", (q) =>
-          q.eq("organizationId", args.organizationId).gte("createdAt", args.created_after ?? 0),
+          q
+            .eq("organizationId", args.organizationId)
+            .gte("createdAt", args.created_after ?? 0)
         );
     }
 
     // Apply cursor if provided (use _creationTime for index-based pagination)
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      const cursorDoc = await ctx.db.get(
+        args.cursor as Parameters<typeof ctx.db.get>[0]
+      );
       if (cursorDoc) {
-        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+        query = query.filter((q) =>
+          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
+        );
       }
     }
 
@@ -102,7 +112,8 @@ export const listAuditLog = internalQuery({
 
     // Apply upper date bound and action filter in-memory (Convex single-range index)
     const filtered = allEntries.filter((e) => {
-      if (args.created_before && e.createdAt > args.created_before) return false;
+      if (args.created_before && e.createdAt > args.created_before)
+        return false;
       if (args.action && e.action !== args.action) return false;
       return true;
     });
@@ -122,7 +133,7 @@ export const listAuditLog = internalQuery({
           const user = await ctx.db
             .query("users")
             .withIndex("by_auth_subject", (q) =>
-              q.eq("authSubject", sealAssertPresent(entry.userId)),
+              q.eq("authSubject", sealAssertPresent(entry.userId))
             )
             .first();
           if (user) {
@@ -130,10 +141,13 @@ export const listAuditLog = internalQuery({
             actor_email = user.email;
           }
         } else if (entry.actorType === "recipient" && entry.actorId) {
-          const recipient = await ctx.db.get(entry.actorId as Parameters<typeof ctx.db.get>[0]);
+          const recipient = await ctx.db.get(
+            entry.actorId as Parameters<typeof ctx.db.get>[0]
+          );
           if (recipient && "email" in recipient) {
             actor_email = recipient.email as string;
-            actor_name = "name" in recipient ? (recipient.name as string) : undefined;
+            actor_name =
+              "name" in recipient ? (recipient.name as string) : undefined;
           }
         }
 
@@ -150,7 +164,7 @@ export const listAuditLog = internalQuery({
           source: entry.metadata?.source,
           created_at: new Date(entry.createdAt).toISOString(),
         };
-      }),
+      })
     );
 
     return { entries, has_more, next_cursor };

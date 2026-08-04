@@ -12,13 +12,17 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { internalQuery, query, type QueryCtx } from "../_generated/server";
 import { adminQuery, authQuery } from "../auth";
-import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
+import {
+  ACCESS_ERRORS,
+  checkDocumentAccess,
+  getDocumentOrThrow,
+} from "../auth/access_control";
 import { generateSignatureCertificate } from "../crypto/helpers";
 import { findRecipientByToken } from "../documents/recipient_helpers";
 import { auditActionTuple } from "../schemas/audit_logs";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -31,11 +35,13 @@ type AuditExportRecipients = Doc<"document_recipients">[];
 type AuditExportFields = Doc<"signature_fields">[];
 type AuditExportSignatures = Doc<"signatures">[];
 type AuditExportLogs = Doc<"audit_logs">[];
-type AuditExportSignatureCertificate = ReturnType<typeof generateSignatureCertificate>;
+type AuditExportSignatureCertificate = ReturnType<
+  typeof generateSignatureCertificate
+>;
 
 async function getAuditExportData(
   ctx: { db: QueryCtx["db"] },
-  documentId: AuditExportDocument["_id"],
+  documentId: AuditExportDocument["_id"]
 ): Promise<{
   signatures: AuditExportSignatures;
   recipients: AuditExportRecipients;
@@ -76,9 +82,11 @@ function toIsoString(timestamp: number): string {
 function buildSignatureCertificates(
   document: AuditExportDocument,
   signatures: AuditExportSignatures,
-  recipients: AuditExportRecipients,
+  recipients: AuditExportRecipients
 ): AuditExportSignatureCertificate[] {
-  const recipientsById = new Map(recipients.map((recipient) => [recipient._id, recipient]));
+  const recipientsById = new Map(
+    recipients.map((recipient) => [recipient._id, recipient])
+  );
 
   return signatures.map((signature) => {
     const recipient = recipientsById.get(signature.recipientId);
@@ -98,7 +106,7 @@ function buildSignatureCertificates(
       {
         name: document.name,
         documentHash: document.documentHash,
-      },
+      }
     );
   });
 }
@@ -110,7 +118,7 @@ function buildAuditExport(
   fields: AuditExportFields,
   signatures: AuditExportSignatures,
   auditLogs: AuditExportLogs,
-  signatureCertificates: AuditExportSignatureCertificate[],
+  signatureCertificates: AuditExportSignatureCertificate[]
 ) {
   return {
     exportVersion: "1.0",
@@ -127,7 +135,9 @@ function buildAuditExport(
       updatedAt: toIsoString(document.updatedAt),
       workflowStatus: document.workflowStatus,
       documentHash: document.documentHash,
-      integrityStatus: document.documentHash ? "hash_available" : "no_hash_computed",
+      integrityStatus: document.documentHash
+        ? "hash_available"
+        : "no_hash_computed",
     },
     recipients: recipients.map((recipient) => ({
       id: recipient._id,
@@ -137,7 +147,9 @@ function buildAuditExport(
       status: recipient.status,
       signedAt: recipient.signedAt ? toIsoString(recipient.signedAt) : null,
       viewedAt: recipient.viewedAt ? toIsoString(recipient.viewedAt) : null,
-      declinedAt: recipient.declinedAt ? toIsoString(recipient.declinedAt) : null,
+      declinedAt: recipient.declinedAt
+        ? toIsoString(recipient.declinedAt)
+        : null,
     })),
     fields: fields.map((field) => ({
       id: field._id,
@@ -173,13 +185,17 @@ function buildAuditExport(
     })),
     summary: {
       totalRecipients: recipients.length,
-      signedRecipients: recipients.filter((recipient) => recipient.status === "signed").length,
+      signedRecipients: recipients.filter(
+        (recipient) => recipient.status === "signed"
+      ).length,
       totalFields: fields.length,
       requiredFields: fields.filter((field) => field.isRequired).length,
       completedFields: signatures.length,
       auditLogEntries: auditLogs.length,
       completionPercentage:
-        fields.length > 0 ? Math.round((signatures.length / fields.length) * 100) : 0,
+        fields.length > 0
+          ? Math.round((signatures.length / fields.length) * 100)
+          : 0,
     },
   };
 }
@@ -206,7 +222,9 @@ export const getDocumentAuditLogs = authQuery({
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance bound=global
     const auditLogs = await ctx.db
       .query("audit_logs")
-      .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+      .withIndex("by_document_created", (q) =>
+        q.eq("documentId", args.documentId)
+      )
       .order("desc")
       .collect();
 
@@ -224,7 +242,10 @@ export const getOrganizationAuditLogs = authQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    if (ctx.auth.organization._id !== args.organizationId || ctx.auth.member.status !== "active") {
+    if (
+      ctx.auth.organization._id !== args.organizationId ||
+      ctx.auth.member.status !== "active"
+    ) {
       throw new ConvexError("You are not a member of this organization");
     }
 
@@ -236,7 +257,9 @@ export const getOrganizationAuditLogs = authQuery({
     const limit = args.limit ?? 100;
     const auditLogs = await ctx.db
       .query("audit_logs")
-      .withIndex("by_organization_created", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization_created", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .order("desc")
       .take(limit);
 
@@ -270,11 +293,13 @@ export const exportDocumentAuditTrail = authQuery({
       throw new ConvexError("Only the document owner can export audit trail");
     }
 
-    const { signatures, recipients, fields, auditLogs } = await getAuditExportData(
-      ctx,
-      args.documentId,
+    const { signatures, recipients, fields, auditLogs } =
+      await getAuditExportData(ctx, args.documentId);
+    const signatureCertificates = buildSignatureCertificates(
+      document,
+      signatures,
+      recipients
     );
-    const signatureCertificates = buildSignatureCertificates(document, signatures, recipients);
 
     return buildAuditExport(
       userId,
@@ -283,7 +308,7 @@ export const exportDocumentAuditTrail = authQuery({
       fields,
       signatures,
       auditLogs,
-      signatureCertificates,
+      signatureCertificates
     );
   },
 });
@@ -298,7 +323,9 @@ export const getDocumentAuditTrailInternal = internalQuery({
     return await ctx.db
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
       .query("audit_logs")
-      .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+      .withIndex("by_document_created", (q) =>
+        q.eq("documentId", args.documentId)
+      )
       .order("desc")
       .collect();
   },
@@ -339,7 +366,9 @@ export const getSigningSessionAuditTrail = query({
       "recipient.signed",
     ];
 
-    const filteredLogs = recipientLogs.filter((log) => allowedActions.includes(log.action));
+    const filteredLogs = recipientLogs.filter((log) =>
+      allowedActions.includes(log.action)
+    );
 
     return {
       logs: filteredLogs.map((log) => ({
@@ -373,10 +402,14 @@ export const listOrgAuditLogs = adminQuery({
       .withIndex("by_organization_created", (q) => {
         const base = q.eq("organizationId", orgId);
         if (args.dateFrom !== undefined && args.dateTo !== undefined) {
-          return base.gte("createdAt", args.dateFrom).lte("createdAt", args.dateTo);
+          return base
+            .gte("createdAt", args.dateFrom)
+            .lte("createdAt", args.dateTo);
         }
-        if (args.dateFrom !== undefined) return base.gte("createdAt", args.dateFrom);
-        if (args.dateTo !== undefined) return base.lte("createdAt", args.dateTo);
+        if (args.dateFrom !== undefined)
+          return base.gte("createdAt", args.dateFrom);
+        if (args.dateTo !== undefined)
+          return base.lte("createdAt", args.dateTo);
         return base;
       })
       .order("desc")
@@ -384,7 +417,9 @@ export const listOrgAuditLogs = adminQuery({
 
     let filtered = logs;
     if (args.actions && args.actions.length > 0) {
-      filtered = filtered.filter((l) => sealAssertPresent(args.actions).includes(l.action));
+      filtered = filtered.filter((l) =>
+        sealAssertPresent(args.actions).includes(l.action)
+      );
     }
     if (args.actorUserId) {
       filtered = filtered.filter((l) => l.userId === args.actorUserId);

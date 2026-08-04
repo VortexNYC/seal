@@ -8,11 +8,14 @@ import {
   annotationCategoryTuple,
   annotationSeverityTuple,
 } from "../schemas/ai_document_annotations";
-import { dueDateTermsTuple, paymentTypeTuple } from "../schemas/payment_field_configs";
+import {
+  dueDateTermsTuple,
+  paymentTypeTuple,
+} from "../schemas/payment_field_configs";
 import { fieldTypeTuple } from "../schemas/signature_fields";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -41,7 +44,7 @@ interface FieldForAssignment {
  */
 function assignRecipient(
   field: FieldForAssignment,
-  signers: Doc<"document_recipients">[],
+  signers: Doc<"document_recipients">[]
 ): Doc<"document_recipients">["_id"] | undefined {
   if (signers.length === 0) return undefined;
   if (signers.length === 1) return sealAssertPresent(signers[0])._id;
@@ -55,7 +58,9 @@ function assignRecipient(
       return signer._id;
     }
     // Also match email prefix (before @)
-    const emailPrefix = sealAssertPresent(signer.email.split("@")[0]).toLowerCase();
+    const emailPrefix = sealAssertPresent(
+      signer.email.split("@")[0]
+    ).toLowerCase();
     if (emailPrefix.length > 2 && label.includes(emailPrefix)) {
       return signer._id;
     }
@@ -87,7 +92,7 @@ async function createPaymentConfigsFromExtraction(
   ctx: Pick<MutationCtx, "db">,
   suggestion: Doc<"ai_field_suggestions">,
   paymentFieldIds: Id<"signature_fields">[],
-  now: number,
+  now: number
 ): Promise<void> {
   if (paymentFieldIds.length === 0 || !suggestion.paymentExtraction) return;
 
@@ -164,7 +169,7 @@ export const saveFieldSuggestions = internalMutation({
         label: v.string(),
         confidence: v.number(),
         isRequired: v.boolean(),
-      }),
+      })
     ),
     modelUsed: v.string(),
     tokensUsed: v.number(),
@@ -176,7 +181,7 @@ export const saveFieldSuggestions = internalMutation({
     const existing = await ctx.db
       .query("ai_field_suggestions")
       .withIndex("by_document_status", (q) =>
-        q.eq("documentId", args.documentId).eq("status", "pending"),
+        q.eq("documentId", args.documentId).eq("status", "pending")
       )
       .collect();
 
@@ -204,7 +209,8 @@ export const applyFieldSuggestions = authMutation({
   handler: async (ctx, args) => {
     const suggestion = await ctx.db.get(args.suggestionId);
     if (!suggestion) throw new ConvexError("Suggestions not found");
-    if (suggestion.status !== "pending") throw new ConvexError("Suggestions already processed");
+    if (suggestion.status !== "pending")
+      throw new ConvexError("Suggestions already processed");
 
     const document = await ctx.db.get(suggestion.documentId);
     if (!document) throw new ConvexError("Document not found");
@@ -214,13 +220,17 @@ export const applyFieldSuggestions = authMutation({
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and preserves all signers bound=global
     const signers = await ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", suggestion.documentId))
+      .withIndex("by_document", (q) =>
+        q.eq("documentId", suggestion.documentId)
+      )
       .filter((q) => q.eq(q.field("role"), "signer"))
       .collect();
     signers.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     const fieldsToApply = args.selectedFieldIndices
-      ? suggestion.fields.filter((_, i) => args.selectedFieldIndices?.includes(i))
+      ? suggestion.fields.filter((_, i) =>
+          args.selectedFieldIndices?.includes(i)
+        )
       : suggestion.fields;
 
     const fieldIds: Id<"signature_fields">[] = [];
@@ -252,7 +262,12 @@ export const applyFieldSuggestions = authMutation({
 
     await ctx.db.patch(args.suggestionId, { status: "applied" as const });
 
-    await createPaymentConfigsFromExtraction(ctx, suggestion, paymentFieldIds, now);
+    await createPaymentConfigsFromExtraction(
+      ctx,
+      suggestion,
+      paymentFieldIds,
+      now
+    );
 
     return { fieldIds, count: fieldIds.length };
   },
@@ -287,7 +302,7 @@ export const saveExtractedPaymentConfig = internalMutation({
           description: v.string(),
           quantity: v.number(),
           unitPriceCents: v.number(),
-        }),
+        })
       ),
       currency: v.string(),
       paymentType: paymentTypeTuple,
@@ -299,25 +314,29 @@ export const saveExtractedPaymentConfig = internalMutation({
           type: v.union(v.literal("percentage"), v.literal("fixed")),
           amount: v.number(),
           gracePeriodDays: v.number(),
-        }),
+        })
       ),
       recurringConfig: v.optional(
         v.object({
-          interval: v.union(v.literal("week"), v.literal("month"), v.literal("year")),
+          interval: v.union(
+            v.literal("week"),
+            v.literal("month"),
+            v.literal("year")
+          ),
           intervalCount: v.number(),
-        }),
+        })
       ),
       installmentsConfig: v.optional(
         v.object({
           count: v.number(),
           interval: v.union(v.literal("week"), v.literal("month")),
-        }),
+        })
       ),
       depositBalanceConfig: v.optional(
         v.object({
           depositPercent: v.number(),
           balanceDueDays: v.number(),
-        }),
+        })
       ),
     }),
   },
@@ -325,7 +344,8 @@ export const saveExtractedPaymentConfig = internalMutation({
     // Verify the field exists and is a payment field
     const field = await ctx.db.get(args.fieldId);
     if (!field) throw new ConvexError("Payment field not found");
-    if (field.fieldType !== "payment") throw new ConvexError("Field is not a payment type");
+    if (field.fieldType !== "payment")
+      throw new ConvexError("Field is not a payment type");
 
     const { extraction } = args;
 
@@ -352,7 +372,10 @@ export const saveExtractedPaymentConfig = internalMutation({
     // Build recurring config with sensible defaults
     const recurringConfig = extraction.recurringConfig
       ? {
-          interval: extraction.recurringConfig.interval as "week" | "month" | "year",
+          interval: extraction.recurringConfig.interval as
+            | "week"
+            | "month"
+            | "year",
           intervalCount: extraction.recurringConfig.intervalCount,
           endCondition: "never" as const,
         }
@@ -445,7 +468,7 @@ export const saveDocumentAnnotations = internalMutation({
         severity: annotationSeverityTuple,
         text: v.string(),
         summary: v.string(),
-      }),
+      })
     ),
     modelUsed: v.string(),
     tokensUsed: v.number(),

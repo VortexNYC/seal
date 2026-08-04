@@ -15,8 +15,18 @@ interface PdfPageWithCanvasProps {
   fields?: PlacedField[];
   selectedFieldId?: string | null;
   onFieldSelect?: (fieldId: string | null) => void;
-  onFieldUpdate?: (fieldId: string, x: number, y: number, width: number, height: number) => void;
-  onPageDimensions?: (pageNumber: number, width: number, height: number) => void;
+  onFieldUpdate?: (
+    fieldId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => void;
+  onPageDimensions?: (
+    pageNumber: number,
+    width: number,
+    height: number
+  ) => void;
   /** SEA-78: Callback to register page ref for scroll navigation */
   onPageRef?: (pageNumber: number, element: HTMLDivElement | null) => void;
 }

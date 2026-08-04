@@ -25,11 +25,34 @@
     />
 
     <!-- Favicon and Icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/favicon/favicon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/favicon/favicon-512.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/favicon-iphone.png" />
-    <link rel="apple-touch-icon" sizes="196x196" href="/favicon/favicon-android.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon/favicon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/favicon/favicon-192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="/favicon/favicon-512.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/favicon/favicon-iphone.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="196x196"
+      href="/favicon/favicon-android.png"
+    />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -74,10 +97,12 @@
         const isSystem = storedTheme !== "light" && storedTheme !== "dark";
         const nextResolvedTheme =
           storedTheme === "dark" ||
-          (isSystem && window.matchMedia("(prefers-color-scheme: dark)").matches)
+          (isSystem &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
             ? "dark"
             : "light";
-        const fallbackBackground = nextResolvedTheme === "dark" ? "#09090b" : "#f8fafc";
+        const fallbackBackground =
+          nextResolvedTheme === "dark" ? "#09090b" : "#f8fafc";
 
         const root = document.documentElement;
         root.classList.toggle("dark", nextResolvedTheme === "dark");

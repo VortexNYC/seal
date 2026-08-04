@@ -8,8 +8,15 @@
  * wrapDatabaseReader/wrapDatabaseWriter from convex-helpers.
  */
 
-import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
-import { wrapDatabaseReader, wrapDatabaseWriter } from "convex-helpers/server/rowLevelSecurity";
+import {
+  customCtx,
+  customMutation,
+  customQuery,
+} from "convex-helpers/server/customFunctions";
+import {
+  wrapDatabaseReader,
+  wrapDatabaseWriter,
+} from "convex-helpers/server/rowLevelSecurity";
 import { ConvexError } from "convex/values";
 
 import { mutation, query } from "../_generated/server";
@@ -30,7 +37,7 @@ export const authQuery = customQuery(
       auth,
       db: wrapDatabaseReader(ctx, ctx.db, rules),
     };
-  }),
+  })
 );
 
 /**
@@ -69,7 +76,7 @@ export const permissionQuery = (requiredPermission: string) =>
         auth,
         db: wrapDatabaseReader(ctx, ctx.db, rules),
       };
-    }),
+    })
   );
 
 /**
@@ -105,7 +112,7 @@ export const permissionAnyQuery = (requiredPermissions: string[]) =>
         auth,
         db: wrapDatabaseReader(ctx, ctx.db, rules),
       };
-    }),
+    })
   );
 
 /**
@@ -141,7 +148,7 @@ export const permissionAllQuery = (requiredPermissions: string[]) =>
         auth,
         db: wrapDatabaseReader(ctx, ctx.db, rules),
       };
-    }),
+    })
   );
 
 /**
@@ -175,7 +182,7 @@ export const adminQuery = customQuery(
       auth,
       db: wrapDatabaseReader(ctx, ctx.db, rules),
     };
-  }),
+  })
 );
 
 /**
@@ -200,7 +207,7 @@ export const ownerQuery = customQuery(
       auth,
       db: wrapDatabaseReader(ctx, ctx.db, rules),
     };
-  }),
+  })
 );
 
 // =====================
@@ -220,7 +227,7 @@ export const authMutation = customMutation(
       auth,
       db: wrapDatabaseWriter(ctx, ctx.db, rules),
     };
-  }),
+  })
 );
 
 /**
@@ -257,7 +264,7 @@ export const permissionMutation = (requiredPermission: string) =>
         auth,
         db: wrapDatabaseWriter(ctx, ctx.db, rules),
       };
-    }),
+    })
   );
 
 /**
@@ -283,7 +290,7 @@ export const permissionAnyMutation = (requiredPermissions: string[]) =>
         auth,
         db: wrapDatabaseWriter(ctx, ctx.db, rules),
       };
-    }),
+    })
   );
 
 /**
@@ -309,7 +316,7 @@ export const permissionAllMutation = (requiredPermissions: string[]) =>
         auth,
         db: wrapDatabaseWriter(ctx, ctx.db, rules),
       };
-    }),
+    })
   );
 
 /**
@@ -334,7 +341,7 @@ export const adminMutation = customMutation(
       auth,
       db: wrapDatabaseWriter(ctx, ctx.db, rules),
     };
-  }),
+  })
 );
 
 /**
@@ -359,5 +366,5 @@ export const ownerMutation = customMutation(
       auth,
       db: wrapDatabaseWriter(ctx, ctx.db, rules),
     };
-  }),
+  })
 );

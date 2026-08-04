@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
-import { sendResendEmail } from "../resend_component";
 import { createTestContext } from "../../test.setup";
+import { sendResendEmail } from "../resend_component";
 
 describe("emails/resend_component", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -86,7 +86,10 @@ describe("emails/resend_component", () => {
       process.env.RESEND_API_KEY = "re_test_direct";
 
       const fetchMock = vi.fn(
-        async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+        async (
+          input: Parameters<typeof fetch>[0],
+          init?: Parameters<typeof fetch>[1]
+        ) => {
           expect(String(input)).toBe("https://api.resend.com/emails");
           expect(init?.method).toBe("POST");
 
@@ -104,8 +107,10 @@ describe("emails/resend_component", () => {
             to: ["user@example.com"],
           });
 
-          return new Response(JSON.stringify({ id: "email_123" }), { status: 200 });
-        },
+          return new Response(JSON.stringify({ id: "email_123" }), {
+            status: 200,
+          });
+        }
       );
       globalThis.fetch = fetchMock as unknown as typeof fetch;
 
@@ -167,7 +172,9 @@ describe("emails/resend_component", () => {
       const auditLogs = await t.run(async (ctx) => {
         return await ctx.db
           .query("audit_logs")
-          .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId)
+          )
           .collect();
       });
 
@@ -227,7 +234,9 @@ describe("emails/resend_component", () => {
       const auditLogs = await t.run(async (ctx) => {
         return await ctx.db
           .query("audit_logs")
-          .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId)
+          )
           .collect();
       });
 
@@ -281,7 +290,9 @@ describe("emails/resend_component", () => {
       const auditLogs = await t.run(async (ctx) => {
         return await ctx.db
           .query("audit_logs")
-          .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId)
+          )
           .collect();
       });
 
@@ -388,7 +399,10 @@ describe("emails/resend_component", () => {
   // ---------------------------------------------------------------------------
   describe("cleanupResendEmails", () => {
     test("schedules both cleanup jobs", async () => {
-      await t.mutation(internal.emails.resend_component.cleanupResendEmails, {});
+      await t.mutation(
+        internal.emails.resend_component.cleanupResendEmails,
+        {}
+      );
 
       // The mutation schedules two component functions via ctx.scheduler.runAfter.
       // In convex-test, we can't directly inspect scheduled component functions,

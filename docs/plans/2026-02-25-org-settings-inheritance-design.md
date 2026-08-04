@@ -35,7 +35,7 @@ The core pattern: **org settings provide defaults, team settings override select
 // Pseudocode
 function resolveSettings(
   orgSettings: OrgSettings,
-  teamSettings?: Partial<OrgSettings>,
+  teamSettings?: Partial<OrgSettings>
 ): OrgSettings {
   if (!teamSettings) return orgSettings;
 
@@ -68,7 +68,7 @@ settings: v.optional(
     signing: v.object({
       defaultAuthMethod: v.literal("email"), // Only "email" for v1. SMS and ID verification are future features — do NOT add them to the schema until they are implemented.
       allowedSignatureTypes: v.array(
-        v.union(v.literal("draw"), v.literal("type"), v.literal("upload")),
+        v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
       ), // Default ["draw", "type", "upload"]
       esignConsentText: v.optional(v.string()), // Custom consent text, null = Seal default
       defaultDeadlineDays: v.number(), // Default 30
@@ -85,7 +85,7 @@ settings: v.optional(
       sessionTimeoutMinutes: v.number(), // Default 480 (8 hours)
       allowApiAccess: v.boolean(), // Default true
     }),
-  }),
+  })
 );
 ```
 

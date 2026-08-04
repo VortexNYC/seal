@@ -1,6 +1,12 @@
 #!/usr/bin/env bun
 
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly Json[]
+  | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
@@ -47,9 +53,15 @@ function objectField(value: JsonObject, field: string): JsonObject {
   return child;
 }
 
-function nullableObjectField(value: JsonObject, field: string): JsonObject | null {
+function nullableObjectField(
+  value: JsonObject,
+  field: string
+): JsonObject | null {
   const child = value[field];
-  assert(child === null || isJsonObject(child), `Expected ${field} to be an object or null`);
+  assert(
+    child === null || isJsonObject(child),
+    `Expected ${field} to be an object or null`
+  );
   return child;
 }
 
@@ -61,26 +73,41 @@ function arrayField(value: JsonObject, field: string): readonly Json[] {
 
 function stringField(value: JsonObject, field: string): string {
   const child = value[field];
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
-function optionalStringField(value: JsonObject, field: string): string | undefined {
+function optionalStringField(
+  value: JsonObject,
+  field: string
+): string | undefined {
   const child = value[field];
   if (child === undefined || child === null) {
     return undefined;
   }
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
 function numberField(value: JsonObject, field: string): number {
   const child = value[field];
-  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a number`);
+  assert(
+    typeof child === "number" && Number.isFinite(child),
+    `Expected ${field} to be a number`
+  );
   return child;
 }
 
-function optionalObjectField(value: JsonObject, field: string): JsonObject | undefined {
+function optionalObjectField(
+  value: JsonObject,
+  field: string
+): JsonObject | undefined {
   const child = value[field];
   if (child === undefined || child === null) {
     return undefined;
@@ -137,7 +164,10 @@ async function runConvex<T extends Json>(input: {
   });
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
-  assert(jsonStart >= 0, `No JSON returned from ${input.functionName}: ${trimmed}`);
+  assert(
+    jsonStart >= 0,
+    `No JSON returned from ${input.functionName}: ${trimmed}`
+  );
   return JSON.parse(trimmed.slice(jsonStart)) as T;
 }
 
@@ -168,16 +198,21 @@ async function requestVortexCatalog(input: {
   const text = await response.text();
   const parsed = objectFromJson(
     text.length > 0 ? (JSON.parse(text) as Json) : null,
-    "Vortex catalog response",
+    "Vortex catalog response"
   );
   if (response.status < 200 || response.status >= 300) {
-    fail(`GET /v1/catalog failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`);
+    fail(
+      `GET /v1/catalog failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`
+    );
   }
   return parsed;
 }
 
 function isActiveCatalogRecord(value: Json): value is JsonObject {
-  return isJsonObject(value) && (value.archivedAt === undefined || value.archivedAt === null);
+  return (
+    isJsonObject(value) &&
+    (value.archivedAt === undefined || value.archivedAt === null)
+  );
 }
 
 function selectCatalogPrice(catalog: JsonObject): {
@@ -187,13 +222,20 @@ function selectCatalogPrice(catalog: JsonObject): {
   const data = objectField(catalog, "data");
   const products = arrayField(data, "products").filter(isActiveCatalogRecord);
   const prices = arrayField(data, "prices").filter(isActiveCatalogRecord);
-  assert(products.length > 0, "Expected Vortex catalog to include at least one active product");
-  assert(prices.length > 0, "Expected Vortex catalog to include at least one active price");
+  assert(
+    products.length > 0,
+    "Expected Vortex catalog to include at least one active product"
+  );
+  assert(
+    prices.length > 0,
+    "Expected Vortex catalog to include at least one active price"
+  );
 
   const vortexShaped = findLinkedCatalogPrice(
     products,
     prices,
-    (productId, priceId) => productId.startsWith("vtx_") && priceId.startsWith("vtx_"),
+    (productId, priceId) =>
+      productId.startsWith("vtx_") && priceId.startsWith("vtx_")
   );
   if (vortexShaped !== null) {
     return vortexShaped;
@@ -201,14 +243,16 @@ function selectCatalogPrice(catalog: JsonObject): {
 
   return (
     findLinkedCatalogPrice(products, prices, () => true) ??
-    fail("Expected at least one Vortex catalog price to reference an active product")
+    fail(
+      "Expected at least one Vortex catalog price to reference an active product"
+    )
   );
 }
 
 function findLinkedCatalogPrice(
   products: readonly JsonObject[],
   prices: readonly JsonObject[],
-  predicate: (productId: string, priceId: string) => boolean,
+  predicate: (productId: string, priceId: string) => boolean
 ): { readonly product: JsonObject; readonly price: JsonObject } | null {
   for (const price of prices) {
     const productId = stringField(price, "productId");
@@ -216,7 +260,9 @@ function findLinkedCatalogPrice(
     if (!predicate(productId, priceId)) {
       continue;
     }
-    const product = products.find((candidate) => stringField(candidate, "productId") === productId);
+    const product = products.find(
+      (candidate) => stringField(candidate, "productId") === productId
+    );
     if (product !== undefined) {
       return { product, price };
     }
@@ -227,14 +273,21 @@ function findLinkedCatalogPrice(
 
 function assertPlanPro(state: JsonObject, context: string): void {
   const plan = objectField(state, "plan");
-  assert(plan.plan === "pro", `${context}: expected Vortex entitlement control plan to remain pro`);
-  assert(plan.isPro === true, `${context}: expected Vortex entitlement control isPro true`);
+  assert(
+    plan.plan === "pro",
+    `${context}: expected Vortex entitlement control plan to remain pro`
+  );
+  assert(
+    plan.isPro === true,
+    `${context}: expected Vortex entitlement control isPro true`
+  );
 }
 
 async function main(): Promise<void> {
-  const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
+  const sealDeployment =
+    readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
   const vortexBaseUrl = urlWithoutTrailingSlash(
-    readEnv("VORTEX_BILLING_API_BASE_URL") ?? defaultVortexBaseUrl,
+    readEnv("VORTEX_BILLING_API_BASE_URL") ?? defaultVortexBaseUrl
   );
   const vortexApiKey = readEnv("VORTEX_BILLING_API_KEY");
   const missing = vortexApiKey === undefined ? ["VORTEX_BILLING_API_KEY"] : [];
@@ -250,17 +303,30 @@ async function main(): Promise<void> {
   const selected = selectCatalogPrice(catalog);
   const vortexPriceId = stringField(selected.price, "priceId");
   const vortexProductId = stringField(selected.product, "productId");
-  const expectedCurrency = stringField(selected.price, "currency").toLowerCase();
+  const expectedCurrency = stringField(
+    selected.price,
+    "currency"
+  ).toLowerCase();
   const expectedUnitAmount = numberField(selected.price, "unitAmount");
-  const expectedBillingInterval = optionalStringField(selected.price, "billingInterval");
+  const expectedBillingInterval = optionalStringField(
+    selected.price,
+    "billingInterval"
+  );
 
   const vortexEntitlementSafety = await runConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:seedVortexEntitlementSafetyProof",
+    functionName:
+      "vortex_billing/proof_actions:seedVortexEntitlementSafetyProof",
     args: { proofRunId },
   });
-  const safetyOrganizationId = stringField(vortexEntitlementSafety, "organizationId");
-  const safetyVortexPriceId = stringField(vortexEntitlementSafety, "vortexPriceId");
+  const safetyOrganizationId = stringField(
+    vortexEntitlementSafety,
+    "organizationId"
+  );
+  const safetyVortexPriceId = stringField(
+    vortexEntitlementSafety,
+    "vortexPriceId"
+  );
 
   const beforeState = await runConvex<JsonObject>({
     deployment: sealDeployment,
@@ -285,34 +351,49 @@ async function main(): Promise<void> {
     functionName: "vortex_billing/catalog_sync:syncCatalogFromVortex",
     args: {},
   });
-  assert(syncResult.success === true, "Expected syncCatalogFromVortex success true");
+  assert(
+    syncResult.success === true,
+    "Expected syncCatalogFromVortex success true"
+  );
 
   const catalogPrice = await runConvex<JsonObject | null>({
     deployment: sealDeployment,
     functionName: "vortex_billing/proof_actions:getVortexCatalogProofPrice",
     args: { vortexPriceId },
   });
-  assert(catalogPrice !== null, `Expected synced Vortex price row: ${vortexPriceId}`);
-  assert(stringField(catalogPrice, "vortexPriceId") === vortexPriceId, "Expected vortexPriceId");
+  assert(
+    catalogPrice !== null,
+    `Expected synced Vortex price row: ${vortexPriceId}`
+  );
+  assert(
+    stringField(catalogPrice, "vortexPriceId") === vortexPriceId,
+    "Expected vortexPriceId"
+  );
   assert(
     stringField(catalogPrice, "externalPriceId") === vortexPriceId,
-    "Expected additive Vortex externalPriceId shadow",
+    "Expected additive Vortex externalPriceId shadow"
   );
   assert(
     stringField(catalogPrice, "vortexProductId") === vortexProductId,
-    "Expected vortexProductId",
+    "Expected vortexProductId"
   );
   assert(
     stringField(catalogPrice, "currency") === expectedCurrency,
-    "Expected normalized currency",
+    "Expected normalized currency"
   );
-  assert(numberField(catalogPrice, "unitAmount") === expectedUnitAmount, "Expected unitAmount");
+  assert(
+    numberField(catalogPrice, "unitAmount") === expectedUnitAmount,
+    "Expected unitAmount"
+  );
   const recurring = optionalObjectField(catalogPrice, "recurring");
   if (expectedBillingInterval !== undefined) {
-    assert(recurring !== undefined, "Expected recurring details for recurring Vortex price");
+    assert(
+      recurring !== undefined,
+      "Expected recurring details for recurring Vortex price"
+    );
     assert(
       stringField(recurring, "interval") === expectedBillingInterval,
-      "Expected billingInterval",
+      "Expected billingInterval"
     );
   }
 
@@ -323,14 +404,17 @@ async function main(): Promise<void> {
   });
   assertPlanPro(afterState, "after Vortex catalog sync");
   const safetyPrice = nullableObjectField(afterState, "price");
-  assert(safetyPrice !== null, "Expected Vortex entitlement safety price after sync");
+  assert(
+    safetyPrice !== null,
+    "Expected Vortex entitlement safety price after sync"
+  );
   assert(
     stringField(safetyPrice, "externalPriceId") === safetyVortexPriceId,
-    "Expected Vortex entitlement safety subscription to stay on its Vortex price id",
+    "Expected Vortex entitlement safety subscription to stay on its Vortex price id"
   );
   assert(
     afterState.activeNonVortexProviderIdPresent === false,
-    "Expected Vortex entitlement control to contain no non-Vortex-provider-shaped IDs",
+    "Expected Vortex entitlement control to contain no non-Vortex-provider-shaped IDs"
   );
 
   console.log(
@@ -362,8 +446,8 @@ async function main(): Promise<void> {
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

@@ -19,9 +19,14 @@ export function SigningComplete({
   role = "signer",
   downloadUrl,
 }: SigningCompleteProps) {
-  const actionText = role === "signer" ? "signed" : role === "approver" ? "approved" : "viewed";
+  const actionText =
+    role === "signer" ? "signed" : role === "approver" ? "approved" : "viewed";
   const actionPastTense =
-    role === "signer" ? "signature" : role === "approver" ? "approval" : "review";
+    role === "signer"
+      ? "signature"
+      : role === "approver"
+        ? "approval"
+        : "review";
   const previewText = `You have successfully ${actionText} "${documentName}"`;
 
   const formattedDate = new Date(signedAt).toLocaleDateString("en-US", {
@@ -33,7 +38,8 @@ export function SigningComplete({
     minute: "2-digit",
   });
 
-  const capitalizedAction = actionPastTense.charAt(0).toUpperCase() + actionPastTense.slice(1);
+  const capitalizedAction =
+    actionPastTense.charAt(0).toUpperCase() + actionPastTense.slice(1);
 
   return (
     <EmailLayout
@@ -55,7 +61,12 @@ export function SigningComplete({
           }}
         >
           <Text
-            style={{ margin: "0", fontSize: "32px", lineHeight: "64px", color: status.success }}
+            style={{
+              margin: "0",
+              fontSize: "32px",
+              lineHeight: "64px",
+              color: status.success,
+            }}
           >
             &#x2713;
           </Text>
@@ -66,7 +77,8 @@ export function SigningComplete({
         <Text style={emailStyles.bodyText}>Hello {recipientName},</Text>
 
         <Text style={emailStyles.bodyTextSpaced}>
-          You have successfully <strong>{actionText}</strong> the following document:
+          You have successfully <strong>{actionText}</strong> the following
+          document:
         </Text>
 
         {/* Document card — success variant */}
@@ -95,8 +107,8 @@ export function SigningComplete({
         </Section>
 
         <Text style={emailStyles.bodyTextMuted}>
-          A copy of this document has been saved for your records. You will receive another email
-          when all parties have completed signing.
+          A copy of this document has been saved for your records. You will
+          receive another email when all parties have completed signing.
         </Text>
 
         {/* Download button if available */}

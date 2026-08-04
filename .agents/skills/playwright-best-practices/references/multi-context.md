@@ -183,7 +183,7 @@ test("mock OAuth flow", async ({ page, context }) => {
         access_token: "mock-token",
         user: { name: "Test User", email: "test@example.com" },
       },
-    }),
+    })
   );
 
   await page.goto("/login");

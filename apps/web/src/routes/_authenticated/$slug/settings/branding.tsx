@@ -8,7 +8,14 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { Building2Icon, ImageIcon, PaletteIcon, Save, Trash2Icon, UploadIcon } from "lucide-react";
+import {
+  Building2Icon,
+  ImageIcon,
+  PaletteIcon,
+  Save,
+  Trash2Icon,
+  UploadIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -16,15 +23,23 @@ import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/branding")({
-  component: BrandingSettings,
-  pendingComponent: FormSkeleton,
-});
+export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
+  {
+    component: BrandingSettings,
+    pendingComponent: FormSkeleton,
+  }
+);
 
 function BrandingSettings() {
   const { slug } = Route.useParams();
@@ -35,11 +50,15 @@ function BrandingSettings() {
 
   const brandingSettings = useQuery(
     api.organizations.queries.getBrandingSettings,
-    organization ? { organizationId: organization._id } : "skip",
+    organization ? { organizationId: organization._id } : "skip"
   );
 
-  const updateBranding = useMutation(api.organizations.mutations.updateBrandingSettings);
-  const generateLogoUploadUrl = useMutation(api.organizations.mutations.generateLogoUploadUrl);
+  const updateBranding = useMutation(
+    api.organizations.mutations.updateBrandingSettings
+  );
+  const generateLogoUploadUrl = useMutation(
+    api.organizations.mutations.generateLogoUploadUrl
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -83,7 +102,11 @@ function BrandingSettings() {
       if (!file) return;
 
       // Validate file type
-      if (!["image/png", "image/jpeg", "image/svg+xml", "image/webp"].includes(file.type)) {
+      if (
+        !["image/png", "image/jpeg", "image/svg+xml", "image/webp"].includes(
+          file.type
+        )
+      ) {
         toast.error("Please upload a PNG, JPG, SVG, or WebP image");
         return;
       }
@@ -109,7 +132,9 @@ function BrandingSettings() {
         await updateBranding({ logoStorageId: storageId });
         toast.success("Logo uploaded");
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to upload logo");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to upload logo"
+        );
       } finally {
         setIsUploading(false);
         // Reset input so same file can be re-selected
@@ -118,7 +143,7 @@ function BrandingSettings() {
         }
       }
     },
-    [generateLogoUploadUrl, updateBranding],
+    [generateLogoUploadUrl, updateBranding]
   );
 
   const handleRemoveLogo = useCallback(async () => {
@@ -127,7 +152,9 @@ function BrandingSettings() {
       setLogoUrl(undefined);
       toast.success("Logo removed");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove logo");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove logo"
+      );
     }
   }, [updateBranding]);
 
@@ -146,12 +173,16 @@ function BrandingSettings() {
       // Validate hex colors if provided
       const hexRegex = /^#[0-9a-fA-F]{6}$/;
       if (formData.brandColor && !hexRegex.test(formData.brandColor)) {
-        toast.error("Brand color must be a valid hex color (for example, a 6-digit hex value)");
+        toast.error(
+          "Brand color must be a valid hex color (for example, a 6-digit hex value)"
+        );
         setIsSubmitting(false);
         return;
       }
       if (formData.accentColor && !hexRegex.test(formData.accentColor)) {
-        toast.error("Accent color must be a valid hex color (for example, a 6-digit hex value)");
+        toast.error(
+          "Accent color must be a valid hex color (for example, a 6-digit hex value)"
+        );
         setIsSubmitting(false);
         return;
       }
@@ -169,7 +200,11 @@ function BrandingSettings() {
       });
       toast.success("Branding settings updated");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update branding settings");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update branding settings"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -195,25 +230,31 @@ function BrandingSettings() {
                 <CardTitle>Custom Branding</CardTitle>
               </div>
               <CardDescription>
-                Customize the signing experience with your brand. Recipients will see your logo,
-                colors, and messaging instead of Seal defaults.
+                Customize the signing experience with your brand. Recipients
+                will see your logo, colors, and messaging instead of Seal
+                defaults.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="branding-enabled" className="text-sm font-medium">
+                  <Label
+                    htmlFor="branding-enabled"
+                    className="text-sm font-medium"
+                  >
                     Enable custom branding
                   </Label>
                   <p className="text-muted-foreground text-xs">
-                    When enabled, your branding will appear on signing pages and email
-                    notifications.
+                    When enabled, your branding will appear on signing pages and
+                    email notifications.
                   </p>
                 </div>
                 <Switch
                   id="branding-enabled"
                   checked={formData.enabled}
-                  onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, enabled: checked })
+                  }
                 />
               </div>
             </CardContent>
@@ -239,7 +280,9 @@ function BrandingSettings() {
                   id="company-name"
                   placeholder="e.g. Acme Corp"
                   value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, companyName: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -251,7 +294,9 @@ function BrandingSettings() {
                   type="url"
                   placeholder="https://acme.com"
                   value={formData.companyWebsite}
-                  onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, companyWebsite: e.target.value })
+                  }
                 />
               </div>
             </CardContent>
@@ -265,8 +310,8 @@ function BrandingSettings() {
                 <CardTitle className="text-base">Logo</CardTitle>
               </div>
               <CardDescription>
-                Upload your organization logo for the signing page header. Max 2MB,
-                PNG/JPG/SVG/WebP.
+                Upload your organization logo for the signing page header. Max
+                2MB, PNG/JPG/SVG/WebP.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -321,7 +366,8 @@ function BrandingSettings() {
                 <CardTitle className="text-base">Colors</CardTitle>
               </div>
               <CardDescription>
-                Set your brand colors for buttons and accents on the signing page.
+                Set your brand colors for buttons and accents on the signing
+                page.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -334,15 +380,18 @@ function BrandingSettings() {
                     id="brand-color"
                     placeholder="6-digit hex value"
                     value={formData.brandColor}
-                    onChange={(e) => setFormData({ ...formData, brandColor: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, brandColor: e.target.value })
+                    }
                     className="font-mono"
                   />
-                  {formData.brandColor && /^#[0-9a-fA-F]{6}$/.test(formData.brandColor) && (
-                    <div
-                      className="size-9 shrink-0 rounded-md border"
-                      style={{ backgroundColor: formData.brandColor }}
-                    />
-                  )}
+                  {formData.brandColor &&
+                    /^#[0-9a-fA-F]{6}$/.test(formData.brandColor) && (
+                      <div
+                        className="size-9 shrink-0 rounded-md border"
+                        style={{ backgroundColor: formData.brandColor }}
+                      />
+                    )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -354,15 +403,18 @@ function BrandingSettings() {
                     id="accent-color"
                     placeholder="6-digit hex value"
                     value={formData.accentColor}
-                    onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, accentColor: e.target.value })
+                    }
                     className="font-mono"
                   />
-                  {formData.accentColor && /^#[0-9a-fA-F]{6}$/.test(formData.accentColor) && (
-                    <div
-                      className="size-9 shrink-0 rounded-md border"
-                      style={{ backgroundColor: formData.accentColor }}
-                    />
-                  )}
+                  {formData.accentColor &&
+                    /^#[0-9a-fA-F]{6}$/.test(formData.accentColor) && (
+                      <div
+                        className="size-9 shrink-0 rounded-md border"
+                        style={{ backgroundColor: formData.accentColor }}
+                      />
+                    )}
                 </div>
               </div>
             </CardContent>
@@ -372,7 +424,9 @@ function BrandingSettings() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Email Customization</CardTitle>
-              <CardDescription>Customize how your emails appear to recipients.</CardDescription>
+              <CardDescription>
+                Customize how your emails appear to recipients.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -383,7 +437,9 @@ function BrandingSettings() {
                   id="email-from-name"
                   placeholder="e.g. Acme Legal"
                   value={formData.emailFromName}
-                  onChange={(e) => setFormData({ ...formData, emailFromName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, emailFromName: e.target.value })
+                  }
                 />
                 <p className="text-muted-foreground text-xs">
                   Shown as the sender name in email notifications.
@@ -398,10 +454,13 @@ function BrandingSettings() {
                   type="email"
                   placeholder="legal@acme.com"
                   value={formData.emailReplyTo}
-                  onChange={(e) => setFormData({ ...formData, emailReplyTo: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, emailReplyTo: e.target.value })
+                  }
                 />
                 <p className="text-muted-foreground text-xs">
-                  Recipients who reply will reach this address instead of no-reply.
+                  Recipients who reply will reach this address instead of
+                  no-reply.
                 </p>
               </div>
             </CardContent>
@@ -418,7 +477,10 @@ function BrandingSettings() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="hide-seal-branding" className="text-sm font-medium">
+                  <Label
+                    htmlFor="hide-seal-branding"
+                    className="text-sm font-medium"
+                  >
                     Hide &quot;Powered by Seal&quot;
                   </Label>
                   <p className="text-muted-foreground text-xs">
@@ -441,7 +503,12 @@ function BrandingSettings() {
                   id="custom-footer"
                   placeholder="e.g. Acme Corp — Confidential"
                   value={formData.customFooterText}
-                  onChange={(e) => setFormData({ ...formData, customFooterText: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      customFooterText: e.target.value,
+                    })
+                  }
                 />
               </div>
             </CardContent>

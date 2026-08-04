@@ -26,7 +26,7 @@ describe("api/v1/audit", () => {
       actorType: "user" | "recipient" | "system";
       userId: string;
       createdAt: number;
-    }> = {},
+    }> = {}
   ) {
     return t.run(async (ctx) => {
       return await ctx.db.insert("audit_logs", {
@@ -112,8 +112,14 @@ describe("api/v1/audit", () => {
     });
 
     test("returns entries for the organization", async () => {
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ action: "document.sent", createdAt: BASE_TIME + 1000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        action: "document.sent",
+        createdAt: BASE_TIME + 1000,
+      });
 
       // Also insert an entry for another org (should not appear)
       await t.run(async (ctx) => {
@@ -137,9 +143,18 @@ describe("api/v1/audit", () => {
     });
 
     test("returns entries in descending order (newest first)", async () => {
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ action: "document.sent", createdAt: BASE_TIME + 5000 });
-      await insertAuditLog({ action: "document.completed", createdAt: BASE_TIME + 10000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        action: "document.sent",
+        createdAt: BASE_TIME + 5000,
+      });
+      await insertAuditLog({
+        action: "document.completed",
+        createdAt: BASE_TIME + 10000,
+      });
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
@@ -153,9 +168,18 @@ describe("api/v1/audit", () => {
     });
 
     test("filters by action", async () => {
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ action: "document.sent", createdAt: BASE_TIME + 1000 });
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME + 2000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        action: "document.sent",
+        createdAt: BASE_TIME + 1000,
+      });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME + 2000,
+      });
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
@@ -166,16 +190,28 @@ describe("api/v1/audit", () => {
       expect(result.entries).toHaveLength(2);
       expect(
         result.entries.every(
-          (e: (typeof result.entries)[number]) => e.action === "document.created",
-        ),
+          (e: (typeof result.entries)[number]) =>
+            e.action === "document.created"
+        )
       ).toBe(true);
     });
 
     test("filters by document_id", async () => {
-      await insertAuditLog({ documentId, action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ documentId, action: "document.sent", createdAt: BASE_TIME + 1000 });
+      await insertAuditLog({
+        documentId,
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        documentId,
+        action: "document.sent",
+        createdAt: BASE_TIME + 1000,
+      });
       // This entry has no documentId
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME + 2000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME + 2000,
+      });
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
@@ -185,14 +221,25 @@ describe("api/v1/audit", () => {
 
       expect(result.entries).toHaveLength(2);
       expect(
-        result.entries.every((e: (typeof result.entries)[number]) => e.document_id === documentId),
+        result.entries.every(
+          (e: (typeof result.entries)[number]) => e.document_id === documentId
+        )
       ).toBe(true);
     });
 
     test("filters by created_after", async () => {
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ action: "document.sent", createdAt: BASE_TIME + 10000 });
-      await insertAuditLog({ action: "document.completed", createdAt: BASE_TIME + 20000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        action: "document.sent",
+        createdAt: BASE_TIME + 10000,
+      });
+      await insertAuditLog({
+        action: "document.completed",
+        createdAt: BASE_TIME + 20000,
+      });
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
@@ -204,15 +251,24 @@ describe("api/v1/audit", () => {
       expect(
         result.entries.every(
           (e: (typeof result.entries)[number]) =>
-            new Date(e.created_at).getTime() >= BASE_TIME + 5000,
-        ),
+            new Date(e.created_at).getTime() >= BASE_TIME + 5000
+        )
       ).toBe(true);
     });
 
     test("filters by created_before", async () => {
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ action: "document.sent", createdAt: BASE_TIME + 10000 });
-      await insertAuditLog({ action: "document.completed", createdAt: BASE_TIME + 20000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        action: "document.sent",
+        createdAt: BASE_TIME + 10000,
+      });
+      await insertAuditLog({
+        action: "document.completed",
+        createdAt: BASE_TIME + 20000,
+      });
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
@@ -224,14 +280,17 @@ describe("api/v1/audit", () => {
       expect(
         result.entries.every(
           (e: (typeof result.entries)[number]) =>
-            new Date(e.created_at).getTime() <= BASE_TIME + 15000,
-        ),
+            new Date(e.created_at).getTime() <= BASE_TIME + 15000
+        )
       ).toBe(true);
     });
 
     test("respects limit and returns has_more=true when more exist", async () => {
       for (let i = 0; i < 5; i++) {
-        await insertAuditLog({ action: "document.created", createdAt: BASE_TIME + i * 1000 });
+        await insertAuditLog({
+          action: "document.created",
+          createdAt: BASE_TIME + i * 1000,
+        });
       }
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
@@ -247,7 +306,10 @@ describe("api/v1/audit", () => {
 
     test("cursor pagination returns next page", async () => {
       for (let i = 0; i < 5; i++) {
-        await insertAuditLog({ action: "document.created", createdAt: BASE_TIME + i * 1000 });
+        await insertAuditLog({
+          action: "document.created",
+          createdAt: BASE_TIME + i * 1000,
+        });
       }
 
       const page1 = await t.query(internal.api.v1.audit.listAuditLog, {
@@ -268,16 +330,26 @@ describe("api/v1/audit", () => {
 
       expect(page2.entries).toHaveLength(2);
       // No overlap between pages
-      const page1Ids = new Set(page1.entries.map((e: (typeof page1.entries)[number]) => e.id));
-      const page2Ids = new Set(page2.entries.map((e: (typeof page2.entries)[number]) => e.id));
+      const page1Ids = new Set(
+        page1.entries.map((e: (typeof page1.entries)[number]) => e.id)
+      );
+      const page2Ids = new Set(
+        page2.entries.map((e: (typeof page2.entries)[number]) => e.id)
+      );
       for (const id of page2Ids) {
         expect(page1Ids.has(id)).toBe(false);
       }
     });
 
     test("has_more=false when all entries fit on one page", async () => {
-      await insertAuditLog({ action: "document.created", createdAt: BASE_TIME });
-      await insertAuditLog({ action: "document.sent", createdAt: BASE_TIME + 1000 });
+      await insertAuditLog({
+        action: "document.created",
+        createdAt: BASE_TIME,
+      });
+      await insertAuditLog({
+        action: "document.sent",
+        createdAt: BASE_TIME + 1000,
+      });
 
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
@@ -317,7 +389,9 @@ describe("api/v1/audit", () => {
         organizationId,
       });
 
-      expect(result.entries[0]?.created_at).toBe(new Date(BASE_TIME).toISOString());
+      expect(result.entries[0]?.created_at).toBe(
+        new Date(BASE_TIME).toISOString()
+      );
     });
   });
 });

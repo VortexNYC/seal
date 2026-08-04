@@ -27,7 +27,7 @@ describe("getDocumentsApproachingDeadline", () => {
       deadline: number;
       expirationAlertsSent: number[];
       status: "active" | "deleted";
-    }> = {},
+    }> = {}
   ) {
     return {
       name: "Test Document",
@@ -42,7 +42,9 @@ describe("getDocumentsApproachingDeadline", () => {
       updatedAt: Date.now(),
       workflowStatus: overrides.workflowStatus ?? "sent",
       sentAt: Date.now(),
-      ...(overrides.deadline !== undefined ? { deadline: overrides.deadline } : {}),
+      ...(overrides.deadline !== undefined
+        ? { deadline: overrides.deadline }
+        : {}),
       ...(overrides.expirationAlertsSent !== undefined
         ? { expirationAlertsSent: overrides.expirationAlertsSent }
         : {}),
@@ -88,12 +90,12 @@ describe("getDocumentsApproachingDeadline", () => {
         "documents",
         makeDocument({
           deadline: Date.now() + 2 * ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(1);
@@ -107,12 +109,12 @@ describe("getDocumentsApproachingDeadline", () => {
         "documents",
         makeDocument({
           deadline: Date.now() + 10 * ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(0);
@@ -124,12 +126,12 @@ describe("getDocumentsApproachingDeadline", () => {
         "documents",
         makeDocument({
           deadline: Date.now() - ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(0);
@@ -142,12 +144,12 @@ describe("getDocumentsApproachingDeadline", () => {
         makeDocument({
           deadline: Date.now() + 2 * ONE_DAY,
           expirationAlertsSent: [2], // Already alerted at 2 days
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(0);
@@ -161,12 +163,12 @@ describe("getDocumentsApproachingDeadline", () => {
         makeDocument({
           deadline: Date.now() + 2 * ONE_DAY,
           expirationAlertsSent: [3],
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(1);
@@ -180,19 +182,19 @@ describe("getDocumentsApproachingDeadline", () => {
         makeDocument({
           workflowStatus: "draft",
           deadline: Date.now() + 2 * ONE_DAY,
-        }),
+        })
       );
       await ctx.db.insert(
         "documents",
         makeDocument({
           workflowStatus: "expired",
           deadline: Date.now() + 2 * ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(0);
@@ -205,12 +207,12 @@ describe("getDocumentsApproachingDeadline", () => {
         makeDocument({
           workflowStatus: "in_progress",
           deadline: Date.now() + 1 * ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(1);
@@ -223,12 +225,12 @@ describe("getDocumentsApproachingDeadline", () => {
         makeDocument({
           status: "deleted",
           deadline: Date.now() + 2 * ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(0);
@@ -253,12 +255,12 @@ describe("getDocumentsApproachingDeadline", () => {
         "documents",
         makeDocument({
           deadline: Date.now() + 5 * ONE_DAY,
-        }),
+        })
       );
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(1);
@@ -271,7 +273,7 @@ describe("getDocumentsApproachingDeadline", () => {
     });
 
     const candidates = await t.query(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     expect(candidates).toHaveLength(0);
@@ -330,27 +332,36 @@ describe("recordExpirationAlert", () => {
   });
 
   test("appends daysRemaining to expirationAlertsSent", async () => {
-    await t.mutation(internal.documents.expiration_alerts.recordExpirationAlert, {
-      documentId,
-      alertedAt: Date.now(),
-      daysRemaining: 3,
-    });
+    await t.mutation(
+      internal.documents.expiration_alerts.recordExpirationAlert,
+      {
+        documentId,
+        alertedAt: Date.now(),
+        daysRemaining: 3,
+      }
+    );
 
     const doc = await t.run(async (ctx) => ctx.db.get(documentId));
     expect(doc?.expirationAlertsSent).toEqual([3]);
   });
 
   test("accumulates multiple alert records", async () => {
-    await t.mutation(internal.documents.expiration_alerts.recordExpirationAlert, {
-      documentId,
-      alertedAt: Date.now(),
-      daysRemaining: 3,
-    });
-    await t.mutation(internal.documents.expiration_alerts.recordExpirationAlert, {
-      documentId,
-      alertedAt: Date.now(),
-      daysRemaining: 1,
-    });
+    await t.mutation(
+      internal.documents.expiration_alerts.recordExpirationAlert,
+      {
+        documentId,
+        alertedAt: Date.now(),
+        daysRemaining: 3,
+      }
+    );
+    await t.mutation(
+      internal.documents.expiration_alerts.recordExpirationAlert,
+      {
+        documentId,
+        alertedAt: Date.now(),
+        daysRemaining: 1,
+      }
+    );
 
     const doc = await t.run(async (ctx) => ctx.db.get(documentId));
     expect(doc?.expirationAlertsSent).toEqual([3, 1]);

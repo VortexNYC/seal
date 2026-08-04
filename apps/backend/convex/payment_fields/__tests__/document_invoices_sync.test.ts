@@ -4,7 +4,7 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -84,7 +84,14 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
         documentId,
         organizationId,
         paymentType: "one_time",
-        items: [{ id: "item1", description: "Service", quantity: 1, unitPrice: 50000 }],
+        items: [
+          {
+            id: "item1",
+            description: "Service",
+            quantity: 1,
+            unitPrice: 50000,
+          },
+        ],
         currency: "usd",
         dueDateTerms: "net_30",
         allowedPaymentMethods: ["card"],
@@ -101,15 +108,18 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
   test("storeProviderPaymentIds creates document_invoices record", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-      configId,
-      paymentStatus: "awaiting",
-      providerInvoiceId: "in_test_123",
-      hostedInvoiceUrl: "https://billing.vortex.test/test",
-      providerAccountId: "acct_test_456",
-      customerEmail: "customer@example.com",
-      customerName: "Jane Doe",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      {
+        configId,
+        paymentStatus: "awaiting",
+        providerInvoiceId: "in_test_123",
+        hostedInvoiceUrl: "https://billing.vortex.test/test",
+        providerAccountId: "acct_test_456",
+        customerEmail: "customer@example.com",
+        customerName: "Jane Doe",
+      }
+    );
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
@@ -119,15 +129,21 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
     });
 
     expect(invoices).toHaveLength(1);
-    expect(sealAssertPresent(invoices[0]).providerInvoiceId).toBe("in_test_123");
-    expect(sealAssertPresent(invoices[0]).providerAccountId).toBe("acct_test_456");
-    expect(sealAssertPresent(invoices[0]).customerEmail).toBe("customer@example.com");
+    expect(sealAssertPresent(invoices[0]).providerInvoiceId).toBe(
+      "in_test_123"
+    );
+    expect(sealAssertPresent(invoices[0]).providerAccountId).toBe(
+      "acct_test_456"
+    );
+    expect(sealAssertPresent(invoices[0]).customerEmail).toBe(
+      "customer@example.com"
+    );
     expect(sealAssertPresent(invoices[0]).customerName).toBe("Jane Doe");
     expect(sealAssertPresent(invoices[0]).amountDue).toBe(50000);
     expect(sealAssertPresent(invoices[0]).currency).toBe("usd");
     expect(sealAssertPresent(invoices[0]).status).toBe("open");
     expect(sealAssertPresent(invoices[0]).hostedInvoiceUrl).toBe(
-      "https://billing.vortex.test/test",
+      "https://billing.vortex.test/test"
     );
   });
 
@@ -144,7 +160,8 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
         customerName: "Vortex Buyer",
         amountDue: 4200,
         currency: "usd",
-        hostedInvoiceUrl: "https://notable-leopard-969.convex.site/pay/pay_test",
+        hostedInvoiceUrl:
+          "https://notable-leopard-969.convex.site/pay/pay_test",
         vortexPayableId: "payable_test",
         vortexPaymentRequestId: "preq_test",
         dunningStatus: "none",
@@ -176,13 +193,21 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
       customerEmail: "customer@example.com",
     };
 
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, storeArgs);
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, storeArgs);
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      storeArgs
+    );
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      storeArgs
+    );
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_idempotent"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_test_idempotent")
+        )
         .collect();
     });
 
@@ -192,11 +217,14 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
   test("storeProviderPaymentIds without providerAccountId does not create invoice record", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-      configId,
-      paymentStatus: "awaiting",
-      providerInvoiceId: "in_test_no_account",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      {
+        configId,
+        paymentStatus: "awaiting",
+        providerInvoiceId: "in_test_no_account",
+      }
+    );
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db.query("document_invoices").collect();
@@ -209,13 +237,16 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
     const { internal } = await import("../../_generated/api");
 
     // First create the invoice record via storeProviderPaymentIds
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-      configId,
-      paymentStatus: "awaiting",
-      providerInvoiceId: "in_test_paid",
-      providerAccountId: "acct_test_456",
-      customerEmail: "payer@example.com",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      {
+        configId,
+        paymentStatus: "awaiting",
+        providerInvoiceId: "in_test_paid",
+        providerAccountId: "acct_test_456",
+        customerEmail: "payer@example.com",
+      }
+    );
 
     // Now simulate Vortex Billing webhook updating to paid
     const result = await t.mutation(
@@ -223,7 +254,7 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
       {
         providerInvoiceId: "in_test_paid",
         paymentStatus: "paid",
-      },
+      }
     );
 
     expect(result).not.toBeNull();
@@ -232,7 +263,9 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_paid"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_test_paid")
+        )
         .collect();
     });
 
@@ -244,23 +277,31 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
   test("updatePaymentStatusFromProviderInvoice syncs failed status as uncollectible", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-      configId,
-      paymentStatus: "awaiting",
-      providerInvoiceId: "in_test_failed",
-      providerAccountId: "acct_test_456",
-      customerEmail: "payer@example.com",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      {
+        configId,
+        paymentStatus: "awaiting",
+        providerInvoiceId: "in_test_failed",
+        providerAccountId: "acct_test_456",
+        customerEmail: "payer@example.com",
+      }
+    );
 
-    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice, {
-      providerInvoiceId: "in_test_failed",
-      paymentStatus: "failed",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
+      {
+        providerInvoiceId: "in_test_failed",
+        paymentStatus: "failed",
+      }
+    );
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_failed"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_test_failed")
+        )
         .collect();
     });
 
@@ -270,23 +311,31 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
   test("updatePaymentStatusFromProviderInvoice syncs cancelled status as void", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-      configId,
-      paymentStatus: "awaiting",
-      providerInvoiceId: "in_test_void",
-      providerAccountId: "acct_test_456",
-      customerEmail: "payer@example.com",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.storeProviderPaymentIds,
+      {
+        configId,
+        paymentStatus: "awaiting",
+        providerInvoiceId: "in_test_void",
+        providerAccountId: "acct_test_456",
+        customerEmail: "payer@example.com",
+      }
+    );
 
-    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice, {
-      providerInvoiceId: "in_test_void",
-      paymentStatus: "cancelled",
-    });
+    await t.mutation(
+      internal.payment_fields.mutations.updatePaymentStatusFromProviderInvoice,
+      {
+        providerInvoiceId: "in_test_void",
+        paymentStatus: "cancelled",
+      }
+    );
 
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", "in_test_void"))
+        .withIndex("by_provider_invoice", (q) =>
+          q.eq("providerInvoiceId", "in_test_void")
+        )
         .collect();
     });
 

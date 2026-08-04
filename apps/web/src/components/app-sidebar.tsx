@@ -105,7 +105,11 @@ function formatRole(value: string | undefined) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function isPathActive(currentPath: string, targetPath: string, exactMatch = false) {
+function isPathActive(
+  currentPath: string,
+  targetPath: string,
+  exactMatch = false
+) {
   // Exact match - this is the primary check
   if (currentPath === targetPath) {
     return true;
@@ -135,7 +139,8 @@ function buildNavSections({
   isPro: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
-  const canView = (flag?: boolean) => (flag === undefined ? true : Boolean(flag));
+  const canView = (flag?: boolean) =>
+    flag === undefined ? true : Boolean(flag);
 
   const workspaceItems = [
     {
@@ -256,7 +261,8 @@ function buildNavSections({
       title: "Billing",
       url: buildOrganizationPath(slug, "/settings/billing"),
       visible:
-        canView(permissionFlags?.canViewBilling) || canView(permissionFlags?.canManageBilling),
+        canView(permissionFlags?.canViewBilling) ||
+        canView(permissionFlags?.canManageBilling),
     },
     {
       title: "Merchant Payments",
@@ -270,7 +276,8 @@ function buildNavSections({
       title: "API Keys",
       url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
       visible:
-        canView(permissionFlags?.canManageAPIKeys) || canView(permissionFlags?.canManageWebhooks),
+        canView(permissionFlags?.canManageAPIKeys) ||
+        canView(permissionFlags?.canManageWebhooks),
       proGated: true,
     },
     {
@@ -321,7 +328,7 @@ function buildNavSections({
         isActive: isPathActive(
           currentPath,
           item.url,
-          "exactMatch" in item ? Boolean(item.exactMatch) : false,
+          "exactMatch" in item ? Boolean(item.exactMatch) : false
         ),
         locked: "proGated" in item && Boolean(item.proGated) && !isPro,
       }));
@@ -361,7 +368,7 @@ function buildTeamOptions({
       <span
         className={cn(
           "grid h-full w-full place-items-center rounded-md bg-transparent text-[0.65rem] font-semibold uppercase",
-          className,
+          className
         )}
       >
         {initials}
@@ -377,7 +384,12 @@ function buildTeamOptions({
   });
 }
 
-export function AppSidebar({ slug, organization, permissions, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  slug,
+  organization,
+  permissions,
+  ...props
+}: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useCurrentUser();
@@ -385,11 +397,17 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const { reset: resetAnalytics } = useAnalytics();
   const organizationStatus = useQuery(api.check_membership.hasOrganization);
   const organizations = useQuery(api.check_membership.listUserOrganizations);
-  const setActiveOrganization = useMutation(api.check_membership.setActiveOrganizationBySlug);
-  const merchantAccountSlug = organizationStatus?.activeOrganizationSlug ?? slug;
-  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
-    slug: merchantAccountSlug,
-  });
+  const setActiveOrganization = useMutation(
+    api.check_membership.setActiveOrganizationBySlug
+  );
+  const merchantAccountSlug =
+    organizationStatus?.activeOrganizationSlug ?? slug;
+  const merchantAccount = useQuery(
+    api.payments.merchant_account_queries.getMerchantAccount,
+    {
+      slug: merchantAccountSlug,
+    }
+  );
   const hasMerchantAccount = merchantAccount?.status === "connected";
   const { isPro } = useSubscriptionLimits();
 
@@ -401,7 +419,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
 
   const teamOptions = React.useMemo(
     () => buildTeamOptions({ slug, organizations }),
-    [organizations, slug],
+    [organizations, slug]
   );
 
   const navItems = React.useMemo(
@@ -413,7 +431,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         hasMerchantAccount,
         isPro,
       }),
-    [slug, location.pathname, permissions, hasMerchantAccount, isPro],
+    [slug, location.pathname, permissions, hasMerchantAccount, isPro]
   );
 
   const activeTeamSlug = slug;
@@ -466,7 +484,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
 
         const target = buildOrganizationPath(
           nextSlug,
-          relativePath.length > 0 ? relativePath : "/home",
+          relativePath.length > 0 ? relativePath : "/home"
         );
 
         navigate({ to: target });
@@ -474,7 +492,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         console.error("Failed to switch workspace:", error);
       }
     },
-    [location.pathname, navigate, setActiveOrganization, slug],
+    [location.pathname, navigate, setActiveOrganization, slug]
   );
 
   if (!organization) {
@@ -513,20 +531,28 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
                 aria-pressed={isDark}
               >
                 <div className="flex items-center gap-2">
-                  {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                  <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
+                  {isDark ? (
+                    <Moon className="size-4" />
+                  ) : (
+                    <Sun className="size-4" />
+                  )}
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    Dark mode
+                  </span>
                 </div>
                 <span
                   aria-hidden="true"
                   className={cn(
                     "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors group-data-[collapsible=icon]:hidden",
-                    isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
+                    isDark
+                      ? "bg-primary border-primary justify-end"
+                      : "bg-muted border-border"
                   )}
                 >
                   <span
                     className={cn(
                       "bg-background block h-4 w-4 rounded-full shadow-sm transition-transform",
-                      isDark ? "-translate-x-0.5" : "translate-x-0.5",
+                      isDark ? "-translate-x-0.5" : "translate-x-0.5"
                     )}
                   />
                 </span>
@@ -534,7 +560,9 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
-        {currentUser && <NavUser user={currentUser} slug={slug} onSignOut={handleSignOut} />}
+        {currentUser && (
+          <NavUser user={currentUser} slug={slug} onSignOut={handleSignOut} />
+        )}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

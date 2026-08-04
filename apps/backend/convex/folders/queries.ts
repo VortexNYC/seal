@@ -18,7 +18,7 @@ export const listFolders = authQuery({
     const member = await resolveComponentMembershipForOrganization(
       ctx,
       ctx.auth.user,
-      organization,
+      organization
     );
 
     if (!member) throw new ConvexError("No access to this organization");
@@ -29,19 +29,25 @@ export const listFolders = authQuery({
     const allFolders = await ctx.db
       .query("folders")
       .withIndex("by_org_type", (q) =>
-        q.eq("organizationId", args.organizationId).eq("type", args.type),
+        q.eq("organizationId", args.organizationId).eq("type", args.type)
       )
       .collect();
 
     // Filter by parentId (in-memory since Convex can't do optional index prefix + filter)
     const filtered = allFolders.filter((f) => {
       // Match parentId (undefined for root)
-      if (args.parentId ? f.parentId !== args.parentId : f.parentId !== undefined) {
+      if (
+        args.parentId ? f.parentId !== args.parentId : f.parentId !== undefined
+      ) {
         return false;
       }
       // Visibility: everyone sees "everyone" folders, only admin/owner sees "admin" folders
       // Exception: creator always sees their own folders
-      if (f.visibility === "admin" && !isAdminOrOwner && f.createdBy !== userId) {
+      if (
+        f.visibility === "admin" &&
+        !isAdminOrOwner &&
+        f.createdBy !== userId
+      ) {
         return false;
       }
       return true;
@@ -103,7 +109,7 @@ export const getAllFoldersFlat = authQuery({
     const member = await resolveComponentMembershipForOrganization(
       ctx,
       ctx.auth.user,
-      organization,
+      organization
     );
 
     if (!member) throw new ConvexError("No access to this organization");
@@ -112,13 +118,17 @@ export const getAllFoldersFlat = authQuery({
     const allFolders = await ctx.db
       .query("folders")
       .withIndex("by_org_type", (q) =>
-        q.eq("organizationId", args.organizationId).eq("type", args.type),
+        q.eq("organizationId", args.organizationId).eq("type", args.type)
       )
       .collect();
 
     return allFolders
       .filter((f) => {
-        if (f.visibility === "admin" && !isAdminOrOwner && f.createdBy !== userId) {
+        if (
+          f.visibility === "admin" &&
+          !isAdminOrOwner &&
+          f.createdBy !== userId
+        ) {
           return false;
         }
         return true;

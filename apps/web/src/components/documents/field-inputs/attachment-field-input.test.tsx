@@ -16,7 +16,7 @@ import { AttachmentFieldInput } from "./attachment-field-input";
 afterEach(cleanup);
 
 function renderAttachmentField(
-  overrides: Partial<Parameters<typeof AttachmentFieldInput>[0]> = {},
+  overrides: Partial<Parameters<typeof AttachmentFieldInput>[0]> = {}
 ) {
   const onChange = vi.fn();
   const onValidationChange = vi.fn();
@@ -28,7 +28,7 @@ function renderAttachmentField(
       onChange={onChange}
       onValidationChange={onValidationChange}
       {...overrides}
-    />,
+    />
   );
 
   return { onChange, onValidationChange, ...result };

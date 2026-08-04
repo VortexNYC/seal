@@ -128,7 +128,9 @@ export const Route = createFileRoute("/posts/$postId")({
 export const Route = createFileRoute("/posts/$postId")({
   loader: async ({ params, context: { queryClient } }) => {
     // Critical data - await
-    const post = await queryClient.ensureQueryData(postQueries.detail(params.postId));
+    const post = await queryClient.ensureQueryData(
+      postQueries.detail(params.postId)
+    );
 
     // Non-critical - start but don't await (stream in later)
     queryClient.prefetchQuery(commentQueries.forPost(params.postId));
@@ -145,7 +147,9 @@ function PostPage() {
 
   // Critical data ready immediately
   // Non-critical loads in component with loading state
-  const { data: comments, isLoading } = useQuery(commentQueries.forPost(postId));
+  const { data: comments, isLoading } = useQuery(
+    commentQueries.forPost(postId)
+  );
 
   return (
     <article>

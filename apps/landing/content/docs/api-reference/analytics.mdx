@@ -92,8 +92,9 @@ GET /api/v1/analytics
 | `to`      | number | Unix timestamp in **milliseconds** — end of the reporting period   |
 
 <Callout type="info">
-  If `from` and `to` are omitted, the endpoint defaults to the **last 30 days**. The
-  `workspace_snapshot` is always a current point-in-time count, regardless of the date range.
+  If `from` and `to` are omitted, the endpoint defaults to the **last 30 days**.
+  The `workspace_snapshot` is always a current point-in-time count, regardless
+  of the date range.
 </Callout>
 
 ### TypeScript Example
@@ -103,16 +104,21 @@ GET /api/v1/analytics
 const from = new Date("2024-01-01").getTime();
 const to = new Date("2024-02-01").getTime();
 
-const response = await fetch(`https://seal.convex.site/api/v1/analytics?from=${from}&to=${to}`, {
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  `https://seal.convex.site/api/v1/analytics?from=${from}&to=${to}`,
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 
 const analytics = await response.json();
 
 console.log(`Completion rate: ${analytics.documents.completion_rate}%`);
-console.log(`Median signing time: ${analytics.documents.median_signing_hours}h`);
+console.log(
+  `Median signing time: ${analytics.documents.median_signing_hours}h`
+);
 ```
 
 ### cURL Example
@@ -172,12 +178,15 @@ async function getMonthlyAnalytics() {
 
     const response = await fetch(
       `https://seal.convex.site/api/v1/analytics?from=${start.getTime()}&to=${end.getTime()}`,
-      { headers: { Authorization: "Bearer ak_your_api_key_here" } },
+      { headers: { Authorization: "Bearer ak_your_api_key_here" } }
     );
 
     const data = await response.json();
     months.push({
-      month: start.toLocaleString("default", { month: "short", year: "numeric" }),
+      month: start.toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      }),
       completed: data.documents.total_completed,
       completion_rate: data.documents.completion_rate,
     });

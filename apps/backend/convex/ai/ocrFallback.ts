@@ -40,15 +40,20 @@ export const ocrExtractText = internalAction({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{ charCount: number; tokensUsed: number; durationMs: number }> => {
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
     if (!document) throw new Error("Document not found");
 
     // Download PDF
-    const pdfUrl = await ctx.storage.getUrl(document.storageId as Id<"_storage">);
+    const pdfUrl = await ctx.storage.getUrl(
+      document.storageId as Id<"_storage">
+    );
     if (!pdfUrl) throw new Error("PDF not found in storage");
 
     const response = await fetch(pdfUrl);
@@ -85,7 +90,9 @@ export const ocrExtractText = internalAction({
     }
 
     if (extractedText.length === 0) {
-      console.warn(`[OCR Fallback] Gemini returned no text for ${args.documentId}`);
+      console.warn(
+        `[OCR Fallback] Gemini returned no text for ${args.documentId}`
+      );
       return { charCount: 0, tokensUsed, durationMs };
     }
 
@@ -96,7 +103,7 @@ export const ocrExtractText = internalAction({
     });
 
     console.info(
-      `[OCR Fallback] Extracted ${extractedText.length} chars from scanned PDF ${args.documentId}`,
+      `[OCR Fallback] Extracted ${extractedText.length} chars from scanned PDF ${args.documentId}`
     );
 
     return { charCount: extractedText.length, tokensUsed, durationMs };

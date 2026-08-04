@@ -38,7 +38,10 @@ export type SealRLSContext = {
   hasAllPermissions: (permissions: string[]) => boolean;
 
   // Document access cache (for performance)
-  documentAccessCache: Map<Id<"documents">, "owner" | "manage" | "edit" | "view" | "none">;
+  documentAccessCache: Map<
+    Id<"documents">,
+    "owner" | "manage" | "edit" | "view" | "none"
+  >;
 
   // Recipient context (for token-based access via document_recipients)
   recipientContext?: {
@@ -84,7 +87,7 @@ async function getRLSContext(ctx: QueryCtx): Promise<SealRLSContext | null> {
 async function getDocumentAccessLevel(
   ctx: QueryCtx,
   rlsCtx: SealRLSContext,
-  doc: Doc<"documents">,
+  doc: Doc<"documents">
 ): Promise<"owner" | "manage" | "edit" | "view" | "none"> {
   // Super admin always has full access
   if (rlsCtx.isSuperAdmin) return "owner";
@@ -112,7 +115,7 @@ async function getDocumentAccessLevel(
         const access = await ctx.db
           .query("document_access")
           .withIndex("by_document_user", (q) =>
-            q.eq("documentId", doc._id).eq("userId", currentUserId),
+            q.eq("documentId", doc._id).eq("userId", currentUserId)
           )
           .first();
 
@@ -146,7 +149,7 @@ type StrictRules = {
  */
 function getUserManagementRules(
   ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "users" | "user_profiles" | "saved_signatures"> {
   return {
     users: {
@@ -161,7 +164,7 @@ function getUserManagementRules(
           const membership = await resolveComponentMembershipForOrganization(
             ctx,
             doc,
-            organization,
+            organization
           );
           return membership !== null && membership.status === "active";
         }
@@ -206,7 +209,7 @@ function getUserManagementRules(
 
 function getOrganizationManagementRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "organizations"> {
   return {
     organizations: {
@@ -227,7 +230,7 @@ function getOrganizationManagementRules(
 
 function getPrimaryDocumentRules(
   ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "documents" | "document_access" | "document_recipients"> {
   return {
     documents: {
@@ -296,7 +299,7 @@ function getPrimaryDocumentRules(
 
 function getDocumentWorkflowRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "document_reminders" | "folders" | "document_invoices"> {
   return {
     document_reminders: {
@@ -350,7 +353,7 @@ function getDocumentWorkflowRules(
 
 function getDocumentAssetRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "document_versions" | "payment_field_configs"> {
   return {
     document_versions: {
@@ -360,7 +363,10 @@ function getDocumentAssetRules(
         const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
         if (document.ownerId === rlsCtx.userId) return true;
-        return document.sharingMode === "workspace" && document.organizationId === rlsCtx.orgId;
+        return (
+          document.sharingMode === "workspace" &&
+          document.organizationId === rlsCtx.orgId
+        );
       },
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
@@ -393,7 +399,7 @@ function getDocumentAssetRules(
 
 function getSignatureWorkflowRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "recipients" | "signature_fields" | "signatures"> {
   return {
     recipients: {
@@ -438,7 +444,10 @@ function getSignatureWorkflowRules(
         const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
-        return access === "owner" || (access === "edit" && document.workflowStatus === "draft");
+        return (
+          access === "owner" ||
+          (access === "edit" && document.workflowStatus === "draft")
+        );
       },
     },
     signatures: {
@@ -460,20 +469,25 @@ function getSignatureWorkflowRules(
 
 function getTemplateAndContactRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<StrictRules, "templates" | "template_fields" | "contacts"> {
   return {
     templates: {
       read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        if (doc.status === "deleted" || rlsCtx.orgId !== doc.organizationId) return false;
-        return rlsCtx.hasPermission("templates:view") || rlsCtx.hasPermission("templates:read");
+        if (doc.status === "deleted" || rlsCtx.orgId !== doc.organizationId)
+          return false;
+        return (
+          rlsCtx.hasPermission("templates:view") ||
+          rlsCtx.hasPermission("templates:read")
+        );
       },
       modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        if (doc.status === "deleted" || rlsCtx.orgId !== doc.organizationId) return false;
+        if (doc.status === "deleted" || rlsCtx.orgId !== doc.organizationId)
+          return false;
         if (doc.createdBy === rlsCtx.userId) return true;
         return rlsCtx.hasPermission("templates:edit");
       },
@@ -517,7 +531,7 @@ function getTemplateAndContactRules(
 
 function getAuditAndBillingRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<
   StrictRules,
   | "audit_logs"
@@ -547,7 +561,10 @@ function getAuditAndBillingRules(
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        return rlsCtx.hasPermission("audit:view") || rlsCtx.hasPermission("audit:read");
+        return (
+          rlsCtx.hasPermission("audit:view") ||
+          rlsCtx.hasPermission("audit:read")
+        );
       },
       modify: async () => false,
     },
@@ -589,7 +606,7 @@ function getAuditAndBillingRules(
 
 function getIntegrationAndWebhookRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<
   StrictRules,
   | "connected_apps"
@@ -661,8 +678,11 @@ function getIntegrationAndWebhookRules(
 
 function getInternalOnlyRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
-): Pick<StrictRules, "download_tokens" | "subscription_coupons" | "subscription_promo_codes"> {
+  rlsCtx: SealRLSContext | null
+): Pick<
+  StrictRules,
+  "download_tokens" | "subscription_coupons" | "subscription_promo_codes"
+> {
   return {
     download_tokens: {
       read: async () => false,
@@ -681,7 +701,7 @@ function getInternalOnlyRules(
 
 function getExportAndAiRules(
   _ctx: QueryCtx,
-  rlsCtx: SealRLSContext | null,
+  rlsCtx: SealRLSContext | null
 ): Pick<
   StrictRules,
   | "data_exports"
@@ -694,14 +714,20 @@ function getExportAndAiRules(
 > {
   return {
     data_exports: {
-      read: async (_queryCtx, doc) => Boolean(rlsCtx && doc.userId === rlsCtx.userId),
-      modify: async (_queryCtx, doc) => Boolean(rlsCtx && doc.userId === rlsCtx.userId),
+      read: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && doc.userId === rlsCtx.userId),
+      modify: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && doc.userId === rlsCtx.userId),
     },
     ai_threads: {
       read: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
       modify: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
     },
     ai_progress: {
       read: async () => rlsCtx !== null,
@@ -709,15 +735,23 @@ function getExportAndAiRules(
     },
     ai_field_suggestions: {
       read: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
       modify: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
     },
     ai_document_annotations: {
       read: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
       modify: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
     },
     ai_routing_logs: {
       read: async () => Boolean(rlsCtx?.isSuperAdmin),
@@ -725,14 +759,20 @@ function getExportAndAiRules(
     },
     ai_usage_log: {
       read: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
       modify: async (_queryCtx, doc) =>
-        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+        Boolean(
+          rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)
+        ),
     },
   };
 }
 
-export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
+export async function rlsRules(
+  ctx: QueryCtx
+): Promise<Rules<QueryCtx, DataModel>> {
   const rlsCtx = await getRLSContext(ctx);
 
   const rules: StrictRules = {

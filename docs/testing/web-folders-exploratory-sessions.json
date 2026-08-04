@@ -198,10 +198,29 @@
           "notes": "Sidebar panel config: defaultSize=20%, minSize=15%, maxSize=35%, collapsible. Dragged narrower — sidebar collapsed to icon-only state. Content area adjusts properly to fill space. Grip handle visible. After reload, layout returns to reasonable default. Panel supports full collapse due to collapsible prop."
         }
       ],
-      "executionOrder": ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "C1", "C2", "D1"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "B1",
+        "B2",
+        "B3",
+        "C1",
+        "C2",
+        "D1"
+      ],
       "blocks": {
-        "A": { "name": "Core folder sidebar + navigation", "priority": 1, "sessions": 4 },
-        "B": { "name": "Context menu actions + move", "priority": 2, "sessions": 3 },
+        "A": {
+          "name": "Core folder sidebar + navigation",
+          "priority": 1,
+          "sessions": 4
+        },
+        "B": {
+          "name": "Context menu actions + move",
+          "priority": 2,
+          "sessions": 3
+        },
         "C": { "name": "Templates + edge cases", "priority": 2, "sessions": 2 },
         "D": { "name": "Layout + UX polish", "priority": 3, "sessions": 1 }
       },

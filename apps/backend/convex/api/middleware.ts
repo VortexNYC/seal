@@ -13,7 +13,12 @@ import {
   type RateLimitConfig,
   throwRateLimitExceeded,
 } from "./api_rate_limiter";
-import { type ApiAuthContext, type ApiScope, requireScope, resolveAuthContext } from "./context";
+import {
+  type ApiAuthContext,
+  type ApiScope,
+  requireScope,
+  resolveAuthContext,
+} from "./context";
 import { ApiError, apiResponse, handleApiError } from "./errors";
 import { type ApiVersion, getApiVersion } from "./versioning";
 
@@ -124,7 +129,8 @@ function createCorsPreflightResponse(): Response {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Version",
+      "Access-Control-Allow-Headers":
+        "Authorization, Content-Type, X-API-Version",
       "Access-Control-Max-Age": "86400",
     },
   });
@@ -134,13 +140,15 @@ function getClientIp(request: Request): string | undefined {
   const forwarded = request.headers.get("x-forwarded-for");
   return forwarded
     ? forwarded.split(",")[0]?.trim()
-    : (request.headers.get("cf-connecting-ip") ?? request.headers.get("x-real-ip") ?? undefined);
+    : (request.headers.get("cf-connecting-ip") ??
+        request.headers.get("x-real-ip") ??
+        undefined);
 }
 
 async function authenticateApiRequest(
   ctx: ActionCtx,
   request: Request,
-  options: ApiEndpointOptions,
+  options: ApiEndpointOptions
 ): Promise<{ auth: ApiAuthContext | null; rateLimitHeaders?: Headers }> {
   if (options.public) {
     return { auth: null };
@@ -152,12 +160,14 @@ async function authenticateApiRequest(
   if (options.scope) {
     requireScope(auth, options.scope);
   } else if (options.scopes && options.scopes.length > 0) {
-    const hasRequiredScope = options.scopes.some((scope) => auth.hasScope(scope));
+    const hasRequiredScope = options.scopes.some((scope) =>
+      auth.hasScope(scope)
+    );
     if (!hasRequiredScope) {
       throw new ApiError(
         403,
         `Missing required scope. Need one of: ${options.scopes.join(", ")}`,
-        "INSUFFICIENT_SCOPE",
+        "INSUFFICIENT_SCOPE"
       );
     }
   }
@@ -166,12 +176,17 @@ async function authenticateApiRequest(
     return { auth };
   }
 
-  const rateLimitKey = auth.authType === "api_key" ? auth.apiKeyId : `jwt:${auth.userId}`;
+  const rateLimitKey =
+    auth.authType === "api_key" ? auth.apiKeyId : `jwt:${auth.userId}`;
   if (!rateLimitKey) {
     throw new ApiError(500, "Rate limit key unavailable", "INTERNAL_ERROR");
   }
 
-  const rateLimitResult = await checkApiRateLimit(ctx, rateLimitKey, options.rateLimit);
+  const rateLimitResult = await checkApiRateLimit(
+    ctx,
+    rateLimitKey,
+    options.rateLimit
+  );
   const rateLimitHeaders = buildRateLimitHeaders(rateLimitResult);
   if (!rateLimitResult.allowed) {
     throwRateLimitExceeded(rateLimitResult);
@@ -183,7 +198,10 @@ async function authenticateApiRequest(
 /**
  * Adds standard and rate limit headers to a response.
  */
-function addResponseHeaders(response: Response, rateLimitHeaders?: Headers): Response {
+function addResponseHeaders(
+  response: Response,
+  rateLimitHeaders?: Headers
+): Response {
   const headers = new Headers(response.headers);
 
   // Add standard security headers
@@ -237,7 +255,10 @@ function addResponseHeaders(response: Response, rateLimitHeaders?: Headers): Res
  * );
  * ```
  */
-export function apiHttpAction(handler: ApiHandler, options: ApiEndpointOptions = {}) {
+export function apiHttpAction(
+  handler: ApiHandler,
+  options: ApiEndpointOptions = {}
+) {
   return httpAction(async (ctx, request) => {
     try {
       if (request.method === "OPTIONS") {
@@ -246,7 +267,11 @@ export function apiHttpAction(handler: ApiHandler, options: ApiEndpointOptions =
 
       const { url, pathSegments, query } = parseRequest(request);
       const apiVersion = getApiVersion(request);
-      const { auth, rateLimitHeaders } = await authenticateApiRequest(ctx, request, options);
+      const { auth, rateLimitHeaders } = await authenticateApiRequest(
+        ctx,
+        request,
+        options
+      );
       const requestContext: ApiRequestContext = {
         ctx,
         request,
@@ -283,7 +308,7 @@ export function apiHttpAction(handler: ApiHandler, options: ApiEndpointOptions =
  * ```
  */
 export function publicApiHttpAction(
-  handler: (context: Omit<ApiRequestContext, "auth">) => Promise<Response>,
+  handler: (context: Omit<ApiRequestContext, "auth">) => Promise<Response>
 ) {
   return apiHttpAction(handler as ApiHandler, { public: true });
 }
@@ -303,7 +328,11 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
     }
     return JSON.parse(text) as T;
   } catch {
-    throw new ApiError(400, "Invalid JSON in request body", "INVALID_REQUEST_BODY");
+    throw new ApiError(
+      400,
+      "Invalid JSON in request body",
+      "INVALID_REQUEST_BODY"
+    );
   }
 }
 
@@ -316,7 +345,7 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
  */
 export function parsePagination(
   query: Record<string, string>,
-  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
+  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 }
 ): { limit: number; cursor?: string } {
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 
@@ -341,7 +370,11 @@ export function parsePagination(
  * @param nextCursor - Cursor for the next page (if hasMore is true)
  * @returns Response with pagination metadata
  */
-export function paginatedResponse<T>(items: T[], hasMore: boolean, nextCursor?: string): Response {
+export function paginatedResponse<T>(
+  items: T[],
+  hasMore: boolean,
+  nextCursor?: string
+): Response {
   return apiResponse(200, {
     data: items,
     has_more: hasMore,
@@ -358,7 +391,7 @@ export function paginatedResponse<T>(items: T[], hasMore: boolean, nextCursor?: 
  */
 export function validateRequiredFields(
   body: Record<string, unknown>,
-  requiredFields: string[],
+  requiredFields: string[]
 ): void {
   const errors: Record<string, string[]> = {};
 
@@ -370,7 +403,12 @@ export function validateRequiredFields(
   }
 
   if (Object.keys(errors).length > 0) {
-    throw new ApiError(422, "Missing required fields", "VALIDATION_ERROR", errors);
+    throw new ApiError(
+      422,
+      "Missing required fields",
+      "VALIDATION_ERROR",
+      errors
+    );
   }
 }
 

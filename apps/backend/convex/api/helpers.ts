@@ -39,7 +39,11 @@ export const getMembership = internalQuery({
     if (!user || !organization) {
       return null;
     }
-    const membership = await resolveComponentMembershipForOrganization(ctx, user, organization);
+    const membership = await resolveComponentMembershipForOrganization(
+      ctx,
+      user,
+      organization
+    );
     if (!membership) {
       return null;
     }
@@ -95,7 +99,11 @@ export const getUserPermissions = internalQuery({
     if (!user || !organization) {
       return null;
     }
-    const membership = await resolveComponentMembershipForOrganization(ctx, user, organization);
+    const membership = await resolveComponentMembershipForOrganization(
+      ctx,
+      user,
+      organization
+    );
     if (!membership || membership.status !== "active") {
       return null;
     }
@@ -129,7 +137,8 @@ export const getOrganizationOwner = internalQuery({
 
     const members = await listComponentMembersByOrganization(ctx, organization);
     const ownerMembership = members.find(
-      (member) => member.role === "owner" && member.status === "active" && member.userId,
+      (member) =>
+        member.role === "owner" && member.status === "active" && member.userId
     );
 
     if (ownerMembership?.userId) {
@@ -137,7 +146,8 @@ export const getOrganizationOwner = internalQuery({
     }
 
     const adminMembership = members.find(
-      (member) => member.role === "admin" && member.status === "active" && member.userId,
+      (member) =>
+        member.role === "admin" && member.status === "active" && member.userId
     );
 
     if (!adminMembership?.userId) {
@@ -206,7 +216,7 @@ export const getUserOrganizationMemberships = internalQuery({
           userId: args.userId,
           organization: org,
         };
-      }),
+      })
     );
 
     return membershipsWithOrgs.filter((m) => m.organization !== null);

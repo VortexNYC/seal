@@ -526,7 +526,12 @@ export const getTransactionList = memberQuery({
   args: {
     slug: v.string(),
     statusFilter: v.optional(
-      v.union(v.literal("paid"), v.literal("open"), v.literal("void"), v.literal("all")),
+      v.union(
+        v.literal("paid"),
+        v.literal("open"),
+        v.literal("void"),
+        v.literal("all")
+      )
     ),
   },
   handler: async (ctx, args) => {
@@ -565,7 +570,7 @@ export const getTransactionList = memberQuery({
           paidAt: inv.paidAt,
           createdAt: inv.createdAt,
         };
-      }),
+      })
     );
 
     return transactions;
@@ -626,7 +631,7 @@ export const getActiveSubscriptions = memberQuery({
 
     // Filter to recurring payments with active retired provider subscriptions
     const recurring = configs.filter(
-      (c) => c.paymentType === "recurring" && c.retired_providerSubscriptionId,
+      (c) => c.paymentType === "recurring" && c.retired_providerSubscriptionId
     );
 
     const subscriptions = await Promise.all(
@@ -638,7 +643,10 @@ export const getActiveSubscriptions = memberQuery({
           ? await ctx.db
               .query("document_invoices")
               .withIndex("by_retired_provider_invoice", (q) =>
-                q.eq("retired_providerInvoiceId", config.retired_providerInvoiceId!),
+                q.eq(
+                  "retired_providerInvoiceId",
+                  config.retired_providerInvoiceId!
+                )
               )
               .first()
           : null;
@@ -655,10 +663,11 @@ export const getActiveSubscriptions = memberQuery({
           intervalCount: config.recurringConfig?.intervalCount ?? 1,
           endCondition: config.recurringConfig?.endCondition ?? "never",
           paymentStatus: config.paymentStatus ?? "pending",
-          retired_providerSubscriptionId: config.retired_providerSubscriptionId!,
+          retired_providerSubscriptionId:
+            config.retired_providerSubscriptionId!,
           createdAt: config.createdAt,
         };
-      }),
+      })
     );
 
     return subscriptions;

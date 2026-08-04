@@ -36,7 +36,7 @@ type OrganizationQueryCtx = {
 
 async function requireComponentMembership(
   ctx: OrganizationQueryCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ) {
   const organization = await ctx.db.get(organizationId);
   if (!organization) {
@@ -45,7 +45,7 @@ async function requireComponentMembership(
   const membership = await resolveComponentMembershipForOrganization(
     ctx,
     ctx.auth.user,
-    organization,
+    organization
   );
   if (!membership) {
     throw new ConvexError("No access to this organization");
@@ -70,7 +70,11 @@ export const getOrganization = authQuery({
       throw new ConvexError("Organization not found");
     }
 
-    const membership = await resolveComponentMembershipForOrganization(ctx, ctx.auth.user, org);
+    const membership = await resolveComponentMembershipForOrganization(
+      ctx,
+      ctx.auth.user,
+      org
+    );
     if (!membership) {
       throw new ConvexError("No access to this organization");
     }
@@ -91,7 +95,10 @@ export const getOrganizationMembers = authQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const { organization } = await requireComponentMembership(ctx, args.organizationId);
+    const { organization } = await requireComponentMembership(
+      ctx,
+      args.organizationId
+    );
     const members = await listComponentMembersByOrganization(ctx, organization);
 
     // Fetch user details for each member
@@ -117,7 +124,7 @@ export const getOrganizationMembers = authQuery({
           joinedAt: member.createdAt,
           permissions: [],
         };
-      }),
+      })
     );
 
     // Filter out null values and sort by role hierarchy (owner first, then admin, etc.)
@@ -140,7 +147,10 @@ export const getUserPermissions = authQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const { membership } = await requireComponentMembership(ctx, args.organizationId);
+    const { membership } = await requireComponentMembership(
+      ctx,
+      args.organizationId
+    );
 
     // Return detailed permission information
     return {
@@ -149,64 +159,100 @@ export const getUserPermissions = authQuery({
       isPrimary: ctx.auth.user.activeOrganizationId === args.organizationId,
       permissions: {
         // Organization management
-        canManageOrganization: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.ORG_MANAGE),
-        canViewSettings: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.ORG_SETTINGS_READ),
+        canManageOrganization: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_MANAGE
+        ),
+        canViewSettings: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_SETTINGS_READ
+        ),
         canUpdateSettings: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.ORG_SETTINGS_UPDATE,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_SETTINGS_UPDATE
         ),
 
         // Member management
-        canViewMembers: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_READ),
-        canInviteMembers: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE),
-        canRemoveMembers: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE),
+        canViewMembers: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_READ
+        ),
+        canInviteMembers: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE
+        ),
+        canRemoveMembers: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE
+        ),
         canUpdateRoles: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_UPDATE_ROLE,
+          DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_UPDATE_ROLE
         ),
 
         // Subscription
         canManageBilling: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE,
+          DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE
         ),
         canViewBilling: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_BILLING_READ,
+          DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_BILLING_READ
         ),
 
         // Documents
         canCreateDocuments: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_CREATE,
+          DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_CREATE
         ),
-        canSendDocuments: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_SEND),
+        canSendDocuments: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_SEND
+        ),
         canDeleteDocuments: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_DELETE,
+          DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_DELETE
         ),
 
         // Templates
         canCreateTemplates: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_CREATE,
+          DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_CREATE
         ),
         canManageTemplates: hasPermission(
           membership,
-          DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_UPDATE,
+          DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_UPDATE
         ),
 
         // API & Webhooks
-        canManageAPIKeys: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.API_CREATE),
-        canManageWebhooks: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.WEBHOOKS_CREATE),
+        canManageAPIKeys: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.API_CREATE
+        ),
+        canManageWebhooks: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.WEBHOOKS_CREATE
+        ),
 
         // Audit
-        canViewAudit: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.AUDIT_READ),
+        canViewAudit: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.AUDIT_READ
+        ),
 
         // Contacts
-        canViewContacts: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_VIEW),
-        canCreateContacts: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_CREATE),
-        canDeleteContacts: hasPermission(membership, DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_DELETE),
+        canViewContacts: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_VIEW
+        ),
+        canCreateContacts: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_CREATE
+        ),
+        canDeleteContacts: hasPermission(
+          membership,
+          DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_DELETE
+        ),
       },
     };
   },
@@ -220,7 +266,10 @@ export const getOrganizationMemberCount = authQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const { organization } = await requireComponentMembership(ctx, args.organizationId);
+    const { organization } = await requireComponentMembership(
+      ctx,
+      args.organizationId
+    );
     const members = await listComponentMembersByOrganization(ctx, organization);
 
     const activeMembers = members.filter((m) => m.status === "active");
@@ -252,7 +301,10 @@ export const getOrganizationMember = authQuery({
     memberId: v.string(),
   },
   handler: async (ctx, args) => {
-    const { organization } = await requireComponentMembership(ctx, args.organizationId);
+    const { organization } = await requireComponentMembership(
+      ctx,
+      args.organizationId
+    );
     const member = await getComponentMemberById(ctx, args.memberId);
     if (!member) {
       throw new ConvexError("Member not found");
@@ -272,12 +324,17 @@ export const getOrganizationMember = authQuery({
     }
 
     // Get custom role if assigned
-    let customRole: null | { id: string; name: string; permissions: string[] } = null;
+    let customRole: null | { id: string; name: string; permissions: string[] } =
+      null;
     if (organization.vortexAuthOrganizationId) {
-      const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
-        roleId: member.roleId as GenericId<"organization_roles">,
-        organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
-      });
+      const role = await ctx.runQuery(
+        components.vortexAuth.organizations.getRole,
+        {
+          roleId: member.roleId as GenericId<"organization_roles">,
+          organizationId:
+            organization.vortexAuthOrganizationId as GenericId<"organizations">,
+        }
+      );
       customRole = role
         ? {
             id: String(role._id),

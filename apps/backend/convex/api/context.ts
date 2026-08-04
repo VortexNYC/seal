@@ -203,9 +203,17 @@ export const MCP_OAUTH_RESOURCE_ID = "seal:mcp";
  */
 export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
   [API_SCOPES.DOCUMENTS_READ]: ["documents:view"],
-  [API_SCOPES.DOCUMENTS_WRITE]: ["documents:create", "documents:edit", "documents:delete"],
+  [API_SCOPES.DOCUMENTS_WRITE]: [
+    "documents:create",
+    "documents:edit",
+    "documents:delete",
+  ],
   [API_SCOPES.TEMPLATES_READ]: ["templates:view", "templates:read"],
-  [API_SCOPES.TEMPLATES_WRITE]: ["templates:create", "templates:edit", "templates:delete"],
+  [API_SCOPES.TEMPLATES_WRITE]: [
+    "templates:create",
+    "templates:edit",
+    "templates:delete",
+  ],
   [API_SCOPES.RECIPIENTS_READ]: ["documents:view"],
   [API_SCOPES.RECIPIENTS_WRITE]: ["documents:edit"],
   [API_SCOPES.SIGNATURES_READ]: ["documents:view", "audit:view"],
@@ -215,7 +223,11 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
   [API_SCOPES.SETTINGS_WRITE]: ["settings:edit"],
   [API_SCOPES.AUDIT_READ]: ["audit:view"],
   [API_SCOPES.CONTACTS_READ]: ["contacts:view"],
-  [API_SCOPES.CONTACTS_WRITE]: ["contacts:create", "contacts:edit", "contacts:delete"],
+  [API_SCOPES.CONTACTS_WRITE]: [
+    "contacts:create",
+    "contacts:edit",
+    "contacts:delete",
+  ],
 };
 
 /**
@@ -253,7 +265,11 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
  */
 function parseBearerToken(authHeader: string | null): string {
   if (!authHeader) {
-    throw new ApiError(401, "Missing Authorization header", "MISSING_AUTH_HEADER");
+    throw new ApiError(
+      401,
+      "Missing Authorization header",
+      "MISSING_AUTH_HEADER"
+    );
   }
 
   const [scheme, token] = authHeader.split(" ");
@@ -268,7 +284,7 @@ function parseBearerToken(authHeader: string | null): string {
   throw new ApiError(
     401,
     "Invalid Authorization format. Use: Bearer <token>",
-    "INVALID_AUTH_FORMAT",
+    "INVALID_AUTH_FORMAT"
   );
 }
 
@@ -288,7 +304,7 @@ async function buildAuthContext(
     authSubject: string;
     subjectType: "user" | "organization";
     clientIp?: string;
-  },
+  }
 ): Promise<ApiAuthContext> {
   // Step 4: Validate user has active membership in the organization
   const membership = await ctx.runQuery(internal.api.helpers.getMembership, {
@@ -300,21 +316,21 @@ async function buildAuthContext(
     throw new ApiError(
       403,
       "User is not an active member of the organization",
-      "ORGANIZATION_ACCESS_DENIED",
+      "ORGANIZATION_ACCESS_DENIED"
     );
   }
 
   // Check if organization allows API access
   const securitySettings = await ctx.runQuery(
     internal.organizations.queries.getSecuritySettingsInternal,
-    { organizationId: params.organizationId },
+    { organizationId: params.organizationId }
   );
 
   if (securitySettings.allowApiAccess === false) {
     throw new ApiError(
       403,
       "API access is disabled for this organization. An organization owner can enable it in Settings > Security.",
-      "API_ACCESS_DISABLED",
+      "API_ACCESS_DISABLED"
     );
   }
 
@@ -325,16 +341,19 @@ async function buildAuthContext(
       throw new ApiError(
         403,
         "Your IP address is not in the organization's allowlist.",
-        "IP_NOT_ALLOWED",
+        "IP_NOT_ALLOWED"
       );
     }
   }
 
   // Get user permissions
-  const permissionInfo = await ctx.runQuery(internal.api.helpers.getUserPermissions, {
-    userId: params.userId,
-    organizationId: params.organizationId,
-  });
+  const permissionInfo = await ctx.runQuery(
+    internal.api.helpers.getUserPermissions,
+    {
+      userId: params.userId,
+      organizationId: params.organizationId,
+    }
+  );
 
   const role = permissionInfo?.role ?? "member";
   const permissions = permissionInfo?.permissions ?? [];
@@ -362,7 +381,7 @@ async function buildAuthContext(
 export async function resolveApiAuth(
   ctx: ActionCtx,
   authHeader: string | null,
-  clientIp?: string,
+  clientIp?: string
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
 
@@ -372,7 +391,9 @@ export async function resolveApiAuth(
   const result = await resolveStoredApiKeyCredential({
     token,
     findByKeyPrefix: async (keyPrefix) =>
-      await ctx.runQuery(internal.api_keys.keys.getApiKeyByPrefix, { keyPrefix }),
+      await ctx.runQuery(internal.api_keys.keys.getApiKeyByPrefix, {
+        keyPrefix,
+      }),
   });
   if (!result.ok) {
     throw new ApiError(401, "Invalid or expired API key", "INVALID_API_KEY");
@@ -380,11 +401,18 @@ export async function resolveApiAuth(
   const apiKey = result.apiKey;
 
   // Tier check: Free-tier organizations cannot use the API
-  const { plan } = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
-    organizationId: apiKey.organizationId,
-  });
+  const { plan } = await ctx.runQuery(
+    internal.auth.subscription_helpers.checkProFeature,
+    {
+      organizationId: apiKey.organizationId,
+    }
+  );
   if (plan === "free") {
-    throw new ApiError(403, "API access requires a Professional plan", "API_ACCESS_DISABLED");
+    throw new ApiError(
+      403,
+      "API access requires a Professional plan",
+      "API_ACCESS_DISABLED"
+    );
   }
 
   return buildAuthContext(ctx, {
@@ -416,7 +444,7 @@ export async function resolveApiAuth(
 async function resolveMcpApiAuth(
   ctx: ActionCtx,
   token: string,
-  clientIp?: string,
+  clientIp?: string
 ): Promise<ApiAuthContext> {
   // verifyAccessToken throws on malformed / bad-signature / wrong-audience
   // tokens. Any such failure is an auth failure (401), not a server error (500).
@@ -465,7 +493,7 @@ async function resolveMcpApiAuth(
 export async function resolveAuthContext(
   ctx: ActionCtx,
   authHeader: string | null,
-  clientIp?: string,
+  clientIp?: string
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
 
@@ -486,7 +514,10 @@ export async function resolveAuthContext(
  * @param scope - The API scope to check
  * @returns Whether the user has permissions that satisfy the scope
  */
-export function canUserUseScope(userPermissions: readonly string[], scope: ApiScope): boolean {
+export function canUserUseScope(
+  userPermissions: readonly string[],
+  scope: ApiScope
+): boolean {
   const requiredPerms = SCOPE_PERMISSION_MAP[scope];
   if (!requiredPerms) {
     return false;
@@ -503,7 +534,9 @@ export function canUserUseScope(userPermissions: readonly string[], scope: ApiSc
  * @throws {ApiError} 403 - If scope is missing
  */
 /** Map Seal's auth types onto the package scope-authorization vocabulary. */
-function toPackageScopeAuthType(authType: ApiAuthType): "jwt" | "api_key" | "oauth" {
+function toPackageScopeAuthType(
+  authType: ApiAuthType
+): "jwt" | "api_key" | "oauth" {
   return authType === "mcp_oauth" ? "oauth" : authType;
 }
 
@@ -524,7 +557,11 @@ export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
   if (decision.allowed) {
     return;
   }
-  throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
+  throw new ApiError(
+    403,
+    `Missing required scope: ${scope}`,
+    "INSUFFICIENT_SCOPE"
+  );
 }
 
 /**
@@ -535,7 +572,10 @@ export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
  * @param scopes - Array of acceptable scopes
  * @throws {ApiError} 403 - If no scope matches
  */
-export function requireAnyScope(auth: ApiAuthContext, scopes: ApiScope[]): void {
+export function requireAnyScope(
+  auth: ApiAuthContext,
+  scopes: ApiScope[]
+): void {
   // Authorized if ANY required scope passes the canonical decision (each enforces
   // the token-scope ceiling + permission).
   const allowed = scopes.some(
@@ -548,13 +588,13 @@ export function requireAnyScope(auth: ApiAuthContext, scopes: ApiScope[]): void 
         requiredScope: scope,
         fullAccessRoles: [],
         canUserUseScope,
-      }).allowed,
+      }).allowed
   );
   if (!allowed) {
     throw new ApiError(
       403,
       `Missing required scope. Need one of: ${scopes.join(", ")}`,
-      "INSUFFICIENT_SCOPE",
+      "INSUFFICIENT_SCOPE"
     );
   }
 }
@@ -592,7 +632,9 @@ export interface ResolveMcpAuthArgs {
 
 type BetterAuthRuntime = {
   issuer: string;
-  verifier: ReturnType<typeof createBetterAuthApiTokenVerifierFromConvexAuthConfig>;
+  verifier: ReturnType<
+    typeof createBetterAuthApiTokenVerifierFromConvexAuthConfig
+  >;
 };
 
 let betterAuthRuntime: BetterAuthRuntime | null = null;
@@ -619,24 +661,11 @@ function getBetterAuthRuntime(): BetterAuthRuntime {
 
 function createApiAuthLookupAdapter(ctx: ActionCtx) {
   return createConvexApiAuthLookupAdapter({
-    runQuery: async (reference, args) => {
-      return await ctx.runQuery(
-        reference as
-          | typeof internal.apiAuth.getUserByIdentityForApiAuth
-          | typeof internal.apiAuth.getOrganizationAccessForApiAuth,
-        args as
-          | {
-              provider: string;
-              issuer: string;
-              subject: string;
-              tokenIdentifier: string;
-            }
-          | {
-              userId: string;
-              requestedOrganizationId: string | null;
-              organizationHintId: string | null;
-            },
-      );
+    runUserIdentityQuery: async (reference, args) => {
+      return await ctx.runQuery(reference, args);
+    },
+    runOrganizationAccessQuery: async (reference, args) => {
+      return await ctx.runQuery(reference, args);
     },
     refs: {
       getUserByIdentity: internal.apiAuth.getUserByIdentityForApiAuth,
@@ -650,19 +679,22 @@ async function authorizeMcpOrganizationAccess(
   args: {
     userId: Id<"users">;
     organizationId: Id<"organizations">;
-  },
+  }
 ): Promise<{ role: string; permissions: string[] } | null> {
   const membershipAccess = await ctx.runQuery(
     internal.apiAuth.getOrganizationMembershipAccessForApiAuth,
     {
       userId: args.userId,
       organizationId: args.organizationId,
-    },
+    }
   );
   if (!membershipAccess) {
     return null;
   }
-  return { role: membershipAccess.role, permissions: membershipAccess.permissions };
+  return {
+    role: membershipAccess.role,
+    permissions: membershipAccess.permissions,
+  };
 }
 
 /**
@@ -673,7 +705,7 @@ async function authorizeMcpOrganizationAccess(
  */
 export async function resolveMcpAuth(
   ctx: ActionCtx,
-  args: ResolveMcpAuthArgs,
+  args: ResolveMcpAuthArgs
 ): Promise<McpAuthContext> {
   try {
     const { issuer } = getBetterAuthRuntime();
@@ -703,7 +735,11 @@ export async function resolveMcpAuth(
     });
 
     if (authorized === null) {
-      throw new ApiError(403, "No active organization available", "ORGANIZATION_ACCESS_DENIED");
+      throw new ApiError(
+        403,
+        "No active organization available",
+        "ORGANIZATION_ACCESS_DENIED"
+      );
     }
 
     return {
@@ -715,7 +751,8 @@ export async function resolveMcpAuth(
       role: authorized.role,
       permissions: authorized.permissions,
       hasScope: (scope: string) => authorized.scopes.includes(scope),
-      hasPermission: (permission: string) => authorized.permissions.includes(permission),
+      hasPermission: (permission: string) =>
+        authorized.permissions.includes(permission),
     };
   } catch (error) {
     if (error instanceof ApiAuthError) {

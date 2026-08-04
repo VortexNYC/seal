@@ -4,14 +4,14 @@ import { type Infer, v } from "convex/values";
 export const organizationTypeTuple = v.union(
   v.literal("personal"),
   v.literal("group"),
-  v.literal("company"),
+  v.literal("company")
 );
 export type OrganizationType = Infer<typeof organizationTypeTuple>;
 
 export const organizationStatus = v.union(
   v.literal("active"),
   v.literal("suspended"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
 export type OrganizationStatus = Infer<typeof organizationStatus>;
 
@@ -33,7 +33,7 @@ export type BrandingSettings = Infer<typeof brandingSettingsValidator>;
 export const signingSettingsValidator = v.object({
   defaultAuthMethod: v.literal("email"), // Only "email" for v1
   allowedSignatureTypes: v.array(
-    v.union(v.literal("draw"), v.literal("type"), v.literal("upload")),
+    v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
   ),
   esignConsentText: v.optional(v.string()), // null = use Seal default
   defaultDeadlineDays: v.number(), // Default 30
@@ -80,7 +80,7 @@ export const organizationsTable = defineTable({
       aiEnabled: v.boolean(), // Master switch for all AI features
       aiAutoAnalyze: v.boolean(), // Auto-run AI pipeline on document upload
       aiShowRedlinesToSigners: v.boolean(), // Show annotations to recipients on signing page
-    }),
+    })
   ),
 
   // Branding settings for signing pages and emails

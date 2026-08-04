@@ -16,17 +16,21 @@ export const getProfile = createServerFn().handler(async () => {
   // ... rest of handler
 });
 
-export const updateProfile = createServerFn({ method: "POST" }).handler(async ({ data }) => {
-  const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
-  // ... rest of handler
-});
+export const updateProfile = createServerFn({ method: "POST" }).handler(
+  async ({ data }) => {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    // ... rest of handler
+  }
+);
 
-export const deleteAccount = createServerFn({ method: "POST" }).handler(async () => {
-  const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
-  // ... rest of handler
-});
+export const deleteAccount = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    // ... rest of handler
+  }
+);
 ```
 
 ## Good Example: Authentication Middleware
@@ -68,24 +72,26 @@ export const requireAuthMiddleware = createMiddleware()
 
 ```tsx
 // lib/middleware/logging.ts
-export const loggingMiddleware = createMiddleware().server(async ({ next, request }) => {
-  const start = Date.now();
-  const requestId = crypto.randomUUID();
+export const loggingMiddleware = createMiddleware().server(
+  async ({ next, request }) => {
+    const start = Date.now();
+    const requestId = crypto.randomUUID();
 
-  console.log(`[${requestId}] ${request.method} ${request.url}`);
+    console.log(`[${requestId}] ${request.method} ${request.url}`);
 
-  try {
-    const result = await next({
-      context: { requestId },
-    });
+    try {
+      const result = await next({
+        context: { requestId },
+      });
 
-    console.log(`[${requestId}] Completed in ${Date.now() - start}ms`);
-    return result;
-  } catch (error) {
-    console.error(`[${requestId}] Error:`, error);
-    throw error;
+      console.log(`[${requestId}] Completed in ${Date.now() - start}ms`);
+      return result;
+    } catch (error) {
+      console.error(`[${requestId}] Error:`, error);
+      throw error;
+    }
   }
-});
+);
 ```
 
 ## Good Example: Global Middleware Configuration
@@ -110,27 +116,29 @@ import { createMiddleware } from "@tanstack/react-start";
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
-export const rateLimitMiddleware = createMiddleware().server(async ({ next, request }) => {
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute
-  const maxRequests = 100;
+export const rateLimitMiddleware = createMiddleware().server(
+  async ({ next, request }) => {
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 minute
+    const maxRequests = 100;
 
-  let record = rateLimitStore.get(ip);
+    let record = rateLimitStore.get(ip);
 
-  if (!record || record.resetAt < now) {
-    record = { count: 0, resetAt: now + windowMs };
+    if (!record || record.resetAt < now) {
+      record = { count: 0, resetAt: now + windowMs };
+    }
+
+    record.count++;
+    rateLimitStore.set(ip, record);
+
+    if (record.count > maxRequests) {
+      throw new Response("Too Many Requests", { status: 429 });
+    }
+
+    return next();
   }
-
-  record.count++;
-  rateLimitStore.set(ip, record);
-
-  if (record.count > maxRequests) {
-    throw new Response("Too Many Requests", { status: 429 });
-  }
-
-  return next();
-});
+);
 ```
 
 ## Middleware Execution Order

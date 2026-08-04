@@ -25,7 +25,10 @@ export interface ChangelogManifestEntry {
 
 interface ChangelogManifest {
   entries: Array<
-    Omit<ChangelogManifestEntry, "breakingChanges" | "features" | "fixes" | "improvements"> & {
+    Omit<
+      ChangelogManifestEntry,
+      "breakingChanges" | "features" | "fixes" | "improvements"
+    > & {
       breakingChanges?: string[];
       features?: ChangelogFeature[];
       fixes?: string[];
@@ -45,7 +48,7 @@ const changelogEntries = [...changelogManifest.entries]
   }))
   .sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
 const changelogEntriesBySlug = Object.fromEntries(
-  changelogEntries.map((entry) => [entry.slug, entry]),
+  changelogEntries.map((entry) => [entry.slug, entry])
 );
 
 export function getChangelogEntries(): ChangelogManifestEntry[] {

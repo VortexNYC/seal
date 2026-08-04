@@ -1,11 +1,12 @@
 import { ArrowRight, Check, Circle, CreditCard, FileText } from "lucide-react";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
+
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/content/types";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -127,10 +128,16 @@ function AiReviewMockup() {
                 }`}
               />
               <div>
-                <p className="text-foreground text-sm font-medium">{clause.title}</p>
-                <p className="text-muted-foreground mt-0.5 text-xs">{clause.detail}</p>
+                <p className="text-foreground text-sm font-medium">
+                  {clause.title}
+                </p>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {clause.detail}
+                </p>
                 {clause.cta && (
-                  <p className="text-primary mt-1.5 text-xs font-medium">{clause.cta}</p>
+                  <p className="text-primary mt-1.5 text-xs font-medium">
+                    {clause.cta}
+                  </p>
                 )}
               </div>
             </div>
@@ -162,7 +169,9 @@ const SIGNERS = [
 ];
 
 function SigningMockup() {
-  const [phase, setPhase] = useState<"waiting" | "signing1" | "signing2" | "complete">("waiting");
+  const [phase, setPhase] = useState<
+    "waiting" | "signing1" | "signing2" | "complete"
+  >("waiting");
 
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
@@ -192,7 +201,9 @@ function SigningMockup() {
         </span>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-300 ${
-            phase === "complete" ? "bg-success/15 text-success" : "bg-primary/10 text-primary"
+            phase === "complete"
+              ? "bg-success/15 text-success"
+              : "bg-primary/10 text-primary"
           }`}
         >
           <Circle aria-hidden="true" className="size-1.5 fill-current" />
@@ -211,7 +222,9 @@ function SigningMockup() {
           {/* Signer 1 */}
           <div
             className={`mb-2 rounded-lg border p-3 transition-all duration-500 ${
-              phase === "signing1" || phase === "signing2" || phase === "complete"
+              phase === "signing1" ||
+              phase === "signing2" ||
+              phase === "complete"
                 ? "border-success/30 bg-success/5"
                 : "border-border bg-card"
             }`}
@@ -219,16 +232,22 @@ function SigningMockup() {
             <div className="flex items-center justify-between">
               <span
                 className={`font-serif text-base italic transition-all duration-500 ${
-                  phase === "signing1" || phase === "signing2" || phase === "complete"
+                  phase === "signing1" ||
+                  phase === "signing2" ||
+                  phase === "complete"
                     ? "text-foreground animate-fade-in"
                     : "text-muted-foreground/30"
                 }`}
               >
-                {phase === "signing1" || phase === "signing2" || phase === "complete"
+                {phase === "signing1" ||
+                phase === "signing2" ||
+                phase === "complete"
                   ? "✓ Sarah Chen"
                   : "Sarah Chen"}
               </span>
-              {(phase === "signing1" || phase === "signing2" || phase === "complete") && (
+              {(phase === "signing1" ||
+                phase === "signing2" ||
+                phase === "complete") && (
                 <span className="bg-success text-success-foreground animate-badge-pop rounded px-2 py-0.5 text-xs font-semibold uppercase">
                   Signed
                 </span>
@@ -252,7 +271,9 @@ function SigningMockup() {
                     : "text-muted-foreground/30"
                 }`}
               >
-                {phase === "signing2" || phase === "complete" ? "✓ Marcus Lee" : "Marcus Lee"}
+                {phase === "signing2" || phase === "complete"
+                  ? "✓ Marcus Lee"
+                  : "Marcus Lee"}
               </span>
               {(phase === "signing2" || phase === "complete") && (
                 <span className="bg-success text-success-foreground animate-badge-pop rounded px-2 py-0.5 text-xs font-semibold uppercase">
@@ -354,10 +375,12 @@ function DevApiMockup() {
     <div className="border-border bg-card w-full overflow-hidden rounded-xl border font-mono text-xs shadow-lg">
       {/* Terminal tab bar */}
       <div className="border-border bg-muted/30 flex items-center gap-1.5 border-b px-4 py-2.5">
-        <span className="size-2.5 rounded-full bg-destructive/70" />
-        <span className="size-2.5 rounded-full bg-warning/70" />
-        <span className="size-2.5 rounded-full bg-success/70" />
-        <span className="text-muted-foreground ml-3 text-xs">seal api — zsh</span>
+        <span className="bg-destructive/70 size-2.5 rounded-full" />
+        <span className="bg-warning/70 size-2.5 rounded-full" />
+        <span className="bg-success/70 size-2.5 rounded-full" />
+        <span className="text-muted-foreground ml-3 text-xs">
+          seal api — zsh
+        </span>
       </div>
 
       <div className="min-h-[220px] space-y-1 p-5">
@@ -367,7 +390,11 @@ function DevApiMockup() {
             <p
               className={`mb-1 ${s.type === "request" ? "text-primary" : s.type === "response" ? "text-success" : "text-warning"}`}
             >
-              {s.type === "request" ? "$ curl" : s.type === "response" ? "←" : "⚡"}{" "}
+              {s.type === "request"
+                ? "$ curl"
+                : s.type === "response"
+                  ? "←"
+                  : "⚡"}{" "}
               <span className="text-foreground/70">{s.label}</span>
             </p>
             <div className="space-y-0.5 pl-4">
@@ -385,7 +412,11 @@ function DevApiMockup() {
           <p
             className={`mb-1 ${current.type === "request" ? "text-primary" : current.type === "response" ? "text-success" : "text-warning"}`}
           >
-            {current.type === "request" ? "$ curl" : current.type === "response" ? "←" : "⚡"}{" "}
+            {current.type === "request"
+              ? "$ curl"
+              : current.type === "response"
+                ? "←"
+                : "⚡"}{" "}
             <span className="text-foreground">{current.label}</span>
           </p>
           <div className="space-y-0.5 pl-4">
@@ -420,7 +451,9 @@ function DevApiMockup() {
             />
           ))}
         </div>
-        <span className="text-muted-foreground text-xs">REST API · Full OpenAPI spec</span>
+        <span className="text-muted-foreground text-xs">
+          REST API · Full OpenAPI spec
+        </span>
       </div>
     </div>
   );
@@ -465,7 +498,9 @@ function PaymentsMockup() {
           <div className="bg-primary/15 flex size-5 items-center justify-center rounded">
             <CreditCard aria-hidden="true" className="text-primary size-3" />
           </div>
-          <span className="text-foreground text-sm font-medium">Payment — Service Agreement</span>
+          <span className="text-foreground text-sm font-medium">
+            Payment — Service Agreement
+          </span>
         </div>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-500 ${
@@ -483,9 +518,13 @@ function PaymentsMockup() {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-foreground text-sm font-medium">ACME Corp</p>
-            <p className="text-muted-foreground text-xs">Signed · Mar 3, 2026</p>
+            <p className="text-muted-foreground text-xs">
+              Signed · Mar 3, 2026
+            </p>
           </div>
-          <span className="text-foreground text-sm font-semibold">$4,800.00</span>
+          <span className="text-foreground text-sm font-semibold">
+            $4,800.00
+          </span>
         </div>
 
         {/* Progress bar */}
@@ -545,7 +584,9 @@ function PaymentsMockup() {
       </div>
 
       <div className="border-border flex items-center justify-between border-t px-5 py-3">
-        <span className="text-muted-foreground text-xs">Auto-invoiced on completion</span>
+        <span className="text-muted-foreground text-xs">
+          Auto-invoiced on completion
+        </span>
         <span className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium">
           View invoice <ArrowRight aria-hidden="true" className="size-3" />
         </span>
@@ -649,7 +690,10 @@ export function StaticFeatures() {
                   {section.bullets && (
                     <ul className="mt-6 space-y-2.5">
                       {section.bullets.map((bullet) => (
-                        <li className="flex items-center gap-3 text-sm" key={bullet}>
+                        <li
+                          className="flex items-center gap-3 text-sm"
+                          key={bullet}
+                        >
                           <span className="bg-primary size-1.5 shrink-0 rounded-full" />
                           <span className="text-foreground">{bullet}</span>
                         </li>
@@ -677,8 +721,13 @@ const GRID_LAYOUTS: Record<string, string> = {
   alternating: "sm:grid-cols-1 max-w-3xl",
 };
 
-export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock }) {
-  const gridCols = GRID_LAYOUTS[block.layout ?? ""] ?? "sm:grid-cols-2 lg:grid-cols-3";
+export function FeaturesBlockComponent({
+  block,
+}: {
+  block: FeaturesSectionBlock;
+}) {
+  const gridCols =
+    GRID_LAYOUTS[block.layout ?? ""] ?? "sm:grid-cols-2 lg:grid-cols-3";
 
   return (
     <section className="relative py-24 sm:py-32">
@@ -696,7 +745,9 @@ export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock 
               </h2>
             )}
             {block.description && (
-              <p className="text-muted-foreground text-lg text-pretty">{block.description}</p>
+              <p className="text-muted-foreground text-lg text-pretty">
+                {block.description}
+              </p>
             )}
           </div>
         )}
@@ -709,9 +760,13 @@ export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock 
                     <span className="text-2xl">{feature.icon}</span>
                   </div>
                 )}
-                <h3 className="text-foreground mb-3 text-xl font-semibold">{feature.title}</h3>
+                <h3 className="text-foreground mb-3 text-xl font-semibold">
+                  {feature.title}
+                </h3>
                 {feature.description && (
-                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
                 )}
               </div>
             </div>

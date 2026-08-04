@@ -72,16 +72,17 @@ export function useFieldPlacement({
   signaturesByFieldId,
   paymentConfigByFieldId,
 }: UseFieldPlacementOptions) {
-  const [draggingFieldType, setDraggingFieldType] = useState<FieldType | null>(null);
+  const [draggingFieldType, setDraggingFieldType] = useState<FieldType | null>(
+    null
+  );
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [showFieldDeleteDialog, setShowFieldDeleteDialog] = useState(false);
 
   // Recipient selector for field assignment after drop
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
-  const [selectedRecipientId, setSelectedRecipientId] = useState<Id<"document_recipients"> | null>(
-    null,
-  );
+  const [selectedRecipientId, setSelectedRecipientId] =
+    useState<Id<"document_recipients"> | null>(null);
   const [pendingFieldData, setPendingFieldData] = useState<{
     fieldType: FieldType;
     x: number;
@@ -93,21 +94,25 @@ export function useFieldPlacement({
 
   // Field options dialog for checkbox/dropdown/radio configuration
   const [showFieldOptions, setShowFieldOptions] = useState(false);
-  const [pendingFieldOptions, setPendingFieldOptions] = useState<FieldOptionsConfig | null>(null);
+  const [pendingFieldOptions, setPendingFieldOptions] =
+    useState<FieldOptionsConfig | null>(null);
   const [pendingFieldName, setPendingFieldName] = useState<string | null>(null);
 
   // Field properties dialog
   const [showFieldProperties, setShowFieldProperties] = useState(false);
-  const [fieldPropertiesId, setFieldPropertiesId] = useState<string | null>(null);
+  const [fieldPropertiesId, setFieldPropertiesId] = useState<string | null>(
+    null
+  );
 
   // Payment config modal
   const [showPaymentConfigModal, setShowPaymentConfigModal] = useState(false);
-  const [paymentConfigFieldId, setPaymentConfigFieldId] = useState<Id<"signature_fields"> | null>(
-    null,
-  );
+  const [paymentConfigFieldId, setPaymentConfigFieldId] =
+    useState<Id<"signature_fields"> | null>(null);
 
   const createField = useMutation(api.signature_fields.mutations.createField);
-  const repositionField = useMutation(api.signature_fields.mutations.repositionField);
+  const repositionField = useMutation(
+    api.signature_fields.mutations.repositionField
+  );
   const deleteField = useMutation(api.signature_fields.mutations.deleteField);
 
   // SEA-91: Sync database fields to local state, including signature and payment data
@@ -123,7 +128,8 @@ export function useFieldPlacement({
       recipientId: field.recipientId ?? undefined,
       label: field.label,
       properties: field.properties ?? undefined,
-      paymentTotalCents: paymentConfigByFieldId.get(field._id)?.totalAmountCents,
+      paymentTotalCents: paymentConfigByFieldId.get(field._id)
+        ?.totalAmountCents,
       signatureData: (() => {
         const sd = signaturesByFieldId.get(field._id);
         if (!sd) return undefined;
@@ -189,7 +195,11 @@ export function useFieldPlacement({
   };
 
   const fieldTypeRequiresOptions = (fieldType: FieldType): boolean => {
-    return fieldType === "checkbox" || fieldType === "dropdown" || fieldType === "radio";
+    return (
+      fieldType === "checkbox" ||
+      fieldType === "dropdown" ||
+      fieldType === "radio"
+    );
   };
 
   const handleFieldDragOver = (e: React.DragEvent) => {
@@ -205,7 +215,7 @@ export function useFieldPlacement({
     const signers = recipients.filter((r) => r.role === "signer");
     if (signers.length === 0) {
       toast.error(
-        "Please add at least one signer before placing fields. Approvers and viewers cannot have fields assigned.",
+        "Please add at least one signer before placing fields. Approvers and viewers cannot have fields assigned."
       );
       setDraggingFieldType(null);
       return;
@@ -223,7 +233,8 @@ export function useFieldPlacement({
     }
 
     const pageRect = targetPageElement.getBoundingClientRect();
-    const { width: widthPixels, height: heightPixels } = FIELD_DIMENSIONS[fieldType];
+    const { width: widthPixels, height: heightPixels } =
+      FIELD_DIMENSIONS[fieldType];
 
     const currentScale = pageRect.width / pdfWidth;
     const scaledFieldWidth = widthPixels * currentScale;
@@ -259,7 +270,7 @@ export function useFieldPlacement({
 
   const createFieldWithOptions = async (
     optionsConfig: FieldOptionsConfig | null,
-    fieldName?: string | null,
+    fieldName?: string | null
   ) => {
     if (!pendingFieldData || !selectedRecipientId) return;
 
@@ -281,7 +292,8 @@ export function useFieldPlacement({
         finalHeight = (heightPixels / pdfHeight) * 100;
       }
 
-      const label = fieldName || formatFieldTypeLabel(pendingFieldData.fieldType);
+      const label =
+        fieldName || formatFieldTypeLabel(pendingFieldData.fieldType);
 
       const fieldId = await createField({
         documentId,
@@ -319,7 +331,8 @@ export function useFieldPlacement({
       setPendingFieldOptions(null);
       setPendingFieldName(null);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create field";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create field";
       toast.error(errorMessage);
       setDraggingFieldType(null);
     }
@@ -359,10 +372,12 @@ export function useFieldPlacement({
     x: number,
     y: number,
     width: number,
-    height: number,
+    height: number
   ) => {
     setPlacedFields((prev) =>
-      prev.map((field) => (field.id === fieldId ? { ...field, x, y, width, height } : field)),
+      prev.map((field) =>
+        field.id === fieldId ? { ...field, x, y, width, height } : field
+      )
     );
 
     try {
@@ -374,7 +389,8 @@ export function useFieldPlacement({
         height,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update field";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update field";
       toast.error(errorMessage);
       await refetchFields();
     }
@@ -393,7 +409,8 @@ export function useFieldPlacement({
       await refetchFields();
       toast.success("Field deleted");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete field";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete field";
       toast.error(errorMessage);
     }
   }, [selectedFieldId, deleteField, refetchFields]);

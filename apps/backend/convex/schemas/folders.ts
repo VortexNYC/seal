@@ -1,10 +1,16 @@
 import { defineTable } from "convex/server";
 import { type Infer, v } from "convex/values";
 
-export const folderTypeTuple = v.union(v.literal("document"), v.literal("template"));
+export const folderTypeTuple = v.union(
+  v.literal("document"),
+  v.literal("template")
+);
 export type FolderType = Infer<typeof folderTypeTuple>;
 
-export const folderVisibilityTuple = v.union(v.literal("everyone"), v.literal("admin"));
+export const folderVisibilityTuple = v.union(
+  v.literal("everyone"),
+  v.literal("admin")
+);
 export type FolderVisibility = Infer<typeof folderVisibilityTuple>;
 
 export const foldersTable = defineTable({

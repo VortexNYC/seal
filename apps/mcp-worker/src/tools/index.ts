@@ -18,7 +18,10 @@ import { registerWebhookTools } from "./webhooks";
 /**
  * Registers all tools with the MCP server.
  */
-export function registerAllTools(server: McpServer, client: SealApiClient): void {
+export function registerAllTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   registerAccountTools(server, client);
   registerAnalyticsTools(server, client);
   registerAuditTools(server, client);

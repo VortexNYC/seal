@@ -84,7 +84,8 @@ export function InviteMemberDialog({
       });
       onOpenChange(false);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to send invitation";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send invitation";
       form.setError("root", { message: errorMessage });
       toast.error("Failed to send invitation", { description: errorMessage });
     }
@@ -98,12 +99,17 @@ export function InviteMemberDialog({
         <DialogHeader>
           <DialogTitle>Invite Team Member</DialogTitle>
           <DialogDescription>
-            Send an invitation to join this workspace. They'll receive an email with instructions.
+            Send an invitation to join this workspace. They'll receive an email
+            with instructions.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4" noValidate>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4 py-4"
+            noValidate
+          >
             {rootError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -118,7 +124,11 @@ export function InviteMemberDialog({
                 <FormItem>
                   <FormLabel>Email address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="colleague@example.com" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="colleague@example.com"
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     We'll send them an invitation to join your workspace
@@ -134,7 +144,10 @@ export function InviteMemberDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />

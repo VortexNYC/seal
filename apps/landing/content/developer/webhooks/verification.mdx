@@ -16,8 +16,8 @@ Without signature verification, anyone who knows your webhook URL could send fak
 - **Security**: Protection against replay attacks
 
 <Callout type="warn">
-  **Security Critical**: Never process webhook events without verifying the signature. Unverified
-  webhooks are a security vulnerability.
+  **Security Critical**: Never process webhook events without verifying the
+  signature. Unverified webhooks are a security vulnerability.
 </Callout>
 
 ## How Signatures Work
@@ -40,7 +40,7 @@ function verifyWebhookSignature(
   signature: string,
   eventId: string,
   timestamp: string,
-  secret: string,
+  secret: string
 ): boolean {
   const signedContent = `${eventId}.${timestamp}.${payload}`;
   const expectedSignature = `v1=${createHmac("sha256", secret)
@@ -51,28 +51,41 @@ function verifyWebhookSignature(
     return false;
   }
 
-  return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  return timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
 }
 
 // Usage in Express
-app.post("/webhooks/seal", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["x-seal-signature"] as string;
-  const eventId = req.headers["x-seal-event-id"] as string;
-  const timestamp = req.headers["x-seal-timestamp"] as string;
-  const payload = req.body.toString("utf8");
+app.post(
+  "/webhooks/seal",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const signature = req.headers["x-seal-signature"] as string;
+    const eventId = req.headers["x-seal-event-id"] as string;
+    const timestamp = req.headers["x-seal-timestamp"] as string;
+    const payload = req.body.toString("utf8");
 
-  if (
-    !verifyWebhookSignature(payload, signature, eventId, timestamp, process.env.WEBHOOK_SECRET!)
-  ) {
-    return res.status(401).send("Invalid signature");
+    if (
+      !verifyWebhookSignature(
+        payload,
+        signature,
+        eventId,
+        timestamp,
+        process.env.WEBHOOK_SECRET!
+      )
+    ) {
+      return res.status(401).send("Invalid signature");
+    }
+
+    // Process event
+    const event = JSON.parse(payload);
+    // ...
+
+    res.status(200).send("OK");
   }
-
-  // Process event
-  const event = JSON.parse(payload);
-  // ...
-
-  res.status(200).send("OK");
-});
+);
 ```
 
 ### Python
@@ -302,18 +315,32 @@ function verifyWithFallback(
   payload: string,
   signature: string,
   eventId: string,
-  timestamp: string,
+  timestamp: string
 ): boolean {
   const currentSecret = process.env.WEBHOOK_SECRET!;
   const previousSecret = process.env.WEBHOOK_SECRET_OLD;
 
-  if (verifyWebhookSignature(payload, signature, eventId, timestamp, currentSecret)) {
+  if (
+    verifyWebhookSignature(
+      payload,
+      signature,
+      eventId,
+      timestamp,
+      currentSecret
+    )
+  ) {
     return true;
   }
 
   if (
     previousSecret &&
-    verifyWebhookSignature(payload, signature, eventId, timestamp, previousSecret)
+    verifyWebhookSignature(
+      payload,
+      signature,
+      eventId,
+      timestamp,
+      previousSecret
+    )
   ) {
     console.warn("Webhook verified with old secret - update sender");
     return true;
@@ -351,7 +378,7 @@ function debugSignature(
   receivedSignature: string,
   eventId: string,
   timestamp: string,
-  secret: string,
+  secret: string
 ) {
   const signedContent = `${eventId}.${timestamp}.${payload}`;
   const expectedSignature = `v1=${createHmac("sha256", secret)

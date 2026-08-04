@@ -9,8 +9,8 @@ import rag from "@convex-dev/rag/convex.config";
 import rateLimiter from "@convex-dev/rate-limiter/convex.config";
 import workflow from "@convex-dev/workflow/convex.config";
 import workpool from "@convex-dev/workpool/convex.config";
-import vortexAuth from "@vortexnyc/auth/convex.config.js";
 import posthog from "@posthog/convex/convex.config.js";
+import vortexAuth from "@vortexnyc/auth/convex.config.js";
 import timeline from "convex-timeline/convex.config";
 import { defineApp } from "convex/server";
 import { v } from "convex/values";
@@ -32,7 +32,8 @@ app.use(posthog, {
     POSTHOG_PROJECT_TOKEN: app.env.POSTHOG_PROJECT_TOKEN,
     POSTHOG_HOST: app.env.POSTHOG_HOST,
     POSTHOG_PERSONAL_API_KEY: app.env.POSTHOG_PERSONAL_API_KEY,
-    POSTHOG_FLAGS_POLLING_INTERVAL_SECONDS: app.env.POSTHOG_FLAGS_POLLING_INTERVAL_SECONDS,
+    POSTHOG_FLAGS_POLLING_INTERVAL_SECONDS:
+      app.env.POSTHOG_FLAGS_POLLING_INTERVAL_SECONDS,
   },
 });
 app.use(actionCache);

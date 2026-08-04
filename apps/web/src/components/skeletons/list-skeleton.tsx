@@ -40,7 +40,9 @@ export function ListSkeleton({
           {showAvatar && <Skeleton className="h-10 w-10 rounded-full" />}
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-[200px] max-w-full" />
-            {showSecondaryText && <Skeleton className="h-3 w-[160px] max-w-full" />}
+            {showSecondaryText && (
+              <Skeleton className="h-3 w-[160px] max-w-full" />
+            )}
           </div>
         </div>
       ))}

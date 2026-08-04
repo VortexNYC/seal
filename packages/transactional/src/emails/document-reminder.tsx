@@ -21,7 +21,10 @@ interface ReminderMeta {
   badgeLabel: string;
 }
 
-function getReminderMeta(expiresAt: number | undefined, reminderCount: number): ReminderMeta {
+function getReminderMeta(
+  expiresAt: number | undefined,
+  reminderCount: number
+): ReminderMeta {
   const expirationDate = expiresAt
     ? new Date(expiresAt).toLocaleDateString("en-US", {
         weekday: "long",
@@ -30,7 +33,9 @@ function getReminderMeta(expiresAt: number | undefined, reminderCount: number): 
         day: "numeric",
       })
     : null;
-  const isUrgent = expiresAt ? expiresAt - Date.now() < URGENT_REMINDER_WINDOW_MS : false;
+  const isUrgent = expiresAt
+    ? expiresAt - Date.now() < URGENT_REMINDER_WINDOW_MS
+    : false;
   const reminderSuffix = reminderCount > 1 ? ` #${reminderCount}` : "";
 
   return {
@@ -40,13 +45,18 @@ function getReminderMeta(expiresAt: number | undefined, reminderCount: number): 
   };
 }
 
-function ReminderBadge({ isUrgent, badgeLabel }: Pick<ReminderMeta, "isUrgent" | "badgeLabel">) {
+function ReminderBadge({
+  isUrgent,
+  badgeLabel,
+}: Pick<ReminderMeta, "isUrgent" | "badgeLabel">) {
   return (
     <Section className="mb-[24px] text-center">
       <div
         style={{
           display: "inline-block",
-          backgroundColor: isUrgent ? `${status.destructive}14` : email.warningSurface,
+          backgroundColor: isUrgent
+            ? `${status.destructive}14`
+            : email.warningSurface,
           border: `1px solid ${isUrgent ? `${status.destructive}40` : `${email.warning}60`}`,
           borderRadius: "9999px",
           padding: "8px 16px",
@@ -122,7 +132,9 @@ function ReminderMessageSection({
       >
         &ldquo;{customMessage}&rdquo;
       </Text>
-      <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}>
+      <Text
+        style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}
+      >
         &mdash; {senderName}
       </Text>
     </Section>
@@ -139,7 +151,10 @@ export function DocumentReminder({
   reminderCount = 1,
 }: DocumentReminderProps) {
   const previewText = `Reminder: "${documentName}" is waiting for your signature`;
-  const { expirationDate, isUrgent, badgeLabel } = getReminderMeta(expiresAt, reminderCount);
+  const { expirationDate, isUrgent, badgeLabel } = getReminderMeta(
+    expiresAt,
+    reminderCount
+  );
 
   return (
     <EmailLayout
@@ -153,8 +168,9 @@ export function DocumentReminder({
         <Text style={emailStyles.bodyText}>Hello {recipientName},</Text>
 
         <Text style={emailStyles.bodyTextMuted}>
-          This is a reminder that <strong style={emailStyles.strong}>{senderName}</strong> is
-          waiting for your signature on the following document:
+          This is a reminder that{" "}
+          <strong style={emailStyles.strong}>{senderName}</strong> is waiting
+          for your signature on the following document:
         </Text>
 
         <ReminderDocumentCard
@@ -163,7 +179,10 @@ export function DocumentReminder({
           isUrgent={isUrgent}
         />
 
-        <ReminderMessageSection customMessage={customMessage} senderName={senderName} />
+        <ReminderMessageSection
+          customMessage={customMessage}
+          senderName={senderName}
+        />
 
         {/* CTA Button */}
         <Section className="my-[32px] text-center">
@@ -172,10 +191,16 @@ export function DocumentReminder({
           </Button>
         </Section>
 
-        <Text style={emailStyles.smallText}>Or copy and paste this link into your browser:</Text>
+        <Text style={emailStyles.smallText}>
+          Or copy and paste this link into your browser:
+        </Text>
         <Link
           href={signingUrl}
-          style={{ fontSize: "14px", color: emailStyles.linkColor, wordBreak: "break-all" }}
+          style={{
+            fontSize: "14px",
+            color: emailStyles.linkColor,
+            wordBreak: "break-all",
+          }}
         >
           {signingUrl}
         </Link>

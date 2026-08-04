@@ -247,7 +247,10 @@ export function hasPermission(member: AuthMember, permission: string): boolean {
  * Check if user has specific role or higher
  */
 /** Returns true if the member's role is at or above the required level. */
-export function hasRole(member: AuthMember, requiredRole: OrganizationMemberRole): boolean {
+export function hasRole(
+  member: AuthMember,
+  requiredRole: OrganizationMemberRole
+): boolean {
   const userLevel = ROLE_HIERARCHY[member.role] || 0;
   const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
   return userLevel >= requiredLevel;
@@ -257,7 +260,10 @@ export function hasRole(member: AuthMember, requiredRole: OrganizationMemberRole
  * Check if user can access specific organization
  */
 /** Returns true if the member can access the given organization. */
-export function canAccessOrganization(member: AuthMember, targetOrgId: string): boolean {
+export function canAccessOrganization(
+  member: AuthMember,
+  targetOrgId: string
+): boolean {
   return member.organizationId === targetOrgId;
 }
 
@@ -428,7 +434,10 @@ export function canAccessAuditLogs(member: AuthMember): boolean {
  * Check if user can manage subscription/billing
  */
 export function canManageSubscription(member: AuthMember): boolean {
-  return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE);
+  return hasPermission(
+    member,
+    DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE
+  );
 }
 
 /**
@@ -453,7 +462,7 @@ export function canManageMembers(member: AuthMember): boolean {
  */
 export function getHighestPermissionLevel(
   member: AuthMember,
-  domain: "documents" | "templates" | "signatures" | "webhooks" | "api",
+  domain: "documents" | "templates" | "signatures" | "webhooks" | "api"
 ): "none" | "read" | "write" | "delete" {
   const permissions = getEffectivePermissions(member);
 

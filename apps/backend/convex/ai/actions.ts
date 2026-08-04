@@ -20,17 +20,23 @@ export const analyzeDocument = action({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new ConvexError("Not authenticated");
 
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
     if (!document) throw new ConvexError("Document not found");
 
     const userId = identity.subject;
 
     // Check for existing thread
-    const existingThread = await ctx.runQuery(internal.ai.threadQueries.getThreadByDocument, {
-      documentId: args.documentId,
-    });
+    const existingThread = await ctx.runQuery(
+      internal.ai.threadQueries.getThreadByDocument,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     let threadId: string;
 
@@ -56,12 +62,15 @@ export const analyzeDocument = action({
     // Save the prompt and schedule generation
     const prompt = `Analyze the document with ID "${args.documentId}" and detect all form fields that should be placed on it. The document is named "${document.name}".`;
 
-    const { messageId } = await sealAgent.saveMessage(ctx as unknown as SealAICtx, {
-      threadId,
-      userId,
-      prompt,
-      skipEmbeddings: true,
-    });
+    const { messageId } = await sealAgent.saveMessage(
+      ctx as unknown as SealAICtx,
+      {
+        threadId,
+        userId,
+        prompt,
+        skipEmbeddings: true,
+      }
+    );
 
     // Schedule async generation
     await ctx.scheduler.runAfter(0, internal.ai.threads.generateResponseAsync, {

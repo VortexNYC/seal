@@ -26,7 +26,10 @@ import { SignatureCapture } from "./signature-capture";
 
 interface RenderOptions {
   recipientName?: string;
-  onSignatureCapture?: (signature: string, type: "drawn" | "typed" | "uploaded") => void;
+  onSignatureCapture?: (
+    signature: string,
+    type: "drawn" | "typed" | "uploaded"
+  ) => void;
   onCancel?: () => void;
   showLibrary?: boolean;
 }
@@ -52,7 +55,7 @@ describe("SignatureCapture", () => {
   test('renders "Choose your preferred method..." description', () => {
     renderSignatureCapture();
     expect(
-      screen.getByText("Choose your preferred method to sign this document"),
+      screen.getByText("Choose your preferred method to sign this document")
     ).toBeInTheDocument();
   });
 
@@ -75,15 +78,17 @@ describe("SignatureCapture", () => {
   test('shows "Cancel" and "Accept & Sign" buttons', () => {
     renderSignatureCapture();
     expect(screen.getByRole("button", { name: /Cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Accept & Sign/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Accept & Sign/i })
+    ).toBeInTheDocument();
   });
 
   test("shows legal text about signature agreement", () => {
     renderSignatureCapture();
     expect(
       screen.getByText(
-        /By clicking "Accept & Sign", you agree that this is a legal representation of your signature\./i,
-      ),
+        /By clicking "Accept & Sign", you agree that this is a legal representation of your signature\./i
+      )
     ).toBeInTheDocument();
   });
 
@@ -91,7 +96,9 @@ describe("SignatureCapture", () => {
     const user = userEvent.setup();
     renderSignatureCapture({ recipientName: "Jane Smith" });
     await user.click(screen.getByRole("tab", { name: /Type/i }));
-    const input = screen.getByRole("textbox", { name: /type your full name/i }) as HTMLInputElement;
+    const input = screen.getByRole("textbox", {
+      name: /type your full name/i,
+    }) as HTMLInputElement;
     expect(input).toBeInTheDocument();
     expect(input.value).toBe("Jane Smith");
   });
@@ -100,6 +107,8 @@ describe("SignatureCapture", () => {
     const user = userEvent.setup();
     renderSignatureCapture();
     await user.click(screen.getByRole("tab", { name: /Upload/i }));
-    expect(screen.getByText("Upload a PNG or JPG image file (max 5MB)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Upload a PNG or JPG image file (max 5MB)")
+    ).toBeInTheDocument();
   });
 });

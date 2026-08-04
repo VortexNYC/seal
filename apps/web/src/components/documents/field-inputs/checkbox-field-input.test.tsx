@@ -6,7 +6,9 @@ import { CheckboxFieldInput } from "./checkbox-field-input";
 
 afterEach(cleanup);
 
-function renderCheckboxField(overrides: Partial<Parameters<typeof CheckboxFieldInput>[0]> = {}) {
+function renderCheckboxField(
+  overrides: Partial<Parameters<typeof CheckboxFieldInput>[0]> = {}
+) {
   const onChange = vi.fn();
   const onValidationChange = vi.fn();
 
@@ -17,7 +19,7 @@ function renderCheckboxField(overrides: Partial<Parameters<typeof CheckboxFieldI
       onChange={onChange}
       onValidationChange={onValidationChange}
       {...overrides}
-    />,
+    />
   );
 
   return { onChange, onValidationChange, ...result };
@@ -58,7 +60,10 @@ describe("CheckboxFieldInput — single mode", () => {
   });
 
   test("shows help text when there is no error", () => {
-    renderCheckboxField({ helpText: "You must agree to continue", value: "true" });
+    renderCheckboxField({
+      helpText: "You must agree to continue",
+      value: "true",
+    });
     expect(screen.getByText("You must agree to continue")).toBeInTheDocument();
   });
 
@@ -68,7 +73,9 @@ describe("CheckboxFieldInput — single mode", () => {
       isRequired: true,
       value: "false",
     });
-    expect(screen.queryByText("You must agree to continue")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("You must agree to continue")
+    ).not.toBeInTheDocument();
     expect(screen.getByText("This field must be checked")).toBeInTheDocument();
   });
 });
@@ -106,7 +113,9 @@ describe("CheckboxFieldInput — multi-option mode", () => {
 
   test("shows required error on initial render when no options are selected", () => {
     renderCheckboxField({ options, isRequired: true });
-    expect(screen.getByText("At least one option must be selected")).toBeInTheDocument();
+    expect(
+      screen.getByText("At least one option must be selected")
+    ).toBeInTheDocument();
   });
 
   test("shows required indicator when isRequired", () => {
@@ -124,8 +133,14 @@ describe("CheckboxFieldInput — multi-option mode", () => {
   });
 
   test("hides help text when required error is shown", () => {
-    renderCheckboxField({ options, isRequired: true, helpText: "Select all that apply" });
+    renderCheckboxField({
+      options,
+      isRequired: true,
+      helpText: "Select all that apply",
+    });
     expect(screen.queryByText("Select all that apply")).not.toBeInTheDocument();
-    expect(screen.getByText("At least one option must be selected")).toBeInTheDocument();
+    expect(
+      screen.getByText("At least one option must be selected")
+    ).toBeInTheDocument();
   });
 });

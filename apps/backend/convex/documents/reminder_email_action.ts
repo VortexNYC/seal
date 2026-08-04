@@ -17,36 +17,41 @@ import {
 } from "../_generated/server";
 import { sendReminder } from "./email";
 
-function hasRecipientCompleted(status: Doc<"document_recipients">["status"]): boolean {
+function hasRecipientCompleted(
+  status: Doc<"document_recipients">["status"]
+): boolean {
   return status === "signed" || status === "approved" || status === "declined";
 }
 
 async function updateReminderAsFailed(
   ctx: ActionCtx,
   reminderId: Doc<"document_reminders">["_id"],
-  error: string,
+  error: string
 ): Promise<void> {
-  await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-    reminderId,
-    status: "failed",
-    failedAt: Date.now(),
-    lastError: error,
-  });
+  await ctx.runMutation(
+    internal.documents.reminder_email_action.updateReminderStatus,
+    {
+      reminderId,
+      status: "failed",
+      failedAt: Date.now(),
+      lastError: error,
+    }
+  );
 }
 
 async function buildReminderEmailContext(
   ctx: ActionCtx,
   document: Doc<"documents">,
-  recipient: Doc<"document_recipients">,
+  recipient: Doc<"document_recipients">
 ) {
   const owner: Doc<"users"> | null = await ctx.runQuery(
     internal.documents.reminder_email_action.getDocumentOwner,
-    { ownerId: document.ownerId },
+    { ownerId: document.ownerId }
   );
 
   const brandingSettings = await ctx.runQuery(
     internal.organizations.queries.getBrandingSettingsInternal,
-    { organizationId: document.organizationId },
+    { organizationId: document.organizationId }
   );
 
   return {
@@ -112,7 +117,7 @@ export const updateReminderStatus = internalMutation({
       v.literal("scheduled"),
       v.literal("sent"),
       v.literal("failed"),
-      v.literal("cancelled"),
+      v.literal("cancelled")
     ),
     sentAt: v.optional(v.number()),
     failedAt: v.optional(v.number()),
@@ -140,7 +145,7 @@ export const sendReminderEmail = internalAction({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     success: boolean;
     messageId?: string;
@@ -149,7 +154,7 @@ export const sendReminderEmail = internalAction({
     // 1. Get the reminder
     const reminder: Doc<"document_reminders"> | null = await ctx.runQuery(
       internal.documents.reminder_email_action.getReminderById,
-      { reminderId: args.reminderId },
+      { reminderId: args.reminderId }
     );
 
     if (!reminder) {
@@ -168,23 +173,31 @@ export const sendReminderEmail = internalAction({
     // 3. Get the document
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.reminder_email_action.getDocumentById,
-      { documentId: reminder.documentId },
+      { documentId: reminder.documentId }
     );
 
     if (!document || document.status === "deleted") {
-      await updateReminderAsFailed(ctx, args.reminderId, "Document not found or deleted");
+      await updateReminderAsFailed(
+        ctx,
+        args.reminderId,
+        "Document not found or deleted"
+      );
       return { success: false, error: "Document not found" };
     }
 
     // 4. Get recipient (if specific recipient)
     if (!reminder.recipientId) {
-      await updateReminderAsFailed(ctx, args.reminderId, "No recipient specified for reminder");
+      await updateReminderAsFailed(
+        ctx,
+        args.reminderId,
+        "No recipient specified for reminder"
+      );
       return { success: false, error: "No recipient specified" };
     }
 
     const recipient: Doc<"document_recipients"> | null = await ctx.runQuery(
       internal.documents.reminder_email_action.getRecipientById,
-      { recipientId: reminder.recipientId },
+      { recipientId: reminder.recipientId }
     );
 
     if (!recipient) {
@@ -194,19 +207,19 @@ export const sendReminderEmail = internalAction({
 
     // 5. Check if recipient has already completed action
     if (hasRecipientCompleted(recipient.status)) {
-      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-        reminderId: args.reminderId,
-        status: "cancelled",
-        cancelledAt: Date.now(),
-      });
+      await ctx.runMutation(
+        internal.documents.reminder_email_action.updateReminderStatus,
+        {
+          reminderId: args.reminderId,
+          status: "cancelled",
+          cancelledAt: Date.now(),
+        }
+      );
       return { success: true }; // Not an error, just no longer needed
     }
 
-    const { senderName, signingUrl, emailBranding } = await buildReminderEmailContext(
-      ctx,
-      document,
-      recipient,
-    );
+    const { senderName, signingUrl, emailBranding } =
+      await buildReminderEmailContext(ctx, document, recipient);
 
     // 9. Send the email
     const result = await sendReminder(ctx, {
@@ -222,25 +235,31 @@ export const sendReminderEmail = internalAction({
 
     // 9. Update reminder status based on result
     if (result.success) {
-      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-        reminderId: args.reminderId,
-        status: "sent",
-        sentAt: Date.now(),
-        messageId: result.messageId,
-      });
+      await ctx.runMutation(
+        internal.documents.reminder_email_action.updateReminderStatus,
+        {
+          reminderId: args.reminderId,
+          status: "sent",
+          sentAt: Date.now(),
+          messageId: result.messageId,
+        }
+      );
     } else {
       const currentReminder = await ctx.runQuery(
         internal.documents.reminder_email_action.getReminderById,
-        { reminderId: args.reminderId },
+        { reminderId: args.reminderId }
       );
 
-      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-        reminderId: args.reminderId,
-        status: "failed",
-        failedAt: Date.now(),
-        lastError: result.error,
-        attemptCount: (currentReminder?.attemptCount || 0) + 1,
-      });
+      await ctx.runMutation(
+        internal.documents.reminder_email_action.updateReminderStatus,
+        {
+          reminderId: args.reminderId,
+          status: "failed",
+          failedAt: Date.now(),
+          lastError: result.error,
+          attemptCount: (currentReminder?.attemptCount || 0) + 1,
+        }
+      );
     }
 
     return result;
@@ -262,7 +281,7 @@ export const sendReminderEmailDirect = internalAction({
     // Get document
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.reminder_email_action.getDocumentById,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document || document.status === "deleted") return;
@@ -270,7 +289,7 @@ export const sendReminderEmailDirect = internalAction({
     // Get recipient
     const recipient: Doc<"document_recipients"> | null = await ctx.runQuery(
       internal.documents.reminder_email_action.getRecipientById,
-      { recipientId: args.recipientId },
+      { recipientId: args.recipientId }
     );
 
     if (!recipient) return;
@@ -280,11 +299,8 @@ export const sendReminderEmailDirect = internalAction({
       return;
     }
 
-    const { senderName, signingUrl, emailBranding } = await buildReminderEmailContext(
-      ctx,
-      document,
-      recipient,
-    );
+    const { senderName, signingUrl, emailBranding } =
+      await buildReminderEmailContext(ctx, document, recipient);
 
     await sendReminder(ctx, {
       to: recipient.email,

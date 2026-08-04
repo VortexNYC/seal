@@ -58,9 +58,17 @@ extendZodWithOpenApi(z);
 // Example: existing schema with OpenAPI extensions
 export const createDocumentSchema = z
   .object({
-    title: z.string().openapi({ description: "Document title", example: "Employment Agreement" }),
-    templateId: z.string().optional().openapi({ description: "Template ID to create from" }),
-    recipients: z.array(recipientSchema).openapi({ description: "List of recipients" }),
+    title: z.string().openapi({
+      description: "Document title",
+      example: "Employment Agreement",
+    }),
+    templateId: z
+      .string()
+      .optional()
+      .openapi({ description: "Template ID to create from" }),
+    recipients: z
+      .array(recipientSchema)
+      .openapi({ description: "List of recipients" }),
   })
   .openapi("CreateDocumentRequest");
 ```
@@ -125,7 +133,10 @@ const spec = generator.generateDocument({
 });
 
 // Write to file
-Bun.write("apps/backend/convex/api/openapi.json", JSON.stringify(spec, null, 2));
+Bun.write(
+  "apps/backend/convex/api/openapi.json",
+  JSON.stringify(spec, null, 2)
+);
 ```
 
 Run with: `bun run scripts/generate-openapi.ts`

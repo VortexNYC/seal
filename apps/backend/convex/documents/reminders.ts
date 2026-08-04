@@ -10,14 +10,16 @@ import { internalMutation, type MutationCtx } from "../_generated/server";
 import { authMutation } from "../auth";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
-function isRecipientDone(status: Doc<"document_recipients">["status"]): boolean {
+function isRecipientDone(
+  status: Doc<"document_recipients">["status"]
+): boolean {
   return status === "signed" || status === "approved" || status === "declined";
 }
 
 async function updateReminderFailure(
   ctx: MutationCtx,
   reminderId: Doc<"document_reminders">["_id"],
-  lastError: string,
+  lastError: string
 ): Promise<void> {
   await ctx.db.patch(reminderId, {
     status: "failed",
@@ -29,7 +31,7 @@ async function updateReminderFailure(
 
 async function cancelReminderRecord(
   ctx: MutationCtx,
-  reminderId: Doc<"document_reminders">["_id"],
+  reminderId: Doc<"document_reminders">["_id"]
 ): Promise<void> {
   await ctx.db.patch(reminderId, {
     status: "cancelled",
@@ -63,7 +65,9 @@ export const sendManualReminder = authMutation({
     // 3. Get the recipient
     const recipient = await ctx.db.get(args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
-      throw new ConvexError("Recipient not found or doesn't belong to document");
+      throw new ConvexError(
+        "Recipient not found or doesn't belong to document"
+      );
     }
 
     // 4. Check recipient status - don't remind completed recipients
@@ -72,7 +76,9 @@ export const sendManualReminder = authMutation({
       recipient.status === "approved" ||
       recipient.status === "declined"
     ) {
-      throw new ConvexError(`Cannot send reminder - recipient has already ${recipient.status}`);
+      throw new ConvexError(
+        `Cannot send reminder - recipient has already ${recipient.status}`
+      );
     }
 
     // 5. Create reminder record
@@ -91,9 +97,13 @@ export const sendManualReminder = authMutation({
 
     // 6. Schedule immediate sending
     // When email is enabled, this will actually send the email
-    await ctx.scheduler.runAfter(0, internal.documents?.reminders.processReminder, {
-      reminderId,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents?.reminders.processReminder,
+      {
+        reminderId,
+      }
+    );
 
     return { reminderId, success: true };
   },
@@ -127,7 +137,10 @@ export const sendBulkReminder = authMutation({
       .collect();
 
     const pendingRecipients = allRecipients.filter(
-      (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
+      (r) =>
+        r.status !== "signed" &&
+        r.status !== "approved" &&
+        r.status !== "declined"
     );
 
     if (pendingRecipients.length === 0) {
@@ -157,7 +170,7 @@ export const sendBulkReminder = authMutation({
       await ctx.scheduler.runAfter(
         reminderIds.length * 250,
         internal.documents?.reminders.processReminder,
-        { reminderId },
+        { reminderId }
       );
     }
 
@@ -209,9 +222,13 @@ export const scheduleAutomatedReminder = authMutation({
 
     // 5. Schedule the reminder
     const delayMs = scheduledFor - now;
-    await ctx.scheduler.runAfter(delayMs, internal.documents?.reminders.processReminder, {
-      reminderId,
-    });
+    await ctx.scheduler.runAfter(
+      delayMs,
+      internal.documents?.reminders.processReminder,
+      {
+        reminderId,
+      }
+    );
 
     return { reminderId, scheduledFor, success: true };
   },
@@ -238,7 +255,9 @@ export const cancelReminder = authMutation({
 
     // 3. Check if reminder can be cancelled
     if (reminder.status === "sent") {
-      throw new ConvexError("Cannot cancel reminder that has already been sent");
+      throw new ConvexError(
+        "Cannot cancel reminder that has already been sent"
+      );
     }
 
     if (reminder.status === "cancelled") {
@@ -289,7 +308,11 @@ export const processReminder = internalMutation({
       // 4. Get document to validate it exists
       const document = await ctx.db.get(reminder.documentId);
       if (!document || document.status === "deleted") {
-        await updateReminderFailure(ctx, args.reminderId, "Document not found or deleted");
+        await updateReminderFailure(
+          ctx,
+          args.reminderId,
+          "Document not found or deleted"
+        );
         return { success: false, error: "Document not found" };
       }
 
@@ -297,7 +320,11 @@ export const processReminder = internalMutation({
       if (reminder.recipientId) {
         const recipient = await ctx.db.get(reminder.recipientId);
         if (!recipient) {
-          await updateReminderFailure(ctx, args.reminderId, "Recipient not found");
+          await updateReminderFailure(
+            ctx,
+            args.reminderId,
+            "Recipient not found"
+          );
           return { success: false, error: "Recipient not found" };
         }
 
@@ -305,7 +332,7 @@ export const processReminder = internalMutation({
         if (isRecipientDone(recipient.status)) {
           await cancelReminderRecord(ctx, args.reminderId);
           console.info(
-            `Recipient ${recipient._id} already ${recipient.status}, cancelling reminder`,
+            `Recipient ${recipient._id} already ${recipient.status}, cancelling reminder`
           );
           return { success: true, skipped: true };
         }
@@ -313,11 +340,17 @@ export const processReminder = internalMutation({
 
       // 6. Schedule the email action to send the reminder
       // Using an action because it calls external email service
-      await ctx.scheduler.runAfter(0, internal.documents.reminder_email_action.sendReminderEmail, {
-        reminderId: args.reminderId,
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.reminder_email_action.sendReminderEmail,
+        {
+          reminderId: args.reminderId,
+        }
+      );
 
-      console.info(`Reminder ${args.reminderId} validated, email action scheduled`);
+      console.info(
+        `Reminder ${args.reminderId} validated, email action scheduled`
+      );
 
       return { success: true, scheduled: true };
     } catch (error) {

@@ -13,7 +13,13 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
+import {
+  PDFDocument,
+  type PDFFont,
+  type PDFPage,
+  rgb,
+  StandardFonts,
+} from "pdf-lib";
 
 import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -41,11 +47,11 @@ type SignatureStampLayout = {
 
 async function loadSigningPdfBundle(
   ctx: ActionCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<PdfSigningBundle> {
   const document: Doc<"documents"> | null = await ctx.runQuery(
     internal.documents.queries.getDocumentInternal,
-    { documentId },
+    { documentId }
   );
   if (!document) {
     throw new ConvexError("Document not found");
@@ -53,7 +59,7 @@ async function loadSigningPdfBundle(
 
   const signatures: Doc<"signatures">[] = await ctx.runQuery(
     internal.signatures.queries.getDecryptedSignaturesByDocumentInternal,
-    { documentId },
+    { documentId }
   );
   if (signatures.length === 0) {
     throw new ConvexError("No signatures found for this document");
@@ -72,11 +78,11 @@ async function loadSigningPdfBundle(
   const pdfDoc = await PDFDocument.load(await response.arrayBuffer());
   const signatureFields: Doc<"signature_fields">[] = await ctx.runQuery(
     internal.signature_fields.queries.getFieldsByDocumentInternal,
-    { documentId },
+    { documentId }
   );
   const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
     internal.documents.recipients_queries.getDocumentRecipientsInternal,
-    { documentId },
+    { documentId }
   );
 
   return {
@@ -92,7 +98,7 @@ async function loadSigningPdfBundle(
 
 async function saveSignedPdfToStorage(
   ctx: ActionCtx,
-  pdfDoc: Awaited<ReturnType<typeof PDFDocument.load>>,
+  pdfDoc: Awaited<ReturnType<typeof PDFDocument.load>>
 ): Promise<string> {
   const signedPdfBytes = await pdfDoc.save();
   const signedBlob = new Blob([signedPdfBytes as BlobPart], {
@@ -109,7 +115,10 @@ export const signPdfDocument = action({
   args: {
     documentId: v.id("documents"),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; signedStorageId: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; signedStorageId: string }> => {
     const signingBundle = await loadSigningPdfBundle(ctx, args.documentId);
     await embedSignaturesIntoPdf(
       signingBundle.pdfDoc,
@@ -118,9 +127,12 @@ export const signPdfDocument = action({
       signingBundle.signatureFields,
       signingBundle.recipients,
       signingBundle.helvetica,
-      signingBundle.helveticaBold,
+      signingBundle.helveticaBold
     );
-    const signedStorageId = await saveSignedPdfToStorage(ctx, signingBundle.pdfDoc);
+    const signedStorageId = await saveSignedPdfToStorage(
+      ctx,
+      signingBundle.pdfDoc
+    );
 
     await ctx.runMutation(internal.documents.mutations.updateSignedStorageId, {
       documentId: args.documentId,
@@ -141,7 +153,7 @@ export const getSignedPdfUrl = action({
   handler: async (ctx, args): Promise<string | null> => {
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document || !document.signedStorageId) {
@@ -162,7 +174,7 @@ export const getDocumentPdfUrls = action({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     originalUrl: string | null;
     signedUrl: string | null;
@@ -171,7 +183,7 @@ export const getDocumentPdfUrls = action({
   }> => {
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document) {
@@ -201,7 +213,7 @@ export const checkDocumentSigningStatus = action({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     hasSignatures: boolean;
     signatureCount: number;
@@ -210,7 +222,7 @@ export const checkDocumentSigningStatus = action({
   }> => {
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document) {
@@ -219,7 +231,7 @@ export const checkDocumentSigningStatus = action({
 
     const signatures: Doc<"signatures">[] = await ctx.runQuery(
       internal.signatures.queries.getSignaturesByDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     return {
@@ -251,7 +263,7 @@ const stampConfig = {
 
 function getSignatureStampLayout(
   page: PDFPage,
-  field: Doc<"signature_fields">,
+  field: Doc<"signature_fields">
 ): SignatureStampLayout {
   const { width: pageWidth, height: pageHeight } = page.getSize();
   const x = (field.x / 100) * pageWidth;
@@ -270,7 +282,10 @@ function getSignatureStampLayout(
   };
 }
 
-function formatSignedAt(signedAt: number): { dateStr: string; timeStr: string } {
+function formatSignedAt(signedAt: number): {
+  dateStr: string;
+  timeStr: string;
+} {
   const signedDate = new Date(signedAt);
   return {
     dateStr: signedDate.toLocaleDateString("en-US", {
@@ -299,7 +314,10 @@ function drawSignatureFrame(page: PDFPage, layout: SignatureStampLayout): void {
 
   page.drawLine({
     start: { x: layout.x + 2, y: layout.pdfY + layout.stampHeight },
-    end: { x: layout.x + layout.width - 2, y: layout.pdfY + layout.stampHeight },
+    end: {
+      x: layout.x + layout.width - 2,
+      y: layout.pdfY + layout.stampHeight,
+    },
     thickness: 0.5,
     color: stampConfig.borderColor,
   });
@@ -308,7 +326,7 @@ function drawSignatureFrame(page: PDFPage, layout: SignatureStampLayout): void {
 async function embedImageBytes(
   pdfDoc: Awaited<ReturnType<typeof PDFDocument.load>>,
   imageBytes: Uint8Array,
-  prefersPng: boolean,
+  prefersPng: boolean
 ) {
   if (prefersPng) {
     return await pdfDoc.embedPng(imageBytes);
@@ -323,7 +341,7 @@ async function embedImageBytes(
 
 async function loadEmbeddedSignatureImage(
   pdfDoc: Awaited<ReturnType<typeof PDFDocument.load>>,
-  signatureImageUrl: string,
+  signatureImageUrl: string
 ) {
   try {
     if (signatureImageUrl.startsWith("data:image/")) {
@@ -332,11 +350,13 @@ async function loadEmbeddedSignatureImage(
         return null;
       }
 
-      const imageBytes = Uint8Array.from(atob(base64Data), (char) => char.charCodeAt(0));
+      const imageBytes = Uint8Array.from(atob(base64Data), (char) =>
+        char.charCodeAt(0)
+      );
       return await embedImageBytes(
         pdfDoc,
         imageBytes,
-        signatureImageUrl.includes("data:image/png"),
+        signatureImageUrl.includes("data:image/png")
       );
     }
 
@@ -347,7 +367,11 @@ async function loadEmbeddedSignatureImage(
 
     const imageBytes = new Uint8Array(await response.arrayBuffer());
     const contentType = response.headers.get("content-type") || "";
-    return await embedImageBytes(pdfDoc, imageBytes, contentType.includes("png"));
+    return await embedImageBytes(
+      pdfDoc,
+      imageBytes,
+      contentType.includes("png")
+    );
   } catch (error) {
     console.error("Failed to embed signature image:", error);
     return null;
@@ -358,20 +382,26 @@ async function drawSignatureImage(
   page: PDFPage,
   pdfDoc: Awaited<ReturnType<typeof PDFDocument.load>>,
   signatureImageUrl: string,
-  layout: SignatureStampLayout,
+  layout: SignatureStampLayout
 ): Promise<void> {
-  const embeddedImage = await loadEmbeddedSignatureImage(pdfDoc, signatureImageUrl);
+  const embeddedImage = await loadEmbeddedSignatureImage(
+    pdfDoc,
+    signatureImageUrl
+  );
   if (!embeddedImage) {
     return;
   }
 
   const imageDimensions = embeddedImage.scaleToFit(
     layout.width - 10,
-    layout.signatureAreaHeight - 6,
+    layout.signatureAreaHeight - 6
   );
   page.drawImage(embeddedImage, {
     x: layout.x + (layout.width - imageDimensions.width) / 2,
-    y: layout.pdfY + layout.stampHeight + (layout.signatureAreaHeight - imageDimensions.height) / 2,
+    y:
+      layout.pdfY +
+      layout.stampHeight +
+      (layout.signatureAreaHeight - imageDimensions.height) / 2,
     width: imageDimensions.width,
     height: imageDimensions.height,
   });
@@ -381,14 +411,18 @@ function drawTypedSignatureText(
   page: PDFPage,
   signatureValue: string,
   layout: SignatureStampLayout,
-  helveticaBold: PDFFont,
+  helveticaBold: PDFFont
 ): void {
   const fontSize = Math.min(layout.signatureAreaHeight * 0.5, 20);
   const textWidth = helveticaBold.widthOfTextAtSize(signatureValue, fontSize);
 
   page.drawText(signatureValue, {
     x: layout.x + (layout.width - textWidth) / 2,
-    y: layout.pdfY + layout.stampHeight + layout.signatureAreaHeight / 2 - fontSize / 3,
+    y:
+      layout.pdfY +
+      layout.stampHeight +
+      layout.signatureAreaHeight / 2 -
+      fontSize / 3,
     size: fontSize,
     font: helveticaBold,
     color: rgb(0.1, 0.1, 0.3),
@@ -402,7 +436,7 @@ function drawSignatureStampDetails(
   signedAt: { dateStr: string; timeStr: string },
   layout: SignatureStampLayout,
   helvetica: PDFFont,
-  helveticaBold: PDFFont,
+  helveticaBold: PDFFont
 ): void {
   const stampX = layout.x + stampConfig.padding;
   let stampY = layout.pdfY + layout.stampHeight - stampConfig.padding - 2;
@@ -415,7 +449,10 @@ function drawSignatureStampDetails(
     color: stampConfig.labelColor,
   });
 
-  const signedByLabelWidth = helvetica.widthOfTextAtSize("Signed by: ", stampConfig.fontSize.label);
+  const signedByLabelWidth = helvetica.widthOfTextAtSize(
+    "Signed by: ",
+    stampConfig.fontSize.label
+  );
   page.drawText(signerName, {
     x: stampX + signedByLabelWidth,
     y: stampY,
@@ -428,7 +465,9 @@ function drawSignatureStampDetails(
 
   if (signerEmail && signerEmail !== signerName) {
     const emailDisplay =
-      signerEmail.length > 35 ? `${signerEmail.substring(0, 32)}...` : signerEmail;
+      signerEmail.length > 35
+        ? `${signerEmail.substring(0, 32)}...`
+        : signerEmail;
     page.drawText(emailDisplay, {
       x: stampX,
       y: stampY,
@@ -447,7 +486,10 @@ function drawSignatureStampDetails(
     color: stampConfig.labelColor,
   });
 
-  const dateLabelWidth = helvetica.widthOfTextAtSize("Date: ", stampConfig.fontSize.label);
+  const dateLabelWidth = helvetica.widthOfTextAtSize(
+    "Date: ",
+    stampConfig.fontSize.label
+  );
   page.drawText(`${signedAt.dateStr} at ${signedAt.timeStr}`, {
     x: stampX + dateLabelWidth,
     y: stampY,
@@ -464,7 +506,7 @@ async function drawSignatureStamp(
   field: Doc<"signature_fields">,
   recipient: Doc<"document_recipients"> | undefined,
   helvetica: PDFFont,
-  helveticaBold: PDFFont,
+  helveticaBold: PDFFont
 ): Promise<void> {
   const layout = getSignatureStampLayout(page, field);
   drawSignatureFrame(page, layout);
@@ -482,7 +524,7 @@ async function drawSignatureStamp(
     formatSignedAt(signature.signedAt),
     layout,
     helvetica,
-    helveticaBold,
+    helveticaBold
   );
 }
 
@@ -490,7 +532,7 @@ function addVerificationFooter(
   page: PDFPage,
   document: Doc<"documents">,
   signatures: Doc<"signatures">[],
-  helvetica: PDFFont,
+  helvetica: PDFFont
 ): void {
   const { width: pageWidth } = page.getSize();
   const footerY = 20;
@@ -524,7 +566,7 @@ async function embedSignaturesIntoPdf(
   signatureFields: Doc<"signature_fields">[],
   recipients: Doc<"document_recipients">[],
   helvetica: PDFFont,
-  helveticaBold: PDFFont,
+  helveticaBold: PDFFont
 ): Promise<void> {
   const pages = pdfDoc.getPages();
   const recipientMap = new Map(recipients.map((r) => [r._id, r]));
@@ -547,7 +589,7 @@ async function embedSignaturesIntoPdf(
       field,
       recipientMap.get(signature.recipientId as Id<"document_recipients">),
       helvetica,
-      helveticaBold,
+      helveticaBold
     );
   }
 
@@ -566,16 +608,25 @@ export const generateAndGetSignedPdfByToken = action({
   args: {
     signingToken: v.string(),
   },
-  handler: async (ctx, args): Promise<{ url: string; documentName: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ url: string; documentName: string }> => {
     // 1. Validate token and get recipient (this validates token expiration as well)
-    const { recipient } = await ctx.runQuery(api.documents.recipients_queries.getRecipientByToken, {
-      signingToken: args.signingToken,
-    });
+    const { recipient } = await ctx.runQuery(
+      api.documents.recipients_queries.getRecipientByToken,
+      {
+        signingToken: args.signingToken,
+      }
+    );
 
     // 2. Get full document from internal query (to access signedStorageId)
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: recipient.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: recipient.documentId,
+      }
+    );
 
     if (!document) {
       throw new ConvexError("Document not found");
@@ -584,12 +635,14 @@ export const generateAndGetSignedPdfByToken = action({
     // 3. Get recipients for name labels and completion check
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      { documentId: document._id },
+      { documentId: document._id }
     );
 
     const allRecipientsComplete =
       recipients.length > 0 &&
-      recipients.every((recipient) => isRecipientComplete(recipient.role, recipient.status));
+      recipients.every((recipient) =>
+        isRecipientComplete(recipient.role, recipient.status)
+      );
 
     // 4. Check if signed PDF already exists and document is fully complete
     if (document.signedStorageId && allRecipientsComplete) {
@@ -604,7 +657,7 @@ export const generateAndGetSignedPdfByToken = action({
       internal.signatures.queries.getDecryptedSignaturesByDocumentInternal,
       {
         documentId: document._id,
-      },
+      }
     );
 
     // If no signatures yet, return original PDF
@@ -635,12 +688,14 @@ export const generateAndGetSignedPdfByToken = action({
     // Get signature fields to know where to place signatures
     const signatureFields: Doc<"signature_fields">[] = await ctx.runQuery(
       internal.signature_fields.queries.getFieldsByDocumentInternal,
-      { documentId: document._id },
+      { documentId: document._id }
     );
 
     // Embed fonts for text rendering
     const helvetica = await pdfDoc.embedFont(StandardFontsLib.Helvetica);
-    const helveticaBold = await pdfDoc.embedFont(StandardFontsLib.HelveticaBold);
+    const helveticaBold = await pdfDoc.embedFont(
+      StandardFontsLib.HelveticaBold
+    );
 
     // 8. Embed signatures into the PDF
     await embedSignaturesIntoPdf(
@@ -650,7 +705,7 @@ export const generateAndGetSignedPdfByToken = action({
       signatureFields,
       recipients,
       helvetica,
-      helveticaBold,
+      helveticaBold
     );
 
     // 9. Save the signed PDF
@@ -664,10 +719,13 @@ export const generateAndGetSignedPdfByToken = action({
 
     // 11. Update the document with the signed PDF reference only once fully complete
     if (allRecipientsComplete) {
-      await ctx.runMutation(internal.documents.mutations.updateSignedStorageId, {
-        documentId: document._id,
-        signedStorageId,
-      });
+      await ctx.runMutation(
+        internal.documents.mutations.updateSignedStorageId,
+        {
+          documentId: document._id,
+          signedStorageId,
+        }
+      );
     }
 
     // 12. Return the signed PDF URL

@@ -36,7 +36,7 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 Install dependencies once from the repo root:
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## Local Development
@@ -44,7 +44,7 @@ bun install
 Use the root `dev` command for the main product stack:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 That starts:
@@ -57,16 +57,16 @@ There is still no root `start` script.
 Equivalent targeted commands:
 
 ```bash
-bunx turbo run dev --filter=@seal/backend
-bunx turbo run dev --filter=@seal/web
+pnpm exec vp run -r dev --filter=@seal/backend
+pnpm exec vp run -r dev --filter=@seal/web
 ```
 
 Other useful non-default targets:
 
 ```bash
-bunx turbo run dev --filter=@seal/landing
-bunx turbo run dev --filter=@seal/mcp-server
-bunx turbo run dev --filter=@seal/transactional
+pnpm exec vp run -r dev --filter=@seal/landing
+pnpm exec vp run -r dev --filter=@seal/mcp-server
+pnpm exec vp run -r dev --filter=@seal/transactional
 ```
 
 Notes:
@@ -127,23 +127,23 @@ Use [apps/web/.env.test.example](apps/web/.env.test.example) as the starting poi
 Run these from the repo root unless noted otherwise.
 
 ```bash
-bun run dev
-bun run build
-bun run lint
-bun run format
-bun run format:check
-bun run typecheck
-bun run knip
-bun run verify
-bun run test
+pnpm run dev
+pnpm run build
+pnpm run lint
+pnpm run format
+pnpm run format:check
+pnpm run typecheck
+pnpm run knip
+pnpm run verify
+pnpm run test
 ```
 
 Target a single workspace when you want faster feedback:
 
 ```bash
-bunx turbo run test --filter=@seal/backend
-bunx turbo run test --filter=@seal/web
-bunx turbo run build --filter=@seal/landing
+pnpm exec vp run -r test --filter=@seal/backend
+pnpm exec vp run -r test --filter=@seal/web
+pnpm exec vp run -r build --filter=@seal/landing
 ```
 
 ## E2E Testing
@@ -151,26 +151,26 @@ bunx turbo run build --filter=@seal/landing
 Install Playwright browsers:
 
 ```bash
-bun --cwd apps/web x playwright install chromium
-bun --cwd apps/landing x playwright install chromium firefox webkit
+pnpm --dir apps/web exec playwright install chromium
+pnpm --dir apps/landing exec playwright install chromium firefox webkit
 ```
 
 Run the test suite:
 
 ```bash
-bun --cwd apps/web run test:e2e
-bun --cwd apps/landing run test:e2e
+pnpm --dir apps/web run test:e2e
+pnpm --dir apps/landing run test:e2e
 ```
 
 Useful variants:
 
 ```bash
-bun --cwd apps/web run test:e2e:ui
-bun --cwd apps/web run test:e2e:headed
-bun --cwd apps/web run test:e2e:debug
-bun --cwd apps/landing run test:e2e:ui
-bun --cwd apps/landing run test:e2e:headed
-bun --cwd apps/landing run test:e2e:debug
+pnpm --dir apps/web run test:e2e:ui
+pnpm --dir apps/web run test:e2e:headed
+pnpm --dir apps/web run test:e2e:debug
+pnpm --dir apps/landing run test:e2e:ui
+pnpm --dir apps/landing run test:e2e:headed
+pnpm --dir apps/landing run test:e2e:debug
 ```
 
 More detail lives in [apps/web/e2e/README.md](apps/web/e2e/README.md) and [apps/landing/e2e/README.md](apps/landing/e2e/README.md).
@@ -182,10 +182,10 @@ Published developer docs live in `apps/landing/content/docs`.
 Useful landing/docs commands:
 
 ```bash
-bun --cwd apps/landing run content:prepare
-bun --cwd apps/landing run docs:generate:api
-bun --cwd apps/landing run content:search
-bun --cwd apps/landing run content:sitemap
+pnpm --dir apps/landing run content:prepare
+pnpm --dir apps/landing run docs:generate:api
+pnpm --dir apps/landing run content:search
+pnpm --dir apps/landing run content:sitemap
 ```
 
 The API reference content is generated from `apps/landing/openapi.yaml`.

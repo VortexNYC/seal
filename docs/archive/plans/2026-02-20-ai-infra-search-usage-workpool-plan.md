@@ -70,7 +70,7 @@ export const aiActionValidator = v.union(
   v.literal("payment_extraction"),
   v.literal("redlining"),
   v.literal("search"),
-  v.literal("chat"),
+  v.literal("chat")
 );
 
 export const aiUsageLogTable = defineTable({
@@ -177,7 +177,7 @@ export const logAiUsage = internalMutation({
       v.literal("payment_extraction"),
       v.literal("redlining"),
       v.literal("search"),
-      v.literal("chat"),
+      v.literal("chat")
     ),
     tokensUsed: v.number(),
     durationMs: v.number(),
@@ -288,7 +288,7 @@ export async function enqueueAiPipeline(
   ctx: MutationCtx,
   db: DatabaseReader,
   documentId: Id<"documents">,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ) {
   // Determine plan tier — find org owner's subscription
   const isPro = await isProOrganization(db, organizationId);
@@ -305,7 +305,7 @@ export async function enqueueAiPipeline(
  */
 async function isProOrganization(
   db: DatabaseReader,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<boolean> {
   // Find the primary (owner) member
   const owner = await db
@@ -323,7 +323,9 @@ async function isProOrganization(
     .order("desc")
     .first();
 
-  return subscription?.status === "active" || subscription?.status === "trialing";
+  return (
+    subscription?.status === "active" || subscription?.status === "trialing"
+  );
 }
 ```
 
@@ -477,7 +479,7 @@ export async function enqueueAiPipeline(
   db: DatabaseReader,
   documentId: Id<"documents">,
   organizationId: Id<"organizations">,
-  userId?: Id<"users">,
+  userId?: Id<"users">
 ) {
   const isPro = await isProOrganization(db, organizationId);
   const pool = isPro ? aiPoolPro : aiPoolFree;
@@ -535,26 +537,35 @@ export const fullSearch = action({
 
     if (args.query.trim().length < 2) return [];
 
-    const result = await ctx.runQuery(internal.ai.search_queries.getCurrentUserOrg, {
-      clerkUserId: identity.subject,
-    });
+    const result = await ctx.runQuery(
+      internal.ai.search_queries.getCurrentUserOrg,
+      {
+        clerkUserId: identity.subject,
+      }
+    );
     if (!result) return [];
 
     const startMs = Date.now();
-    const results = await ctx.runAction(internal.ai.search.hybridSearchDocuments, {
-      organizationId: result.organizationId,
-      query: args.query.trim(),
-      limit: args.limit ?? 20,
-      workflowStatus: args.workflowStatus,
-      dateFrom: args.dateFrom,
-      dateTo: args.dateTo,
-    });
+    const results = await ctx.runAction(
+      internal.ai.search.hybridSearchDocuments,
+      {
+        organizationId: result.organizationId,
+        query: args.query.trim(),
+        limit: args.limit ?? 20,
+        workflowStatus: args.workflowStatus,
+        dateFrom: args.dateFrom,
+        dateTo: args.dateTo,
+      }
+    );
     const durationMs = Date.now() - startMs;
 
     // Log search usage (resolve userId)
-    const user = await ctx.runQuery(internal.ai.search_queries.getUserByClerkId, {
-      clerkUserId: identity.subject,
-    });
+    const user = await ctx.runQuery(
+      internal.ai.search_queries.getUserByClerkId,
+      {
+        clerkUserId: identity.subject,
+      }
+    );
     if (user) {
       await ctx.runMutation(internal.ai.usage.logAiUsage, {
         organizationId: result.organizationId,
@@ -644,7 +655,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { api } from "@seal/backend/convex/_generated/api";
 
@@ -732,10 +747,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (documentId: string) => {
       onOpenChange(false);
       if (slug) {
-        navigate({ to: "/$slug/documents/$documentId", params: { slug, documentId } });
+        navigate({
+          to: "/$slug/documents/$documentId",
+          params: { slug, documentId },
+        });
       }
     },
-    [navigate, onOpenChange, slug],
+    [navigate, onOpenChange, slug]
   );
 
   const clearFilters = useCallback(() => {
@@ -751,7 +769,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       title="Search Documents"
       description="Search across all workspace documents"
     >
-      <CommandInput placeholder="Search documents..." value={query} onValueChange={setQuery} />
+      <CommandInput
+        placeholder="Search documents..."
+        value={query}
+        onValueChange={setQuery}
+      />
 
       {/* Inline filter bar */}
       <div className="flex items-center gap-2 border-b px-3 py-2">
@@ -774,7 +796,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CalendarIcon className="h-3 w-3" />
               Date
               {(dateFrom || dateTo) && (
-                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[9px]">
+                <Badge
+                  variant="secondary"
+                  className="ml-1 px-1 py-0 text-[9px]"
+                >
                   set
                 </Badge>
               )}
@@ -826,7 +851,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <CommandEmpty>No documents found.</CommandEmpty>
         ) : (
           results.length > 0 && (
-            <CommandGroup heading={`${results.length} result${results.length !== 1 ? "s" : ""}`}>
+            <CommandGroup
+              heading={`${results.length} result${results.length !== 1 ? "s" : ""}`}
+            >
               {results.map((result) => (
                 <CommandItem
                   key={`${result.documentId}-${result.pageNumber}`}

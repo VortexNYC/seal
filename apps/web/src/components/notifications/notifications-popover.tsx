@@ -68,7 +68,8 @@ function getNotificationIcon(type: Notification["type"]) {
 
 function getNotificationMessage(notification: Notification): string {
   const data = notification.data;
-  const documentName = "documentName" in data ? (data.documentName ?? "a document") : "a document";
+  const documentName =
+    "documentName" in data ? (data.documentName ?? "a document") : "a document";
 
   switch (notification.type) {
     case "document_shared": {
@@ -187,7 +188,10 @@ function NotificationItem({
   slug: string;
   onMarkAsRead: (id: Id<"notifications">) => void;
 }) {
-  const documentId = "documentId" in notification.data ? notification.data.documentId : undefined;
+  const documentId =
+    "documentId" in notification.data
+      ? notification.data.documentId
+      : undefined;
 
   const handleClick = () => {
     if (!notification.read) {
@@ -201,17 +205,21 @@ function NotificationItem({
         "flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors",
         notification.read
           ? "hover:bg-muted bg-transparent"
-          : "bg-info-surface/50 hover:bg-info-surface",
+          : "bg-info-surface/50 hover:bg-info-surface"
       )}
       onClick={handleClick}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
     >
-      <div className="mt-0.5 flex-shrink-0">{getNotificationIcon(notification.type)}</div>
+      <div className="mt-0.5 flex-shrink-0">
+        {getNotificationIcon(notification.type)}
+      </div>
       <div className="min-w-0 flex-1">
         <p
           className={cn(
             "text-sm leading-tight",
-            notification.read ? "text-muted-foreground" : "text-foreground font-medium",
+            notification.read
+              ? "text-muted-foreground"
+              : "text-foreground font-medium"
           )}
         >
           {getNotificationMessage(notification)}
@@ -236,7 +244,11 @@ function NotificationItem({
 
   if (documentId) {
     return (
-      <Link to="/$slug/documents/$documentId" params={{ slug, documentId }} className="block">
+      <Link
+        to="/$slug/documents/$documentId"
+        params={{ slug, documentId }}
+        className="block"
+      >
         {content}
       </Link>
     );
@@ -268,7 +280,9 @@ function EmptyState() {
         <BellIcon className="text-muted-foreground h-6 w-6" />
       </div>
       <p className="text-foreground text-sm font-medium">No notifications</p>
-      <p className="text-muted-foreground mt-1 text-xs">You're all caught up!</p>
+      <p className="text-muted-foreground mt-1 text-xs">
+        You're all caught up!
+      </p>
     </div>
   );
 }
@@ -288,13 +302,19 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
   };
 
   const isLoading = notifications === undefined;
-  const hasNotifications = notifications?.items && notifications.items.length > 0;
+  const hasNotifications =
+    notifications?.items && notifications.items.length > 0;
   const hasUnread = (unreadCount ?? 0) > 0;
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8" aria-label="Notifications">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-8 w-8"
+          aria-label="Notifications"
+        >
           <BellIcon className="h-4 w-4" />
           {hasUnread && (
             <Badge
@@ -343,7 +363,11 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
 
         {hasNotifications && notifications.hasMore && (
           <div className="border-t px-4 py-3 text-center">
-            <Button variant="ghost" size="sm" className="text-muted-foreground text-xs">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground text-xs"
+            >
               <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />
               Load more
             </Button>

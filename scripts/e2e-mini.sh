@@ -7,12 +7,12 @@
 #   scripts/e2e-mini.sh chromium auth.e2e.ts  # specific test, chromium project
 #   SYNC=1 scripts/e2e-mini.sh                # rsync working tree first (uncommitted changes)
 #
-# Defaults: project=chromium, app=apps/web, host=mini (~/projects/Seal)
+# Defaults: project=chromium, app=apps/web, host=mini (~/projects/vortex-sign)
 
 set -euo pipefail
 
 HOST="${MINI_HOST:-mini}"
-REMOTE_PATH="${MINI_PATH:-projects/Seal}"
+REMOTE_PATH="${MINI_PATH:-projects/vortex-sign}"
 APP="${APP:-apps/web}"
 PROJECT="${1:-chromium}"
 shift || true
@@ -44,7 +44,7 @@ ENV_PREFIX="set -a; source .env.test; set +a;"
 WORKER_FLAGS="CI=1"
 [[ "$FULL_PARALLEL" == "1" ]] && WORKER_FLAGS=""
 
-REMOTE_CMD="cd $REMOTE_PATH/$APP && export PATH=\"\$HOME/.bun/bin:\$PATH\" && pkill -f 'vite|playwright|chromium_headless' 2>/dev/null; sleep 1; $ENV_PREFIX $WORKER_FLAGS bunx playwright test --project=$PROJECT --reporter=list ${EXTRA_ARGS[*]:-}"
+REMOTE_CMD="cd $REMOTE_PATH/$APP && export PATH=\"\$HOME/.bun/bin:\$PATH\" && pkill -f 'vite|playwright|chromium_headless' 2>/dev/null; sleep 1; $ENV_PREFIX $WORKER_FLAGS pnpm exec playwright test --project=$PROJECT --reporter=list ${EXTRA_ARGS[*]:-}"
 
 echo "[e2e-mini] running on $HOST: project=$PROJECT ${EXTRA_ARGS[*]:-}"
 echo "[e2e-mini] cmd: $REMOTE_CMD"
@@ -61,7 +61,7 @@ if [[ $EXIT_CODE -ne 0 ]]; then
   rsync -az "$HOST:$REMOTE_PATH/$APP/test-results/" "$REPO_ROOT/$APP/test-results/" || true
   rsync -az "$HOST:$REMOTE_PATH/$APP/playwright-report/" "$REPO_ROOT/$APP/playwright-report/" 2>/dev/null || true
   echo "[e2e-mini] artifacts in $APP/test-results and $APP/playwright-report"
-  echo "[e2e-mini] view html report: cd $APP && bunx playwright show-report"
+  echo "[e2e-mini] view html report: cd $APP && pnpm exec playwright show-report"
 fi
 
 exit $EXIT_CODE

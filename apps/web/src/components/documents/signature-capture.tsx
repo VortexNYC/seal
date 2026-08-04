@@ -32,7 +32,13 @@ import SignatureCanvas from "react-signature-canvas";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -104,14 +110,19 @@ export function SignatureCapture({
     upload: "uploaded",
   };
   const allowedTabs: SignatureType[] = allowedSignatureTypes
-    ? (allowedSignatureTypes.map((t) => ORG_TO_TAB[t]).filter(Boolean) as SignatureType[])
+    ? (allowedSignatureTypes
+        .map((t) => ORG_TO_TAB[t])
+        .filter(Boolean) as SignatureType[])
     : ["drawn", "typed", "uploaded"];
   const hasAvailableMethods = allowedTabs.length > 0 || showLibrary;
 
-  const defaultTab: TabType = showLibrary ? "saved" : (allowedTabs[0] ?? "drawn");
+  const defaultTab: TabType = showLibrary
+    ? "saved"
+    : (allowedTabs[0] ?? "drawn");
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [typedName, setTypedName] = useState(recipientName || "");
-  const [selectedFont, setSelectedFont] = useState<SignatureFont>("dancing-script");
+  const [selectedFont, setSelectedFont] =
+    useState<SignatureFont>("dancing-script");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const signaturePadRef = useRef<SignatureCanvas>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -171,14 +182,23 @@ export function SignatureCapture({
     enabled: showLibrary,
   });
 
-  const saveSignatureMutation = useMutation(api.saved_signatures.mutations.saveSignature);
-  const deleteSignatureMutation = useMutation(api.saved_signatures.mutations.deleteSignature);
-  const setDefaultMutation = useMutation(api.saved_signatures.mutations.updateSignature);
-  const incrementUsageMutation = useMutation(api.saved_signatures.mutations.incrementUsageCount);
+  const saveSignatureMutation = useMutation(
+    api.saved_signatures.mutations.saveSignature
+  );
+  const deleteSignatureMutation = useMutation(
+    api.saved_signatures.mutations.deleteSignature
+  );
+  const setDefaultMutation = useMutation(
+    api.saved_signatures.mutations.updateSignature
+  );
+  const incrementUsageMutation = useMutation(
+    api.saved_signatures.mutations.incrementUsageCount
+  );
 
   // Get the current font's CSS family
   const currentFontFamily =
-    SIGNATURE_FONTS.find((f) => f.value === selectedFont)?.cssFamily || "'Dancing Script', cursive";
+    SIGNATURE_FONTS.find((f) => f.value === selectedFont)?.cssFamily ||
+    "'Dancing Script', cursive";
 
   // Save current state to history before drawing
   const saveToHistory = useCallback(() => {
@@ -299,7 +319,7 @@ export function SignatureCapture({
     }
 
     const signature = savedSignatures.find(
-      (s: Doc<"saved_signatures">) => s._id === selectedSavedSignature,
+      (s: Doc<"saved_signatures">) => s._id === selectedSavedSignature
     );
     if (!signature) {
       toast.error("Selected signature not found");
@@ -330,7 +350,8 @@ export function SignatureCapture({
         name: saveSignatureName.trim(),
         signatureImageUrl: pendingSignatureData.data,
         signatureType: pendingSignatureData.type,
-        fontFamily: pendingSignatureData.type === "typed" ? currentFontFamily : undefined,
+        fontFamily:
+          pendingSignatureData.type === "typed" ? currentFontFamily : undefined,
         setAsDefault: saveAsDefault,
       });
 
@@ -349,7 +370,9 @@ export function SignatureCapture({
   };
 
   // Handle deleting a saved signature
-  const handleDeleteSavedSignature = async (signatureId: Id<"saved_signatures">) => {
+  const handleDeleteSavedSignature = async (
+    signatureId: Id<"saved_signatures">
+  ) => {
     try {
       await deleteSignatureMutation({ signatureId });
       toast.success("Signature deleted");
@@ -401,7 +424,9 @@ export function SignatureCapture({
       <Card className="mx-auto w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Sign Document</CardTitle>
-          <CardDescription>No signature methods are currently available.</CardDescription>
+          <CardDescription>
+            No signature methods are currently available.
+          </CardDescription>
         </CardHeader>
         <CardContent className="text-muted-foreground pt-0 text-sm">
           Contact your organization administrator to re-enable signing methods.
@@ -419,10 +444,15 @@ export function SignatureCapture({
     <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
         <CardTitle>Sign Document</CardTitle>
-        <CardDescription>Choose your preferred method to sign this document</CardDescription>
+        <CardDescription>
+          Choose your preferred method to sign this document
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as TabType)}
+        >
           {/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
           <TabsList
             className="grid h-auto w-full"
@@ -476,11 +506,16 @@ export function SignatureCapture({
                   <BookmarkIcon className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p className="text-sm">No saved signatures yet</p>
                   <p className="mt-1 text-xs">
-                    Create a signature using Draw, Type, or Upload and save it for quick reuse
+                    Create a signature using Draw, Type, or Upload and save it
+                    for quick reuse
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-3" role="listbox" aria-label="Saved signatures">
+                <div
+                  className="grid gap-3"
+                  role="listbox"
+                  aria-label="Saved signatures"
+                >
                   {savedSignatures.map((sig: Doc<"saved_signatures">) => (
                     <div
                       key={sig._id}
@@ -491,7 +526,7 @@ export function SignatureCapture({
                         "relative cursor-pointer rounded-lg border-2 p-3 transition-colors",
                         selectedSavedSignature === sig._id
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-border",
+                          : "border-border hover:border-border"
                       )}
                       onClick={() => setSelectedSavedSignature(sig._id)}
                       onKeyDown={(event) => {
@@ -506,7 +541,9 @@ export function SignatureCapture({
                       <div className="flex items-center gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="truncate text-sm font-medium">{sig.name}</span>
+                            <span className="truncate text-sm font-medium">
+                              {sig.name}
+                            </span>
                             {sig.isDefault && (
                               <StarIcon className="fill-warning text-warning h-3 w-3 flex-shrink-0" />
                             )}
@@ -579,7 +616,8 @@ export function SignatureCapture({
                     canvasProps={{
                       width: canvasWidth,
                       height: 200,
-                      className: "w-full h-[200px] cursor-crosshair touch-none select-none",
+                      className:
+                        "w-full h-[200px] cursor-crosshair touch-none select-none",
                       style: { touchAction: "none" },
                     }}
                     // vortex-allow-color: signature capture pad represents white paper in both themes
@@ -646,7 +684,9 @@ export function SignatureCapture({
                   <SelectContent>
                     {SIGNATURE_FONTS.map((font) => (
                       <SelectItem key={font.value} value={font.value}>
-                        <span style={{ fontFamily: font.cssFamily }}>{font.name}</span>
+                        <span style={{ fontFamily: font.cssFamily }}>
+                          {font.name}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -667,7 +707,8 @@ export function SignatureCapture({
                 </div>
               )}
               <p className="text-muted-foreground text-sm">
-                Your typed name will be converted to a signature style using the selected font
+                Your typed name will be converted to a signature style using the
+                selected font
               </p>
             </TabsContent>
           )}
@@ -676,7 +717,9 @@ export function SignatureCapture({
           {allowedTabs.includes("uploaded") && (
             <TabsContent value="uploaded" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signature-upload">Upload your signature image</Label>
+                <Label htmlFor="signature-upload">
+                  Upload your signature image
+                </Label>
                 <Input
                   id="signature-upload"
                   type="file"
@@ -705,7 +748,11 @@ export function SignatureCapture({
 
         {/* SEA-116: Mobile-optimized action buttons with proper touch targets */}
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
-          <Button variant="outline" onClick={onCancel} className="h-12 min-h-[44px] flex-1 sm:h-11">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="h-12 min-h-[44px] flex-1 sm:h-11"
+          >
             Cancel
           </Button>
           <Button
@@ -724,8 +771,8 @@ export function SignatureCapture({
 
         {/* Legal Text */}
         <p className="text-muted-foreground mt-4 text-center text-xs">
-          By clicking "Accept & Sign", you agree that this is a legal representation of your
-          signature.
+          By clicking "Accept & Sign", you agree that this is a legal
+          representation of your signature.
         </p>
       </CardContent>
 
@@ -735,7 +782,8 @@ export function SignatureCapture({
           <DialogHeader>
             <DialogTitle>Save to Signature Library?</DialogTitle>
             <DialogDescription>
-              Would you like to save this signature for quick reuse in future documents?
+              Would you like to save this signature for quick reuse in future
+              documents?
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -764,7 +812,9 @@ export function SignatureCapture({
               <Checkbox
                 id="set-default"
                 checked={saveAsDefault}
-                onCheckedChange={(checked) => setSaveAsDefault(checked === true)}
+                onCheckedChange={(checked) =>
+                  setSaveAsDefault(checked === true)
+                }
               />
               <Label htmlFor="set-default" className="text-sm font-normal">
                 Set as my default signature
@@ -772,7 +822,11 @@ export function SignatureCapture({
             </div>
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={handleSubmitWithoutSaving} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={handleSubmitWithoutSaving}
+              className="flex-1"
+            >
               Skip & Sign
             </Button>
             <Button

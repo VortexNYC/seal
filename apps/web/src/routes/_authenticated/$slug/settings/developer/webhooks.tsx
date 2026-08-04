@@ -49,9 +49,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -68,7 +78,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/developer/webhooks")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/developer/webhooks"
+)({
   component: WebhooksPage,
   pendingComponent: FormSkeleton,
 });
@@ -97,7 +109,10 @@ function formatRelativeTime(timestamp: number): string {
   return formatDate(timestamp);
 }
 
-type WebhookEndpointWithStats = Omit<Doc<"webhook_endpoints">, "secret" | "secretHash"> & {
+type WebhookEndpointWithStats = Omit<
+  Doc<"webhook_endpoints">,
+  "secret" | "secretHash"
+> & {
   stats: {
     recentDeliveries: number;
     delivered: number;
@@ -211,19 +226,21 @@ function SlackNotificationsSection({
             </div>
             <p className="mt-6 font-mono">Connect a Slack channel</p>
             <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-              Paste a Slack Incoming Webhook URL to start receiving event notifications in your
-              channel.
+              Paste a Slack Incoming Webhook URL to start receiving event
+              notifications in your channel.
             </p>
             <Button
               onClick={() => setIsCreating(true)}
-              className="bg-ai-accent hover:bg-ai-accent/90 mt-4 text-primary-foreground"
+              className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground mt-4"
               disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
               Connect Slack
             </Button>
             {!isPro && !isLoadingPlan && (
-              <p className="text-warning mt-2 text-sm">Requires a Professional plan</p>
+              <p className="text-warning mt-2 text-sm">
+                Requires a Professional plan
+              </p>
             )}
           </div>
         ) : (
@@ -244,13 +261,19 @@ interface CreateSlackDialogProps {
   eventTypes: { type: string; category: string; description: string }[];
 }
 
-function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialogProps) {
+function CreateSlackDialog({
+  open,
+  onOpenChange,
+  eventTypes,
+}: CreateSlackDialogProps) {
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createSlackEndpoint = useMutation(api.webhooks.mutations.createSlackEndpoint);
+  const createSlackEndpoint = useMutation(
+    api.webhooks.mutations.createSlackEndpoint
+  );
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -272,7 +295,9 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
       toast.success("Slack channel connected");
       handleClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to connect Slack");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to connect Slack"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -288,15 +313,21 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
 
   const toggleEvent = (eventType: string) => {
     setSelectedEvents((prev) =>
-      prev.includes(eventType) ? prev.filter((e) => e !== eventType) : [...prev, eventType],
+      prev.includes(eventType)
+        ? prev.filter((e) => e !== eventType)
+        : [...prev, eventType]
     );
   };
 
   const toggleCategory = (category: string) => {
-    const categoryEvents = eventTypes.filter((e) => e.category === category).map((e) => e.type);
+    const categoryEvents = eventTypes
+      .filter((e) => e.category === category)
+      .map((e) => e.type);
     const allSelected = categoryEvents.every((e) => selectedEvents.includes(e));
     if (allSelected) {
-      setSelectedEvents((prev) => prev.filter((e) => !categoryEvents.includes(e)));
+      setSelectedEvents((prev) =>
+        prev.filter((e) => !categoryEvents.includes(e))
+      );
     } else {
       setSelectedEvents((prev) => [...new Set([...prev, ...categoryEvents])]);
     }
@@ -308,13 +339,16 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
       acc[event.category].push(event);
       return acc;
     },
-    {} as Record<string, typeof eventTypes>,
+    {} as Record<string, typeof eventTypes>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground">
+        <Button
+          size="sm"
+          className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground"
+        >
           <Plus className="mr-1 h-4 w-4" />
           Connect Slack
         </Button>
@@ -323,7 +357,8 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
         <DialogHeader>
           <DialogTitle>Connect Slack Channel</DialogTitle>
           <DialogDescription>
-            Paste a Slack Incoming Webhook URL to send event notifications to your channel.
+            Paste a Slack Incoming Webhook URL to send event notifications to
+            your channel.
           </DialogDescription>
         </DialogHeader>
 
@@ -369,12 +404,17 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground text-xs">Leave empty to receive all events</p>
+            <p className="text-muted-foreground text-xs">
+              Leave empty to receive all events
+            </p>
             <div className="bg-muted/30 max-h-48 space-y-4 overflow-y-auto rounded-lg border p-3">
               {Object.entries(eventsByCategory).map(([category, events]) => {
-                const categorySelected = events.every((e) => selectedEvents.includes(e.type));
+                const categorySelected = events.every((e) =>
+                  selectedEvents.includes(e.type)
+                );
                 const categoryPartial =
-                  !categorySelected && events.some((e) => selectedEvents.includes(e.type));
+                  !categorySelected &&
+                  events.some((e) => selectedEvents.includes(e.type));
 
                 return (
                   <div key={category}>
@@ -384,9 +424,8 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
                         checked={categorySelected}
                         ref={(el) => {
                           if (el) {
-                            (el as HTMLButtonElement).dataset.state = categoryPartial
-                              ? "indeterminate"
-                              : undefined;
+                            (el as HTMLButtonElement).dataset.state =
+                              categoryPartial ? "indeterminate" : undefined;
                           }
                         }}
                         onCheckedChange={() => toggleCategory(category)}
@@ -401,7 +440,10 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
                     </div>
                     <div className="ml-6 space-y-1">
                       {events.map((event) => (
-                        <div key={event.type} className="flex items-start gap-2">
+                        <div
+                          key={event.type}
+                          className="flex items-start gap-2"
+                        >
                           <Checkbox
                             id={`slack-${event.type}`}
                             checked={selectedEvents.includes(event.type)}
@@ -487,7 +529,9 @@ function WebhookEndpointsSection({
         <CardDescription>
           Configure endpoints to receive webhook events
           {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">Webhooks require a Professional plan.</span>
+            <span className="text-warning mt-1 block">
+              Webhooks require a Professional plan.
+            </span>
           )}
         </CardDescription>
       </CardHeader>
@@ -511,14 +555,16 @@ function WebhookEndpointsSection({
             </p>
             <Button
               onClick={() => setIsCreating(true)}
-              className="bg-ai-accent hover:bg-ai-accent/90 mt-6 text-primary-foreground"
+              className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground mt-6"
               disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Endpoint
             </Button>
             {!isPro && !isLoadingPlan && (
-              <p className="text-warning mt-2 text-sm">Requires a Professional plan</p>
+              <p className="text-warning mt-2 text-sm">
+                Requires a Professional plan
+              </p>
             )}
           </div>
         ) : (
@@ -545,7 +591,11 @@ interface CreateWebhookDialogProps {
   eventTypes: { type: string; category: string; description: string }[];
 }
 
-function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDialogProps) {
+function CreateWebhookDialog({
+  open,
+  onOpenChange,
+  eventTypes,
+}: CreateWebhookDialogProps) {
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -579,7 +629,9 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
         toast.success("Webhook endpoint created");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create webhook");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create webhook"
+      );
     }
   };
 
@@ -604,17 +656,23 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
 
   const toggleEvent = (eventType: string) => {
     setSelectedEvents((prev) =>
-      prev.includes(eventType) ? prev.filter((e) => e !== eventType) : [...prev, eventType],
+      prev.includes(eventType)
+        ? prev.filter((e) => e !== eventType)
+        : [...prev, eventType]
     );
   };
 
   const toggleCategory = (category: string) => {
-    const categoryEvents = eventTypes.filter((e) => e.category === category).map((e) => e.type);
+    const categoryEvents = eventTypes
+      .filter((e) => e.category === category)
+      .map((e) => e.type);
 
     const allSelected = categoryEvents.every((e) => selectedEvents.includes(e));
 
     if (allSelected) {
-      setSelectedEvents((prev) => prev.filter((e) => !categoryEvents.includes(e)));
+      setSelectedEvents((prev) =>
+        prev.filter((e) => !categoryEvents.includes(e))
+      );
     } else {
       setSelectedEvents((prev) => [...new Set([...prev, ...categoryEvents])]);
     }
@@ -628,20 +686,25 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
       acc[event.category].push(event);
       return acc;
     },
-    {} as Record<string, typeof eventTypes>,
+    {} as Record<string, typeof eventTypes>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground">
+        <Button
+          size="sm"
+          className="bg-ai-accent hover:bg-ai-accent/90 text-primary-foreground"
+        >
           <Plus className="mr-1 h-4 w-4" />
           Add Endpoint
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{newSecret ? "Webhook Created" : "Create Webhook Endpoint"}</DialogTitle>
+          <DialogTitle>
+            {newSecret ? "Webhook Created" : "Create Webhook Endpoint"}
+          </DialogTitle>
           <DialogDescription>
             {newSecret
               ? "Copy your signing secret now. You won't be able to see it again."
@@ -680,8 +743,12 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
             <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
               <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <p className="text-warning font-medium">Store this secret securely</p>
-                <p className="text-warning text-sm">You'll need it to verify webhook signatures.</p>
+                <p className="text-warning font-medium">
+                  Store this secret securely
+                </p>
+                <p className="text-warning text-sm">
+                  You'll need it to verify webhook signatures.
+                </p>
               </div>
             </div>
             <DialogFooter>
@@ -714,11 +781,15 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                 onChange={(e) => setUrl(e.target.value)}
                 className="font-mono"
               />
-              <p className="text-muted-foreground text-xs">Must be HTTPS for production use</p>
+              <p className="text-muted-foreground text-xs">
+                Must be HTTPS for production use
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="webhook-description">Description (optional)</Label>
+              <Label htmlFor="webhook-description">
+                Description (optional)
+              </Label>
               <Textarea
                 id="webhook-description"
                 placeholder="What this webhook is used for..."
@@ -737,12 +808,17 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                   </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground text-xs">Leave empty to receive all events</p>
+              <p className="text-muted-foreground text-xs">
+                Leave empty to receive all events
+              </p>
               <div className="bg-muted/30 max-h-48 space-y-4 overflow-y-auto rounded-lg border p-3">
                 {Object.entries(eventsByCategory).map(([category, events]) => {
-                  const categorySelected = events.every((e) => selectedEvents.includes(e.type));
+                  const categorySelected = events.every((e) =>
+                    selectedEvents.includes(e.type)
+                  );
                   const categoryPartial =
-                    !categorySelected && events.some((e) => selectedEvents.includes(e.type));
+                    !categorySelected &&
+                    events.some((e) => selectedEvents.includes(e.type));
 
                   return (
                     <div key={category}>
@@ -752,9 +828,8 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                           checked={categorySelected}
                           ref={(el) => {
                             if (el) {
-                              (el as HTMLButtonElement).dataset.state = categoryPartial
-                                ? "indeterminate"
-                                : undefined;
+                              (el as HTMLButtonElement).dataset.state =
+                                categoryPartial ? "indeterminate" : undefined;
                             }
                           }}
                           onCheckedChange={() => toggleCategory(category)}
@@ -769,7 +844,10 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                       </div>
                       <div className="ml-6 space-y-1">
                         {events.map((event) => (
-                          <div key={event.type} className="flex items-start gap-2">
+                          <div
+                            key={event.type}
+                            className="flex items-start gap-2"
+                          >
                             <Checkbox
                               id={event.type}
                               checked={selectedEvents.includes(event.type)}
@@ -829,7 +907,7 @@ type WebhookEndpointStatusConfig = {
 };
 
 function webhookEndpointStatusConfig(
-  status: WebhookEndpointWithStats["status"],
+  status: WebhookEndpointWithStats["status"]
 ): WebhookEndpointStatusConfig {
   const config = {
     active: {
@@ -847,11 +925,17 @@ function webhookEndpointStatusConfig(
       badge: "text-destructive",
       dot: "bg-destructive",
     },
-  } satisfies Record<WebhookEndpointWithStats["status"], WebhookEndpointStatusConfig>;
+  } satisfies Record<
+    WebhookEndpointWithStats["status"],
+    WebhookEndpointStatusConfig
+  >;
   return config[status];
 }
 
-function splitWebhookUrl(url: string): { readonly protocol: string; readonly urlPath: string } {
+function splitWebhookUrl(url: string): {
+  readonly protocol: string;
+  readonly urlPath: string;
+} {
   const urlParts = url.match(/^(https?:\/\/)(.+)$/);
   return {
     protocol: urlParts?.[1] || "",
@@ -876,7 +960,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
   const deliveries = useQuery(
     api.webhooks.queries.listDeliveries,
-    isExpanded ? { endpointId: endpoint._id, limit: 25 } : "skip",
+    isExpanded ? { endpointId: endpoint._id, limit: 25 } : "skip"
   );
 
   const handleToggleStatus = async () => {
@@ -886,9 +970,13 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
         endpointId: endpoint._id,
         status: newStatus,
       });
-      toast.success(newStatus === "active" ? "Webhook enabled" : "Webhook paused");
+      toast.success(
+        newStatus === "active" ? "Webhook enabled" : "Webhook paused"
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update webhook");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update webhook"
+      );
     }
   };
 
@@ -897,7 +985,9 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
       await deleteEndpoint({ endpointId: endpoint._id });
       toast.success("Webhook deleted");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete webhook");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete webhook"
+      );
     }
   };
 
@@ -909,7 +999,9 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
         toast.success("New secret copied to clipboard");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to rotate secret");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to rotate secret"
+      );
     }
   };
 
@@ -919,7 +1011,9 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
       await testEndpoint({ endpointId: endpoint._id });
       toast.success("Test webhook sent");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to send test");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send test"
+      );
     } finally {
       setIsTesting(false);
     }
@@ -936,7 +1030,9 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <div className="group hover:border-ai-accent/30 relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:shadow-sm">
-        <div className={cn("absolute top-0 bottom-0 left-0 w-1", config.border)} />
+        <div
+          className={cn("absolute top-0 bottom-0 left-0 w-1", config.border)}
+        />
         <WebhookEndpointSummary
           actions={actions}
           config={config}
@@ -976,8 +1072,16 @@ function WebhookEndpointSummary({
   return (
     <div className="p-4 pl-5">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <WebhookEndpointIdentity config={config} endpoint={endpoint} isExpanded={isExpanded} />
-        <WebhookEndpointButtons actions={actions} endpoint={endpoint} isTesting={isTesting} />
+        <WebhookEndpointIdentity
+          config={config}
+          endpoint={endpoint}
+          isExpanded={isExpanded}
+        />
+        <WebhookEndpointButtons
+          actions={actions}
+          endpoint={endpoint}
+          isTesting={isTesting}
+        />
       </div>
     </div>
   );
@@ -1023,16 +1127,25 @@ function WebhookEndpointIdentity({
   );
 }
 
-function WebhookEndpointStats({ endpoint }: { readonly endpoint: WebhookEndpointWithStats }) {
+function WebhookEndpointStats({
+  endpoint,
+}: {
+  readonly endpoint: WebhookEndpointWithStats;
+}) {
   return (
     <div className="text-muted-foreground flex items-center gap-4 text-xs">
       <span
-        className={cn("font-mono font-medium", successRateClassName(endpoint.stats.successRate))}
+        className={cn(
+          "font-mono font-medium",
+          successRateClassName(endpoint.stats.successRate)
+        )}
       >
         {endpoint.stats.successRate}% success
       </span>
       <span>
-        {endpoint.events.length === 0 ? "All events" : `${endpoint.events.length} events`}
+        {endpoint.events.length === 0
+          ? "All events"
+          : `${endpoint.events.length} events`}
       </span>
       {endpoint.lastSuccessAt && (
         <span>Last success {formatRelativeTime(endpoint.lastSuccessAt)}</span>
@@ -1059,7 +1172,9 @@ function WebhookEndpointButtons({
         disabled={isTesting}
         title="Send test webhook"
       >
-        <Send className={cn("h-4 w-4", isTesting && "motion-safe:animate-pulse")} />
+        <Send
+          className={cn("h-4 w-4", isTesting && "motion-safe:animate-pulse")}
+        />
       </Button>
       <Button
         variant="outline"
@@ -1078,7 +1193,11 @@ function WebhookEndpointButtons({
   );
 }
 
-function DeleteWebhookButton({ deleteEndpoint }: { readonly deleteEndpoint: () => Promise<void> }) {
+function DeleteWebhookButton({
+  deleteEndpoint,
+}: {
+  readonly deleteEndpoint: () => Promise<void>;
+}) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -1090,8 +1209,8 @@ function DeleteWebhookButton({ deleteEndpoint }: { readonly deleteEndpoint: () =
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Webhook</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete this webhook endpoint and all its delivery history. This
-            action cannot be undone.
+            This will permanently delete this webhook endpoint and all its
+            delivery history. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1156,19 +1275,27 @@ function SigningSecretSection({
           <code
             className={cn(
               "font-mono text-sm transition-[filter,color] duration-300",
-              showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
+              showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm"
             )}
           >
-            {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
+            {showSecret
+              ? `${endpoint.secretPrefix}...`
+              : "whsec_••••••••••••••••"}
           </code>
         </div>
         <Button
           variant="outline"
           size="icon"
-          aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
+          aria-label={
+            showSecret ? "Hide signing secret" : "Show signing secret"
+          }
           onClick={() => setShowSecret(!showSecret)}
         >
-          {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showSecret ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
         </Button>
         <RotateSecretButton rotateSecret={rotateSecret} />
       </div>
@@ -1176,7 +1303,11 @@ function SigningSecretSection({
   );
 }
 
-function RotateSecretButton({ rotateSecret }: { readonly rotateSecret: () => Promise<void> }) {
+function RotateSecretButton({
+  rotateSecret,
+}: {
+  readonly rotateSecret: () => Promise<void>;
+}) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -1193,8 +1324,8 @@ function RotateSecretButton({ rotateSecret }: { readonly rotateSecret: () => Pro
         <AlertDialogHeader>
           <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
           <AlertDialogDescription>
-            This will generate a new signing secret. The old secret will be invalidated immediately.
-            Make sure to update your integration.
+            This will generate a new signing secret. The old secret will be
+            invalidated immediately. Make sure to update your integration.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1211,7 +1342,11 @@ function RotateSecretButton({ rotateSecret }: { readonly rotateSecret: () => Pro
   );
 }
 
-function SubscribedEventsSection({ events }: { readonly events: readonly string[] }) {
+function SubscribedEventsSection({
+  events,
+}: {
+  readonly events: readonly string[];
+}) {
   return (
     <div className="space-y-2">
       <Label>Subscribed Events</Label>
@@ -1298,8 +1433,11 @@ function deliveryStatusConfig(status: WebhookDelivery["status"]): {
 }
 
 function responseCodeColor(responseCode: number | undefined): string {
-  if (responseCode && responseCode >= 200 && responseCode < 300) return "text-success";
-  return responseCode && responseCode >= 400 ? "text-destructive" : "text-warning";
+  if (responseCode && responseCode >= 200 && responseCode < 300)
+    return "text-success";
+  return responseCode && responseCode >= 400
+    ? "text-destructive"
+    : "text-warning";
 }
 
 function parsedDeliveryPayload(payload: string): string {
@@ -1316,9 +1454,14 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
 
   return (
     <div className="relative flex items-start gap-3">
-      {!isLast && <div className="bg-border absolute top-7 bottom-0 left-[11px] w-px" />}
+      {!isLast && (
+        <div className="bg-border absolute top-7 bottom-0 left-[11px] w-px" />
+      )}
       <div
-        className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full", config.bg)}
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+          config.bg
+        )}
       >
         {config.icon}
       </div>
@@ -1356,13 +1499,24 @@ function DeliverySummaryButton({
       </div>
       <div className="text-muted-foreground flex items-center gap-3 text-xs">
         {delivery.responseCode && (
-          <span className={cn("font-mono font-medium", responseCodeColor(delivery.responseCode))}>
+          <span
+            className={cn(
+              "font-mono font-medium",
+              responseCodeColor(delivery.responseCode)
+            )}
+          >
             {delivery.responseCode}
           </span>
         )}
-        {delivery.responseTimeMs && <span className="font-mono">{delivery.responseTimeMs}ms</span>}
+        {delivery.responseTimeMs && (
+          <span className="font-mono">{delivery.responseTimeMs}ms</span>
+        )}
         <span>{formatRelativeTime(delivery.createdAt)}</span>
-        {isDetailOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        {isDetailOpen ? (
+          <ChevronDown className="h-3 w-3" />
+        ) : (
+          <ChevronRight className="h-3 w-3" />
+        )}
       </div>
     </button>
   );
@@ -1373,7 +1527,11 @@ function DeliveryDetails({ delivery }: { readonly delivery: WebhookDelivery }) {
     <div className="mt-2 space-y-3 rounded-lg border p-3">
       <DeliveryMetadataGrid delivery={delivery} />
       {delivery.errorMessage && (
-        <DeliveryCodeBlock label="Error" tone="error" value={delivery.errorMessage} />
+        <DeliveryCodeBlock
+          label="Error"
+          tone="error"
+          value={delivery.errorMessage}
+        />
       )}
       {delivery.responseBody && (
         <DeliveryCodeBlock
@@ -1391,7 +1549,11 @@ function DeliveryDetails({ delivery }: { readonly delivery: WebhookDelivery }) {
   );
 }
 
-function DeliveryMetadataGrid({ delivery }: { readonly delivery: WebhookDelivery }) {
+function DeliveryMetadataGrid({
+  delivery,
+}: {
+  readonly delivery: WebhookDelivery;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3 text-xs">
       <DeliveryMetadata
@@ -1409,12 +1571,21 @@ function DeliveryMetadataGrid({ delivery }: { readonly delivery: WebhookDelivery
         value={delivery.eventId}
         valueClassName="truncate font-mono"
       />
-      <DeliveryMetadata label="Created" value={formatDate(delivery.createdAt)} />
+      <DeliveryMetadata
+        label="Created"
+        value={formatDate(delivery.createdAt)}
+      />
       {delivery.deliveredAt && (
-        <DeliveryMetadata label="Delivered" value={formatDate(delivery.deliveredAt)} />
+        <DeliveryMetadata
+          label="Delivered"
+          value={formatDate(delivery.deliveredAt)}
+        />
       )}
       {delivery.nextRetryAt && (
-        <DeliveryMetadata label="Next Retry" value={formatDate(delivery.nextRetryAt)} />
+        <DeliveryMetadata
+          label="Next Retry"
+          value={formatDate(delivery.nextRetryAt)}
+        />
       )}
     </div>
   );
@@ -1457,7 +1628,7 @@ function DeliveryCodeBlock({
           maxHeightClassName,
           tone === "error"
             ? "bg-destructive/10 border-destructive/30 text-destructive"
-            : "bg-muted",
+            : "bg-muted"
         )}
       >
         {value}
@@ -1481,7 +1652,7 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
       acc[event.category].push(event);
       return acc;
     },
-    {} as Record<string, typeof eventTypes>,
+    {} as Record<string, typeof eventTypes>
   );
 
   return (
@@ -1493,8 +1664,12 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
               <div className="flex items-center gap-2">
                 <Zap className="text-ai-accent h-5 w-5" />
                 <div>
-                  <CardTitle className="text-base">Event Types Reference</CardTitle>
-                  <CardDescription>All available webhook event types</CardDescription>
+                  <CardTitle className="text-base">
+                    Event Types Reference
+                  </CardTitle>
+                  <CardDescription>
+                    All available webhook event types
+                  </CardDescription>
                 </div>
               </div>
               {isOpen ? (
@@ -1544,7 +1719,9 @@ function WebhookDocumentation() {
           <ExternalLink className="text-ai-accent h-5 w-5" />
           <CardTitle>Webhook Documentation</CardTitle>
         </div>
-        <CardDescription>Learn how to verify and handle webhook events</CardDescription>
+        <CardDescription>
+          Learn how to verify and handle webhook events
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="bg-muted relative overflow-hidden rounded-lg border">
@@ -1617,7 +1794,10 @@ function WebhookDocumentation() {
               ["X-Seal-Event-Id", "Unique event identifier"],
               ["X-Seal-Event-Type", "Event type name"],
             ].map(([header, description]) => (
-              <div key={header} className="flex items-center justify-between gap-4">
+              <div
+                key={header}
+                className="flex items-center justify-between gap-4"
+              >
                 <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
                   {header}
                 </code>

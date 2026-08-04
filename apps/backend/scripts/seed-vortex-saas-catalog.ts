@@ -10,7 +10,11 @@
  * - lookupKey metadata mirrored into VORTEX_BILLING_SAAS_PRICE_MAP
  */
 
-import { createClient, createProduct, createPrice } from "@vortexnyc/payments-sdk";
+import {
+  createClient,
+  createProduct,
+  createPrice,
+} from "@vortexnyc/payments-sdk";
 
 type BillingCurrency = "USD" | "CAD";
 type BillingInterval = "day" | "week" | "month" | "year";
@@ -72,7 +76,9 @@ type CatalogMutationResult = {
 
 async function main(): Promise<void> {
   if (process.env.CI === "true") {
-    throw new Error("seed-vortex-saas-catalog.ts is manual-only and must never run in CI");
+    throw new Error(
+      "seed-vortex-saas-catalog.ts is manual-only and must never run in CI"
+    );
   }
 
   validateOperatorEditedPlans(SEAL_SAAS_PLANS);
@@ -91,7 +97,9 @@ async function main(): Promise<void> {
 
   const productResult = await createProduct({
     client,
-    headers: { "Idempotency-Key": `seal-saas-product:${SEAL_SAAS_PRODUCT.productId}` },
+    headers: {
+      "Idempotency-Key": `seal-saas-product:${SEAL_SAAS_PRODUCT.productId}`,
+    },
     body: {
       productId: SEAL_SAAS_PRODUCT.productId,
       name: SEAL_SAAS_PRODUCT.name,
@@ -130,7 +138,10 @@ async function main(): Promise<void> {
   console.info(JSON.stringify(seededPriceMap, null, 2));
 }
 
-function handleCatalogResult(result: CatalogMutationResult, label: string): void {
+function handleCatalogResult(
+  result: CatalogMutationResult,
+  label: string
+): void {
   const { data, error, response } = result;
 
   if (response?.status === 409) {
@@ -141,17 +152,23 @@ function handleCatalogResult(result: CatalogMutationResult, label: string): void
   if (error !== undefined || response === undefined || !response.ok) {
     const status = response?.status ?? "no-response";
     throw new Error(
-      `Vortex Billing seed failed for ${label} (${status}): ${summarize(error ?? data)}`,
+      `Vortex Billing seed failed for ${label} (${status}): ${summarize(error ?? data)}`
     );
   }
 }
 
-function validateOperatorEditedPlans(plans: readonly SeedPlanDefinition[]): void {
+function validateOperatorEditedPlans(
+  plans: readonly SeedPlanDefinition[]
+): void {
   const placeholderPlans = plans.filter((plan) => plan.unitAmount === 0);
 
   if (placeholderPlans.length > 0) {
-    const lookupKeys = placeholderPlans.map((plan) => plan.lookupKey).join(", ");
-    throw new Error(`Set real unitAmount values before seeding Vortex Billing: ${lookupKeys}`);
+    const lookupKeys = placeholderPlans
+      .map((plan) => plan.lookupKey)
+      .join(", ");
+    throw new Error(
+      `Set real unitAmount values before seeding Vortex Billing: ${lookupKeys}`
+    );
   }
 }
 
@@ -173,7 +190,9 @@ function summarize(value: unknown): string {
   }
 
   if (value instanceof Error) {
-    return value.message.length > 0 ? `${value.name}: ${value.message}` : value.name;
+    return value.message.length > 0
+      ? `${value.name}: ${value.message}`
+      : value.name;
   }
 
   try {

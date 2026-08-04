@@ -85,7 +85,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const { data: recipients } = await response.json();
@@ -148,7 +148,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const recipient = await response.json();
@@ -176,8 +176,9 @@ curl -X GET "https://seal.convex.site/api/v1/recipients/get?document_id=jd7k8l9m
 ```
 
 <Callout type="info">
-  **Note**: The `signing_url` is only included when retrieving a single recipient. This URL allows
-  the recipient to access the document directly without authentication.
+  **Note**: The `signing_url` is only included when retrieving a single
+  recipient. This URL allows the recipient to access the document directly
+  without authentication.
 </Callout>
 
 ## Add Recipient
@@ -222,7 +223,7 @@ const response = await fetch(
       order: 1,
       message: "Please review and sign this agreement.",
     }),
-  },
+  }
 );
 
 const recipient = await response.json();
@@ -292,7 +293,7 @@ const response = await fetch(
       name: "John Smith",
       order: 2,
     }),
-  },
+  }
 );
 
 const recipient = await response.json();
@@ -311,8 +312,8 @@ curl -X PUT "https://seal.convex.site/api/v1/recipients/update?document_id=jd7k8
 ```
 
 <Callout type="warn">
-  **Warning**: You cannot change a recipient's role or email after they have viewed or signed the
-  document. Create a new recipient instead.
+  **Warning**: You cannot change a recipient's role or email after they have
+  viewed or signed the document. Create a new recipient instead.
 </Callout>
 
 ## Remove Recipient
@@ -339,7 +340,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const result = await response.json();
@@ -354,7 +355,8 @@ curl -X DELETE "https://seal.convex.site/api/v1/recipients/delete?document_id=jd
 ```
 
 <Callout type="warn">
-  **Warning**: You cannot remove a recipient who has already signed or approved the document.
+  **Warning**: You cannot remove a recipient who has already signed or approved
+  the document.
 </Callout>
 
 ## Send Reminder
@@ -391,7 +393,7 @@ const response = await fetch(
     body: JSON.stringify({
       message: "Gentle reminder to review and sign the agreement.",
     }),
-  },
+  }
 );
 
 const result = await response.json();
@@ -419,7 +421,8 @@ curl -X POST "https://seal.convex.site/api/v1/recipients/remind?document_id=jd7k
 ```
 
 <Callout type="info">
-  **Rate Limiting**: You can only send one reminder per recipient every 24 hours to prevent spam.
+  **Rate Limiting**: You can only send one reminder per recipient every 24 hours
+  to prevent spam.
 </Callout>
 
 ## Sequential Signing

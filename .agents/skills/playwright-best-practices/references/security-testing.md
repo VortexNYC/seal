@@ -107,7 +107,9 @@ test("forms include CSRF token", async ({ page }) => {
   await page.goto("/settings");
 
   // Check form has CSRF token
-  const csrfInput = page.locator('input[name="_csrf"], input[name="csrf_token"]');
+  const csrfInput = page.locator(
+    'input[name="_csrf"], input[name="csrf_token"]'
+  );
   await expect(csrfInput).toBeAttached();
 
   const csrfValue = await csrfInput.getAttribute("value");
@@ -155,7 +157,9 @@ test("accepts requests with valid CSRF token", async ({ page }) => {
   await page.goto("/settings");
 
   // Get CSRF token from page
-  const csrfToken = await page.locator('meta[name="csrf-token"]').getAttribute("content");
+  const csrfToken = await page
+    .locator('meta[name="csrf-token"]')
+    .getAttribute("content");
 
   // Submit form normally
   await page.getByLabel("Theme").selectOption("dark");
@@ -216,7 +220,9 @@ test("handles concurrent session limit", async ({ browser }) => {
 
   // First session should be invalidated (or warning shown)
   await page1.reload();
-  await expect(page1.getByText(/session.*another device|logged out/i)).toBeVisible();
+  await expect(
+    page1.getByText(/session.*another device|logged out/i)
+  ).toBeVisible();
 
   await context1.close();
   await context2.close();
@@ -269,7 +275,7 @@ test.describe("authorization", () => {
     expect(
       (await page.getByText("Access denied").isVisible()) ||
         (await page.url()).includes("/login") ||
-        (await page.url()).includes("/403"),
+        (await page.url()).includes("/403")
     ).toBe(true);
 
     await context.close();
@@ -287,7 +293,10 @@ test.describe("authorization", () => {
 ### Test IDOR (Insecure Direct Object Reference)
 
 ```typescript
-test("cannot access other user resources by changing ID", async ({ page, request }) => {
+test("cannot access other user resources by changing ID", async ({
+  page,
+  request,
+}) => {
   // Get current user's order
   await page.goto("/orders/my-order-123");
   await expect(page.getByText("Order #my-order-123")).toBeVisible();
@@ -322,7 +331,9 @@ test("SQL injection is prevented", async ({ page }) => {
     await expect(page.getByText("Error")).not.toBeVisible();
 
     // Should show no results or escaped text
-    const hasError = await page.getByText(/database error|sql|syntax/i).isVisible();
+    const hasError = await page
+      .getByText(/database error|sql|syntax/i)
+      .isVisible();
     expect(hasError).toBe(false);
   }
 });

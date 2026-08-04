@@ -69,7 +69,7 @@ export function useAnalytics() {
       });
       identifiedUserRef.current = user.userId;
     },
-    [posthog],
+    [posthog]
   );
 
   /**
@@ -89,7 +89,7 @@ export function useAnalytics() {
       });
       identifiedOrgRef.current = org.organizationId;
     },
-    [posthog],
+    [posthog]
   );
 
   /**
@@ -109,77 +109,77 @@ export function useAnalytics() {
     (properties?: DocumentProperties) => {
       posthog?.capture("document_uploaded", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const documentSent = useCallback(
     (properties?: DocumentProperties & { recipientCount?: number }) => {
       posthog?.capture("document_sent", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const documentCancelled = useCallback(
     (properties?: DocumentProperties) => {
       posthog?.capture("document_cancelled", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const documentDeleted = useCallback(
     (properties?: DocumentProperties) => {
       posthog?.capture("document_deleted", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const documentDownloaded = useCallback(
     (properties?: DocumentProperties) => {
       posthog?.capture("document_downloaded", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const templateUsed = useCallback(
     (properties?: TemplateProperties) => {
       posthog?.capture("template_used", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const templateEdited = useCallback(
     (properties?: TemplateProperties) => {
       posthog?.capture("template_edited", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const templateDeleted = useCallback(
     (properties?: TemplateProperties) => {
       posthog?.capture("template_deleted", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const signatureCompleted = useCallback(
     (properties?: SignatureProperties) => {
       posthog?.capture("signature_completed", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const signatureDeclined = useCallback(
     (properties?: SignatureProperties & { reason?: string }) => {
       posthog?.capture("signature_declined", properties);
     },
-    [posthog],
+    [posthog]
   );
 
   const capture = useCallback(
     (eventName: string, properties?: Record<string, unknown>) => {
       posthog?.capture(eventName, properties);
     },
-    [posthog],
+    [posthog]
   );
 
   return {

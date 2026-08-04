@@ -7,7 +7,7 @@ import { type Infer, v } from "convex/values";
 export const recipientRoleTuple = v.union(
   v.literal("signer"), // Must sign the document
   v.literal("viewer"), // Can only view the document
-  v.literal("approver"), // Must approve before signing can proceed
+  v.literal("approver") // Must approve before signing can proceed
 );
 export type RecipientRole = Infer<typeof recipientRoleTuple>;
 
@@ -20,7 +20,7 @@ export const recipientStatusTuple = v.union(
   v.literal("signed"), // Has signed the document
   v.literal("approved"), // Has approved the document (approvers only)
   v.literal("declined"), // Declined to sign/approve
-  v.literal("expired"), // Signing period expired
+  v.literal("expired") // Signing period expired
 );
 export type RecipientStatus = Infer<typeof recipientStatusTuple>;
 
@@ -68,8 +68,8 @@ export const documentRecipientsTable = defineTable({
     v.union(
       v.literal("drawn"), // Hand-drawn signature
       v.literal("typed"), // Typed name as signature
-      v.literal("uploaded"), // Uploaded signature image
-    ),
+      v.literal("uploaded") // Uploaded signature image
+    )
   ),
 
   // ESIGN Act consent tracking
@@ -131,7 +131,10 @@ export function getRecipientStatusLabel(status: RecipientStatus): string {
 /**
  * Check if recipient has completed their required action
  */
-export function isRecipientComplete(role: RecipientRole, status: RecipientStatus): boolean {
+export function isRecipientComplete(
+  role: RecipientRole,
+  status: RecipientStatus
+): boolean {
   switch (role) {
     case "signer":
       return status === "signed";
@@ -149,6 +152,9 @@ export function isRecipientComplete(role: RecipientRole, status: RecipientStatus
  */
 export function isRecipientTerminal(status: RecipientStatus): boolean {
   return (
-    status === "signed" || status === "approved" || status === "declined" || status === "expired"
+    status === "signed" ||
+    status === "approved" ||
+    status === "declined" ||
+    status === "expired"
   );
 }

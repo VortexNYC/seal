@@ -147,10 +147,11 @@ export const extractPaymentInternal = internalAction({
       } catch (error) {
         lastError = error;
         if (attempt < RETRY_CONFIG.maxRetries) {
-          const delayMs = RETRY_CONFIG.initialDelayMs * RETRY_CONFIG.backoffBase ** attempt;
+          const delayMs =
+            RETRY_CONFIG.initialDelayMs * RETRY_CONFIG.backoffBase ** attempt;
           console.warn(
             `[AI Pipeline] Payment extraction attempt ${attempt + 1} failed, retrying in ${delayMs}ms`,
-            error,
+            error
           );
           await new Promise((resolve) => setTimeout(resolve, delayMs));
         }

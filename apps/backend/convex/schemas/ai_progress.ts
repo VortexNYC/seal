@@ -11,7 +11,7 @@ export const aiProgressTable = defineTable({
     v.literal("in_progress"),
     v.literal("completed"),
     v.literal("aborted"),
-    v.literal("failed"),
+    v.literal("failed")
   ),
   error: v.optional(v.string()),
   startedAt: v.number(),

@@ -108,7 +108,10 @@ import path from "path";
 
 type DownloadFixtures = {
   downloadDir: string;
-  downloadAndVerify: (trigger: () => Promise<void>, expectedFilename: string) => Promise<string>;
+  downloadAndVerify: (
+    trigger: () => Promise<void>,
+    expectedFilename: string
+  ) => Promise<string>;
 };
 
 export const test = base.extend<DownloadFixtures>({
@@ -143,7 +146,9 @@ test("upload profile picture", async ({ page }) => {
   await page.goto("/settings/profile");
 
   // Upload file
-  await page.getByLabel("Profile Picture").setInputFiles("./fixtures/avatar.png");
+  await page
+    .getByLabel("Profile Picture")
+    .setInputFiles("./fixtures/avatar.png");
 
   // Verify preview
   await expect(page.getByAltText("Profile preview")).toBeVisible();
@@ -161,7 +166,11 @@ test("upload multiple documents", async ({ page }) => {
 
   await page
     .getByLabel("Documents")
-    .setInputFiles(["./fixtures/doc1.pdf", "./fixtures/doc2.pdf", "./fixtures/doc3.pdf"]);
+    .setInputFiles([
+      "./fixtures/doc1.pdf",
+      "./fixtures/doc2.pdf",
+      "./fixtures/doc3.pdf",
+    ]);
 
   // Verify all files listed
   await expect(page.getByText("doc1.pdf")).toBeVisible();
@@ -253,7 +262,7 @@ test("drag and drop file upload", async ({ page }) => {
       });
       dataTransfer.items.add(file);
     },
-    [dataTransfer, [...buffer]] as const,
+    [dataTransfer, [...buffer]] as const
   );
 
   // Dispatch drop event

@@ -4,9 +4,11 @@ import { type Infer, v } from "convex/values";
 export const documentPermissionLevelTuple = v.union(
   v.literal("view"), // Read-only access
   v.literal("edit"), // Can modify document
-  v.literal("manage"), // Can share, transfer ownership, delete
+  v.literal("manage") // Can share, transfer ownership, delete
 );
-export type DocumentPermissionLevel = Infer<typeof documentPermissionLevelTuple>;
+export type DocumentPermissionLevel = Infer<
+  typeof documentPermissionLevelTuple
+>;
 
 export const documentAccessTable = defineTable({
   // References

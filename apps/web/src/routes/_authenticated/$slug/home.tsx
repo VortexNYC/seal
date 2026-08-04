@@ -132,7 +132,9 @@ function WorkspaceHome(): React.ReactElement | null {
   const { slug } = Route.useParams();
   const { user } = useUser();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    slug,
+  });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   if (!organization || !orgId) return null;
@@ -150,11 +152,14 @@ function WorkspaceHome(): React.ReactElement | null {
           }}
         >
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {greeting}, <span className="font-serif font-normal italic">{firstName}</span>
+            {greeting},{" "}
+            <span className="font-serif font-normal italic">{firstName}</span>
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
             Here&apos;s what&apos;s happening in{" "}
-            <span className="text-foreground font-medium">{organization.name}</span>
+            <span className="text-foreground font-medium">
+              {organization.name}
+            </span>
           </p>
         </div>
 
@@ -194,7 +199,10 @@ function WorkspaceHome(): React.ReactElement | null {
         </Suspense>
 
         {/* Team Overview */}
-        <TeamOverview organizationName={organization.name} organizationId={orgId} />
+        <TeamOverview
+          organizationName={organization.name}
+          organizationId={orgId}
+        />
       </div>
     </PageWrapper>
   );

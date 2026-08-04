@@ -40,7 +40,9 @@ describe("ensureVortexAuthSystemRoles", () => {
     const roles = await seedAndListRoles();
 
     expect(roles).toHaveLength(Object.keys(ROLE_PERMISSIONS).length);
-    expect(roles.map((role) => role.name).sort()).toEqual(Object.keys(ROLE_PERMISSIONS).sort());
+    expect(roles.map((role) => role.name).sort()).toEqual(
+      Object.keys(ROLE_PERMISSIONS).sort()
+    );
   });
 
   test("component roles have the canonical permissions", async () => {
@@ -62,7 +64,7 @@ describe("ensureVortexAuthSystemRoles", () => {
 
     expect(second).toHaveLength(first.length);
     expect(second.map((role) => role.roleId).sort()).toEqual(
-      first.map((role) => role.roleId).sort(),
+      first.map((role) => role.roleId).sort()
     );
   });
 
@@ -95,7 +97,7 @@ describe("ensureVortexAuthSystemRoles", () => {
       expect(org1Ids.has(role.roleId)).toBe(false);
     }
     expect(org2Roles.map((role) => role.name).sort()).toEqual(
-      org1Roles.map((role) => role.name).sort(),
+      org1Roles.map((role) => role.name).sort()
     );
   });
 });

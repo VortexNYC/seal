@@ -6,7 +6,7 @@ export const userStatus = v.union(
   v.literal("inactive"),
   v.literal("suspended"),
   v.literal("pending"),
-  v.literal("blocked"),
+  v.literal("blocked")
 );
 export type UserStatus = Infer<typeof userStatus>;
 

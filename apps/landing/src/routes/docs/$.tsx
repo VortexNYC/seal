@@ -1,9 +1,18 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
+import {
+  DocsBody,
+  DocsDescription,
+  DocsPage,
+  DocsTitle,
+} from "fumadocs-ui/page";
 import { Suspense } from "react";
+
 import { PageLastUpdate } from "~/components/docs/page-last-update";
-import { renderDocsPageContent, preloadDocsPageContent } from "~/lib/docs/client-loader";
+import {
+  renderDocsPageContent,
+  preloadDocsPageContent,
+} from "~/lib/docs/client-loader";
 import { docsSource } from "~/lib/docs/server-source";
 
 export const Route = createFileRoute("/docs/$")({
@@ -40,12 +49,16 @@ const serverLoader = createServerFn({ method: "GET" })
 
 function DocsPageRoute() {
   const loaderData = Route.useLoaderData();
-  const lastModified = loaderData.lastModified ? new Date(loaderData.lastModified) : undefined;
+  const lastModified = loaderData.lastModified
+    ? new Date(loaderData.lastModified)
+    : undefined;
 
   return (
     <DocsPage key={loaderData.path} toc={loaderData.toc}>
       <DocsTitle>{loaderData.title}</DocsTitle>
-      {loaderData.description && <DocsDescription>{loaderData.description}</DocsDescription>}
+      {loaderData.description && (
+        <DocsDescription>{loaderData.description}</DocsDescription>
+      )}
       <DocsBody>
         <Suspense fallback={<div>Loading...</div>}>
           {renderDocsPageContent(loaderData.path)}

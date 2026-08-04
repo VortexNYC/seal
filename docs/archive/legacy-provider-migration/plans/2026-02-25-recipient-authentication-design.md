@@ -106,9 +106,13 @@ sms_verifications:
 securitySettings: v.optional(
   v.object({
     defaultAuthMethod: v.optional(
-      v.union(v.literal("email"), v.literal("sms"), v.literal("id_verification")),
+      v.union(
+        v.literal("email"),
+        v.literal("sms"),
+        v.literal("id_verification")
+      )
     ),
-  }),
+  })
 );
 ```
 

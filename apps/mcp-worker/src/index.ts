@@ -38,7 +38,8 @@ interface Env {
 // RFC 9728 protected-resource metadata, served by the worker for its own /mcp
 // resource and proxied from Seal Convex's seal-mcp document.
 const PROTECTED_RESOURCE_PATH = "/.well-known/oauth-protected-resource";
-const SEAL_PROTECTED_RESOURCE_PATH = "/.well-known/oauth-protected-resource/seal-mcp";
+const SEAL_PROTECTED_RESOURCE_PATH =
+  "/.well-known/oauth-protected-resource/seal-mcp";
 
 function withCors(resp: Response): Response {
   const h = new Headers(resp.headers);
@@ -46,7 +47,7 @@ function withCors(resp: Response): Response {
   h.set("Access-Control-Expose-Headers", "WWW-Authenticate, Mcp-Session-Id");
   h.set(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version",
+    "Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version"
   );
   h.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   return new Response(resp.body, { status: resp.status, headers: h });
@@ -84,20 +85,27 @@ function bridgeEnvToProcess(env: Env): void {
 function unauthorized(url: URL): Response {
   return withCors(
     new Response(
-      JSON.stringify({ error: "unauthorized", error_description: "Missing bearer token" }),
+      JSON.stringify({
+        error: "unauthorized",
+        error_description: "Missing bearer token",
+      }),
       {
         status: 401,
         headers: {
           "content-type": "application/json",
           "WWW-Authenticate": `Bearer resource_metadata="${url.origin}${PROTECTED_RESOURCE_PATH}"`,
         },
-      },
-    ),
+      }
+    )
   );
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<Response> {
     bridgeEnvToProcess(env);
 
     const url = new URL(request.url);
@@ -111,19 +119,26 @@ export default {
         Response.json({
           name: "Seal MCP Server",
           version: "0.0.1",
-          description: "Model Context Protocol server for Seal document management",
+          description:
+            "Model Context Protocol server for Seal document management",
           endpoints: {
             mcp: "/mcp",
             health: "/health",
             oauth_protected_resource: PROTECTED_RESOURCE_PATH,
           },
           documentation: "https://docs.seal.app/api/mcp",
-        }),
+        })
       );
     }
 
     if (url.pathname === "/health") {
-      return withCors(Response.json({ status: "ok", name: "seal-mcp-server", version: "0.0.1" }));
+      return withCors(
+        Response.json({
+          status: "ok",
+          name: "seal-mcp-server",
+          version: "0.0.1",
+        })
+      );
     }
 
     // RFC 9728 protected-resource metadata — proxied from Seal Convex's seal-mcp
@@ -133,23 +148,26 @@ export default {
       url.pathname === `${PROTECTED_RESOURCE_PATH}/mcp`
     ) {
       try {
-        const upstream = await fetch(`${getConvexSiteOrigin(env)}${SEAL_PROTECTED_RESOURCE_PATH}`);
+        const upstream = await fetch(
+          `${getConvexSiteOrigin(env)}${SEAL_PROTECTED_RESOURCE_PATH}`
+        );
         const body = await upstream.text();
         return withCors(
           new Response(body, {
             status: upstream.status,
             headers: { "content-type": "application/json" },
-          }),
+          })
         );
       } catch (error) {
         return withCors(
           Response.json(
             {
               error: "metadata_unavailable",
-              error_description: error instanceof Error ? error.message : "Unknown error",
+              error_description:
+                error instanceof Error ? error.message : "Unknown error",
             },
-            { status: 502 },
-          ),
+            { status: 502 }
+          )
         );
       }
     }
@@ -158,9 +176,13 @@ export default {
       if (request.method !== "POST") {
         return withCors(
           Response.json(
-            { jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed" }, id: null },
-            { status: 405 },
-          ),
+            {
+              jsonrpc: "2.0",
+              error: { code: -32000, message: "Method not allowed" },
+              id: null,
+            },
+            { status: 405 }
+          )
         );
       }
 
@@ -174,7 +196,10 @@ export default {
       // gate. Tools read the token via getMcpAuthContext().props (utils/auth.ts).
       const config = getConfig();
       const apiClient = new SealApiClient(config);
-      const server = new McpServer({ name: "seal-mcp-server", version: "0.0.1" });
+      const server = new McpServer({
+        name: "seal-mcp-server",
+        version: "0.0.1",
+      });
       registerAllTools(server, apiClient);
       registerAllResources(server, apiClient);
       registerAllPrompts(server);

@@ -10,16 +10,22 @@ interface BackgroundPatternProps {
   opacity?: number;
 }
 
-export function BackgroundPattern({ className, opacity = 0.05 }: BackgroundPatternProps) {
+export function BackgroundPattern({
+  className,
+  opacity = 0.05,
+}: BackgroundPatternProps) {
   return (
     <div
       className={cn(
         "bg-background pointer-events-none fixed inset-0 -z-50 overflow-hidden select-none",
-        className,
+        className
       )}
     >
       {/* Light mode pattern */}
-      <svg className="absolute inset-0 h-full w-full dark:hidden" aria-hidden="true">
+      <svg
+        className="absolute inset-0 h-full w-full dark:hidden"
+        aria-hidden="true"
+      >
         <defs>
           <pattern
             id="seal-pattern-light"
@@ -55,12 +61,25 @@ export function BackgroundPattern({ className, opacity = 0.05 }: BackgroundPatte
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" strokeWidth={0} fill="url(#dot-pattern-light)" />
-        <rect width="100%" height="100%" strokeWidth={0} fill="url(#seal-pattern-light)" />
+        <rect
+          width="100%"
+          height="100%"
+          strokeWidth={0}
+          fill="url(#dot-pattern-light)"
+        />
+        <rect
+          width="100%"
+          height="100%"
+          strokeWidth={0}
+          fill="url(#seal-pattern-light)"
+        />
       </svg>
 
       {/* Dark mode pattern */}
-      <svg className="absolute inset-0 hidden h-full w-full dark:block" aria-hidden="true">
+      <svg
+        className="absolute inset-0 hidden h-full w-full dark:block"
+        aria-hidden="true"
+      >
         <defs>
           <pattern
             id="seal-pattern-dark"
@@ -96,8 +115,18 @@ export function BackgroundPattern({ className, opacity = 0.05 }: BackgroundPatte
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" strokeWidth={0} fill="url(#dot-pattern-dark)" />
-        <rect width="100%" height="100%" strokeWidth={0} fill="url(#seal-pattern-dark)" />
+        <rect
+          width="100%"
+          height="100%"
+          strokeWidth={0}
+          fill="url(#dot-pattern-dark)"
+        />
+        <rect
+          width="100%"
+          height="100%"
+          strokeWidth={0}
+          fill="url(#seal-pattern-dark)"
+        />
       </svg>
     </div>
   );

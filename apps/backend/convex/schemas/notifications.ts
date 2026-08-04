@@ -11,7 +11,7 @@ export const notificationTypeTuple = v.union(
   v.literal("signature_requested"),
   v.literal("reminder"),
   v.literal("sharing_disabled"),
-  v.literal("bulk_access_revoked"),
+  v.literal("bulk_access_revoked")
 );
 export type NotificationType = Infer<typeof notificationTypeTuple>;
 
@@ -22,7 +22,11 @@ const baseNotificationData = {
 
 export const documentSharedData = v.object({
   ...baseNotificationData,
-  permissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
+  permissionLevel: v.union(
+    v.literal("view"),
+    v.literal("edit"),
+    v.literal("manage")
+  ),
   sharedBy: v.id("users"),
   sharedByName: v.optional(v.string()),
 });
@@ -37,8 +41,16 @@ export const accessRevokedData = v.object({
 
 export const accessUpdatedData = v.object({
   ...baseNotificationData,
-  oldPermissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
-  newPermissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
+  oldPermissionLevel: v.union(
+    v.literal("view"),
+    v.literal("edit"),
+    v.literal("manage")
+  ),
+  newPermissionLevel: v.union(
+    v.literal("view"),
+    v.literal("edit"),
+    v.literal("manage")
+  ),
   updatedBy: v.id("users"),
   updatedByName: v.optional(v.string()),
 });
@@ -101,7 +113,7 @@ export const notificationDataTuple = v.union(
   signatureRequestedData,
   reminderData,
   sharingDisabledData,
-  bulkAccessRevokedData,
+  bulkAccessRevokedData
 );
 export type NotificationData = Infer<typeof notificationDataTuple>;
 
@@ -109,7 +121,7 @@ export const emailStatusTuple = v.union(
   v.literal("pending"),
   v.literal("sent"),
   v.literal("failed"),
-  v.literal("not_applicable"),
+  v.literal("not_applicable")
 );
 export type EmailStatus = Infer<typeof emailStatusTuple>;
 

@@ -24,14 +24,18 @@ type SharingQueryDbCtx = Pick<QueryCtx, "db" | "runQuery">;
 async function canViewSharedDocument(
   ctx: SharingQueryDbCtx,
   document: Doc<"documents">,
-  userId: Id<"users">,
+  userId: Id<"users">
 ): Promise<boolean> {
   if (document.ownerId === userId) {
     return true;
   }
 
   if (document.sharingMode === "workspace") {
-    const member = await getActiveMembership(ctx, userId, document.organizationId);
+    const member = await getActiveMembership(
+      ctx,
+      userId,
+      document.organizationId
+    );
 
     if (member !== null && isAccountValid(member)) {
       return true;
@@ -40,19 +44,26 @@ async function canViewSharedDocument(
 
   const access = await ctx.db
     .query("document_access")
-    .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+    .withIndex("by_document_user", (q) =>
+      q.eq("documentId", document._id).eq("userId", userId)
+    )
     .first();
 
   return access !== null && access.revokedAt === undefined;
 }
 
-async function getActiveAccessWithUsers(ctx: SharingQueryDbCtx, documentId: Id<"documents">) {
+async function getActiveAccessWithUsers(
+  ctx: SharingQueryDbCtx,
+  documentId: Id<"documents">
+) {
   const accessRecords = await ctx.db
     .query("document_access")
     .withIndex("by_document", (q) => q.eq("documentId", documentId))
     .collect();
 
-  const activeAccessRecords = accessRecords.filter((record) => record.revokedAt === undefined);
+  const activeAccessRecords = accessRecords.filter(
+    (record) => record.revokedAt === undefined
+  );
 
   const sharedWith = await Promise.all(
     activeAccessRecords.map(async (access) => {
@@ -67,7 +78,7 @@ async function getActiveAccessWithUsers(ctx: SharingQueryDbCtx, documentId: Id<"
         grantedAt: access.grantedAt,
         grantedBy: grantedByUser?.name ?? "Unknown",
       };
-    }),
+    })
   );
 
   return { activeAccessRecords, sharedWith };
@@ -76,19 +87,19 @@ async function getActiveAccessWithUsers(ctx: SharingQueryDbCtx, documentId: Id<"
 async function getSharingSubscriptionState(
   ctx: SharingQueryDbCtx,
   organizationId: Id<"organizations">,
-  hasSharedDocuments: boolean,
+  hasSharedDocuments: boolean
 ) {
   const activeOrTrialing =
     (await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
+        q.eq("organizationId", organizationId).eq("status", "active")
       )
       .first()) ??
     (await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "trialing"),
+        q.eq("organizationId", organizationId).eq("status", "trialing")
       )
       .first());
 
@@ -101,7 +112,7 @@ async function getSharingSubscriptionState(
     pastDueSubscription = await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "past_due"),
+        q.eq("organizationId", organizationId).eq("status", "past_due")
       )
       .first();
     if (pastDueSubscription) {
@@ -112,7 +123,8 @@ async function getSharingSubscriptionState(
 
   return {
     canUseTeamSharing,
-    subscriptionStatus: (activeOrTrialing ?? pastDueSubscription)?.status ?? null,
+    subscriptionStatus:
+      (activeOrTrialing ?? pastDueSubscription)?.status ?? null,
     subscriptionWarning,
   };
 }
@@ -125,7 +137,11 @@ async function getSharingSubscriptionState(
 export const updateSharingMode = permissionMutation("documents:share")({
   args: {
     documentId: v.id("documents"),
-    sharingMode: v.union(v.literal("private"), v.literal("workspace"), v.literal("specific")),
+    sharingMode: v.union(
+      v.literal("private"),
+      v.literal("workspace"),
+      v.literal("specific")
+    ),
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
@@ -135,14 +151,14 @@ export const updateSharingMode = permissionMutation("documents:share")({
       ctx,
       userId,
       document,
-      "Only the document owner or managers can change sharing settings",
+      "Only the document owner or managers can change sharing settings"
     );
 
     if (args.sharingMode === "workspace" || args.sharingMode === "specific") {
       const subscription = await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", document.organizationId).eq("status", "active"),
+          q.eq("organizationId", document.organizationId).eq("status", "active")
         )
         .first();
 
@@ -150,7 +166,7 @@ export const updateSharingMode = permissionMutation("documents:share")({
 
       if (!isPro) {
         throw new ConvexError(
-          "Team sharing features require a Professional plan. Please upgrade to share documents with your team.",
+          "Team sharing features require a Professional plan. Please upgrade to share documents with your team."
         );
       }
     }
@@ -173,7 +189,11 @@ export const grantAccess = permissionMutation("documents:share")({
   args: {
     documentId: v.id("documents"),
     userId: v.id("users"),
-    permissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
+    permissionLevel: v.union(
+      v.literal("view"),
+      v.literal("edit"),
+      v.literal("manage")
+    ),
   },
   handler: async (ctx, args) => {
     const currentUserId = ctx.auth.user._id;
@@ -183,32 +203,38 @@ export const grantAccess = permissionMutation("documents:share")({
       ctx,
       currentUserId,
       document,
-      "Only the document owner or managers can grant access",
+      "Only the document owner or managers can grant access"
     );
 
     if (document.sharingMode !== "specific") {
       throw new ConvexError(
-        'Document must be in "specific" sharing mode to grant individual access',
+        'Document must be in "specific" sharing mode to grant individual access'
       );
     }
 
     if (args.userId === document.ownerId) {
       throw new ConvexError(
-        "Cannot grant access to document owner - they already have full access",
+        "Cannot grant access to document owner - they already have full access"
       );
     }
 
-    const targetMember = await getActiveMembership(ctx, args.userId, document.organizationId);
+    const targetMember = await getActiveMembership(
+      ctx,
+      args.userId,
+      document.organizationId
+    );
 
     if (!targetMember || targetMember.status !== "active") {
-      throw new ConvexError("User is not an active member of this organization");
+      throw new ConvexError(
+        "User is not an active member of this organization"
+      );
     }
 
     // 5. Check if access already exists
     const existingAccess = await ctx.db
       .query("document_access")
       .withIndex("by_document_user", (q) =>
-        q.eq("documentId", args.documentId).eq("userId", args.userId),
+        q.eq("documentId", args.documentId).eq("userId", args.userId)
       )
       .first();
 
@@ -257,7 +283,7 @@ export const grantAccess = permissionMutation("documents:share")({
         sharedByUserId: currentUserId,
         permissionLevel: args.permissionLevel,
         notificationId: notificationId ?? undefined,
-      },
+      }
     );
 
     return { success: true };
@@ -274,8 +300,12 @@ export const grantAccessBulk = permissionMutation("documents:share")({
     users: v.array(
       v.object({
         userId: v.id("users"),
-        permissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
-      }),
+        permissionLevel: v.union(
+          v.literal("view"),
+          v.literal("edit"),
+          v.literal("manage")
+        ),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -286,7 +316,9 @@ export const grantAccessBulk = permissionMutation("documents:share")({
     }
 
     if (args.users.length > 50) {
-      throw new ConvexError("Cannot grant access to more than 50 users at once");
+      throw new ConvexError(
+        "Cannot grant access to more than 50 users at once"
+      );
     }
 
     const document = await getDocumentOrThrow(ctx, args.documentId);
@@ -294,12 +326,12 @@ export const grantAccessBulk = permissionMutation("documents:share")({
       ctx,
       currentUserId,
       document,
-      "Only the document owner or managers can grant access",
+      "Only the document owner or managers can grant access"
     );
 
     if (document.sharingMode !== "specific") {
       throw new ConvexError(
-        'Document must be in "specific" sharing mode to grant individual access',
+        'Document must be in "specific" sharing mode to grant individual access'
       );
     }
 
@@ -314,7 +346,11 @@ export const grantAccessBulk = permissionMutation("documents:share")({
         continue;
       }
 
-      const targetMember = await getActiveMembership(ctx, userId, document.organizationId);
+      const targetMember = await getActiveMembership(
+        ctx,
+        userId,
+        document.organizationId
+      );
 
       if (!targetMember || targetMember.status !== "active") {
         skipped++;
@@ -324,7 +360,7 @@ export const grantAccessBulk = permissionMutation("documents:share")({
       const existingAccess = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", args.documentId).eq("userId", userId),
+          q.eq("documentId", args.documentId).eq("userId", userId)
         )
         .first();
 
@@ -371,7 +407,7 @@ export const grantAccessBulk = permissionMutation("documents:share")({
           sharedByUserId: currentUserId,
           permissionLevel,
           notificationId: notificationId ?? undefined,
-        },
+        }
       );
 
       granted++;
@@ -398,7 +434,7 @@ export const revokeAccess = permissionMutation("documents:share")({
       ctx,
       currentUserId,
       document,
-      "Only the document owner or managers can revoke access",
+      "Only the document owner or managers can revoke access"
     );
 
     if (args.userId === document.ownerId) {
@@ -408,12 +444,14 @@ export const revokeAccess = permissionMutation("documents:share")({
     const access = await ctx.db
       .query("document_access")
       .withIndex("by_document_user", (q) =>
-        q.eq("documentId", args.documentId).eq("userId", args.userId),
+        q.eq("documentId", args.documentId).eq("userId", args.userId)
       )
       .first();
 
     if (!access) {
-      throw new ConvexError("User does not have explicit access to this document");
+      throw new ConvexError(
+        "User does not have explicit access to this document"
+      );
     }
 
     await ctx.db.patch(access._id, {
@@ -446,7 +484,11 @@ export const updateAccessLevel = permissionMutation("documents:share")({
   args: {
     documentId: v.id("documents"),
     userId: v.id("users"),
-    newPermissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
+    newPermissionLevel: v.union(
+      v.literal("view"),
+      v.literal("edit"),
+      v.literal("manage")
+    ),
   },
   handler: async (ctx, args) => {
     const currentUserId = ctx.auth.user._id;
@@ -456,25 +498,31 @@ export const updateAccessLevel = permissionMutation("documents:share")({
       ctx,
       currentUserId,
       document,
-      "Only the document owner or managers can update access levels",
+      "Only the document owner or managers can update access levels"
     );
 
-    const targetMember = await getActiveMembership(ctx, args.userId, document.organizationId);
+    const targetMember = await getActiveMembership(
+      ctx,
+      args.userId,
+      document.organizationId
+    );
     if (!targetMember) {
       throw new ConvexError(
-        "Cannot update access for user who is no longer an active organization member",
+        "Cannot update access for user who is no longer an active organization member"
       );
     }
 
     const access = await ctx.db
       .query("document_access")
       .withIndex("by_document_user", (q) =>
-        q.eq("documentId", args.documentId).eq("userId", args.userId),
+        q.eq("documentId", args.documentId).eq("userId", args.userId)
       )
       .first();
 
     if (!access || access.revokedAt !== undefined) {
-      throw new ConvexError("User does not have active access to this document");
+      throw new ConvexError(
+        "User does not have active access to this document"
+      );
     }
 
     const oldPermissionLevel = access.permissionLevel;
@@ -527,10 +575,16 @@ export const transferOwnership = permissionMutation("documents:share")({
     const document = await getDocumentOrThrow(ctx, args.documentId);
     requireOwnership(currentUserId, document, ACCESS_ERRORS.OWNER_REQUIRED);
 
-    const newOwnerMember = await getActiveMembership(ctx, args.newOwnerId, document.organizationId);
+    const newOwnerMember = await getActiveMembership(
+      ctx,
+      args.newOwnerId,
+      document.organizationId
+    );
 
     if (!newOwnerMember || newOwnerMember.status !== "active") {
-      throw new ConvexError("New owner must be an active member of this organization");
+      throw new ConvexError(
+        "New owner must be an active member of this organization"
+      );
     }
 
     const now = Date.now();
@@ -586,14 +640,15 @@ export const getDocumentAccess = authQuery({
 
     const { activeAccessRecords, sharedWith } = await getActiveAccessWithUsers(
       ctx,
-      args.documentId,
+      args.documentId
     );
     const owner = await ctx.db.get(document.ownerId);
-    const hasSharedDocuments = document.sharingMode !== "private" || activeAccessRecords.length > 0;
+    const hasSharedDocuments =
+      document.sharingMode !== "private" || activeAccessRecords.length > 0;
     const subscriptionState = await getSharingSubscriptionState(
       ctx,
       document.organizationId,
-      hasSharedDocuments,
+      hasSharedDocuments
     );
 
     return {
@@ -634,10 +689,11 @@ export const getShareableMembers = authQuery({
       const access = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", args.documentId).eq("userId", userId),
+          q.eq("documentId", args.documentId).eq("userId", userId)
         )
         .first();
-      canManage = access?.permissionLevel === "manage" && access.revokedAt === undefined;
+      canManage =
+        access?.permissionLevel === "manage" && access.revokedAt === undefined;
     }
 
     if (!canManage) {
@@ -648,9 +704,13 @@ export const getShareableMembers = authQuery({
     if (!organization) {
       return [];
     }
-    const activeMembers = await listComponentMembersByOrganization(ctx, organization, {
-      status: "active",
-    });
+    const activeMembers = await listComponentMembersByOrganization(
+      ctx,
+      organization,
+      {
+        status: "active",
+      }
+    );
 
     // 4. Get existing access records to mark already-shared members
     const accessRecords = await ctx.db
@@ -661,7 +721,7 @@ export const getShareableMembers = authQuery({
     const activeAccessMap = new Map(
       accessRecords
         .filter((a) => a.revokedAt === undefined)
-        .map((a) => [a.userId.toString(), a.permissionLevel]),
+        .map((a) => [a.userId.toString(), a.permissionLevel])
     );
 
     // 5. Get user details for each member
@@ -683,7 +743,7 @@ export const getShareableMembers = authQuery({
           hasAccess: isOwner || existingAccess !== undefined,
           permissionLevel: isOwner ? ("owner" as const) : existingAccess,
         };
-      }),
+      })
     );
 
     // Sort: owner first, then by name

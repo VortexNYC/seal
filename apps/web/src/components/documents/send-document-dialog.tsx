@@ -23,7 +23,11 @@ import { z } from "zod";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { Button } from "../ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +38,13 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 
@@ -50,7 +60,13 @@ interface SendDocumentDialogProps {
     name?: string;
     email: string;
     role: "signer" | "viewer" | "approver";
-    status: "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
+    status:
+      | "pending"
+      | "viewed"
+      | "signed"
+      | "approved"
+      | "declined"
+      | "expired";
     order?: number;
   }>;
   signatureFieldCount: number;
@@ -78,8 +94,12 @@ export function SendDocumentDialog({
   const [isSending, setIsSending] = useState(false);
 
   // SEA-119: Per-recipient messages
-  const [recipientMessages, setRecipientMessages] = useState<Record<string, string>>({});
-  const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
+  const [recipientMessages, setRecipientMessages] = useState<
+    Record<string, string>
+  >({});
+  const [expandedRecipient, setExpandedRecipient] = useState<string | null>(
+    null
+  );
 
   // SEA-119: Expiration period state — pre-populate from org default if set
   type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
@@ -88,29 +108,41 @@ export function SendDocumentDialog({
       ? [7, 14, 30, 60, 90].includes(defaultDeadlineDays)
         ? (String(defaultDeadlineDays) as ExpirationPreset)
         : "custom"
-      : "none",
+      : "none"
   );
   const [customAmount, setCustomAmount] = useState(defaultDeadlineDays ?? 30);
   const [customUnit, setCustomUnit] = useState<"day" | "week" | "month">("day");
 
   // Signing mode: parallel (all at once) or sequential (by order groups)
-  const [signingMode, setSigningMode] = useState<"parallel" | "sequential">("parallel");
+  const [signingMode, setSigningMode] = useState<"parallel" | "sequential">(
+    "parallel"
+  );
   const [allowDictateNextSigner, setAllowDictateNextSigner] = useState(false);
   const [expirationError, setExpirationError] = useState<string | null>(null);
 
   // Check if any recipients have order values set (enables sequential option)
-  const hasOrderValues = recipients.some((r) => r.order !== undefined && r.order !== 0);
+  const hasOrderValues = recipients.some(
+    (r) => r.order !== undefined && r.order !== 0
+  );
 
-  const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
+  const sendDocumentEmails = useAction(
+    api.documents.send_document_action.sendDocumentEmails
+  );
 
   // Query payment field configs for this document
-  const paymentConfigs = useQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
-    documentId,
-  });
+  const paymentConfigs = useQuery(
+    api.payment_fields.queries.getPaymentConfigsByDocument,
+    {
+      documentId,
+    }
+  );
 
   // Count pending recipients
   const pendingRecipients = recipients.filter(
-    (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
+    (r) =>
+      r.status !== "signed" &&
+      r.status !== "approved" &&
+      r.status !== "declined"
   );
 
   // SEA-119: Get message for a specific recipient
@@ -151,7 +183,9 @@ export function SendDocumentDialog({
     // SEA-119: Validate expiration period
     const expirationPeriod = getExpirationPeriod();
     if (expirationPeriod) {
-      const validation = expirationSchema.safeParse({ amount: expirationPeriod.amount });
+      const validation = expirationSchema.safeParse({
+        amount: expirationPeriod.amount,
+      });
       if (!validation.success) {
         setExpirationError(validation.error.issues[0].message);
         return;
@@ -173,16 +207,19 @@ export function SendDocumentDialog({
       const result = await sendDocumentEmails({
         documentId,
         customMessage: customMessage.trim() || undefined,
-        recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
+        recipientMessages:
+          perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         expirationPeriod,
         signingMode: signingMode === "sequential" ? "sequential" : undefined,
         allowDictateNextSigner:
-          signingMode === "sequential" && allowDictateNextSigner ? true : undefined,
+          signingMode === "sequential" && allowDictateNextSigner
+            ? true
+            : undefined,
       });
 
       if (result.success) {
         toast.success(
-          `Document sent successfully to ${result.emailsSent} recipient${result.emailsSent !== 1 ? "s" : ""}`,
+          `Document sent successfully to ${result.emailsSent} recipient${result.emailsSent !== 1 ? "s" : ""}`
         );
         onSuccess?.();
         onOpenChange(false);
@@ -196,7 +233,7 @@ export function SendDocumentDialog({
         setAllowDictateNextSigner(false);
       } else {
         toast.error(
-          `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`,
+          `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`
         );
       }
     } catch (error) {
@@ -235,7 +272,10 @@ export function SendDocumentDialog({
                   </p>
                   <div className="mt-1 space-y-0.5">
                     {paymentConfigs.map((config) => (
-                      <p key={config._id} className="text-field-payment text-xs">
+                      <p
+                        key={config._id}
+                        className="text-field-payment text-xs"
+                      >
                         {new Intl.NumberFormat("en-US", {
                           style: "currency",
                           currency: config.currency.toUpperCase(),
@@ -257,7 +297,9 @@ export function SendDocumentDialog({
                 <Collapsible
                   key={recipient._id}
                   open={expandedRecipient === recipient._id}
-                  onOpenChange={(open) => setExpandedRecipient(open ? recipient._id : null)}
+                  onOpenChange={(open) =>
+                    setExpandedRecipient(open ? recipient._id : null)
+                  }
                 >
                   <div className="overflow-hidden rounded-md border">
                     <CollapsibleTrigger asChild>
@@ -267,7 +309,8 @@ export function SendDocumentDialog({
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-3">
                           <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-                            {(recipient.name || recipient.email)[0].toUpperCase()}
+                            {(recipient.name ||
+                              recipient.email)[0].toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1 text-left">
                             <p className="truncate text-sm font-medium">
@@ -275,14 +318,20 @@ export function SendDocumentDialog({
                             </p>
                             <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
                               {recipient.name && (
-                                <span className="max-w-[180px] truncate">{recipient.email}</span>
+                                <span className="max-w-[180px] truncate">
+                                  {recipient.email}
+                                </span>
                               )}
                               {recipient.name && <span>•</span>}
-                              <span className="shrink-0 capitalize">{recipient.role}</span>
+                              <span className="shrink-0 capitalize">
+                                {recipient.role}
+                              </span>
                               {getRecipientMessage(recipient._id) && (
                                 <>
                                   <span>•</span>
-                                  <span className="text-primary shrink-0">Custom message</span>
+                                  <span className="text-primary shrink-0">
+                                    Custom message
+                                  </span>
                                 </>
                               )}
                             </div>
@@ -292,7 +341,8 @@ export function SendDocumentDialog({
                           {fieldCountsByRecipient && (
                             <span className="bg-background rounded border px-2 py-1 text-xs font-medium">
                               {fieldCountsByRecipient.get(recipient._id) ?? 0}{" "}
-                              {(fieldCountsByRecipient.get(recipient._id) ?? 0) === 1
+                              {(fieldCountsByRecipient.get(recipient._id) ??
+                                0) === 1
                                 ? "field"
                                 : "fields"}
                             </span>
@@ -310,13 +360,15 @@ export function SendDocumentDialog({
                         <Textarea
                           placeholder={`Custom message for ${recipient.name || recipient.email}...`}
                           value={getRecipientMessage(recipient._id)}
-                          onChange={(e) => setRecipientMessage(recipient._id, e.target.value)}
+                          onChange={(e) =>
+                            setRecipientMessage(recipient._id, e.target.value)
+                          }
                           className="min-h-[80px]"
                           maxLength={500}
                         />
                         <p className="text-muted-foreground text-xs">
-                          {getRecipientMessage(recipient._id).length}/500 characters (leave empty to
-                          use default message)
+                          {getRecipientMessage(recipient._id).length}/500
+                          characters (leave empty to use default message)
                         </p>
                       </div>
                     </CollapsibleContent>
@@ -364,13 +416,15 @@ export function SendDocumentDialog({
                     "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
                     signingMode === "parallel"
                       ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                      : "hover:bg-muted",
+                      : "hover:bg-muted"
                   )}
                 >
                   <UsersIcon className="text-muted-foreground size-4 shrink-0" />
                   <div>
                     <p className="font-medium">All at once</p>
-                    <p className="text-muted-foreground text-xs">Everyone signs simultaneously</p>
+                    <p className="text-muted-foreground text-xs">
+                      Everyone signs simultaneously
+                    </p>
                   </div>
                 </button>
                 <button
@@ -380,7 +434,7 @@ export function SendDocumentDialog({
                     "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
                     signingMode === "sequential"
                       ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                      : "hover:bg-muted",
+                      : "hover:bg-muted"
                   )}
                 >
                   <ListOrderedIcon className="text-muted-foreground size-4 shrink-0" />
@@ -394,14 +448,16 @@ export function SendDocumentDialog({
               </div>
               {signingMode === "sequential" && !hasOrderValues && (
                 <p className="text-muted-foreground mt-2 text-xs">
-                  Recipients will sign in the order listed above. To customize the order, set order
-                  values on recipients before sending.
+                  Recipients will sign in the order listed above. To customize
+                  the order, set order values on recipients before sending.
                 </p>
               )}
               {signingMode === "sequential" && (
                 <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">Signers choose next recipient</Label>
+                    <Label className="text-sm font-medium">
+                      Signers choose next recipient
+                    </Label>
                     <p className="text-muted-foreground text-xs">
                       Allow each signer to designate who signs after them.
                     </p>
@@ -423,7 +479,9 @@ export function SendDocumentDialog({
             </p>
             <Select
               value={expirationPreset}
-              onValueChange={(val) => setExpirationPreset(val as ExpirationPreset)}
+              onValueChange={(val) =>
+                setExpirationPreset(val as ExpirationPreset)
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="No expiration" />
@@ -454,7 +512,9 @@ export function SendDocumentDialog({
                 />
                 <Select
                   value={customUnit}
-                  onValueChange={(val) => setCustomUnit(val as "day" | "week" | "month")}
+                  onValueChange={(val) =>
+                    setCustomUnit(val as "day" | "week" | "month")
+                  }
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -468,9 +528,13 @@ export function SendDocumentDialog({
               </div>
             )}
 
-            {expirationError && <p className="text-destructive mt-1 text-sm">{expirationError}</p>}
+            {expirationError && (
+              <p className="text-destructive mt-1 text-sm">{expirationError}</p>
+            )}
             {getExpirationText() && (
-              <p className="text-muted-foreground mt-1.5 text-xs">{getExpirationText()}</p>
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                {getExpirationText()}
+              </p>
             )}
           </div>
 
@@ -490,18 +554,28 @@ export function SendDocumentDialog({
           {signatureFieldCount > 0 && (
             <div className="border-info/30 bg-info/10 rounded-md border p-3">
               <p className="text-foreground text-sm">
-                Recipients will receive an email with a link to sign the document.
-                {getExpirationText() && <span className="mt-1 block">{getExpirationText()}</span>}
+                Recipients will receive an email with a link to sign the
+                document.
+                {getExpirationText() && (
+                  <span className="mt-1 block">{getExpirationText()}</span>
+                )}
               </p>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSending}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSend} disabled={isSending || signatureFieldCount === 0}>
+          <Button
+            onClick={handleSend}
+            disabled={isSending || signatureFieldCount === 0}
+          >
             {isSending ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />

@@ -30,7 +30,7 @@ export const hashDocument = internalAction({
       internal.documents.queries.getDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     if (!document) {
@@ -78,7 +78,7 @@ export const verifyDocumentIntegrity = action({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     isValid: boolean;
     storedHash: string | null;
@@ -90,7 +90,7 @@ export const verifyDocumentIntegrity = action({
       internal.documents.queries.getDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     if (!document) {
@@ -120,7 +120,8 @@ export const verifyDocumentIntegrity = action({
         isValid: false,
         storedHash: null,
         currentHash,
-        message: "Document has no stored hash. Call hashDocument first to establish baseline.",
+        message:
+          "Document has no stored hash. Call hashDocument first to establish baseline.",
       };
     }
 

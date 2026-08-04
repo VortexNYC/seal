@@ -9,15 +9,20 @@ import { defineTable } from "convex/server";
 import type { Infer } from "convex/values";
 import { v } from "convex/values";
 
-export const subscriptionCouponType = v.union(v.literal("percent_off"), v.literal("amount_off"));
+export const subscriptionCouponType = v.union(
+  v.literal("percent_off"),
+  v.literal("amount_off")
+);
 export type SubscriptionCouponType = Infer<typeof subscriptionCouponType>;
 
 export const subscriptionCouponDuration = v.union(
   v.literal("forever"),
   v.literal("once"),
-  v.literal("repeating"),
+  v.literal("repeating")
 );
-export type SubscriptionCouponDuration = Infer<typeof subscriptionCouponDuration>;
+export type SubscriptionCouponDuration = Infer<
+  typeof subscriptionCouponDuration
+>;
 
 export const subscriptionCouponsTable = defineTable({
   // Provider coupon ID
@@ -44,7 +49,7 @@ export const subscriptionCouponsTable = defineTable({
     v.object({
       notes: v.optional(v.string()),
       createdBy: v.optional(v.string()),
-    }),
+    })
   ),
 
   // Timestamps

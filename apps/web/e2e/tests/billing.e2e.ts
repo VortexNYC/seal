@@ -39,10 +39,14 @@ test.describe("Billing", () => {
     // word "subscription" first is enough to confirm the route resolved and
     // the auth-gated layout rendered without falling through to an error
     // boundary.
-    await expect(authenticatedPage.getByText(/subscription|billing/i).first()).toBeVisible({
+    await expect(
+      authenticatedPage.getByText(/subscription|billing/i).first()
+    ).toBeVisible({
       timeout: 10000,
     });
-    await expect(authenticatedPage.getByText(/something went wrong/i)).not.toBeVisible({
+    await expect(
+      authenticatedPage.getByText(/something went wrong/i)
+    ).not.toBeVisible({
       timeout: 1000,
     });
   });
@@ -58,7 +62,10 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.query(api.payments.billing_queries.getAvailablePlans, {})) as Plan[];
+      return (await client.query(
+        api.payments.billing_queries.getAvailablePlans,
+        {}
+      )) as Plan[];
     });
 
     expect(Array.isArray(plans)).toBe(true);
@@ -80,9 +87,12 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.action(api.payments.subscription_actions.createCustomerPortalSession, {
-        returnUrl,
-      })) as { url: string };
+      return (await client.action(
+        api.payments.subscription_actions.createCustomerPortalSession,
+        {
+          returnUrl,
+        }
+      )) as { url: string };
     }, authenticatedPage.url());
 
     expect(result).toHaveProperty("url");
@@ -102,11 +112,14 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.action(api.payments.subscription_actions.createCheckoutSession, {
-        lookupKey: "pro:monthly:v2",
-        successUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
-        cancelUrl: currentUrl,
-      })) as { checkoutUrl: string };
+      return (await client.action(
+        api.payments.subscription_actions.createCheckoutSession,
+        {
+          lookupKey: "pro:monthly:v2",
+          successUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
+          cancelUrl: currentUrl,
+        }
+      )) as { checkoutUrl: string };
     }, authenticatedPage.url());
 
     expect(result).toHaveProperty("checkoutUrl");
@@ -151,8 +164,9 @@ function expectVortexSealProPlan(plans: readonly Plan[]): void {
  */
 async function waitForBillingPageReady(page: Page): Promise<void> {
   await page.waitForFunction(
-    () => window.__convexClient !== undefined && window.__convexApi !== undefined,
-    { timeout: 10000 },
+    () =>
+      window.__convexClient !== undefined && window.__convexApi !== undefined,
+    { timeout: 10000 }
   );
   await page
     .getByRole("button", { name: /manage billing/i })

@@ -7,7 +7,9 @@
 
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/developer/")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/developer/"
+)({
   component: DeveloperIndex,
 });
 

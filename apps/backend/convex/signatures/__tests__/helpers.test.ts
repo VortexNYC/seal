@@ -10,7 +10,11 @@ describe("validateSignature", () => {
   // -- signature field type -------------------------------------------------
   describe('fieldType "signature"', () => {
     test("valid when signatureImageUrl is provided", () => {
-      const result = validateSignature("signature", undefined, "https://example.com/sig.png");
+      const result = validateSignature(
+        "signature",
+        undefined,
+        "https://example.com/sig.png"
+      );
       expect(result).toEqual({ valid: true });
     });
 
@@ -26,7 +30,11 @@ describe("validateSignature", () => {
     });
 
     test("ignores value when signatureImageUrl is provided", () => {
-      const result = validateSignature("signature", "", "https://example.com/sig.png");
+      const result = validateSignature(
+        "signature",
+        "",
+        "https://example.com/sig.png"
+      );
       expect(result.valid).toBe(true);
     });
   });
@@ -34,7 +42,11 @@ describe("validateSignature", () => {
   // -- initial field type ---------------------------------------------------
   describe('fieldType "initial"', () => {
     test("valid when signatureImageUrl is provided", () => {
-      const result = validateSignature("initial", undefined, "https://example.com/init.png");
+      const result = validateSignature(
+        "initial",
+        undefined,
+        "https://example.com/init.png"
+      );
       expect(result).toEqual({ valid: true });
     });
 
@@ -145,7 +157,9 @@ describe("validateSignature", () => {
   // -- unknown / other field types ------------------------------------------
   describe("unknown field types", () => {
     test("valid by default for unrecognized types", () => {
-      expect(validateSignature("custom_field", "anything")).toEqual({ valid: true });
+      expect(validateSignature("custom_field", "anything")).toEqual({
+        valid: true,
+      });
       expect(validateSignature("unknown")).toEqual({ valid: true });
     });
   });
@@ -307,8 +321,13 @@ describe("validateAgainstRules", () => {
 
     test("email pattern validation", () => {
       const emailPattern = "^[^@]+@[^@]+\\.[^@]+$";
-      expect(validateAgainstRules("user@example.com", { pattern: emailPattern }).valid).toBe(true);
-      expect(validateAgainstRules("not-an-email", { pattern: emailPattern }).valid).toBe(false);
+      expect(
+        validateAgainstRules("user@example.com", { pattern: emailPattern })
+          .valid
+      ).toBe(true);
+      expect(
+        validateAgainstRules("not-an-email", { pattern: emailPattern }).valid
+      ).toBe(false);
     });
   });
 

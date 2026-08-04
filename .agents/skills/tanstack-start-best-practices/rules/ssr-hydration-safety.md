@@ -74,7 +74,9 @@ function LocationPage() {
 
 // Or use useEffect for client-only state
 function WindowSize() {
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null
+  );
 
   useEffect(() => {
     setSize({
@@ -144,7 +146,11 @@ function RelativeTime({ date }: { date: Date }) {
   }, [date]);
 
   // Show absolute date initially (same server/client)
-  return <time dateTime={date.toISOString()}>{formatted || date.toISOString().split("T")[0]}</time>;
+  return (
+    <time dateTime={date.toISOString()}>
+      {formatted || date.toISOString().split("T")[0]}
+    </time>
+  );
 }
 ```
 
@@ -170,7 +176,9 @@ function RelativeTime({ date }: { date: Date }) {
 
 // For difficult cases, use suppressHydrationWarning sparingly
 function UserContent({ html }: { html: string }) {
-  return <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />
+  );
 }
 ```
 

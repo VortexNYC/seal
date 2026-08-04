@@ -32,7 +32,7 @@ export interface RateLimitResult {
 export async function checkApiRateLimit(
   ctx: GenericActionCtx<DataModel>,
   key: string,
-  _config?: Partial<RateLimitConfig>,
+  _config?: Partial<RateLimitConfig>
 ): Promise<RateLimitResult> {
   const now = Date.now();
 
@@ -84,15 +84,26 @@ export function buildRateLimitHeaders(result: RateLimitResult): Headers {
 
   const remaining = Math.min(result.remainingMinute, result.remainingHour);
   const reset =
-    result.remainingMinute < result.remainingHour ? result.resetMinute : result.resetHour;
+    result.remainingMinute < result.remainingHour
+      ? result.resetMinute
+      : result.resetHour;
 
-  headers.set("X-RateLimit-Limit", String(DEFAULT_RATE_LIMITS.requestsPerMinute));
+  headers.set(
+    "X-RateLimit-Limit",
+    String(DEFAULT_RATE_LIMITS.requestsPerMinute)
+  );
   headers.set("X-RateLimit-Remaining", String(remaining));
   headers.set("X-RateLimit-Reset", String(reset));
 
-  headers.set("X-RateLimit-Limit-Minute", String(DEFAULT_RATE_LIMITS.requestsPerMinute));
+  headers.set(
+    "X-RateLimit-Limit-Minute",
+    String(DEFAULT_RATE_LIMITS.requestsPerMinute)
+  );
   headers.set("X-RateLimit-Remaining-Minute", String(result.remainingMinute));
-  headers.set("X-RateLimit-Limit-Hour", String(DEFAULT_RATE_LIMITS.requestsPerHour));
+  headers.set(
+    "X-RateLimit-Limit-Hour",
+    String(DEFAULT_RATE_LIMITS.requestsPerHour)
+  );
   headers.set("X-RateLimit-Remaining-Hour", String(result.remainingHour));
 
   return headers;
@@ -104,11 +115,12 @@ export function throwRateLimitExceeded(result: RateLimitResult): never {
       ? result.resetMinute - Math.floor(Date.now() / 1000)
       : result.resetHour - Math.floor(Date.now() / 1000);
 
-  const limitType = result.exceededLimit === "minute" ? "per-minute" : "per-hour";
+  const limitType =
+    result.exceededLimit === "minute" ? "per-minute" : "per-hour";
 
   throw new ApiError(
     429,
     `Rate limit exceeded (${limitType}). Try again in ${retryAfter} seconds.`,
-    "RATE_LIMIT_EXCEEDED",
+    "RATE_LIMIT_EXCEEDED"
   );
 }

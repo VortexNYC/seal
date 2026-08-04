@@ -167,7 +167,11 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+      expect(result).toEqual({
+        isPro: false,
+        isEnterprise: false,
+        plan: "free",
+      });
     });
 
     test("returns pro plan for active subscription with pro tier product", async () => {
@@ -225,7 +229,9 @@ describe("subscription_guards", () => {
         });
       });
 
-      process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+      process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([
+        organizationId,
+      ]);
 
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
@@ -300,7 +306,11 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: true, isEnterprise: true, plan: "enterprise" });
+      expect(result).toEqual({
+        isPro: true,
+        isEnterprise: true,
+        plan: "enterprise",
+      });
     });
 
     test("returns free plan for canceled subscription", async () => {
@@ -309,11 +319,18 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+      expect(result).toEqual({
+        isPro: false,
+        isEnterprise: false,
+        plan: "free",
+      });
     });
 
     test("returns pro plan for past_due subscription within grace", async () => {
-      await seedSubscription({ subscriptionStatus: "past_due", pastDueSince: Date.now() });
+      await seedSubscription({
+        subscriptionStatus: "past_due",
+        pastDueSince: Date.now(),
+      });
 
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
@@ -330,7 +347,11 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+      expect(result).toEqual({
+        isPro: false,
+        isEnterprise: false,
+        plan: "free",
+      });
     });
 
     test("returns free plan for incomplete subscription", async () => {
@@ -339,7 +360,11 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+      expect(result).toEqual({
+        isPro: false,
+        isEnterprise: false,
+        plan: "free",
+      });
     });
 
     test("returns free plan for unpaid subscription", async () => {
@@ -348,7 +373,11 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+      expect(result).toEqual({
+        isPro: false,
+        isEnterprise: false,
+        plan: "free",
+      });
     });
 
     test("returns free plan when product tier is not pro or enterprise", async () => {
@@ -357,7 +386,11 @@ describe("subscription_guards", () => {
       const result = await t.run(async (ctx) => {
         return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
+      expect(result).toEqual({
+        isPro: false,
+        isEnterprise: false,
+        plan: "free",
+      });
     });
   });
 
@@ -370,7 +403,7 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         await expect(
-          ensureProFeature(ctx.db, organizationId, "Workspace sharing"),
+          ensureProFeature(ctx.db, organizationId, "Workspace sharing")
         ).resolves.toBeUndefined();
       });
     });
@@ -380,16 +413,16 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         await expect(
-          ensureProFeature(ctx.db, organizationId, "Workspace sharing"),
+          ensureProFeature(ctx.db, organizationId, "Workspace sharing")
         ).resolves.toBeUndefined();
       });
     });
 
     test("throws ConvexError for free org", async () => {
       await t.run(async (ctx) => {
-        await expect(ensureProFeature(ctx.db, organizationId, "Workspace sharing")).rejects.toThrow(
-          ConvexError,
-        );
+        await expect(
+          ensureProFeature(ctx.db, organizationId, "Workspace sharing")
+        ).rejects.toThrow(ConvexError);
       });
     });
 
@@ -414,7 +447,9 @@ describe("subscription_guards", () => {
   describe("ensureSeatLimit", () => {
     test("does not throw when org has no members (free plan, 0 of 1)", async () => {
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx, organizationId)).resolves.toBeUndefined();
+        await expect(
+          ensureSeatLimit(ctx, organizationId)
+        ).resolves.toBeUndefined();
       });
     });
 
@@ -422,7 +457,9 @@ describe("subscription_guards", () => {
       await seedMember();
 
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx, organizationId)).rejects.toThrow(ConvexError);
+        await expect(ensureSeatLimit(ctx, organizationId)).rejects.toThrow(
+          ConvexError
+        );
       });
     });
 
@@ -434,7 +471,9 @@ describe("subscription_guards", () => {
       }
 
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx, organizationId)).resolves.toBeUndefined();
+        await expect(
+          ensureSeatLimit(ctx, organizationId)
+        ).resolves.toBeUndefined();
       });
     });
 
@@ -446,7 +485,9 @@ describe("subscription_guards", () => {
       }
 
       await t.run(async (ctx) => {
-        await expect(ensureSeatLimit(ctx, organizationId)).rejects.toThrow(ConvexError);
+        await expect(ensureSeatLimit(ctx, organizationId)).rejects.toThrow(
+          ConvexError
+        );
       });
     });
 

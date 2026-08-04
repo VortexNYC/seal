@@ -1,10 +1,18 @@
 /// <reference types="vite/client" />
-import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+  useLocation,
+} from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
-import appCss from "~/app/globals.css?url";
+
 import { Footer } from "~/components/layout/footer";
 import { Navbar } from "~/components/layout/navbar";
 import { initPostHog } from "~/lib/posthog";
+
+import appCss from "~/app/globals.css?url";
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -86,7 +94,10 @@ export const Route = createRootRoute({
         content:
           "Sign documents, collect payments, and let AI handle the rest. An intelligent document platform with a full REST API.",
       },
-      { name: "twitter:image", content: "https://seal.co/favicon/og-image.png" },
+      {
+        name: "twitter:image",
+        content: "https://seal.co/favicon/og-image.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -119,7 +130,8 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { pathname } = useLocation();
-  const isFullscreen = pathname.startsWith("/docs") || pathname.startsWith("/developer");
+  const isFullscreen =
+    pathname.startsWith("/docs") || pathname.startsWith("/developer");
 
   useEffect(() => {
     initPostHog();

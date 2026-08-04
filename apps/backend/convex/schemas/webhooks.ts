@@ -41,14 +41,23 @@ export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
 /**
  * Webhook endpoint status values.
  */
-export const WEBHOOK_ENDPOINT_STATUS = ["active", "paused", "disabled"] as const;
+export const WEBHOOK_ENDPOINT_STATUS = [
+  "active",
+  "paused",
+  "disabled",
+] as const;
 
 export type WebhookEndpointStatus = (typeof WEBHOOK_ENDPOINT_STATUS)[number];
 
 /**
  * Webhook delivery status values.
  */
-export const WEBHOOK_DELIVERY_STATUS = ["pending", "delivered", "failed", "abandoned"] as const;
+export const WEBHOOK_DELIVERY_STATUS = [
+  "pending",
+  "delivered",
+  "failed",
+  "abandoned",
+] as const;
 
 export type WebhookDeliveryStatus = (typeof WEBHOOK_DELIVERY_STATUS)[number];
 
@@ -109,7 +118,11 @@ export const webhookEndpoints = defineTable({
    * - paused: Temporarily disabled by user
    * - disabled: Disabled due to repeated failures
    */
-  status: v.union(v.literal("active"), v.literal("paused"), v.literal("disabled")),
+  status: v.union(
+    v.literal("active"),
+    v.literal("paused"),
+    v.literal("disabled")
+  ),
 
   /**
    * Payload format for delivery.
@@ -200,7 +213,7 @@ export const webhookDeliveries = defineTable({
     v.literal("pending"),
     v.literal("delivered"),
     v.literal("failed"),
-    v.literal("abandoned"),
+    v.literal("abandoned")
   ),
 
   /**

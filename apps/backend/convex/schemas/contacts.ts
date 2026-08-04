@@ -12,7 +12,7 @@ import { type Infer, v } from "convex/values";
 export const contactStatusValidator = v.union(
   v.literal("active"),
   v.literal("inactive"),
-  v.literal("lead"),
+  v.literal("lead")
 );
 export type ContactStatus = Infer<typeof contactStatusValidator>;
 

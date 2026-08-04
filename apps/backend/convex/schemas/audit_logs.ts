@@ -69,7 +69,7 @@ export const auditActionTuple = v.union(
   v.literal("email.failed"),
 
   // Generic action for extensibility
-  v.literal("other"),
+  v.literal("other")
 );
 export type AuditAction = Infer<typeof auditActionTuple>;
 
@@ -83,7 +83,7 @@ export const auditResourceTypeTuple = v.union(
   v.literal("user"),
   v.literal("member"),
   v.literal("email"),
-  v.literal("other"),
+  v.literal("other")
 );
 export type AuditResourceType = Infer<typeof auditResourceTypeTuple>;
 
@@ -93,7 +93,11 @@ export const auditLogsTable = defineTable({
 
   // Actor Information
   userId: v.optional(v.string()), // auth subject (optional for recipient actions)
-  actorType: v.union(v.literal("user"), v.literal("recipient"), v.literal("system")), // Who performed the action
+  actorType: v.union(
+    v.literal("user"),
+    v.literal("recipient"),
+    v.literal("system")
+  ), // Who performed the action
   actorId: v.optional(v.string()), // ID of the actor (userId or recipientId)
 
   // Action Details
@@ -117,7 +121,7 @@ export const auditLogsTable = defineTable({
       description: v.optional(v.string()), // Human-readable description
       source: v.optional(v.string()), // Where action originated (web, api, system)
       sessionId: v.optional(v.string()), // Session identifier
-    }),
+    })
   ),
 
   // Security Information

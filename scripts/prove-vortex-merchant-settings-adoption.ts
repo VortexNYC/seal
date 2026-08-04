@@ -4,11 +4,11 @@ import { join } from "node:path";
 const repoRoot = new URL("..", import.meta.url).pathname;
 const paymentsRoutePath = join(
   repoRoot,
-  "apps/web/src/routes/_authenticated/$slug/settings/payments.tsx",
+  "apps/web/src/routes/_authenticated/$slug/settings/payments.tsx"
 );
 const vortexComponentsPath = join(
   repoRoot,
-  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js",
+  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js"
 );
 
 const paymentsRoute = readFileSync(paymentsRoutePath, "utf8");
@@ -29,7 +29,7 @@ for (const requiredFragment of [
 ]) {
   if (!paymentsRoute.includes(requiredFragment)) {
     failures.push(
-      `payments route missing required merchant adoption fragment: ${requiredFragment}`,
+      `payments route missing required merchant adoption fragment: ${requiredFragment}`
     );
   }
 }
@@ -43,7 +43,7 @@ for (const requiredPackageFragment of [
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
-      `@vortexnyc/payments-react missing required merchant selector fragment: ${requiredPackageFragment}`,
+      `@vortexnyc/payments-react missing required merchant selector fragment: ${requiredPackageFragment}`
     );
   }
 }
@@ -55,7 +55,7 @@ for (const forbiddenFragment of [
 ]) {
   if (paymentsRoute.includes(forbiddenFragment)) {
     failures.push(
-      `payments route still contains non-Vortex provider UI fragment: ${forbiddenFragment}`,
+      `payments route still contains non-Vortex provider UI fragment: ${forbiddenFragment}`
     );
   }
 }
@@ -70,7 +70,9 @@ if (failures.length > 0) {
 
 console.log("Vortex merchant settings adoption proof passed:");
 console.log(
-  "- Seal payments settings renders Vortex Connect state through Vortex package components.",
+  "- Seal payments settings renders Vortex Connect state through Vortex package components."
 );
 console.log("- Non-Vortex embedded account UI and theme helpers stay deleted.");
-console.log("- Merchant account data reads through the Vortex Payments boundary.");
+console.log(
+  "- Merchant account data reads through the Vortex Payments boundary."
+);

@@ -31,7 +31,7 @@ export const documentWorkflowStatusTuple = v.union(
   v.literal("completed"),
   v.literal("cancelled"),
   v.literal("declined"),
-  v.literal("expired"),
+  v.literal("expired")
 );
 ```
 
@@ -40,10 +40,19 @@ export const documentWorkflowStatusTuple = v.union(
 Add `"expired"` as valid target from `sent` and `in_progress`, add `expired → sent` for re-send, and add terminal `expired` entry:
 
 ```typescript
-export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkflowStatus[]> = {
+export const WORKFLOW_TRANSITIONS: Record<
+  DocumentWorkflowStatus,
+  DocumentWorkflowStatus[]
+> = {
   draft: ["sent", "cancelled"],
   sent: ["in_progress", "cancelled", "declined", "expired"],
-  in_progress: ["completed", "waiting_for_payment", "cancelled", "declined", "expired"],
+  in_progress: [
+    "completed",
+    "waiting_for_payment",
+    "cancelled",
+    "declined",
+    "expired",
+  ],
   waiting_for_payment: ["completed", "cancelled"],
   completed: [], // Terminal state
   cancelled: [], // Terminal state
@@ -84,7 +93,7 @@ export const recipientStatusTuple = v.union(
   v.literal("viewed"),
   v.literal("signed"),
   v.literal("declined"),
-  v.literal("expired"),
+  v.literal("expired")
 );
 ```
 
@@ -170,7 +179,9 @@ git commit -m "feat: add expirationPeriod to documents schema, audit actions for
 **Step 1: Update isTerminalWorkflowStatus (line 73–75)**
 
 ```typescript
-export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolean {
+export function isTerminalWorkflowStatus(
+  status: DocumentWorkflowStatus
+): boolean {
   return (
     status === "completed" ||
     status === "cancelled" ||
@@ -339,7 +350,10 @@ Add to args:
 
 ```typescript
 /** Convert expiration period to milliseconds */
-function expirationPeriodToMs(amount: number, unit: "day" | "week" | "month"): number {
+function expirationPeriodToMs(
+  amount: number,
+  unit: "day" | "week" | "month"
+): number {
   const MS_PER_DAY = 86_400_000;
   switch (unit) {
     case "day":
@@ -361,7 +375,11 @@ After the sharing loop ends (line ~143) and before the status patch (line ~154),
 if (args.expirationPeriod) {
   const now = Date.now();
   const expiresAt =
-    now + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
+    now +
+    expirationPeriodToMs(
+      args.expirationPeriod.amount,
+      args.expirationPeriod.unit
+    );
   for (const recipient of recipients) {
     await ctx.db.patch(recipient._id, { expiresAt, updatedAt: now });
   }
@@ -398,13 +416,16 @@ In `sendDocumentEmails` args (line ~197), add:
 In the handler where `markDocumentAsSent` is called (line ~395-403), pass it through:
 
 ```typescript
-await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
-  documentId: args.documentId,
-  deadline: args.deadline,
-  userId: senderUser?.clerkId,
-  signingMode: args.signingMode,
-  expirationPeriod: args.expirationPeriod,
-});
+await ctx.runMutation(
+  internal.documents.send_document_action.markDocumentAsSent,
+  {
+    documentId: args.documentId,
+    deadline: args.deadline,
+    userId: senderUser?.clerkId,
+    signingMode: args.signingMode,
+    expirationPeriod: args.expirationPeriod,
+  }
+);
 ```
 
 Also compute `deadline` from `expirationPeriod` if deadline not explicitly set — for existing alert cron compatibility. In the handler, before calling markDocumentAsSent:
@@ -414,7 +435,11 @@ Also compute `deadline` from `expirationPeriod` if deadline not explicitly set �
 let deadline = args.deadline;
 if (!deadline && args.expirationPeriod) {
   deadline =
-    Date.now() + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
+    Date.now() +
+    expirationPeriodToMs(
+      args.expirationPeriod.amount,
+      args.expirationPeriod.unit
+    );
 }
 ```
 
@@ -478,7 +503,10 @@ export const sweepExpiredRecipients = internalMutation({
       .collect();
 
     const candidates = [...pendingRecipients, ...viewedRecipients].filter(
-      (r) => r.expiresAt !== undefined && r.expiresAt < now && r.expirationNotifiedAt === undefined,
+      (r) =>
+        r.expiresAt !== undefined &&
+        r.expiresAt < now &&
+        r.expirationNotifiedAt === undefined
     );
 
     // Process up to BATCH_SIZE
@@ -527,7 +555,10 @@ export const sweepExpiredRecipients = internalMutation({
 
       // Check if all recipients are in terminal states (signed, expired, declined)
       const allTerminal = allRecipients.every(
-        (r) => r.status === "signed" || r.status === "expired" || r.status === "declined",
+        (r) =>
+          r.status === "signed" ||
+          r.status === "expired" ||
+          r.status === "declined"
       );
       const hasExpired = allRecipients.some((r) => r.status === "expired");
 
@@ -545,14 +576,19 @@ export const sweepExpiredRecipients = internalMutation({
           action: "document.expired",
           documentId: docId,
           newValues: { workflowStatus: "expired" },
-          description: "Document expired — all pending recipients passed deadline",
+          description:
+            "Document expired — all pending recipients passed deadline",
           ipAddress: "system-cron",
         });
 
         // Schedule notification email to sender
-        await ctx.scheduler.runAfter(0, internal.documents.expiration_sweep.notifyDocumentExpired, {
-          documentId: docId,
-        });
+        await ctx.scheduler.runAfter(
+          0,
+          internal.documents.expiration_sweep.notifyDocumentExpired,
+          {
+            documentId: docId,
+          }
+        );
       }
     }
   },
@@ -567,15 +603,21 @@ export const notifyDocumentExpired = internalAction({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
     if (!document) return;
 
     // Get owner info
-    const owner = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: document.ownerId,
-    });
+    const owner = await ctx.runQuery(
+      internal.organizations.helpers.getUserById,
+      {
+        userId: document.ownerId,
+      }
+    );
     if (!owner?.email) return;
 
     // Send expiration notification email
@@ -608,7 +650,7 @@ import { internalAction } from "../_generated/server";
 crons.interval(
   "sweep-expired-recipients",
   { minutes: 15 },
-  internal.documents.expiration_sweep.sweepExpiredRecipients,
+  internal.documents.expiration_sweep.sweepExpiredRecipients
 );
 ```
 
@@ -714,11 +756,14 @@ export function DocumentExpiredPage({ ownerName }: DocumentExpiredPageProps) {
             <ClockIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
           </div>
 
-          <h1 className="text-xl font-semibold text-balance">This document has expired</h1>
+          <h1 className="text-xl font-semibold text-balance">
+            This document has expired
+          </h1>
 
           <p className="text-muted-foreground mt-2 text-sm text-pretty">
             The sender set an expiration date that has passed. Please contact{" "}
-            <span className="font-medium">{ownerName}</span> for a new signing link.
+            <span className="font-medium">{ownerName}</span> for a new signing
+            link.
           </p>
         </div>
       </div>
@@ -769,7 +814,7 @@ Remove:
 
 ```typescript
 const [deadline, setDeadline] = useState<Date | undefined>(
-  defaultDeadlineDays ? addDays(new Date(), defaultDeadlineDays) : undefined,
+  defaultDeadlineDays ? addDays(new Date(), defaultDeadlineDays) : undefined
 );
 ```
 
@@ -783,7 +828,7 @@ const [expirationPreset, setExpirationPreset] = useState<ExpirationPreset>(
     ? [7, 14, 30, 60, 90].includes(defaultDeadlineDays)
       ? (String(defaultDeadlineDays) as ExpirationPreset)
       : "custom"
-    : "none",
+    : "none"
 );
 const [customAmount, setCustomAmount] = useState(defaultDeadlineDays ?? 30);
 const [customUnit, setCustomUnit] = useState<"day" | "week" | "month">("day");
@@ -829,7 +874,8 @@ Update the `sendDocumentEmails` call (line 142–148):
 const result = await sendDocumentEmails({
   documentId,
   customMessage: customMessage.trim() || undefined,
-  recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
+  recipientMessages:
+    perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
   expirationPeriod,
   signingMode: signingMode === "sequential" ? "sequential" : undefined,
 });
@@ -895,7 +941,9 @@ Replace the entire `{/* SEA-119: Deadline picker */}` block with:
   )}
 
   {getExpirationText() && (
-    <p className="text-muted-foreground mt-1.5 text-xs">{getExpirationText()}</p>
+    <p className="text-muted-foreground mt-1.5 text-xs">
+      {getExpirationText()}
+    </p>
   )}
 </div>;
 ```
@@ -912,7 +960,9 @@ Replace the deadline reference in the info box (line ~426-428) with expiration i
 
 ```tsx
 {
-  getExpirationText() && <span className="mt-1 block">{getExpirationText()}</span>;
+  getExpirationText() && (
+    <span className="mt-1 block">{getExpirationText()}</span>
+  );
 }
 ```
 
@@ -978,14 +1028,17 @@ export function DocumentExpiredEmail({
           <Heading style={heading}>Document Expired</Heading>
           <Text style={text}>Hi {ownerName},</Text>
           <Text style={text}>
-            Your document <strong>{documentName}</strong> has expired as of {expiredAt}. All
-            unsigned recipients have been marked as expired.
+            Your document <strong>{documentName}</strong> has expired as of{" "}
+            {expiredAt}. All unsigned recipients have been marked as expired.
           </Text>
           <Text style={text}>
-            You can re-send this document to give recipients a new expiration period.
+            You can re-send this document to give recipients a new expiration
+            period.
           </Text>
           <Section style={footer}>
-            <Text style={footerText}>This is an automated message from Seal.</Text>
+            <Text style={footerText}>
+              This is an automated message from Seal.
+            </Text>
           </Section>
         </Container>
       </Body>
@@ -1003,9 +1056,18 @@ const container = {
   padding: "20px 48px",
   borderRadius: "5px",
 };
-const heading = { fontSize: "24px", fontWeight: "bold", marginBottom: "20px", color: "#1a1a1a" };
+const heading = {
+  fontSize: "24px",
+  fontWeight: "bold",
+  marginBottom: "20px",
+  color: "#1a1a1a",
+};
 const text = { fontSize: "16px", lineHeight: "26px", color: "#484848" };
-const footer = { marginTop: "32px", paddingTop: "16px", borderTop: "1px solid #e6e6e6" };
+const footer = {
+  marginTop: "32px",
+  paddingTop: "16px",
+  borderTop: "1px solid #e6e6e6",
+};
 const footerText = { fontSize: "12px", color: "#999999" };
 
 export async function renderDocumentExpired(props: DocumentExpiredEmailProps) {
@@ -1040,7 +1102,7 @@ export interface SendDocumentExpiredNotificationParams {
 }
 
 export async function sendDocumentExpiredNotification(
-  params: SendDocumentExpiredNotificationParams,
+  params: SendDocumentExpiredNotificationParams
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const html = await renderDocumentExpired({
@@ -1183,27 +1245,36 @@ After verifying the recipient and before sending the email (line ~470), add:
 ```typescript
 // 5a. If recipient is expired, reset their status and expiration
 if (recipient.status === "expired") {
-  const document_latest = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-    documentId: args.documentId,
-  });
+  const document_latest = await ctx.runQuery(
+    internal.documents.queries.getDocumentInternal,
+    {
+      documentId: args.documentId,
+    }
+  );
   const expiresAt = document_latest?.expirationPeriod
     ? Date.now() +
       expirationPeriodToMs(
         document_latest.expirationPeriod.amount,
-        document_latest.expirationPeriod.unit,
+        document_latest.expirationPeriod.unit
       )
     : undefined;
 
-  await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
-    recipientId: args.recipientId,
-    expiresAt,
-  });
+  await ctx.runMutation(
+    internal.documents.send_document_action.resetExpiredRecipient,
+    {
+      recipientId: args.recipientId,
+      expiresAt,
+    }
+  );
 
   // If document is expired, transition back to sent
   if (document_latest?.workflowStatus === "expired") {
-    await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
-      documentId: args.documentId,
-    });
+    await ctx.runMutation(
+      internal.documents.send_document_action.reactivateExpiredDocument,
+      {
+        documentId: args.documentId,
+      }
+    );
   }
 }
 ```

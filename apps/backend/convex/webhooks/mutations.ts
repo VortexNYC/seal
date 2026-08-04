@@ -18,7 +18,8 @@ import { WEBHOOK_EVENT_TYPES } from "../schemas/webhooks";
  * @returns Random alphanumeric string
  */
 function generateSecret(length: number): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   const randomValues = new Uint8Array(length);
   crypto.getRandomValues(randomValues);
@@ -53,14 +54,19 @@ type EndpointUpdateArgs = {
   status?: "active" | "paused" | "disabled";
 };
 
-function createValidationError(message: string): ConvexError<Record<string, string>> {
+function createValidationError(
+  message: string
+): ConvexError<Record<string, string>> {
   return new ConvexError({
     code: "VALIDATION_ERROR",
     message,
   });
 }
 
-function applyNameUpdate(updates: Record<string, unknown>, name: string | undefined): void {
+function applyNameUpdate(
+  updates: Record<string, unknown>,
+  name: string | undefined
+): void {
   if (name === undefined) {
     return;
   }
@@ -73,7 +79,10 @@ function applyNameUpdate(updates: Record<string, unknown>, name: string | undefi
   updates.name = name.trim();
 }
 
-function applyUrlUpdate(updates: Record<string, unknown>, urlValue: string | undefined): void {
+function applyUrlUpdate(
+  updates: Record<string, unknown>,
+  urlValue: string | undefined
+): void {
   if (urlValue === undefined) {
     return;
   }
@@ -93,7 +102,10 @@ function applyUrlUpdate(updates: Record<string, unknown>, urlValue: string | und
   updates.url = urlValue;
 }
 
-function applyEventsUpdate(updates: Record<string, unknown>, events: string[] | undefined): void {
+function applyEventsUpdate(
+  updates: Record<string, unknown>,
+  events: string[] | undefined
+): void {
   if (events === undefined) {
     return;
   }
@@ -111,7 +123,7 @@ function applyEventsUpdate(updates: Record<string, unknown>, events: string[] | 
 function applyOptionalEndpointUpdates(
   updates: Record<string, unknown>,
   endpointStatus: "active" | "paused" | "disabled",
-  args: EndpointUpdateArgs,
+  args: EndpointUpdateArgs
 ): void {
   if (args.description !== undefined) {
     updates.description = args.description;
@@ -127,7 +139,7 @@ function applyOptionalEndpointUpdates(
 
 function buildEndpointUpdates(
   endpointStatus: "active" | "paused" | "disabled",
-  args: EndpointUpdateArgs,
+  args: EndpointUpdateArgs
 ): Record<string, unknown> {
   const updates: Record<string, unknown> = {
     updatedAt: Date.now(),
@@ -202,12 +214,18 @@ export const createEndpoint = permissionMutation("settings:integrations")({
     }
 
     // Check Pro plan requirement for webhooks
-    await ensureProFeature(ctx.db, ctx.auth.organizationId, "Webhook endpoints");
+    await ensureProFeature(
+      ctx.db,
+      ctx.auth.organizationId,
+      "Webhook endpoints"
+    );
 
     // Check endpoint limit (max 10 per organization)
     const existingEndpoints = await ctx.db
       .query("webhook_endpoints")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organizationId)
+      )
       .collect();
 
     if (existingEndpoints.length >= 10) {
@@ -268,7 +286,9 @@ export const updateEndpoint = permissionMutation("settings:integrations")({
     url: v.optional(v.string()),
     events: v.optional(v.array(v.string())),
     description: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("disabled"))),
+    status: v.optional(
+      v.union(v.literal("active"), v.literal("paused"), v.literal("disabled"))
+    ),
   },
   handler: async (ctx, args) => {
     const endpoint = await ctx.db.get(args.endpointId);
@@ -452,12 +472,18 @@ export const createSlackEndpoint = permissionMutation("settings:integrations")({
       }
     }
 
-    await ensureProFeature(ctx.db, ctx.auth.organizationId, "Slack notifications");
+    await ensureProFeature(
+      ctx.db,
+      ctx.auth.organizationId,
+      "Slack notifications"
+    );
 
     // Check endpoint limit (shared with regular webhooks)
     const existingEndpoints = await ctx.db
       .query("webhook_endpoints")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organizationId)
+      )
       .collect();
 
     if (existingEndpoints.length >= 10) {

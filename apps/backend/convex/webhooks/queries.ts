@@ -20,7 +20,9 @@ export const listEndpoints = permissionQuery("settings:integrations")({
   handler: async (ctx) => {
     const endpoints = await ctx.db
       .query("webhook_endpoints")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organizationId)
+      )
       .collect();
 
     // Get recent delivery stats for each endpoint
@@ -28,17 +30,25 @@ export const listEndpoints = permissionQuery("settings:integrations")({
       endpoints.map(async (endpoint) => {
         const recentDeliveries = await ctx.db
           .query("webhook_deliveries")
-          .withIndex("by_endpoint_created", (q) => q.eq("endpointId", endpoint._id))
+          .withIndex("by_endpoint_created", (q) =>
+            q.eq("endpointId", endpoint._id)
+          )
           .order("desc")
           .take(100);
 
-        const delivered = recentDeliveries.filter((d) => d.status === "delivered").length;
+        const delivered = recentDeliveries.filter(
+          (d) => d.status === "delivered"
+        ).length;
         const failed = recentDeliveries.filter(
-          (d) => d.status === "failed" || d.status === "abandoned",
+          (d) => d.status === "failed" || d.status === "abandoned"
         ).length;
 
         // Strip secret fields — never send raw secret or hash to client
-        const { secret: _secret, secretHash: _secretHash, ...safeEndpoint } = endpoint;
+        const {
+          secret: _secret,
+          secretHash: _secretHash,
+          ...safeEndpoint
+        } = endpoint;
 
         return {
           ...safeEndpoint,
@@ -52,7 +62,7 @@ export const listEndpoints = permissionQuery("settings:integrations")({
                 : 100,
           },
         };
-      }),
+      })
     );
 
     return endpointsWithStats;
@@ -83,7 +93,11 @@ export const getEndpoint = permissionQuery("settings:integrations")({
     }
 
     // Strip secret fields — never send raw secret or hash to client
-    const { secret: _secret, secretHash: _secretHash, ...safeEndpoint } = endpoint;
+    const {
+      secret: _secret,
+      secretHash: _secretHash,
+      ...safeEndpoint
+    } = endpoint;
     return safeEndpoint;
   },
 });
@@ -112,7 +126,9 @@ export const listDeliveries = permissionQuery("settings:integrations")({
 
     const deliveries = await ctx.db
       .query("webhook_deliveries")
-      .withIndex("by_endpoint_created", (q) => q.eq("endpointId", args.endpointId))
+      .withIndex("by_endpoint_created", (q) =>
+        q.eq("endpointId", args.endpointId)
+      )
       .order("desc")
       .take(limit);
 

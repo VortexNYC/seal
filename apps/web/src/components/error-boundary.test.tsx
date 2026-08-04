@@ -34,7 +34,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowingComponent shouldThrow={false} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
     expect(screen.getByText("Working")).toBeDefined();
   });
@@ -45,7 +45,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     expect(screen.getByText("Something went wrong")).toBeDefined();
@@ -58,7 +58,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     expect(screen.getByText("Something went wrong")).toBeDefined();
@@ -71,7 +71,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary fallback={<div>Custom fallback</div>}>
         <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     expect(screen.getByText("Custom fallback")).toBeDefined();
@@ -99,7 +99,9 @@ describe("ErrorBoundary", () => {
 
 describe("ErrorFallback", () => {
   test("renders heading and both buttons", () => {
-    render(<ErrorFallback error={null} onReset={() => {}} onGoHome={() => {}} />);
+    render(
+      <ErrorFallback error={null} onReset={() => {}} onGoHome={() => {}} />
+    );
 
     expect(screen.getByText("Something went wrong")).toBeDefined();
     expect(screen.getByRole("button", { name: /try again/i })).toBeDefined();
@@ -110,7 +112,9 @@ describe("ErrorFallback", () => {
     const user = userEvent.setup();
     const onReset = vi.fn();
 
-    render(<ErrorFallback error={null} onReset={onReset} onGoHome={() => {}} />);
+    render(
+      <ErrorFallback error={null} onReset={onReset} onGoHome={() => {}} />
+    );
 
     await user.click(screen.getByRole("button", { name: /try again/i }));
 
@@ -121,7 +125,9 @@ describe("ErrorFallback", () => {
     const user = userEvent.setup();
     const onGoHome = vi.fn();
 
-    render(<ErrorFallback error={null} onReset={() => {}} onGoHome={onGoHome} />);
+    render(
+      <ErrorFallback error={null} onReset={() => {}} onGoHome={onGoHome} />
+    );
 
     await user.click(screen.getByRole("button", { name: /go to home/i }));
 

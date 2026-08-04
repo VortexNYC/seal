@@ -36,7 +36,7 @@ describe("workflows/document_completion_steps", () => {
         isActive: true,
         timezone: "UTC",
         updatedAt: Date.now(),
-      }),
+      })
     );
 
     userId = await t.run((ctx) =>
@@ -48,7 +48,7 @@ describe("workflows/document_completion_steps", () => {
         timezone: "UTC",
         locale: "en-US",
         activeOrganizationId: organizationId,
-      }),
+      })
     );
 
     documentId = await t.run((ctx) =>
@@ -64,7 +64,7 @@ describe("workflows/document_completion_steps", () => {
         storageId: "storage_resend_test",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-      }),
+      })
     );
 
     // Recipient is already in the terminal state — sendSignerConfirmation
@@ -83,7 +83,7 @@ describe("workflows/document_completion_steps", () => {
         sentAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-      }),
+      })
     );
   });
 
@@ -95,20 +95,24 @@ describe("workflows/document_completion_steps", () => {
       // can move on instead of retry-stalling forever.
       const result = await t.action(
         internal.workflows.document_completion_steps.sendSignerConfirmation,
-        { recipientId, documentId },
+        { recipientId, documentId }
       );
 
-      expect(result).toEqual(expect.objectContaining({ sent: expect.any(Boolean) }));
+      expect(result).toEqual(
+        expect.objectContaining({ sent: expect.any(Boolean) })
+      );
     });
 
     test("returns sent:false when the recipient has not actually completed", async () => {
       // Reset to a non-terminal status — the helper short-circuits on
       // isRecipientComplete being false, never touching Resend.
-      await t.run((ctx) => ctx.db.patch(recipientId, { status: "pending", signedAt: undefined }));
+      await t.run((ctx) =>
+        ctx.db.patch(recipientId, { status: "pending", signedAt: undefined })
+      );
 
       const result = await t.action(
         internal.workflows.document_completion_steps.sendSignerConfirmation,
-        { recipientId, documentId },
+        { recipientId, documentId }
       );
 
       expect(result.sent).toBe(false);
@@ -122,7 +126,7 @@ describe("workflows/document_completion_steps", () => {
 
       const result = await t.action(
         internal.workflows.document_completion_steps.sendSignerConfirmation,
-        { recipientId, documentId },
+        { recipientId, documentId }
       );
 
       expect(result.sent).toBe(false);
@@ -133,7 +137,7 @@ describe("workflows/document_completion_steps", () => {
     test("returns allComplete:true when the only signer has signed", async () => {
       const result = await t.query(
         internal.workflows.document_completion_steps.checkAllRecipientsComplete,
-        { documentId },
+        { documentId }
       );
       expect(result.allComplete).toBe(true);
     });
@@ -151,12 +155,12 @@ describe("workflows/document_completion_steps", () => {
           tokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-        }),
+        })
       );
 
       const result = await t.query(
         internal.workflows.document_completion_steps.checkAllRecipientsComplete,
-        { documentId },
+        { documentId }
       );
       expect(result.allComplete).toBe(false);
     });
@@ -166,7 +170,7 @@ describe("workflows/document_completion_steps", () => {
     test("returns shouldComplete:true the first time and false on a re-fire", async () => {
       const first = await t.mutation(
         internal.workflows.document_completion_steps.triggerDocumentCompletion,
-        { documentId },
+        { documentId }
       );
       expect(first.shouldComplete).toBe(true);
 
@@ -176,12 +180,12 @@ describe("workflows/document_completion_steps", () => {
           workflowStatus: "completed",
           completedAt: Date.now(),
           updatedAt: Date.now(),
-        }),
+        })
       );
 
       const second = await t.mutation(
         internal.workflows.document_completion_steps.triggerDocumentCompletion,
-        { documentId },
+        { documentId }
       );
       expect(second.shouldComplete).toBe(false);
     });
@@ -191,7 +195,7 @@ describe("workflows/document_completion_steps", () => {
 
       const result = await t.mutation(
         internal.workflows.document_completion_steps.triggerDocumentCompletion,
-        { documentId },
+        { documentId }
       );
       expect(result.shouldComplete).toBe(false);
     });

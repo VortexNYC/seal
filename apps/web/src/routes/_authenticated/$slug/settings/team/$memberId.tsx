@@ -22,11 +22,19 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/team/$memberId")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/team/$memberId"
+)({
   component: MemberDetails,
   pendingComponent: MemberDetailsSkeleton,
 });
@@ -86,7 +94,7 @@ function MemberDetails() {
           organizationId: orgId,
           memberId,
         }
-      : "skip",
+      : "skip"
   );
 
   const removeMember = useMutation(api.organizations.mutations.removeMember);
@@ -106,7 +114,9 @@ function MemberDetails() {
         params: { slug },
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove member");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove member"
+      );
     } finally {
       setIsRemoving(false);
       setShowRemoveDialog(false);
@@ -123,7 +133,8 @@ function MemberDetails() {
   }
 
   const currentEmail =
-    user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
+    user?.primaryEmailAddress?.emailAddress ||
+    user?.emailAddresses[0]?.emailAddress;
 
   return (
     <PageWrapper
@@ -170,7 +181,8 @@ function MemberProfileCard({
   member: TeamMemberDetails;
 }) {
   const isCurrentUser =
-    Boolean(currentEmail) && member.email.toLowerCase() === currentEmail?.toLowerCase();
+    Boolean(currentEmail) &&
+    member.email.toLowerCase() === currentEmail?.toLowerCase();
 
   return (
     <Card>
@@ -198,7 +210,9 @@ function MemberProfileCard({
             <div className="mt-3 flex items-center gap-2">
               <MemberRoleBadge role={member.role} />
               <MemberStatusBadge status={member.status} />
-              {member.isPrimary ? <Badge variant="outline">Primary Organization</Badge> : null}
+              {member.isPrimary ? (
+                <Badge variant="outline">Primary Organization</Badge>
+              ) : null}
             </div>
           </div>
         </div>
@@ -212,7 +226,9 @@ function MemberBasicInfoCard({ member }: { member: TeamMemberDetails }) {
     <Card>
       <CardHeader>
         <CardTitle>Basic Information</CardTitle>
-        <CardDescription>Member details and account information</CardDescription>
+        <CardDescription>
+          Member details and account information
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -227,11 +243,19 @@ function MemberBasicInfoCard({ member }: { member: TeamMemberDetails }) {
             value={member.role}
             valueClassName="capitalize"
           />
-          {member.timezone ? <MemberInfoItem label="Timezone" value={member.timezone} /> : null}
-          <MemberInfoItem label="Status" value={member.status} valueClassName="capitalize" />
+          {member.timezone ? (
+            <MemberInfoItem label="Timezone" value={member.timezone} />
+          ) : null}
+          <MemberInfoItem
+            label="Status"
+            value={member.status}
+            valueClassName="capitalize"
+          />
         </div>
 
-        {member.customRole ? <MemberCustomRole customRole={member.customRole} /> : null}
+        {member.customRole ? (
+          <MemberCustomRole customRole={member.customRole} />
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -254,7 +278,9 @@ function MemberInfoItem({
         {Icon ? <Icon className="h-4 w-4" /> : null}
         {label}
       </div>
-      <p className={["mt-1 text-sm", valueClassName].filter(Boolean).join(" ")}>{value}</p>
+      <p className={["mt-1 text-sm", valueClassName].filter(Boolean).join(" ")}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -268,7 +294,9 @@ function MemberCustomRole({
     <>
       <Separator />
       <div>
-        <div className="text-muted-foreground text-sm font-medium">Custom Role</div>
+        <div className="text-muted-foreground text-sm font-medium">
+          Custom Role
+        </div>
         <p className="mt-1 text-sm font-medium">{customRole.name}</p>
         <p className="text-muted-foreground mt-1 text-xs">
           {customRole.permissions.length} permissions assigned
@@ -289,18 +317,25 @@ function MemberDangerZone({
     <Card className="border-destructive">
       <CardHeader>
         <CardTitle className="text-destructive">Danger Zone</CardTitle>
-        <CardDescription>Remove this member from the organization</CardDescription>
+        <CardDescription>
+          Remove this member from the organization
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Remove Member</p>
             <p className="text-muted-foreground text-sm">
-              This removes the member from this organization. Their account and access to any other
-              organizations are unaffected.
+              This removes the member from this organization. Their account and
+              access to any other organizations are unaffected.
             </p>
           </div>
-          <Button variant="destructive" size="sm" onClick={onRemoveClick} disabled={isRemoving}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onRemoveClick}
+            disabled={isRemoving}
+          >
             <Trash2 className="mr-2 h-4 w-4" />
             Remove Member
           </Button>
@@ -331,7 +366,8 @@ function RemoveMemberDialog({
           <AlertDialogDescription asChild>
             <div>
               <p>
-                This removes <span className="font-semibold">{memberLabel}</span> from this
+                This removes{" "}
+                <span className="font-semibold">{memberLabel}</span> from this
                 organization, including:
               </p>
               <ul className="mt-2 list-inside list-disc space-y-1">
@@ -339,7 +375,8 @@ function RemoveMemberDialog({
                 <li>Access to this workspace</li>
               </ul>
               <p className="mt-2">
-                Their account and access to any other organizations are unaffected.
+                Their account and access to any other organizations are
+                unaffected.
               </p>
             </div>
           </AlertDialogDescription>

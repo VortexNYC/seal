@@ -53,17 +53,19 @@ type FieldDoc = Doc<"signature_fields">;
 
 function isAccessibleDocument(
   document: ApiDocument | null,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): document is ApiDocument {
   return Boolean(
-    document && document.status !== "deleted" && document.organizationId === organizationId,
+    document &&
+    document.status !== "deleted" &&
+    document.organizationId === organizationId
   );
 }
 
 function buildApiSignature(
   signature: SignatureDoc,
   recipient: RecipientDoc | null,
-  field: FieldDoc | null,
+  field: FieldDoc | null
 ): ApiSignature {
   return {
     id: signature._id,
@@ -152,7 +154,9 @@ export const listSignatures = internalQuery({
     const recipientIds = [...new Set(signatures.map((s) => s.recipientId))];
     const fieldIds = [...new Set(signatures.map((s) => s.fieldId))];
 
-    const recipients = await Promise.all(recipientIds.map((id) => ctx.db.get(id)));
+    const recipients = await Promise.all(
+      recipientIds.map((id) => ctx.db.get(id))
+    );
     const fields = await Promise.all(fieldIds.map((id) => ctx.db.get(id)));
 
     const recipientMap = new Map(recipients.map((r) => [r?._id, r]));
@@ -258,7 +262,9 @@ export const verifyDocument = internalQuery({
       recipients
         .filter((r) => r.status === "signed" || r.status === "approved")
         .map(async (recipient) => {
-          const recipientSigs = signatures.filter((s) => s.recipientId === recipient._id);
+          const recipientSigs = signatures.filter(
+            (s) => s.recipientId === recipient._id
+          );
           const mainSig = recipientSigs.find((s) => s.signatureHash);
 
           return {
@@ -266,18 +272,18 @@ export const verifyDocument = internalQuery({
             recipient_name: recipient.name ?? "",
             role: recipient.role,
             signed_at: new Date(
-              recipient.signedAt ?? recipient.approvedAt ?? Date.now(),
+              recipient.signedAt ?? recipient.approvedAt ?? Date.now()
             ).toISOString(),
             ip_address: mainSig?.ipAddress ?? "",
             signature_hash: mainSig?.signatureHash,
             // Verification passes if we have a signature hash
             verified: !!mainSig?.signatureHash,
           };
-        }),
+        })
     );
 
     const signedCount = recipients.filter(
-      (r) => r.status === "signed" || r.status === "approved",
+      (r) => r.status === "signed" || r.status === "approved"
     ).length;
 
     // Document is verified if it's completed and all signatures have hashes
@@ -315,7 +321,7 @@ export const getAuditTrail = internalQuery({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     document_id: string;
     events: Array<{
@@ -342,7 +348,9 @@ export const getAuditTrail = internalQuery({
 
     const auditLogs = await ctx.db
       .query("audit_logs")
-      .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+      .withIndex("by_document_created", (q) =>
+        q.eq("documentId", args.documentId)
+      )
       .order("desc")
       .take(limit);
 
@@ -356,7 +364,9 @@ export const getAuditTrail = internalQuery({
           // userId is an auth subject (string), find user by authSubject
           const user = await ctx.db
             .query("users")
-            .withIndex("by_auth_subject", (q) => q.eq("authSubject", log.userId as string))
+            .withIndex("by_auth_subject", (q) =>
+              q.eq("authSubject", log.userId as string)
+            )
             .first();
           if (user) {
             actorEmail = user.email;
@@ -373,7 +383,7 @@ export const getAuditTrail = internalQuery({
           ip_address: log.ipAddress,
           metadata: log.metadata as Record<string, unknown> | undefined,
         };
-      }),
+      })
     );
 
     return {

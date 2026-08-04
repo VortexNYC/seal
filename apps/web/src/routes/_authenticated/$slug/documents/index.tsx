@@ -2,7 +2,12 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate, useRouteContext, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouteContext,
+  useRouter,
+} from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import Fuse, { type FuseResultMatch } from "fuse.js";
 import {
@@ -60,7 +65,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,7 +80,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -78,7 +93,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
 
@@ -152,7 +171,7 @@ function HighlightedText({
     parts.push(
       <mark key={`${start}-${end}`} className="bg-warning/30 rounded px-0.5">
         {text.slice(start, end + 1)}
-      </mark>,
+      </mark>
     );
     lastIndex = end + 1;
   }
@@ -222,7 +241,10 @@ type DocumentListActions = {
   readonly sendDocument: (documentId: Id<"documents">) => void;
   readonly cancelDocument: (documentId: Id<"documents">) => void;
   readonly downloadDocument: (documentId: Id<"documents">) => void;
-  readonly shareDocument: (documentId: Id<"documents">, documentName: string) => void;
+  readonly shareDocument: (
+    documentId: Id<"documents">,
+    documentName: string
+  ) => void;
   readonly moveToFolder: (documentId: Id<"documents">) => void;
   readonly deleteDocument: (documentId: Id<"documents">) => void;
   readonly transferOwnership: (doc: {
@@ -247,7 +269,10 @@ type ConfirmDialogContent = {
 type DocumentsListData = {
   readonly currentPage: number;
   readonly hasFiltersOrSearch: boolean;
-  readonly matchesMap: Map<Id<"documents">, readonly FuseResultMatch[] | undefined>;
+  readonly matchesMap: Map<
+    Id<"documents">,
+    readonly FuseResultMatch[] | undefined
+  >;
   readonly paginatedDocuments: readonly DocumentListItem[];
   readonly setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   readonly sortedDocuments: readonly DocumentListItem[];
@@ -267,17 +292,21 @@ function defaultConfirmDialog(): ConfirmDialogState {
   return { open: false, type: "delete", documentId: null };
 }
 
-function confirmDialogContent(type: ConfirmDialogState["type"]): ConfirmDialogContent {
+function confirmDialogContent(
+  type: ConfirmDialogState["type"]
+): ConfirmDialogContent {
   switch (type) {
     case "delete":
       return {
         title: "Delete Document",
-        description: "Are you sure you want to delete this document? This action cannot be undone.",
+        description:
+          "Are you sure you want to delete this document? This action cannot be undone.",
       };
     case "send":
       return {
         title: "Send Document",
-        description: "Send this document? Once sent, recipients will be notified to take action.",
+        description:
+          "Send this document? Once sent, recipients will be notified to take action.",
       };
     case "cancel":
       return {
@@ -293,7 +322,9 @@ function confirmDialogActionLabel(type: ConfirmDialogState["type"]): string {
   return type === "send" ? "Send" : "Cancel Document";
 }
 
-function confirmDialogActionVariant(type: ConfirmDialogState["type"]): "default" | "destructive" {
+function confirmDialogActionVariant(
+  type: ConfirmDialogState["type"]
+): "default" | "destructive" {
   return type === "delete" || type === "cancel" ? "destructive" : "default";
 }
 
@@ -308,20 +339,23 @@ function formatBytes(bytes: number): string {
 function filterDocumentsByStatusAndDate(
   documents: readonly DocumentListItem[],
   workflowStatusFilter: WorkflowStatusFilter,
-  dateRange: DateRange | undefined,
+  dateRange: DateRange | undefined
 ): readonly DocumentListItem[] {
   return documents.filter((doc) => {
     const workflowStatusMatches =
-      workflowStatusFilter === "all" || (doc.workflowStatus ?? "draft") === workflowStatusFilter;
+      workflowStatusFilter === "all" ||
+      (doc.workflowStatus ?? "draft") === workflowStatusFilter;
     return workflowStatusMatches && documentMatchesDateRange(doc, dateRange);
   });
 }
 
 function documentMatchesDateRange(
   doc: DocumentListItem,
-  dateRange: DateRange | undefined,
+  dateRange: DateRange | undefined
 ): boolean {
-  const fromTime = dateRange?.from ? dayStart(dateRange.from).getTime() : undefined;
+  const fromTime = dateRange?.from
+    ? dayStart(dateRange.from).getTime()
+    : undefined;
   const toTime = dateRange?.to ? dayEnd(dateRange.to).getTime() : undefined;
   return (
     (fromTime === undefined || doc.createdAt >= fromTime) &&
@@ -345,31 +379,39 @@ function sortDocuments(
   documents: readonly DocumentListItem[],
   searchQuery: string,
   sortField: SortField,
-  sortDirection: SortDirection,
+  sortDirection: SortDirection
 ): readonly DocumentListItem[] {
   if (searchQuery.trim() && sortField === "createdAt") return documents;
-  return [...documents].sort((a, b) => documentSortComparison(a, b, sortField, sortDirection));
+  return [...documents].sort((a, b) =>
+    documentSortComparison(a, b, sortField, sortDirection)
+  );
 }
 
 function documentSortComparison(
   a: DocumentListItem,
   b: DocumentListItem,
   sortField: SortField,
-  sortDirection: SortDirection,
+  sortDirection: SortDirection
 ): number {
   const comparison = documentSortValue(a, b, sortField);
   return sortDirection === "asc" ? comparison : -comparison;
 }
 
-function documentSortValue(a: DocumentListItem, b: DocumentListItem, sortField: SortField): number {
+function documentSortValue(
+  a: DocumentListItem,
+  b: DocumentListItem,
+  sortField: SortField
+): number {
   if (sortField === "name") return a.name.localeCompare(b.name);
   if (sortField === "createdAt") return a.createdAt - b.createdAt;
-  return (a.workflowStatus ?? "draft").localeCompare(b.workflowStatus ?? "draft");
+  return (a.workflowStatus ?? "draft").localeCompare(
+    b.workflowStatus ?? "draft"
+  );
 }
 
 function paginatedDocuments(
   documents: readonly DocumentListItem[],
-  currentPage: number,
+  currentPage: number
 ): readonly DocumentListItem[] {
   const startIndex = (currentPage - 1) * DOCUMENTS_PER_PAGE;
   return documents.slice(startIndex, startIndex + DOCUMENTS_PER_PAGE);
@@ -379,9 +421,12 @@ function buildMatchesMap(
   searchResults: readonly {
     readonly item: DocumentListItem;
     readonly matches?: readonly FuseResultMatch[];
-  }[],
+  }[]
 ): Map<Id<"documents">, readonly FuseResultMatch[] | undefined> {
-  const map = new Map<Id<"documents">, readonly FuseResultMatch[] | undefined>();
+  const map = new Map<
+    Id<"documents">,
+    readonly FuseResultMatch[] | undefined
+  >();
   for (const result of searchResults) map.set(result.item._id, result.matches);
   return map;
 }
@@ -499,7 +544,11 @@ function DocumentSummary({
       </p>
       {doc.description && (
         <p className="text-muted-foreground line-clamp-1 text-sm">
-          <HighlightedText text={doc.description} matches={matches} fieldKey="description" />
+          <HighlightedText
+            text={doc.description}
+            matches={matches}
+            fieldKey="description"
+          />
         </p>
       )}
       {doc.pageCount !== undefined && doc.pageCount > 0 && (
@@ -566,7 +615,11 @@ function DocumentGridCard({
         <GridCardHeader actions={actions} doc={doc} matches={matches} />
         {doc.description && (
           <CardDescription className="line-clamp-2">
-            <HighlightedText text={doc.description} matches={matches} fieldKey="description" />
+            <HighlightedText
+              text={doc.description}
+              matches={matches}
+              fieldKey="description"
+            />
           </CardDescription>
         )}
       </CardHeader>
@@ -682,8 +735,10 @@ function DocumentActionsMenu({
 }) {
   const workflowStatus = doc.workflowStatus ?? "draft";
   const canSend =
-    workflowStatus === "draft" || (includeExpiredSend && workflowStatus === "expired");
-  const canCancel = workflowStatus === "sent" || workflowStatus === "in_progress";
+    workflowStatus === "draft" ||
+    (includeExpiredSend && workflowStatus === "expired");
+  const canCancel =
+    workflowStatus === "sent" || workflowStatus === "in_progress";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -697,7 +752,10 @@ function DocumentActionsMenu({
           <MoreVerticalIcon className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+      <DropdownMenuContent
+        align="end"
+        onClick={(event) => event.stopPropagation()}
+      >
         <DropdownMenuItem onClick={() => actions.openDocument(doc._id)}>
           <FileTextIcon className="mr-2 h-4 w-4" />
           Open
@@ -705,7 +763,9 @@ function DocumentActionsMenu({
         {canSend && (
           <DropdownMenuItem onClick={() => actions.sendDocument(doc._id)}>
             <SendIcon className="mr-2 h-4 w-4" />
-            {workflowStatus === "expired" ? "Re-send Document" : "Send Document"}
+            {workflowStatus === "expired"
+              ? "Re-send Document"
+              : "Send Document"}
           </DropdownMenuItem>
         )}
         {canCancel && (
@@ -721,7 +781,9 @@ function DocumentActionsMenu({
           <DownloadIcon className="mr-2 h-4 w-4" />
           Download
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => actions.shareDocument(doc._id, doc.name)}>
+        <DropdownMenuItem
+          onClick={() => actions.shareDocument(doc._id, doc.name)}
+        >
           <Share2Icon className="mr-2 h-4 w-4" />
           Share
         </DropdownMenuItem>
@@ -774,7 +836,7 @@ function useDocumentsListData({
       filter,
       folderId,
       rootOnly: !folderId,
-    }),
+    })
   );
   const subfolders = useQuery(api.folders.queries.listFolders, {
     organizationId,
@@ -783,36 +845,55 @@ function useDocumentsListData({
   });
 
   const filteredByStatus = useMemo(
-    () => filterDocumentsByStatusAndDate(allDocuments, workflowStatusFilter, dateRange),
-    [allDocuments, workflowStatusFilter, dateRange],
+    () =>
+      filterDocumentsByStatusAndDate(
+        allDocuments,
+        workflowStatusFilter,
+        dateRange
+      ),
+    [allDocuments, workflowStatusFilter, dateRange]
   );
-  const fuse = useMemo(() => new Fuse(filteredByStatus, fuseOptions), [filteredByStatus]);
+  const fuse = useMemo(
+    () => new Fuse(filteredByStatus, fuseOptions),
+    [filteredByStatus]
+  );
   const searchResults = useMemo(
     () =>
       searchQuery.trim()
         ? fuse.search(searchQuery)
         : filteredByStatus.map((doc) => ({ item: doc, matches: undefined })),
-    [fuse, searchQuery, filteredByStatus],
+    [fuse, searchQuery, filteredByStatus]
   );
   const filteredDocuments = useMemo(
     () => searchResults.map((result) => result.item),
-    [searchResults],
+    [searchResults]
   );
-  const matchesMap = useMemo(() => buildMatchesMap(searchResults), [searchResults]);
+  const matchesMap = useMemo(
+    () => buildMatchesMap(searchResults),
+    [searchResults]
+  );
   const sortedDocuments = useMemo(
-    () => sortDocuments(filteredDocuments, searchQuery, sortField, sortDirection),
-    [filteredDocuments, sortField, sortDirection, searchQuery],
+    () =>
+      sortDocuments(filteredDocuments, searchQuery, sortField, sortDirection),
+    [filteredDocuments, sortField, sortDirection, searchQuery]
   );
   const totalPages = Math.ceil(sortedDocuments.length / DOCUMENTS_PER_PAGE);
   const visibleDocuments = useMemo(
     () => paginatedDocuments(sortedDocuments, currentPage),
-    [sortedDocuments, currentPage],
+    [sortedDocuments, currentPage]
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters/search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery, dateRange]);
+  }, [
+    filter,
+    workflowStatusFilter,
+    sortField,
+    sortDirection,
+    searchQuery,
+    dateRange,
+  ]);
 
   return {
     currentPage,
@@ -821,7 +902,7 @@ function useDocumentsListData({
       filter !== "all" ||
       workflowStatusFilter !== "all" ||
       dateRange?.from ||
-      dateRange?.to,
+      dateRange?.to
     ),
     matchesMap,
     paginatedDocuments: visibleDocuments,
@@ -856,7 +937,10 @@ function DocumentsListContent({
   readonly sortField: SortField;
   readonly viewMode: ViewMode;
 }) {
-  if (data.sortedDocuments.length === 0 && (!data.subfolders || data.subfolders.length === 0)) {
+  if (
+    data.sortedDocuments.length === 0 &&
+    (!data.subfolders || data.subfolders.length === 0)
+  ) {
     return (
       <DocumentsEmptyState
         hasFiltersOrSearch={data.hasFiltersOrSearch}
@@ -909,7 +993,11 @@ function DocumentsEmptyState({
       icon={FileTextIcon}
       title="No documents yet"
       description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
-      action={{ label: "Upload Document", onClick: onUploadClick, icon: UploadIcon }}
+      action={{
+        label: "Upload Document",
+        onClick: onUploadClick,
+        icon: UploadIcon,
+      }}
     />
   );
 }
@@ -1008,7 +1096,11 @@ function DocumentsGrid({
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {!searchQuery.trim() &&
         data.subfolders?.map((folder) => (
-          <FolderGridCard key={folder._id} folder={folder} onFolderNavigate={onFolderNavigate} />
+          <FolderGridCard
+            key={folder._id}
+            folder={folder}
+            onFolderNavigate={onFolderNavigate}
+          />
         ))}
       {data.paginatedDocuments.map((doc) => (
         <DocumentGridCard
@@ -1026,10 +1118,16 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
   if (data.totalPages <= 1) return null;
   return (
     <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-      <p className="text-muted-foreground text-center text-sm sm:text-left" aria-live="polite">
+      <p
+        className="text-muted-foreground text-center text-sm sm:text-left"
+        aria-live="polite"
+      >
         Showing {(data.currentPage - 1) * DOCUMENTS_PER_PAGE + 1} to{" "}
-        {Math.min(data.currentPage * DOCUMENTS_PER_PAGE, data.sortedDocuments.length)} of{" "}
-        {data.sortedDocuments.length} documents
+        {Math.min(
+          data.currentPage * DOCUMENTS_PER_PAGE,
+          data.sortedDocuments.length
+        )}{" "}
+        of {data.sortedDocuments.length} documents
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -1043,22 +1141,26 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
           <span className="hidden sm:inline">Previous</span>
         </Button>
         <div className="flex items-center gap-1">
-          {Array.from({ length: data.totalPages }, (_, index) => index + 1).map((page) => (
-            <Button
-              key={page}
-              variant={page === data.currentPage ? "default" : "outline"}
-              size="sm"
-              onClick={() => data.setCurrentPage(page)}
-              className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
-            >
-              {page}
-            </Button>
-          ))}
+          {Array.from({ length: data.totalPages }, (_, index) => index + 1).map(
+            (page) => (
+              <Button
+                key={page}
+                variant={page === data.currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() => data.setCurrentPage(page)}
+                className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
+              >
+                {page}
+              </Button>
+            )
+          )}
         </div>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => data.setCurrentPage((prev) => Math.min(data.totalPages, prev + 1))}
+          onClick={() =>
+            data.setCurrentPage((prev) => Math.min(data.totalPages, prev + 1))
+          }
           disabled={data.currentPage === data.totalPages}
           className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
         >
@@ -1070,7 +1172,13 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
   );
 }
 
-function SortHeader({ field, label, onSortChange, sortDirection, sortField }: SortHeaderProps) {
+function SortHeader({
+  field,
+  label,
+  onSortChange,
+  sortDirection,
+  sortField,
+}: SortHeaderProps) {
   return (
     <Button
       variant="ghost"
@@ -1095,13 +1203,17 @@ function DocumentConfirmationDialog({
 }: {
   readonly confirmDialog: ConfirmDialogState;
   readonly onConfirm: () => Promise<void>;
-  readonly setConfirmDialog: React.Dispatch<React.SetStateAction<ConfirmDialogState>>;
+  readonly setConfirmDialog: React.Dispatch<
+    React.SetStateAction<ConfirmDialogState>
+  >;
 }) {
   const content = confirmDialogContent(confirmDialog.type);
   return (
     <AlertDialog
       open={confirmDialog.open}
-      onOpenChange={(open) => setConfirmDialog({ ...defaultConfirmDialog(), open })}
+      onOpenChange={(open) =>
+        setConfirmDialog({ ...defaultConfirmDialog(), open })
+      }
     >
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -1127,13 +1239,18 @@ function useDocumentListActions({
   onShareClick,
   onTransferOwnership,
   refetch,
-}: Pick<DocumentsListProps, "onMoveToFolder" | "onShareClick" | "onTransferOwnership"> & {
+}: Pick<
+  DocumentsListProps,
+  "onMoveToFolder" | "onShareClick" | "onTransferOwnership"
+> & {
   readonly refetch: () => void;
 }): {
   readonly confirmDialog: ConfirmDialogState;
   readonly documentActions: DocumentListActions;
   readonly handleConfirmAction: () => Promise<void>;
-  readonly setConfirmDialog: React.Dispatch<React.SetStateAction<ConfirmDialogState>>;
+  readonly setConfirmDialog: React.Dispatch<
+    React.SetStateAction<ConfirmDialogState>
+  >;
 } {
   const { slug } = Route.useParams();
   const router = useRouter();
@@ -1142,17 +1259,28 @@ function useDocumentListActions({
   const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
   const sendDocument = useMutation(api.documents.mutations.sendDocument);
   const cancelDocument = useMutation(api.documents.mutations.cancelDocument);
-  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(defaultConfirmDialog());
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(
+    defaultConfirmDialog()
+  );
 
-  const openConfirmDialog = (type: ConfirmDialogState["type"], documentId: Id<"documents">) => {
+  const openConfirmDialog = (
+    type: ConfirmDialogState["type"],
+    documentId: Id<"documents">
+  ) => {
     setConfirmDialog({ open: true, type, documentId });
   };
   const handleOpenDocument = (documentId: Id<"documents">) => {
-    router.navigate({ to: "/$slug/documents/$documentId", params: { slug, documentId } });
+    router.navigate({
+      to: "/$slug/documents/$documentId",
+      params: { slug, documentId },
+    });
   };
   const handleDownload = async (documentId: Id<"documents">) => {
     try {
-      const url = await convexClient.query(api.documents.queries.getDocumentUrl, { documentId });
+      const url = await convexClient.query(
+        api.documents.queries.getDocumentUrl,
+        { documentId }
+      );
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");
     } catch (_error) {
@@ -1172,7 +1300,9 @@ function useDocumentListActions({
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : `Failed to ${confirmDialog.type} document`;
+        error instanceof Error
+          ? error.message
+          : `Failed to ${confirmDialog.type} document`;
       toast.error(errorMessage);
     } finally {
       setConfirmDialog(defaultConfirmDialog());
@@ -1204,11 +1334,17 @@ async function runConfirmedDocumentAction({
   sendDocument,
   track,
 }: {
-  readonly cancelDocument: (args: { readonly documentId: Id<"documents"> }) => Promise<unknown>;
+  readonly cancelDocument: (args: {
+    readonly documentId: Id<"documents">;
+  }) => Promise<unknown>;
   readonly confirmDialog: ConfirmDialogState;
-  readonly deleteDocument: (args: { readonly documentId: Id<"documents"> }) => Promise<unknown>;
+  readonly deleteDocument: (args: {
+    readonly documentId: Id<"documents">;
+  }) => Promise<unknown>;
   readonly refetch: () => void;
-  readonly sendDocument: (args: { readonly documentId: Id<"documents"> }) => Promise<unknown>;
+  readonly sendDocument: (args: {
+    readonly documentId: Id<"documents">;
+  }) => Promise<unknown>;
   readonly track: ReturnType<typeof useAnalytics>["track"];
 }) {
   const documentId = confirmDialog.documentId;
@@ -1257,13 +1393,17 @@ function DocumentsList({
     sortField,
     workflowStatusFilter,
   });
-  const { confirmDialog, documentActions, handleConfirmAction, setConfirmDialog } =
-    useDocumentListActions({
-      onMoveToFolder,
-      onShareClick,
-      onTransferOwnership,
-      refetch: data.refetch,
-    });
+  const {
+    confirmDialog,
+    documentActions,
+    handleConfirmAction,
+    setConfirmDialog,
+  } = useDocumentListActions({
+    onMoveToFolder,
+    onShareClick,
+    onTransferOwnership,
+    refetch: data.refetch,
+  });
 
   return (
     <>
@@ -1294,7 +1434,8 @@ function DocumentsPage() {
   const navigate = useNavigate();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"documents"> | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] =
+    useState<Id<"documents"> | null>(null);
   const [selectedDocumentName, setSelectedDocumentName] = useState("");
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [transferDocument, setTransferDocument] = useState<{
@@ -1304,7 +1445,8 @@ function DocumentsPage() {
     sharingMode: string;
   } | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
-  const [workflowStatusFilter, setWorkflowStatusFilter] = useState<WorkflowStatusFilter>("all");
+  const [workflowStatusFilter, setWorkflowStatusFilter] =
+    useState<WorkflowStatusFilter>("all");
   const [refreshKey, setRefreshKey] = useState(0);
 
   // SEA-68: View mode, sorting state
@@ -1320,8 +1462,12 @@ function DocumentsPage() {
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveDocumentId, setMoveDocumentId] = useState<Id<"documents"> | null>(null);
-  const moveItemsToFolder = useMutation(api.folders.mutations.moveItemsToFolder);
+  const [moveDocumentId, setMoveDocumentId] = useState<Id<"documents"> | null>(
+    null
+  );
+  const moveItemsToFolder = useMutation(
+    api.folders.mutations.moveItemsToFolder
+  );
 
   // Cast folderId string from URL to Id<"folders"> if present
   const folderId = folderIdParam ? (folderIdParam as Id<"folders">) : undefined;
@@ -1350,7 +1496,8 @@ function DocumentsPage() {
       toast.success("Document moved successfully");
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Failed to move document";
+      const msg =
+        error instanceof Error ? error.message : "Failed to move document";
       toast.error(msg);
     } finally {
       setMoveDialogOpen(false);
@@ -1370,14 +1517,17 @@ function DocumentsPage() {
   };
 
   const { data: organization } = useSuspenseQuery(
-    convexQuery(api.organizations.queries.getOrganization, { slug }),
+    convexQuery(api.organizations.queries.getOrganization, { slug })
   );
 
   const handleRefetch = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
-  const handleShareClick = (documentId: Id<"documents">, documentName: string) => {
+  const handleShareClick = (
+    documentId: Id<"documents">,
+    documentName: string
+  ) => {
     setSelectedDocumentId(documentId);
     setSelectedDocumentName(documentName);
     setShareDialogOpen(true);
@@ -1409,7 +1559,11 @@ function DocumentsPage() {
       }}
       headerActions={<CreateFolderDialog type="document" parentId={folderId} />}
       headerCenter={
-        <FolderBreadcrumbs folderId={folderId} type="document" onNavigate={handleFolderSelect} />
+        <FolderBreadcrumbs
+          folderId={folderId}
+          type="document"
+          onNavigate={handleFolderSelect}
+        />
       }
     >
       <div className="space-y-6">
@@ -1484,7 +1638,9 @@ function DocumentsPage() {
 
           {/* Workflow Status Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-muted-foreground self-center text-sm">Status:</span>
+            <span className="text-muted-foreground self-center text-sm">
+              Status:
+            </span>
             <Button
               size="sm"
               variant={workflowStatusFilter === "all" ? "default" : "outline"}
@@ -1508,28 +1664,36 @@ function DocumentsPage() {
             </Button>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "in_progress" ? "default" : "outline"}
+              variant={
+                workflowStatusFilter === "in_progress" ? "default" : "outline"
+              }
               onClick={() => setWorkflowStatusFilter("in_progress")}
             >
               In Progress
             </Button>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "completed" ? "default" : "outline"}
+              variant={
+                workflowStatusFilter === "completed" ? "default" : "outline"
+              }
               onClick={() => setWorkflowStatusFilter("completed")}
             >
               Completed
             </Button>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "cancelled" ? "default" : "outline"}
+              variant={
+                workflowStatusFilter === "cancelled" ? "default" : "outline"
+              }
               onClick={() => setWorkflowStatusFilter("cancelled")}
             >
               Cancelled
             </Button>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "expired" ? "default" : "outline"}
+              variant={
+                workflowStatusFilter === "expired" ? "default" : "outline"
+              }
               onClick={() => setWorkflowStatusFilter("expired")}
             >
               Expired
@@ -1608,7 +1772,9 @@ function DocumentsPage() {
             workflowStatusFilter !== "all" ||
             dateRange?.from) && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground text-sm">Active filters:</span>
+              <span className="text-muted-foreground text-sm">
+                Active filters:
+              </span>
               {searchQuery.trim() && (
                 <Badge variant="secondary" className="gap-1 pl-2">
                   Search: "{searchQuery}"
@@ -1636,7 +1802,9 @@ function DocumentsPage() {
               {workflowStatusFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 capitalize">
                   Status:{" "}
-                  {workflowStatusFilter === "in_progress" ? "In Progress" : workflowStatusFilter}
+                  {workflowStatusFilter === "in_progress"
+                    ? "In Progress"
+                    : workflowStatusFilter}
                   <button
                     type="button"
                     onClick={() => setWorkflowStatusFilter("all")}

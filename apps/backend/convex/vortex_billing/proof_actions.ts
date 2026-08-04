@@ -189,7 +189,7 @@ async function insertSaasProofOrganization(
   ctx: MutationCtx,
   proofRunId: string,
   now: number,
-  billingCustomerId?: string,
+  billingCustomerId?: string
 ): Promise<Id<"organizations">> {
   return await ctx.db.insert("organizations", {
     name: `Vortex SaaS Billing Proof ${proofRunId}`,
@@ -205,7 +205,7 @@ async function insertSaasProofOrganization(
 async function insertSaasProofOwner(
   ctx: MutationCtx,
   proofRunId: string,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<Id<"users">> {
   return await ctx.db.insert("users", {
     email: `saas-billing-owner+${proofRunId}@seal.test`,
@@ -227,9 +227,13 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
     slug: v.string(),
     ownerAuthSubject: v.string(),
   }),
-  handler: async (ctx, args): Promise<EnsureSealVortexOnboardingProofOrganizationResult> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<EnsureSealVortexOnboardingProofOrganizationResult> => {
     const now = Date.now();
-    const slug = `seal-vortex-onboarding-proof-${args.proofRunId}`.toLowerCase();
+    const slug =
+      `seal-vortex-onboarding-proof-${args.proofRunId}`.toLowerCase();
     const ownerAuthSubject = `seal_vortex_onboarding_proof_${args.proofRunId}`;
     const existingOrganization = await ctx.db
       .query("organizations")
@@ -249,7 +253,9 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
 
     const existingOwner = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", ownerAuthSubject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", ownerAuthSubject)
+      )
       .first();
     const ownerId =
       existingOwner?._id ??
@@ -275,7 +281,10 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
     await ctx.db.patch(ownerId, {
       activeOrganizationId: organizationId,
       ...(organization?.vortexAuthOrganizationId !== undefined
-        ? { activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId }
+        ? {
+            activeVortexAuthOrganizationId:
+              organization.vortexAuthOrganizationId,
+          }
         : {}),
       updatedAt: now,
     });
@@ -293,7 +302,7 @@ function hasNonVortexProviderPrefix(value: string | undefined): boolean {
 }
 
 function toProofSubscription(
-  subscription: Doc<"subscriptions"> | null,
+  subscription: Doc<"subscriptions"> | null
 ): VortexSaasBillingProofState["subscription"] {
   if (subscription === null) {
     return null;
@@ -313,7 +322,7 @@ function toProofSubscription(
 }
 
 function toProofProduct(
-  product: Doc<"subscription_products"> | null,
+  product: Doc<"subscription_products"> | null
 ): VortexSaasBillingProofState["product"] {
   if (product === null) {
     return null;
@@ -328,7 +337,7 @@ function toProofProduct(
 }
 
 function toProofPrice(
-  price: Doc<"subscription_prices"> | null,
+  price: Doc<"subscription_prices"> | null
 ): VortexSaasBillingProofState["price"] {
   if (price === null) {
     return null;
@@ -345,7 +354,7 @@ function toProofPrice(
 
 function hasActiveNonVortexProviderId(
   subscription: Doc<"subscriptions"> | null,
-  product: Doc<"subscription_products"> | null,
+  product: Doc<"subscription_products"> | null
 ): boolean {
   return (
     hasNonVortexProviderPrefix(subscription?.externalCustomerId) ||
@@ -367,15 +376,22 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
     currency: v.string(),
     billingCustomerId: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<SeedVortexSaasBillingCatalogProjectionResult> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<SeedVortexSaasBillingCatalogProjectionResult> => {
     const now = Date.now();
     const organizationId = await insertSaasProofOrganization(
       ctx,
       args.proofRunId,
       now,
-      args.billingCustomerId,
+      args.billingCustomerId
     );
-    const ownerId = await insertSaasProofOwner(ctx, args.proofRunId, organizationId);
+    const ownerId = await insertSaasProofOwner(
+      ctx,
+      args.proofRunId,
+      organizationId
+    );
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
       externalProductId: args.vortexProductId,
       vortexProductId: args.vortexProductId,
@@ -434,12 +450,12 @@ export const seedVortexEntitlementSafetyProof = internalMutation({
       ctx,
       `catalog-safety-${args.proofRunId}`,
       now,
-      `vtx_cust_catalog_safety_${args.proofRunId}`,
+      `vtx_cust_catalog_safety_${args.proofRunId}`
     );
     const ownerId = await insertSaasProofOwner(
       ctx,
       `catalog-safety-${args.proofRunId}`,
-      organizationId,
+      organizationId
     );
     await seedTestOrganizationMember(ctx, {
       organizationId,
@@ -500,19 +516,22 @@ export const seedVortexEntitlementSafetyProof = internalMutation({
 
 async function archiveProductsByExternalProductIdRange(
   ctx: Pick<MutationCtx, "db">,
-  args: { readonly lower: string; readonly upper: string; readonly now: number },
+  args: { readonly lower: string; readonly upper: string; readonly now: number }
 ): Promise<number> {
   let archived = 0;
   const products = await ctx.db
     .query("subscription_products")
     .withIndex("by_external_product_id", (q) =>
-      q.gte("externalProductId", args.lower).lt("externalProductId", args.upper),
+      q.gte("externalProductId", args.lower).lt("externalProductId", args.upper)
     )
     .collect();
 
   for (const product of products) {
     if (product.status !== "archived") {
-      await ctx.db.patch(product._id, { status: "archived", updatedAt: args.now });
+      await ctx.db.patch(product._id, {
+        status: "archived",
+        updatedAt: args.now,
+      });
       archived++;
     }
   }
@@ -522,17 +541,22 @@ async function archiveProductsByExternalProductIdRange(
 
 async function archivePricesByLookupKeyRange(
   ctx: Pick<MutationCtx, "db">,
-  args: { readonly lower: string; readonly upper: string; readonly now: number },
+  args: { readonly lower: string; readonly upper: string; readonly now: number }
 ): Promise<number> {
   let archived = 0;
   const prices = await ctx.db
     .query("subscription_prices")
-    .withIndex("by_lookup_key", (q) => q.gte("lookupKey", args.lower).lt("lookupKey", args.upper))
+    .withIndex("by_lookup_key", (q) =>
+      q.gte("lookupKey", args.lower).lt("lookupKey", args.upper)
+    )
     .collect();
 
   for (const price of prices) {
     if (price.status !== "archived") {
-      await ctx.db.patch(price._id, { status: "archived", updatedAt: args.now });
+      await ctx.db.patch(price._id, {
+        status: "archived",
+        updatedAt: args.now,
+      });
       archived++;
     }
   }
@@ -542,19 +566,22 @@ async function archivePricesByLookupKeyRange(
 
 async function archivePricesByExternalPriceIdRange(
   ctx: Pick<MutationCtx, "db">,
-  args: { readonly lower: string; readonly upper: string; readonly now: number },
+  args: { readonly lower: string; readonly upper: string; readonly now: number }
 ): Promise<number> {
   let archived = 0;
   const prices = await ctx.db
     .query("subscription_prices")
     .withIndex("by_external_price_id", (q) =>
-      q.gte("externalPriceId", args.lower).lt("externalPriceId", args.upper),
+      q.gte("externalPriceId", args.lower).lt("externalPriceId", args.upper)
     )
     .collect();
 
   for (const price of prices) {
     if (price.status !== "archived") {
-      await ctx.db.patch(price._id, { status: "archived", updatedAt: args.now });
+      await ctx.db.patch(price._id, {
+        status: "archived",
+        updatedAt: args.now,
+      });
       archived++;
     }
   }
@@ -610,7 +637,11 @@ type SeedVortexDocumentPayableProofInput = {
   readonly tokenPrefix: string;
   readonly paymentLabel: string;
   readonly paymentConfig: {
-    readonly paymentType: "one_time" | "recurring" | "installments" | "deposit_balance";
+    readonly paymentType:
+      | "one_time"
+      | "recurring"
+      | "installments"
+      | "deposit_balance";
     readonly description: string;
     readonly quantity: number;
     readonly unitPrice: number;
@@ -633,34 +664,44 @@ type SeedVortexDocumentPayableProofInput = {
 };
 
 async function seedVortexDocumentPayableProofDocument(
-  input: SeedVortexDocumentPayableProofInput,
+  input: SeedVortexDocumentPayableProofInput
 ): Promise<SeedVortexRecurringDocumentPayableProofDocumentResult> {
   const now = Date.now();
   const organizationId = await insertSaasProofOrganization(
     input.ctx,
     `${input.organizationProofPrefix}-${input.proofRunId}`,
-    now,
+    now
   );
   const ownerId = await insertSaasProofOwner(
     input.ctx,
     `${input.organizationProofPrefix}-${input.proofRunId}`,
-    organizationId,
+    organizationId
   );
-  const documentId = await insertVortexProofDocument(input, organizationId, ownerId, now);
+  const documentId = await insertVortexProofDocument(
+    input,
+    organizationId,
+    ownerId,
+    now
+  );
   const recipientId = await insertVortexProofRecipient(input, documentId, now);
   const signatureFieldId = await insertVortexProofSignatureField(
     input.ctx,
     documentId,
     recipientId,
-    now,
+    now
   );
-  const paymentFieldId = await insertVortexProofPaymentField(input, documentId, recipientId, now);
+  const paymentFieldId = await insertVortexProofPaymentField(
+    input,
+    documentId,
+    recipientId,
+    now
+  );
   const paymentConfigId = await insertVortexProofPaymentConfig(
     input,
     documentId,
     organizationId,
     paymentFieldId,
-    now,
+    now
   );
 
   return {
@@ -681,7 +722,7 @@ async function insertVortexProofDocument(
   input: SeedVortexDocumentPayableProofInput,
   organizationId: Id<"organizations">,
   ownerId: Id<"users">,
-  now: number,
+  now: number
 ): Promise<Id<"documents">> {
   return await input.ctx.db.insert("documents", {
     organizationId,
@@ -702,7 +743,7 @@ async function insertVortexProofDocument(
 async function insertVortexProofRecipient(
   input: SeedVortexDocumentPayableProofInput,
   documentId: Id<"documents">,
-  now: number,
+  now: number
 ): Promise<Id<"document_recipients">> {
   return await input.ctx.db.insert("document_recipients", {
     documentId,
@@ -722,7 +763,7 @@ async function insertVortexProofSignatureField(
   ctx: MutationCtx,
   documentId: Id<"documents">,
   recipientId: Id<"document_recipients">,
-  now: number,
+  now: number
 ): Promise<Id<"signature_fields">> {
   return await ctx.db.insert("signature_fields", {
     documentId,
@@ -745,7 +786,7 @@ async function insertVortexProofPaymentField(
   input: SeedVortexDocumentPayableProofInput,
   documentId: Id<"documents">,
   recipientId: Id<"document_recipients">,
-  now: number,
+  now: number
 ): Promise<Id<"signature_fields">> {
   return await input.ctx.db.insert("signature_fields", {
     documentId,
@@ -768,7 +809,7 @@ async function insertVortexProofPaymentConfig(
   documentId: Id<"documents">,
   organizationId: Id<"organizations">,
   paymentFieldId: Id<"signature_fields">,
-  now: number,
+  now: number
 ): Promise<Id<"payment_field_configs">> {
   return await input.ctx.db.insert("payment_field_configs", {
     fieldId: paymentFieldId,
@@ -809,7 +850,7 @@ async function insertVortexWebhookProofInvoice(
   args: SeedVortexWebhookProofPaymentConfigArgs,
   documentId: Id<"documents">,
   organizationId: Id<"organizations">,
-  now: number,
+  now: number
 ): Promise<void> {
   await ctx.db.insert("document_invoices", {
     documentId,
@@ -835,7 +876,10 @@ export const seedVortexOneTimeDocumentPayableProofDocument = internalMutation({
     lineItemId: v.string(),
     recipientEmail: v.string(),
   },
-  handler: async (ctx, args): Promise<SeedVortexOneTimeDocumentPayableProofDocumentResult> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<SeedVortexOneTimeDocumentPayableProofDocumentResult> => {
     return await seedVortexDocumentPayableProofDocument({
       ctx,
       proofRunId: args.proofRunId,
@@ -858,159 +902,174 @@ export const seedVortexOneTimeDocumentPayableProofDocument = internalMutation({
   },
 });
 
-export const markVortexDocumentPayableProofWaitingForPayment = internalMutation({
-  args: {
-    documentId: v.id("documents"),
-  },
-  returns: v.object({
-    documentId: v.id("documents"),
-    recipientIds: v.array(v.id("document_recipients")),
-    paymentConfigIds: v.array(v.id("payment_field_configs")),
-    workflowStatus: v.literal("waiting_for_payment"),
-  }),
-  handler: async (ctx, args): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
-    const document = await ctx.db.get(args.documentId);
-    if (!document) {
-      throw new Error(`Document ${args.documentId} not found`);
-    }
-
-    const now = Date.now();
-    const recipients = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-    const paymentConfigs = await ctx.db
-      .query("payment_field_configs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
-    for (const recipient of recipients) {
-      if (recipient.status !== "signed") {
-        await ctx.db.patch(recipient._id, {
-          status: "signed",
-          signedAt: recipient.signedAt ?? now,
-          updatedAt: now,
-        });
+export const markVortexDocumentPayableProofWaitingForPayment = internalMutation(
+  {
+    args: {
+      documentId: v.id("documents"),
+    },
+    returns: v.object({
+      documentId: v.id("documents"),
+      recipientIds: v.array(v.id("document_recipients")),
+      paymentConfigIds: v.array(v.id("payment_field_configs")),
+      workflowStatus: v.literal("waiting_for_payment"),
+    }),
+    handler: async (
+      ctx,
+      args
+    ): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
+      const document = await ctx.db.get(args.documentId);
+      if (!document) {
+        throw new Error(`Document ${args.documentId} not found`);
       }
-    }
 
-    await ctx.db.patch(args.documentId, {
-      workflowStatus: "waiting_for_payment",
-      updatedAt: now,
-    });
+      const now = Date.now();
+      const recipients = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect();
+      const paymentConfigs = await ctx.db
+        .query("payment_field_configs")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect();
 
-    return {
-      documentId: args.documentId,
-      recipientIds: recipients.map((recipient) => recipient._id),
-      paymentConfigIds: paymentConfigs.map((config) => config._id),
-      workflowStatus: "waiting_for_payment",
-    };
-  },
-});
+      for (const recipient of recipients) {
+        if (recipient.status !== "signed") {
+          await ctx.db.patch(recipient._id, {
+            status: "signed",
+            signedAt: recipient.signedAt ?? now,
+            updatedAt: now,
+          });
+        }
+      }
 
-export const seedVortexRecurringDocumentPayableProofDocument = internalMutation({
-  args: {
-    proofRunId: v.string(),
-    lineItemId: v.string(),
-    recipientEmail: v.string(),
-  },
-  handler: async (ctx, args): Promise<SeedVortexRecurringDocumentPayableProofDocumentResult> => {
-    return await seedVortexDocumentPayableProofDocument({
+      await ctx.db.patch(args.documentId, {
+        workflowStatus: "waiting_for_payment",
+        updatedAt: now,
+      });
+
+      return {
+        documentId: args.documentId,
+        recipientIds: recipients.map((recipient) => recipient._id),
+        paymentConfigIds: paymentConfigs.map((config) => config._id),
+        workflowStatus: "waiting_for_payment",
+      };
+    },
+  }
+);
+
+export const seedVortexRecurringDocumentPayableProofDocument = internalMutation(
+  {
+    args: {
+      proofRunId: v.string(),
+      lineItemId: v.string(),
+      recipientEmail: v.string(),
+    },
+    handler: async (
       ctx,
-      proofRunId: args.proofRunId,
-      lineItemId: args.lineItemId,
-      recipientEmail: args.recipientEmail,
-      organizationProofPrefix: "recurring-document",
-      documentName: "Vortex recurring document payable proof",
-      storageIdPrefix: "vortex-recurring-document-proof",
-      recipientName: "Vortex Recurring Proof Recipient",
-      tokenPrefix: "vortex-recurring-proof-token",
-      paymentLabel: "Recurring payment",
-      paymentConfig: {
-        paymentType: "recurring",
-        description: "Vortex recurring document payable proof",
-        quantity: 1,
-        unitPrice: 4200,
-        totalAmountCents: 4200,
-        recurringConfig: {
-          interval: "month",
-          intervalCount: 1,
-          endCondition: "after_count",
-          endAfterCount: 2,
+      args
+    ): Promise<SeedVortexRecurringDocumentPayableProofDocumentResult> => {
+      return await seedVortexDocumentPayableProofDocument({
+        ctx,
+        proofRunId: args.proofRunId,
+        lineItemId: args.lineItemId,
+        recipientEmail: args.recipientEmail,
+        organizationProofPrefix: "recurring-document",
+        documentName: "Vortex recurring document payable proof",
+        storageIdPrefix: "vortex-recurring-document-proof",
+        recipientName: "Vortex Recurring Proof Recipient",
+        tokenPrefix: "vortex-recurring-proof-token",
+        paymentLabel: "Recurring payment",
+        paymentConfig: {
+          paymentType: "recurring",
+          description: "Vortex recurring document payable proof",
+          quantity: 1,
+          unitPrice: 4200,
+          totalAmountCents: 4200,
+          recurringConfig: {
+            interval: "month",
+            intervalCount: 1,
+            endCondition: "after_count",
+            endAfterCount: 2,
+          },
         },
-      },
-    });
-  },
-});
+      });
+    },
+  }
+);
 
-export const seedVortexInstallmentDocumentPayableProofDocument = internalMutation({
-  args: {
-    proofRunId: v.string(),
-    lineItemId: v.string(),
-    recipientEmail: v.string(),
-  },
-  handler: async (ctx, args): Promise<SeedVortexInstallmentDocumentPayableProofDocumentResult> => {
-    return await seedVortexDocumentPayableProofDocument({
+export const seedVortexInstallmentDocumentPayableProofDocument =
+  internalMutation({
+    args: {
+      proofRunId: v.string(),
+      lineItemId: v.string(),
+      recipientEmail: v.string(),
+    },
+    handler: async (
       ctx,
-      proofRunId: args.proofRunId,
-      lineItemId: args.lineItemId,
-      recipientEmail: args.recipientEmail,
-      organizationProofPrefix: "installment-document",
-      documentName: "Vortex installment document payable proof",
-      storageIdPrefix: "vortex-installment-document-proof",
-      recipientName: "Vortex Installment Proof Recipient",
-      tokenPrefix: "vortex-installment-proof-token",
-      paymentLabel: "Installment payment",
-      paymentConfig: {
-        paymentType: "installments",
-        description: "Vortex installment document payable proof",
-        quantity: 3,
-        unitPrice: 4200,
-        totalAmountCents: 12600,
-        installmentsConfig: {
-          count: 3,
-          interval: "month",
+      args
+    ): Promise<SeedVortexInstallmentDocumentPayableProofDocumentResult> => {
+      return await seedVortexDocumentPayableProofDocument({
+        ctx,
+        proofRunId: args.proofRunId,
+        lineItemId: args.lineItemId,
+        recipientEmail: args.recipientEmail,
+        organizationProofPrefix: "installment-document",
+        documentName: "Vortex installment document payable proof",
+        storageIdPrefix: "vortex-installment-document-proof",
+        recipientName: "Vortex Installment Proof Recipient",
+        tokenPrefix: "vortex-installment-proof-token",
+        paymentLabel: "Installment payment",
+        paymentConfig: {
+          paymentType: "installments",
+          description: "Vortex installment document payable proof",
+          quantity: 3,
+          unitPrice: 4200,
+          totalAmountCents: 12600,
+          installmentsConfig: {
+            count: 3,
+            interval: "month",
+          },
         },
-      },
-    });
-  },
-});
+      });
+    },
+  });
 
-export const seedVortexDepositBalanceDocumentPayableProofDocument = internalMutation({
-  args: {
-    proofRunId: v.string(),
-    lineItemId: v.string(),
-    recipientEmail: v.string(),
-  },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<SeedVortexDepositBalanceDocumentPayableProofDocumentResult> => {
-    return await seedVortexDocumentPayableProofDocument({
+export const seedVortexDepositBalanceDocumentPayableProofDocument =
+  internalMutation({
+    args: {
+      proofRunId: v.string(),
+      lineItemId: v.string(),
+      recipientEmail: v.string(),
+    },
+    handler: async (
       ctx,
-      proofRunId: args.proofRunId,
-      lineItemId: args.lineItemId,
-      recipientEmail: args.recipientEmail,
-      organizationProofPrefix: "deposit-balance-document",
-      documentName: "Vortex deposit balance document payable proof",
-      storageIdPrefix: "vortex-deposit-balance-document-proof",
-      recipientName: "Vortex Deposit Balance Proof Recipient",
-      tokenPrefix: "vortex-deposit-balance-proof-token",
-      paymentLabel: "Deposit balance payment",
-      paymentConfig: {
-        paymentType: "deposit_balance",
-        description: "Vortex deposit balance document payable proof",
-        quantity: 1,
-        unitPrice: 20000,
-        totalAmountCents: 20000,
-        depositBalanceConfig: {
-          depositPercent: 25,
-          balanceDueDays: 30,
+      args
+    ): Promise<SeedVortexDepositBalanceDocumentPayableProofDocumentResult> => {
+      return await seedVortexDocumentPayableProofDocument({
+        ctx,
+        proofRunId: args.proofRunId,
+        lineItemId: args.lineItemId,
+        recipientEmail: args.recipientEmail,
+        organizationProofPrefix: "deposit-balance-document",
+        documentName: "Vortex deposit balance document payable proof",
+        storageIdPrefix: "vortex-deposit-balance-document-proof",
+        recipientName: "Vortex Deposit Balance Proof Recipient",
+        tokenPrefix: "vortex-deposit-balance-proof-token",
+        paymentLabel: "Deposit balance payment",
+        paymentConfig: {
+          paymentType: "deposit_balance",
+          description: "Vortex deposit balance document payable proof",
+          quantity: 1,
+          unitPrice: 20000,
+          totalAmountCents: 20000,
+          depositBalanceConfig: {
+            depositPercent: 25,
+            balanceDueDays: 30,
+          },
         },
-      },
-    });
-  },
-});
+      });
+    },
+  });
 
 export const seedVortexWebhookProofPaymentConfig = internalMutation({
   args: {
@@ -1019,17 +1078,20 @@ export const seedVortexWebhookProofPaymentConfig = internalMutation({
     vortexPaymentRequestId: v.string(),
     hostedInvoiceUrl: v.string(),
   },
-  handler: async (ctx, args): Promise<SeedVortexWebhookProofPaymentConfigResult> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<SeedVortexWebhookProofPaymentConfigResult> => {
     const now = Date.now();
     const organizationId = await insertSaasProofOrganization(
       ctx,
       `webhook-document-${args.proofRunId}`,
-      now,
+      now
     );
     const ownerId = await insertSaasProofOwner(
       ctx,
       `webhook-document-${args.proofRunId}`,
-      organizationId,
+      organizationId
     );
     const documentId = await ctx.db.insert("documents", {
       organizationId,
@@ -1098,7 +1160,13 @@ export const seedVortexWebhookProofPaymentConfig = internalMutation({
       updatedAt: now,
     });
 
-    await insertVortexWebhookProofInvoice(ctx, args, documentId, organizationId, now);
+    await insertVortexWebhookProofInvoice(
+      ctx,
+      args,
+      documentId,
+      organizationId,
+      now
+    );
 
     return {
       organizationId,
@@ -1123,25 +1191,28 @@ export const getVortexSaasBillingProofState = internalQuery({
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", "active"),
+          q.eq("organizationId", args.organizationId).eq("status", "active")
         )
         .first()) ??
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", "trialing"),
+          q.eq("organizationId", args.organizationId).eq("status", "trialing")
         )
         .first()) ??
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", "past_due"),
+          q.eq("organizationId", args.organizationId).eq("status", "past_due")
         )
         .first());
     const { price, product } =
       subscription === null
         ? { price: null, product: null }
-        : await resolveSubscriptionPriceAndProductByAnyId(ctx.db, subscription.externalPriceId);
+        : await resolveSubscriptionPriceAndProductByAnyId(
+            ctx.db,
+            subscription.externalPriceId
+          );
 
     return {
       organizationId: args.organizationId,
@@ -1150,7 +1221,10 @@ export const getVortexSaasBillingProofState = internalQuery({
       subscription: toProofSubscription(subscription),
       product: toProofProduct(product),
       price: toProofPrice(price),
-      activeNonVortexProviderIdPresent: hasActiveNonVortexProviderId(subscription, product),
+      activeNonVortexProviderIdPresent: hasActiveNonVortexProviderId(
+        subscription,
+        product
+      ),
     };
   },
 });
@@ -1184,10 +1258,15 @@ export const createVortexSaasCheckoutProofSession = internalAction({
             VORTEX_BILLING_API_BASE_URL: args.apiBaseUrl,
             VORTEX_BILLING_API_KEY: args.apiKey,
             VORTEX_BILLING_ACCOUNT_ID: args.billingAccountId,
-            VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ [args.lookupKey]: args.priceId }),
+            VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({
+              [args.lookupKey]: args.priceId,
+            }),
           }
         : process.env;
-    const checkoutSession = await createVortexBillingCheckoutSessionDetails(args, explicitEnv);
+    const checkoutSession = await createVortexBillingCheckoutSessionDetails(
+      args,
+      explicitEnv
+    );
     return {
       checkoutUrl: checkoutSession.checkoutUrl,
       amountTotal: checkoutSession.amountTotal,
@@ -1226,8 +1305,10 @@ export const resolveVortexSaasBillingProofRefs = internalAction({
         VORTEX_BILLING_API_BASE_URL: args.apiBaseUrl,
         VORTEX_BILLING_API_KEY: args.apiKey,
         VORTEX_BILLING_ACCOUNT_ID: args.billingAccountId,
-        VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({ [args.lookupKey]: args.priceId }),
-      },
+        VORTEX_BILLING_SAAS_PRICE_MAP: JSON.stringify({
+          [args.lookupKey]: args.priceId,
+        }),
+      }
     );
     return {
       customerExternalId: config.customerExternalId,
@@ -1248,24 +1329,32 @@ export const getVortexCatalogProofPrice = internalQuery({
       vortexPriceId: v.optional(v.string()),
       externalProductId: v.string(),
       vortexProductId: v.optional(v.string()),
-      status: v.union(v.literal("active"), v.literal("archived"), v.literal("deleted")),
+      status: v.union(
+        v.literal("active"),
+        v.literal("archived"),
+        v.literal("deleted")
+      ),
       currency: v.string(),
       unitAmount: v.optional(v.number()),
       recurring: v.optional(
         v.object({
           interval: v.string(),
           intervalCount: v.number(),
-        }),
+        })
       ),
       productName: v.string(),
-      productStatus: v.union(v.literal("active"), v.literal("archived"), v.literal("deleted")),
+      productStatus: v.union(
+        v.literal("active"),
+        v.literal("archived"),
+        v.literal("deleted")
+      ),
     }),
-    v.null(),
+    v.null()
   ),
   handler: async (ctx, args) => {
     const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
       ctx.db,
-      args.vortexPriceId,
+      args.vortexPriceId
     );
     if (price === null || product === null) {
       return null;
@@ -1287,7 +1376,7 @@ export const getVortexCatalogProofPrice = internalQuery({
 });
 
 function toWebhookProofConfigState(
-  config: Doc<"payment_field_configs"> | null,
+  config: Doc<"payment_field_configs"> | null
 ): Pick<
   VortexWebhookProofPaymentState,
   | "configId"
@@ -1312,7 +1401,7 @@ function toWebhookProofConfigState(
 }
 
 function toWebhookProofInvoiceState(
-  invoice: Doc<"document_invoices"> | null,
+  invoice: Doc<"document_invoices"> | null
 ): Pick<
   VortexWebhookProofPaymentState,
   | "invoiceStatus"
@@ -1338,7 +1427,7 @@ function toWebhookProofInvoiceState(
 }
 
 function toWebhookProofInvoiceIdentityState(
-  invoice: Doc<"document_invoices"> | null,
+  invoice: Doc<"document_invoices"> | null
 ): Pick<
   VortexWebhookProofPaymentState,
   | "invoiceStatus"
@@ -1367,7 +1456,7 @@ function toWebhookProofInvoiceIdentityState(
 }
 
 function toWebhookProofInvoiceDunningState(
-  invoice: Doc<"document_invoices"> | null,
+  invoice: Doc<"document_invoices"> | null
 ): Pick<
   VortexWebhookProofPaymentState,
   | "invoiceDunningStatus"
@@ -1392,14 +1481,19 @@ export const getVortexWebhookProofPaymentState = internalQuery({
   handler: async (ctx, args): Promise<VortexWebhookProofPaymentState> => {
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .withIndex("by_vortex_payable", (q) =>
+        q.eq("vortexPayableId", args.vortexPayableId)
+      )
       .first();
     const invoice = await ctx.db
       .query("document_invoices")
-      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .withIndex("by_vortex_payable", (q) =>
+        q.eq("vortexPayableId", args.vortexPayableId)
+      )
       .first();
     const documentId = config?.documentId ?? invoice?.documentId;
-    const document = documentId === undefined ? null : await ctx.db.get(documentId);
+    const document =
+      documentId === undefined ? null : await ctx.db.get(documentId);
 
     return {
       documentId,
@@ -1424,13 +1518,17 @@ export const createVortexDocumentPayableProofObjects = internalAction({
         vortexPayableId: v.string(),
         totalAmountCents: v.number(),
         currency: v.string(),
-      }),
+      })
     ),
   }),
-  handler: async (ctx, args): Promise<CreateVortexDocumentPayableProofObjectsResult> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<CreateVortexDocumentPayableProofObjectsResult> => {
     return await ctx.runAction(
-      internal.vortex_billing.payable_actions.createVortexPaymentObjectsForDocumentFields,
-      args,
+      internal.vortex_billing.payable_actions
+        .createVortexPaymentObjectsForDocumentFields,
+      args
     );
   },
 });
@@ -1458,10 +1556,14 @@ export const createVortexMerchantProofAccount = internalAction({
       }),
     }),
   }),
-  handler: async (ctx, args): Promise<CreateVortexMerchantProofAccountResult> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<CreateVortexMerchantProofAccountResult> => {
     return await ctx.runAction(
-      internal.payments.vortex_merchant_actions.createVortexMerchantProofAccount,
-      args,
+      internal.payments.vortex_merchant_actions
+        .createVortexMerchantProofAccount,
+      args
     );
   },
 });
@@ -1473,10 +1575,14 @@ export const forceRefreshVortexMerchantProofState = internalAction({
   returns: v.object({
     status: v.union(v.literal("not_connected"), v.literal("refreshed")),
   }),
-  handler: async (ctx, args): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
     return await ctx.runAction(
-      internal.payments.vortex_merchant_actions.refreshVortexMerchantProofAccount,
-      args,
+      internal.payments.vortex_merchant_actions
+        .refreshVortexMerchantProofAccount,
+      args
     );
   },
 });
@@ -1488,7 +1594,9 @@ export const getVortexMerchantProofState = internalQuery({
   handler: async (ctx, args): Promise<VortexMerchantProofState> => {
     const account = await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .first();
 
     return {

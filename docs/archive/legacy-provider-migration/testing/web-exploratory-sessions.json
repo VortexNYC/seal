@@ -195,7 +195,18 @@
           "notes": "Expiration Alert field found with label 'Notify the sender this many days before a document expires', spinbutton default 3, unit 'days before expiry'. Changed to 5, saved (toast: 'Notification settings updated'). Reset to 3 after test."
         }
       ],
-      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "D1",
+        "D2",
+        "E1",
+        "E2"
+      ],
       "blocks": {
         "A": {
           "name": "Send with Expiration",
@@ -755,7 +766,18 @@
           "notes": "Analytics dashboard loaded with real data: '5 created this week', '3 sent, 0 in progress', '1 completed this month', '1 cancelled/declined'. Eight tabs: Document Activity, Status Breakdown, Recent Activity, Email Engagement, Recipient Timing, Template Performance, Export, Team Members. Date range filters (7 days / 30 days) work correctly \u2014 30 days becomes active on click. Status Breakdown tab shows pie/donut chart: Draft (2), Sent (3), Completed (1), Cancelled (1). Team/Personal toggle present. All data reflects the documents created during this testing round. No empty state shown (data present). No Pro plan gate on analytics."
         }
       ],
-      "executionOrder": ["A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2", "E1"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "A3",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "D1",
+        "D2",
+        "E1"
+      ],
       "blocks": {
         "A": {
           "name": "Signing Flow (Recipient)",
@@ -1295,7 +1317,18 @@
           "notes": "Mobile resize (375x812) renders correctly with collapsed sidebar and stacked cards. Rapid navigation between dashboard/documents/contacts/home works cleanly with no console errors and sub-500ms loads. Toast notifications verified (folder creation, document upload, recipient add, AI field apply). 404 handling has issues - see bugs."
         }
       ],
-      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "D1",
+        "D2",
+        "E1",
+        "E2"
+      ],
       "blocks": {
         "A": {
           "name": "Dashboard",

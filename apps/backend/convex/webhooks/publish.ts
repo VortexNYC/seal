@@ -54,13 +54,13 @@ export async function publishWebhookEvent(
     organizationId: Id<"organizations">;
     eventType: WebhookEventType;
     data: Record<string, unknown>;
-  },
+  }
 ): Promise<number> {
   // Get all active endpoints for this organization
   const endpoints = await ctx.db
     .query("webhook_endpoints")
     .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", params.organizationId).eq("status", "active"),
+      q.eq("organizationId", params.organizationId).eq("status", "active")
     )
     .collect();
 
@@ -83,7 +83,10 @@ export async function publishWebhookEvent(
   for (const endpoint of endpoints) {
     // Check if endpoint subscribes to this event type
     // Empty events array means "all events"
-    if (endpoint.events.length > 0 && !endpoint.events.includes(params.eventType)) {
+    if (
+      endpoint.events.length > 0 &&
+      !endpoint.events.includes(params.eventType)
+    ) {
       continue;
     }
 

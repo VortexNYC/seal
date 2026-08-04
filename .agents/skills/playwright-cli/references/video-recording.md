@@ -50,7 +50,10 @@ It allows pulling appropriate pauses between the actions and annotating the vide
 
 ```js
 async (page) => {
-  await page.screencast.start({ path: "video.webm", size: { width: 1280, height: 800 } });
+  await page.screencast.start({
+    path: "video.webm",
+    size: { width: 1280, height: 800 },
+  });
   await page.goto("https://demo.playwright.dev/todomvc");
 
   // Show a chapter card — blurs the page and shows a dialog.
@@ -66,7 +69,9 @@ async (page) => {
   await page
     .getByRole("textbox", { name: "What needs to be done?" })
     .pressSequentially("Walk the dog", { delay: 60 });
-  await page.getByRole("textbox", { name: "What needs to be done?" }).press("Enter");
+  await page
+    .getByRole("textbox", { name: "What needs to be done?" })
+    .press("Enter");
   await page.waitForTimeout(1000);
 
   // Show next chapter
@@ -89,7 +94,9 @@ async (page) => {
   await page
     .getByRole("textbox", { name: "What needs to be done?" })
     .pressSequentially("Buy groceries", { delay: 60 });
-  await page.getByRole("textbox", { name: "What needs to be done?" }).press("Enter");
+  await page
+    .getByRole("textbox", { name: "What needs to be done?" })
+    .press("Enter");
   await page.waitForTimeout(1500);
 
   // Remove the annotation when done
@@ -117,7 +124,7 @@ async (page) => {
       color: white;">Check it out, it is right above this text
     </div>
   `,
-    { duration: 2000 },
+    { duration: 2000 }
   );
 
   await page.screencast.stop();

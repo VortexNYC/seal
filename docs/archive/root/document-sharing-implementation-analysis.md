@@ -286,7 +286,7 @@ canManageTemplates(member, orgId); // Template management
    const member = await ctx.db
      .query("organization_members")
      .withIndex("by_user_organization", (q) =>
-       q.eq("userId", ctx.auth.user._id).eq("organizationId", orgId),
+       q.eq("userId", ctx.auth.user._id).eq("organizationId", orgId)
      )
      .first();
 
@@ -483,7 +483,7 @@ export const getOrganization = authQuery({
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", ctx.auth.user._id).eq("organizationId", org._id),
+        q.eq("userId", ctx.auth.user._id).eq("organizationId", org._id)
       )
       .first();
 

@@ -31,7 +31,7 @@ describe("api/v1/documents — access and bulk operations", () => {
       sharingMode?: "private" | "workspace" | "specific";
       status?: "active" | "deleted";
       organizationId?: Id<"organizations">;
-    } = {},
+    } = {}
   ) {
     const orgId = overrides.organizationId ?? organizationId;
     return t.run(async (ctx) => {
@@ -46,7 +46,9 @@ describe("api/v1/documents — access and bulk operations", () => {
         storageId: "storage-doc-access-test",
         createdAt: BASE_TIME,
         updatedAt: BASE_TIME,
-        ...(overrides.workflowStatus ? { workflowStatus: overrides.workflowStatus } : {}),
+        ...(overrides.workflowStatus
+          ? { workflowStatus: overrides.workflowStatus }
+          : {}),
       });
     });
   }
@@ -123,11 +125,14 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("returns private sharing mode by default", async () => {
       const documentId = await insertDocument();
 
-      const result = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const result = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
 
       expect(result).not.toBeNull();
       expect(result?.document_id).toBe(documentId);
@@ -137,11 +142,14 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("returns workspace sharing mode when set", async () => {
       const documentId = await insertDocument({ sharingMode: "workspace" });
 
-      const result = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const result = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
 
       expect(result?.sharing_mode).toBe("workspace");
     });
@@ -149,11 +157,14 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("returns specific sharing mode when set", async () => {
       const documentId = await insertDocument({ sharingMode: "specific" });
 
-      const result = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const result = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
 
       expect(result?.sharing_mode).toBe("specific");
     });
@@ -161,11 +172,14 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("returns null for document in different org", async () => {
       const documentId = await insertDocument({ organizationId: otherOrgId });
 
-      const result = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const result = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
 
       expect(result).toBeNull();
     });
@@ -173,11 +187,14 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("returns null for deleted document", async () => {
       const documentId = await insertDocument({ status: "deleted" });
 
-      const result = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const result = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
 
       expect(result).toBeNull();
     });
@@ -191,20 +208,26 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("changes sharing mode to workspace", async () => {
       const documentId = await insertDocument({ sharingMode: "private" });
 
-      const result = await t.mutation(internal.api.v1.documents.updateDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-        sharing_mode: "workspace",
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.updateDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+          sharing_mode: "workspace",
+        }
+      );
 
       expect(result.success).toBe(true);
 
-      const access = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const access = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
       expect(access?.sharing_mode).toBe("workspace");
     });
 
@@ -218,11 +241,14 @@ describe("api/v1/documents — access and bulk operations", () => {
         sharing_mode: "private",
       });
 
-      const access = await t.query(internal.api.v1.documents.getDocumentAccess, {
-        userId,
-        organizationId,
-        documentId,
-      });
+      const access = await t.query(
+        internal.api.v1.documents.getDocumentAccess,
+        {
+          userId,
+          organizationId,
+          documentId,
+        }
+      );
       expect(access?.sharing_mode).toBe("private");
     });
 
@@ -235,7 +261,7 @@ describe("api/v1/documents — access and bulk operations", () => {
           organizationId,
           documentId,
           sharing_mode: "workspace",
-        }),
+        })
       ).rejects.toThrow("Document not found");
     });
 
@@ -248,7 +274,7 @@ describe("api/v1/documents — access and bulk operations", () => {
           organizationId,
           documentId,
           sharing_mode: "workspace",
-        }),
+        })
       ).rejects.toThrow("Document not found");
     });
   });
@@ -262,17 +288,22 @@ describe("api/v1/documents — access and bulk operations", () => {
       const doc1 = await insertDocument({ workflowStatus: "draft" });
       const doc2 = await insertDocument({ workflowStatus: "sent" });
 
-      const result = await t.mutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId,
-        organizationId,
-        document_ids: [doc1, doc2],
-        reason: "Test void",
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [doc1, doc2],
+          reason: "Test void",
+        }
+      );
 
       expect(result.total_requested).toBe(2);
       expect(result.succeeded).toBe(2);
       expect(result.failed).toBe(0);
-      expect(result.results.every((r: (typeof result.results)[number]) => r.success)).toBe(true);
+      expect(
+        result.results.every((r: (typeof result.results)[number]) => r.success)
+      ).toBe(true);
 
       // Verify documents are now cancelled
       const updatedDoc1 = await t.run(async (ctx) => ctx.db.get(doc1));
@@ -280,36 +311,46 @@ describe("api/v1/documents — access and bulk operations", () => {
     });
 
     test("reports failure for already-completed documents", async () => {
-      const completedDoc = await insertDocument({ workflowStatus: "completed" });
+      const completedDoc = await insertDocument({
+        workflowStatus: "completed",
+      });
       const draftDoc = await insertDocument({ workflowStatus: "draft" });
 
-      const result = await t.mutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId,
-        organizationId,
-        document_ids: [completedDoc, draftDoc],
-        reason: "Test",
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [completedDoc, draftDoc],
+          reason: "Test",
+        }
+      );
 
       expect(result.total_requested).toBe(2);
       expect(result.succeeded).toBe(1);
       expect(result.failed).toBe(1);
 
       const completedResult = result.results.find(
-        (r: (typeof result.results)[number]) => r.id === completedDoc,
+        (r: (typeof result.results)[number]) => r.id === completedDoc
       );
       expect(completedResult?.success).toBe(false);
       expect(completedResult?.error).toContain("Cannot void");
     });
 
     test("reports failure for already-cancelled documents", async () => {
-      const cancelledDoc = await insertDocument({ workflowStatus: "cancelled" });
-
-      const result = await t.mutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId,
-        organizationId,
-        document_ids: [cancelledDoc],
-        reason: "Test",
+      const cancelledDoc = await insertDocument({
+        workflowStatus: "cancelled",
       });
+
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [cancelledDoc],
+          reason: "Test",
+        }
+      );
 
       expect(result.succeeded).toBe(0);
       expect(result.failed).toBe(1);
@@ -321,12 +362,15 @@ describe("api/v1/documents — access and bulk operations", () => {
     test("reports failure for already-declined documents", async () => {
       const declinedDoc = await insertDocument({ workflowStatus: "declined" });
 
-      const result = await t.mutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId,
-        organizationId,
-        document_ids: [declinedDoc],
-        reason: "Test",
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [declinedDoc],
+          reason: "Test",
+        }
+      );
 
       expect(result.failed).toBe(1);
       const r = result.results[0];
@@ -340,12 +384,15 @@ describe("api/v1/documents — access and bulk operations", () => {
         workflowStatus: "draft",
       });
 
-      const result = await t.mutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId,
-        organizationId,
-        document_ids: [otherDoc],
-        reason: "Test",
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [otherDoc],
+          reason: "Test",
+        }
+      );
 
       expect(result.succeeded).toBe(0);
       expect(result.failed).toBe(1);
@@ -353,12 +400,15 @@ describe("api/v1/documents — access and bulk operations", () => {
     });
 
     test("returns empty results for empty input", async () => {
-      const result = await t.mutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId,
-        organizationId,
-        document_ids: [],
-        reason: "Test",
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [],
+          reason: "Test",
+        }
+      );
 
       expect(result.total_requested).toBe(0);
       expect(result.succeeded).toBe(0);
@@ -378,11 +428,14 @@ describe("api/v1/documents — access and bulk operations", () => {
       await insertRecipient(doc1);
       await insertRecipient(doc2);
 
-      const result = await t.mutation(internal.api.v1.documents.bulkSendDocuments, {
-        userId,
-        organizationId,
-        document_ids: [doc1, doc2],
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkSendDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [doc1, doc2],
+        }
+      );
 
       expect(result.total_requested).toBe(2);
       expect(result.succeeded).toBe(2);
@@ -397,11 +450,14 @@ describe("api/v1/documents — access and bulk operations", () => {
       const sentDoc = await insertDocument({ workflowStatus: "sent" });
       await insertRecipient(sentDoc);
 
-      const result = await t.mutation(internal.api.v1.documents.bulkSendDocuments, {
-        userId,
-        organizationId,
-        document_ids: [sentDoc],
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkSendDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [sentDoc],
+        }
+      );
 
       expect(result.succeeded).toBe(0);
       expect(result.failed).toBe(1);
@@ -412,11 +468,14 @@ describe("api/v1/documents — access and bulk operations", () => {
       const draftDoc = await insertDocument({ workflowStatus: "draft" });
       // No recipients inserted
 
-      const result = await t.mutation(internal.api.v1.documents.bulkSendDocuments, {
-        userId,
-        organizationId,
-        document_ids: [draftDoc],
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkSendDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [draftDoc],
+        }
+      );
 
       expect(result.succeeded).toBe(0);
       expect(result.failed).toBe(1);
@@ -430,11 +489,14 @@ describe("api/v1/documents — access and bulk operations", () => {
       });
       await insertRecipient(otherDoc);
 
-      const result = await t.mutation(internal.api.v1.documents.bulkSendDocuments, {
-        userId,
-        organizationId,
-        document_ids: [otherDoc],
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkSendDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [otherDoc],
+        }
+      );
 
       expect(result.succeeded).toBe(0);
       expect(result.failed).toBe(1);
@@ -447,11 +509,14 @@ describe("api/v1/documents — access and bulk operations", () => {
       await insertRecipient(goodDoc);
       // No recipients for noRecipientsDoc
 
-      const result = await t.mutation(internal.api.v1.documents.bulkSendDocuments, {
-        userId,
-        organizationId,
-        document_ids: [goodDoc, noRecipientsDoc],
-      });
+      const result = await t.mutation(
+        internal.api.v1.documents.bulkSendDocuments,
+        {
+          userId,
+          organizationId,
+          document_ids: [goodDoc, noRecipientsDoc],
+        }
+      );
 
       expect(result.total_requested).toBe(2);
       expect(result.succeeded).toBe(1);

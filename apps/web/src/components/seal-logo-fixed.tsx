@@ -30,7 +30,7 @@ export function SealLogoBadgeFixed({
         "from-background to-muted dark:from-background dark:to-muted inline-flex items-center justify-center bg-linear-to-br",
         "shadow-brand-700/10 border-brand-700/5 border shadow-xl",
         "hover:shadow-brand-700/15 transition-shadow duration-300 hover:shadow-2xl",
-        className,
+        className
       )}
       style={{
         width: withText ? "auto" : size,

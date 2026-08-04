@@ -73,12 +73,20 @@ export function RedirectCountdown({
           <ExternalLinkIcon className="text-info relative h-4 w-4" />
         </div>
         <span className="text-muted-foreground text-sm">
-          Redirecting to <span className="text-foreground font-medium">{destination}</span> in{" "}
-          <span className="text-foreground font-semibold tabular-nums">{secondsLeft}s</span>
+          Redirecting to{" "}
+          <span className="text-foreground font-medium">{destination}</span> in{" "}
+          <span className="text-foreground font-semibold tabular-nums">
+            {secondsLeft}s
+          </span>
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <Button variant="default" size="sm" onClick={handleGoNow} disabled={secondsLeft === 0}>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleGoNow}
+          disabled={secondsLeft === 0}
+        >
           <ExternalLinkIcon className="mr-1.5 h-3.5 w-3.5" />
           Go now
         </Button>

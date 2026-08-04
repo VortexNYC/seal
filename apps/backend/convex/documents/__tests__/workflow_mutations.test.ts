@@ -110,8 +110,10 @@ describe("Workflow mutations", () => {
           .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.workflow_mutations.sendDocument, {
             documentId,
-          }),
-      ).rejects.toThrow("Document must have at least one recipient before sending");
+          })
+      ).rejects.toThrow(
+        "Document must have at least one recipient before sending"
+      );
     });
 
     test("rejects if document is deleted", async () => {
@@ -124,7 +126,7 @@ describe("Workflow mutations", () => {
           .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.workflow_mutations.sendDocument, {
             documentId,
-          }),
+          })
       ).rejects.toThrow("Document not found");
     });
 
@@ -132,7 +134,7 @@ describe("Workflow mutations", () => {
       await expect(
         t.mutation(api.documents.workflow_mutations.sendDocument, {
           documentId,
-        }),
+        })
       ).rejects.toThrow();
     });
   });
@@ -178,7 +180,7 @@ describe("Workflow mutations", () => {
           .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.workflow_mutations.cancelDocument, {
             documentId,
-          }),
+          })
       ).rejects.toThrow("Cannot cancel a completed document");
     });
 
@@ -236,7 +238,7 @@ describe("Workflow mutations", () => {
       await expect(
         t.mutation(api.documents.workflow_mutations.cancelDocument, {
           documentId,
-        }),
+        })
       ).rejects.toThrow();
     });
   });
@@ -389,7 +391,9 @@ describe("Workflow mutations", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 }],
+          items: [
+            { id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 },
+          ],
           totalAmountCents: 5000,
           currency: "usd",
           dueDateTerms: "on_receipt",
@@ -458,7 +462,9 @@ describe("Workflow mutations", () => {
   describe("checkPaymentCompletionAndFinalize", () => {
     test("transitions waiting_for_payment to completed when all payments done", async () => {
       await t.run(async (ctx) => {
-        await ctx.db.patch(documentId, { workflowStatus: "waiting_for_payment" });
+        await ctx.db.patch(documentId, {
+          workflowStatus: "waiting_for_payment",
+        });
       });
 
       // Create a recipient and paid payment config
@@ -499,7 +505,9 @@ describe("Workflow mutations", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 }],
+          items: [
+            { id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 },
+          ],
           totalAmountCents: 5000,
           currency: "usd",
           dueDateTerms: "on_receipt",
@@ -516,7 +524,7 @@ describe("Workflow mutations", () => {
 
       const result = await t.mutation(
         internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize,
-        { documentId },
+        { documentId }
       );
 
       expect(result.completed).toBe(true);
@@ -532,7 +540,9 @@ describe("Workflow mutations", () => {
 
     test("does not complete when payments are still pending", async () => {
       await t.run(async (ctx) => {
-        await ctx.db.patch(documentId, { workflowStatus: "waiting_for_payment" });
+        await ctx.db.patch(documentId, {
+          workflowStatus: "waiting_for_payment",
+        });
       });
 
       const recipientId = await t.run(async (ctx) => {
@@ -572,7 +582,9 @@ describe("Workflow mutations", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 }],
+          items: [
+            { id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 },
+          ],
           totalAmountCents: 5000,
           currency: "usd",
           dueDateTerms: "on_receipt",
@@ -587,7 +599,7 @@ describe("Workflow mutations", () => {
 
       const result = await t.mutation(
         internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize,
-        { documentId },
+        { documentId }
       );
 
       expect(result.completed).toBe(false);
@@ -604,7 +616,7 @@ describe("Workflow mutations", () => {
       // Document is still in draft
       const result = await t.mutation(
         internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize,
-        { documentId },
+        { documentId }
       );
 
       expect(result.completed).toBe(false);
@@ -619,7 +631,7 @@ describe("Workflow mutations", () => {
 
       const result = await t.mutation(
         internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize,
-        { documentId },
+        { documentId }
       );
 
       expect(result.completed).toBe(false);

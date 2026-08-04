@@ -20,7 +20,7 @@ export const Route = createFileRoute("/verify/$qrToken")({
 function VerifyPage() {
   const { qrToken } = Route.useParams();
   const { data: result } = useSuspenseQuery(
-    convexQuery(api.documents.verification.getDocumentByQrToken, { qrToken }),
+    convexQuery(api.documents.verification.getDocumentByQrToken, { qrToken })
   );
 
   if (!result) {
@@ -35,7 +35,12 @@ interface VerifyResult {
   documentName: string;
   completedAt: number | null;
   signerCount: number;
-  signers: { name: string; maskedEmail: string; role: string; signedAt: number | null }[];
+  signers: {
+    name: string;
+    maskedEmail: string;
+    role: string;
+    signedAt: number | null;
+  }[];
   documentHash: string | null;
   createdAt: number;
 }
@@ -46,7 +51,9 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="mb-10 text-center">
-          <span className="text-foreground text-2xl font-bold tracking-tight">Seal</span>
+          <span className="text-foreground text-2xl font-bold tracking-tight">
+            Seal
+          </span>
         </div>
 
         {/* Verified card */}
@@ -60,7 +67,9 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
               <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
                 Document Verified
               </p>
-              <h1 className="text-foreground mt-1 text-xl font-semibold">{result.documentName}</h1>
+              <h1 className="text-foreground mt-1 text-xl font-semibold">
+                {result.documentName}
+              </h1>
             </div>
             {result.completedAt && (
               <p className="text-muted-foreground text-sm">
@@ -83,20 +92,29 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
             <div className="space-y-3">
               {result.signers.map((signer, i) => (
                 <div key={i} className="bg-muted/50 rounded-lg px-4 py-3">
-                  <p className="text-foreground text-sm font-medium">{signer.name}</p>
-                  <p className="text-muted-foreground text-xs">{signer.maskedEmail}</p>
+                  <p className="text-foreground text-sm font-medium">
+                    {signer.name}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {signer.maskedEmail}
+                  </p>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="text-muted-foreground text-xs capitalize">{signer.role}</span>
+                    <span className="text-muted-foreground text-xs capitalize">
+                      {signer.role}
+                    </span>
                     {signer.signedAt && (
                       <>
                         <span className="text-muted-foreground text-xs">·</span>
                         <span className="text-muted-foreground text-xs">
-                          {new Date(signer.signedAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            timeZone: "UTC",
-                          })}
+                          {new Date(signer.signedAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              timeZone: "UTC",
+                            }
+                          )}
                         </span>
                       </>
                     )}
@@ -109,10 +127,12 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
           {/* Document Hash */}
           {result.documentHash && (
             <div className="border-border mt-6 border-t pt-6">
-              <h2 className="text-foreground mb-2 text-sm font-semibold">Document Integrity</h2>
+              <h2 className="text-foreground mb-2 text-sm font-semibold">
+                Document Integrity
+              </h2>
               <p className="text-muted-foreground mb-2 text-xs">
-                SHA-256 hash of the original document. Compare this with your copy to verify it has
-                not been altered.
+                SHA-256 hash of the original document. Compare this with your
+                copy to verify it has not been altered.
               </p>
               <HashField hash={result.documentHash} />
             </div>
@@ -143,7 +163,9 @@ function HashField({ hash }: { hash: string }) {
 
   return (
     <div className="border-border bg-muted/50 flex items-center gap-2 rounded-lg border px-3 py-2">
-      <code className="text-foreground min-w-0 flex-1 truncate font-mono text-xs">{hash}</code>
+      <code className="text-foreground min-w-0 flex-1 truncate font-mono text-xs">
+        {hash}
+      </code>
       <button
         onClick={copy}
         className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
@@ -164,7 +186,9 @@ function VerifyFailed() {
     <div className="bg-background flex min-h-dvh flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg">
         <div className="mb-10 text-center">
-          <span className="text-foreground text-2xl font-bold tracking-tight">Seal</span>
+          <span className="text-foreground text-2xl font-bold tracking-tight">
+            Seal
+          </span>
         </div>
 
         <div className="border-border bg-card rounded-xl border p-8 text-center shadow-sm">
@@ -173,7 +197,9 @@ function VerifyFailed() {
               <ShieldXIcon className="text-destructive h-7 w-7" />
             </div>
           </div>
-          <h1 className="text-foreground mb-2 text-xl font-semibold">Verification Failed</h1>
+          <h1 className="text-foreground mb-2 text-xl font-semibold">
+            Verification Failed
+          </h1>
           <p className="text-muted-foreground text-sm">
             This verification link is invalid or the document no longer exists.
           </p>

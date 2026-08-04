@@ -1,10 +1,20 @@
 import { canvas } from "@seal/tokens/theme";
 import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
-import { Group, Image as KonvaImage, Rect, Text, Transformer } from "react-konva";
+import {
+  Group,
+  Image as KonvaImage,
+  Rect,
+  Text,
+  Transformer,
+} from "react-konva";
 
 import type { FieldType } from "./field-toolbar";
-import { getRecipientColorById, type RecipientColor, UNASSIGNED_COLOR } from "./recipient-colors";
+import {
+  getRecipientColorById,
+  type RecipientColor,
+  UNASSIGNED_COLOR,
+} from "./recipient-colors";
 
 function useSealIcon(): HTMLImageElement | null {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -141,7 +151,10 @@ const FIELD_LABELS: Record<FieldType, string> = {
 /**
  * Default field dimensions
  */
-export const FIELD_DIMENSIONS: Record<FieldType, { width: number; height: number }> = {
+export const FIELD_DIMENSIONS: Record<
+  FieldType,
+  { width: number; height: number }
+> = {
   signature: { width: 200, height: 50 },
   text: { width: 180, height: 36 },
   number: { width: 180, height: 36 },
@@ -156,7 +169,9 @@ export const FIELD_DIMENSIONS: Record<FieldType, { width: number; height: number
 /**
  * Convert RecipientColor to the color format used by field rendering
  */
-function recipientColorToFieldColors(recipientColor: RecipientColor): FieldColors {
+function recipientColorToFieldColors(
+  recipientColor: RecipientColor
+): FieldColors {
   // Create a darker version of the hex color for the ink
   const hex = recipientColor.hex;
   // Simple darkening - we'll use the hex color as accent and a darker version as ink
@@ -183,7 +198,11 @@ export function DraggableField({
   const shapeRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const sealIcon = useSealIcon();
-  const renderState = getFieldRenderState(field, recipientIndexMap, useRecipientColors);
+  const renderState = getFieldRenderState(
+    field,
+    recipientIndexMap,
+    useRecipientColors
+  );
 
   // Update transformer when selection changes
   useEffect(() => {
@@ -212,7 +231,7 @@ export function DraggableField({
       node.x(),
       node.y(),
       Math.max(30, node.width() * scaleX),
-      Math.max(20, node.height() * scaleY),
+      Math.max(20, node.height() * scaleY)
     );
   };
 
@@ -277,7 +296,7 @@ export function DraggableField({
 function getFieldRenderState(
   field: PlacedField,
   recipientIndexMap: Map<string, number> | undefined,
-  useRecipientColors: boolean,
+  useRecipientColors: boolean
 ): FieldRenderState {
   const recipientColor = useRecipientColors
     ? getRecipientColorById(field.recipientId, recipientIndexMap ?? new Map())
@@ -287,7 +306,9 @@ function getFieldRenderState(
     : FIELD_COLORS[field.fieldType];
   return {
     colors,
-    isUnassigned: useRecipientColors && (!field.recipientId || recipientColor === UNASSIGNED_COLOR),
+    isUnassigned:
+      useRecipientColors &&
+      (!field.recipientId || recipientColor === UNASSIGNED_COLOR),
     label: field.label || FIELD_LABELS[field.fieldType],
   };
 }
@@ -302,11 +323,18 @@ function FieldContent({
 }: StandardFieldProps) {
   if (field.signatureData?.signedAt) {
     return (
-      <FilledFieldStamp colors={colors} field={field} isSelected={isSelected} sealIcon={sealIcon} />
+      <FilledFieldStamp
+        colors={colors}
+        field={field}
+        isSelected={isSelected}
+        sealIcon={sealIcon}
+      />
     );
   }
   if (field.fieldType === "checkbox") {
-    return <CheckboxField colors={colors} field={field} isSelected={isSelected} />;
+    return (
+      <CheckboxField colors={colors} field={field} isSelected={isSelected} />
+    );
   }
   return (
     <StandardField
@@ -323,13 +351,26 @@ function FieldContent({
 function CheckboxField({ colors, field, isSelected }: FieldRendererProps) {
   const options = field.properties?.options;
   return options && options.length > 0 ? (
-    <CheckboxGroupField colors={colors} field={field} isSelected={isSelected} options={options} />
+    <CheckboxGroupField
+      colors={colors}
+      field={field}
+      isSelected={isSelected}
+      options={options}
+    />
   ) : (
-    <SingleCheckboxField colors={colors} field={field} isSelected={isSelected} />
+    <SingleCheckboxField
+      colors={colors}
+      field={field}
+      isSelected={isSelected}
+    />
   );
 }
 
-function SingleCheckboxField({ colors, field, isSelected }: FieldRendererProps) {
+function SingleCheckboxField({
+  colors,
+  field,
+  isSelected,
+}: FieldRendererProps) {
   const safeSize = Math.max(16, Math.min(field.width, field.height) - 6);
   const x = (field.width - safeSize) / 2;
   const y = (field.height - safeSize) / 2;
@@ -373,17 +414,36 @@ function CheckboxGroupField({
 }) {
   return (
     <>
-      <FieldBackground colors={colors} field={field} isSelected={isSelected} dashed />
-      <AccentRail colors={colors} field={field} isSelected={isSelected} unselectedOpacity={0.7} />
+      <FieldBackground
+        colors={colors}
+        field={field}
+        isSelected={isSelected}
+        dashed
+      />
+      <AccentRail
+        colors={colors}
+        field={field}
+        isSelected={isSelected}
+        unselectedOpacity={0.7}
+      />
       {field.label && <CheckboxGroupTitle colors={colors} field={field} />}
       {options.map((option, index) => (
-        <CheckboxOption key={option} colors={colors} field={field} index={index} option={option} />
+        <CheckboxOption
+          key={option}
+          colors={colors}
+          field={field}
+          index={index}
+          option={option}
+        />
       ))}
     </>
   );
 }
 
-function CheckboxGroupTitle({ colors, field }: Pick<FieldRendererProps, "colors" | "field">) {
+function CheckboxGroupTitle({
+  colors,
+  field,
+}: Pick<FieldRendererProps, "colors" | "field">) {
   return (
     <Text
       x={12}
@@ -471,7 +531,12 @@ function StandardField({
         isSelected={isSelected}
         isUnassigned={isUnassigned}
       />
-      <SealSidebar colors={colors} field={field} metrics={metrics} sealIcon={sealIcon} />
+      <SealSidebar
+        colors={colors}
+        field={field}
+        metrics={metrics}
+        sealIcon={sealIcon}
+      />
       <StandardFieldLabel
         colors={colors}
         field={field}
@@ -495,7 +560,11 @@ function StandardFieldBackground({
     <Rect
       width={field.width}
       height={field.height}
-      fill={isUnassigned ? canvas.chrome.backgroundUnassigned : canvas.chrome.background}
+      fill={
+        isUnassigned
+          ? canvas.chrome.backgroundUnassigned
+          : canvas.chrome.background
+      }
       stroke={isSelected ? colors.accent : canvas.chrome.borderUnselected}
       strokeWidth={isSelected ? 2 : 1}
       cornerRadius={6}
@@ -570,7 +639,12 @@ function SealSidebar({
   if (!sealIcon) return null;
   return (
     <Group x={4} y={0}>
-      <Rect width={metrics.sidebarWidth} height={field.height} fill={colors.glow} opacity={0.3} />
+      <Rect
+        width={metrics.sidebarWidth}
+        height={field.height}
+        fill={colors.glow}
+        opacity={0.3}
+      />
       <Rect
         x={metrics.sidebarWidth}
         y={0}
@@ -603,7 +677,8 @@ function StandardFieldLabel({
   readonly textOffsetX: number;
 }) {
   if (!label) return null;
-  return field.fieldType === "payment" && field.paymentTotalCents !== undefined ? (
+  return field.fieldType === "payment" &&
+    field.paymentTotalCents !== undefined ? (
     <PaymentFieldLabel
       colors={colors}
       field={field}
@@ -696,11 +771,17 @@ function FilledFieldStamp({
   const detailFontSize = isSmallField ? 7 : 9;
   const formattedDate = formatSignatureDate(field.signatureData?.signedAt);
   const signerName =
-    field.signatureData?.signerName || field.signatureData?.signerEmail || "Unknown";
+    field.signatureData?.signerName ||
+    field.signatureData?.signerEmail ||
+    "Unknown";
 
   return (
     <>
-      <FilledStampBackground colors={colors} field={field} isSelected={isSelected} />
+      <FilledStampBackground
+        colors={colors}
+        field={field}
+        isSelected={isSelected}
+      />
       <FilledStampSidebar field={field} metrics={metrics} sealIcon={sealIcon} />
       <Text
         x={metrics.textOffsetX}
@@ -725,7 +806,11 @@ function FilledFieldStamp({
   );
 }
 
-function FilledStampBackground({ colors, field, isSelected }: FieldRendererProps) {
+function FilledStampBackground({
+  colors,
+  field,
+  isSelected,
+}: FieldRendererProps) {
   return (
     <>
       <Rect
@@ -763,7 +848,11 @@ function FilledStampSidebar({
   if (!sealIcon) return null;
   return (
     <Group x={4} y={0}>
-      <Rect width={metrics.sidebarWidth} height={field.height} fill={canvas.filled.accentTint} />
+      <Rect
+        width={metrics.sidebarWidth}
+        height={field.height}
+        fill={canvas.filled.accentTint}
+      />
       <Rect
         x={metrics.sidebarWidth}
         y={0}
@@ -881,7 +970,7 @@ function SmallFilledStampDetails({
 function sealSidebarMetrics(
   field: PlacedField,
   sealIcon: HTMLImageElement | null,
-  noIconTextOffsetX: number,
+  noIconTextOffsetX: number
 ): SidebarMetrics {
   const iconSize = Math.max(10, Math.min(16, field.height * 0.35));
   const sidebarWidth = iconSize + 16;
@@ -900,7 +989,9 @@ function formatPaymentTotal(paymentTotalCents: number | undefined): string {
   return `$${amount}`;
 }
 
-function formatSignatureDate(timestamp: number | undefined): FormattedSignatureDate {
+function formatSignatureDate(
+  timestamp: number | undefined
+): FormattedSignatureDate {
   if (!timestamp) return { date: "", time: "" };
   const date = new Date(timestamp);
   return {

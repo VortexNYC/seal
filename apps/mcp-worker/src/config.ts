@@ -8,7 +8,10 @@ const configSchema = z.object({
   /** Optional API key for server-to-server auth (fallback when no user token) */
   apiKey: z.string().min(1).optional(),
   /** Base URL for the Seal API */
-  baseUrl: z.string().url().default("https://compassionate-robin-742.convex.site/api/v1"),
+  baseUrl: z
+    .string()
+    .url()
+    .default("https://compassionate-robin-742.convex.site/api/v1"),
   /** Request timeout in milliseconds */
   requestTimeout: z.coerce.number().default(30000),
   /** Enable debug logging */

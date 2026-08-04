@@ -39,7 +39,8 @@ export const pageSEO: Record<string, PageSEO> = {
   },
   signIn: {
     title: "Sign In - Seal",
-    description: "Sign in to your Seal account to manage your documents and signatures.",
+    description:
+      "Sign in to your Seal account to manage your documents and signatures.",
     noIndex: true,
   },
   signUp: {
@@ -54,27 +55,32 @@ export const pageSEO: Record<string, PageSEO> = {
   },
   dashboard: {
     title: "Dashboard - Seal",
-    description: "Your Seal dashboard. View recent activity and manage your documents.",
+    description:
+      "Your Seal dashboard. View recent activity and manage your documents.",
     noIndex: true,
   },
   documents: {
     title: "Documents - Seal",
-    description: "Manage all your documents in one place. Create, send, and track signatures.",
+    description:
+      "Manage all your documents in one place. Create, send, and track signatures.",
     noIndex: true,
   },
   templates: {
     title: "Templates - Seal",
-    description: "Create and manage reusable document templates for faster signing workflows.",
+    description:
+      "Create and manage reusable document templates for faster signing workflows.",
     noIndex: true,
   },
   settings: {
     title: "Settings - Seal",
-    description: "Manage your account settings, notifications, and preferences.",
+    description:
+      "Manage your account settings, notifications, and preferences.",
     noIndex: true,
   },
   analytics: {
     title: "Analytics - Seal",
-    description: "View document analytics, signing metrics, and team performance.",
+    description:
+      "View document analytics, signing metrics, and team performance.",
     noIndex: true,
   },
   contacts: {
@@ -99,7 +105,7 @@ export function getCanonicalUrl(path: string): string {
  */
 export function createPageMeta(
   seo: PageSEO,
-  path?: string,
+  path?: string
 ): {
   meta: Array<{
     title?: string;

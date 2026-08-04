@@ -14,22 +14,33 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
-import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
+import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 
 export { PLAN_LIMITS, type TierPlan };
 
 // Bounded dunning access: failed renewals keep paid entitlement during retries for 14 days.
 export const GRACE_PERIOD_MS = 14 * 24 * 60 * 60 * 1000;
 
-type SubscriptionPlanResult = { isPro: boolean; isEnterprise: boolean; plan: TierPlan };
+type SubscriptionPlanResult = {
+  isPro: boolean;
+  isEnterprise: boolean;
+  plan: TierPlan;
+};
 type PlanSubscription = Pick<
   Doc<"subscriptions">,
-  "_creationTime" | "externalPriceId" | "externalSubscriptionId" | "pastDueSince" | "status"
+  | "_creationTime"
+  | "externalPriceId"
+  | "externalSubscriptionId"
+  | "pastDueSince"
+  | "status"
 >;
 
 export function isVortexSaasSubscription(
-  subscription: Pick<Doc<"subscriptions">, "externalPriceId" | "externalSubscriptionId">,
+  subscription: Pick<
+    Doc<"subscriptions">,
+    "externalPriceId" | "externalSubscriptionId"
+  >
 ): boolean {
   return (
     subscription.externalSubscriptionId.startsWith("vtx_") ||
@@ -39,7 +50,10 @@ export function isVortexSaasSubscription(
 
 export function isSubscriptionVisibleForCurrentSaasProvider(
   organizationId: Id<"organizations">,
-  subscription: Pick<Doc<"subscriptions">, "externalPriceId" | "externalSubscriptionId">,
+  subscription: Pick<
+    Doc<"subscriptions">,
+    "externalPriceId" | "externalSubscriptionId"
+  >
 ): boolean {
   if (selectSaasBillingProvider(organizationId) === "vortex_billing") {
     return true;
@@ -50,18 +64,18 @@ export function isSubscriptionVisibleForCurrentSaasProvider(
 async function getLatestVisibleSubscriptionByStatus(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
-  status: Doc<"subscriptions">["status"],
+  status: Doc<"subscriptions">["status"]
 ): Promise<PlanSubscription | null> {
   const subscriptions = await db
     .query("subscriptions")
     .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", status),
+      q.eq("organizationId", organizationId).eq("status", status)
     )
     .order("desc")
     .take(20);
   return (
     subscriptions.find((subscription) =>
-      isSubscriptionVisibleForCurrentSaasProvider(organizationId, subscription),
+      isSubscriptionVisibleForCurrentSaasProvider(organizationId, subscription)
     ) ?? null
   );
 }
@@ -69,12 +83,12 @@ async function getLatestVisibleSubscriptionByStatus(
 async function resolvePlanForSubscription(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
-  subscription: PlanSubscription,
+  subscription: PlanSubscription
 ): Promise<SubscriptionPlanResult> {
   // Resolve the tier by joining through price → product
   const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
     db,
-    subscription.externalPriceId,
+    subscription.externalPriceId
   );
 
   let tier: string | undefined;
@@ -88,7 +102,7 @@ async function resolvePlanForSubscription(
         externalPriceId: subscription.externalPriceId,
         subscriptionStatus: subscription.status,
         timestamp: Date.now(),
-      }),
+      })
     );
   } else {
     if (!product) {
@@ -101,7 +115,7 @@ async function resolvePlanForSubscription(
           externalProductId: price.externalProductId,
           externalPriceId: subscription.externalPriceId,
           timestamp: Date.now(),
-        }),
+        })
       );
     }
     tier = product?.metadata?.tier;
@@ -126,7 +140,7 @@ async function resolvePlanForSubscription(
         subscriptionId: subscription.externalSubscriptionId,
         priceId: subscription.externalPriceId,
         timestamp: Date.now(),
-      }),
+      })
     );
   }
   return { isPro: false, isEnterprise: false, plan: "free" };
@@ -140,11 +154,19 @@ async function resolvePlanForSubscription(
  */
 export async function getSubscriptionPlan(
   db: DatabaseReader,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<SubscriptionPlanResult> {
   const subscription =
-    (await getLatestVisibleSubscriptionByStatus(db, organizationId, "active")) ??
-    (await getLatestVisibleSubscriptionByStatus(db, organizationId, "trialing"));
+    (await getLatestVisibleSubscriptionByStatus(
+      db,
+      organizationId,
+      "active"
+    )) ??
+    (await getLatestVisibleSubscriptionByStatus(
+      db,
+      organizationId,
+      "trialing"
+    ));
 
   if (subscription) {
     return await resolvePlanForSubscription(db, organizationId, subscription);
@@ -153,13 +175,18 @@ export async function getSubscriptionPlan(
   const pastDueSubscription = await getLatestVisibleSubscriptionByStatus(
     db,
     organizationId,
-    "past_due",
+    "past_due"
   );
 
   if (pastDueSubscription) {
-    const pastDueStartedAt = pastDueSubscription.pastDueSince ?? pastDueSubscription._creationTime;
+    const pastDueStartedAt =
+      pastDueSubscription.pastDueSince ?? pastDueSubscription._creationTime;
     if (Date.now() - pastDueStartedAt <= GRACE_PERIOD_MS) {
-      return await resolvePlanForSubscription(db, organizationId, pastDueSubscription);
+      return await resolvePlanForSubscription(
+        db,
+        organizationId,
+        pastDueSubscription
+      );
     }
   }
 
@@ -175,12 +202,12 @@ export async function getSubscriptionPlan(
 export async function ensureProFeature(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
-  featureName: string,
+  featureName: string
 ): Promise<void> {
   const { isPro } = await getSubscriptionPlan(db, organizationId);
   if (!isPro) {
     throw new ConvexError(
-      `${featureName} requires a Professional plan. Please upgrade to continue.`,
+      `${featureName} requires a Professional plan. Please upgrade to continue.`
     );
   }
 }
@@ -190,7 +217,7 @@ export async function ensureProFeature(
  */
 export async function ensureSeatLimit(
   ctx: { db: DatabaseReader; runQuery: QueryCtx["runQuery"] },
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<void> {
   const { plan } = await getSubscriptionPlan(ctx.db, organizationId);
   const limits = PLAN_LIMITS[plan];
@@ -199,7 +226,9 @@ export async function ensureSeatLimit(
   if (!organization) {
     throw new ConvexError("Organization not found");
   }
-  const members = await listComponentMembersByOrganization(ctx, organization, { status: "active" });
+  const members = await listComponentMembersByOrganization(ctx, organization, {
+    status: "active",
+  });
 
   if (members.length >= limits.maxSeats) {
     throw new ConvexError(
@@ -208,7 +237,7 @@ export async function ensureSeatLimit(
           ? "Upgrade to Professional to add team members."
           : plan === "pro"
             ? "Upgrade to Enterprise for more than 20 seats."
-            : "Contact support to increase your seat limit."),
+            : "Contact support to increase your seat limit.")
     );
   }
 }
@@ -231,12 +260,14 @@ export function calculateApplicationFee(
   amountCents: number,
   plan: TierPlan,
   isAch: boolean,
-  customRates?: { cardRate: number; cardFixed: number },
+  customRates?: { cardRate: number; cardFixed: number }
 ): number {
   if (isAch) return 0;
 
   if (customRates) {
-    return Math.round(amountCents * customRates.cardRate + customRates.cardFixed);
+    return Math.round(
+      amountCents * customRates.cardRate + customRates.cardFixed
+    );
   }
 
   const rates = SEAL_FEE_RATES[plan];
@@ -250,7 +281,7 @@ export async function getApplicationFee(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
   amountCents: number,
-  isAch: boolean,
+  isAch: boolean
 ): Promise<number> {
   const { plan } = await getSubscriptionPlan(db, organizationId);
 
@@ -258,8 +289,11 @@ export async function getApplicationFee(
   const org = await db.get(organizationId);
   const customRates =
     plan === "enterprise"
-      ? (org as { customPaymentRates?: { cardRate: number; cardFixed: number } })
-          ?.customPaymentRates
+      ? (
+          org as {
+            customPaymentRates?: { cardRate: number; cardFixed: number };
+          }
+        )?.customPaymentRates
       : undefined;
 
   return calculateApplicationFee(amountCents, plan, isAch, customRates);

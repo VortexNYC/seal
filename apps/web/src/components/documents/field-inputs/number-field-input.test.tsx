@@ -6,7 +6,9 @@ import { NumberFieldInput } from "./number-field-input";
 
 afterEach(cleanup);
 
-function renderNumberField(overrides: Partial<Parameters<typeof NumberFieldInput>[0]> = {}) {
+function renderNumberField(
+  overrides: Partial<Parameters<typeof NumberFieldInput>[0]> = {}
+) {
   const onChange = vi.fn();
   const onValidationChange = vi.fn();
 
@@ -17,7 +19,7 @@ function renderNumberField(overrides: Partial<Parameters<typeof NumberFieldInput
       onChange={onChange}
       onValidationChange={onValidationChange}
       {...overrides}
-    />,
+    />
   );
 
   return { onChange, onValidationChange, ...result };
@@ -41,7 +43,9 @@ describe("NumberFieldInput", () => {
 
   test("shows help text", () => {
     renderNumberField({ helpText: "Enter a number between 1 and 100" });
-    expect(screen.getByText("Enter a number between 1 and 100")).toBeInTheDocument();
+    expect(
+      screen.getByText("Enter a number between 1 and 100")
+    ).toBeInTheDocument();
   });
 
   test("calls onChange with typed value", async () => {
@@ -57,7 +61,10 @@ describe("NumberFieldInput", () => {
 
   test("reports valid for optional empty field", async () => {
     const user = userEvent.setup();
-    const { onValidationChange } = renderNumberField({ isRequired: false, value: "5" });
+    const { onValidationChange } = renderNumberField({
+      isRequired: false,
+      value: "5",
+    });
 
     const input = screen.getByRole("spinbutton");
     await user.clear(input);
@@ -67,12 +74,18 @@ describe("NumberFieldInput", () => {
 
   test("reports invalid for required empty field", async () => {
     const user = userEvent.setup();
-    const { onValidationChange } = renderNumberField({ isRequired: true, value: "5" });
+    const { onValidationChange } = renderNumberField({
+      isRequired: true,
+      value: "5",
+    });
 
     const input = screen.getByRole("spinbutton");
     await user.clear(input);
 
-    expect(onValidationChange).toHaveBeenCalledWith(false, "This field is required");
+    expect(onValidationChange).toHaveBeenCalledWith(
+      false,
+      "This field is required"
+    );
   });
 
   test("shows error when value is below min", async () => {
@@ -82,7 +95,10 @@ describe("NumberFieldInput", () => {
     const input = screen.getByRole("spinbutton");
     await user.type(input, "5");
 
-    expect(onValidationChange).toHaveBeenCalledWith(false, "Minimum value is 10");
+    expect(onValidationChange).toHaveBeenCalledWith(
+      false,
+      "Minimum value is 10"
+    );
     expect(screen.getByText("Minimum value is 10")).toBeInTheDocument();
   });
 
@@ -93,7 +109,10 @@ describe("NumberFieldInput", () => {
     const input = screen.getByRole("spinbutton");
     await user.type(input, "150");
 
-    expect(onValidationChange).toHaveBeenCalledWith(false, "Maximum value is 100");
+    expect(onValidationChange).toHaveBeenCalledWith(
+      false,
+      "Maximum value is 100"
+    );
   });
 
   test("valid value within min/max range reports valid", async () => {
@@ -103,7 +122,8 @@ describe("NumberFieldInput", () => {
     const input = screen.getByRole("spinbutton");
     await user.type(input, "50");
 
-    const lastCall = onValidationChange.mock.calls[onValidationChange.mock.calls.length - 1];
+    const lastCall =
+      onValidationChange.mock.calls[onValidationChange.mock.calls.length - 1];
     expect(lastCall).toEqual([true, undefined]);
   });
 

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, X } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
@@ -13,7 +14,10 @@ export const Route = createFileRoute("/compare")({
         content:
           "See how Seal compares to DocuSign, HelloSign, PandaDoc, and Agree. AI-powered document review, built-in payments, and a full REST API — at a fraction of the cost.",
       },
-      { property: "og:title", content: "Seal vs DocuSign, HelloSign, PandaDoc, Agree" },
+      {
+        property: "og:title",
+        content: "Seal vs DocuSign, HelloSign, PandaDoc, Agree",
+      },
       {
         property: "og:description",
         content:
@@ -157,9 +161,21 @@ const features: Feature[] = [
   },
 ];
 
-const competitors = ["Seal", "DocuSign", "HelloSign", "PandaDoc", "Agree"] as const;
+const competitors = [
+  "Seal",
+  "DocuSign",
+  "HelloSign",
+  "PandaDoc",
+  "Agree",
+] as const;
 
-function CellValue({ value, isSeal }: { value: boolean | string; isSeal?: boolean }) {
+function CellValue({
+  value,
+  isSeal,
+}: {
+  value: boolean | string;
+  isSeal?: boolean;
+}) {
   if (value === true) {
     return (
       <div className="flex justify-center">
@@ -181,7 +197,9 @@ function CellValue({ value, isSeal }: { value: boolean | string; isSeal?: boolea
   }
   return (
     <div className="flex justify-center">
-      <span className={`text-xs ${isSeal ? "text-primary font-medium" : "text-muted-foreground"}`}>
+      <span
+        className={`text-xs ${isSeal ? "text-primary font-medium" : "text-muted-foreground"}`}
+      >
         {value}
       </span>
     </div>
@@ -257,19 +275,26 @@ function ComparePage() {
           <FadeIn delay={0.05}>
             <h1 className="text-foreground font-serif text-[clamp(2rem,5vw,4rem)] leading-[1.05] font-normal tracking-tight">
               The old tools built e-signatures.{" "}
-              <span className="text-primary italic">We built a document platform.</span>
+              <span className="text-primary italic">
+                We built a document platform.
+              </span>
             </h1>
           </FadeIn>
           <FadeIn delay={0.1}>
             <p className="text-muted-foreground mt-6 max-w-2xl text-lg leading-relaxed text-pretty">
-              DocuSign, HelloSign, PandaDoc, and Agree all solve variations of the same problem.
-              Seal solves the full one: sign, collect payment, review with AI, and connect to your
-              stack — at a price that doesn't require a procurement meeting.
+              DocuSign, HelloSign, PandaDoc, and Agree all solve variations of
+              the same problem. Seal solves the full one: sign, collect payment,
+              review with AI, and connect to your stack — at a price that
+              doesn't require a procurement meeting.
             </p>
           </FadeIn>
           <FadeIn delay={0.15}>
             <div className="mt-8">
-              <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+              <Button
+                asChild
+                className="group h-12 px-8 text-base font-medium"
+                size="lg"
+              >
                 <a href={`${APP_URL}/waitlist`}>
                   Join Waitlist
                   <ArrowRight
@@ -381,8 +406,12 @@ function ComparePage() {
                 <div className="border-border bg-card rounded-2xl border p-8 sm:p-10">
                   <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-foreground text-xl font-semibold">{alt.name}</h3>
-                      <p className="text-muted-foreground mt-1 text-sm">{alt.tagline}</p>
+                      <h3 className="text-foreground text-xl font-semibold">
+                        {alt.name}
+                      </h3>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {alt.tagline}
+                      </p>
                     </div>
                     <span className="border-border bg-muted/40 text-muted-foreground rounded-full border px-3 py-1 text-xs">
                       {alt.pricing}
@@ -404,7 +433,9 @@ function ComparePage() {
                             aria-hidden="true"
                             className="text-muted-foreground/50 mt-0.5 size-4 shrink-0"
                           />
-                          <span className="text-muted-foreground text-sm">{w}</span>
+                          <span className="text-muted-foreground text-sm">
+                            {w}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -424,11 +455,15 @@ function ComparePage() {
               Ready to make the switch?
             </h2>
             <p className="text-muted-foreground mt-6 text-lg text-pretty">
-              Free plan, no credit card required. Most teams are up and running in under two
-              minutes.
+              Free plan, no credit card required. Most teams are up and running
+              in under two minutes.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+              <Button
+                asChild
+                className="group h-12 px-8 text-base font-medium"
+                size="lg"
+              >
                 <a href={`${APP_URL}/waitlist`}>
                   Join Waitlist
                   <ArrowRight

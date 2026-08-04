@@ -65,15 +65,21 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
-  signature: "bg-field-signature-surface text-field-signature border-field-signature-border",
+  signature:
+    "bg-field-signature-surface text-field-signature border-field-signature-border",
   text: "bg-field-text-surface text-field-text border-field-text-border",
-  number: "bg-field-number-surface text-field-number border-field-number-border",
+  number:
+    "bg-field-number-surface text-field-number border-field-number-border",
   date: "bg-field-date-surface text-field-date border-field-date-border",
-  checkbox: "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
-  dropdown: "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
+  checkbox:
+    "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
+  dropdown:
+    "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
   radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
-  attachment: "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
-  payment: "bg-field-payment-surface text-field-payment border-field-payment-border",
+  attachment:
+    "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
+  payment:
+    "bg-field-payment-surface text-field-payment border-field-payment-border",
 };
 
 const FIELD_LABELS: Record<FieldType, string> = {
@@ -132,12 +138,17 @@ function FieldRow({
         "w-full cursor-pointer rounded-lg border-2 p-3 transition-colors",
         isSelected
           ? "border-primary bg-primary/5"
-          : "border-border bg-background hover:border-primary/50 hover:bg-muted/50",
+          : "border-border bg-background hover:border-primary/50 hover:bg-muted/50"
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-start gap-2">
-          <div className={cn("mt-0.5 rounded-md border p-1.5", FIELD_COLORS[field.fieldType])}>
+          <div
+            className={cn(
+              "mt-0.5 rounded-md border p-1.5",
+              FIELD_COLORS[field.fieldType]
+            )}
+          >
             {FIELD_ICONS[field.fieldType]}
           </div>
           <div className="min-w-0 flex-1">
@@ -152,17 +163,24 @@ function FieldRow({
             {recipient ? (
               <div className="text-muted-foreground mt-1 text-xs">
                 {recipient.name && (
-                  <p className="text-foreground/80 truncate font-medium">{recipient.name}</p>
+                  <p className="text-foreground/80 truncate font-medium">
+                    {recipient.name}
+                  </p>
                 )}
                 <p className="truncate">{recipient.email}</p>
               </div>
             ) : (
-              <p className="text-muted-foreground mt-1 text-xs italic">Unassigned</p>
+              <p className="text-muted-foreground mt-1 text-xs italic">
+                Unassigned
+              </p>
             )}
             {field.fieldType === "payment" && field.paymentConfig && (
               <div className="mt-1 flex items-center gap-1.5 text-xs">
                 <span className="text-field-payment font-semibold">
-                  {formatCents(field.paymentConfig.totalAmountCents, field.paymentConfig.currency)}
+                  {formatCents(
+                    field.paymentConfig.totalAmountCents,
+                    field.paymentConfig.currency
+                  )}
                 </span>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-muted-foreground">
@@ -172,7 +190,9 @@ function FieldRow({
               </div>
             )}
             {field.fieldType === "payment" && !field.paymentConfig && (
-              <p className="text-muted-foreground mt-1 text-xs italic">Not configured</p>
+              <p className="text-muted-foreground mt-1 text-xs italic">
+                Not configured
+              </p>
             )}
           </div>
         </div>
@@ -224,7 +244,10 @@ function VirtualizedFieldList({
   onFieldProperties,
 }: {
   fields: FieldListItem[];
-  recipientMap: Map<Id<"document_recipients">, { name?: string; email: string }>;
+  recipientMap: Map<
+    Id<"document_recipients">,
+    { name?: string; email: string }
+  >;
   selectedFieldId: string | null;
   canEdit: boolean;
   onFieldSelect?: (fieldId: string | null) => void;
@@ -243,10 +266,15 @@ function VirtualizedFieldList({
 
   return (
     <div ref={parentRef} className="max-h-[60vh] overflow-y-auto">
-      <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+      <div
+        className="relative w-full"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const field = fields[virtualRow.index];
-          const recipient = field.recipientId ? recipientMap.get(field.recipientId) : undefined;
+          const recipient = field.recipientId
+            ? recipientMap.get(field.recipientId)
+            : undefined;
           const isSelected = selectedFieldId === field._id;
 
           return (
@@ -283,13 +311,17 @@ export function FieldList({
   onFieldDelete,
   onFieldProperties,
 }: FieldListProps) {
-  const recipientMap = new Map(recipients.map((r) => [r._id, { name: r.name, email: r.email }]));
+  const recipientMap = new Map(
+    recipients.map((r) => [r._id, { name: r.name, email: r.email }])
+  );
 
   if (fields.length === 0) {
     return (
       <div className="text-muted-foreground py-8 text-center">
         <p className="text-sm">No fields added yet</p>
-        <p className="mt-1 text-xs">Drag fields from the toolbar onto the document</p>
+        <p className="mt-1 text-xs">
+          Drag fields from the toolbar onto the document
+        </p>
       </div>
     );
   }
@@ -311,7 +343,9 @@ export function FieldList({
   return (
     <div className="space-y-2">
       {fields.map((field) => {
-        const recipient = field.recipientId ? recipientMap.get(field.recipientId) : undefined;
+        const recipient = field.recipientId
+          ? recipientMap.get(field.recipientId)
+          : undefined;
         const isSelected = selectedFieldId === field._id;
 
         return (

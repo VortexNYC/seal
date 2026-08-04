@@ -54,7 +54,10 @@ export default defineConfig(() => {
       return "vendor-convex";
     }
 
-    if (moduleId.includes("@tanstack/react-query") || moduleId.includes("@tanstack/query")) {
+    if (
+      moduleId.includes("@tanstack/react-query") ||
+      moduleId.includes("@tanstack/query")
+    ) {
       return "vendor-query";
     }
 
@@ -67,7 +70,10 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "./src"),
-        "pdfjs-dist": path.resolve(import.meta.dirname, "./node_modules/pdfjs-dist"),
+        "pdfjs-dist": path.resolve(
+          import.meta.dirname,
+          "./node_modules/pdfjs-dist"
+        ),
       },
       dedupe: ["react", "react-dom", "pdfjs-dist"],
     },
@@ -80,7 +86,8 @@ export default defineConfig(() => {
         "/ingest/static": {
           target: "https://us-assets.i.posthog.com",
           changeOrigin: true,
-          rewrite: (pathStr: string) => pathStr.replace(/^\/ingest\/static/, "/static"),
+          rewrite: (pathStr: string) =>
+            pathStr.replace(/^\/ingest\/static/, "/static"),
         },
         "/ingest": {
           target: "https://us.i.posthog.com",

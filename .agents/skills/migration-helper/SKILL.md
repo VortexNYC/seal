@@ -267,7 +267,7 @@ crons.interval(
   "migrate-batch",
   { minutes: 5 }, // Every 5 minutes
   internal.migrations.migrateBatch,
-  { batchSize: 100 },
+  { batchSize: 100 }
 );
 
 export default crons;

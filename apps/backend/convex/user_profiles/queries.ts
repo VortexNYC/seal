@@ -47,7 +47,9 @@ export const getUserProfile = query({
 
     const profile = await ctx.db
       .query("user_profiles")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.authSubject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", args.authSubject)
+      )
       .first();
 
     return profile;
@@ -101,18 +103,18 @@ export const getUsageStatistics = authQuery({
     const startOfMonthTimestamp = startOfMonth.getTime();
 
     const documentsThisMonth = activeDocuments.filter(
-      (doc) => doc.createdAt >= startOfMonthTimestamp,
+      (doc) => doc.createdAt >= startOfMonthTimestamp
     );
 
     const completedThisMonth = documentsThisMonth.filter(
-      (doc) => doc.workflowStatus === "completed",
+      (doc) => doc.workflowStatus === "completed"
     );
 
     const sentThisMonth = documentsThisMonth.filter(
       (doc) =>
         doc.workflowStatus === "sent" ||
         doc.workflowStatus === "in_progress" ||
-        doc.workflowStatus === "completed",
+        doc.workflowStatus === "completed"
     );
 
     // Get org's subscription for plan limits
@@ -120,7 +122,7 @@ export const getUsageStatistics = authQuery({
     const subscription = await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
+        q.eq("organizationId", organizationId).eq("status", "active")
       )
       .first();
 
@@ -145,14 +147,17 @@ export const getUsageStatistics = authQuery({
       // Storage
       storageUsedBytes: totalStorageBytes,
       storageLimitBytes: limits.storageBytes,
-      storagePercentUsed: Math.min(100, (totalStorageBytes / limits.storageBytes) * 100),
+      storagePercentUsed: Math.min(
+        100,
+        (totalStorageBytes / limits.storageBytes) * 100
+      ),
 
       // Plan info
       plan: isPro ? "pro" : "free",
       documentsLimit: limits.documentsPerMonth,
       documentsPercentUsed: Math.min(
         100,
-        (documentsThisMonth.length / limits.documentsPerMonth) * 100,
+        (documentsThisMonth.length / limits.documentsPerMonth) * 100
       ),
 
       // Completion rate

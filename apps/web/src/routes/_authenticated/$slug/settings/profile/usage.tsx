@@ -22,12 +22,20 @@ import {
 import { FormSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/profile/usage")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/profile/usage"
+)({
   component: UsageSettings,
   pendingComponent: FormSkeleton,
 });
@@ -51,7 +59,8 @@ function UsageSettings() {
   const isApproachingDocumentLimit = stats.documentsPercentUsed >= 80;
   const isApproachingStorageLimit = stats.storagePercentUsed >= 80;
   const showUpgradePrompt =
-    stats.plan === "free" && (isApproachingDocumentLimit || isApproachingStorageLimit);
+    stats.plan === "free" &&
+    (isApproachingDocumentLimit || isApproachingStorageLimit);
 
   return (
     <div className="space-y-6">
@@ -62,7 +71,9 @@ function UsageSettings() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="text-warning h-5 w-5" />
               <div>
-                <p className="text-warning font-medium">Approaching usage limits</p>
+                <p className="text-warning font-medium">
+                  Approaching usage limits
+                </p>
                 <p className="text-warning text-sm">
                   Upgrade to Professional for higher limits and more features
                 </p>
@@ -89,13 +100,17 @@ function UsageSettings() {
               {stats.plan === "pro" ? "Pro Plan" : "Free Plan"}
             </Badge>
           </div>
-          <CardDescription>Your current subscription and usage limits</CardDescription>
+          <CardDescription>
+            Your current subscription and usage limits
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Documents this month */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Documents this month</span>
+              <span className="text-muted-foreground">
+                Documents this month
+              </span>
               <span className="font-medium">
                 {stats.documentsThisMonth} / {stats.documentsLimit}
               </span>
@@ -116,7 +131,8 @@ function UsageSettings() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Storage used</span>
               <span className="font-medium">
-                {formatBytes(stats.storageUsedBytes)} / {formatBytes(stats.storageLimitBytes)}
+                {formatBytes(stats.storageUsedBytes)} /{" "}
+                {formatBytes(stats.storageLimitBytes)}
               </span>
             </div>
             <Progress
@@ -143,8 +159,16 @@ function UsageSettings() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard icon={FileText} label="Total Documents" value={stats.totalDocuments} />
-            <StatCard icon={Send} label="Sent This Month" value={stats.sentThisMonth} />
+            <StatCard
+              icon={FileText}
+              label="Total Documents"
+              value={stats.totalDocuments}
+            />
+            <StatCard
+              icon={Send}
+              label="Sent This Month"
+              value={stats.sentThisMonth}
+            />
             <StatCard
               icon={CheckCircle}
               label="Completed"
@@ -154,7 +178,9 @@ function UsageSettings() {
             <StatCard
               icon={Clock}
               label="Pending"
-              value={stats.workflowCounts.sent + stats.workflowCounts.in_progress}
+              value={
+                stats.workflowCounts.sent + stats.workflowCounts.in_progress
+              }
               className="text-warning"
             />
           </div>
@@ -165,7 +191,9 @@ function UsageSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Document Status Breakdown</CardTitle>
-          <CardDescription>Documents grouped by their current workflow status</CardDescription>
+          <CardDescription>
+            Documents grouped by their current workflow status
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -220,11 +248,14 @@ function UsageSettings() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-full">
-              <span className="text-2xl font-bold">{stats.completionRate}%</span>
+              <span className="text-2xl font-bold">
+                {stats.completionRate}%
+              </span>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground text-sm">
-                {stats.completedThisMonth} of {stats.sentThisMonth} documents completed
+                {stats.completedThisMonth} of {stats.sentThisMonth} documents
+                completed
               </p>
               {stats.sentThisMonth > 0 && stats.completionRate >= 80 && (
                 <p className="text-success text-sm">Great completion rate!</p>
@@ -246,16 +277,22 @@ function UsageSettings() {
             <HardDrive className="h-5 w-5" />
             <CardTitle>Storage Details</CardTitle>
           </div>
-          <CardDescription>Breakdown of your document storage usage</CardDescription>
+          <CardDescription>
+            Breakdown of your document storage usage
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-sm">Used Storage</span>
-            <span className="font-medium">{formatBytes(stats.storageUsedBytes)}</span>
+            <span className="font-medium">
+              {formatBytes(stats.storageUsedBytes)}
+            </span>
           </div>
           <Separator />
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-sm">Available Storage</span>
+            <span className="text-muted-foreground text-sm">
+              Available Storage
+            </span>
             <span className="font-medium">
               {formatBytes(stats.storageLimitBytes - stats.storageUsedBytes)}
             </span>
@@ -263,7 +300,9 @@ function UsageSettings() {
           <Separator />
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-sm">Total Limit</span>
-            <span className="font-medium">{formatBytes(stats.storageLimitBytes)}</span>
+            <span className="font-medium">
+              {formatBytes(stats.storageLimitBytes)}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -306,10 +345,15 @@ function StatusRow({ label, count, total, color }: StatusRowProps) {
       <span className="w-24 text-sm">{label}</span>
       <div className="flex-1">
         <div className="bg-muted h-2 overflow-hidden rounded-full">
-          <div className={cn("h-full", color)} style={{ width: `${percentage}%` }} />
+          <div
+            className={cn("h-full", color)}
+            style={{ width: `${percentage}%` }}
+          />
         </div>
       </div>
-      <span className="text-muted-foreground w-12 text-right text-sm">{count}</span>
+      <span className="text-muted-foreground w-12 text-right text-sm">
+        {count}
+      </span>
     </div>
   );
 }

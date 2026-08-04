@@ -68,7 +68,13 @@ describe("DocumentAnalysisSchema", () => {
   });
 
   test("accepts all annotation categories", () => {
-    const categories = ["obligation", "payment", "risk", "dates", "terms"] as const;
+    const categories = [
+      "obligation",
+      "payment",
+      "risk",
+      "dates",
+      "terms",
+    ] as const;
 
     for (const category of categories) {
       const result = DocumentAnalysisSchema.safeParse({
@@ -95,7 +101,13 @@ describe("DocumentAnalysisSchema", () => {
     const result = DocumentAnalysisSchema.safeParse({
       fields: [
         { ...validField, page: 1, label: "Buyer Signature" },
-        { ...validField, page: 1, label: "Buyer Date", fieldType: "date", y: 85 },
+        {
+          ...validField,
+          page: 1,
+          label: "Buyer Date",
+          fieldType: "date",
+          y: 85,
+        },
         { ...validField, page: 3, label: "Seller Signature", y: 70 },
       ],
       annotations: [],

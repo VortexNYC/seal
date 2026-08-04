@@ -64,7 +64,7 @@ export function SaveAsTemplateDialog({
       });
 
       toast.success(
-        `Template saved with ${result.fieldCount} field${result.fieldCount !== 1 ? "s" : ""}`,
+        `Template saved with ${result.fieldCount} field${result.fieldCount !== 1 ? "s" : ""}`
       );
       onSuccess?.();
       onOpenChange(false);
@@ -87,8 +87,9 @@ export function SaveAsTemplateDialog({
             Save as Template
           </DialogTitle>
           <DialogDescription>
-            Create a reusable template from "{documentName}". All signature fields will be preserved
-            and can be assigned to new recipients when you use the template.
+            Create a reusable template from "{documentName}". All signature
+            fields will be preserved and can be assigned to new recipients when
+            you use the template.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,7 +106,8 @@ export function SaveAsTemplateDialog({
 
           <div className="space-y-2">
             <Label htmlFor="templateDescription">
-              Description <span className="text-muted-foreground">(optional)</span>
+              Description{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Textarea
               id="templateDescription"
@@ -115,12 +117,18 @@ export function SaveAsTemplateDialog({
               rows={3}
               maxLength={500}
             />
-            <p className="text-muted-foreground text-right text-xs">{description.length}/500</p>
+            <p className="text-muted-foreground text-right text-xs">
+              {description.length}/500
+            </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isSaving || !name.trim()}>

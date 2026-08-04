@@ -81,14 +81,18 @@ describe("AddRecipientDialog", () => {
       mockUseQuery.mockReturnValue([]);
       renderDialog({ open: true });
       // Use role=heading to distinguish the dialog title from the submit button text
-      expect(screen.getByRole("heading", { name: "Add Recipient" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Add Recipient" })
+      ).toBeInTheDocument();
     });
 
     test("renders description when open", () => {
       mockUseQuery.mockReturnValue([]);
       renderDialog();
       expect(
-        screen.getByText("Add a person who needs to take action on this document."),
+        screen.getByText(
+          "Add a person who needs to take action on this document."
+        )
       ).toBeInTheDocument();
     });
   });
@@ -104,7 +108,9 @@ describe("AddRecipientDialog", () => {
     test("does not show the member list while loading", () => {
       mockUseQuery.mockReturnValue(undefined);
       renderDialog();
-      expect(screen.queryByRole("button", { name: /member/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /member/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -119,7 +125,9 @@ describe("AddRecipientDialog", () => {
       const members = makeMembers([{ email: "alice@example.com" }]);
       mockUseQuery.mockReturnValue(members);
       renderDialog({ existingRecipientEmails: ["alice@example.com"] });
-      expect(screen.getByText("All team members have been added")).toBeInTheDocument();
+      expect(
+        screen.getByText("All team members have been added")
+      ).toBeInTheDocument();
     });
 
     test("filters out current user from team list", () => {
@@ -146,7 +154,11 @@ describe("AddRecipientDialog", () => {
 
     test("filters out inactive members", () => {
       const members = makeMembers([
-        { email: "inactive@example.com", name: "Inactive User", status: "inactive" },
+        {
+          email: "inactive@example.com",
+          name: "Inactive User",
+          status: "inactive",
+        },
         { email: "active@example.com", name: "Active User", status: "active" },
       ]);
       mockUseQuery.mockReturnValue(members);
@@ -169,7 +181,9 @@ describe("AddRecipientDialog", () => {
       // "self" filtered by currentUserEmail, "added" filtered by existingRecipientEmails,
       // "inactive" filtered by status. existingRecipientEmails.length > 0 so message is
       // "All team members have been added".
-      expect(screen.getByText("All team members have been added")).toBeInTheDocument();
+      expect(
+        screen.getByText("All team members have been added")
+      ).toBeInTheDocument();
     });
   });
 
@@ -188,28 +202,37 @@ describe("AddRecipientDialog", () => {
     });
 
     test("shows member count in the Team tab trigger", () => {
-      const members = makeMembers([{ email: "a@example.com" }, { email: "b@example.com" }]);
+      const members = makeMembers([
+        { email: "a@example.com" },
+        { email: "b@example.com" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
       expect(screen.getByText("Team (2)")).toBeInTheDocument();
     });
 
     test("renders avatar initials for a member with two-word name", () => {
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice Smith" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice Smith" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
       expect(screen.getByText("AS")).toBeInTheDocument();
     });
 
     test("renders avatar initials for a member with single-word name", () => {
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
       expect(screen.getByText("A")).toBeInTheDocument();
     });
 
     test("renders '?' as avatar fallback when member name is null/undefined", () => {
-      const members = makeMembers([{ email: "anon@example.com", name: undefined }]);
+      const members = makeMembers([
+        { email: "anon@example.com", name: undefined },
+      ]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
       expect(screen.getByText("?")).toBeInTheDocument();
@@ -217,7 +240,9 @@ describe("AddRecipientDialog", () => {
 
     test("selecting a member enables the submit button", async () => {
       const user = userEvent.setup();
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice Smith" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice Smith" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
 
@@ -232,7 +257,9 @@ describe("AddRecipientDialog", () => {
 
     test("shows check icon next to selected member", async () => {
       const user = userEvent.setup();
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice Smith" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice Smith" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
 
@@ -262,19 +289,28 @@ describe("AddRecipientDialog", () => {
 
     test("submit is disabled when external email is empty", async () => {
       await switchToExternal();
-      expect(screen.getByRole("button", { name: "Add Recipient" })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Add Recipient" })
+      ).toBeDisabled();
     });
 
     test("submit is disabled when external email has no '@'", async () => {
       const user = await switchToExternal();
       await user.type(screen.getByLabelText("Email Address *"), "invalidemail");
-      expect(screen.getByRole("button", { name: "Add Recipient" })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Add Recipient" })
+      ).toBeDisabled();
     });
 
     test("submit becomes enabled once a valid email is entered", async () => {
       const user = await switchToExternal();
-      await user.type(screen.getByLabelText("Email Address *"), "valid@example.com");
-      expect(screen.getByRole("button", { name: "Add Recipient" })).not.toBeDisabled();
+      await user.type(
+        screen.getByLabelText("Email Address *"),
+        "valid@example.com"
+      );
+      expect(
+        screen.getByRole("button", { name: "Add Recipient" })
+      ).not.toBeDisabled();
     });
   });
 
@@ -290,7 +326,9 @@ describe("AddRecipientDialog", () => {
     test("shows role description for signer by default", () => {
       mockUseQuery.mockReturnValue([]);
       renderDialog();
-      expect(screen.getByText("This person must sign the document.")).toBeInTheDocument();
+      expect(
+        screen.getByText("This person must sign the document.")
+      ).toBeInTheDocument();
     });
   });
 
@@ -310,7 +348,9 @@ describe("AddRecipientDialog", () => {
     test("calls addRecipients mutation with selected member details on submit", async () => {
       const user = userEvent.setup();
       mockUseMutation.mockResolvedValue(undefined);
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice Smith" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice Smith" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       const onSuccess = vi.fn();
       renderDialog({ onSuccess });
@@ -328,14 +368,16 @@ describe("AddRecipientDialog", () => {
               role: "signer",
             }),
           ],
-        }),
+        })
       );
     });
 
     test("calls onSuccess after successful submission", async () => {
       const user = userEvent.setup();
       mockUseMutation.mockResolvedValue(undefined);
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice Smith" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice Smith" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       const onSuccess = vi.fn();
       renderDialog({ onSuccess });
@@ -349,7 +391,9 @@ describe("AddRecipientDialog", () => {
     test("calls onOpenChange(false) after successful submission", async () => {
       const user = userEvent.setup();
       mockUseMutation.mockResolvedValue(undefined);
-      const members = makeMembers([{ email: "alice@example.com", name: "Alice Smith" }]);
+      const members = makeMembers([
+        { email: "alice@example.com", name: "Alice Smith" },
+      ]);
       mockUseQuery.mockReturnValue(members);
       const onOpenChange = vi.fn();
       renderDialog({ onOpenChange });
@@ -369,7 +413,10 @@ describe("AddRecipientDialog", () => {
       renderDialog();
 
       await user.click(screen.getByRole("tab", { name: "External" }));
-      await user.type(screen.getByLabelText("Email Address *"), "external@example.com");
+      await user.type(
+        screen.getByLabelText("Email Address *"),
+        "external@example.com"
+      );
       await user.type(screen.getByLabelText("Name (Optional)"), "Jane Doe");
       await user.click(screen.getByRole("button", { name: "Add Recipient" }));
 
@@ -383,7 +430,7 @@ describe("AddRecipientDialog", () => {
               role: "signer",
             }),
           ],
-        }),
+        })
       );
     });
   });

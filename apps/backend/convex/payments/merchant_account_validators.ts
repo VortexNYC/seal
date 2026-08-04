@@ -1,12 +1,15 @@
 import { v } from "convex/values";
 
-export const feeHandlingValidator = v.union(v.literal("absorb"), v.literal("pass_to_recipient"));
+export const feeHandlingValidator = v.union(
+  v.literal("absorb"),
+  v.literal("pass_to_recipient")
+);
 
 export const merchantConnectionStatusValidator = v.union(
   v.literal("not_connected"),
   v.literal("pending"),
   v.literal("restricted"),
-  v.literal("connected"),
+  v.literal("connected")
 );
 
 export const merchantAccountValidator = v.object({
@@ -25,7 +28,7 @@ export const merchantAccountValidator = v.object({
       cardPayments: v.string(),
       transfers: v.string(),
       usBankAccountAchPayments: v.optional(v.string()),
-    }),
+    })
   ),
   requirements: v.optional(
     v.object({
@@ -33,7 +36,7 @@ export const merchantAccountValidator = v.object({
       eventuallyDue: v.array(v.string()),
       pastDue: v.array(v.string()),
       disabledReason: v.optional(v.string()),
-    }),
+    })
   ),
 });
 

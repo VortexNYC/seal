@@ -32,7 +32,9 @@ const test = base.extend<{
   workspaceSlug: async ({ browser: _browser }, run) => {
     const slug = readCachedWorkspaceSlug();
     if (!slug) {
-      throw new Error("Cached workspace slug not found — setup-app project must run first");
+      throw new Error(
+        "Cached workspace slug not found — setup-app project must run first"
+      );
     }
     await run(slug);
   },
@@ -57,7 +59,9 @@ test.describe("Recipient Signing", () => {
     browser,
     signableDoc,
   }) => {
-    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     try {
       const page = await context.newPage();
       await page.goto(`/sign/${signableDoc.signingToken}`);
@@ -66,9 +70,11 @@ test.describe("Recipient Signing", () => {
       // If this renders, the public token route resolved and the auth-race fix is
       // holding — the React error boundary stays cold.
       await expect(
-        page.getByRole("heading", { name: /electronic signature consent/i }),
+        page.getByRole("heading", { name: /electronic signature consent/i })
       ).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText(/something went wrong/i)).not.toBeVisible({ timeout: 1000 });
+      await expect(page.getByText(/something went wrong/i)).not.toBeVisible({
+        timeout: 1000,
+      });
     } finally {
       await context.close();
     }
@@ -83,14 +89,22 @@ test.describe("Recipient Signing", () => {
     // gives generous headroom under parallel-test load.
     test.setTimeout(120_000);
 
-    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     try {
       const page = await context.newPage();
       await page.goto(`/sign/${signableDoc.signingToken}`);
 
       // 1. Pass the ESIGN consent gate.
-      await page.getByRole("checkbox", { name: /consent to use electronic signatures/i }).check();
-      await page.getByRole("button", { name: /accept electronic signature consent/i }).click();
+      await page
+        .getByRole("checkbox", {
+          name: /consent to use electronic signatures/i,
+        })
+        .check();
+      await page
+        .getByRole("button", { name: /accept electronic signature consent/i })
+        .click();
 
       // 2. Open the signature field.
       const signatureFieldButton = page.getByRole("button", {
@@ -114,8 +128,12 @@ test.describe("Recipient Signing", () => {
       // 4. With a single required field on a single-recipient doc, "Accept & Sign"
       //    submits the document directly — there's no separate sign-submit button.
       //    Wait for the completed-state surface (status badge + "Document Signed" copy).
-      await expect(page.getByText(/document signed/i).first()).toBeVisible({ timeout: 15000 });
-      await expect(page.getByText(/^completed$/i).first()).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(/document signed/i).first()).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(page.getByText(/^completed$/i).first()).toBeVisible({
+        timeout: 5000,
+      });
     } finally {
       await context.close();
     }
@@ -158,7 +176,9 @@ test.describe("Recipient Signing", () => {
     expect(completed?.auditActions).toContain("email.queued");
   });
 
-  test("recipient backend state is seeded correctly", async ({ signableDoc }) => {
+  test("recipient backend state is seeded correctly", async ({
+    signableDoc,
+  }) => {
     // Sanity check on the helper itself before we start exercising the UI.
     const state = await getDocumentState(signableDoc.documentId);
     expect(state).not.toBeNull();

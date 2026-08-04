@@ -27,7 +27,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -104,7 +108,7 @@ export function ExportDataDialog() {
           startDate: dateRange.from?.getTime(),
           endDate: dateRange.to?.getTime(),
         }
-      : "skip",
+      : "skip"
   );
 
   const formatDate = (timestamp: number | undefined) => {
@@ -152,7 +156,10 @@ export function ExportDataDialog() {
       ]);
 
       // Combine header and rows
-      const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
 
       // Create and download file
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -230,7 +237,10 @@ export function ExportDataDialog() {
         }
       }
 
-      const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -379,8 +389,8 @@ export function ExportDataDialog() {
                 </div>
               ) : (
                 <>
-                  <span className="font-medium">{exportData.length}</span> documents match your
-                  filters
+                  <span className="font-medium">{exportData.length}</span>{" "}
+                  documents match your filters
                 </>
               )}
             </div>
@@ -416,8 +426,8 @@ export function ExportDataDialog() {
           </div>
 
           <p className="text-muted-foreground text-xs">
-            Summary CSV includes one row per document. Detailed CSV includes one row per recipient
-            for comprehensive tracking.
+            Summary CSV includes one row per document. Detailed CSV includes one
+            row per recipient for comprehensive tracking.
           </p>
         </div>
       </DialogContent>

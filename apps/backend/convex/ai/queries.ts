@@ -8,7 +8,7 @@ export const getFieldSuggestions = authQuery({
     return await ctx.db
       .query("ai_field_suggestions")
       .withIndex("by_document_status", (q) =>
-        q.eq("documentId", args.documentId).eq("status", "pending"),
+        q.eq("documentId", args.documentId).eq("status", "pending")
       )
       .order("desc")
       .first();
@@ -21,7 +21,7 @@ export const getDocumentAnnotations = authQuery({
     return await ctx.db
       .query("ai_document_annotations")
       .withIndex("by_document_status", (q) =>
-        q.eq("documentId", args.documentId).eq("status", "active"),
+        q.eq("documentId", args.documentId).eq("status", "active")
       )
       .order("desc")
       .first();

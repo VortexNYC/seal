@@ -40,7 +40,11 @@ export default defineSchema({
     userId: v.id("users"),
 
     // Enums with union + literal
-    status: v.union(v.literal("active"), v.literal("pending"), v.literal("archived")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending"),
+      v.literal("archived")
+    ),
 
     // Timestamps
     createdAt: v.number(),
@@ -119,7 +123,9 @@ export default defineSchema({
   users: defineTable({
     name: v.string(),
     // Small, bounded collections are fine
-    roles: v.array(v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer"))),
+    roles: v.array(
+      v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer"))
+    ),
     tags: v.array(v.string()), // e.g., max 10 tags
   }),
 });
@@ -190,7 +196,7 @@ users: defineTable({
     v.object({
       title: v.string(),
       comments: v.array(v.object({ text: v.string() })),
-    }),
+    })
   ),
 });
 ```

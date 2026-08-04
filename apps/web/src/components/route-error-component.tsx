@@ -1,11 +1,28 @@
-import { type ErrorComponentProps, Link, useRouter } from "@tanstack/react-router";
-import { AlertTriangleIcon, HomeIcon, LogOut, MailIcon, RefreshCwIcon } from "lucide-react";
+import {
+  type ErrorComponentProps,
+  Link,
+  useRouter,
+} from "@tanstack/react-router";
+import {
+  AlertTriangleIcon,
+  HomeIcon,
+  LogOut,
+  MailIcon,
+  RefreshCwIcon,
+} from "lucide-react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 /**
  * Route-level error component for TanStack Router
@@ -19,7 +36,8 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   const { reset: resetAnalytics } = useAnalytics();
   const isDev = import.meta.env.DEV;
 
-  const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+  const errorMessage =
+    error instanceof Error ? error.message : "An unexpected error occurred";
   const errorStack = error instanceof Error ? error.stack : undefined;
 
   const handleRetry = () => {
@@ -43,14 +61,15 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
           </div>
           <CardTitle className="text-2xl">Something went wrong</CardTitle>
           <CardDescription className="text-base">
-            We encountered an error while loading this page. Please try again or return to the home
-            page.
+            We encountered an error while loading this page. Please try again or
+            return to the home page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-muted rounded-lg p-4 text-center">
             <p className="text-muted-foreground text-sm">
-              If the problem persists, please contact our support team for assistance.
+              If the problem persists, please contact our support team for
+              assistance.
             </p>
           </div>
 
@@ -59,7 +78,9 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
               <p className="text-destructive mb-2 text-sm font-medium">
                 Error Details (Development Only):
               </p>
-              <pre className="text-muted-foreground overflow-auto text-xs">{errorMessage}</pre>
+              <pre className="text-muted-foreground overflow-auto text-xs">
+                {errorMessage}
+              </pre>
               {errorStack && (
                 <details className="mt-2">
                   <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs">
@@ -74,7 +95,11 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={handleRetry} variant="default" className="w-full sm:w-auto">
+          <Button
+            onClick={handleRetry}
+            variant="default"
+            className="w-full sm:w-auto"
+          >
             <RefreshCwIcon className="size-4" />
             Try Again
           </Button>
@@ -90,7 +115,11 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
               Contact Support
             </a>
           </Button>
-          <Button onClick={() => void handleSignOut()} variant="ghost" className="w-full sm:w-auto">
+          <Button
+            onClick={() => void handleSignOut()}
+            variant="ghost"
+            className="w-full sm:w-auto"
+          >
             <LogOut className="size-4" />
             Sign Out
           </Button>

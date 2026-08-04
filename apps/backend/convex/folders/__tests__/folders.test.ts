@@ -6,7 +6,7 @@ import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -154,10 +154,12 @@ describe("Folders", () => {
 
     test("rejects empty name", async () => {
       await expect(
-        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.createFolder, {
-          name: "   ",
-          type: "document",
-        }),
+        t
+          .withIdentity({ subject: "folders_admin" })
+          .mutation(api.folders.mutations.createFolder, {
+            name: "   ",
+            type: "document",
+          })
       ).rejects.toThrow("Folder name cannot be empty");
     });
 
@@ -180,11 +182,13 @@ describe("Folders", () => {
 
       // The 11th nested folder should fail (ancestor depth = 10, and 10 > 9 is true)
       await expect(
-        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.createFolder, {
-          name: "Level 11",
-          type: "document",
-          parentId: currentParentId,
-        }),
+        t
+          .withIdentity({ subject: "folders_admin" })
+          .mutation(api.folders.mutations.createFolder, {
+            name: "Level 11",
+            type: "document",
+            parentId: currentParentId,
+          })
       ).rejects.toThrow("Folder nesting cannot exceed");
     });
 
@@ -197,11 +201,13 @@ describe("Folders", () => {
         });
 
       await expect(
-        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.createFolder, {
-          name: "Template Child",
-          type: "template",
-          parentId: parent.id,
-        }),
+        t
+          .withIdentity({ subject: "folders_admin" })
+          .mutation(api.folders.mutations.createFolder, {
+            name: "Template Child",
+            type: "template",
+            parentId: parent.id,
+          })
       ).rejects.toThrow("Parent folder type must match");
     });
   });
@@ -401,7 +407,9 @@ describe("Folders", () => {
           newParentId: folderB,
         });
 
-      const moved = (await t.run(async (ctx) => ctx.db.get(folderA))) as Doc<"folders"> | null;
+      const moved = (await t.run(async (ctx) =>
+        ctx.db.get(folderA)
+      )) as Doc<"folders"> | null;
       expect(sealAssertPresent(moved).parentId).toEqual(folderB);
     });
 
@@ -428,7 +436,9 @@ describe("Folders", () => {
           // newParentId omitted = move to root
         });
 
-      const moved = (await t.run(async (ctx) => ctx.db.get(childId))) as Doc<"folders"> | null;
+      const moved = (await t.run(async (ctx) =>
+        ctx.db.get(childId)
+      )) as Doc<"folders"> | null;
       expect(sealAssertPresent(moved).parentId).toBeUndefined();
     });
 
@@ -449,10 +459,12 @@ describe("Folders", () => {
         });
 
       await expect(
-        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.moveToFolder, {
-          folderId: parentId,
-          newParentId: childId,
-        }),
+        t
+          .withIdentity({ subject: "folders_admin" })
+          .mutation(api.folders.mutations.moveToFolder, {
+            folderId: parentId,
+            newParentId: childId,
+          })
       ).rejects.toThrow("Cannot move a folder into its own descendant");
     });
 
@@ -489,10 +501,12 @@ describe("Folders", () => {
       // Moving A (subtreeDepth=1) under deepParentId (ancestor depth=8)
       // newDepth = 8 + 1 = 9, subtreeDepth = 1, total = 9 + 1 + 1 = 11 > 10
       await expect(
-        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.moveToFolder, {
-          folderId: folderA,
-          newParentId: deepParentId,
-        }),
+        t
+          .withIdentity({ subject: "folders_admin" })
+          .mutation(api.folders.mutations.moveToFolder, {
+            folderId: folderA,
+            newParentId: deepParentId,
+          })
       ).rejects.toThrow("Move would exceed maximum nesting depth");
     });
   });
@@ -569,7 +583,7 @@ describe("Folders", () => {
             itemIds: [docId],
             itemType: "document",
             targetFolderId: templateFolderId,
-          }),
+          })
       ).rejects.toThrow("Cannot move documents into a template folder");
     });
 
@@ -679,8 +693,12 @@ describe("Folders", () => {
         });
 
       expect(folders.length).toBe(2);
-      expect(folders.map((f: (typeof folders)[number]) => f.name)).toContain("Root A");
-      expect(folders.map((f: (typeof folders)[number]) => f.name)).toContain("Root B");
+      expect(folders.map((f: (typeof folders)[number]) => f.name)).toContain(
+        "Root A"
+      );
+      expect(folders.map((f: (typeof folders)[number]) => f.name)).toContain(
+        "Root B"
+      );
     });
 
     test("returns child folders for a given parent", async () => {
@@ -717,7 +735,7 @@ describe("Folders", () => {
 
       expect(children.length).toBe(2);
       expect(children.map((f: (typeof children)[number]) => f.name)).toEqual(
-        expect.arrayContaining(["Child 1", "Child 2"]),
+        expect.arrayContaining(["Child 1", "Child 2"])
       );
     });
 

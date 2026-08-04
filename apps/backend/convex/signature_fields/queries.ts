@@ -60,7 +60,7 @@ export const getFieldsByPage = query({
     const fields = await ctx.db
       .query("signature_fields")
       .withIndex("by_document_page", (q) =>
-        q.eq("documentId", args.documentId).eq("page", args.page),
+        q.eq("documentId", args.documentId).eq("page", args.page)
       )
       .collect();
 
@@ -80,7 +80,7 @@ export const getFieldsByDocumentAndRecipient = query({
     const fields = await ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
-        q.eq("documentId", args.documentId).eq("recipientId", args.recipientId),
+        q.eq("documentId", args.documentId).eq("recipientId", args.recipientId)
       )
       .collect();
 
@@ -110,7 +110,7 @@ export const getFieldWithRecipient = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     field: Doc<"signature_fields">;
     recipient: Doc<"document_recipients"> | null;
@@ -120,7 +120,9 @@ export const getFieldWithRecipient = query({
       return null;
     }
 
-    const recipient = field.recipientId ? await ctx.db.get(field.recipientId) : null;
+    const recipient = field.recipientId
+      ? await ctx.db.get(field.recipientId)
+      : null;
 
     return {
       field,
@@ -155,7 +157,7 @@ export const getFieldStatsByDocument = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     total: number;
     required: number;
@@ -194,7 +196,7 @@ export const checkRequiredFieldsComplete = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     complete: boolean;
     totalRequired: number;
@@ -255,7 +257,9 @@ export const getFieldsBySigningToken = query({
     const fields = await ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
-        q.eq("documentId", recipient.documentId).eq("recipientId", recipient._id),
+        q
+          .eq("documentId", recipient.documentId)
+          .eq("recipientId", recipient._id)
       )
       .collect();
 
@@ -283,7 +287,9 @@ export const getFieldsBySigningToken = query({
               // Try to get user's name from users table by email
               const signerUser = await ctx.db
                 .query("users")
-                .withIndex("by_email", (q) => q.eq("email", signerRecipient.email))
+                .withIndex("by_email", (q) =>
+                  q.eq("email", signerRecipient.email)
+                )
                 .first();
               signerName = signerUser?.name ?? undefined;
             }
@@ -291,7 +297,10 @@ export const getFieldsBySigningToken = query({
         }
 
         // Decrypt signature image data for display
-        const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
+        const decryptedImageUrl = await decryptSignatureData(
+          signature?.signatureImageUrl,
+          encKey
+        );
 
         // For payment fields, check payment config status
         let isPaymentPaid = false;
@@ -318,7 +327,7 @@ export const getFieldsBySigningToken = query({
               }
             : undefined,
         };
-      }),
+      })
     );
 
     // 4. Sort by page number for easier rendering
@@ -363,7 +372,7 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
     const fields = await ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
-        q.eq("documentId", args.documentId).eq("recipientId", recipient._id),
+        q.eq("documentId", args.documentId).eq("recipientId", recipient._id)
       )
       .collect();
 
@@ -391,7 +400,9 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
               // Try to get user's name from users table by email
               const signerUser = await ctx.db
                 .query("users")
-                .withIndex("by_email", (q) => q.eq("email", signerRecipient.email))
+                .withIndex("by_email", (q) =>
+                  q.eq("email", signerRecipient.email)
+                )
                 .first();
               signerName = signerUser?.name ?? undefined;
             }
@@ -399,7 +410,10 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
         }
 
         // Decrypt signature image data for display
-        const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
+        const decryptedImageUrl = await decryptSignatureData(
+          signature?.signatureImageUrl,
+          encKey
+        );
 
         // For payment fields, check payment config status
         let isPaymentPaid = false;
@@ -426,7 +440,7 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
               }
             : undefined,
         };
-      }),
+      })
     );
 
     // 5. Sort by page number for easier rendering

@@ -76,7 +76,7 @@ export const getSignaturesByDocumentAndRecipient = query({
     const signatures = await ctx.db
       .query("signatures")
       .withIndex("by_document_recipient", (q) =>
-        q.eq("documentId", args.documentId).eq("recipientId", args.recipientId),
+        q.eq("documentId", args.documentId).eq("recipientId", args.recipientId)
       )
       .collect();
 
@@ -106,7 +106,7 @@ export const getSignatureWithDetails = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     signature: Doc<"signatures">;
     field: Doc<"signature_fields"> | null;
@@ -164,7 +164,7 @@ export const getDocumentSignaturesWithFields = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<
     Array<{
       signature: Doc<"signatures">;
@@ -187,7 +187,7 @@ export const getDocumentSignaturesWithFields = query({
           field,
           recipient,
         };
-      }),
+      })
     );
 
     return signatureDetails;
@@ -244,8 +244,11 @@ export const getDecryptedSignaturesByDocumentInternal = internalQuery({
     return Promise.all(
       signatures.map(async (sig) => ({
         ...sig,
-        signatureImageUrl: await decryptSignatureData(sig.signatureImageUrl, encKey),
-      })),
+        signatureImageUrl: await decryptSignatureData(
+          sig.signatureImageUrl,
+          encKey
+        ),
+      }))
     );
   },
 });

@@ -49,7 +49,10 @@ interface TreeNode {
  * Collect all descendant IDs of a set of folder IDs from a flat list.
  * Returns the union of excludeIds and all their transitive children.
  */
-function getExcludedSet(folders: FlatFolder[], excludeIds: Id<"folders">[]): Set<string> {
+function getExcludedSet(
+  folders: FlatFolder[],
+  excludeIds: Id<"folders">[]
+): Set<string> {
   const excluded = new Set<string>(excludeIds);
   let changed = true;
 
@@ -69,7 +72,10 @@ function getExcludedSet(folders: FlatFolder[], excludeIds: Id<"folders">[]): Set
 /**
  * Build a tree structure from a flat folder list, excluding specified folders.
  */
-function buildTree(folders: FlatFolder[], excludedSet: Set<string>): TreeNode[] {
+function buildTree(
+  folders: FlatFolder[],
+  excludedSet: Set<string>
+): TreeNode[] {
   const filtered = folders.filter((f) => !excludedSet.has(f._id));
   const childMap = new Map<string | undefined, FlatFolder[]>();
 
@@ -109,21 +115,25 @@ export function MoveToFolderDialog({
 }: MoveToFolderDialogProps) {
   const folders = useQuery(
     api.folders.queries.getAllFoldersFlat,
-    open ? { organizationId, type } : "skip",
+    open ? { organizationId, type } : "skip"
   );
 
-  const [selectedFolderId, setSelectedFolderId] = useState<Id<"folders"> | undefined>(undefined);
+  const [selectedFolderId, setSelectedFolderId] = useState<
+    Id<"folders"> | undefined
+  >(undefined);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const excludedSet = useMemo(
     () =>
-      folders && excludeFolderIds ? getExcludedSet(folders, excludeFolderIds) : new Set<string>(),
-    [folders, excludeFolderIds],
+      folders && excludeFolderIds
+        ? getExcludedSet(folders, excludeFolderIds)
+        : new Set<string>(),
+    [folders, excludeFolderIds]
   );
 
   const tree = useMemo(
     () => (folders ? buildTree(folders, excludedSet) : []),
-    [folders, excludedSet],
+    [folders, excludedSet]
   );
 
   const toggleExpanded = useCallback((folderId: string) => {
@@ -152,7 +162,7 @@ export function MoveToFolderDialog({
       }
       onOpenChange(nextOpen);
     },
-    [onOpenChange],
+    [onOpenChange]
   );
 
   return (
@@ -161,7 +171,8 @@ export function MoveToFolderDialog({
         <DialogHeader>
           <DialogTitle>Move to Folder</DialogTitle>
           <DialogDescription>
-            Select a destination folder, or choose root to remove from all folders.
+            Select a destination folder, or choose root to remove from all
+            folders.
           </DialogDescription>
         </DialogHeader>
 
@@ -173,7 +184,7 @@ export function MoveToFolderDialog({
               "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm",
               selectedFolderId === undefined
                 ? "bg-accent text-accent-foreground"
-                : "hover:bg-accent/50",
+                : "hover:bg-accent/50"
             )}
             onClick={() => setSelectedFolderId(undefined)}
           >
@@ -183,7 +194,9 @@ export function MoveToFolderDialog({
 
           {/* Folder tree */}
           {folders === undefined ? (
-            <div className="text-muted-foreground px-2 py-4 text-center text-sm">Loading...</div>
+            <div className="text-muted-foreground px-2 py-4 text-center text-sm">
+              Loading...
+            </div>
           ) : tree.length === 0 ? (
             <div className="text-muted-foreground px-2 py-4 text-center text-sm">
               No folders available
@@ -240,7 +253,7 @@ function TreeNodeItem({
       <div
         className={cn(
           "flex w-full items-center gap-1 rounded-sm px-2 py-1.5 text-sm",
-          isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
+          isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
         )}
         style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
       >
@@ -256,7 +269,10 @@ function TreeNodeItem({
             aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
           >
             <ChevronRight
-              className={cn("size-3.5 transition-transform", isExpanded && "rotate-90")}
+              className={cn(
+                "size-3.5 transition-transform",
+                isExpanded && "rotate-90"
+              )}
             />
           </button>
         ) : (

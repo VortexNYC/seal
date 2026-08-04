@@ -11,7 +11,8 @@
  * - durationMs: how long the full pipeline took
  */
 
-const CONVEX_SITE_URL = process.env.CONVEX_SITE_URL || "https://wooden-poodle-362.convex.site";
+const CONVEX_SITE_URL =
+  process.env.CONVEX_SITE_URL || "https://wooden-poodle-362.convex.site";
 
 let hasResetState = false;
 

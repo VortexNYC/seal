@@ -22,7 +22,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -106,11 +110,15 @@ const SEVERITY_DOT: Record<AnnotationSeverity, string> = {
 // ---------------------------------------------------------------------------
 
 export function useDocumentAnnotations(documentId: Id<"documents">) {
-  const annotations = useQuery(api.ai.queries.getDocumentAnnotations, { documentId });
-  const dismissMutation = useMutation(api.ai.mutations.dismissDocumentAnnotations);
-  const [enabledCategories, setEnabledCategories] = useState<Set<AnnotationCategory>>(
-    new Set(["obligation", "payment", "risk", "dates", "terms"]),
+  const annotations = useQuery(api.ai.queries.getDocumentAnnotations, {
+    documentId,
+  });
+  const dismissMutation = useMutation(
+    api.ai.mutations.dismissDocumentAnnotations
   );
+  const [enabledCategories, setEnabledCategories] = useState<
+    Set<AnnotationCategory>
+  >(new Set(["obligation", "payment", "risk", "dates", "terms"]));
 
   const toggleCategory = useCallback((category: AnnotationCategory) => {
     setEnabledCategories((prev) => {
@@ -166,7 +174,10 @@ function HighlightOverlay({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={cn("absolute cursor-default rounded-sm transition-opacity", config.bgColor)}
+          className={cn(
+            "absolute cursor-default rounded-sm transition-opacity",
+            config.bgColor
+          )}
           style={{ left, top, width, height }}
         />
       </TooltipTrigger>
@@ -178,12 +189,17 @@ function HighlightOverlay({
         <div className="mb-0.5 flex items-center gap-1.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
           <span
-            className={cn("text-[10px] font-semibold tracking-wide uppercase", config.textColor)}
+            className={cn(
+              "text-[10px] font-semibold tracking-wide uppercase",
+              config.textColor
+            )}
           >
             {config.label}
           </span>
         </div>
-        <p className="text-popover-foreground text-xs leading-relaxed">{annotation.summary}</p>
+        <p className="text-popover-foreground text-xs leading-relaxed">
+          {annotation.summary}
+        </p>
       </TooltipContent>
     </Tooltip>
   );
@@ -196,7 +212,9 @@ export function AIAnnotationOverlays({
   pdfPageWidth,
   pdfPageHeight,
 }: {
-  annotations: NonNullable<ReturnType<typeof useDocumentAnnotations>["annotations"]>;
+  annotations: NonNullable<
+    ReturnType<typeof useDocumentAnnotations>["annotations"]
+  >;
   enabledCategories: Set<AnnotationCategory>;
   currentPage: number;
   pdfPageWidth: number;
@@ -207,7 +225,7 @@ export function AIAnnotationOverlays({
     (a) =>
       a.severity !== "informational" &&
       enabledCategories.has(a.category as AnnotationCategory) &&
-      a.page === currentPage,
+      a.page === currentPage
   );
 
   return (
@@ -235,7 +253,9 @@ export function AIInsightsPanel({
   onDismiss,
   onPageJump,
 }: {
-  annotations: NonNullable<ReturnType<typeof useDocumentAnnotations>["annotations"]>;
+  annotations: NonNullable<
+    ReturnType<typeof useDocumentAnnotations>["annotations"]
+  >;
   enabledCategories: Set<AnnotationCategory>;
   toggleCategory: (category: AnnotationCategory) => void;
   onDismiss: () => void;
@@ -243,47 +263,55 @@ export function AIInsightsPanel({
 }) {
   const allAnnotations = annotations.annotations;
   const filtered = allAnnotations.filter((a) =>
-    enabledCategories.has(a.category as AnnotationCategory),
+    enabledCategories.has(a.category as AnnotationCategory)
   );
 
   return (
     <div className="flex flex-col gap-3">
       {/* Category filter chips */}
       <div className="flex flex-wrap gap-1.5">
-        {(Object.keys(CATEGORY_CONFIG) as AnnotationCategory[]).map((category) => {
-          const config = CATEGORY_CONFIG[category];
-          const count = allAnnotations.filter((a) => a.category === category).length;
-          if (count === 0) return null;
-          const isActive = enabledCategories.has(category);
+        {(Object.keys(CATEGORY_CONFIG) as AnnotationCategory[]).map(
+          (category) => {
+            const config = CATEGORY_CONFIG[category];
+            const count = allAnnotations.filter(
+              (a) => a.category === category
+            ).length;
+            if (count === 0) return null;
+            const isActive = enabledCategories.has(category);
 
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => toggleCategory(category)}
-              aria-pressed={isActive}
-              aria-label={`${config.label} annotations (${count})`}
-              className={cn(
-                "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                isActive
-                  ? cn(config.bgColor, config.textColor)
-                  : "bg-muted text-muted-foreground/60",
-              )}
-            >
-              <span
-                className={cn("h-1.5 w-1.5 rounded-full", isActive ? config.dotColor : "bg-border")}
-              />
-              {config.label}
-              <span className="opacity-60">{count}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => toggleCategory(category)}
+                aria-pressed={isActive}
+                aria-label={`${config.label} annotations (${count})`}
+                className={cn(
+                  "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  isActive
+                    ? cn(config.bgColor, config.textColor)
+                    : "bg-muted text-muted-foreground/60"
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    isActive ? config.dotColor : "bg-border"
+                  )}
+                />
+                {config.label}
+                <span className="opacity-60">{count}</span>
+              </button>
+            );
+          }
+        )}
       </div>
 
       {/* Annotation list */}
       <div className="flex flex-col gap-1">
         {filtered.map((annotation, i) => {
-          const config = CATEGORY_CONFIG[annotation.category as AnnotationCategory];
+          const config =
+            CATEGORY_CONFIG[annotation.category as AnnotationCategory];
           return (
             <button
               key={`insight-${annotation.page}-${i}`}
@@ -296,11 +324,13 @@ export function AIInsightsPanel({
                 className={cn(
                   "mt-1.5 h-2 w-2 shrink-0 rounded-full",
                   config.dotColor,
-                  SEVERITY_DOT[annotation.severity as AnnotationSeverity],
+                  SEVERITY_DOT[annotation.severity as AnnotationSeverity]
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-foreground text-xs leading-snug">{annotation.summary}</p>
+                <p className="text-foreground text-xs leading-snug">
+                  {annotation.summary}
+                </p>
               </div>
               <span className="text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
                 p.{annotation.page}
@@ -324,8 +354,8 @@ export function AIInsightsPanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Dismiss all insights?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all {allAnnotations.length} document insights. They won&apos;t
-              reappear unless the document is re-analyzed.
+              This will remove all {allAnnotations.length} document insights.
+              They won&apos;t reappear unless the document is re-analyzed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

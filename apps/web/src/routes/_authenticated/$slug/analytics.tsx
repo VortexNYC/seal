@@ -47,13 +47,26 @@ import {
 } from "recharts";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { AnalyticsSkeleton, AnalyticsTabSkeleton } from "@/components/skeletons/analytics-skeleton";
+import {
+  AnalyticsSkeleton,
+  AnalyticsTabSkeleton,
+} from "@/components/skeletons/analytics-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -82,7 +95,9 @@ function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("activity");
   const [scope, setScope] = useState<AnalyticsScope>("personal");
   const [trendPreset, setTrendPreset] = useState<TrendPreset>("30");
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(
+    undefined
+  );
 
   // Use useQuery (not useSuspenseQuery) so real-time updates don't trigger Suspense remounts
   const stats = useQuery(api.dashboard.queries.getDocumentStats, { scope });
@@ -174,7 +189,7 @@ function AnalyticsContent({
                 "rounded-md px-3 py-1 text-sm transition-colors",
                 scope === "team"
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted",
+                  : "text-muted-foreground hover:bg-muted"
               )}
             >
               Team
@@ -186,7 +201,7 @@ function AnalyticsContent({
                 "rounded-md px-3 py-1 text-sm transition-colors",
                 scope === "personal"
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted",
+                  : "text-muted-foreground hover:bg-muted"
               )}
             >
               Personal
@@ -216,7 +231,11 @@ function AnalyticsContent({
             customRange={customRange}
             onCustomRangeChange={onCustomRangeChange}
           />
-          <TrendChart preset={trendPreset} customRange={customRange} scope={effectiveScope} />
+          <TrendChart
+            preset={trendPreset}
+            customRange={customRange}
+            scope={effectiveScope}
+          />
         </TabsContent>
 
         <TabsContent value="status" className="space-y-4">
@@ -275,8 +294,14 @@ function OverviewStats({
   };
   scope: AnalyticsScope;
 }) {
-  const weekStats = useQuery(api.dashboard.queries.getPeriodStats, { period: "week", scope });
-  const monthStats = useQuery(api.dashboard.queries.getPeriodStats, { period: "month", scope });
+  const weekStats = useQuery(api.dashboard.queries.getPeriodStats, {
+    period: "week",
+    scope,
+  });
+  const monthStats = useQuery(api.dashboard.queries.getPeriodStats, {
+    period: "month",
+    scope,
+  });
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -284,7 +309,9 @@ function OverviewStats({
         title="Total Documents"
         value={stats.total}
         icon={<FileTextIcon className="h-4 w-4" />}
-        description={weekStats ? `${weekStats.created} created this week` : undefined}
+        description={
+          weekStats ? `${weekStats.created} created this week` : undefined
+        }
       />
       <StatCard
         title="Pending Signatures"
@@ -296,14 +323,18 @@ function OverviewStats({
         title="Completed"
         value={stats.completed}
         icon={<CheckCircle2Icon className="h-4 w-4" />}
-        description={monthStats ? `${monthStats.completed} this month` : undefined}
+        description={
+          monthStats ? `${monthStats.completed} this month` : undefined
+        }
         trend={stats.completed > 0 ? "up" : undefined}
       />
       <StatCard
         title="Avg. Signing Time"
         value={formatSigningTime(stats.avgSigningTimeMs)}
         icon={<ClockIcon className="h-4 w-4" />}
-        description={stats.avgSigningTimeMs !== null ? "sent to completed" : undefined}
+        description={
+          stats.avgSigningTimeMs !== null ? "sent to completed" : undefined
+        }
       />
       <StatCard
         title="Completion Rate"
@@ -341,10 +372,16 @@ function StatCard({
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{value}</span>
           {trend === "up" && <ArrowUpIcon className="text-success h-4 w-4" />}
-          {trend === "down" && <ArrowDownIcon className="text-destructive h-4 w-4" />}
+          {trend === "down" && (
+            <ArrowDownIcon className="text-destructive h-4 w-4" />
+          )}
         </div>
-        {progress !== undefined && <Progress value={progress} className="mt-2 h-2" />}
-        {description && <p className="text-muted-foreground mt-1 text-xs">{description}</p>}
+        {progress !== undefined && (
+          <Progress value={progress} className="mt-2 h-2" />
+        )}
+        {description && (
+          <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -370,9 +407,15 @@ function TrendControls({
 
   const formatDateLabel = (range: DateRange | undefined) => {
     if (!range?.from) return "Pick dates";
-    const from = range.from.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const from = range.from.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
     if (!range.to) return from;
-    const to = range.to.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const to = range.to.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
     return `${from} – ${to}`;
   };
 
@@ -387,7 +430,7 @@ function TrendControls({
             "rounded-md px-3 py-1 text-sm transition-colors",
             preset === p.value
               ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted",
+              : "text-muted-foreground hover:bg-muted"
           )}
         >
           {p.label}
@@ -437,7 +480,7 @@ function TrendChart({
   }, [preset, customRange, scope]);
 
   const { data: trends } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentTrends, queryArgs),
+    convexQuery(api.dashboard.queries.getDocumentTrends, queryArgs)
   );
 
   const chartData = useMemo(() => {
@@ -456,20 +499,50 @@ function TrendChart({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Document Trends</CardTitle>
-        <CardDescription>Documents created and completed over the selected period</CardDescription>
+        <CardDescription>
+          Documents created and completed over the selected period
+        </CardDescription>
       </CardHeader>
       <CardContent className="pl-0 sm:pl-6">
         {hasData ? (
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={chartData} margin={{ left: 0, right: 8 }}>
               <defs>
-                <linearGradient id="analyticsCreated" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                <linearGradient
+                  id="analyticsCreated"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="var(--primary)"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--primary)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
-                <linearGradient id="analyticsCompleted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
+                <linearGradient
+                  id="analyticsCompleted"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="var(--success)"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--success)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
               <XAxis
@@ -533,16 +606,34 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function StatusPieChart() {
-  const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
+  const { data: stats } = useSuspenseQuery(
+    convexQuery(api.dashboard.queries.getDocumentStats, {})
+  );
 
   const pieData = useMemo(() => {
     const items = [
       { name: "Draft", value: stats.draft, color: STATUS_COLORS.draft },
       { name: "Sent", value: stats.sent, color: STATUS_COLORS.sent },
-      { name: "In Progress", value: stats.inProgress, color: STATUS_COLORS.in_progress },
-      { name: "Completed", value: stats.completed, color: STATUS_COLORS.completed },
-      { name: "Cancelled", value: stats.cancelled, color: STATUS_COLORS.cancelled },
-      { name: "Declined", value: stats.declined, color: STATUS_COLORS.declined },
+      {
+        name: "In Progress",
+        value: stats.inProgress,
+        color: STATUS_COLORS.in_progress,
+      },
+      {
+        name: "Completed",
+        value: stats.completed,
+        color: STATUS_COLORS.completed,
+      },
+      {
+        name: "Cancelled",
+        value: stats.cancelled,
+        color: STATUS_COLORS.cancelled,
+      },
+      {
+        name: "Declined",
+        value: stats.declined,
+        color: STATUS_COLORS.declined,
+      },
       { name: "Expired", value: stats.expired, color: STATUS_COLORS.expired },
     ];
     return items.filter((item) => item.value > 0);
@@ -598,7 +689,10 @@ function StatusPieChart() {
         <div className="mt-2 flex flex-wrap justify-center gap-3">
           {pieData.map((entry) => (
             <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-              <div className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+              <div
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
               <span className="text-muted-foreground">
                 {entry.name} ({entry.value})
               </span>
@@ -611,19 +705,33 @@ function StatusPieChart() {
 }
 
 function StatusBarChart() {
-  const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
+  const { data: stats } = useSuspenseQuery(
+    convexQuery(api.dashboard.queries.getDocumentStats, {})
+  );
 
   const barData = useMemo(
     () => [
       { name: "Draft", value: stats.draft, fill: STATUS_COLORS.draft },
       { name: "Sent", value: stats.sent, fill: STATUS_COLORS.sent },
-      { name: "In Progress", value: stats.inProgress, fill: STATUS_COLORS.in_progress },
-      { name: "Completed", value: stats.completed, fill: STATUS_COLORS.completed },
-      { name: "Cancelled", value: stats.cancelled, fill: STATUS_COLORS.cancelled },
+      {
+        name: "In Progress",
+        value: stats.inProgress,
+        fill: STATUS_COLORS.in_progress,
+      },
+      {
+        name: "Completed",
+        value: stats.completed,
+        fill: STATUS_COLORS.completed,
+      },
+      {
+        name: "Cancelled",
+        value: stats.cancelled,
+        fill: STATUS_COLORS.cancelled,
+      },
       { name: "Declined", value: stats.declined, fill: STATUS_COLORS.declined },
       { name: "Expired", value: stats.expired, fill: STATUS_COLORS.expired },
     ],
-    [stats],
+    [stats]
   );
 
   return (
@@ -635,7 +743,12 @@ function StatusBarChart() {
       <CardContent>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={barData} margin={{ left: 0, right: 8 }}>
-            <XAxis dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+            />
             <YAxis
               tick={{ fontSize: 10 }}
               tickLine={false}
@@ -676,7 +789,11 @@ const ACTION_LABELS: Record<
     icon: <FileTextIcon className="h-3 w-3" />,
     variant: "secondary",
   },
-  "document.sent": { label: "Sent", icon: <ClockIcon className="h-3 w-3" />, variant: "default" },
+  "document.sent": {
+    label: "Sent",
+    icon: <ClockIcon className="h-3 w-3" />,
+    variant: "default",
+  },
   "document.completed": {
     label: "Completed",
     icon: <CheckCircle2Icon className="h-3 w-3" />,
@@ -734,11 +851,16 @@ function formatRelativeTime(timestamp: number): string {
   if (diffMinutes < 60) return `${diffMinutes}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function RecentActivityFeed() {
-  const activity = useQuery(api.dashboard.queries.getRecentActivity, { limit: 30 });
+  const activity = useQuery(api.dashboard.queries.getRecentActivity, {
+    limit: 30,
+  });
 
   if (!activity) {
     return (
@@ -777,7 +899,8 @@ function RecentActivityFeed() {
         <div className="space-y-3">
           {activity.map((item) => {
             const actionInfo = ACTION_LABELS[item.action];
-            const actionLabel = actionInfo?.label ?? item.action.replace(/\./g, " ");
+            const actionLabel =
+              actionInfo?.label ?? item.action.replace(/\./g, " ");
 
             return (
               <div key={item._id} className="flex items-start gap-3 py-1">
@@ -786,7 +909,9 @@ function RecentActivityFeed() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium">{item.actorName}</span>
+                    <span className="truncate text-sm font-medium">
+                      {item.actorName}
+                    </span>
                     <Badge
                       variant={actionInfo?.variant ?? "secondary"}
                       className="shrink-0 text-[10px]"
@@ -849,7 +974,9 @@ function MemberActivityTable() {
           <UsersIcon className="text-muted-foreground h-4 w-4" />
           <CardTitle className="text-base">Team Member Activity</CardTitle>
         </div>
-        <CardDescription>Document activity breakdown by workspace member</CardDescription>
+        <CardDescription>
+          Document activity breakdown by workspace member
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -870,13 +997,23 @@ function MemberActivityTable() {
                   <td className="py-2.5 pr-4">
                     <div>
                       <span className="font-medium">{member.name}</span>
-                      <span className="text-muted-foreground ml-2 text-xs">{member.email}</span>
+                      <span className="text-muted-foreground ml-2 text-xs">
+                        {member.email}
+                      </span>
                     </div>
                   </td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">{member.created}</td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">{member.completed}</td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">{member.pending}</td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">{member.completionRate}%</td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                    {member.created}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                    {member.completed}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                    {member.pending}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                    {member.completionRate}%
+                  </td>
                   <td className="py-2.5 text-right tabular-nums">
                     {formatSigningTime(member.avgSigningTimeMs)}
                   </td>
@@ -946,7 +1083,10 @@ function ExportPanel() {
     return args;
   }, [statusFilter, periodFilter]);
 
-  const exportData = useQuery(api.dashboard.queries.getDocumentsForExport, queryArgs);
+  const exportData = useQuery(
+    api.dashboard.queries.getDocumentsForExport,
+    queryArgs
+  );
 
   const handleExportCsv = useCallback(() => {
     if (!exportData || exportData.length === 0) return;
@@ -988,9 +1128,11 @@ function ExportPanel() {
             .map((cell) => {
               const str = String(cell);
               // Escape cells that contain commas or quotes
-              return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+              return str.includes(",") || str.includes('"')
+                ? `"${str.replace(/"/g, '""')}"`
+                : str;
             })
-            .join(","),
+            .join(",")
         ),
       ].join("\n");
 
@@ -1051,7 +1193,11 @@ function ExportPanel() {
         d.signedCount,
       ]);
 
-      (doc as typeof doc & { autoTable: (options: Record<string, unknown>) => void }).autoTable({
+      (
+        doc as typeof doc & {
+          autoTable: (options: Record<string, unknown>) => void;
+        }
+      ).autoTable({
         head: [headers],
         body: rows,
         startY: 33,
@@ -1059,7 +1205,9 @@ function ExportPanel() {
         headStyles: { fillColor: [30, 30, 30] },
       });
 
-      doc.save(`seal-documents-export-${new Date().toISOString().split("T")[0]}.pdf`);
+      doc.save(
+        `seal-documents-export-${new Date().toISOString().split("T")[0]}.pdf`
+      );
     } finally {
       setIsExporting(false);
     }
@@ -1082,7 +1230,10 @@ function ExportPanel() {
             >
               Status
             </Label>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ExportStatus)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as ExportStatus)}
+            >
               <SelectTrigger id="analytics-export-status" className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
@@ -1105,7 +1256,10 @@ function ExportPanel() {
             >
               Period
             </Label>
-            <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as ExportPeriod)}>
+            <Select
+              value={periodFilter}
+              onValueChange={(v) => setPeriodFilter(v as ExportPeriod)}
+            >
               <SelectTrigger id="analytics-export-period" className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
@@ -1156,9 +1310,12 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
-  const engagement = useQuery(api.dashboard.analytics_queries.getEmailEngagementStats, {
-    days: 30,
-  });
+  const engagement = useQuery(
+    api.dashboard.analytics_queries.getEmailEngagementStats,
+    {
+      days: 30,
+    }
+  );
 
   if (!engagement) {
     return <AnalyticsTabSkeleton />;
@@ -1168,7 +1325,9 @@ function EmailEngagementTab() {
     return (
       <Card>
         <CardContent className="flex h-[200px] items-center justify-center">
-          <p className="text-muted-foreground text-sm">No email data available yet</p>
+          <p className="text-muted-foreground text-sm">
+            No email data available yet
+          </p>
         </CardContent>
       </Card>
     );
@@ -1184,7 +1343,9 @@ function EmailEngagementTab() {
     {
       name: "Opened",
       value: Math.round(
-        (engagement.openRate / 100) * (engagement.deliveryRate / 100) * engagement.total,
+        (engagement.openRate / 100) *
+          (engagement.deliveryRate / 100) *
+          engagement.total
       ),
       fill: EMAIL_FUNNEL_COLORS.opened,
     },
@@ -1194,7 +1355,7 @@ function EmailEngagementTab() {
         (engagement.clickRate / 100) *
           (engagement.openRate / 100) *
           (engagement.deliveryRate / 100) *
-          engagement.total,
+          engagement.total
       ),
       fill: EMAIL_FUNNEL_COLORS.clicked,
     },
@@ -1232,7 +1393,9 @@ function EmailEngagementTab() {
           value={engagement.avgTimeToOpen ?? "—"}
           icon={<ClockIcon className="h-4 w-4" />}
           description={
-            engagement.bounceRate > 0 ? `${engagement.bounceRate}% bounce rate` : undefined
+            engagement.bounceRate > 0
+              ? `${engagement.bounceRate}% bounce rate`
+              : undefined
           }
         />
       </div>
@@ -1240,12 +1403,19 @@ function EmailEngagementTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Email Funnel</CardTitle>
-          <CardDescription>Email engagement progression (last 30 days)</CardDescription>
+          <CardDescription>
+            Email engagement progression (last 30 days)
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={funnelData} margin={{ left: 0, right: 8 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
               <YAxis
                 tick={{ fontSize: 10 }}
                 tickLine={false}
@@ -1286,7 +1456,10 @@ const TIMING_BUCKET_COLORS: Record<string, string> = {
 };
 
 function RecipientTimingTab() {
-  const timing = useQuery(api.dashboard.analytics_queries.getRecipientTimingStats, { days: 30 });
+  const timing = useQuery(
+    api.dashboard.analytics_queries.getRecipientTimingStats,
+    { days: 30 }
+  );
 
   if (!timing) {
     return <AnalyticsTabSkeleton />;
@@ -1296,7 +1469,9 @@ function RecipientTimingTab() {
     return (
       <Card>
         <CardContent className="flex h-[200px] items-center justify-center">
-          <p className="text-muted-foreground text-sm">No signed documents in the last 30 days</p>
+          <p className="text-muted-foreground text-sm">
+            No signed documents in the last 30 days
+          </p>
         </CardContent>
       </Card>
     );
@@ -1340,12 +1515,19 @@ function RecipientTimingTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Signing Time Distribution</CardTitle>
-          <CardDescription>How long recipients take to complete signing</CardDescription>
+          <CardDescription>
+            How long recipients take to complete signing
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={distributionData} margin={{ left: 0, right: 8 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
               <YAxis
                 tick={{ fontSize: 10 }}
                 tickLine={false}
@@ -1370,8 +1552,14 @@ function RecipientTimingTab() {
           </ResponsiveContainer>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             {distributionData.map((entry) => (
-              <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-                <div className="size-2.5 rounded-full" style={{ backgroundColor: entry.fill }} />
+              <div
+                key={entry.name}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                <div
+                  className="size-2.5 rounded-full"
+                  style={{ backgroundColor: entry.fill }}
+                />
                 <span className="text-muted-foreground">
                   {entry.name} ({entry.value})
                 </span>
@@ -1388,7 +1576,10 @@ function RecipientTimingTab() {
 
 function TemplatePerformanceTab() {
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
-  const templates = useQuery(api.dashboard.analytics_queries.getTemplatePerformance, { days: 90 });
+  const templates = useQuery(
+    api.dashboard.analytics_queries.getTemplatePerformance,
+    { days: 90 }
+  );
 
   if (!templates || isLoadingPlan) {
     return <AnalyticsTabSkeleton />;
@@ -1424,7 +1615,9 @@ function TemplatePerformanceTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Template Comparison</CardTitle>
-          <CardDescription>Performance of templates over the last 90 days</CardDescription>
+          <CardDescription>
+            Performance of templates over the last 90 days
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -1434,16 +1627,24 @@ function TemplatePerformanceTab() {
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{t.templateName}</p>
-                  <p className="text-muted-foreground text-xs">{t.docsSent} documents sent</p>
+                  <p className="truncate text-sm font-medium">
+                    {t.templateName}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {t.docsSent} documents sent
+                  </p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm font-medium tabular-nums">{t.completionRate}%</p>
+                    <p className="text-sm font-medium tabular-nums">
+                      {t.completionRate}%
+                    </p>
                     <p className="text-muted-foreground text-xs">Completed</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium tabular-nums">{t.avgTurnaround ?? "—"}</p>
+                    <p className="text-sm font-medium tabular-nums">
+                      {t.avgTurnaround ?? "—"}
+                    </p>
                     <p className="text-muted-foreground text-xs">Avg time</p>
                   </div>
                   {t.declineRate > 0 && (

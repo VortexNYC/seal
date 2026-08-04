@@ -1,5 +1,6 @@
 import { FileCheck, Lock, Shield, Zap } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
+
 import { FadeIn } from "~/components/ui/fade-in";
 
 interface TrustItem {
@@ -49,8 +50,9 @@ export function StaticTrust() {
               Built for documents that matter.
             </h2>
             <p className="text-muted-foreground mt-6 text-lg text-pretty">
-              When you&apos;re handling legally binding contracts, security isn&apos;t optional.
-              Every feature is built with compliance and data integrity in mind.
+              When you&apos;re handling legally binding contracts, security
+              isn&apos;t optional. Every feature is built with compliance and
+              data integrity in mind.
             </p>
           </div>
         </FadeIn>
@@ -60,8 +62,13 @@ export function StaticTrust() {
           <div className="border-border bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2">
             {trustItems.map((item) => (
               <div className="bg-card p-8 sm:p-10" key={item.title}>
-                <item.icon aria-hidden="true" className="text-primary mb-5 size-6" />
-                <h3 className="text-foreground mb-3 text-lg font-semibold">{item.title}</h3>
+                <item.icon
+                  aria-hidden="true"
+                  className="text-primary mb-5 size-6"
+                />
+                <h3 className="text-foreground mb-3 text-lg font-semibold">
+                  {item.title}
+                </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
                   {item.description}
                 </p>
@@ -73,7 +80,9 @@ export function StaticTrust() {
         {/* Payments badge */}
         <FadeIn delay={0.25}>
           <div className="mt-12 flex items-center justify-center">
-            <span className="text-muted-foreground text-sm">Payments powered by Vortex</span>
+            <span className="text-muted-foreground text-sm">
+              Payments powered by Vortex
+            </span>
           </div>
         </FadeIn>
       </div>

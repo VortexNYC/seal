@@ -31,7 +31,9 @@ export const saveSignature = mutation({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -46,7 +48,7 @@ export const saveSignature = mutation({
 
     if (existingSignatures.length >= 10) {
       throw new ConvexError(
-        "You can only save up to 10 signatures. Please delete one to add a new one.",
+        "You can only save up to 10 signatures. Please delete one to add a new one."
       );
     }
 
@@ -95,7 +97,9 @@ export const updateSignature = mutation({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -115,7 +119,7 @@ export const updateSignature = mutation({
         .collect();
 
       const currentDefault = existingSignatures.find(
-        (s) => s.isDefault && s._id !== args.signatureId,
+        (s) => s.isDefault && s._id !== args.signatureId
       );
       if (currentDefault) {
         await ctx.db.patch(currentDefault._id, { isDefault: false });
@@ -155,7 +159,9 @@ export const deleteSignature = mutation({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -178,7 +184,9 @@ export const deleteSignature = mutation({
 
       if (remainingSignatures.length > 0) {
         // Set the most recently created as default
-        const mostRecent = remainingSignatures.sort((a, b) => b.createdAt - a.createdAt)[0];
+        const mostRecent = remainingSignatures.sort(
+          (a, b) => b.createdAt - a.createdAt
+        )[0];
         if (mostRecent) {
           await ctx.db.patch(mostRecent._id, { isDefault: true });
         }
@@ -205,7 +213,9 @@ export const incrementUsageCount = mutation({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {

@@ -9,13 +9,26 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export function TrendChart(): React.ReactElement {
   const { data: trends } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentTrends, { days: 30 }),
+    convexQuery(api.dashboard.queries.getDocumentTrends, { days: 30 })
   );
 
   const chartData = useMemo(() => {
@@ -40,7 +53,9 @@ export function TrendChart(): React.ReactElement {
       }}
     >
       <CardHeader className="pb-2 sm:pb-6">
-        <CardTitle className="text-base sm:text-lg">Document Activity</CardTitle>
+        <CardTitle className="text-base sm:text-lg">
+          Document Activity
+        </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
           Created and completed over the last 30 days
         </CardDescription>
@@ -49,20 +64,47 @@ export function TrendChart(): React.ReactElement {
         {hasData ? (
           <div
             style={{
-              animation: "fadeIn var(--duration-deliberate) var(--ease-enter) both",
+              animation:
+                "fadeIn var(--duration-deliberate) var(--ease-enter) both",
               animationDelay: "400ms",
             }}
           >
-            <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">
+            <ResponsiveContainer
+              width="100%"
+              height={200}
+              className="sm:h-[250px]"
+            >
               <AreaChart data={chartData} margin={{ left: 0, right: 8 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
-                  <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
+                  <linearGradient
+                    id="colorCompleted"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="var(--success)"
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--success)"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <XAxis
@@ -109,7 +151,8 @@ export function TrendChart(): React.ReactElement {
             </ResponsiveContainer>
             {/* Accessible chart summary */}
             <p className="sr-only">
-              Area chart showing document creation and completion trends over 30 days.
+              Area chart showing document creation and completion trends over 30
+              days.
               {chartData.length > 0 &&
                 ` Most recent day: ${chartData[chartData.length - 1]?.displayDate}, ${chartData[chartData.length - 1]?.created} created, ${chartData[chartData.length - 1]?.completed} completed.`}
             </p>

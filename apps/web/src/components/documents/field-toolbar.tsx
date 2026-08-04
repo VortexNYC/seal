@@ -147,7 +147,11 @@ function FieldButton({
     dragImage.textContent = config.label;
 
     document.body.appendChild(dragImage);
-    e.dataTransfer.setDragImage(dragImage, dimensions.width / 2, dimensions.height / 2);
+    e.dataTransfer.setDragImage(
+      dragImage,
+      dimensions.width / 2,
+      dimensions.height / 2
+    );
 
     requestAnimationFrame(() => {
       document.body.removeChild(dragImage);
@@ -176,7 +180,7 @@ function FieldButton({
         disabled
           ? "cursor-not-allowed opacity-50"
           : "hover:border-border cursor-grab active:cursor-grabbing",
-        isDragging && "scale-95 border-dashed opacity-40",
+        isDragging && "scale-95 border-dashed opacity-40"
       )}
     >
       <div className="text-muted-foreground flex items-center transition-colors">
@@ -187,7 +191,9 @@ function FieldButton({
         style={{
           backgroundColor: isHovered ? config.accentColor : "var(--card)",
           borderColor: isHovered ? config.accentColor : "var(--border)",
-          color: isHovered ? "var(--primary-foreground)" : "var(--muted-foreground)",
+          color: isHovered
+            ? "var(--primary-foreground)"
+            : "var(--muted-foreground)",
         }}
       >
         {icon}
@@ -215,11 +221,15 @@ export function FieldToolbar({
     onFieldDragEnd?.();
   };
 
-  const undoFields = useMutation(api.signature_fields.timeline_mutations.undoFields);
-  const redoFields = useMutation(api.signature_fields.timeline_mutations.redoFields);
+  const undoFields = useMutation(
+    api.signature_fields.timeline_mutations.undoFields
+  );
+  const redoFields = useMutation(
+    api.signature_fields.timeline_mutations.redoFields
+  );
   const timelineStatus = useQuery(
     api.signature_fields.timeline_mutations.fieldTimelineStatus,
-    documentId ? { documentId } : "skip",
+    documentId ? { documentId } : "skip"
   );
 
   const canUndo = timelineStatus?.canUndo ?? false;
@@ -244,7 +254,11 @@ export function FieldToolbar({
 
       // Don't capture if user is typing in an input
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
         return;
       }
 
@@ -276,7 +290,7 @@ export function FieldToolbar({
               "rounded p-1 transition-colors",
               canUndo && isDraft
                 ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed",
+                : "text-muted-foreground/30 cursor-not-allowed"
             )}
           >
             <Undo2Icon className="h-3.5 w-3.5" />
@@ -290,7 +304,7 @@ export function FieldToolbar({
               "rounded p-1 transition-colors",
               canRedo && isDraft
                 ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed",
+                : "text-muted-foreground/30 cursor-not-allowed"
             )}
           >
             <Redo2Icon className="h-3.5 w-3.5" />

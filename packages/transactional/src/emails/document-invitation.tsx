@@ -27,7 +27,10 @@ function formatExpirationDate(expiresAt?: number): string | null {
     : null;
 }
 
-function formatInvoiceAmount(invoiceAmount?: number, invoiceCurrency?: string): string | null {
+function formatInvoiceAmount(
+  invoiceAmount?: number,
+  invoiceCurrency?: string
+): string | null {
   return invoiceAmount && invoiceCurrency
     ? new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -56,7 +59,9 @@ function CustomMessageSection({
       >
         &ldquo;{customMessage}&rdquo;
       </Text>
-      <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}>
+      <Text
+        style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}
+      >
         &mdash; {senderName}
       </Text>
     </Section>
@@ -84,7 +89,14 @@ function InvoiceSection({
         marginBottom: "24px",
       }}
     >
-      <Text style={{ margin: "0", fontSize: "14px", fontWeight: "600", color: "#1e3a8a" }}>
+      <Text
+        style={{
+          margin: "0",
+          fontSize: "14px",
+          fontWeight: "600",
+          color: "#1e3a8a",
+        }}
+      >
         Invoice attached
       </Text>
       <Text style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#1e40af" }}>
@@ -97,9 +109,18 @@ function InvoiceSection({
           Review Invoice
         </Button>
       </Section>
-      <Text style={{ margin: "10px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
+      <Text
+        style={{
+          margin: "10px 0 0 0",
+          fontSize: "12px",
+          color: email.mutedForeground,
+        }}
+      >
         Or open this link:{" "}
-        <Link href={invoiceUrl} style={{ color: "#2563eb", wordBreak: "break-all" }}>
+        <Link
+          href={invoiceUrl}
+          style={{ color: "#2563eb", wordBreak: "break-all" }}
+        >
           {invoiceUrl}
         </Link>
       </Text>
@@ -122,7 +143,10 @@ export function DocumentInvitation({
     ? `${senderName} sent you "${documentName}" with an invoice`
     : `${senderName} sent you "${documentName}" to sign`;
   const expirationDate = formatExpirationDate(expiresAt);
-  const invoiceAmountFormatted = formatInvoiceAmount(invoiceAmount, invoiceCurrency);
+  const invoiceAmountFormatted = formatInvoiceAmount(
+    invoiceAmount,
+    invoiceCurrency
+  );
 
   return (
     <EmailLayout
@@ -134,22 +158,31 @@ export function DocumentInvitation({
         <Text style={emailStyles.bodyText}>Hello {recipientName},</Text>
 
         <Text style={emailStyles.bodyTextMuted}>
-          <strong style={emailStyles.strong}>{senderName}</strong> has sent you a document to sign:
+          <strong style={emailStyles.strong}>{senderName}</strong> has sent you
+          a document to sign:
         </Text>
 
         {/* Document card */}
         <Section style={emailStyles.documentCard}>
           <Text style={emailStyles.documentTitle}>{documentName}</Text>
           {expirationDate && (
-            <Text style={{ ...emailStyles.documentMeta, color: status.destructive }}>
+            <Text
+              style={{ ...emailStyles.documentMeta, color: status.destructive }}
+            >
               Expires: {expirationDate}
             </Text>
           )}
         </Section>
 
-        <CustomMessageSection customMessage={customMessage} senderName={senderName} />
+        <CustomMessageSection
+          customMessage={customMessage}
+          senderName={senderName}
+        />
 
-        <InvoiceSection invoiceUrl={invoiceUrl} invoiceAmountFormatted={invoiceAmountFormatted} />
+        <InvoiceSection
+          invoiceUrl={invoiceUrl}
+          invoiceAmountFormatted={invoiceAmountFormatted}
+        />
 
         {/* CTA Button */}
         <Section className="my-[32px] text-center">
@@ -158,10 +191,16 @@ export function DocumentInvitation({
           </Button>
         </Section>
 
-        <Text style={emailStyles.smallText}>Or copy and paste this link into your browser:</Text>
+        <Text style={emailStyles.smallText}>
+          Or copy and paste this link into your browser:
+        </Text>
         <Link
           href={signingUrl}
-          style={{ fontSize: "14px", color: emailStyles.linkColor, wordBreak: "break-all" }}
+          style={{
+            fontSize: "14px",
+            color: emailStyles.linkColor,
+            wordBreak: "break-all",
+          }}
         >
           {signingUrl}
         </Link>

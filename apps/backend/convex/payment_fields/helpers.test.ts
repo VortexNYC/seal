@@ -30,7 +30,14 @@ describe("computeTotalAmountCents", () => {
 describe("validatePaymentConfig", () => {
   const validBaseConfig = {
     paymentType: "one_time" as const,
-    items: [{ id: "item-1", description: "Service fee", quantity: 1, unitPrice: 5000 }],
+    items: [
+      {
+        id: "item-1",
+        description: "Service fee",
+        quantity: 1,
+        unitPrice: 5000,
+      },
+    ],
     totalAmountCents: 5000,
     allowedPaymentMethods: ["card"],
   };
@@ -50,7 +57,9 @@ describe("validatePaymentConfig", () => {
   test("rejects item with empty description", () => {
     const result = validatePaymentConfig({
       ...validBaseConfig,
-      items: [{ id: "item-1", description: "  ", quantity: 1, unitPrice: 5000 }],
+      items: [
+        { id: "item-1", description: "  ", quantity: 1, unitPrice: 5000 },
+      ],
     });
     expect(result).toBe("Each line item must have a description");
   });
@@ -58,7 +67,9 @@ describe("validatePaymentConfig", () => {
   test("rejects item with zero quantity", () => {
     const result = validatePaymentConfig({
       ...validBaseConfig,
-      items: [{ id: "item-1", description: "Fee", quantity: 0, unitPrice: 5000 }],
+      items: [
+        { id: "item-1", description: "Fee", quantity: 0, unitPrice: 5000 },
+      ],
     });
     expect(result).toBe("Quantity must be greater than zero");
   });
@@ -66,7 +77,9 @@ describe("validatePaymentConfig", () => {
   test("rejects item with negative unit price", () => {
     const result = validatePaymentConfig({
       ...validBaseConfig,
-      items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: -100 }],
+      items: [
+        { id: "item-1", description: "Fee", quantity: 1, unitPrice: -100 },
+      ],
     });
     expect(result).toBe("Unit price cannot be negative");
   });
@@ -83,7 +96,14 @@ describe("validatePaymentConfig", () => {
   test("rejects total above $999,999.99 maximum", () => {
     const result = validatePaymentConfig({
       ...validBaseConfig,
-      items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: 100_000_000 }],
+      items: [
+        {
+          id: "item-1",
+          description: "Fee",
+          quantity: 1,
+          unitPrice: 100_000_000,
+        },
+      ],
       totalAmountCents: 100_000_000,
     });
     expect(result).toMatch(/Total amount cannot exceed/);
@@ -112,7 +132,9 @@ describe("validatePaymentConfig", () => {
       ...validBaseConfig,
       paymentType: "recurring",
     });
-    expect(result).toBe("Recurring configuration is required for recurring payments");
+    expect(result).toBe(
+      "Recurring configuration is required for recurring payments"
+    );
   });
 
   test("rejects recurring with intervalCount < 1", () => {
@@ -148,7 +170,9 @@ describe("validatePaymentConfig", () => {
       ...validBaseConfig,
       paymentType: "installments",
     });
-    expect(result).toBe("Installments configuration is required for installment payments");
+    expect(result).toBe(
+      "Installments configuration is required for installment payments"
+    );
   });
 
   test("rejects installments with count < 2", () => {

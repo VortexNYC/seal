@@ -10,7 +10,12 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, type MutationCtx, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  type MutationCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import {
   listComponentInvitationsByOrganization,
   listComponentMembersByOrganization,
@@ -19,7 +24,7 @@ import {
 import { setVortexAuthInvitationStatus } from "./lib/vortexAuthOrganizations";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -37,7 +42,7 @@ function sealAssertPresent<T>(
 function requireE2eDeployment(): void {
   if (!process.env.E2E_DEPLOYMENT_SECRET) {
     throw new Error(
-      "Test helper functions are disabled. E2E_DEPLOYMENT_SECRET is not set on this deployment.",
+      "Test helper functions are disabled. E2E_DEPLOYMENT_SECRET is not set on this deployment."
     );
   }
 }
@@ -46,12 +51,14 @@ async function resolveE2eDocumentOwner(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   ownerAuthSubject?: string,
-  ownerEmail?: string,
+  ownerEmail?: string
 ): Promise<Doc<"users">> {
   if (ownerAuthSubject) {
     const owner = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", ownerAuthSubject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", ownerAuthSubject)
+      )
       .first();
 
     if (!owner) {
@@ -62,10 +69,16 @@ async function resolveE2eDocumentOwner(
     if (!organization) {
       throw new Error(`e2e_organization_not_found: ${organizationId}`);
     }
-    const membership = await resolveComponentMembershipForOrganization(ctx, owner, organization);
+    const membership = await resolveComponentMembershipForOrganization(
+      ctx,
+      owner,
+      organization
+    );
 
     if (membership?.status !== "active") {
-      throw new Error(`e2e_owner_auth_subject_not_active_member: ${ownerAuthSubject}`);
+      throw new Error(
+        `e2e_owner_auth_subject_not_active_member: ${ownerAuthSubject}`
+      );
     }
 
     return owner;
@@ -86,7 +99,11 @@ async function resolveE2eDocumentOwner(
       if (!organization) {
         throw new Error(`e2e_organization_not_found: ${organizationId}`);
       }
-      const membership = await resolveComponentMembershipForOrganization(ctx, owner, organization);
+      const membership = await resolveComponentMembershipForOrganization(
+        ctx,
+        owner,
+        organization
+      );
 
       if (membership?.status === "active") {
         return owner;
@@ -101,7 +118,9 @@ async function resolveE2eDocumentOwner(
     throw new Error(`e2e_organization_not_found: ${organizationId}`);
   }
   const activeMember = (
-    await listComponentMembersByOrganization(ctx, organization, { status: "active" })
+    await listComponentMembersByOrganization(ctx, organization, {
+      status: "active",
+    })
   ).find((member) => member.userId !== null);
 
   if (!activeMember?.userId) {
@@ -147,7 +166,9 @@ export const seedProSubscriptionForE2E = mutation({
     // Ensure product exists with tier: "pro" metadata so getSubscriptionDetails resolves tier correctly
     const existingProduct = await ctx.db
       .query("subscription_products")
-      .withIndex("by_external_product_id", (q) => q.eq("externalProductId", externalProductId))
+      .withIndex("by_external_product_id", (q) =>
+        q.eq("externalProductId", externalProductId)
+      )
       .first();
 
     if (!existingProduct) {
@@ -164,13 +185,17 @@ export const seedProSubscriptionForE2E = mutation({
     // Ensure price exists
     const existingPrice = await ctx.db
       .query("subscription_prices")
-      .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", externalPriceId))
+      .withIndex("by_external_price_id", (q) =>
+        q.eq("externalPriceId", externalPriceId)
+      )
       .first();
 
     if (!existingPrice) {
       const product = await ctx.db
         .query("subscription_products")
-        .withIndex("by_external_product_id", (q) => q.eq("externalProductId", externalProductId))
+        .withIndex("by_external_product_id", (q) =>
+          q.eq("externalProductId", externalProductId)
+        )
         .first();
 
       await ctx.db.insert("subscription_prices", {
@@ -193,17 +218,18 @@ export const seedProSubscriptionForE2E = mutation({
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", org._id).eq("status", "active"),
+          q.eq("organizationId", org._id).eq("status", "active")
         )
         .first()) ??
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", org._id).eq("status", "trialing"),
+          q.eq("organizationId", org._id).eq("status", "trialing")
         )
         .first());
 
-    if (existing) return { seeded: false, reason: "subscription_already_active" };
+    if (existing)
+      return { seeded: false, reason: "subscription_already_active" };
 
     await ctx.db.insert("subscriptions", {
       organizationId: org._id,
@@ -285,9 +311,14 @@ export const purgeE2EPendingInvitations = mutation({
       return { revoked: 0, hasMore: false, reason: "org_not_found" };
     }
 
-    const invitations = await listComponentInvitationsByOrganization(ctx, org, "pending", {
-      limit: batchSize + 1,
-    });
+    const invitations = await listComponentInvitationsByOrganization(
+      ctx,
+      org,
+      "pending",
+      {
+        limit: batchSize + 1,
+      }
+    );
     const hasMore = invitations.length > batchSize;
     const toRevoke = invitations.slice(0, batchSize);
 
@@ -327,7 +358,10 @@ export const createTestDocument = mutation({
     ownerAuthSubject: v.optional(v.string()),
     ownerEmail: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationSlug, storageId, name, ownerAuthSubject, ownerEmail }) => {
+  handler: async (
+    ctx,
+    { organizationSlug, storageId, name, ownerAuthSubject, ownerEmail }
+  ) => {
     requireE2eDeployment();
 
     const org = await ctx.db
@@ -336,7 +370,12 @@ export const createTestDocument = mutation({
       .first();
     if (!org) throw new Error(`org_not_found: ${organizationSlug}`);
 
-    const owner = await resolveE2eDocumentOwner(ctx, org._id, ownerAuthSubject, ownerEmail);
+    const owner = await resolveE2eDocumentOwner(
+      ctx,
+      org._id,
+      ownerAuthSubject,
+      ownerEmail
+    );
 
     const now = Date.now();
     const docId = await ctx.db.insert("documents", {
@@ -392,7 +431,7 @@ export const createSignableTestDocument = mutation({
       recipientEmail,
       recipientName,
       workflowStatus,
-    },
+    }
   ) => {
     requireE2eDeployment();
     const desiredStatus = workflowStatus ?? "sent";
@@ -403,7 +442,12 @@ export const createSignableTestDocument = mutation({
       .first();
     if (!org) throw new Error(`org_not_found: ${organizationSlug}`);
 
-    const owner = await resolveE2eDocumentOwner(ctx, org._id, ownerAuthSubject, ownerEmail);
+    const owner = await resolveE2eDocumentOwner(
+      ctx,
+      org._id,
+      ownerAuthSubject,
+      ownerEmail
+    );
 
     const now = Date.now();
     const docId = await ctx.db.insert("documents", {
@@ -567,17 +611,18 @@ export const seedProSubscription = internalMutation({
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", organizationId).eq("status", "active"),
+          q.eq("organizationId", organizationId).eq("status", "active")
         )
         .first()) ??
       (await ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", organizationId).eq("status", "trialing"),
+          q.eq("organizationId", organizationId).eq("status", "trialing")
         )
         .first());
 
-    if (existing) return { seeded: false, reason: "subscription_already_active" };
+    if (existing)
+      return { seeded: false, reason: "subscription_already_active" };
 
     const now = Date.now();
     const externalProductId = "prod_e2e_test_pro";
@@ -586,7 +631,9 @@ export const seedProSubscription = internalMutation({
     // Ensure product exists
     const existingProduct = await ctx.db
       .query("subscription_products")
-      .withIndex("by_external_product_id", (q) => q.eq("externalProductId", externalProductId))
+      .withIndex("by_external_product_id", (q) =>
+        q.eq("externalProductId", externalProductId)
+      )
       .first();
 
     if (!existingProduct) {
@@ -603,7 +650,9 @@ export const seedProSubscription = internalMutation({
     // Ensure price exists
     const existingPrice = await ctx.db
       .query("subscription_prices")
-      .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", externalPriceId))
+      .withIndex("by_external_price_id", (q) =>
+        q.eq("externalPriceId", externalPriceId)
+      )
       .first();
 
     if (!existingPrice) {
@@ -614,9 +663,9 @@ export const seedProSubscription = internalMutation({
           await ctx.db
             .query("subscription_products")
             .withIndex("by_external_product_id", (q) =>
-              q.eq("externalProductId", externalProductId),
+              q.eq("externalProductId", externalProductId)
             )
-            .first(),
+            .first()
         )._id,
         type: "recurring",
         billingScheme: "per_unit",

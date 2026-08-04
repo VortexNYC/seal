@@ -125,51 +125,67 @@ const productionProof = runJsonScript<ProductionProofAudit>({
 const missingProductionNames = collectMissingNames(production);
 const invalidProductionNames = collectInvalidNames(production);
 const unexpectedMissingNames = missingProductionNames.filter(
-  (name) => !knownProductionConfigBlockers.has(name),
+  (name) => !knownProductionConfigBlockers.has(name)
 );
 
 if (invalidProductionNames.length > 0) {
-  fail(`Production readiness has invalid present values: ${invalidProductionNames.join(", ")}`);
+  fail(
+    `Production readiness has invalid present values: ${invalidProductionNames.join(", ")}`
+  );
 }
 
 if (unexpectedMissingNames.length > 0) {
-  fail(`Production readiness has unexpected missing values: ${unexpectedMissingNames.join(", ")}`);
+  fail(
+    `Production readiness has unexpected missing values: ${unexpectedMissingNames.join(", ")}`
+  );
 }
 
 const remediationLabels = new Set(
-  production.remediation.missingEnvSetCommands.map((command) => command.label),
+  production.remediation.missingEnvSetCommands.map((command) => command.label)
 );
-const missingCommands = missingProductionNames.filter((name) => !remediationLabels.has(name));
+const missingCommands = missingProductionNames.filter(
+  (name) => !remediationLabels.has(name)
+);
 const extraRemediationCommands = [...remediationLabels].filter(
-  (name) => !missingProductionNames.includes(name),
+  (name) => !missingProductionNames.includes(name)
 );
 
 if (missingCommands.length > 0) {
-  fail(`Production readiness remediation omits missing values: ${missingCommands.join(", ")}`);
+  fail(
+    `Production readiness remediation omits missing values: ${missingCommands.join(", ")}`
+  );
 }
 
 if (extraRemediationCommands.length > 0) {
   fail(
-    `Production readiness remediation includes non-missing values: ${extraRemediationCommands.join(", ")}`,
+    `Production readiness remediation includes non-missing values: ${extraRemediationCommands.join(", ")}`
   );
 }
 
 if (!production.ok && missingProductionNames.length === 0) {
-  fail("Production readiness failed without reporting missing production names.");
+  fail(
+    "Production readiness failed without reporting missing production names."
+  );
 }
 
 const productionBoundary = production.ok
   ? "ready_for_production_proof"
   : "waiting_for_known_production_config";
 const waitingOn = [
-  ...(hostedOutcomes.settlement.fullySettledEvidence ? [] : ["settlement_proof"]),
+  ...(hostedOutcomes.settlement.fullySettledEvidence
+    ? []
+    : ["settlement_proof"]),
   ...(production.ok ? [] : ["production_config"]),
-  ...(productionProof.productionMoneyProofComplete ? [] : ["production_live_money_proof"]),
-  ...(productionProof.productionMoneyProofComplete && !productionProof.postProofRetirementComplete
+  ...(productionProof.productionMoneyProofComplete
+    ? []
+    : ["production_live_money_proof"]),
+  ...(productionProof.productionMoneyProofComplete &&
+  !productionProof.postProofRetirementComplete
     ? ["production_external_residue_retirement"]
     : []),
 ] as const;
-const launchReady = waitingOn.length === 0 && productionProof.goLiveProofComplete;
+const launchReady =
+  waitingOn.length === 0 && productionProof.goLiveProofComplete;
 
 console.log(
   JSON.stringify(
@@ -197,10 +213,12 @@ console.log(
         boundary: productionBoundary,
         missingKnownConfig: missingProductionNames,
         invalidPresentConfig: invalidProductionNames,
-        remediationCommandCount: production.remediation.missingEnvSetCommands.length,
+        remediationCommandCount:
+          production.remediation.missingEnvSetCommands.length,
         operatorBoundary: production.remediation.boundary,
         agentAllowedActions: production.remediation.agentAllowedActions,
-        operatorControlledActions: production.remediation.operatorControlledActions,
+        operatorControlledActions:
+          production.remediation.operatorControlledActions,
         proofSequence: production.remediation.proofSequence,
         successCriteria: production.remediation.successCriteria,
       },
@@ -208,8 +226,10 @@ console.log(
         ok: productionProof.ok,
         proofDoc: productionProof.proofDoc,
         proofDocExists: productionProof.proofDocExists,
-        productionMoneyProofComplete: productionProof.productionMoneyProofComplete,
-        postProofRetirementComplete: productionProof.postProofRetirementComplete,
+        productionMoneyProofComplete:
+          productionProof.productionMoneyProofComplete,
+        postProofRetirementComplete:
+          productionProof.postProofRetirementComplete,
         goLiveProofComplete: productionProof.goLiveProofComplete,
         status: productionProof.status,
         requiredBeforeLaunch: productionProof.requiredBeforeLaunch,
@@ -218,15 +238,16 @@ console.log(
         launchReady,
         needsSettlementProof: !hostedOutcomes.settlement.fullySettledEvidence,
         needsProductionConfig: !production.ok,
-        needsProductionMoneyProof: !productionProof.productionMoneyProofComplete,
+        needsProductionMoneyProof:
+          !productionProof.productionMoneyProofComplete,
         needsPostProofRetirement:
           productionProof.productionMoneyProofComplete &&
           !productionProof.postProofRetirementComplete,
       }),
     },
     null,
-    2,
-  ),
+    2
+  )
 );
 
 function runJsonScript<T>(input: {
@@ -271,14 +292,18 @@ function parseJsonFromOutput(output: string, label: string): unknown {
   }
 }
 
-function collectMissingNames(audit: ProductionReadinessAudit): readonly string[] {
+function collectMissingNames(
+  audit: ProductionReadinessAudit
+): readonly string[] {
   return unique([
     ...audit.seal.groups.flatMap((group) => group.missing),
     ...audit.vortex.groups.flatMap((group) => group.missing),
   ]);
 }
 
-function collectInvalidNames(audit: ProductionReadinessAudit): readonly string[] {
+function collectInvalidNames(
+  audit: ProductionReadinessAudit
+): readonly string[] {
   return unique([
     ...audit.seal.groups.flatMap((group) => group.invalid),
     ...audit.vortex.groups.flatMap((group) => group.invalid),
@@ -289,7 +314,9 @@ function unique(values: readonly string[]): readonly string[] {
   return [...new Set(values)];
 }
 
-function isProductionReadinessAudit(value: unknown): value is ProductionReadinessAudit {
+function isProductionReadinessAudit(
+  value: unknown
+): value is ProductionReadinessAudit {
   if (!isRecord(value)) {
     return false;
   }
@@ -323,14 +350,17 @@ function isHostedOutcomeAudit(value: unknown): value is HostedOutcomeAudit {
   );
 }
 
-function isSandboxSettlementAudit(value: unknown): value is SandboxSettlementAudit {
+function isSandboxSettlementAudit(
+  value: unknown
+): value is SandboxSettlementAudit {
   if (!isRecord(value) || !isRecord(value.captured)) {
     return false;
   }
   return (
     value.ok === true &&
     value.check === "seal_vortex_sandbox_settlement_boundary" &&
-    (value.readinessWindow === "elapsed" || value.readinessWindow === "waiting") &&
+    (value.readinessWindow === "elapsed" ||
+      value.readinessWindow === "waiting") &&
     typeof value.earliestReconcileAt === "string" &&
     typeof value.operatorBoundary === "string" &&
     typeof value.captured.merchantAccountId === "string" &&
@@ -384,7 +414,9 @@ function isGroupAudit(value: unknown): value is GroupAudit {
 }
 
 function isStringArray(value: unknown): value is readonly string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

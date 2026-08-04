@@ -30,14 +30,16 @@ export const list = query({
       presenceList.map(async (entry) => {
         const user = await ctx.db
           .query("users")
-          .withIndex("by_auth_subject", (q) => q.eq("authSubject", entry.userId))
+          .withIndex("by_auth_subject", (q) =>
+            q.eq("authSubject", entry.userId)
+          )
           .unique();
         return {
           ...entry,
           name: user?.name,
           image: user?.avatar,
         };
-      }),
+      })
     );
     return listWithUserInfo;
   },

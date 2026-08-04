@@ -149,7 +149,7 @@ describe("Document Sharing - Database Operations", () => {
         return ctx.db
           .query("document_access")
           .withIndex("by_document_user", (q) =>
-            q.eq("documentId", documentId).eq("userId", viewerId),
+            q.eq("documentId", documentId).eq("userId", viewerId)
           )
           .first();
       });
@@ -241,7 +241,9 @@ describe("Document Sharing - Database Operations", () => {
         });
       });
 
-      const notification = await t.run(async (ctx) => ctx.db.get(notificationId));
+      const notification = await t.run(async (ctx) =>
+        ctx.db.get(notificationId)
+      );
       expect(notification).not.toBeNull();
       expect(notification?.type).toBe("document_shared");
     });
@@ -262,7 +264,9 @@ describe("Document Sharing - Database Operations", () => {
         });
       });
 
-      const notification = await t.run(async (ctx) => ctx.db.get(notificationId));
+      const notification = await t.run(async (ctx) =>
+        ctx.db.get(notificationId)
+      );
       expect(notification).not.toBeNull();
       expect(notification?.type).toBe("access_revoked");
     });
@@ -285,7 +289,9 @@ describe("Document Sharing - Database Operations", () => {
         });
       });
 
-      const notification = await t.run(async (ctx) => ctx.db.get(notificationId));
+      const notification = await t.run(async (ctx) =>
+        ctx.db.get(notificationId)
+      );
       expect(notification).not.toBeNull();
       expect(notification?.type).toBe("access_updated");
     });

@@ -26,28 +26,35 @@ export class DashboardPage {
     this.heading = page.getByRole("heading", { name: "Dashboard" });
     // The sidebar toggle is the icon button near the Dashboard heading
     this.toggleSidebarButton = page
-      .locator('button[aria-label="Toggle Sidebar"], [data-testid="sidebar-toggle"]')
+      .locator(
+        'button[aria-label="Toggle Sidebar"], [data-testid="sidebar-toggle"]'
+      )
       .first();
 
     // Metric cards
     this.totalDocumentsCard = page.getByText("Total Documents").locator("..");
-    this.pendingSignaturesCard = page.getByText("Pending Signatures").locator("..");
+    this.pendingSignaturesCard = page
+      .getByText("Pending Signatures")
+      .locator("..");
     this.completedCard = page.getByText("Completed").first().locator("..");
     this.completionRateCard = page.getByText("Completion Rate").locator("..");
 
     // Metric values - the large numbers in each card
     this.totalDocumentsValue = this.totalDocumentsCard.locator(
-      'div:has-text("0"), div:has-text("1"), div:has-text("2")',
+      'div:has-text("0"), div:has-text("1"), div:has-text("2")'
     );
     this.pendingSignaturesValue = this.pendingSignaturesCard.locator(
-      'div:has-text("0"), div:has-text("1"), div:has-text("2")',
+      'div:has-text("0"), div:has-text("1"), div:has-text("2")'
     );
     this.completedValue = this.completedCard.locator(
-      'div:has-text("0"), div:has-text("1"), div:has-text("2")',
+      'div:has-text("0"), div:has-text("1"), div:has-text("2")'
     );
-    this.completionRateValue = this.completionRateCard.locator('div:has-text("%")');
+    this.completionRateValue =
+      this.completionRateCard.locator('div:has-text("%")');
 
-    this.documentActivitySection = page.locator('[data-testid="document-activity-section"]');
+    this.documentActivitySection = page.locator(
+      '[data-testid="document-activity-section"]'
+    );
     this.noActivityMessage = page.getByText("No document activity yet");
   }
 
@@ -104,13 +111,22 @@ export class DashboardPage {
     return !(await this.noActivityMessage.isVisible());
   }
 
-  async navigateToSidebarItem(sectionTitle: string, itemTitle: string): Promise<void> {
+  async navigateToSidebarItem(
+    sectionTitle: string,
+    itemTitle: string
+  ): Promise<void> {
     if (await this.navigateViaQuickActionIfAvailable(itemTitle)) {
       return;
     }
 
-    const sectionButton = this.page.getByRole("button", { name: sectionTitle, exact: true });
-    const itemLink = this.page.getByRole("link", { name: itemTitle, exact: true });
+    const sectionButton = this.page.getByRole("button", {
+      name: sectionTitle,
+      exact: true,
+    });
+    const itemLink = this.page.getByRole("link", {
+      name: itemTitle,
+      exact: true,
+    });
 
     // Wait for the sidebar to populate — section buttons depend on Convex queries
     // for permissions and org data that may not have resolved yet.
@@ -131,7 +147,7 @@ export class DashboardPage {
 
   private async openMobileSidebarIfNeeded(
     sectionButton: Locator,
-    itemLink: Locator,
+    itemLink: Locator
   ): Promise<void> {
     const viewportWidth = this.page.viewportSize()?.width;
 
@@ -143,7 +159,9 @@ export class DashboardPage {
         return;
       }
 
-      const mobileTrigger = this.page.getByRole("button", { name: "Toggle Sidebar" });
+      const mobileTrigger = this.page.getByRole("button", {
+        name: "Toggle Sidebar",
+      });
 
       await mobileTrigger.waitFor({ state: "visible", timeout: 5000 });
 
@@ -159,7 +177,9 @@ export class DashboardPage {
     }
   }
 
-  private async navigateViaQuickActionIfAvailable(itemTitle: string): Promise<boolean> {
+  private async navigateViaQuickActionIfAvailable(
+    itemTitle: string
+  ): Promise<boolean> {
     const viewportWidth = this.page.viewportSize()?.width;
 
     if (!viewportWidth || viewportWidth >= 768) {
@@ -178,7 +198,9 @@ export class DashboardPage {
       return false;
     }
 
-    const quickActionButton = this.page.getByRole("button", { name: quickActionMatcher }).first();
+    const quickActionButton = this.page
+      .getByRole("button", { name: quickActionMatcher })
+      .first();
 
     if (!(await quickActionButton.isVisible().catch(() => false))) {
       return false;
@@ -188,7 +210,10 @@ export class DashboardPage {
     return true;
   }
 
-  private async waitForAnyVisible(locators: Locator[], timeoutMs: number): Promise<boolean> {
+  private async waitForAnyVisible(
+    locators: Locator[],
+    timeoutMs: number
+  ): Promise<boolean> {
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {

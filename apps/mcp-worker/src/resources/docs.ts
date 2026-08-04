@@ -369,12 +369,14 @@ export function registerDocsResources(server: McpServer): void {
     "docs-index",
     "seal://docs",
     {
-      description: "Seal product documentation index. Lists all available knowledge topics.",
+      description:
+        "Seal product documentation index. Lists all available knowledge topics.",
       mimeType: "text/markdown",
     },
     async (uri) => {
       const topicList = VALID_TOPICS.map(
-        ([topic, entry]) => `- [${entry.title}](seal://docs/${topic}) — \`seal://docs/${topic}\``,
+        ([topic, entry]) =>
+          `- [${entry.title}](seal://docs/${topic}) — \`seal://docs/${topic}\``
       ).join("\n");
 
       return {
@@ -392,7 +394,7 @@ ${topicList}`,
           },
         ],
       };
-    },
+    }
   );
 
   // Individual topic resource template
@@ -401,7 +403,8 @@ ${topicList}`,
     new ResourceTemplate("seal://docs/{topic}", { list: undefined }),
     {
       description:
-        "Seal product knowledge on a specific topic. Valid topics: " + VALID_TOPICS.join(", "),
+        "Seal product knowledge on a specific topic. Valid topics: " +
+        VALID_TOPICS.join(", "),
       mimeType: "text/markdown",
     },
     async (uri, { topic }) => {
@@ -429,6 +432,6 @@ ${topicList}`,
           },
         ],
       };
-    },
+    }
   );
 }

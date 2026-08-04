@@ -9,12 +9,15 @@ import { useQuery } from "convex/react";
  * for conditionally rendering tier-gated features.
  */
 export function useSubscriptionLimits() {
-  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails);
+  const subscription = useQuery(
+    api.payments.billing_queries.getSubscriptionDetails
+  );
 
   const isLoading = subscription === undefined;
 
   const tier = (subscription?.tier ?? "free") as keyof typeof PLAN_LIMITS;
-  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+  const isActive =
+    subscription?.status === "active" || subscription?.status === "trialing";
 
   const isPro = isActive && (tier === "pro" || tier === "enterprise");
   const isEnterprise = isActive && tier === "enterprise";

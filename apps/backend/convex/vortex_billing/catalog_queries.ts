@@ -11,7 +11,11 @@ const subscriptionPriceResultValidator = v.object({
   vortexPriceId: v.optional(v.string()),
   externalProductId: v.string(),
   vortexProductId: v.optional(v.string()),
-  status: v.union(v.literal("active"), v.literal("archived"), v.literal("deleted")),
+  status: v.union(
+    v.literal("active"),
+    v.literal("archived"),
+    v.literal("deleted")
+  ),
   unitAmount: v.optional(v.number()),
 });
 
@@ -28,7 +32,7 @@ type SubscriptionPriceResult = {
 
 function serializeSubscriptionPrice(
   price: Doc<"subscription_prices">,
-  product: Doc<"subscription_products"> | null,
+  product: Doc<"subscription_products"> | null
 ): SubscriptionPriceResult {
   return {
     subscriptionPriceId: price._id,
@@ -48,7 +52,10 @@ export const getSubscriptionPriceByAnyId = internalQuery({
   },
   returns: v.union(subscriptionPriceResultValidator, v.null()),
   handler: async (ctx, args): Promise<SubscriptionPriceResult | null> => {
-    const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(ctx.db, args.id);
+    const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
+      ctx.db,
+      args.id
+    );
     if (price === null) {
       return null;
     }
@@ -68,7 +75,7 @@ export const getActiveVortexSubscriptionPriceByLookupKey = internalQuery({
       .withIndex("by_lookup_key", (q) => q.eq("lookupKey", args.lookupKey))
       .take(20);
     const activeVortexPrices = prices.filter(
-      (price) => price.status === "active" && price.vortexPriceId !== undefined,
+      (price) => price.status === "active" && price.vortexPriceId !== undefined
     );
 
     if (activeVortexPrices.length === 0) {
@@ -76,7 +83,7 @@ export const getActiveVortexSubscriptionPriceByLookupKey = internalQuery({
     }
     if (activeVortexPrices.length > 1) {
       throw new ConvexError(
-        `Multiple active Vortex subscription prices found for lookupKey: ${args.lookupKey}`,
+        `Multiple active Vortex subscription prices found for lookupKey: ${args.lookupKey}`
       );
     }
 

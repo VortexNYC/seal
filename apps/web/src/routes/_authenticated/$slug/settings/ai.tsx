@@ -15,7 +15,13 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
@@ -33,10 +39,12 @@ function AISettings() {
 
   const aiSettings = useQuery(
     api.organizations.queries.getAiSettings,
-    organization ? { organizationId: organization._id } : "skip",
+    organization ? { organizationId: organization._id } : "skip"
   );
 
-  const updateAiSettings = useMutation(api.organizations.mutations.updateAiSettings);
+  const updateAiSettings = useMutation(
+    api.organizations.mutations.updateAiSettings
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -67,7 +75,9 @@ function AISettings() {
       });
       toast.success("AI settings updated");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update AI settings");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update AI settings"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -87,8 +97,8 @@ function AISettings() {
               <CardTitle>Document Intelligence</CardTitle>
             </div>
             <CardDescription>
-              Control how Seal AI analyzes documents, detects fields, and surfaces insights for your
-              workspace.
+              Control how Seal AI analyzes documents, detects fields, and
+              surfaces insights for your workspace.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -98,25 +108,31 @@ function AISettings() {
                   Enable AI features
                 </Label>
                 <p className="text-muted-foreground text-xs">
-                  Turn off to hide all AI suggestions, annotations, and chat across your workspace.
+                  Turn off to hide all AI suggestions, annotations, and chat
+                  across your workspace.
                 </p>
               </div>
               <Switch
                 id="ai-enabled"
                 checked={formData.aiEnabled}
-                onCheckedChange={(checked) => setFormData({ ...formData, aiEnabled: checked })}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, aiEnabled: checked })
+                }
               />
             </div>
 
             <div className="border-t pt-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="ai-auto-analyze" className="text-sm font-medium">
+                  <Label
+                    htmlFor="ai-auto-analyze"
+                    className="text-sm font-medium"
+                  >
                     Auto-analyze uploaded documents
                   </Label>
                   <p className="text-muted-foreground text-xs">
-                    Automatically detect form fields and surface insights when documents are
-                    uploaded. Disable to require manual analysis.
+                    Automatically detect form fields and surface insights when
+                    documents are uploaded. Disable to require manual analysis.
                   </p>
                 </div>
                 <Switch
@@ -133,12 +149,16 @@ function AISettings() {
             <div className="border-t pt-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="ai-redlines-signers" className="text-sm font-medium">
+                  <Label
+                    htmlFor="ai-redlines-signers"
+                    className="text-sm font-medium"
+                  >
                     Show insights to signers
                   </Label>
                   <p className="text-muted-foreground text-xs">
-                    When enabled, document signers will see AI-generated annotations (obligations,
-                    risks, payment terms) on the signing page.
+                    When enabled, document signers will see AI-generated
+                    annotations (obligations, risks, payment terms) on the
+                    signing page.
                   </p>
                 </div>
                 <Switch
@@ -146,7 +166,10 @@ function AISettings() {
                   checked={formData.aiShowRedlinesToSigners}
                   disabled={!formData.aiEnabled}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, aiShowRedlinesToSigners: checked })
+                    setFormData({
+                      ...formData,
+                      aiShowRedlinesToSigners: checked,
+                    })
                   }
                 />
               </div>

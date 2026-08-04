@@ -46,12 +46,13 @@ export function ensureAdmin(auth: AuthContextWithPermissions): void {
  */
 export function ensureOrganizationScope(
   auth: AuthContextWithPermissions,
-  targetOrgId?: Id<"organizations">,
+  targetOrgId?: Id<"organizations">
 ): void {
   if (targetOrgId && targetOrgId !== auth.organizationId) {
     throw new ConvexError({
       code: "FORBIDDEN",
-      message: "Organization scope mismatch - cannot access resources from different organization",
+      message:
+        "Organization scope mismatch - cannot access resources from different organization",
     });
   }
 }
@@ -62,7 +63,7 @@ export function ensureOrganizationScope(
  */
 export function ensureAdminForOrg(
   auth: AuthContextWithPermissions,
-  targetOrgId?: Id<"organizations">,
+  targetOrgId?: Id<"organizations">
 ): void {
   ensureAdmin(auth);
   ensureOrganizationScope(auth, targetOrgId);
@@ -74,7 +75,7 @@ export function ensureAdminForOrg(
  */
 export function ensureOwnerForOrg(
   auth: AuthContextWithPermissions,
-  targetOrgId?: Id<"organizations">,
+  targetOrgId?: Id<"organizations">
 ): void {
   ensureOwner(auth);
   ensureOrganizationScope(auth, targetOrgId);
@@ -87,7 +88,10 @@ export function ensureOwnerForOrg(
  * @example
  * ensurePermission(ctx.auth, "documents:delete");
  */
-export function ensurePermission(auth: AuthContextWithPermissions, permission: string): void {
+export function ensurePermission(
+  auth: AuthContextWithPermissions,
+  permission: string
+): void {
   if (!auth.hasPermission(permission)) {
     throw new ConvexError({
       code: "FORBIDDEN",
@@ -101,7 +105,10 @@ export function ensurePermission(auth: AuthContextWithPermissions, permission: s
  * Ensure user has any of the specified permissions
  * Throws if user doesn't have at least one
  */
-export function ensureAnyPermission(auth: AuthContextWithPermissions, permissions: string[]): void {
+export function ensureAnyPermission(
+  auth: AuthContextWithPermissions,
+  permissions: string[]
+): void {
   if (!auth.hasAnyPermission(permissions)) {
     throw new ConvexError({
       code: "FORBIDDEN",
@@ -117,7 +124,7 @@ export function ensureAnyPermission(auth: AuthContextWithPermissions, permission
  */
 export function ensureAllPermissions(
   auth: AuthContextWithPermissions,
-  permissions: string[],
+  permissions: string[]
 ): void {
   if (!auth.hasAllPermissions(permissions)) {
     throw new ConvexError({
@@ -138,7 +145,7 @@ export function ensureAllPermissions(
  */
 export function ensureResourceOwner(
   auth: AuthContextWithPermissions,
-  resourceOwnerId: Id<"users">,
+  resourceOwnerId: Id<"users">
 ): void {
   if (auth.userId !== resourceOwnerId) {
     throw new ConvexError({
@@ -158,7 +165,7 @@ export function ensureResourceOwner(
  */
 export function ensureResourceOwnerOrAdmin(
   auth: AuthContextWithPermissions,
-  resourceOwnerId: Id<"users">,
+  resourceOwnerId: Id<"users">
 ): void {
   const isResourceOwner = auth.userId === resourceOwnerId;
   const isAdmin = auth.isAdmin;

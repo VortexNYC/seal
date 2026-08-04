@@ -13,7 +13,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -25,7 +31,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/profile/notifications")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/profile/notifications"
+)({
   component: NotificationSettings,
   pendingComponent: FormSkeleton,
 });
@@ -49,13 +57,15 @@ const DEFAULT_EMAIL_PREFERENCES: EmailPreferences = {
 function NotificationSettings() {
   const userProfile = useQuery(api.user_profiles.queries.getCurrentUserProfile);
   const updateNotificationPreferences = useMutation(
-    api.user_profiles.mutations.updateNotificationPreferences,
+    api.user_profiles.mutations.updateNotificationPreferences
   );
 
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Email preferences
-  const [emailPrefs, setEmailPrefs] = useState<EmailPreferences>(DEFAULT_EMAIL_PREFERENCES);
+  const [emailPrefs, setEmailPrefs] = useState<EmailPreferences>(
+    DEFAULT_EMAIL_PREFERENCES
+  );
 
   // Other notification settings
   const [inAppEnabled, setInAppEnabled] = useState(true);
@@ -85,7 +95,10 @@ function NotificationSettings() {
     }
   }, [userProfile?.notificationPreferences]);
 
-  const handleEmailToggle = async (key: keyof EmailPreferences, value: boolean) => {
+  const handleEmailToggle = async (
+    key: keyof EmailPreferences,
+    value: boolean
+  ) => {
     const newPrefs = { ...emailPrefs, [key]: value };
 
     // If disabling main toggle, disable all sub-options
@@ -116,7 +129,7 @@ function NotificationSettings() {
         const permission = await Notification.requestPermission();
         if (permission !== "granted") {
           toast.error(
-            "Please enable notifications in your browser settings to receive desktop notifications",
+            "Please enable notifications in your browser settings to receive desktop notifications"
           );
           return;
         }
@@ -146,7 +159,9 @@ function NotificationSettings() {
       await updateNotificationPreferences(updates);
       toast.success("Notification preferences updated");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update preferences");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update preferences"
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -161,18 +176,24 @@ function NotificationSettings() {
             <Mail className="h-5 w-5" />
             <CardTitle>Email Notifications</CardTitle>
           </div>
-          <CardDescription>Choose which email notifications you want to receive</CardDescription>
+          <CardDescription>
+            Choose which email notifications you want to receive
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="email-enabled">Email Notifications</Label>
-              <p className="text-muted-foreground text-sm">Receive notifications via email</p>
+              <p className="text-muted-foreground text-sm">
+                Receive notifications via email
+              </p>
             </div>
             <Switch
               id="email-enabled"
               checked={emailPrefs.enabled}
-              onCheckedChange={(checked) => handleEmailToggle("enabled", checked)}
+              onCheckedChange={(checked) =>
+                handleEmailToggle("enabled", checked)
+              }
               disabled={isUpdating}
             />
           </div>
@@ -191,7 +212,9 @@ function NotificationSettings() {
                   <Switch
                     id="document-events"
                     checked={emailPrefs.documentEvents}
-                    onCheckedChange={(checked) => handleEmailToggle("documentEvents", checked)}
+                    onCheckedChange={(checked) =>
+                      handleEmailToggle("documentEvents", checked)
+                    }
                     disabled={isUpdating}
                   />
                 </div>
@@ -206,7 +229,9 @@ function NotificationSettings() {
                   <Switch
                     id="reminders"
                     checked={emailPrefs.reminders}
-                    onCheckedChange={(checked) => handleEmailToggle("reminders", checked)}
+                    onCheckedChange={(checked) =>
+                      handleEmailToggle("reminders", checked)
+                    }
                     disabled={isUpdating}
                   />
                 </div>
@@ -221,7 +246,9 @@ function NotificationSettings() {
                   <Switch
                     id="weekly-digest"
                     checked={emailPrefs.weeklyDigest}
-                    onCheckedChange={(checked) => handleEmailToggle("weeklyDigest", checked)}
+                    onCheckedChange={(checked) =>
+                      handleEmailToggle("weeklyDigest", checked)
+                    }
                     disabled={isUpdating}
                   />
                 </div>
@@ -238,7 +265,9 @@ function NotificationSettings() {
             <Bell className="h-5 w-5" />
             <CardTitle>In-App Notifications</CardTitle>
           </div>
-          <CardDescription>Notifications shown within the application</CardDescription>
+          <CardDescription>
+            Notifications shown within the application
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -265,7 +294,9 @@ function NotificationSettings() {
             <Monitor className="h-5 w-5" />
             <CardTitle>Desktop Notifications</CardTitle>
           </div>
-          <CardDescription>Browser push notifications for important updates</CardDescription>
+          <CardDescription>
+            Browser push notifications for important updates
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -306,7 +337,9 @@ function NotificationSettings() {
             </div>
             <Select
               value={frequency}
-              onValueChange={(value) => handleFrequencyChange(value as NotificationFrequency)}
+              onValueChange={(value) =>
+                handleFrequencyChange(value as NotificationFrequency)
+              }
               disabled={isUpdating}
             >
               <SelectTrigger className="w-[180px]">

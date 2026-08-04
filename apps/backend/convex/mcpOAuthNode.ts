@@ -19,20 +19,25 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { API_SCOPES } from "./api/context";
-import { MCP_OAUTH_AUDIENCE, MCP_OAUTH_DEFAULT_CLIENT, MCP_OAUTH_RESOURCE_ID } from "./mcpOAuth";
+import {
+  MCP_OAUTH_AUDIENCE,
+  MCP_OAUTH_DEFAULT_CLIENT,
+  MCP_OAUTH_RESOURCE_ID,
+} from "./mcpOAuth";
 
 const supportedScopeValidator = v.union(
   v.literal(API_SCOPES.DOCUMENTS_READ),
   v.literal(API_SCOPES.TEMPLATES_READ),
   v.literal(API_SCOPES.MEMBERS_READ),
   v.literal(API_SCOPES.CONTACTS_READ),
-  v.literal(API_SCOPES.AUDIT_READ),
+  v.literal(API_SCOPES.AUDIT_READ)
 );
 
 type SigningKeyRecord = McpOAuthSigningKeyRecord;
 type SignedAccessToken = McpOAuthSignedAccessToken;
 
-export const RETIRED_SIGNING_KEY_RETENTION_MS = MCP_OAUTH_RETIRED_SIGNING_KEY_RETENTION_MS;
+export const RETIRED_SIGNING_KEY_RETENTION_MS =
+  MCP_OAUTH_RETIRED_SIGNING_KEY_RETENTION_MS;
 export const shouldPublishSigningKey = shouldPublishMcpOAuthSigningKey;
 
 const MCP_OAUTH_ISSUER_SUFFIX = "/oauth/seal-mcp";
@@ -40,7 +45,10 @@ const MCP_OAUTH_ISSUER_SUFFIX = "/oauth/seal-mcp";
 function resolveIssuer(): string {
   const siteUrl = process.env.CONVEX_SITE_URL;
   if (!siteUrl) {
-    throw new ConvexError({ code: "INTERNAL_ERROR", message: "CONVEX_SITE_URL missing" });
+    throw new ConvexError({
+      code: "INTERNAL_ERROR",
+      message: "CONVEX_SITE_URL missing",
+    });
   }
   return `${siteUrl}${MCP_OAUTH_ISSUER_SUFFIX}`;
 }
@@ -52,10 +60,15 @@ async function createSigningKeyRecord(): Promise<SigningKeyRecord> {
   });
 }
 
-async function ensureSigningKeyRecord(ctx: ActionCtx): Promise<SigningKeyRecord> {
+async function ensureSigningKeyRecord(
+  ctx: ActionCtx
+): Promise<SigningKeyRecord> {
   return await ensureMcpOAuthSigningKey({
     loadActiveSigningKey: async () =>
-      (await ctx.runQuery(internal.mcpOAuthAuth.getSigningKey, {})) as SigningKeyRecord | null,
+      (await ctx.runQuery(
+        internal.mcpOAuthAuth.getSigningKey,
+        {}
+      )) as SigningKeyRecord | null,
     persistSigningKey: async (signingKey) => {
       await ctx.runMutation(internal.mcpOAuthAuth.upsertSigningKey, signingKey);
     },
@@ -93,7 +106,7 @@ export const verifyAccessToken = internalAction({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     azp: string | null;
     betterAuthUserId: string | null;
@@ -125,7 +138,8 @@ export const verifyAccessToken = internalAction({
     } catch (error) {
       throw new ConvexError({
         code: "UNAUTHORIZED",
-        message: error instanceof Error ? error.message : "Token verification failed",
+        message:
+          error instanceof Error ? error.message : "Token verification failed",
       });
     }
   },
@@ -141,22 +155,31 @@ async function signAccessTokenWithClaims(
     organizationId?: string;
     scopes: string[];
     omitOrgId?: boolean;
-  },
+  }
 ): Promise<SignedAccessToken> {
   let organizationSlug: string | undefined;
   if (args.organizationId !== undefined) {
-    const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
-      organizationId: args.organizationId as never,
-    });
+    const organization = await ctx.runQuery(
+      internal.organizations.helpers.getOrganizationById,
+      {
+        organizationId: args.organizationId as never,
+      }
+    );
     if (organization === null) {
-      throw new ConvexError({ code: "NOT_FOUND", message: "Organization not found" });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Organization not found",
+      });
     }
     organizationSlug = organization.slug;
   }
 
   return await signMcpOAuthAccessTokenWithStoredKey({
     loadActiveSigningKey: async () =>
-      (await ctx.runQuery(internal.mcpOAuthAuth.getSigningKey, {})) as SigningKeyRecord | null,
+      (await ctx.runQuery(
+        internal.mcpOAuthAuth.getSigningKey,
+        {}
+      )) as SigningKeyRecord | null,
     persistSigningKey: async (signingKey) => {
       await ctx.runMutation(internal.mcpOAuthAuth.upsertSigningKey, signingKey);
     },
@@ -208,7 +231,10 @@ export const rotateSigningKey = internalAction({
           includeRetired: true,
         }),
       persistSigningKey: async (signingKey) => {
-        await ctx.runMutation(internal.mcpOAuthAuth.upsertSigningKey, signingKey);
+        await ctx.runMutation(
+          internal.mcpOAuthAuth.upsertSigningKey,
+          signingKey
+        );
       },
       retireSigningKey: async ({ keyId, retiredAt }) => {
         await ctx.runMutation(internal.mcpOAuthAuth.updateSigningKeyStatus, {

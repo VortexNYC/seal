@@ -120,7 +120,7 @@ const DEFAULT_REMINDER_SCHEDULE = [3, 7, 14];
 
 async function getOrganizationOrThrow(
   ctx: QueryCtx | MutationCtx,
-  organizationId: OrganizationDoc["_id"],
+  organizationId: OrganizationDoc["_id"]
 ): Promise<OrganizationDoc> {
   const organization = await ctx.db.get(organizationId);
   if (!organization) {
@@ -145,19 +145,25 @@ function buildApiSettings(org: OrganizationDoc): ApiSettings {
 function buildSigningResponse(org: OrganizationDoc): ApiSettings["signing"] {
   return {
     allowed_signature_types:
-      (org.signingSettings?.allowedSignatureTypes as SignatureType[] | undefined) ??
-      DEFAULT_SIGNATURE_TYPES,
+      (org.signingSettings?.allowedSignatureTypes as
+        | SignatureType[]
+        | undefined) ?? DEFAULT_SIGNATURE_TYPES,
     default_deadline_days: org.signingSettings?.defaultDeadlineDays ?? 30,
     esign_consent_text: org.signingSettings?.esignConsentText ?? null,
   };
 }
 
-function buildNotificationResponse(org: OrganizationDoc): ApiSettings["notifications"] {
+function buildNotificationResponse(
+  org: OrganizationDoc
+): ApiSettings["notifications"] {
   return {
-    reminder_schedule: org.notificationSettings?.reminderSchedule ?? DEFAULT_REMINDER_SCHEDULE,
+    reminder_schedule:
+      org.notificationSettings?.reminderSchedule ?? DEFAULT_REMINDER_SCHEDULE,
     expiration_alert_days: org.notificationSettings?.expirationAlertDays ?? 3,
-    send_completion_email: org.notificationSettings?.sendCompletionEmail ?? true,
-    send_viewed_notification: org.notificationSettings?.sendViewedNotification ?? true,
+    send_completion_email:
+      org.notificationSettings?.sendCompletionEmail ?? true,
+    send_viewed_notification:
+      org.notificationSettings?.sendViewedNotification ?? true,
   };
 }
 
@@ -173,7 +179,8 @@ function buildSecurityResponse(org: OrganizationDoc): ApiSettings["security"] {
     ip_allowlist: org.securitySettings?.ipAllowlist ?? [],
     allow_api_access: org.securitySettings?.allowApiAccess ?? true,
     require_mfa: org.securitySettings?.requireMfa ?? false,
-    session_timeout_minutes: org.securitySettings?.sessionTimeoutMinutes ?? null,
+    session_timeout_minutes:
+      org.securitySettings?.sessionTimeoutMinutes ?? null,
   };
 }
 
@@ -185,7 +192,9 @@ function buildSigningSettings(org: OrganizationDoc, update: SigningUpdate) {
       org.signingSettings?.allowedSignatureTypes ??
       DEFAULT_SIGNATURE_TYPES,
     defaultDeadlineDays:
-      update.default_deadline_days ?? org.signingSettings?.defaultDeadlineDays ?? 30,
+      update.default_deadline_days ??
+      org.signingSettings?.defaultDeadlineDays ??
+      30,
     esignConsentText:
       update.esign_consent_text !== undefined
         ? (update.esign_consent_text ?? undefined)
@@ -193,32 +202,43 @@ function buildSigningSettings(org: OrganizationDoc, update: SigningUpdate) {
   };
 }
 
-function buildNotificationSettings(org: OrganizationDoc, update: NotificationUpdate) {
+function buildNotificationSettings(
+  org: OrganizationDoc,
+  update: NotificationUpdate
+) {
   return {
     reminderSchedule:
       update.reminder_schedule ??
       org.notificationSettings?.reminderSchedule ??
       DEFAULT_REMINDER_SCHEDULE,
     expirationAlertDays:
-      update.expiration_alert_days ?? org.notificationSettings?.expirationAlertDays ?? 3,
+      update.expiration_alert_days ??
+      org.notificationSettings?.expirationAlertDays ??
+      3,
     sendCompletionEmail:
-      update.send_completion_email ?? org.notificationSettings?.sendCompletionEmail ?? true,
+      update.send_completion_email ??
+      org.notificationSettings?.sendCompletionEmail ??
+      true,
     sendViewedNotification:
-      update.send_viewed_notification ?? org.notificationSettings?.sendViewedNotification ?? true,
+      update.send_viewed_notification ??
+      org.notificationSettings?.sendViewedNotification ??
+      true,
   };
 }
 
 function buildAiSettings(org: OrganizationDoc, update: AiUpdate) {
   return {
     aiEnabled: update.enabled ?? org.aiSettings?.aiEnabled ?? false,
-    aiAutoAnalyze: update.auto_analyze ?? org.aiSettings?.aiAutoAnalyze ?? false,
+    aiAutoAnalyze:
+      update.auto_analyze ?? org.aiSettings?.aiAutoAnalyze ?? false,
     aiShowRedlinesToSigners: org.aiSettings?.aiShowRedlinesToSigners ?? false,
   };
 }
 
 function buildSecuritySettings(org: OrganizationDoc, update: SecurityUpdate) {
   return {
-    allowApiAccess: update.allow_api_access ?? org.securitySettings?.allowApiAccess ?? true,
+    allowApiAccess:
+      update.allow_api_access ?? org.securitySettings?.allowApiAccess ?? true,
     ipAllowlist: update.ip_allowlist ?? org.securitySettings?.ipAllowlist ?? [],
     requireMfa: update.require_mfa ?? org.securitySettings?.requireMfa ?? false,
     sessionTimeoutMinutes:
@@ -256,11 +276,13 @@ export const updateSettings = internalMutation({
     signing: v.optional(
       v.object({
         allowed_signature_types: v.optional(
-          v.array(v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))),
+          v.array(
+            v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
+          )
         ),
         default_deadline_days: v.optional(v.number()),
         esign_consent_text: v.optional(v.union(v.string(), v.null())),
-      }),
+      })
     ),
     notifications: v.optional(
       v.object({
@@ -268,13 +290,13 @@ export const updateSettings = internalMutation({
         expiration_alert_days: v.optional(v.number()),
         send_completion_email: v.optional(v.boolean()),
         send_viewed_notification: v.optional(v.boolean()),
-      }),
+      })
     ),
     ai: v.optional(
       v.object({
         enabled: v.optional(v.boolean()),
         auto_analyze: v.optional(v.boolean()),
-      }),
+      })
     ),
     security: v.optional(
       v.object({
@@ -282,20 +304,32 @@ export const updateSettings = internalMutation({
         allow_api_access: v.optional(v.boolean()),
         require_mfa: v.optional(v.boolean()),
         session_timeout_minutes: v.optional(v.union(v.number(), v.null())),
-      }),
+      })
     ),
   },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
     const organization = await getOrganizationOrThrow(ctx, args.organizationId);
 
     const patches = [
-      args.signing ? { signingSettings: buildSigningSettings(organization, args.signing) } : null,
+      args.signing
+        ? { signingSettings: buildSigningSettings(organization, args.signing) }
+        : null,
       args.notifications
-        ? { notificationSettings: buildNotificationSettings(organization, args.notifications) }
+        ? {
+            notificationSettings: buildNotificationSettings(
+              organization,
+              args.notifications
+            ),
+          }
         : null,
       args.ai ? { aiSettings: buildAiSettings(organization, args.ai) } : null,
       args.security
-        ? { securitySettings: buildSecuritySettings(organization, args.security) }
+        ? {
+            securitySettings: buildSecuritySettings(
+              organization,
+              args.security
+            ),
+          }
         : null,
     ];
 

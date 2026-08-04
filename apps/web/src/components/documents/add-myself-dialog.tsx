@@ -57,7 +57,11 @@ export function AddMyselfDialog({
               </AlertDialogPrimitive.Description>
 
               <div className="bg-muted border-border/50 mt-3 rounded-md border px-3 py-2">
-                {userName && <div className="text-foreground text-sm font-medium">{userName}</div>}
+                {userName && (
+                  <div className="text-foreground text-sm font-medium">
+                    {userName}
+                  </div>
+                )}
                 <div className="text-muted-foreground text-sm">{userEmail}</div>
               </div>
             </div>

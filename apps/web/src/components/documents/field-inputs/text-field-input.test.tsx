@@ -6,7 +6,9 @@ import { TextFieldInput } from "./text-field-input";
 
 afterEach(cleanup);
 
-function renderTextField(overrides: Partial<Parameters<typeof TextFieldInput>[0]> = {}) {
+function renderTextField(
+  overrides: Partial<Parameters<typeof TextFieldInput>[0]> = {}
+) {
   const onChange = vi.fn();
   const onValidationChange = vi.fn();
 
@@ -17,7 +19,7 @@ function renderTextField(overrides: Partial<Parameters<typeof TextFieldInput>[0]
       onChange={onChange}
       onValidationChange={onValidationChange}
       {...overrides}
-    />,
+    />
   );
 
   return { onChange, onValidationChange, ...result };
@@ -47,17 +49,26 @@ describe("TextFieldInput", () => {
 
   test("reports invalid for required empty field", async () => {
     const user = userEvent.setup();
-    const { onValidationChange } = renderTextField({ isRequired: true, value: "x" });
+    const { onValidationChange } = renderTextField({
+      isRequired: true,
+      value: "x",
+    });
 
     const input = screen.getByRole("textbox");
     await user.clear(input);
 
-    expect(onValidationChange).toHaveBeenCalledWith(false, "This field is required");
+    expect(onValidationChange).toHaveBeenCalledWith(
+      false,
+      "This field is required"
+    );
   });
 
   test("reports valid for optional empty field", async () => {
     const user = userEvent.setup();
-    const { onValidationChange } = renderTextField({ isRequired: false, value: "x" });
+    const { onValidationChange } = renderTextField({
+      isRequired: false,
+      value: "x",
+    });
 
     const input = screen.getByRole("textbox");
     await user.clear(input);
@@ -72,7 +83,10 @@ describe("TextFieldInput", () => {
     const input = screen.getByRole("textbox");
     await user.type(input, "ab");
 
-    expect(onValidationChange).toHaveBeenCalledWith(false, "Minimum length is 3 characters");
+    expect(onValidationChange).toHaveBeenCalledWith(
+      false,
+      "Minimum length is 3 characters"
+    );
   });
 
   test("shows character counter when maxLength is set", () => {
@@ -87,7 +101,10 @@ describe("TextFieldInput", () => {
     const input = screen.getByRole("textbox");
     await user.type(input, "lowercase");
 
-    expect(onValidationChange).toHaveBeenCalledWith(false, "Value does not match required format");
+    expect(onValidationChange).toHaveBeenCalledWith(
+      false,
+      "Value does not match required format"
+    );
   });
 
   test("pattern passes for valid input", async () => {
@@ -97,7 +114,8 @@ describe("TextFieldInput", () => {
     const input = screen.getByRole("textbox");
     await user.type(input, "Uppercase");
 
-    const lastCall = onValidationChange.mock.calls[onValidationChange.mock.calls.length - 1];
+    const lastCall =
+      onValidationChange.mock.calls[onValidationChange.mock.calls.length - 1];
     expect(lastCall).toEqual([true, undefined]);
   });
 
@@ -120,7 +138,11 @@ describe("TextFieldInput", () => {
 
   test("hides help text when error is shown", async () => {
     const user = userEvent.setup();
-    renderTextField({ helpText: "Enter your full name", isRequired: true, value: "x" });
+    renderTextField({
+      helpText: "Enter your full name",
+      isRequired: true,
+      value: "x",
+    });
 
     const input = screen.getByRole("textbox");
     await user.clear(input);

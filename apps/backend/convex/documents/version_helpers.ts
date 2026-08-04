@@ -24,7 +24,7 @@ export async function createVersionSnapshot(
     changeType: DocumentVersionChangeType;
     changeDescription?: string;
     restoredFromVersion?: number;
-  },
+  }
 ): Promise<number> {
   const document = await ctx.db.get(params.documentId);
   if (!document) {

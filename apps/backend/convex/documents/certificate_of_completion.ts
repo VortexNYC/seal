@@ -12,7 +12,13 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import { PDFDocument, type PDFFont, type PDFPage, StandardFonts, rgb } from "pdf-lib";
+import {
+  PDFDocument,
+  type PDFFont,
+  type PDFPage,
+  StandardFonts,
+  rgb,
+} from "pdf-lib";
 import { encode as encodeQr } from "uqr";
 
 import { internal } from "../_generated/api";
@@ -44,7 +50,10 @@ interface CertificatePageState {
   helveticaBold: PDFFont;
 }
 
-function addNewPageIfNeeded(state: CertificatePageState, requiredSpace: number): void {
+function addNewPageIfNeeded(
+  state: CertificatePageState,
+  requiredSpace: number
+): void {
   if (state.y - requiredSpace < MARGIN) {
     state.page = state.pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     state.y = PAGE_HEIGHT - MARGIN;
@@ -70,7 +79,10 @@ function drawHeader(state: CertificatePageState): void {
   state.y -= 25;
 }
 
-function drawDocumentDetails(state: CertificatePageState, data: CertificateData): void {
+function drawDocumentDetails(
+  state: CertificatePageState,
+  data: CertificateData
+): void {
   state.page.drawText("Document Details", {
     x: MARGIN,
     y: state.y,
@@ -86,12 +98,16 @@ function drawDocumentDetails(state: CertificatePageState, data: CertificateData)
     ["Status:", "Completed"],
     [
       "Created:",
-      new Date(data.document._creationTime).toLocaleString("en-US", { timeZone: "UTC" }),
+      new Date(data.document._creationTime).toLocaleString("en-US", {
+        timeZone: "UTC",
+      }),
     ],
     [
       "Completed:",
       data.document.completedAt
-        ? new Date(data.document.completedAt).toLocaleString("en-US", { timeZone: "UTC" })
+        ? new Date(data.document.completedAt).toLocaleString("en-US", {
+            timeZone: "UTC",
+          })
         : "N/A",
     ],
     ["Page Count:", String(data.document.pageCount ?? "N/A")],
@@ -123,7 +139,7 @@ function drawDocumentDetails(state: CertificatePageState, data: CertificateData)
 
 function drawRecipientsSection(
   state: CertificatePageState,
-  recipients: Doc<"document_recipients">[],
+  recipients: Doc<"document_recipients">[]
 ): void {
   addNewPageIfNeeded(state, 40);
   state.page.drawText("Signers & Recipients", {
@@ -164,7 +180,8 @@ function drawRecipientsSection(
       state.y -= 13;
     }
 
-    const completedAt = recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
+    const completedAt =
+      recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
     if (completedAt) {
       state.page.drawText(
         `Completed: ${new Date(completedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC`,
@@ -174,7 +191,7 @@ function drawRecipientsSection(
           size: 9,
           font: state.helvetica,
           color: rgb(0.3, 0.3, 0.3),
-        },
+        }
       );
       state.y -= 13;
     }
@@ -185,7 +202,10 @@ function drawRecipientsSection(
   state.y -= 10;
 }
 
-function drawAuditTrail(state: CertificatePageState, auditLogs: Doc<"audit_logs">[]): void {
+function drawAuditTrail(
+  state: CertificatePageState,
+  auditLogs: Doc<"audit_logs">[]
+): void {
   addNewPageIfNeeded(state, 40);
   state.page.drawText("Audit Trail Timeline", {
     x: MARGIN,
@@ -196,12 +216,16 @@ function drawAuditTrail(state: CertificatePageState, auditLogs: Doc<"audit_logs"
   });
   state.y -= 20;
 
-  const sortedLogs = [...auditLogs].sort((left, right) => left.createdAt - right.createdAt);
+  const sortedLogs = [...auditLogs].sort(
+    (left, right) => left.createdAt - right.createdAt
+  );
 
   for (const log of sortedLogs) {
     addNewPageIfNeeded(state, 28);
 
-    const timestamp = new Date(log.createdAt).toLocaleString("en-US", { timeZone: "UTC" });
+    const timestamp = new Date(log.createdAt).toLocaleString("en-US", {
+      timeZone: "UTC",
+    });
     const actionLabel = log.action
       .replace(/\./g, " ")
       .replace(/\b\w/g, (char) => char.toUpperCase());
@@ -266,7 +290,11 @@ function drawFooter(state: CertificatePageState): void {
   });
 }
 
-function drawQrCode(pdfDoc: PDFDocument, helvetica: PDFFont, data: CertificateData): void {
+function drawQrCode(
+  pdfDoc: PDFDocument,
+  helvetica: PDFFont,
+  data: CertificateData
+): void {
   if (!data.qrToken) {
     return;
   }
@@ -317,7 +345,9 @@ function drawQrCode(pdfDoc: PDFDocument, helvetica: PDFFont, data: CertificateDa
 /**
  * Generate the certificate PDF bytes
  */
-async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array> {
+async function generateCertificatePdf(
+  data: CertificateData
+): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -363,9 +393,12 @@ export const generateCertificate = internalAction({
   },
   handler: async (ctx, args): Promise<{ storageId: string }> => {
     // 1. Get document
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     if (!document) {
       throw new ConvexError("Document not found");
@@ -374,7 +407,7 @@ export const generateCertificate = internalAction({
     // 2. Get recipients
     const recipients = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     // 3. Get audit trail
@@ -382,7 +415,7 @@ export const generateCertificate = internalAction({
       internal.audit_logs.queries.getDocumentAuditTrailInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     // 4. Generate PDF
@@ -400,10 +433,13 @@ export const generateCertificate = internalAction({
     const storageId = await ctx.storage.store(blob);
 
     // 6. Store reference on the document
-    await ctx.runMutation(internal.documents.certificate_of_completion.storeCertificate, {
-      documentId: args.documentId,
-      storageId,
-    });
+    await ctx.runMutation(
+      internal.documents.certificate_of_completion.storeCertificate,
+      {
+        documentId: args.documentId,
+        storageId,
+      }
+    );
 
     return { storageId };
   },

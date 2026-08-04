@@ -26,7 +26,8 @@ const moneyProofMarkers: readonly RequiredMarker[] = [
   },
   {
     label: "settled paid-state proof command",
-    pattern: /prove:seal-document-payment-vortex-paid-state[\s\S]*--require-settled/i,
+    pattern:
+      /prove:seal-document-payment-vortex-paid-state[\s\S]*--require-settled/i,
   },
   {
     label: "fully settled evidence",
@@ -59,14 +60,19 @@ const postProofRetirementMarkers: readonly RequiredMarker[] = [
 
 const proofDocExists = existsSync(proofDocPath);
 const proofDoc = proofDocExists ? readFileSync(proofDocPath, "utf8") : "";
-const missingMoneyProofMarkers = proofDocExists ? missingMarkers(proofDoc, moneyProofMarkers) : [];
+const missingMoneyProofMarkers = proofDocExists
+  ? missingMarkers(proofDoc, moneyProofMarkers)
+  : [];
 const missingPostProofRetirementMarkers = proofDocExists
   ? missingMarkers(proofDoc, postProofRetirementMarkers)
   : [];
-const productionMoneyProofComplete = proofDocExists && missingMoneyProofMarkers.length === 0;
+const productionMoneyProofComplete =
+  proofDocExists && missingMoneyProofMarkers.length === 0;
 const postProofRetirementComplete =
-  productionMoneyProofComplete && missingPostProofRetirementMarkers.length === 0;
-const goLiveProofComplete = productionMoneyProofComplete && postProofRetirementComplete;
+  productionMoneyProofComplete &&
+  missingPostProofRetirementMarkers.length === 0;
+const goLiveProofComplete =
+  productionMoneyProofComplete && postProofRetirementComplete;
 
 if (proofDocExists && !productionMoneyProofComplete) {
   console.log(
@@ -76,8 +82,8 @@ if (proofDocExists && !productionMoneyProofComplete) {
         status: "invalid_production_proof_artifact",
       }),
       null,
-      2,
-    ),
+      2
+    )
   );
   process.exit(1);
 }
@@ -93,12 +99,17 @@ console.log(
           : "waiting_for_production_money_proof",
     }),
     null,
-    2,
-  ),
+    2
+  )
 );
 
-function missingMarkers(contents: string, markers: readonly RequiredMarker[]): readonly string[] {
-  return markers.filter((marker) => !marker.pattern.test(contents)).map((marker) => marker.label);
+function missingMarkers(
+  contents: string,
+  markers: readonly RequiredMarker[]
+): readonly string[] {
+  return markers
+    .filter((marker) => !marker.pattern.test(contents))
+    .map((marker) => marker.label);
 }
 
 function buildAudit(input: { readonly ok: boolean; readonly status: string }) {
@@ -131,7 +142,9 @@ function parseProofDocArg(args: readonly string[]): string | undefined {
     return undefined;
   }
   if (args.length !== 2 || args[0] !== "--proof-doc" || args[1].length === 0) {
-    console.error("Usage: audit-seal-vortex-production-proof-boundary.ts [--proof-doc <path>]");
+    console.error(
+      "Usage: audit-seal-vortex-production-proof-boundary.ts [--proof-doc <path>]"
+    );
     process.exit(1);
   }
   return resolve(args[1]);

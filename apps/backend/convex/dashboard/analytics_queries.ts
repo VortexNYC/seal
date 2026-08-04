@@ -11,7 +11,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { permissionQuery } from "../auth";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -53,7 +53,11 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
 
     // Verify document belongs to org
     const document = await ctx.db.get(args.documentId);
-    if (!document || document.organizationId !== organizationId || document.status === "deleted") {
+    if (
+      !document ||
+      document.organizationId !== organizationId ||
+      document.status === "deleted"
+    ) {
       return null;
     }
 
@@ -76,7 +80,8 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
     const recipientTimings = recipients.map((r) => {
       const sentAt = document.sentAt ?? document.createdAt;
       const timeToView = r.viewedAt ? r.viewedAt - sentAt : null;
-      const timeToSign = r.signedAt && r.viewedAt ? r.signedAt - r.viewedAt : null;
+      const timeToSign =
+        r.signedAt && r.viewedAt ? r.signedAt - r.viewedAt : null;
       const totalTime = r.signedAt ? r.signedAt - sentAt : null;
 
       return {
@@ -89,7 +94,9 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
         timeToSign: timeToSign !== null ? msToHumanReadable(timeToSign) : null,
         totalTime: totalTime !== null ? msToHumanReadable(totalTime) : null,
         daysPending:
-          r.status === "pending" ? Math.floor((Date.now() - sentAt) / (1000 * 60 * 60 * 24)) : null,
+          r.status === "pending"
+            ? Math.floor((Date.now() - sentAt) / (1000 * 60 * 60 * 24))
+            : null,
       };
     });
 
@@ -109,7 +116,12 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
       }>,
     }));
 
-    return { funnel, recipientTimings, emailEngagement, documentName: document.name };
+    return {
+      funnel,
+      recipientTimings,
+      emailEngagement,
+      documentName: document.name,
+    };
   },
 });
 
@@ -148,8 +160,15 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
     // Get documents sent in the date range
     const documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.and(q.neq(q.field("status"), "deleted"), q.gte(q.field("createdAt"), since)))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("status"), "deleted"),
+          q.gte(q.field("createdAt"), since)
+        )
+      )
       .collect();
 
     const sentDocs = documents.filter((d) => d.sentAt);
@@ -164,7 +183,9 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
     }
 
     // Get recipients for those documents
-    const docSentAtMap = new Map(sentDocs.map((d) => [d._id, sealAssertPresent(d.sentAt)]));
+    const docSentAtMap = new Map(
+      sentDocs.map((d) => [d._id, sealAssertPresent(d.sentAt)])
+    );
 
     const allRecipients: Doc<"document_recipients">[] = [];
     for (const doc of sentDocs) {
@@ -217,12 +238,21 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
 
     return {
       avgTimeToView:
-        viewTimeCount > 0 ? msToHumanReadable(Math.round(viewTimeSum / viewTimeCount)) : null,
+        viewTimeCount > 0
+          ? msToHumanReadable(Math.round(viewTimeSum / viewTimeCount))
+          : null,
       avgTimeToSign:
-        signTimeCount > 0 ? msToHumanReadable(Math.round(signTimeSum / signTimeCount)) : null,
+        signTimeCount > 0
+          ? msToHumanReadable(Math.round(signTimeSum / signTimeCount))
+          : null,
       avgTotalTurnaround:
-        totalTimeCount > 0 ? msToHumanReadable(Math.round(totalTimeSum / totalTimeCount)) : null,
-      distribution: Object.entries(buckets).map(([bucket, count]) => ({ bucket, count })),
+        totalTimeCount > 0
+          ? msToHumanReadable(Math.round(totalTimeSum / totalTimeCount))
+          : null,
+      distribution: Object.entries(buckets).map(([bucket, count]) => ({
+        bucket,
+        count,
+      })),
       sampleSize: allRecipients.length,
     };
   },
@@ -241,18 +271,23 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
 
     const documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
       .filter((q) =>
         q.and(
           q.neq(q.field("status"), "deleted"),
           q.gte(q.field("createdAt"), since),
-          q.neq(q.field("sourceTemplateId"), undefined),
-        ),
+          q.neq(q.field("sourceTemplateId"), undefined)
+        )
       )
       .collect();
 
     // Group by template
-    const byTemplate = new Map<string, { docs: Doc<"documents">[]; templateId: string }>();
+    const byTemplate = new Map<
+      string,
+      { docs: Doc<"documents">[]; templateId: string }
+    >();
     for (const doc of documents) {
       if (!doc.sourceTemplateId) continue;
       const key = doc.sourceTemplateId;
@@ -267,7 +302,9 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
       const template = await ctx.db.get(templateId as Id<"templates">);
 
       const sentDocs = docs.filter((d) => d.sentAt);
-      const completedDocs = docs.filter((d) => d.workflowStatus === "completed");
+      const completedDocs = docs.filter(
+        (d) => d.workflowStatus === "completed"
+      );
       const declinedDocs = docs.filter((d) => d.workflowStatus === "declined");
 
       // Avg turnaround for completed
@@ -282,16 +319,21 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
 
       results.push({
         templateId,
-        templateName: (template as { name?: string } | null)?.name ?? "Unknown Template",
+        templateName:
+          (template as { name?: string } | null)?.name ?? "Unknown Template",
         docsSent: sentDocs.length,
         completionRate:
-          sentDocs.length > 0 ? Math.round((completedDocs.length / sentDocs.length) * 100) : 0,
+          sentDocs.length > 0
+            ? Math.round((completedDocs.length / sentDocs.length) * 100)
+            : 0,
         avgTurnaround:
           turnaroundCount > 0
             ? msToHumanReadable(Math.round(turnaroundSum / turnaroundCount))
             : null,
         declineRate:
-          sentDocs.length > 0 ? Math.round((declinedDocs.length / sentDocs.length) * 100) : 0,
+          sentDocs.length > 0
+            ? Math.round((declinedDocs.length / sentDocs.length) * 100)
+            : 0,
       });
     }
 
@@ -311,15 +353,17 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
     // Get active documents (sent or in_progress)
     const documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
       .filter((q) =>
         q.and(
           q.neq(q.field("status"), "deleted"),
           q.or(
             q.eq(q.field("workflowStatus"), "sent"),
-            q.eq(q.field("workflowStatus"), "in_progress"),
-          ),
-        ),
+            q.eq(q.field("workflowStatus"), "in_progress")
+          )
+        )
       )
       .collect();
 
@@ -355,7 +399,11 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
 
       // Stale recipients (pending 3+ days without viewing)
       for (const r of recipients) {
-        if (r.status === "pending" && !r.viewedAt && now - sentAt > threeDaysMs) {
+        if (
+          r.status === "pending" &&
+          !r.viewedAt &&
+          now - sentAt > threeDaysMs
+        ) {
           staleRecipients.push({
             documentId: doc._id,
             documentName: doc.name,
@@ -368,9 +416,11 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
 
       // Approaching deadline
       if (doc.deadline) {
-        const daysRemaining = Math.ceil((doc.deadline - now) / (1000 * 60 * 60 * 24));
+        const daysRemaining = Math.ceil(
+          (doc.deadline - now) / (1000 * 60 * 60 * 24)
+        );
         const unsignedCount = recipients.filter(
-          (r) => r.status === "pending" || r.status === "viewed",
+          (r) => r.status === "pending" || r.status === "viewed"
         ).length;
         if (daysRemaining <= 3 && daysRemaining > 0 && unsignedCount > 0) {
           approachingDeadline.push({
@@ -393,7 +443,10 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
         .sort((a, b) => a.daysRemaining - b.daysRemaining)
         .slice(0, 10),
       bouncedEmails: bouncedEmails.slice(0, 10),
-      totalIssues: staleRecipients.length + approachingDeadline.length + bouncedEmails.length,
+      totalIssues:
+        staleRecipients.length +
+        approachingDeadline.length +
+        bouncedEmails.length,
     };
   },
 });

@@ -25,21 +25,24 @@ export const sendViewedNotification = internalAction({
     // 1. Get recipient info
     const recipient = await ctx.runQuery(
       internal.documents.recipient_email_action.getRecipientById,
-      { recipientId: args.recipientId },
+      { recipientId: args.recipientId }
     );
     if (!recipient) return { success: false, error: "Recipient not found" };
 
     // 2. Get document
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
     if (!document) return { success: false, error: "Document not found" };
 
     // 3. Check org notification settings
     if (document.organizationId) {
       const notificationSettings = await ctx.runQuery(
         internal.organizations.queries.getNotificationSettingsInternal,
-        { organizationId: document.organizationId },
+        { organizationId: document.organizationId }
       );
 
       // Opt-out: sendViewedNotification defaults to true
@@ -49,10 +52,14 @@ export const sendViewedNotification = internalAction({
     }
 
     // 4. Get document owner
-    const owner = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: document.ownerId,
-    });
-    if (!owner?.email) return { success: false, error: "Owner email not found" };
+    const owner = await ctx.runQuery(
+      internal.organizations.helpers.getUserById,
+      {
+        userId: document.ownerId,
+      }
+    );
+    if (!owner?.email)
+      return { success: false, error: "Owner email not found" };
 
     // 5. Send email
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";

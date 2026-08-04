@@ -32,7 +32,9 @@ export function PageBuilder({ content }: { content: PageBlock[] }) {
           case "featuresSection":
             return <FeaturesBlockComponent block={block} key={block._key} />;
           case "testimonialsSection":
-            return <TestimonialsBlockComponent block={block} key={block._key} />;
+            return (
+              <TestimonialsBlockComponent block={block} key={block._key} />
+            );
           case "pricingSection":
             return <PricingBlockComponent block={block} key={block._key} />;
           case "faqSection":
@@ -42,11 +44,17 @@ export function PageBuilder({ content }: { content: PageBlock[] }) {
           case "logoCloud":
             return <LogoCloudBlockComponent block={block} key={block._key} />;
           case "comparisonTable":
-            return <ComparisonTableBlockComponent block={block} key={block._key} />;
+            return (
+              <ComparisonTableBlockComponent block={block} key={block._key} />
+            );
           case "templatePreview":
-            return <TemplatePreviewBlockComponent block={block} key={block._key} />;
+            return (
+              <TemplatePreviewBlockComponent block={block} key={block._key} />
+            );
           case "legalDisclaimer":
-            return <LegalDisclaimerBlockComponent block={block} key={block._key} />;
+            return (
+              <LegalDisclaimerBlockComponent block={block} key={block._key} />
+            );
           default:
             return null;
         }

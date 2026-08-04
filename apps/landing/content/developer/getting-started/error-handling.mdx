@@ -195,14 +195,17 @@ interface ApiError {
 
 async function sendDocument(documentId: string, message: string) {
   try {
-    const response = await fetch(`https://seal.convex.site/api/v1/documents/${documentId}/send`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message }),
-    });
+    const response = await fetch(
+      `https://seal.convex.site/api/v1/documents/${documentId}/send`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      }
+    );
 
     if (!response.ok) {
       const error: ApiError = await response.json();
@@ -262,7 +265,7 @@ async function sendDocument(documentId: string, message: string) {
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelay: number = 1000,
+  baseDelay: number = 1000
 ): Promise<T> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -270,7 +273,8 @@ async function retryWithBackoff<T>(
     } catch (error) {
       const isLastAttempt = attempt === maxRetries - 1;
       const shouldRetry =
-        error instanceof Error && (error.message.includes("500") || error.message.includes("429"));
+        error instanceof Error &&
+        (error.message.includes("500") || error.message.includes("429"));
 
       if (isLastAttempt || !shouldRetry) {
         throw error;
@@ -287,7 +291,9 @@ async function retryWithBackoff<T>(
 }
 
 // Usage
-const result = await retryWithBackoff(() => sendDocument("doc123", "Please sign"));
+const result = await retryWithBackoff(() =>
+  sendDocument("doc123", "Please sign")
+);
 ```
 
 ## Validation Errors
@@ -305,8 +311,9 @@ For 400 errors, the `detail` field often contains specific validation informatio
 ```
 
 <Callout type="info">
-  **Tip**: Always log the full error response (including `type` and `instance`) to help with
-  debugging. The `instance` field shows exactly which request failed.
+  **Tip**: Always log the full error response (including `type` and `instance`)
+  to help with debugging. The `instance` field shows exactly which request
+  failed.
 </Callout>
 
 ## Best Practices

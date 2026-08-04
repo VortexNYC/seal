@@ -5,35 +5,48 @@ import { query, type QueryCtx } from "../_generated/server";
 import { isSubscriptionVisibleForCurrentSaasProvider } from "../auth/subscription_guards";
 import { authQuery } from "../auth/wrappers";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
-import { availablePlanValidator, billingSubscriptionValidator } from "./billing_query_validators";
+import {
+  availablePlanValidator,
+  billingSubscriptionValidator,
+} from "./billing_query_validators";
 
 type BillingQueryDbCtx = Pick<QueryCtx, "db">;
 
-async function getPriceAndProduct(ctx: BillingQueryDbCtx, externalPriceId: string) {
-  return await resolveSubscriptionPriceAndProductByAnyId(ctx.db, externalPriceId);
+async function getPriceAndProduct(
+  ctx: BillingQueryDbCtx,
+  externalPriceId: string
+) {
+  return await resolveSubscriptionPriceAndProductByAnyId(
+    ctx.db,
+    externalPriceId
+  );
 }
 
 function selectPlanPrices(prices: Doc<"subscription_prices">[]) {
   const monthly = prices.find(
     (price) =>
       price.recurring?.interval === "month" &&
-      (price.usageType === "licensed" || price.usageType === undefined),
+      (price.usageType === "licensed" || price.usageType === undefined)
   );
   const yearly = prices.find(
     (price) =>
       price.recurring?.interval === "year" &&
-      (price.usageType === "licensed" || price.usageType === undefined),
+      (price.usageType === "licensed" || price.usageType === undefined)
   );
   const fallback =
     monthly ??
     yearly ??
-    prices.find((price) => price.usageType === "licensed" || price.usageType === undefined);
+    prices.find(
+      (price) => price.usageType === "licensed" || price.usageType === undefined
+    );
 
   return { monthly, yearly, fallback };
 }
 
 function toPricing(
-  price: Pick<Doc<"subscription_prices">, "unitAmount" | "currency" | "lookupKey"> | undefined,
+  price:
+    | Pick<Doc<"subscription_prices">, "unitAmount" | "currency" | "lookupKey">
+    | undefined
 ) {
   if (!price) {
     return null;
@@ -46,10 +59,15 @@ function toPricing(
   };
 }
 
-async function buildAvailablePlan(ctx: BillingQueryDbCtx, product: Doc<"subscription_products">) {
+async function buildAvailablePlan(
+  ctx: BillingQueryDbCtx,
+  product: Doc<"subscription_products">
+) {
   const prices = await ctx.db
     .query("subscription_prices")
-    .withIndex("by_subscription_product_id", (q) => q.eq("subscriptionProductId", product._id))
+    .withIndex("by_subscription_product_id", (q) =>
+      q.eq("subscriptionProductId", product._id)
+    )
     .filter((q) => q.eq(q.field("status"), "active"))
     .collect();
 
@@ -72,22 +90,31 @@ async function buildAvailablePlan(ctx: BillingQueryDbCtx, product: Doc<"subscrip
   };
 }
 
-type AvailablePlanResult = NonNullable<Awaited<ReturnType<typeof buildAvailablePlan>>>;
+type AvailablePlanResult = NonNullable<
+  Awaited<ReturnType<typeof buildAvailablePlan>>
+>;
 
 function availablePlanDedupeKey(plan: AvailablePlanResult): string {
   const monthlyLookupKey = plan.pricing.monthly?.lookupKey ?? "";
   const yearlyLookupKey = plan.pricing.yearly?.lookupKey ?? "";
-  return [plan.tier ?? plan.productId, monthlyLookupKey, yearlyLookupKey].join(":");
+  return [plan.tier ?? plan.productId, monthlyLookupKey, yearlyLookupKey].join(
+    ":"
+  );
 }
 
 function shouldPreferAvailablePlan(
   candidate: AvailablePlanResult,
-  current: AvailablePlanResult,
+  current: AvailablePlanResult
 ): boolean {
-  return candidate.productId.startsWith("vtx_") && !current.productId.startsWith("vtx_");
+  return (
+    candidate.productId.startsWith("vtx_") &&
+    !current.productId.startsWith("vtx_")
+  );
 }
 
-function dedupeAvailablePlans(plans: readonly AvailablePlanResult[]): AvailablePlanResult[] {
+function dedupeAvailablePlans(
+  plans: readonly AvailablePlanResult[]
+): AvailablePlanResult[] {
   const byPlanKey = new Map<string, AvailablePlanResult>();
 
   for (const plan of plans) {
@@ -101,15 +128,20 @@ function dedupeAvailablePlans(plans: readonly AvailablePlanResult[]): AvailableP
   return [...byPlanKey.values()];
 }
 
-async function getCurrentSubscription(ctx: BillingQueryDbCtx, organizationId: Id<"organizations">) {
+async function getCurrentSubscription(
+  ctx: BillingQueryDbCtx,
+  organizationId: Id<"organizations">
+) {
   const subscriptions = await ctx.db
     .query("subscriptions")
-    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
+    .withIndex("by_organization_id", (q) =>
+      q.eq("organizationId", organizationId)
+    )
     .order("desc")
     .take(20);
   return (
     subscriptions.find((subscription) =>
-      isSubscriptionVisibleForCurrentSaasProvider(organizationId, subscription),
+      isSubscriptionVisibleForCurrentSaasProvider(organizationId, subscription)
     ) ?? null
   );
 }
@@ -117,7 +149,7 @@ async function getCurrentSubscription(ctx: BillingQueryDbCtx, organizationId: Id
 function buildSubscriptionDetails(
   subscription: Doc<"subscriptions">,
   price: Doc<"subscription_prices"> | null,
-  product: Doc<"subscription_products"> | null,
+  product: Doc<"subscription_products"> | null
 ) {
   return {
     status: subscription.status,
@@ -132,7 +164,9 @@ function buildSubscriptionDetails(
   };
 }
 
-function buildSubscriptionPlanDetails(product: Doc<"subscription_products"> | null) {
+function buildSubscriptionPlanDetails(
+  product: Doc<"subscription_products"> | null
+) {
   return {
     tier: product?.metadata?.tier ?? "free",
     planName: product?.name ?? "Free",
@@ -140,7 +174,9 @@ function buildSubscriptionPlanDetails(product: Doc<"subscription_products"> | nu
   };
 }
 
-function buildSubscriptionPriceDetails(price: Doc<"subscription_prices"> | null) {
+function buildSubscriptionPriceDetails(
+  price: Doc<"subscription_prices"> | null
+) {
   return {
     unitAmount: price?.unitAmount ?? 0,
     currency: price?.currency ?? "usd",
@@ -160,7 +196,10 @@ export const getSubscriptionDetails = authQuery({
       return null;
     }
 
-    const { price, product } = await getPriceAndProduct(ctx, subscription.externalPriceId);
+    const { price, product } = await getPriceAndProduct(
+      ctx,
+      subscription.externalPriceId
+    );
     return buildSubscriptionDetails(subscription, price, product);
   },
 });

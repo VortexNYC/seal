@@ -53,7 +53,11 @@ function GlobalLoadingIndicator() {
 
   if (pendingMutations.length === 0) return null;
 
-  return <div className="global-loading">Saving {pendingMutations.length} item(s)...</div>;
+  return (
+    <div className="global-loading">
+      Saving {pendingMutations.length} item(s)...
+    </div>
+  );
 }
 ```
 

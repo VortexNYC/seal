@@ -15,7 +15,9 @@ vi.mock("sonner", () => ({
 
 import { EditContactDialog } from "./edit-contact-dialog";
 
-function makeContact(overrides: Partial<Doc<"contacts">> = {}): Doc<"contacts"> {
+function makeContact(
+  overrides: Partial<Doc<"contacts">> = {}
+): Doc<"contacts"> {
   return {
     _id: "contact_1" as Id<"contacts">,
     _creationTime: 1700000000000,
@@ -41,7 +43,7 @@ function renderDialog(
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     contact?: Doc<"contacts">;
-  } = {},
+  } = {}
 ) {
   const props = {
     open: true,
@@ -123,7 +125,9 @@ describe("EditContactDialog", () => {
 
     test("renders Save Changes button", () => {
       renderDialog();
-      expect(screen.getByRole("button", { name: /save changes/i })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: /save changes/i })
+      ).toBeDefined();
     });
   });
 
@@ -173,7 +177,7 @@ describe("EditContactDialog", () => {
           firstName: "Janet",
           lastName: "Smith",
           email: "jane@example.com",
-        }),
+        })
       );
     });
 

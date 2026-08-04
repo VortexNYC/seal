@@ -7,8 +7,15 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { query, type QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth";
-import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
-import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
+import {
+  ACCESS_ERRORS,
+  checkDocumentAccess,
+  getDocumentOrThrow,
+} from "../auth/access_control";
+import {
+  isRecipientComplete,
+  isRecipientTerminal,
+} from "../schemas/document_recipients";
 import {
   findRecipientByToken,
   groupRecipientsByOrder,
@@ -46,7 +53,7 @@ function getSequentialProgress(recipients: Doc<"document_recipients">[]): {
 async function getSequentialSigningState(
   ctx: QueryCtx,
   document: Doc<"documents">,
-  recipient: Doc<"document_recipients">,
+  recipient: Doc<"document_recipients">
 ): Promise<{
   waitingForPreviousGroup: boolean;
   sequentialProgress?: { currentGroup: number; totalGroups: number };
@@ -74,7 +81,7 @@ function buildRecipientTokenResponse(
   recipient: Doc<"document_recipients">,
   document: Doc<"documents">,
   organization: Doc<"organizations"> | null,
-  sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>,
+  sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>
 ) {
   // TODO: Check org tier — if Free, use Seal defaults instead of brandingSettings
   const branding = organization?.brandingSettings?.enabled
@@ -123,7 +130,8 @@ function buildRecipientTokenResponse(
       : undefined,
     signingSettings: organization?.signingSettings
       ? {
-          allowedSignatureTypes: organization.signingSettings.allowedSignatureTypes,
+          allowedSignatureTypes:
+            organization.signingSettings.allowedSignatureTypes,
           esignConsentText: organization.signingSettings.esignConsentText,
         }
       : undefined,
@@ -158,7 +166,9 @@ export const getDocumentRecipients = authQuery({
         const recipient = await ctx.db
           .query("document_recipients")
           .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-          .filter((q) => q.eq(q.field("email"), user.email?.toLowerCase() || ""))
+          .filter((q) =>
+            q.eq(q.field("email"), user.email?.toLowerCase() || "")
+          )
           .first();
         isRecipient = recipient !== null;
       }
@@ -242,14 +252,20 @@ export const getRecipientByToken = query({
     const owner = await ctx.db.get(document.ownerId);
     const ownerName = owner?.name || owner?.email || "the sender";
 
-    const organization = document.organizationId ? await ctx.db.get(document.organizationId) : null;
-    const sequentialState = await getSequentialSigningState(ctx, document, recipient);
+    const organization = document.organizationId
+      ? await ctx.db.get(document.organizationId)
+      : null;
+    const sequentialState = await getSequentialSigningState(
+      ctx,
+      document,
+      recipient
+    );
     return buildRecipientTokenResponse(
       ownerName,
       recipient,
       document,
       organization,
-      sequentialState,
+      sequentialState
     );
   },
 });
@@ -377,7 +393,7 @@ export const getMyRecipientDocuments = authQuery({
 
     // 4. Return array of documents with recipient info
     return Array.from(documentsMap.values()).sort(
-      (a, b) => b.document.createdAt - a.document.createdAt,
+      (a, b) => b.document.createdAt - a.document.createdAt
     );
   },
 });

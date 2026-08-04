@@ -11,7 +11,9 @@ import { ApiError } from "./errors";
 
 describe("SCOPE_PERMISSION_MAP", () => {
   test("WEBHOOKS_MANAGE maps to settings:integrations", () => {
-    expect(SCOPE_PERMISSION_MAP[API_SCOPES.WEBHOOKS_MANAGE]).toEqual(["settings:integrations"]);
+    expect(SCOPE_PERMISSION_MAP[API_SCOPES.WEBHOOKS_MANAGE]).toEqual([
+      "settings:integrations",
+    ]);
   });
 
   test("all scopes have at least one mapped permission", () => {
@@ -27,17 +29,23 @@ describe("canUserUseScope", () => {
   describe("WEBHOOKS_MANAGE scope", () => {
     test("grants access when user has settings:integrations", () => {
       const permissions = ["settings:view", "settings:integrations"];
-      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(true);
+      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(
+        true
+      );
     });
 
     test("denies access when user only has settings:view", () => {
       const permissions = ["settings:view", "documents:view"];
-      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(false);
+      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(
+        false
+      );
     });
 
     test("denies access when user has no settings permissions", () => {
       const permissions = ["documents:view", "documents:create"];
-      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(false);
+      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(
+        false
+      );
     });
 
     test("denies access with empty permissions", () => {
@@ -46,7 +54,9 @@ describe("canUserUseScope", () => {
 
     test("denies access with old webhooks:manage permission (no longer mapped)", () => {
       const permissions = ["webhooks:manage"];
-      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(false);
+      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(
+        false
+      );
     });
 
     test("denies access with granular webhook permissions (not mapped)", () => {
@@ -56,19 +66,29 @@ describe("canUserUseScope", () => {
         "webhooks:update",
         "webhooks:delete",
       ];
-      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(false);
+      expect(canUserUseScope(permissions, API_SCOPES.WEBHOOKS_MANAGE)).toBe(
+        false
+      );
     });
   });
 
   describe("other scopes for comparison", () => {
     test("DOCUMENTS_READ grants access with documents:view", () => {
-      expect(canUserUseScope(["documents:view"], API_SCOPES.DOCUMENTS_READ)).toBe(true);
+      expect(
+        canUserUseScope(["documents:view"], API_SCOPES.DOCUMENTS_READ)
+      ).toBe(true);
     });
 
     test("DOCUMENTS_WRITE grants access with any write permission", () => {
-      expect(canUserUseScope(["documents:create"], API_SCOPES.DOCUMENTS_WRITE)).toBe(true);
-      expect(canUserUseScope(["documents:edit"], API_SCOPES.DOCUMENTS_WRITE)).toBe(true);
-      expect(canUserUseScope(["documents:delete"], API_SCOPES.DOCUMENTS_WRITE)).toBe(true);
+      expect(
+        canUserUseScope(["documents:create"], API_SCOPES.DOCUMENTS_WRITE)
+      ).toBe(true);
+      expect(
+        canUserUseScope(["documents:edit"], API_SCOPES.DOCUMENTS_WRITE)
+      ).toBe(true);
+      expect(
+        canUserUseScope(["documents:delete"], API_SCOPES.DOCUMENTS_WRITE)
+      ).toBe(true);
     });
   });
 });
@@ -86,7 +106,9 @@ describe("requireScope", () => {
       scopes: [],
     } as unknown as ApiAuthContext;
 
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
+      ApiError
+    );
   });
 
   test("allows owner with the granted scope (owner carries the mapped permission)", () => {
@@ -119,7 +141,9 @@ describe("requireScope", () => {
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
     } as unknown as ApiAuthContext;
 
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
+      ApiError
+    );
   });
 
   test("allows API key with the granted scope AND the mapped permission", () => {
@@ -141,7 +165,9 @@ describe("requireScope", () => {
       scopes: [],
     } as unknown as ApiAuthContext;
 
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
+      ApiError
+    );
   });
 
   test("rejects API key with the scope but no mapped permission (defense in depth)", () => {
@@ -152,6 +178,8 @@ describe("requireScope", () => {
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
     } as unknown as ApiAuthContext;
 
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
+      ApiError
+    );
   });
 });

@@ -5,7 +5,7 @@ import { countSignatureFields } from "./signature-fields";
 
 const buildField = (
   fieldType: Doc<"signature_fields">["fieldType"],
-  idSuffix: string,
+  idSuffix: string
 ): Doc<"signature_fields"> => ({
   _id: `field-${idSuffix}` as Id<"signature_fields">,
   _creationTime: 0,

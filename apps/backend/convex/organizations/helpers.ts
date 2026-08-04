@@ -46,7 +46,9 @@ export const getUserByAuthSubject = internalQuery({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.authSubject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", args.authSubject)
+      )
       .first();
   },
 });
@@ -67,7 +69,11 @@ export const getActiveMembershipByUserAndOrganization = internalQuery({
     if (!user || !organization) {
       return null;
     }
-    const membership = await resolveComponentMembershipForOrganization(ctx, user, organization);
+    const membership = await resolveComponentMembershipForOrganization(
+      ctx,
+      user,
+      organization
+    );
 
     if (!membership || membership.status !== "active") {
       return null;
@@ -95,9 +101,13 @@ export const getActiveMemberCount = internalQuery({
     if (!organization) {
       return 0;
     }
-    const members = await listComponentMembersByOrganization(ctx, organization, {
-      status: "active",
-    });
+    const members = await listComponentMembersByOrganization(
+      ctx,
+      organization,
+      {
+        status: "active",
+      }
+    );
     return members.length;
   },
 });

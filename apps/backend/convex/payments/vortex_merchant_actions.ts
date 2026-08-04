@@ -1,7 +1,5 @@
 "use node";
 
-import { ConvexError, v } from "convex/values";
-
 import {
   createMerchantAccount,
   createMerchantOnboardingLink,
@@ -11,6 +9,7 @@ import {
   getMerchantAccountSettlements,
   getMerchantAccountState,
 } from "@vortexnyc/payments-sdk";
+import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -20,7 +19,13 @@ import { isAdmin } from "../auth.utils";
 import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_actions";
 import { createVortexBillingClient } from "./vortex_billing_processor";
 
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly Json[]
+  | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
 type VortexMerchantState = {
@@ -52,7 +57,13 @@ type CreateVortexOnboardingLinkResult = {
 };
 
 type FeeHandling = "absorb" | "pass_to_recipient";
-type SettlementStatus = "accruing" | "closed" | "approved" | "paid_out" | "failed" | "reversed";
+type SettlementStatus =
+  | "accruing"
+  | "closed"
+  | "approved"
+  | "paid_out"
+  | "failed"
+  | "reversed";
 type PayoutStatus =
   | "pending"
   | "submitted"
@@ -166,7 +177,7 @@ const settlementStatusValidator = v.union(
   v.literal("approved"),
   v.literal("paid_out"),
   v.literal("failed"),
-  v.literal("reversed"),
+  v.literal("reversed")
 );
 const payoutStatusValidator = v.union(
   v.literal("pending"),
@@ -175,9 +186,12 @@ const payoutStatusValidator = v.union(
   v.literal("succeeded"),
   v.literal("failed"),
   v.literal("returned"),
-  v.literal("held"),
+  v.literal("held")
 );
-const moneyDirectionValidator = v.union(v.literal("credit"), v.literal("debit"));
+const moneyDirectionValidator = v.union(
+  v.literal("credit"),
+  v.literal("debit")
+);
 
 const settlementSnapshotValidator = v.object({
   id: v.string(),
@@ -220,12 +234,16 @@ const payoutSnapshotValidator = v.object({
 
 const sellerPayoutCapabilityValidator = v.object({
   key: v.string(),
-  status: v.union(v.literal("enabled"), v.literal("disabled"), v.literal("unknown")),
+  status: v.union(
+    v.literal("enabled"),
+    v.literal("disabled"),
+    v.literal("unknown")
+  ),
   reason: v.string(),
   source: v.union(
     v.literal("payout_profile"),
     v.literal("agreement_guardrail"),
-    v.literal("operator_policy"),
+    v.literal("operator_policy")
   ),
 });
 
@@ -285,16 +303,19 @@ const EMPTY_VORTEX_MERCHANT_PAYOUT_DATA: VortexMerchantPayoutDataResult = {
 
 async function resolveAdminMembership(
   ctx: ActionCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<void> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
   }
 
-  const user = await ctx.runQuery(internal.organizations.helpers.getUserByAuthSubject, {
-    authSubject: identity.subject,
-  });
+  const user = await ctx.runQuery(
+    internal.organizations.helpers.getUserByAuthSubject,
+    {
+      authSubject: identity.subject,
+    }
+  );
 
   if (!user) {
     throw new ConvexError("User not found");
@@ -305,7 +326,7 @@ async function resolveAdminMembership(
     {
       userId: user._id,
       organizationId,
-    },
+    }
   );
 
   if (!membership) {
@@ -313,22 +334,27 @@ async function resolveAdminMembership(
   }
 
   if (!isAdmin(membership)) {
-    throw new ConvexError("Only workspace owners and admins can manage Vortex merchant settings");
+    throw new ConvexError(
+      "Only workspace owners and admins can manage Vortex merchant settings"
+    );
   }
 }
 
 async function resolveOrganizationMembership(
   ctx: ActionCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<void> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
   }
 
-  const user = await ctx.runQuery(internal.organizations.helpers.getUserByAuthSubject, {
-    authSubject: identity.subject,
-  });
+  const user = await ctx.runQuery(
+    internal.organizations.helpers.getUserByAuthSubject,
+    {
+      authSubject: identity.subject,
+    }
+  );
 
   if (!user) {
     throw new ConvexError("User not found");
@@ -339,7 +365,7 @@ async function resolveOrganizationMembership(
     {
       userId: user._id,
       organizationId,
-    },
+    }
   );
 
   if (!membership) {
@@ -375,7 +401,10 @@ function readOptionalNumber(value: unknown, label: string): number | undefined {
   return readNumber(value, label);
 }
 
-function readOptionalBoolean(value: unknown, label: string): boolean | undefined {
+function readOptionalBoolean(
+  value: unknown,
+  label: string
+): boolean | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -448,17 +477,22 @@ function readStringArray(value: unknown, label: string): string[] {
 function readListItems<T>(
   body: unknown,
   label: string,
-  mapItem: (item: Record<string, unknown>, index: number) => T,
+  mapItem: (item: Record<string, unknown>, index: number) => T
 ): T[] {
   const root = readObject(body, `${label} response`);
   const data = readObject(root.data, `${label} response data`);
   if (!Array.isArray(data.items)) {
     throw new ConvexError(`${label} response data.items must be an array`);
   }
-  return data.items.map((item, index) => mapItem(readObject(item, `${label} item`), index));
+  return data.items.map((item, index) =>
+    mapItem(readObject(item, `${label} item`), index)
+  );
 }
 
-function readSellerPayoutCapabilities(value: unknown, label: string): SellerPayoutCapability[] {
+function readSellerPayoutCapabilities(
+  value: unknown,
+  label: string
+): SellerPayoutCapability[] {
   if (!Array.isArray(value)) {
     throw new ConvexError(`${label} must be an array`);
   }
@@ -485,22 +519,37 @@ function readSellerPayoutCapabilities(value: unknown, label: string): SellerPayo
   });
 }
 
-function readSettlementSnapshot(value: Record<string, unknown>, index: number): SettlementSnapshot {
+function readSettlementSnapshot(
+  value: Record<string, unknown>,
+  index: number
+): SettlementSnapshot {
   const label = `Vortex settlement ${index}`;
   return {
     id: readString(value.id, `${label}.id`),
     environment: readString(value.environment, `${label}.environment`),
-    merchantAccountId: readString(value.merchantAccountId, `${label}.merchantAccountId`),
+    merchantAccountId: readString(
+      value.merchantAccountId,
+      `${label}.merchantAccountId`
+    ),
     currency: readString(value.currency, `${label}.currency`),
     status: readSettlementStatus(value.status, `${label}.status`),
     grossAmount: readNumber(value.grossAmount, `${label}.grossAmount`),
     feeAmount: readNumber(value.feeAmount, `${label}.feeAmount`),
     refundAmount: readNumber(value.refundAmount, `${label}.refundAmount`),
-    adjustmentAmount: readNumber(value.adjustmentAmount, `${label}.adjustmentAmount`),
+    adjustmentAmount: readNumber(
+      value.adjustmentAmount,
+      `${label}.adjustmentAmount`
+    ),
     netAmount: readNumber(value.netAmount, `${label}.netAmount`),
     direction: readDirection(value.direction, `${label}.direction`),
-    accrualStartAt: readOptionalString(value.accrualStartAt, `${label}.accrualStartAt`),
-    accrualEndAt: readOptionalString(value.accrualEndAt, `${label}.accrualEndAt`),
+    accrualStartAt: readOptionalString(
+      value.accrualStartAt,
+      `${label}.accrualStartAt`
+    ),
+    accrualEndAt: readOptionalString(
+      value.accrualEndAt,
+      `${label}.accrualEndAt`
+    ),
     autoCloseAt: readOptionalString(value.autoCloseAt, `${label}.autoCloseAt`),
     openedAt: readOptionalString(value.openedAt, `${label}.openedAt`),
     closedAt: readOptionalString(value.closedAt, `${label}.closedAt`),
@@ -510,66 +559,98 @@ function readSettlementSnapshot(value: Record<string, unknown>, index: number): 
   };
 }
 
-function readPayoutSnapshot(value: Record<string, unknown>, index: number): PayoutSnapshot {
+function readPayoutSnapshot(
+  value: Record<string, unknown>,
+  index: number
+): PayoutSnapshot {
   const label = `Vortex payout ${index}`;
   return {
     id: readString(value.id, `${label}.id`),
     environment: readString(value.environment, `${label}.environment`),
-    merchantAccountId: readString(value.merchantAccountId, `${label}.merchantAccountId`),
-    payoutAccountId: readOptionalString(value.payoutAccountId, `${label}.payoutAccountId`),
-    settlementId: readOptionalString(value.settlementId, `${label}.settlementId`),
+    merchantAccountId: readString(
+      value.merchantAccountId,
+      `${label}.merchantAccountId`
+    ),
+    payoutAccountId: readOptionalString(
+      value.payoutAccountId,
+      `${label}.payoutAccountId`
+    ),
+    settlementId: readOptionalString(
+      value.settlementId,
+      `${label}.settlementId`
+    ),
     status: readPayoutStatus(value.status, `${label}.status`),
     amount: readNumber(value.amount, `${label}.amount`),
     currency: readString(value.currency, `${label}.currency`),
     direction: readDirection(value.direction, `${label}.direction`),
-    expectedArrivalAt: readOptionalString(value.expectedArrivalAt, `${label}.expectedArrivalAt`),
+    expectedArrivalAt: readOptionalString(
+      value.expectedArrivalAt,
+      `${label}.expectedArrivalAt`
+    ),
     failureCode: readOptionalString(value.failureCode, `${label}.failureCode`),
-    failureMessage: readOptionalString(value.failureMessage, `${label}.failureMessage`),
+    failureMessage: readOptionalString(
+      value.failureMessage,
+      `${label}.failureMessage`
+    ),
     createdAt: readString(value.createdAt, `${label}.createdAt`),
     updatedAt: readString(value.updatedAt, `${label}.updatedAt`),
   };
 }
 
-function readPayoutProfile(body: unknown): MerchantSellerPayoutProfileSnapshot | null {
+function readPayoutProfile(
+  body: unknown
+): MerchantSellerPayoutProfileSnapshot | null {
   const root = readObject(body, "Vortex payout profile response");
   if (root.data === null) {
     return null;
   }
   const data = readObject(root.data, "Vortex payout profile response data");
   return {
-    environment: readString(data.environment, "Vortex payout profile environment"),
-    merchantAccountId: readString(data.merchantAccountId, "Vortex payout profile merchant id"),
+    environment: readString(
+      data.environment,
+      "Vortex payout profile environment"
+    ),
+    merchantAccountId: readString(
+      data.merchantAccountId,
+      "Vortex payout profile merchant id"
+    ),
     mode: readString(data.mode, "Vortex payout profile mode"),
     payoutRail: readString(data.payoutRail, "Vortex payout profile rail"),
-    payoutSchedule: readString(data.payoutSchedule, "Vortex payout profile schedule"),
-    currency: readOptionalString(data.currency, "Vortex payout profile currency"),
+    payoutSchedule: readString(
+      data.payoutSchedule,
+      "Vortex payout profile schedule"
+    ),
+    currency: readOptionalString(
+      data.currency,
+      "Vortex payout profile currency"
+    ),
     settlementDelayDays: readOptionalNumber(
       data.settlementDelayDays,
-      "Vortex payout profile settlement delay days",
+      "Vortex payout profile settlement delay days"
     ),
     submissionDelayDays: readOptionalNumber(
       data.submissionDelayDays,
-      "Vortex payout profile submission delay days",
+      "Vortex payout profile submission delay days"
     ),
     fundingRequirement: readOptionalString(
       data.fundingRequirement,
-      "Vortex payout profile funding requirement",
+      "Vortex payout profile funding requirement"
     ),
     sameDayAchEligible: readOptionalBoolean(
       data.sameDayAchEligible,
-      "Vortex payout profile same day ACH eligibility",
+      "Vortex payout profile same day ACH eligibility"
     ),
     instantPayoutEligible: readOptionalBoolean(
       data.instantPayoutEligible,
-      "Vortex payout profile instant payout eligibility",
+      "Vortex payout profile instant payout eligibility"
     ),
     grossPayoutEnabled: readOptionalBoolean(
       data.grossPayoutEnabled,
-      "Vortex payout profile gross payout flag",
+      "Vortex payout profile gross payout flag"
     ),
     capabilities: readSellerPayoutCapabilities(
       data.capabilities,
-      "Vortex payout profile capabilities",
+      "Vortex payout profile capabilities"
     ),
     fetchedAt: readString(data.fetchedAt, "Vortex payout profile fetched at"),
   };
@@ -581,7 +662,7 @@ function signedAmount(direction: MoneyDirection, amount: number): number {
 
 function getOrCreateDerivedCurrency(
   balances: Map<string, MutableDerivedCurrencyBalance>,
-  currency: string,
+  currency: string
 ): MutableDerivedCurrencyBalance {
   const existing = balances.get(currency);
   if (existing !== undefined) {
@@ -670,12 +751,17 @@ function readVortexMerchantAccountId(body: unknown): string {
   );
 }
 
-function readVortexOnboardingLink(body: unknown): CreateVortexOnboardingLinkResult {
+function readVortexOnboardingLink(
+  body: unknown
+): CreateVortexOnboardingLinkResult {
   const root = readObject(body, "Vortex onboarding link response");
   const data = readObject(root.data, "Vortex onboarding link response data");
   return {
     url: readString(data.url, "Vortex onboarding link url"),
-    onboardingSessionId: readString(data.onboardingSessionId, "Vortex onboarding session id"),
+    onboardingSessionId: readString(
+      data.onboardingSessionId,
+      "Vortex onboarding session id"
+    ),
     expiresAt: readString(data.expiresAt, "Vortex onboarding link expiration"),
   };
 }
@@ -683,7 +769,7 @@ function readVortexOnboardingLink(body: unknown): CreateVortexOnboardingLinkResu
 function mapCapabilityStatus(
   activeCapabilityKeys: readonly string[],
   restrictedCapabilityKeys: readonly string[],
-  capabilityKey: string,
+  capabilityKey: string
 ): string {
   if (activeCapabilityKeys.includes(capabilityKey)) {
     return "active";
@@ -698,31 +784,37 @@ function mapVortexState(input: {
   readonly stateBody: unknown;
   readonly capabilitiesBody: unknown;
 }): VortexMerchantState {
-  const stateRoot = readObject(input.stateBody, "Vortex merchant state response");
-  const state = readObject(stateRoot.data, "Vortex merchant state response data");
+  const stateRoot = readObject(
+    input.stateBody,
+    "Vortex merchant state response"
+  );
+  const state = readObject(
+    stateRoot.data,
+    "Vortex merchant state response data"
+  );
   const capabilitiesRoot = readObject(
     input.capabilitiesBody,
-    "Vortex merchant capabilities response",
+    "Vortex merchant capabilities response"
   );
   const capabilities = readObject(
     capabilitiesRoot.data,
-    "Vortex merchant capabilities response data",
+    "Vortex merchant capabilities response data"
   );
   const activeCapabilityKeys = readStringArray(
     state.activeCapabilityKeys,
-    "Vortex merchant active capability keys",
+    "Vortex merchant active capability keys"
   );
   const restrictedCapabilityKeys = readStringArray(
     state.restrictedCapabilityKeys,
-    "Vortex merchant restricted capability keys",
+    "Vortex merchant restricted capability keys"
   );
   const capabilityActiveKeys = readStringArray(
     capabilities.activeCapabilityKeys,
-    "Vortex merchant capabilities active keys",
+    "Vortex merchant capabilities active keys"
   );
   const capabilityRestrictedKeys = readStringArray(
     capabilities.restrictedCapabilityKeys,
-    "Vortex merchant capabilities restricted keys",
+    "Vortex merchant capabilities restricted keys"
   );
   const mergedActiveCapabilityKeys = [
     ...new Set([...activeCapabilityKeys, ...capabilityActiveKeys]),
@@ -730,20 +822,37 @@ function mapVortexState(input: {
   const mergedRestrictedCapabilityKeys = [
     ...new Set([...restrictedCapabilityKeys, ...capabilityRestrictedKeys]),
   ];
-  const payoutReadiness = readString(state.payoutReadiness, "Vortex merchant payout readiness");
-  const chargesEnabled = readBoolean(state.canAcceptPayments, "Vortex merchant payment readiness");
+  const payoutReadiness = readString(
+    state.payoutReadiness,
+    "Vortex merchant payout readiness"
+  );
+  const chargesEnabled = readBoolean(
+    state.canAcceptPayments,
+    "Vortex merchant payment readiness"
+  );
   const disabledReason =
-    readOptionalString(state.payoutBlockReason, "Vortex merchant payout block reason") ??
-    (chargesEnabled ? undefined : readString(state.merchantStatus, "Vortex merchant status"));
+    readOptionalString(
+      state.payoutBlockReason,
+      "Vortex merchant payout block reason"
+    ) ??
+    (chargesEnabled
+      ? undefined
+      : readString(state.merchantStatus, "Vortex merchant status"));
 
   return {
     chargesEnabled,
     payoutsEnabled: payoutReadiness === "ready",
     detailsSubmitted:
-      readOptionalString(state.onboardingStatus, "Vortex merchant onboarding status") ===
-        "approved" || readString(state.merchantStatus, "Vortex merchant status") === "active",
+      readOptionalString(
+        state.onboardingStatus,
+        "Vortex merchant onboarding status"
+      ) === "approved" ||
+      readString(state.merchantStatus, "Vortex merchant status") === "active",
     requirements: {
-      currentlyDue: readStringArray(state.openRequirementIds, "Vortex merchant open requirements"),
+      currentlyDue: readStringArray(
+        state.openRequirementIds,
+        "Vortex merchant open requirements"
+      ),
       eventuallyDue: [],
       pastDue: [],
       ...(disabledReason !== undefined ? { disabledReason } : {}),
@@ -754,27 +863,38 @@ function mapVortexState(input: {
         : mapCapabilityStatus(
             mergedActiveCapabilityKeys,
             mergedRestrictedCapabilityKeys,
-            "card_payments",
+            "card_payments"
           ),
       transfers: payoutReadiness,
       usBankAccountAchPayments: mapCapabilityStatus(
         mergedActiveCapabilityKeys,
         mergedRestrictedCapabilityKeys,
-        "us_bank_account_ach_payments",
+        "us_bank_account_ach_payments"
       ),
     },
   };
 }
 
 async function readRemoteVortexMerchantState(
-  merchantAccountId: string,
+  merchantAccountId: string
 ): Promise<VortexMerchantState> {
   const env = readVortexBillingEnvFromProcess();
-  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const client = createVortexBillingClient({
+    apiBaseUrl: env.apiBaseUrl,
+    apiKey: env.apiKey,
+  });
   const environment = env.paymentsEnvironment;
   const [stateResult, capabilitiesResult] = await Promise.all([
-    getMerchantAccountState({ client, path: { merchantAccountId }, query: { environment } }),
-    getMerchantAccountCapabilities({ client, path: { merchantAccountId }, query: { environment } }),
+    getMerchantAccountState({
+      client,
+      path: { merchantAccountId },
+      query: { environment },
+    }),
+    getMerchantAccountCapabilities({
+      client,
+      path: { merchantAccountId },
+      query: { environment },
+    }),
   ]);
   if (
     stateResult.error !== undefined ||
@@ -782,7 +902,7 @@ async function readRemoteVortexMerchantState(
     !stateResult.response.ok
   ) {
     throw new ConvexError(
-      `Vortex merchant state refresh failed (${stateResult.response?.status ?? "no-response"})`,
+      `Vortex merchant state refresh failed (${stateResult.response?.status ?? "no-response"})`
     );
   }
   if (
@@ -791,35 +911,54 @@ async function readRemoteVortexMerchantState(
     !capabilitiesResult.response.ok
   ) {
     throw new ConvexError(
-      `Vortex merchant capabilities refresh failed (${capabilitiesResult.response?.status ?? "no-response"})`,
+      `Vortex merchant capabilities refresh failed (${capabilitiesResult.response?.status ?? "no-response"})`
     );
   }
-  return mapVortexState({ stateBody: stateResult.data, capabilitiesBody: capabilitiesResult.data });
+  return mapVortexState({
+    stateBody: stateResult.data,
+    capabilitiesBody: capabilitiesResult.data,
+  });
 }
 
 async function readRemoteVortexMerchantPayoutData(
-  merchantAccountId: string,
+  merchantAccountId: string
 ): Promise<VortexMerchantPayoutDataResult> {
   const env = readVortexBillingEnvFromProcess();
-  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const client = createVortexBillingClient({
+    apiBaseUrl: env.apiBaseUrl,
+    apiKey: env.apiKey,
+  });
   const environment = env.paymentsEnvironment;
-  const [settlementsResult, payoutsResult, payoutProfileResult] = await Promise.all([
-    getMerchantAccountSettlements({ client, path: { merchantAccountId }, query: { environment } }),
-    getMerchantAccountPayouts({ client, path: { merchantAccountId }, query: { environment } }),
-    getMerchantAccountPayoutProfile({
-      client,
-      path: { merchantAccountId },
-      query: { environment },
-    }),
-  ]);
+  const [settlementsResult, payoutsResult, payoutProfileResult] =
+    await Promise.all([
+      getMerchantAccountSettlements({
+        client,
+        path: { merchantAccountId },
+        query: { environment },
+      }),
+      getMerchantAccountPayouts({
+        client,
+        path: { merchantAccountId },
+        query: { environment },
+      }),
+      getMerchantAccountPayoutProfile({
+        client,
+        path: { merchantAccountId },
+        query: { environment },
+      }),
+    ]);
   for (const [label, result] of [
     ["settlements", settlementsResult],
     ["payouts", payoutsResult],
     ["payout profile", payoutProfileResult],
   ] as const) {
-    if (result.error !== undefined || result.response === undefined || !result.response.ok) {
+    if (
+      result.error !== undefined ||
+      result.response === undefined ||
+      !result.response.ok
+    ) {
       throw new ConvexError(
-        `Vortex merchant ${label} read failed (${result.response?.status ?? "no-response"})`,
+        `Vortex merchant ${label} read failed (${result.response?.status ?? "no-response"})`
       );
     }
   }
@@ -829,9 +968,13 @@ async function readRemoteVortexMerchantPayoutData(
   const settlements = readListItems(
     settlementsBody,
     "Vortex merchant settlements",
-    readSettlementSnapshot,
+    readSettlementSnapshot
   );
-  const payouts = readListItems(payoutsBody, "Vortex merchant payouts", readPayoutSnapshot);
+  const payouts = readListItems(
+    payoutsBody,
+    "Vortex merchant payouts",
+    readPayoutSnapshot
+  );
 
   return {
     settlements,
@@ -846,32 +989,35 @@ async function persistVortexMerchantAccount(
   organizationId: Id<"organizations">,
   merchantAccountId: string,
   state: VortexMerchantState,
-  feeHandling: FeeHandling | undefined,
+  feeHandling: FeeHandling | undefined
 ): Promise<void> {
-  await ctx.runMutation(internal.payments.merchant_account_mutations.upsertMerchantAccount, {
-    organizationId,
-    providerAccountId: merchantAccountId,
-    accountType: "standard",
-    chargesEnabled: state.chargesEnabled,
-    payoutsEnabled: state.payoutsEnabled,
-    detailsSubmitted: state.detailsSubmitted,
-    requirements: state.requirements,
-    capabilities: state.capabilities,
-    feeHandling,
-    defaultCurrency: "USD",
-  });
+  await ctx.runMutation(
+    internal.payments.merchant_account_mutations.upsertMerchantAccount,
+    {
+      organizationId,
+      providerAccountId: merchantAccountId,
+      accountType: "standard",
+      chargesEnabled: state.chargesEnabled,
+      payoutsEnabled: state.payoutsEnabled,
+      detailsSubmitted: state.detailsSubmitted,
+      requirements: state.requirements,
+      capabilities: state.capabilities,
+      feeHandling,
+      defaultCurrency: "USD",
+    }
+  );
 }
 
 async function createVortexMerchantAccountForOrganization(
   ctx: ActionCtx,
   organizationId: Id<"organizations">,
-  feeHandling: FeeHandling | undefined,
+  feeHandling: FeeHandling | undefined
 ): Promise<CreateVortexMerchantAccountResult> {
   const existing = await ctx.runQuery(
     internal.payments.merchant_account_mutations.getAccountByOrganizationId,
     {
       organizationId,
-    },
+    }
   );
   if (existing !== null) {
     return {
@@ -893,12 +1039,17 @@ async function createVortexMerchantAccountForOrganization(
     };
   }
   if (existing) {
-    throw new ConvexError("A non-Vortex merchant account already exists for this organization");
+    throw new ConvexError(
+      "A non-Vortex merchant account already exists for this organization"
+    );
   }
 
-  const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
-    organizationId,
-  });
+  const organization = await ctx.runQuery(
+    internal.organizations.helpers.getOrganizationById,
+    {
+      organizationId,
+    }
+  );
   if (!organization) {
     throw new ConvexError("Organization not found");
   }
@@ -924,14 +1075,21 @@ async function createVortexMerchantAccountForOrganization(
       sealOrganizationId: organizationId,
     },
   };
-  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const client = createVortexBillingClient({
+    apiBaseUrl: env.apiBaseUrl,
+    apiKey: env.apiKey,
+  });
   const { data, error, response } = await createMerchantAccount({
     client,
     headers: { "Idempotency-Key": `seal-vortex-merchant:${organizationId}` },
-    body: body as unknown as Parameters<typeof createMerchantAccount>[0]["body"],
+    body: body as unknown as Parameters<
+      typeof createMerchantAccount
+    >[0]["body"],
   });
   if (error !== undefined || response === undefined || !response.ok) {
-    throw new ConvexError(`Vortex merchant create failed (${response?.status ?? "no-response"})`);
+    throw new ConvexError(
+      `Vortex merchant create failed (${response?.status ?? "no-response"})`
+    );
   }
   const merchantAccountId = readVortexMerchantAccountId(data);
   const state: VortexMerchantState = {
@@ -950,7 +1108,13 @@ async function createVortexMerchantAccountForOrganization(
       usBankAccountAchPayments: "inactive",
     },
   };
-  await persistVortexMerchantAccount(ctx, organizationId, merchantAccountId, state, feeHandling);
+  await persistVortexMerchantAccount(
+    ctx,
+    organizationId,
+    merchantAccountId,
+    state,
+    feeHandling
+  );
 
   return {
     merchantAccountId,
@@ -960,13 +1124,13 @@ async function createVortexMerchantAccountForOrganization(
 
 async function refreshVortexMerchantAccountForOrganization(
   ctx: ActionCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<{ readonly status: "not_connected" | "refreshed" }> {
   const existing = await ctx.runQuery(
     internal.payments.merchant_account_mutations.getAccountByOrganizationId,
     {
       organizationId,
-    },
+    }
   );
   if (existing === null) {
     return { status: "not_connected" };
@@ -978,23 +1142,25 @@ async function refreshVortexMerchantAccountForOrganization(
     organizationId,
     existing.providerAccountId,
     state,
-    undefined,
+    undefined
   );
   return { status: "refreshed" };
 }
 
 async function createVortexOnboardingLinkForOrganization(
   ctx: ActionCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<CreateVortexOnboardingLinkResult> {
   const existing = await ctx.runQuery(
     internal.payments.merchant_account_mutations.getAccountByOrganizationId,
     {
       organizationId,
-    },
+    }
   );
   if (existing === null) {
-    throw new ConvexError("Create a Vortex Connect account before starting verification");
+    throw new ConvexError(
+      "Create a Vortex Connect account before starting verification"
+    );
   }
 
   const env = readVortexBillingEnvFromProcess();
@@ -1002,15 +1168,20 @@ async function createVortexOnboardingLinkForOrganization(
     environment: env.paymentsEnvironment,
     createdByRef: `seal:${organizationId}`,
   };
-  const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
+  const client = createVortexBillingClient({
+    apiBaseUrl: env.apiBaseUrl,
+    apiKey: env.apiKey,
+  });
   const { data, error, response } = await createMerchantOnboardingLink({
     client,
     path: { merchantAccountId: existing.providerAccountId },
-    body: body as unknown as Parameters<typeof createMerchantOnboardingLink>[0]["body"],
+    body: body as unknown as Parameters<
+      typeof createMerchantOnboardingLink
+    >[0]["body"],
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(
-      `Vortex merchant onboarding link create failed (${response?.status ?? "no-response"})`,
+      `Vortex merchant onboarding link create failed (${response?.status ?? "no-response"})`
     );
   }
 
@@ -1020,7 +1191,9 @@ async function createVortexOnboardingLinkForOrganization(
 export const createVortexMerchantAccount = internalAction({
   args: {
     organizationId: v.id("organizations"),
-    feeHandling: v.optional(v.union(v.literal("absorb"), v.literal("pass_to_recipient"))),
+    feeHandling: v.optional(
+      v.union(v.literal("absorb"), v.literal("pass_to_recipient"))
+    ),
   },
   returns: v.object({
     merchantAccountId: v.string(),
@@ -1046,7 +1219,7 @@ export const createVortexMerchantAccount = internalAction({
     return await createVortexMerchantAccountForOrganization(
       ctx,
       args.organizationId,
-      args.feeHandling,
+      args.feeHandling
     );
   },
 });
@@ -1062,7 +1235,10 @@ export const createVortexOnboardingLink = internalAction({
   }),
   handler: async (ctx, args): Promise<CreateVortexOnboardingLinkResult> => {
     await resolveAdminMembership(ctx, args.organizationId);
-    return await createVortexOnboardingLinkForOrganization(ctx, args.organizationId);
+    return await createVortexOnboardingLinkForOrganization(
+      ctx,
+      args.organizationId
+    );
   },
 });
 
@@ -1090,7 +1266,11 @@ export const createVortexMerchantProofAccount = internalAction({
     }),
   }),
   handler: async (ctx, args): Promise<CreateVortexMerchantAccountResult> => {
-    return await createVortexMerchantAccountForOrganization(ctx, args.organizationId, undefined);
+    return await createVortexMerchantAccountForOrganization(
+      ctx,
+      args.organizationId,
+      undefined
+    );
   },
 });
 
@@ -1101,9 +1281,15 @@ export const refreshVortexMerchantAccount = internalAction({
   returns: v.object({
     status: v.union(v.literal("not_connected"), v.literal("refreshed")),
   }),
-  handler: async (ctx, args): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
     await resolveAdminMembership(ctx, args.organizationId);
-    return await refreshVortexMerchantAccountForOrganization(ctx, args.organizationId);
+    return await refreshVortexMerchantAccountForOrganization(
+      ctx,
+      args.organizationId
+    );
   },
 });
 
@@ -1114,8 +1300,14 @@ export const refreshVortexMerchantProofAccount = internalAction({
   returns: v.object({
     status: v.union(v.literal("not_connected"), v.literal("refreshed")),
   }),
-  handler: async (ctx, args): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
-    return await refreshVortexMerchantAccountForOrganization(ctx, args.organizationId);
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ readonly status: "not_connected" | "refreshed" }> => {
+    return await refreshVortexMerchantAccountForOrganization(
+      ctx,
+      args.organizationId
+    );
   },
 });
 
@@ -1131,7 +1323,7 @@ export const getVortexMerchantPayoutData = action({
       internal.payments.merchant_account_mutations.getAccountByOrganizationId,
       {
         organizationId: args.organizationId,
-      },
+      }
     );
 
     if (existing === null) {

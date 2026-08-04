@@ -16,7 +16,7 @@ export async function seedTestOrganizationMember(
     role: OrganizationMemberRole;
     status?: ComponentMemberStatus;
     identityIssuer?: string;
-  },
+  }
 ): Promise<string> {
   const user = await ctx.db.get(args.userId);
   if (!user) {
@@ -35,7 +35,9 @@ export async function seedTestOrganizationMember(
 
     const bridgedUser = await ctx.db.get(args.userId);
     if (!bridgedUser?.vortexAuthUserId) {
-      throw new Error(`test_user_vortex_auth_bridge_not_provisioned: ${args.userId}`);
+      throw new Error(
+        `test_user_vortex_auth_bridge_not_provisioned: ${args.userId}`
+      );
     }
   }
 

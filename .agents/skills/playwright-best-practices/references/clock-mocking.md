@@ -89,7 +89,7 @@ test("shows relative time correctly", async ({ page }) => {
         title: "Test Post",
         createdAt: "2025-06-15T12:00:00Z", // 2 hours before mock time
       },
-    }),
+    })
   );
 
   await page.goto("/posts/1");

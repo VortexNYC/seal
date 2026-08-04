@@ -291,7 +291,9 @@ export const unreadCount = query({
   handler: async (ctx, args) => {
     const unread = await ctx.db
       .query("notifications")
-      .withIndex("by_user_and_read", (q) => q.eq("userId", args.userId).eq("read", false))
+      .withIndex("by_user_and_read", (q) =>
+        q.eq("userId", args.userId).eq("read", false)
+      )
       .collect();
 
     return unread.length;

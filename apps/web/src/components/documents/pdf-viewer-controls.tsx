@@ -13,8 +13,19 @@ import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -49,7 +60,8 @@ export function PdfViewerControls({
   onFitToWidth,
   className,
 }: PdfViewerControlsProps) {
-  const { zoomIn, zoomOut, resetTransform, zoomToElement, instance } = useControls();
+  const { zoomIn, zoomOut, resetTransform, zoomToElement, instance } =
+    useControls();
 
   // Page input state for "jump to page" feature
   const [pageInput, setPageInput] = useState(String(currentPage));
@@ -70,7 +82,7 @@ export function PdfViewerControls({
         zoomToElement(element, zoom, 0);
       }
     },
-    [instance.wrapperComponent, zoomToElement],
+    [instance.wrapperComponent, zoomToElement]
   );
 
   const handleFitToWidth = useCallback(() => {
@@ -123,7 +135,10 @@ export function PdfViewerControls({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input field
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
@@ -151,14 +166,20 @@ export function PdfViewerControls({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enableKeyboardShortcuts, goToPreviousPage, goToNextPage, onPageChange, totalPages]);
+  }, [
+    enableKeyboardShortcuts,
+    goToPreviousPage,
+    goToNextPage,
+    onPageChange,
+    totalPages,
+  ]);
 
   return (
     <TooltipProvider delayDuration={300}>
       <div
         className={cn(
           "bg-background/95 flex items-center gap-1 rounded-lg border p-1.5 shadow-sm backdrop-blur-sm sm:gap-2 sm:p-2",
-          className,
+          className
         )}
       >
         {/* Page Navigation */}
@@ -181,7 +202,10 @@ export function PdfViewerControls({
             </TooltipContent>
           </Tooltip>
 
-          <form onSubmit={handlePageInputSubmit} className="flex items-center gap-0.5 sm:gap-1">
+          <form
+            onSubmit={handlePageInputSubmit}
+            className="flex items-center gap-0.5 sm:gap-1"
+          >
             <Input
               type="text"
               inputMode="numeric"
@@ -242,7 +266,9 @@ export function PdfViewerControls({
           {/* Zoom percentage - hidden on mobile, shown as select on desktop */}
           <Select
             value={currentZoom.toFixed(2)}
-            onValueChange={(value) => handleZoomChange(Number.parseFloat(value))}
+            onValueChange={(value) =>
+              handleZoomChange(Number.parseFloat(value))
+            }
           >
             <SelectTrigger
               className="hidden h-7 w-16 px-2 text-xs sm:flex sm:h-8 sm:w-[4.5rem]"

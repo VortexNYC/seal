@@ -2,7 +2,11 @@ import { existsSync } from "node:fs";
 
 import { expect, test } from "../fixtures/auth";
 import { assertConvexE2eHelperAvailability } from "../fixtures/convex-test-api";
-import { authStatePath, pdfStorageIdPath, workspaceSlugPath } from "../fixtures/paths";
+import {
+  authStatePath,
+  pdfStorageIdPath,
+  workspaceSlugPath,
+} from "../fixtures/paths";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 
@@ -24,7 +28,7 @@ test.describe("Smoke Contract", () => {
             return error instanceof Error ? error.message : String(error);
           }
         },
-        { timeout: 10000 },
+        { timeout: 10000 }
       )
       .toBe("ok");
   });
@@ -33,7 +37,9 @@ test.describe("Smoke Contract", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
-    await expect(authenticatedPage).toHaveURL(new RegExp(`/${organizationSlug}/(home|onboarding)`));
+    await expect(authenticatedPage).toHaveURL(
+      new RegExp(`/${organizationSlug}/(home|onboarding)`)
+    );
   });
 
   test("documents index loads for the resolved workspace", async ({
@@ -58,6 +64,8 @@ test.describe("Smoke Contract", () => {
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
-    await expect(authenticatedPage.getByRole("button", { name: /send document/i })).toBeVisible();
+    await expect(
+      authenticatedPage.getByRole("button", { name: /send document/i })
+    ).toBeVisible();
   });
 });

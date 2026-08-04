@@ -10,8 +10,12 @@ import {
 } from "./payable_actions";
 
 type BuildPayableInput = Parameters<typeof buildCreatePayableRequest>[0];
-type BuildRecurringPayableInput = Parameters<typeof buildCreateRecurringPayableRequest>[0];
-type BuildInstallmentPayableInput = Parameters<typeof buildCreateInstallmentPayableRequest>[0];
+type BuildRecurringPayableInput = Parameters<
+  typeof buildCreateRecurringPayableRequest
+>[0];
+type BuildInstallmentPayableInput = Parameters<
+  typeof buildCreateInstallmentPayableRequest
+>[0];
 type BuildDepositBalancePayableInput = Parameters<
   typeof buildCreateDepositBalancePayableRequest
 >[0];
@@ -41,47 +45,61 @@ const baseConfig: BuildPayableInput["config"] = {
 
 describe("Vortex Billing document payable bridge", () => {
   test("selects Vortex for every document payment configuration", () => {
-    expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe("vortex_billing");
+    expect(selectDocumentPaymentProvider("org_1", [baseConfig], {})).toBe(
+      "vortex_billing"
+    );
     expect(
       selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
-        VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify(["org_seal_123"]),
-      }),
+        VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify([
+          "org_seal_123",
+        ]),
+      })
     ).toBe("vortex_billing");
     expect(
-      selectDocumentPaymentProvider("org_seal_123", [{ ...baseConfig, paymentType: "recurring" }], {
-        VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
-      }),
+      selectDocumentPaymentProvider(
+        "org_seal_123",
+        [{ ...baseConfig, paymentType: "recurring" }],
+        {
+          VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
+        }
+      )
     ).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider("org_seal_123", [baseConfig], {
-        VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS: JSON.stringify(["org_seal_123"]),
-      }),
+        VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS: JSON.stringify([
+          "org_seal_123",
+        ]),
+      })
     ).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider(
         "org_seal_123",
         [{ ...baseConfig, paymentType: "installments" }],
-        { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
-      ),
+        { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" }
+      )
     ).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider(
         "org_seal_123",
         [{ ...baseConfig, paymentType: "deposit_balance" }],
-        { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" },
-      ),
+        { VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*" }
+      )
     ).toBe("vortex_billing");
     expect(
-      selectDocumentPaymentProvider("org_seal_123", [{ ...baseConfig, taxEnabled: true }], {
-        VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
-      }),
+      selectDocumentPaymentProvider(
+        "org_seal_123",
+        [{ ...baseConfig, taxEnabled: true }],
+        {
+          VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "*",
+        }
+      )
     ).toBe("vortex_billing");
     expect(
       selectDocumentPaymentProvider(
         "org_not_allowlisted",
         [{ ...baseConfig, taxEnabled: true }],
-        {},
-      ),
+        {}
+      )
     ).toBe("vortex_billing");
   });
 
@@ -150,7 +168,9 @@ describe("Vortex Billing document payable bridge", () => {
     const env = readVortexBillingEnv({
       apiBaseUrl: "https://payments.vortex.test",
       apiKey: "vb_test",
-      customerMapJson: JSON.stringify({ org_seal_123: "cust_seal_org_default" }),
+      customerMapJson: JSON.stringify({
+        org_seal_123: "cust_seal_org_default",
+      }),
       billingAccountMapJson: JSON.stringify({ org_seal_123: "bacc_seal_123" }),
       merchantAccountMapJson: JSON.stringify({ org_seal_123: "ma_seal_123" }),
       defaultPriceId: "price_document_default",
@@ -195,9 +215,11 @@ describe("Vortex Billing document payable bridge", () => {
       currency: "USD",
       rounding: "half_up",
     });
-    expect(request.feePolicy.evidence).toContain("platform_fee:fixed_amount:219:USD:half_up");
+    expect(request.feePolicy.evidence).toContain(
+      "platform_fee:fixed_amount:219:USD:half_up"
+    );
     expect(request.feePolicy.execution.stopCondition).toBe(
-      "fixed application fee is modeled for Vortex payable creation; Vortex executes it on card charge",
+      "fixed application fee is modeled for Vortex payable creation; Vortex executes it on card charge"
     );
   });
 
@@ -230,7 +252,7 @@ describe("Vortex Billing document payable bridge", () => {
         recipient,
         env,
         now,
-      }),
+      })
     ).toMatchObject({
       taxable: true,
       taxBehavior: "inclusive",
@@ -252,7 +274,7 @@ describe("Vortex Billing document payable bridge", () => {
         recipient,
         env,
         now,
-      }),
+      })
     ).toMatchObject({
       taxMode: "taxable_requires_evidence",
       taxable: true,
@@ -280,7 +302,9 @@ describe("Vortex Billing document payable bridge", () => {
       taxBehavior: "inclusive",
       taxClassificationKey: "standard_taxable",
     });
-    expect(installmentRequest.installments[0]?.lineItems[0]?.taxable).toBe(false);
+    expect(installmentRequest.installments[0]?.lineItems[0]?.taxable).toBe(
+      false
+    );
 
     const depositBalanceRequest = buildCreateDepositBalancePayableRequest({
       config: {
@@ -455,9 +479,9 @@ describe("Vortex Billing document payable bridge", () => {
       },
     });
     expect(request.installments).toHaveLength(3);
-    expect(request.installments.map((installment) => installment.amountDue)).toEqual([
-      4200, 4200, 4200,
-    ]);
+    expect(
+      request.installments.map((installment) => installment.amountDue)
+    ).toEqual([4200, 4200, 4200]);
     expect(request.installments[0]).toMatchObject({
       installmentNumber: 1,
       role: "installment",
@@ -605,7 +629,7 @@ describe("Vortex Billing document payable bridge", () => {
         recipient: { email: "buyer@seal.test", name: undefined },
         env,
         now: Date.UTC(2026, 0, 1),
-      }),
+      })
     ).toThrow(/customer missing/);
 
     const envWithoutPrice = readVortexBillingEnv({
@@ -621,7 +645,7 @@ describe("Vortex Billing document payable bridge", () => {
         recipient: { email: "buyer@seal.test", name: undefined },
         env: envWithoutPrice,
         now: Date.UTC(2026, 0, 1),
-      }),
+      })
     ).toThrow(/price missing/);
   });
 });

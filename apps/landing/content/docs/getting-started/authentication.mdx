@@ -18,8 +18,9 @@ API keys are created in the Seal app at **Settings → Developer → API keys**:
 5. Copy the generated API key — it is shown only once at creation (format: `ak_xxx`)
 
 <Callout type="warn">
-  **Security Best Practice**: Store API keys securely and never commit them to version control.
-  Rotate keys regularly and use environment variables in production.
+  **Security Best Practice**: Store API keys securely and never commit them to
+  version control. Rotate keys regularly and use environment variables in
+  production.
 </Callout>
 
 ## API Scopes
@@ -89,9 +90,9 @@ curl -X GET https://seal.convex.site/api/v1/documents \
 ## Best Practices
 
 <Callout type="info">
-  **Scope Principle of Least Privilege**: Only request the minimum scopes needed for your
-  integration. For example, if you only need to read documents, use `seal:documents:read` instead of
-  `seal:documents:write`.
+  **Scope Principle of Least Privilege**: Only request the minimum scopes needed
+  for your integration. For example, if you only need to read documents, use
+  `seal:documents:read` instead of `seal:documents:write`.
 </Callout>
 
 - **Use HTTPS**: Always make requests over HTTPS to protect your API key in transit

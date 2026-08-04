@@ -21,7 +21,13 @@
  * ```
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CardSkeletonProps {
@@ -31,7 +37,10 @@ interface CardSkeletonProps {
   showFooter?: boolean;
 }
 
-export function CardSkeleton({ showDescription = true, showFooter = false }: CardSkeletonProps) {
+export function CardSkeleton({
+  showDescription = true,
+  showFooter = false,
+}: CardSkeletonProps) {
   return (
     <Card role="status" aria-label="Loading card content">
       <CardHeader>

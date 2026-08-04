@@ -108,7 +108,7 @@ embeddingConfig: v.optional(
     allowedOrigins: v.optional(v.array(v.string())), // Restrict to specific domains (empty = allow all)
     hideDeclineButton: v.optional(v.boolean()), // Hide decline in embedded mode
     redirectUrl: v.optional(v.string()), // URL to redirect after signing (non-embedded fallback)
-  }),
+  })
 );
 ```
 

@@ -12,7 +12,10 @@ interface DocumentStatusHeroProps {
   createdAt: number;
 }
 
-export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatusHeroProps) {
+export function DocumentStatusHero({
+  workflowStatus,
+  createdAt,
+}: DocumentStatusHeroProps) {
   const getStatusStyles = () => {
     switch (workflowStatus) {
       case "completed":
@@ -29,21 +32,28 @@ export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatus
   };
 
   const getTextStyles = () => {
-    return workflowStatus === "completed" ? "text-status-completed-text" : "text-foreground";
+    return workflowStatus === "completed"
+      ? "text-status-completed-text"
+      : "text-foreground";
   };
 
   return (
     <div
       className={cn(
         "rounded-2xl border p-6 text-center shadow-sm sm:rounded-xl sm:p-5",
-        getStatusStyles(),
+        getStatusStyles()
       )}
       aria-live="polite"
     >
       <div className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.16em] uppercase">
         Document Status
       </div>
-      <div className={cn("mb-1 text-3xl font-semibold sm:text-2xl", getTextStyles())}>
+      <div
+        className={cn(
+          "mb-1 text-3xl font-semibold sm:text-2xl",
+          getTextStyles()
+        )}
+      >
         {getStatusLabel(workflowStatus)}
       </div>
       <div className="text-muted-foreground text-sm font-medium sm:text-xs">

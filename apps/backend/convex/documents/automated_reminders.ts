@@ -9,7 +9,7 @@ import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -41,11 +41,13 @@ export const processAutomatedReminders = internalMutation({
       .collect();
     const inProgressDocs = await ctx.db
       .query("documents")
-      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "in_progress"))
+      .withIndex("by_workflow_status", (q) =>
+        q.eq("workflowStatus", "in_progress")
+      )
       .collect();
 
     const activeDocs = [...sentDocs, ...inProgressDocs].filter(
-      (doc) => doc.sentAt && doc.organizationId && doc.status !== "deleted",
+      (doc) => doc.sentAt && doc.organizationId && doc.status !== "deleted"
     );
 
     // Group documents by org to batch notification settings lookups
@@ -60,16 +62,21 @@ export const processAutomatedReminders = internalMutation({
 
     for (const [orgId, docs] of docsByOrg) {
       // Fetch org notification settings
-      const notificationSettings = await ctx.db.get(orgId as (typeof docs)[0]["organizationId"]);
-      const reminderSchedule = notificationSettings?.notificationSettings?.reminderSchedule ?? [
-        3, 7, 14,
-      ];
+      const notificationSettings = await ctx.db.get(
+        orgId as (typeof docs)[0]["organizationId"]
+      );
+      const reminderSchedule = notificationSettings?.notificationSettings
+        ?.reminderSchedule ?? [3, 7, 14];
 
       for (const doc of docs) {
-        const daysSinceSent = Math.floor((now - sealAssertPresent(doc.sentAt)) / DAY_MS);
+        const daysSinceSent = Math.floor(
+          (now - sealAssertPresent(doc.sentAt)) / DAY_MS
+        );
 
         // Which reminder intervals are due?
-        const dueIntervals = reminderSchedule.filter((days: number) => daysSinceSent >= days);
+        const dueIntervals = reminderSchedule.filter(
+          (days: number) => daysSinceSent >= days
+        );
         if (dueIntervals.length === 0) continue;
 
         // Get pending recipients for this document
@@ -79,7 +86,7 @@ export const processAutomatedReminders = internalMutation({
           .collect();
 
         const pendingRecipients = recipients.filter(
-          (r) => r.status === "pending" || r.status === "viewed",
+          (r) => r.status === "pending" || r.status === "viewed"
         );
         if (pendingRecipients.length === 0) continue;
 
@@ -89,24 +96,27 @@ export const processAutomatedReminders = internalMutation({
           .withIndex("by_document", (q) => q.eq("documentId", doc._id))
           .collect();
 
-        const automatedReminders = existingReminders.filter((r) => r.type === "automated");
+        const automatedReminders = existingReminders.filter(
+          (r) => r.type === "automated"
+        );
 
         for (const recipient of pendingRecipients) {
           // Find which intervals already have reminders for this recipient
           const recipientReminders = automatedReminders.filter(
-            (r) => r.recipientId === recipient._id,
+            (r) => r.recipientId === recipient._id
           );
 
           // For each due interval, check if we already sent/scheduled a reminder
           for (const intervalDays of dueIntervals) {
-            const intervalTarget = sealAssertPresent(doc.sentAt) + intervalDays * DAY_MS;
+            const intervalTarget =
+              sealAssertPresent(doc.sentAt) + intervalDays * DAY_MS;
 
             // Check if a reminder already exists near this interval
             // (within 12 hours to account for cron timing)
             const alreadyExists = recipientReminders.some(
               (r) =>
-                Math.abs(r.scheduledFor - intervalTarget) < 12 * 60 * 60 * 1000 &&
-                r.status !== "failed",
+                Math.abs(r.scheduledFor - intervalTarget) <
+                  12 * 60 * 60 * 1000 && r.status !== "failed"
             );
 
             if (alreadyExists) continue;
@@ -127,7 +137,7 @@ export const processAutomatedReminders = internalMutation({
             await ctx.scheduler.runAfter(
               remindersScheduled * 250,
               internal.documents.reminder_email_action.sendReminderEmail,
-              { reminderId },
+              { reminderId }
             );
 
             remindersScheduled++;

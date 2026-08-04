@@ -73,7 +73,7 @@ export function getStatusLabel(
     | "cancelled"
     | "declined"
     | "expired"
-    | undefined,
+    | undefined
 ): string {
   const labels = {
     draft: "Draft",

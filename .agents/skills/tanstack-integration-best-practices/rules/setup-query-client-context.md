@@ -89,7 +89,12 @@ export const Route = createFileRoute("/posts")({
 
 ```tsx
 // routes/__root.tsx
-import { createRootRouteWithContext, Outlet, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  createRootRouteWithContext,
+  Outlet,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 
 interface RouterContext {

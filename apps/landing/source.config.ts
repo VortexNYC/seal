@@ -1,4 +1,8 @@
-import { defineCollections, defineConfig, defineDocs } from "fumadocs-mdx/config";
+import {
+  defineCollections,
+  defineConfig,
+  defineDocs,
+} from "fumadocs-mdx/config";
 import lastModified from "fumadocs-mdx/plugins/last-modified";
 import { z } from "zod";
 
@@ -29,7 +33,7 @@ export const changelog = defineCollections({
           description: z.string().optional(),
           image: imageSchema.optional(),
           title: z.string(),
-        }),
+        })
       )
       .optional(),
     fixes: z.array(z.string()).optional(),

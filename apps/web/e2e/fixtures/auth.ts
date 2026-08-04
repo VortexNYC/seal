@@ -2,7 +2,10 @@
 import { test as base, type Page } from "@playwright/test";
 
 import { createDocument, deleteDocument } from "../factories/document-factory";
-import { ensureAuthenticatedWorkspaceHome, getTestWorkspaceConfig } from "./auth-helpers";
+import {
+  ensureAuthenticatedWorkspaceHome,
+  getTestWorkspaceConfig,
+} from "./auth-helpers";
 import { ensurePdfStorageId } from "./convex-test-api";
 import { pdfStorageIdPath, sampleDocumentPath } from "./paths";
 import { readCachedWorkspaceSlug } from "./workspace-state";

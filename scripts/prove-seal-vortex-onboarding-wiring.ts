@@ -2,7 +2,13 @@
 
 import { existsSync } from "node:fs";
 
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly Json[]
+  | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
 // Seal is a monorepo — the Convex app (and its `convex` dependency) lives in apps/backend,
@@ -32,8 +38,9 @@ function warnAndSkip(missing: readonly string[]): never {
 
 function defaultVortexRepoRoot(): string {
   return (
-    defaultVortexRepoRootCandidates.find((candidate) => existsSync(candidate)) ??
-    defaultVortexRepoRootCandidates[0]
+    defaultVortexRepoRootCandidates.find((candidate) =>
+      existsSync(candidate)
+    ) ?? defaultVortexRepoRootCandidates[0]
   );
 }
 
@@ -63,7 +70,10 @@ function objectField(value: JsonObject, field: string): JsonObject {
   return child;
 }
 
-function nullableObjectField(value: JsonObject, field: string): JsonObject | null {
+function nullableObjectField(
+  value: JsonObject,
+  field: string
+): JsonObject | null {
   const child = value[field];
   if (child === null) {
     return null;
@@ -80,16 +90,25 @@ function arrayField(value: JsonObject, field: string): readonly Json[] {
 
 function stringField(value: JsonObject, field: string): string {
   const child = value[field];
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
-function optionalStringField(value: JsonObject, field: string): string | undefined {
+function optionalStringField(
+  value: JsonObject,
+  field: string
+): string | undefined {
   const child = value[field];
   if (child === undefined || child === null) {
     return undefined;
   }
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
@@ -148,7 +167,9 @@ async function runConvex<T extends Json>(input: {
     "run",
     "--typecheck=disable",
     "--codegen=disable",
-    ...(input.identity === undefined ? [] : ["--identity", JSON.stringify(input.identity)]),
+    ...(input.identity === undefined
+      ? []
+      : ["--identity", JSON.stringify(input.identity)]),
     input.functionName,
     JSON.stringify(input.args),
   ];
@@ -160,7 +181,10 @@ async function runConvex<T extends Json>(input: {
   });
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
-  assert(jsonStart >= 0, `No JSON returned from ${input.functionName}: ${trimmed}`);
+  assert(
+    jsonStart >= 0,
+    `No JSON returned from ${input.functionName}: ${trimmed}`
+  );
   return JSON.parse(trimmed.slice(jsonStart)) as T;
 }
 
@@ -175,7 +199,10 @@ async function getConvexEnv(input: {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
+  const [stdout, exitCode] = await Promise.all([
+    new Response(child.stdout).text(),
+    child.exited,
+  ]);
   if (exitCode !== 0) {
     return undefined;
   }
@@ -226,11 +253,11 @@ async function requestVortexJson(input: {
   const text = await response.text();
   const parsed = objectFromJson(
     text.length > 0 ? (JSON.parse(text) as Json) : null,
-    `${input.method} ${input.path} response`,
+    `${input.method} ${input.path} response`
   );
   if (response.status < 200 || response.status >= 300) {
     fail(
-      `${input.method} ${input.path} failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`,
+      `${input.method} ${input.path} failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`
     );
   }
   return parsed;
@@ -254,7 +281,7 @@ async function requestHostedForm(input: {
   }
   assert(
     response.headers.get("content-type")?.includes("text/html") === true,
-    `${input.label} must return HTML`,
+    `${input.label} must return HTML`
   );
   return text;
 }
@@ -331,19 +358,28 @@ function hostedKycForm(displayName: string): URLSearchParams {
 }
 
 async function hashHostedToken(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token)
+  );
   const bytes = new Uint8Array(digest);
   let binary = "";
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
   }
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  return btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 }
 
 function hostedTokenFromUrl(url: string): string {
   const path = new URL(url).pathname;
   const token = path.split("/").filter(Boolean).at(-1);
-  assert(token !== undefined && token.startsWith("monb_"), `Expected hosted URL token: ${url}`);
+  assert(
+    token !== undefined && token.startsWith("monb_"),
+    `Expected hosted URL token: ${url}`
+  );
   return token;
 }
 
@@ -353,10 +389,14 @@ function assertNoOpenRequirements(input: {
   readonly context: string;
 }): void {
   const openRequirementIds = arrayField(input.snapshot, "openRequirementIds");
-  const openRequirements = (input.requirements ?? []).filter(isJsonObject).filter((requirement) => {
-    const status = requirement.status;
-    return status === "pending" || status === "submitted" || status === "failed";
-  });
+  const openRequirements = (input.requirements ?? [])
+    .filter(isJsonObject)
+    .filter((requirement) => {
+      const status = requirement.status;
+      return (
+        status === "pending" || status === "submitted" || status === "failed"
+      );
+    });
   if (openRequirementIds.length > 0 || openRequirements.length > 0) {
     fail(
       `${input.context} returned open requirements:\n${JSON.stringify(
@@ -365,8 +405,8 @@ function assertNoOpenRequirements(input: {
           requirements: openRequirements,
         },
         null,
-        2,
-      )}`,
+        2
+      )}`
     );
   }
 }
@@ -377,15 +417,19 @@ async function refreshUntilApproved(input: {
   readonly merchantAccountId: string;
   readonly onboardingSessionId: string;
 }): Promise<JsonObject> {
-  const timeoutMs = Number(readEnv("FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS") ?? "600000");
-  const pollMs = Number(readEnv("FINIX_SMOKE_MERCHANT_READY_POLL_MS") ?? "3000");
+  const timeoutMs = Number(
+    readEnv("FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS") ?? "600000"
+  );
+  const pollMs = Number(
+    readEnv("FINIX_SMOKE_MERCHANT_READY_POLL_MS") ?? "3000"
+  );
   assert(
     Number.isInteger(timeoutMs) && timeoutMs > 0,
-    "FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS must be positive",
+    "FINIX_SMOKE_MERCHANT_READY_TIMEOUT_MS must be positive"
   );
   assert(
     Number.isInteger(pollMs) && pollMs > 0,
-    "FINIX_SMOKE_MERCHANT_READY_POLL_MS must be positive",
+    "FINIX_SMOKE_MERCHANT_READY_POLL_MS must be positive"
   );
 
   const deadline = Date.now() + timeoutMs;
@@ -403,23 +447,34 @@ async function refreshUntilApproved(input: {
     const requirements = arrayField(latest, "requirements");
     const status = stringField(snapshot, "status");
     if (status === "approved") {
-      assertNoOpenRequirements({ snapshot, requirements, context: "approved onboarding refresh" });
+      assertNoOpenRequirements({
+        snapshot,
+        requirements,
+        context: "approved onboarding refresh",
+      });
       return latest;
     }
     if (status === "rejected" || status === "action_required") {
       fail(
-        `Vortex onboarding reached blocking state "${status}":\n${JSON.stringify(latest, null, 2)}`,
+        `Vortex onboarding reached blocking state "${status}":\n${JSON.stringify(latest, null, 2)}`
       );
     }
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
   fail(
-    `Timed out after ${timeoutMs}ms waiting for onboarding approval:\n${JSON.stringify(latest, null, 2)}`,
+    `Timed out after ${timeoutMs}ms waiting for onboarding approval:\n${JSON.stringify(latest, null, 2)}`
   );
 }
 
-function mergeAllowlist(current: string | undefined, organizationId: string): string {
-  if (current === undefined || current.trim() === "" || current.trim() === "[]") {
+function mergeAllowlist(
+  current: string | undefined,
+  organizationId: string
+): string {
+  if (
+    current === undefined ||
+    current.trim() === "" ||
+    current.trim() === "[]"
+  ) {
     return JSON.stringify([organizationId]);
   }
   const normalized = current.trim();
@@ -430,9 +485,11 @@ function mergeAllowlist(current: string | undefined, organizationId: string): st
     const parsed = JSON.parse(normalized) as Json;
     assert(
       Array.isArray(parsed),
-      "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS must be an array",
+      "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS must be an array"
     );
-    const values = parsed.filter((entry): entry is string => typeof entry === "string");
+    const values = parsed.filter(
+      (entry): entry is string => typeof entry === "string"
+    );
     return JSON.stringify([...new Set([...values, organizationId])]);
   }
   const values = normalized
@@ -443,20 +500,25 @@ function mergeAllowlist(current: string | undefined, organizationId: string): st
 }
 
 async function main(): Promise<void> {
-  const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
+  const sealDeployment =
+    readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
   const vortexDeployment = readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? "dev";
   const vortexBaseUrl = urlWithoutTrailingSlash(
-    readEnv("VORTEX_BILLING_API_BASE_URL") ?? "https://notable-leopard-969.convex.site",
+    readEnv("VORTEX_BILLING_API_BASE_URL") ??
+      "https://notable-leopard-969.convex.site"
   );
   const vortexApiKey = readEnv("VORTEX_BILLING_API_KEY");
-  const vortexRepoRoot = readEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? defaultVortexRepoRoot();
+  const vortexRepoRoot =
+    readEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? defaultVortexRepoRoot();
   const finixUsername = readEnv("FINIX_SANDBOX_USERNAME");
   const finixPassword = readEnv("FINIX_SANDBOX_PASSWORD");
   const missing = [
     ...(vortexApiKey === undefined ? ["VORTEX_BILLING_API_KEY"] : []),
     ...(finixUsername === undefined ? ["FINIX_SANDBOX_USERNAME"] : []),
     ...(finixPassword === undefined ? ["FINIX_SANDBOX_PASSWORD"] : []),
-    ...(!existsSync(vortexRepoRoot) ? [`VORTEX_PAYMENTS_REPO_ROOT (${vortexRepoRoot})`] : []),
+    ...(!existsSync(vortexRepoRoot)
+      ? [`VORTEX_PAYMENTS_REPO_ROOT (${vortexRepoRoot})`]
+      : []),
   ];
   if (missing.length > 0) {
     warnAndSkip(missing);
@@ -478,7 +540,8 @@ async function main(): Promise<void> {
   const proofOrg = await runConvex<JsonObject>({
     cwd: sealConvexCwd,
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:ensureSealVortexOnboardingProofOrganization",
+    functionName:
+      "vortex_billing/proof_actions:ensureSealVortexOnboardingProofOrganization",
     args: { proofRunId },
   });
   const organizationId = stringField(proofOrg, "organizationId");
@@ -524,11 +587,13 @@ async function main(): Promise<void> {
   });
   const merchantAccountId = stringField(createResult, "processorAccountId");
 
-  const returnUrl = readEnv("SEAL_PROOF_RETURN_URL") ?? "https://seal.test/settings/payments";
+  const returnUrl =
+    readEnv("SEAL_PROOF_RETURN_URL") ?? "https://seal.test/settings/payments";
   const linkResult = await runConvex<JsonObject>({
     cwd: sealConvexCwd,
     deployment: sealDeployment,
-    functionName: "payments/merchant_account_actions:createMerchantOnboardingLink",
+    functionName:
+      "payments/merchant_account_actions:createMerchantOnboardingLink",
     args: {
       organizationId,
       returnUrl,
@@ -537,14 +602,17 @@ async function main(): Promise<void> {
     identity,
   });
   const hostedUrl = stringField(linkResult, "url");
-  const preSubmitOnboardingSessionId = optionalStringField(linkResult, "onboardingSessionId");
+  const preSubmitOnboardingSessionId = optionalStringField(
+    linkResult,
+    "onboardingSessionId"
+  );
   assert(
     hostedUrl.includes("/merchant-onboarding/monb_"),
-    `Expected Vortex hosted onboarding URL, got ${hostedUrl}`,
+    `Expected Vortex hosted onboarding URL, got ${hostedUrl}`
   );
   assert(
     preSubmitOnboardingSessionId !== undefined,
-    "Expected Vortex onboardingSessionId from Seal createMerchantOnboardingLink",
+    "Expected Vortex onboardingSessionId from Seal createMerchantOnboardingLink"
   );
   optionalStringField(linkResult, "expiresAt");
 
@@ -556,7 +624,7 @@ async function main(): Promise<void> {
   });
   assert(
     hostedKycHtml.includes("Business review information saved."),
-    "Expected hosted KYC submit to save review information",
+    "Expected hosted KYC submit to save review information"
   );
 
   const finalHtml = await requestHostedForm({
@@ -564,7 +632,10 @@ async function main(): Promise<void> {
     form: new URLSearchParams({ merchantAgreementAccepted: "true" }),
     label: "hosted final onboarding submit",
   });
-  assert(finalHtml.includes("Onboarding submitted."), "Expected hosted final submit");
+  assert(
+    finalHtml.includes("Onboarding submitted."),
+    "Expected hosted final submit"
+  );
 
   const hostedToken = hostedTokenFromUrl(hostedUrl);
   const tokenHash = await hashHostedToken(hostedToken);
@@ -577,12 +648,18 @@ async function main(): Promise<void> {
       now: new Date().toISOString(),
     },
   });
-  assert(reconciledView !== null, "Expected Vortex hosted view after final submit");
+  assert(
+    reconciledView !== null,
+    "Expected Vortex hosted view after final submit"
+  );
   const reconciledLink = objectField(reconciledView, "link");
-  const actualOnboardingSessionId = stringField(reconciledLink, "onboardingSessionId");
+  const actualOnboardingSessionId = stringField(
+    reconciledLink,
+    "onboardingSessionId"
+  );
   assert(
     actualOnboardingSessionId !== preSubmitOnboardingSessionId,
-    "Expected hosted link to reconcile to the real submitted onboarding session id",
+    "Expected hosted link to reconcile to the real submitted onboarding session id"
   );
 
   const refreshed = await refreshUntilApproved({
@@ -592,7 +669,10 @@ async function main(): Promise<void> {
     onboardingSessionId: actualOnboardingSessionId,
   });
   const refreshedSnapshot = objectField(refreshed, "snapshot");
-  assert(stringField(refreshedSnapshot, "status") === "approved", "Expected approved onboarding");
+  assert(
+    stringField(refreshedSnapshot, "status") === "approved",
+    "Expected approved onboarding"
+  );
 
   await runConvex<JsonObject>({
     cwd: sealConvexCwd,
@@ -608,25 +688,30 @@ async function main(): Promise<void> {
     functionName: "vortex_billing/proof_actions:getVortexMerchantProofState",
     args: { organizationId },
   });
-  assert(stringField(sealMerchantState, "provider") === "vortex", "Expected Seal provider vortex");
   assert(
-    stringField(sealMerchantState, "vortexMerchantAccountId") === merchantAccountId,
-    "Expected Seal to store the Vortex merchant account id",
+    stringField(sealMerchantState, "provider") === "vortex",
+    "Expected Seal provider vortex"
+  );
+  assert(
+    stringField(sealMerchantState, "vortexMerchantAccountId") ===
+      merchantAccountId,
+    "Expected Seal to store the Vortex merchant account id"
   );
   assert(
     booleanField(sealMerchantState, "chargesEnabled") === true,
-    "Expected Seal chargesEnabled true",
+    "Expected Seal chargesEnabled true"
   );
 
   const resolvedMerchantAccountId = await runConvex<string | null>({
     cwd: sealConvexCwd,
     deployment: sealDeployment,
-    functionName: "payments/vortex_merchant_queries:getVortexMerchantAccountIdForOrg",
+    functionName:
+      "payments/vortex_merchant_queries:getVortexMerchantAccountIdForOrg",
     args: { organizationId },
   });
   assert(
     resolvedMerchantAccountId === merchantAccountId,
-    "Expected routing resolver to return charges-ready Vortex merchant account id",
+    "Expected routing resolver to return charges-ready Vortex merchant account id"
   );
 
   const payoutProfileBody = await requestVortexJson({
@@ -660,8 +745,8 @@ async function main(): Promise<void> {
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

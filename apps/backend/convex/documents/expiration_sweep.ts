@@ -11,14 +11,21 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { internalAction, internalMutation, type MutationCtx } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  type MutationCtx,
+} from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { isRecipientTerminal } from "../schemas/document_recipients";
 import { sendDocumentExpiredNotification } from "./email";
 
 const BATCH_LIMIT = 100;
 
-function isRecipientReadyToExpire(recipient: Doc<"document_recipients">, now: number): boolean {
+function isRecipientReadyToExpire(
+  recipient: Doc<"document_recipients">,
+  now: number
+): boolean {
   return (
     (recipient.status === "pending" || recipient.status === "viewed") &&
     recipient.expiresAt !== undefined &&
@@ -31,7 +38,7 @@ async function expireRecipient(
   ctx: MutationCtx,
   document: Doc<"documents">,
   recipient: Doc<"document_recipients">,
-  now: number,
+  now: number
 ): Promise<void> {
   await ctx.db.patch(recipient._id, {
     status: "expired",
@@ -58,7 +65,7 @@ async function expireRecipient(
 async function maybeExpireDocument(
   ctx: MutationCtx,
   document: Doc<"documents">,
-  now: number,
+  now: number
 ): Promise<boolean> {
   const updatedRecipients = await ctx.db
     .query("document_recipients")
@@ -67,8 +74,12 @@ async function maybeExpireDocument(
 
   const allTerminal =
     updatedRecipients.length > 0 &&
-    updatedRecipients.every((recipient) => isRecipientTerminal(recipient.status));
-  const hasExpired = updatedRecipients.some((recipient) => recipient.status === "expired");
+    updatedRecipients.every((recipient) =>
+      isRecipientTerminal(recipient.status)
+    );
+  const hasExpired = updatedRecipients.some(
+    (recipient) => recipient.status === "expired"
+  );
 
   if (!allTerminal || !hasExpired) {
     return false;
@@ -95,9 +106,13 @@ async function maybeExpireDocument(
     ipAddress: "0.0.0.0",
   });
 
-  await ctx.scheduler.runAfter(0, internal.documents.expiration_sweep.notifyDocumentExpired, {
-    documentId: document._id,
-  });
+  await ctx.scheduler.runAfter(
+    0,
+    internal.documents.expiration_sweep.notifyDocumentExpired,
+    {
+      documentId: document._id,
+    }
+  );
 
   return true;
 }
@@ -118,11 +133,13 @@ export const sweepExpiredRecipients = internalMutation({
       .collect();
     const inProgressDocs = await ctx.db
       .query("documents")
-      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "in_progress"))
+      .withIndex("by_workflow_status", (q) =>
+        q.eq("workflowStatus", "in_progress")
+      )
       .collect();
 
     const activeDocs = [...sentDocs, ...inProgressDocs].filter(
-      (doc) => doc.status !== "deleted" && doc.organizationId,
+      (doc) => doc.status !== "deleted" && doc.organizationId
     );
 
     let recipientsExpired = 0;
@@ -138,7 +155,9 @@ export const sweepExpiredRecipients = internalMutation({
         .collect();
 
       // Find recipients that need to be expired
-      const toExpire = recipients.filter((recipient) => isRecipientReadyToExpire(recipient, now));
+      const toExpire = recipients.filter((recipient) =>
+        isRecipientReadyToExpire(recipient, now)
+      );
 
       if (toExpire.length === 0) continue;
 
@@ -157,7 +176,7 @@ export const sweepExpiredRecipients = internalMutation({
 
     if (recipientsExpired > 0 || documentsExpired > 0) {
       console.info(
-        `Expiration sweep: ${recipientsExpired} recipients expired, ${documentsExpired} documents transitioned`,
+        `Expiration sweep: ${recipientsExpired} recipients expired, ${documentsExpired} documents transitioned`
       );
     }
 
@@ -178,22 +197,32 @@ export const notifyDocumentExpired = internalAction({
   },
   handler: async (ctx, args) => {
     // Get document
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     if (!document) {
-      console.error(`notifyDocumentExpired: Document ${args.documentId} not found`);
+      console.error(
+        `notifyDocumentExpired: Document ${args.documentId} not found`
+      );
       return;
     }
 
     // Get owner info
-    const owner = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: document.ownerId,
-    });
+    const owner = await ctx.runQuery(
+      internal.organizations.helpers.getUserById,
+      {
+        userId: document.ownerId,
+      }
+    );
 
     if (!owner?.email) {
-      console.error(`notifyDocumentExpired: Owner not found for document ${args.documentId}`);
+      console.error(
+        `notifyDocumentExpired: Owner not found for document ${args.documentId}`
+      );
       return;
     }
 
@@ -207,7 +236,7 @@ export const notifyDocumentExpired = internalAction({
     if (!result.success) {
       console.error(
         `Failed to send expired notification for document ${args.documentId}:`,
-        result.error,
+        result.error
       );
     }
   },

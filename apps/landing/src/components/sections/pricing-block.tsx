@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Minus } from "lucide-react";
 import { useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
@@ -93,7 +94,8 @@ export function StaticPricing() {
               Simple, honest pricing.
             </h2>
             <p className="text-muted-foreground mt-4 text-lg">
-              No per-envelope surprises. No seat minimums. Just documents, signed.
+              No per-envelope surprises. No seat minimums. Just documents,
+              signed.
             </p>
           </div>
         </FadeIn>
@@ -107,7 +109,7 @@ export function StaticPricing() {
                   "focus-visible:ring-ring rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   !annual
                     ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground"
                 )}
                 onClick={() => setAnnual(false)}
                 type="button"
@@ -119,7 +121,7 @@ export function StaticPricing() {
                   "focus-visible:ring-ring rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   annual
                     ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground"
                 )}
                 onClick={() => setAnnual(true)}
                 type="button"
@@ -143,7 +145,9 @@ export function StaticPricing() {
               <div
                 className={cn(
                   "relative flex h-full flex-col rounded-2xl border p-8 sm:p-10",
-                  plan.highlighted ? "border-primary/30 bg-primary/5" : "border-border bg-card",
+                  plan.highlighted
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border bg-card"
                 )}
               >
                 {plan.highlighted && (
@@ -163,10 +167,14 @@ export function StaticPricing() {
                     {annual ? plan.price.annual : plan.price.monthly}
                   </span>
                   {plan.period && (
-                    <span className="text-muted-foreground ml-1 text-sm">{plan.period}</span>
+                    <span className="text-muted-foreground ml-1 text-sm">
+                      {plan.period}
+                    </span>
                   )}
                 </div>
-                <p className="text-muted-foreground mb-8 text-sm">{plan.subtitle}</p>
+                <p className="text-muted-foreground mb-8 text-sm">
+                  {plan.subtitle}
+                </p>
 
                 {/* Divider */}
                 <div className="border-border mb-8 border-t" />
@@ -176,7 +184,10 @@ export function StaticPricing() {
                   {plan.features.map((feature) => (
                     <li className="flex items-center gap-3" key={feature.text}>
                       {feature.included ? (
-                        <Check aria-hidden="true" className="text-primary size-4 shrink-0" />
+                        <Check
+                          aria-hidden="true"
+                          className="text-primary size-4 shrink-0"
+                        />
                       ) : (
                         <Minus
                           aria-hidden="true"
@@ -186,7 +197,9 @@ export function StaticPricing() {
                       <span
                         className={cn(
                           "text-sm",
-                          feature.included ? "text-foreground" : "text-muted-foreground/60",
+                          feature.included
+                            ? "text-foreground"
+                            : "text-muted-foreground/60"
                         )}
                       >
                         {feature.text}
@@ -220,7 +233,11 @@ export function StaticPricing() {
 }
 
 /* ── Legacy CMS-driven component ───────────────────────────────────────── */
-export function PricingBlockComponent({ block }: { block: PricingSectionBlock }) {
+export function PricingBlockComponent({
+  block,
+}: {
+  block: PricingSectionBlock;
+}) {
   return (
     <section className="relative py-24 sm:py-32" id="pricing">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -232,7 +249,9 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
               </h2>
             )}
             {block.description && (
-              <p className="text-muted-foreground text-lg text-pretty">{block.description}</p>
+              <p className="text-muted-foreground text-lg text-pretty">
+                {block.description}
+              </p>
             )}
           </div>
         )}
@@ -241,12 +260,18 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
             <div className="group relative" key={tier.id}>
               <div
                 className={`border-border relative h-full rounded-2xl border p-8 lg:p-10 ${
-                  tier.highlighted ? "bg-primary/5 border-primary/30" : "bg-card"
+                  tier.highlighted
+                    ? "bg-primary/5 border-primary/30"
+                    : "bg-card"
                 }`}
               >
                 <div className="mb-8">
-                  <h3 className="text-foreground mb-2 text-2xl font-bold">{tier.name}</h3>
-                  {tier.description && <p className="text-muted-foreground">{tier.description}</p>}
+                  <h3 className="text-foreground mb-2 text-2xl font-bold">
+                    {tier.name}
+                  </h3>
+                  {tier.description && (
+                    <p className="text-muted-foreground">{tier.description}</p>
+                  )}
                 </div>
                 <div className="mb-8">
                   <span className="text-foreground text-5xl font-bold tracking-tight">
@@ -259,8 +284,13 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                 <ul className="mb-10 space-y-3">
                   {tier.features.map((feature) => (
                     <li className="flex items-center gap-3" key={feature}>
-                      <Check aria-hidden="true" className="text-primary size-4 shrink-0" />
-                      <span className="text-muted-foreground text-sm">{feature}</span>
+                      <Check
+                        aria-hidden="true"
+                        className="text-primary size-4 shrink-0"
+                      />
+                      <span className="text-muted-foreground text-sm">
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>

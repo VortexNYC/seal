@@ -23,7 +23,7 @@ function buildContactUpdates(
     notes?: string;
     tags?: string[];
     lastContactedAt?: number;
-  },
+  }
 ): Record<string, string | number | string[] | undefined> {
   const updates: Record<string, string | number | string[] | undefined> = {
     updatedAt: Date.now(),
@@ -38,7 +38,8 @@ function buildContactUpdates(
   if (args.status !== undefined) updates.status = args.status;
   if (args.notes !== undefined) updates.notes = args.notes;
   if (args.tags !== undefined) updates.tags = args.tags;
-  if (args.lastContactedAt !== undefined) updates.lastContactedAt = args.lastContactedAt;
+  if (args.lastContactedAt !== undefined)
+    updates.lastContactedAt = args.lastContactedAt;
 
   if (args.firstName !== undefined || args.lastName !== undefined) {
     const firstName = args.firstName ?? contact.firstName;
@@ -78,7 +79,7 @@ export const create = permissionMutation("contacts:create")({
     const existing = await ctx.db
       .query("contacts")
       .withIndex("by_org_email", (q) =>
-        q.eq("organizationId", organizationId).eq("email", normalizedEmail),
+        q.eq("organizationId", organizationId).eq("email", normalizedEmail)
       )
       .first();
 

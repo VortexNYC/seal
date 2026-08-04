@@ -19,7 +19,7 @@ type GenericMutationCtx = Pick<MutationCtx, "db">;
 export async function transitionWorkflowStatus(
   ctx: GenericMutationCtx,
   documentId: Id<"documents">,
-  newStatus: DocumentWorkflowStatus,
+  newStatus: DocumentWorkflowStatus
 ): Promise<void> {
   const document = await ctx.db.get(documentId);
   if (!document) {
@@ -31,7 +31,9 @@ export async function transitionWorkflowStatus(
 
   // Validate transition
   if (!isValidWorkflowTransition(currentStatus, newStatus)) {
-    throw new ConvexError(`Invalid workflow transition from ${currentStatus} to ${newStatus}`);
+    throw new ConvexError(
+      `Invalid workflow transition from ${currentStatus} to ${newStatus}`
+    );
   }
 
   // Prepare update with new status and timestamp
@@ -74,7 +76,9 @@ export async function transitionWorkflowStatus(
 /**
  * Check if a document is in a terminal state (cannot be modified)
  */
-export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolean {
+export function isTerminalWorkflowStatus(
+  status: DocumentWorkflowStatus
+): boolean {
   return (
     status === "completed" ||
     status === "cancelled" ||
@@ -110,7 +114,7 @@ export function canCompleteDocument(status: DocumentWorkflowStatus): boolean {
 export async function verifyDocumentOwnership(
   ctx: GenericMutationCtx,
   documentId: Id<"documents">,
-  userId: Id<"users">,
+  userId: Id<"users">
 ): Promise<void> {
   const document = await ctx.db.get(documentId);
   if (!document) {
@@ -118,6 +122,8 @@ export async function verifyDocumentOwnership(
   }
 
   if (document.ownerId !== userId) {
-    throw new ConvexError("Only the document owner can modify the workflow status");
+    throw new ConvexError(
+      "Only the document owner can modify the workflow status"
+    );
   }
 }

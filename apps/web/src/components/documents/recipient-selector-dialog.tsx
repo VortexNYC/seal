@@ -14,7 +14,13 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { getRecipientColor } from "./recipient-colors";
 
 type RecipientRole = "signer" | "viewer" | "approver";
@@ -126,7 +132,10 @@ export function RecipientSelectorDialog({
                           <SelectItem key={recipient._id} value={recipient._id}>
                             <div className="flex items-center gap-3">
                               <div
-                                className={cn("h-3 w-3 flex-shrink-0 rounded-full", color.bg)}
+                                className={cn(
+                                  "h-3 w-3 flex-shrink-0 rounded-full",
+                                  color.bg
+                                )}
                                 aria-hidden="true"
                               />
                               <div className="flex flex-col">
@@ -146,13 +155,14 @@ export function RecipientSelectorDialog({
                   </SelectContent>
                 </Select>
                 <p className="text-muted-foreground text-xs">
-                  This recipient will see and fill this field on the signing page.
+                  This recipient will see and fill this field on the signing
+                  page.
                 </p>
               </>
             ) : (
               <p className="text-muted-foreground py-2 text-sm">
-                No signers available. Only recipients with the "Signer" role can have fields
-                assigned to them.
+                No signers available. Only recipients with the "Signer" role can
+                have fields assigned to them.
               </p>
             )}
           </div>

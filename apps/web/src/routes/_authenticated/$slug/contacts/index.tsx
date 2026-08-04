@@ -76,7 +76,11 @@ type StatusFilter = ContactStatus | "all";
 
 function ContactsTableSkeleton() {
   return (
-    <div className="overflow-x-auto rounded-lg border" role="status" aria-label="Loading contacts">
+    <div
+      className="overflow-x-auto rounded-lg border"
+      role="status"
+      aria-label="Loading contacts"
+    >
       <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow>
@@ -175,7 +179,8 @@ function ContactsTableContent({
         onSelectionChange(next);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete contact";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete contact";
       toast.error(errorMessage);
     } finally {
       setDeleteDialog({ open: false, contactId: null, contactName: "" });
@@ -197,7 +202,8 @@ function ContactsTableContent({
       }
       onSelectionChange(new Set());
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete contacts";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete contacts";
       toast.error(errorMessage);
     } finally {
       setIsBulkDeleting(false);
@@ -255,15 +261,22 @@ function ContactsTableContent({
   }
 
   const allSelected = selectedIds.size === contacts.length;
-  const someSelected = selectedIds.size > 0 && selectedIds.size < contacts.length;
+  const someSelected =
+    selectedIds.size > 0 && selectedIds.size < contacts.length;
 
   return (
     <>
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-lg border p-2">
-          <span className="text-muted-foreground text-sm">{selectedIds.size} selected</span>
-          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
+          <span className="text-muted-foreground text-sm">
+            {selectedIds.size} selected
+          </span>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteOpen(true)}
+          >
             Delete ({selectedIds.size})
           </Button>
         </div>
@@ -275,7 +288,9 @@ function ContactsTableContent({
             <TableRow>
               <TableHead className="w-10">
                 <Checkbox
-                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                  checked={
+                    allSelected ? true : someSelected ? "indeterminate" : false
+                  }
                   onCheckedChange={toggleSelectAll}
                   aria-label="Select all contacts"
                 />
@@ -293,7 +308,9 @@ function ContactsTableContent({
               <TableRow
                 key={contact._id}
                 className="hover:bg-muted/50 cursor-pointer"
-                data-state={selectedIds.has(contact._id) ? "selected" : undefined}
+                data-state={
+                  selectedIds.has(contact._id) ? "selected" : undefined
+                }
                 onClick={() => handleOpenContact(contact._id)}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -307,7 +324,9 @@ function ContactsTableContent({
                   <p className="font-medium">{contact.fullName}</p>
                 </TableCell>
                 <TableCell>
-                  <p className="text-muted-foreground text-sm">{contact.email}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {contact.email}
+                  </p>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
                   <p className="text-sm">{contact.company ?? "-"}</p>
@@ -331,8 +350,13 @@ function ContactsTableContent({
                         <MoreVerticalIcon className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenuItem onClick={() => handleOpenContact(contact._id)}>
+                    <DropdownMenuContent
+                      align="end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenuItem
+                        onClick={() => handleOpenContact(contact._id)}
+                      >
                         Open
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setEditContact(contact)}>
@@ -340,7 +364,9 @@ function ContactsTableContent({
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDelete(contact._id, contact.fullName)}
+                        onClick={() =>
+                          handleDelete(contact._id, contact.fullName)
+                        }
                         className="text-destructive"
                       >
                         <TrashIcon className="mr-2 h-4 w-4" />
@@ -358,19 +384,24 @@ function ContactsTableContent({
       {/* Single delete confirmation */}
       <AlertDialog
         open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog({ open, contactId: null, contactName: "" })}
+        onOpenChange={(open) =>
+          setDeleteDialog({ open, contactId: null, contactName: "" })
+        }
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{deleteDialog.contactName}&rdquo;? This action
-              cannot be undone.
+              Are you sure you want to delete &ldquo;{deleteDialog.contactName}
+              &rdquo;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} variant="destructive">
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              variant="destructive"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -381,20 +412,26 @@ function ContactsTableContent({
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedIds.size} Contacts</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete {selectedIds.size} Contacts
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedIds.size} contacts? This action cannot be
-              undone.
+              Are you sure you want to delete {selectedIds.size} contacts? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isBulkDeleting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               variant="destructive"
               disabled={isBulkDeleting}
             >
-              {isBulkDeleting ? "Deleting..." : `Delete ${selectedIds.size} Contacts`}
+              {isBulkDeleting
+                ? "Deleting..."
+                : `Delete ${selectedIds.size} Contacts`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -432,7 +469,7 @@ function ContactsListData({
   const statusArg = statusFilter === "all" ? undefined : statusFilter;
 
   const { data: contacts } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.list, { status: statusArg }),
+    convexQuery(api.contacts.queries.list, { status: statusArg })
   );
 
   // Notify parent of loaded contacts for export
@@ -469,7 +506,7 @@ function ContactsSearchData({
   const statusArg = statusFilter === "all" ? undefined : statusFilter;
 
   const { data: contacts } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.search, { query, status: statusArg }),
+    convexQuery(api.contacts.queries.search, { query, status: statusArg })
   );
 
   useEffect(() => {
@@ -494,7 +531,9 @@ function ContactsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<Id<"contacts">>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<Id<"contacts">>>(
+    new Set()
+  );
   const [loadedContacts, setLoadedContacts] = useState<Doc<"contacts">[]>([]);
 
   useEffect(() => {
@@ -551,7 +590,9 @@ function ContactsPage() {
 
         {/* Status Filter Tabs */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground self-center text-sm">Status:</span>
+          <span className="text-muted-foreground self-center text-sm">
+            Status:
+          </span>
           <Button
             size="sm"
             variant={statusFilter === "all" ? "default" : "outline"}

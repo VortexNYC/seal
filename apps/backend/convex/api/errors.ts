@@ -95,7 +95,8 @@ export const API_ERROR_CODES = {
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
 } as const;
 
-export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];
+export type ApiErrorCode =
+  (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];
 
 /**
  * Base URL for error type URIs.
@@ -125,7 +126,7 @@ export class ApiError extends Error {
     status: number,
     detail: string,
     code: ApiErrorCode = "INTERNAL_ERROR",
-    errors?: Record<string, string[]>,
+    errors?: Record<string, string[]>
   ) {
     super(detail);
     this.name = "ApiError";
@@ -202,7 +203,7 @@ export function apiErrorResponse(
     instance?: string;
     errors?: Record<string, string[]>;
     headers?: Record<string, string>;
-  },
+  }
 ): Response {
   const error = new ApiError(status, detail, code, options?.errors);
   const body = error.toResponse(options?.instance);
@@ -233,7 +234,7 @@ export function apiErrorResponse(
 export function apiResponse<T>(
   status: number,
   data: T,
-  headers?: Record<string, string>,
+  headers?: Record<string, string>
 ): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -272,7 +273,12 @@ export function handleApiError(error: unknown, instance?: string): Response {
   // Log unexpected errors for debugging
   console.error("[API Error]", error);
 
-  return apiErrorResponse(500, "An unexpected error occurred", "INTERNAL_ERROR", { instance });
+  return apiErrorResponse(
+    500,
+    "An unexpected error occurred",
+    "INTERNAL_ERROR",
+    { instance }
+  );
 }
 
 /**
@@ -289,8 +295,15 @@ export function handleApiError(error: unknown, instance?: string): Response {
  * });
  * ```
  */
-export function validationErrorResponse(errors: Record<string, string[]>): Response {
-  return apiErrorResponse(422, "The request body contains invalid fields", "VALIDATION_ERROR", {
-    errors,
-  });
+export function validationErrorResponse(
+  errors: Record<string, string[]>
+): Response {
+  return apiErrorResponse(
+    422,
+    "The request body contains invalid fields",
+    "VALIDATION_ERROR",
+    {
+      errors,
+    }
+  );
 }

@@ -16,7 +16,10 @@ export function parseCurrency(value: string): number {
   return Number(unformat(value, "en-US"));
 }
 
-type InputCurrencyProps = Omit<InputNumberFormatProps, "locales" | "format" | "currency"> & {
+type InputCurrencyProps = Omit<
+  InputNumberFormatProps,
+  "locales" | "format" | "currency"
+> & {
   currency?: "USD" | "EUR" | "GBP" | "BRL";
 };
 

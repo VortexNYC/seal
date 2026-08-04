@@ -1,4 +1,5 @@
 import { Check, X } from "lucide-react";
+
 import { FadeIn } from "~/components/ui/fade-in";
 
 interface ComparisonItem {
@@ -49,7 +50,10 @@ export function StaticComparison() {
                 {painPoints.map((item) => (
                   <li className="flex items-start gap-3" key={item.text}>
                     <span className="bg-muted mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
-                      <X aria-hidden="true" className="text-muted-foreground size-3.5" />
+                      <X
+                        aria-hidden="true"
+                        className="text-muted-foreground size-3.5"
+                      />
                     </span>
                     <span className="text-muted-foreground text-sm leading-relaxed">
                       {item.text}
@@ -77,9 +81,14 @@ export function StaticComparison() {
                 {benefits.map((item) => (
                   <li className="flex items-start gap-3" key={item.text}>
                     <span className="bg-primary/10 mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
-                      <Check aria-hidden="true" className="text-primary size-3.5" />
+                      <Check
+                        aria-hidden="true"
+                        className="text-primary size-3.5"
+                      />
                     </span>
-                    <span className="text-foreground text-sm leading-relaxed">{item.text}</span>
+                    <span className="text-foreground text-sm leading-relaxed">
+                      {item.text}
+                    </span>
                   </li>
                 ))}
               </ul>

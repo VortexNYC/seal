@@ -80,7 +80,9 @@ export function NumberFieldInput({
         step="any"
         className={error ? "border-destructive" : ""}
       />
-      {helpText && !error && <p className="text-muted-foreground text-xs">{helpText}</p>}
+      {helpText && !error && (
+        <p className="text-muted-foreground text-xs">{helpText}</p>
+      )}
       {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );

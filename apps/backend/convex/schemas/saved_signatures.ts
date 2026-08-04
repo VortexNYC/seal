@@ -14,7 +14,7 @@ import { v } from "convex/values";
 export const signatureTypeTuple = v.union(
   v.literal("drawn"),
   v.literal("typed"),
-  v.literal("uploaded"),
+  v.literal("uploaded")
 );
 
 export type SignatureType = "drawn" | "typed" | "uploaded";
