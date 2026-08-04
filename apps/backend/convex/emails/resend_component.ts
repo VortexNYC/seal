@@ -6,8 +6,8 @@
  * component so the dependency graph does not pull in provider residue.
  */
 
-import { Webhook } from "standardwebhooks";
 import { type Infer, v } from "convex/values";
+import { Webhook } from "standardwebhooks";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -70,10 +70,14 @@ function requireResendApiKey(): string {
   return apiKey;
 }
 
-function normalizeHeaders(headers: EmailHeader[] | Record<string, string> | undefined) {
+function normalizeHeaders(
+  headers: EmailHeader[] | Record<string, string> | undefined
+) {
   if (!headers) return undefined;
   if (Array.isArray(headers)) {
-    return Object.fromEntries(headers.map((header) => [header.name, header.value]));
+    return Object.fromEntries(
+      headers.map((header) => [header.name, header.value])
+    );
   }
   return headers;
 }
@@ -93,12 +97,16 @@ function toResendApiPayload(options: SendEmailOptions) {
   };
 }
 
-function pickIdempotencyKey(headers: EmailHeader[] | Record<string, string> | undefined) {
+function pickIdempotencyKey(
+  headers: EmailHeader[] | Record<string, string> | undefined
+) {
   const normalized = normalizeHeaders(headers);
   return normalized?.["Idempotency-Key"] ?? normalized?.["idempotency-key"];
 }
 
-export async function sendResendEmail(options: ResendEmailPayload): Promise<ResendEmailResult> {
+export async function sendResendEmail(
+  options: ResendEmailPayload
+): Promise<ResendEmailResult> {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -136,12 +144,15 @@ export async function sendResendEmail(options: ResendEmailPayload): Promise<Rese
 
 export async function sendEmailFromAction(
   ctx: Pick<ActionCtx, "runMutation">,
-  options: SendEmailOptions,
+  options: SendEmailOptions
 ): Promise<string> {
   const subject =
     "template" in options && options.subject === undefined
       ? `template:${options.template.id}`
-      : sealAssertPresent(options.subject, "Expected Resend email subject to be present.");
+      : sealAssertPresent(
+          options.subject,
+          "Expected Resend email subject to be present."
+        );
 
   return await sendEmailManuallyFromAction(
     ctx,
@@ -157,18 +168,21 @@ export async function sendEmailFromAction(
     async (idempotencyKey) => {
       const { data, error } = await sendResendEmail({
         ...options,
-        headers: { ...normalizeHeaders(options.headers), "Idempotency-Key": idempotencyKey },
+        headers: {
+          ...normalizeHeaders(options.headers),
+          "Idempotency-Key": idempotencyKey,
+        },
       });
       if (error) throw new Error(error.message ?? "Resend request failed");
       return sealAssertPresent(data).id;
-    },
+    }
   );
 }
 
 export async function sendEmailManuallyFromAction(
   ctx: Pick<ActionCtx, "runMutation">,
   options: SendEmailManualOptions,
-  sendCallback: (idempotencyKey: string) => Promise<string>,
+  sendCallback: (idempotencyKey: string) => Promise<string>
 ): Promise<string> {
   const idempotencyKey = crypto.randomUUID();
   try {
@@ -185,7 +199,7 @@ export async function sendEmailManuallyFromAction(
 
 export async function handleResendEventWebhookFromAction(
   ctx: Pick<ActionCtx, "runMutation">,
-  request: Request,
+  request: Request
 ): Promise<Response> {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
   if (!webhookSecret) {
@@ -195,11 +209,16 @@ export async function handleResendEventWebhookFromAction(
   const raw = await request.text();
   const webhook = new Webhook(webhookSecret);
   const payload = webhook.verify(raw, {
-    "webhook-id": request.headers.get("svix-id") ?? request.headers.get("webhook-id") ?? "",
+    "webhook-id":
+      request.headers.get("svix-id") ?? request.headers.get("webhook-id") ?? "",
     "webhook-timestamp":
-      request.headers.get("svix-timestamp") ?? request.headers.get("webhook-timestamp") ?? "",
+      request.headers.get("svix-timestamp") ??
+      request.headers.get("webhook-timestamp") ??
+      "",
     "webhook-signature":
-      request.headers.get("svix-signature") ?? request.headers.get("webhook-signature") ?? "",
+      request.headers.get("svix-signature") ??
+      request.headers.get("webhook-signature") ??
+      "",
   }) as ValidatedResendEmailEvent;
 
   await ctx.runMutation(internal.emails.resend_component.handleEmailEvent, {
@@ -212,7 +231,7 @@ export async function handleResendEventWebhookFromAction(
 
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -225,8 +244,8 @@ const vEmailHeaders = v.optional(
     v.object({
       name: v.string(),
       value: v.string(),
-    }),
-  ),
+    })
+  )
 );
 
 const vCommonEmailEventFields = {
@@ -243,8 +262,8 @@ const vCommonEmailEventFields = {
   tags: v.optional(
     v.union(
       v.record(v.string(), v.string()),
-      v.array(v.object({ name: v.string(), value: v.string() })),
-    ),
+      v.array(v.object({ name: v.string(), value: v.string() }))
+    )
   ),
 };
 
@@ -315,7 +334,7 @@ const vEmailEvent = v.union(
         reason: v.optional(v.string()),
       }),
     }),
-  }),
+  })
 );
 
 const vOnEmailEventArgs = v.object({
@@ -338,7 +357,11 @@ export const handleEmailEvent = internalMutation({
     const eventType = args.event.type;
 
     // Only audit delivery-related events
-    const auditableEvents = ["email.delivered", "email.opened", "email.bounced"] as const;
+    const auditableEvents = [
+      "email.delivered",
+      "email.opened",
+      "email.bounced",
+    ] as const;
 
     type AuditableEvent = (typeof auditableEvents)[number];
 
@@ -346,7 +369,8 @@ export const handleEmailEvent = internalMutation({
       return;
     }
 
-    const resendMessageId = "data" in args.event ? args.event.data.email_id : undefined;
+    const resendMessageId =
+      "data" in args.event ? args.event.data.email_id : undefined;
     if (!resendMessageId) return;
 
     const recipientEmail =
@@ -359,12 +383,14 @@ export const handleEmailEvent = internalMutation({
     // Look up the notification by Resend message ID (same as old webhook handler)
     const notification = await ctx.db
       .query("notifications")
-      .withIndex("by_email_message_id", (q) => q.eq("emailMessageId", resendMessageId))
+      .withIndex("by_email_message_id", (q) =>
+        q.eq("emailMessageId", resendMessageId)
+      )
       .first();
 
     if (!notification) {
       console.warn(
-        `[Resend Component] No notification found for message ${resendMessageId} (${eventType})`,
+        `[Resend Component] No notification found for message ${resendMessageId} (${eventType})`
       );
       return;
     }

@@ -13,7 +13,7 @@ import {
 } from "./permissions";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -23,7 +23,9 @@ function sealAssertPresent<T>(
 
 describe("hasPermission", () => {
   it("returns true for exact match", () => {
-    expect(hasPermission(["documents:view", "documents:edit"], "documents:view")).toBe(true);
+    expect(
+      hasPermission(["documents:view", "documents:edit"], "documents:view")
+    ).toBe(true);
   });
 
   it("returns false when permission is missing", () => {
@@ -56,15 +58,21 @@ describe("hasPermission", () => {
 
 describe("hasAnyPermission", () => {
   it("returns true when user has one of required permissions", () => {
-    expect(hasAnyPermission(["documents:view"], ["documents:view", "documents:edit"])).toBe(true);
+    expect(
+      hasAnyPermission(["documents:view"], ["documents:view", "documents:edit"])
+    ).toBe(true);
   });
 
   it("returns false when user has none of required permissions", () => {
-    expect(hasAnyPermission(["contacts:view"], ["documents:view", "documents:edit"])).toBe(false);
+    expect(
+      hasAnyPermission(["contacts:view"], ["documents:view", "documents:edit"])
+    ).toBe(false);
   });
 
   it("works with wildcards", () => {
-    expect(hasAnyPermission(["documents:*"], ["documents:edit", "templates:view"])).toBe(true);
+    expect(
+      hasAnyPermission(["documents:*"], ["documents:edit", "templates:view"])
+    ).toBe(true);
   });
 
   it("returns false for empty required permissions", () => {
@@ -76,17 +84,28 @@ describe("hasAnyPermission", () => {
 describe("hasAllPermissions", () => {
   it("returns true when user has all required permissions", () => {
     expect(
-      hasAllPermissions(["documents:view", "documents:edit"], ["documents:view", "documents:edit"]),
+      hasAllPermissions(
+        ["documents:view", "documents:edit"],
+        ["documents:view", "documents:edit"]
+      )
     ).toBe(true);
   });
 
   it("returns false when user is missing one", () => {
-    expect(hasAllPermissions(["documents:view"], ["documents:view", "documents:edit"])).toBe(false);
+    expect(
+      hasAllPermissions(
+        ["documents:view"],
+        ["documents:view", "documents:edit"]
+      )
+    ).toBe(false);
   });
 
   it("domain wildcard satisfies all permissions in that domain", () => {
     expect(
-      hasAllPermissions(["documents:*"], ["documents:view", "documents:edit", "documents:delete"]),
+      hasAllPermissions(
+        ["documents:*"],
+        ["documents:view", "documents:edit", "documents:delete"]
+      )
     ).toBe(true);
   });
 
@@ -176,14 +195,19 @@ describe("getPermissionsByDomain", () => {
 
   it("covers all permissions", () => {
     const byDomain = getPermissionsByDomain();
-    const totalEntries = Object.values(byDomain).reduce((sum, arr) => sum + arr.length, 0);
+    const totalEntries = Object.values(byDomain).reduce(
+      (sum, arr) => sum + arr.length,
+      0
+    );
     expect(totalEntries).toBe(Object.keys(PERMISSIONS).length);
   });
 });
 
 describe("getRoleInfo", () => {
   it("returns name and description for each role", () => {
-    for (const role of Object.keys(ROLE_TEMPLATES) as Array<keyof typeof ROLE_TEMPLATES>) {
+    for (const role of Object.keys(ROLE_TEMPLATES) as Array<
+      keyof typeof ROLE_TEMPLATES
+    >) {
       const info = getRoleInfo(role);
       expect(info.name).toBeTruthy();
       expect(info.description).toBeTruthy();

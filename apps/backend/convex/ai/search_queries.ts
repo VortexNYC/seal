@@ -19,7 +19,9 @@ export const getCurrentUserOrg = internalQuery({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.authSubject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", args.authSubject)
+      )
       .first();
 
     if (!user?.activeOrganizationId) return null;
@@ -46,20 +48,26 @@ export const fullSearch = action({
 
     if (args.query.trim().length < 2) return [];
 
-    const result = await ctx.runQuery(internal.ai.search_queries.getCurrentUserOrg, {
-      authSubject: identity.subject,
-    });
+    const result = await ctx.runQuery(
+      internal.ai.search_queries.getCurrentUserOrg,
+      {
+        authSubject: identity.subject,
+      }
+    );
     if (!result) return [];
 
     const startMs = Date.now();
-    const results = await ctx.runAction(internal.ai.search.hybridSearchDocuments, {
-      organizationId: result.organizationId,
-      query: args.query.trim(),
-      limit: args.limit ?? 20,
-      workflowStatus: args.workflowStatus,
-      dateFrom: args.dateFrom,
-      dateTo: args.dateTo,
-    });
+    const results = await ctx.runAction(
+      internal.ai.search.hybridSearchDocuments,
+      {
+        organizationId: result.organizationId,
+        query: args.query.trim(),
+        limit: args.limit ?? 20,
+        workflowStatus: args.workflowStatus,
+        dateFrom: args.dateFrom,
+        dateTo: args.dateTo,
+      }
+    );
     const durationMs = Date.now() - startMs;
 
     // Log search usage

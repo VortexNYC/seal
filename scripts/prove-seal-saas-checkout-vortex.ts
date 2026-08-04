@@ -2,7 +2,13 @@
 
 import { resolve } from "node:path";
 
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly Json[]
+  | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
 type CommandResult = {
@@ -59,13 +65,19 @@ function objectField(value: JsonObject, field: string): JsonObject {
 
 function stringField(value: JsonObject, field: string): string {
   const child = value[field];
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
 function numberField(value: JsonObject, field: string): number {
   const child = value[field];
-  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a number`);
+  assert(
+    typeof child === "number" && Number.isFinite(child),
+    `Expected ${field} to be a number`
+  );
   return child;
 }
 
@@ -119,7 +131,9 @@ async function setConvexEnv(input: {
     deployment: input.deployment,
   });
   if (result.exitCode !== 0) {
-    fail(`convex env set ${input.name} failed\n${result.stderr}\n${result.stdout}`);
+    fail(
+      `convex env set ${input.name} failed\n${result.stderr}\n${result.stdout}`
+    );
   }
 }
 
@@ -162,19 +176,27 @@ async function runVortexConvex<T extends Json>(input: {
     deployment: input.deployment,
   });
   if (result.exitCode !== 0) {
-    fail(`vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`);
+    fail(
+      `vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`
+    );
   }
   return parseConvexJson<T>(result.stdout, input.functionName);
 }
 
-function parseConvexJson<T extends Json>(stdout: string, functionName: string): T {
+function parseConvexJson<T extends Json>(
+  stdout: string,
+  functionName: string
+): T {
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
   assert(jsonStart >= 0, `No JSON returned from ${functionName}: ${trimmed}`);
   return JSON.parse(trimmed.slice(jsonStart)) as T;
 }
 
-function readStringRecord(value: string | undefined, label: string): Record<string, string> {
+function readStringRecord(
+  value: string | undefined,
+  label: string
+): Record<string, string> {
   if (value === undefined || value.trim().length === 0) {
     return {};
   }
@@ -182,7 +204,10 @@ function readStringRecord(value: string | undefined, label: string): Record<stri
   assert(isJsonObject(parsed), `Expected ${label} to be a JSON object`);
   const record: Record<string, string> = {};
   for (const [key, entry] of Object.entries(parsed)) {
-    assert(typeof entry === "string", `Expected ${label}.${key} to be a string`);
+    assert(
+      typeof entry === "string",
+      `Expected ${label}.${key} to be a string`
+    );
     record[key] = entry;
   }
   return record;
@@ -195,7 +220,7 @@ async function mergeSealStringRecordEnv(input: {
 }): Promise<Record<string, string>> {
   const existing = readStringRecord(
     await getConvexEnv({ deployment: input.deployment, name: input.name }),
-    input.name,
+    input.name
   );
   const next = { ...existing, ...input.updates };
   await setConvexEnv({
@@ -206,15 +231,21 @@ async function mergeSealStringRecordEnv(input: {
   return next;
 }
 
-function readStringArray(value: string | undefined, label: string): readonly string[] {
+function readStringArray(
+  value: string | undefined,
+  label: string
+): readonly string[] {
   assert(value !== undefined && value.trim().length > 0, `${label} is missing`);
-  assert(value.trim() !== "*", `${label}=* requires SEAL_VORTEX_PROOF_ORGANIZATION_ID`);
+  assert(
+    value.trim() !== "*",
+    `${label}=* requires SEAL_VORTEX_PROOF_ORGANIZATION_ID`
+  );
   const parsed = JSON.parse(value) as Json;
   assert(Array.isArray(parsed), `Expected ${label} to be a JSON string array`);
   const entries = parsed.map((entry, index) => {
     assert(
       typeof entry === "string" && entry.length > 0,
-      `Expected ${label}[${index}] to be a string`,
+      `Expected ${label}[${index}] to be a string`
     );
     return entry;
   });
@@ -226,10 +257,14 @@ function selectMappedProofOrganization(input: {
   readonly allowlistedOrganizationIds: readonly string[];
   readonly accountMap: Readonly<Record<string, string>>;
   readonly defaultBillingAccountId: string | undefined;
-}): { readonly organizationId: string; readonly billingAccountId: string } | null {
+}): {
+  readonly organizationId: string;
+  readonly billingAccountId: string;
+} | null {
   if (input.explicitOrganizationId !== undefined) {
     const billingAccountId =
-      input.accountMap[input.explicitOrganizationId] ?? input.defaultBillingAccountId;
+      input.accountMap[input.explicitOrganizationId] ??
+      input.defaultBillingAccountId;
     if (billingAccountId === undefined) {
       return null;
     }
@@ -237,7 +272,8 @@ function selectMappedProofOrganization(input: {
   }
 
   for (const organizationId of input.allowlistedOrganizationIds) {
-    const billingAccountId = input.accountMap[organizationId] ?? input.defaultBillingAccountId;
+    const billingAccountId =
+      input.accountMap[organizationId] ?? input.defaultBillingAccountId;
     if (billingAccountId !== undefined) {
       return { organizationId, billingAccountId };
     }
@@ -250,12 +286,18 @@ function selectOrganizationForProvisioning(input: {
   readonly explicitOrganizationId: string | undefined;
   readonly allowlistedOrganizationIds: readonly string[];
 }): string {
-  const organizationId = input.explicitOrganizationId ?? input.allowlistedOrganizationIds[0];
-  assert(organizationId !== undefined, "No allowlisted organization available for checkout proof");
+  const organizationId =
+    input.explicitOrganizationId ?? input.allowlistedOrganizationIds[0];
+  assert(
+    organizationId !== undefined,
+    "No allowlisted organization available for checkout proof"
+  );
   return organizationId;
 }
 
-function vortexCustomerExternalIdForSealOrganization(organizationId: string): string {
+function vortexCustomerExternalIdForSealOrganization(
+  organizationId: string
+): string {
   return `vtx_cust_seal_org_${organizationId}`;
 }
 
@@ -291,10 +333,12 @@ async function requestVortexJson(input: {
   const text = await response.text();
   const parsed = objectField(
     { response: text.length > 0 ? (JSON.parse(text) as Json) : null },
-    "response",
+    "response"
   );
   if (!response.ok) {
-    fail(`${input.label} failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`);
+    fail(
+      `${input.label} failed: ${response.status}\n${JSON.stringify(parsed, null, 2)}`
+    );
   }
   return parsed;
 }
@@ -302,7 +346,10 @@ async function requestVortexJson(input: {
 async function resolveVortexApiKeyContext(input: {
   readonly deployment: string;
   readonly apiKey: string;
-}): Promise<{ readonly organizationId: string; readonly environment: "sandbox" | "production" }> {
+}): Promise<{
+  readonly organizationId: string;
+  readonly environment: "sandbox" | "production";
+}> {
   const resolved = await runVortexConvex<JsonObject>({
     deployment: input.deployment,
     functionName: "auth:resolveApiKey",
@@ -312,7 +359,7 @@ async function resolveVortexApiKeyContext(input: {
   const environment = stringField(resolved, "environment");
   assert(
     environment === "sandbox" || environment === "production",
-    `Unexpected Vortex API key environment: ${environment}`,
+    `Unexpected Vortex API key environment: ${environment}`
   );
   return {
     organizationId: stringField(resolved, "organizationId"),
@@ -331,8 +378,12 @@ async function provisionMappedBillingAccount(input: {
     deployment: input.vortexDeployment,
     apiKey: input.vortexApiKey,
   });
-  const customerExternalId = vortexCustomerExternalIdForSealOrganization(input.organizationId);
-  const billingAccountId = billingAccountIdForSealOrganization(input.organizationId);
+  const customerExternalId = vortexCustomerExternalIdForSealOrganization(
+    input.organizationId
+  );
+  const billingAccountId = billingAccountIdForSealOrganization(
+    input.organizationId
+  );
 
   await requestVortexJson({
     baseUrl: input.vortexBaseUrl,
@@ -382,16 +433,24 @@ async function provisionMappedBillingAccount(input: {
 }
 
 async function readProofConfig(): Promise<ProofConfig> {
-  const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
-  const vortexDeployment = readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
+  const sealDeployment =
+    readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
+  const vortexDeployment =
+    readEnv("VORTEX_CONVEX_DEPLOYMENT") ?? defaultVortexDeployment;
   const vortexBaseUrl = urlWithoutTrailingSlash(
     readEnv("VORTEX_BILLING_API_BASE_URL") ??
-      (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_API_BASE_URL" })) ??
-      defaultVortexBaseUrl,
+      (await getConvexEnv({
+        deployment: sealDeployment,
+        name: "VORTEX_BILLING_API_BASE_URL",
+      })) ??
+      defaultVortexBaseUrl
   );
   const vortexApiKey =
     readEnv("VORTEX_BILLING_API_KEY") ??
-    (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_API_KEY" }));
+    (await getConvexEnv({
+      deployment: sealDeployment,
+      name: "VORTEX_BILLING_API_KEY",
+    }));
   assert(vortexApiKey !== undefined, "VORTEX_BILLING_API_KEY is missing");
 
   const explicitOrganizationId = readEnv("SEAL_VORTEX_PROOF_ORGANIZATION_ID");
@@ -401,27 +460,39 @@ async function readProofConfig(): Promise<ProofConfig> {
   });
   const allowlistedOrganizationIds = readStringArray(
     allowlist,
-    "VORTEX_BILLING_SAAS_ORGANIZATION_IDS",
+    "VORTEX_BILLING_SAAS_ORGANIZATION_IDS"
   );
   assert(
     allowlistedOrganizationIds.length > 0,
-    "No allowlisted organization available for checkout proof",
+    "No allowlisted organization available for checkout proof"
   );
 
   const accountMap = readStringRecord(
-    await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_ACCOUNT_MAP" }),
-    "VORTEX_BILLING_ACCOUNT_MAP",
+    await getConvexEnv({
+      deployment: sealDeployment,
+      name: "VORTEX_BILLING_ACCOUNT_MAP",
+    }),
+    "VORTEX_BILLING_ACCOUNT_MAP"
   );
   const defaultBillingAccountId =
     readEnv("VORTEX_BILLING_ACCOUNT_ID") ??
-    (await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_ACCOUNT_ID" }));
+    (await getConvexEnv({
+      deployment: sealDeployment,
+      name: "VORTEX_BILLING_ACCOUNT_ID",
+    }));
 
   const priceMap = readStringRecord(
-    await getConvexEnv({ deployment: sealDeployment, name: "VORTEX_BILLING_SAAS_PRICE_MAP" }),
-    "VORTEX_BILLING_SAAS_PRICE_MAP",
+    await getConvexEnv({
+      deployment: sealDeployment,
+      name: "VORTEX_BILLING_SAAS_PRICE_MAP",
+    }),
+    "VORTEX_BILLING_SAAS_PRICE_MAP"
   );
   const priceId = priceMap[lookupKey];
-  assert(priceId !== undefined, `VORTEX_BILLING_SAAS_PRICE_MAP is missing ${lookupKey}`);
+  assert(
+    priceId !== undefined,
+    `VORTEX_BILLING_SAAS_PRICE_MAP is missing ${lookupKey}`
+  );
 
   const selected = selectMappedProofOrganization({
     explicitOrganizationId,
@@ -457,8 +528,11 @@ async function readProofConfig(): Promise<ProofConfig> {
   };
 }
 
-async function createCheckoutProofSession(config: ProofConfig): Promise<JsonObject> {
-  const functionName = "vortex_billing/proof_actions:createVortexSaasCheckoutProofSession";
+async function createCheckoutProofSession(
+  config: ProofConfig
+): Promise<JsonObject> {
+  const functionName =
+    "vortex_billing/proof_actions:createVortexSaasCheckoutProofSession";
   const baseArgs = {
     organizationId: config.organizationId,
     lookupKey,
@@ -484,7 +558,9 @@ async function createCheckoutProofSession(config: ProofConfig): Promise<JsonObje
 
   const output = `${explicitResult.stderr}\n${explicitResult.stdout}`;
   if (!output.includes("Object contains extra field `apiBaseUrl`")) {
-    fail(`convex run ${functionName} failed\n${explicitResult.stderr}\n${explicitResult.stdout}`);
+    fail(
+      `convex run ${functionName} failed\n${explicitResult.stderr}\n${explicitResult.stdout}`
+    );
   }
 
   const legacyResult = await runConvexResult({
@@ -495,7 +571,7 @@ async function createCheckoutProofSession(config: ProofConfig): Promise<JsonObje
   if (legacyResult.exitCode !== 0) {
     fail(
       `convex run ${functionName} failed after legacy fallback\n` +
-        `${legacyResult.stderr}\n${legacyResult.stdout}`,
+        `${legacyResult.stderr}\n${legacyResult.stdout}`
     );
   }
   return parseConvexJson<JsonObject>(legacyResult.stdout, functionName);
@@ -507,10 +583,13 @@ async function main(): Promise<void> {
 
   const checkoutUrl = stringField(checkout, "checkoutUrl");
   assert(checkoutUrl.startsWith("https://"), "Expected hosted checkout URL");
-  assert(checkoutUrl.startsWith(config.vortexBaseUrl), "Expected checkout URL from Vortex");
+  assert(
+    checkoutUrl.startsWith(config.vortexBaseUrl),
+    "Expected checkout URL from Vortex"
+  );
   assert(
     numberField(checkout, "amountTotal") === expectedUnitAmount,
-    "Expected checkout amountTotal to match Seal Professional monthly price",
+    "Expected checkout amountTotal to match Seal Professional monthly price"
   );
 
   console.log(
@@ -518,7 +597,8 @@ async function main(): Promise<void> {
       {
         ok: true,
         check: "seal_saas_checkout_vortex",
-        boundary: "Seal SaaS subscription checkout only; document payments are out of scope",
+        boundary:
+          "Seal SaaS subscription checkout only; document payments are out of scope",
         sealDeployment: config.sealDeployment,
         vortexDeployment: config.vortexDeployment,
         vortexBaseUrl: config.vortexBaseUrl,
@@ -533,8 +613,8 @@ async function main(): Promise<void> {
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

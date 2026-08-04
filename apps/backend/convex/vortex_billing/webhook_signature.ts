@@ -31,7 +31,9 @@ type CreateVortexWebhookSignatureInput = {
 const defaultToleranceSeconds = 5 * 60;
 
 function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
 }
 
 function hexToBytes(value: string): Uint8Array | null {
@@ -98,17 +100,28 @@ async function hmacSha256Hex(secret: string, payload: string): Promise<string> {
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(payload)
+  );
   return bytesToHex(new Uint8Array(signature));
 }
 
 export async function createVortexWebhookSignature(
-  input: CreateVortexWebhookSignatureInput,
-): Promise<{ readonly header: string; readonly timestamp: number; readonly signature: string }> {
+  input: CreateVortexWebhookSignatureInput
+): Promise<{
+  readonly header: string;
+  readonly timestamp: number;
+  readonly signature: string;
+}> {
   const timestamp = input.timestamp ?? Date.now();
-  const signature = await hmacSha256Hex(input.secret, `${timestamp}.${input.payload}`);
+  const signature = await hmacSha256Hex(
+    input.secret,
+    `${timestamp}.${input.payload}`
+  );
   return {
     header: `t=${timestamp},v1=${signature}`,
     timestamp,
@@ -117,17 +130,22 @@ export async function createVortexWebhookSignature(
 }
 
 export async function verifyVortexWebhookSignature(
-  input: VerifyVortexWebhookSignatureInput,
+  input: VerifyVortexWebhookSignatureInput
 ): Promise<VortexWebhookSignatureVerificationResult> {
   const parsed = parseSignatureHeader(input.header);
-  if (input.header === null || input.header === undefined || input.header.length === 0) {
+  if (
+    input.header === null ||
+    input.header === undefined ||
+    input.header.length === 0
+  ) {
     return { ok: false, reason: "missing_header" };
   }
   if (!parsed) {
     return { ok: false, reason: "invalid_header" };
   }
 
-  const toleranceMs = (input.toleranceSeconds ?? defaultToleranceSeconds) * 1000;
+  const toleranceMs =
+    (input.toleranceSeconds ?? defaultToleranceSeconds) * 1000;
   const now = input.now ?? Date.now();
   if (!Number.isFinite(toleranceMs) || toleranceMs < 0) {
     return { ok: false, reason: "invalid_timestamp" };
@@ -136,7 +154,10 @@ export async function verifyVortexWebhookSignature(
     return { ok: false, reason: "timestamp_outside_tolerance" };
   }
 
-  const expected = await hmacSha256Hex(input.secret, `${parsed.timestamp}.${input.payload}`);
+  const expected = await hmacSha256Hex(
+    input.secret,
+    `${parsed.timestamp}.${input.payload}`
+  );
   const expectedBytes = hexToBytes(expected);
   if (!expectedBytes) {
     return { ok: false, reason: "invalid_signature" };

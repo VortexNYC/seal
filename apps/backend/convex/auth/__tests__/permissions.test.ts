@@ -17,7 +17,9 @@ const allPermissionKeys = Object.keys(PERMISSIONS) as PermissionKey[];
 
 describe("hasPermission", () => {
   test("exact match returns true", () => {
-    expect(hasPermission(["documents:view", "documents:edit"], "documents:view")).toBe(true);
+    expect(
+      hasPermission(["documents:view", "documents:edit"], "documents:view")
+    ).toBe(true);
   });
 
   test("global wildcard '*' grants any permission", () => {
@@ -44,14 +46,20 @@ describe("hasPermission", () => {
 describe("hasAnyPermission", () => {
   test("returns true if at least one matches", () => {
     expect(
-      hasAnyPermission(["documents:view", "templates:view"], ["documents:edit", "templates:view"]),
+      hasAnyPermission(
+        ["documents:view", "templates:view"],
+        ["documents:edit", "templates:view"]
+      )
     ).toBe(true);
   });
 
   test("returns false if none match", () => {
-    expect(hasAnyPermission(["documents:view"], ["documents:edit", "templates:create"])).toBe(
-      false,
-    );
+    expect(
+      hasAnyPermission(
+        ["documents:view"],
+        ["documents:edit", "templates:create"]
+      )
+    ).toBe(false);
   });
 });
 
@@ -60,14 +68,17 @@ describe("hasAllPermissions", () => {
     expect(
       hasAllPermissions(
         ["documents:view", "documents:edit", "templates:view"],
-        ["documents:view", "documents:edit"],
-      ),
+        ["documents:view", "documents:edit"]
+      )
     ).toBe(true);
   });
 
   test("returns false if one is missing", () => {
     expect(
-      hasAllPermissions(["documents:view", "templates:view"], ["documents:view", "documents:edit"]),
+      hasAllPermissions(
+        ["documents:view", "templates:view"],
+        ["documents:view", "documents:edit"]
+      )
     ).toBe(false);
   });
 });
@@ -84,12 +95,16 @@ describe("getExpandedPermissions", () => {
     const adminPerms = getExpandedPermissions("admin");
 
     // All document permissions present
-    for (const key of allPermissionKeys.filter((k) => k.startsWith("documents:"))) {
+    for (const key of allPermissionKeys.filter((k) =>
+      k.startsWith("documents:")
+    )) {
       expect(adminPerms).toContain(key);
     }
 
     // All template permissions present
-    for (const key of allPermissionKeys.filter((k) => k.startsWith("templates:"))) {
+    for (const key of allPermissionKeys.filter((k) =>
+      k.startsWith("templates:")
+    )) {
       expect(adminPerms).toContain(key);
     }
 
@@ -106,7 +121,9 @@ describe("getExpandedPermissions", () => {
   });
 
   test("returns a sorted array", () => {
-    for (const role of Object.keys(ROLE_TEMPLATES) as Array<keyof typeof ROLE_TEMPLATES>) {
+    for (const role of Object.keys(ROLE_TEMPLATES) as Array<
+      keyof typeof ROLE_TEMPLATES
+    >) {
       const perms = getExpandedPermissions(role);
       const sorted = [...perms].sort();
       expect(perms).toEqual(sorted);
@@ -156,7 +173,10 @@ describe("getPermissionsByDomain", () => {
 
   test("total entries across all domains equals total permissions count", () => {
     const byDomain = getPermissionsByDomain();
-    const totalEntries = Object.values(byDomain).reduce((sum, entries) => sum + entries.length, 0);
+    const totalEntries = Object.values(byDomain).reduce(
+      (sum, entries) => sum + entries.length,
+      0
+    );
     expect(totalEntries).toBe(allPermissionKeys.length);
   });
 });
@@ -165,7 +185,9 @@ describe("getRoleInfo", () => {
   test("returns correct name and description for each role", () => {
     const ownerInfo = getRoleInfo("owner");
     expect(ownerInfo.name).toBe("Owner");
-    expect(ownerInfo.description).toBe("Full access to all features including billing");
+    expect(ownerInfo.description).toBe(
+      "Full access to all features including billing"
+    );
 
     const adminInfo = getRoleInfo("admin");
     expect(adminInfo.name).toBe("Administrator");

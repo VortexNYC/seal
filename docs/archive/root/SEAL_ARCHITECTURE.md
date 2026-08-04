@@ -360,7 +360,9 @@ Frontend uses `permissions` object from `getUserPermissions` query to conditiona
 In workspace layout (`$slug.tsx`):
 
 ```typescript
-const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+const organization = useQuery(api.organizations.queries.getOrganization, {
+  slug,
+});
 const permissions = useQuery(api.organizations.queries.getUserPermissions, {
   organizationId: orgId,
 });

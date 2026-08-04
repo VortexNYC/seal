@@ -3,12 +3,16 @@ import { z } from "zod";
 
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
-import { fieldAnalysisCache, type FieldAnalysisResult } from "../analyzeFieldsAction";
+import {
+  fieldAnalysisCache,
+  type FieldAnalysisResult,
+} from "../analyzeFieldsAction";
 import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
 export const analyzeDocumentFields = createTool({
-  description: "Analyze a PDF document and detect where form fields should be placed",
+  description:
+    "Analyze a PDF document and detect where form fields should be placed",
   inputSchema: z.object({
     documentId: z
       .string()
@@ -17,17 +21,28 @@ export const analyzeDocumentFields = createTool({
   }),
   execute: async (ctx: SealAICtx, args): Promise<string> => {
     try {
-      const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;
-      if (!docId) throw new Error("No document ID provided and no current document context");
+      const docId = (args.documentId ?? ctx.documentId) as
+        | Id<"documents">
+        | undefined;
+      if (!docId)
+        throw new Error(
+          "No document ID provided and no current document context"
+        );
 
       // Rate limit expensive Gemini vision call (20 ops/min per org)
-      await ctx.runMutation(internal.ai.rateLimiting.checkExpensiveOperationLimit, {
-        organizationId: ctx.organizationId.toString(),
-      });
+      await ctx.runMutation(
+        internal.ai.rateLimiting.checkExpensiveOperationLimit,
+        {
+          organizationId: ctx.organizationId.toString(),
+        }
+      );
 
-      const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-        documentId: docId,
-      });
+      const document = await ctx.runQuery(
+        internal.documents.queries.getDocumentInternal,
+        {
+          documentId: docId,
+        }
+      );
       if (!document) throw new Error("Document not found");
 
       // Use cached Gemini analysis — same PDF (storageId) returns cached result
@@ -56,7 +71,9 @@ export const analyzeDocumentFields = createTool({
         });
       }
 
-      const paymentCount = result.fields.filter((f) => f.fieldType === "payment").length;
+      const paymentCount = result.fields.filter(
+        (f) => f.fieldType === "payment"
+      ).length;
       const paymentNote =
         paymentCount > 0
           ? ` (includes ${paymentCount} payment field(s) — payment terms will be auto-extracted when applied)`

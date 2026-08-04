@@ -19,7 +19,7 @@ import { authMutation, authQuery } from "./auth";
 import { resolveComponentMemberships } from "./lib/componentOrgReads";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -77,7 +77,7 @@ async function getMembershipExports(ctx: QueryCtx, userId: Id<"users">) {
   }
   const memberships = await resolveComponentMemberships(ctx, user);
   const organizations = await Promise.all(
-    memberships.map((membership) => ctx.db.get(membership.organizationId)),
+    memberships.map((membership) => ctx.db.get(membership.organizationId))
   );
 
   return memberships.map((membership, index) => ({
@@ -141,7 +141,7 @@ async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
   const subscription = await ctx.db
     .query("subscriptions")
     .withIndex("by_organization_id", (q) =>
-      q.eq("organizationId", sealAssertPresent(user.activeOrganizationId)),
+      q.eq("organizationId", sealAssertPresent(user.activeOrganizationId))
     )
     .first();
 
@@ -174,7 +174,7 @@ async function getAccessExports(ctx: QueryCtx, userId: Id<"users">) {
         permissionLevel: grant.permissionLevel,
         grantedAt: grant.grantedAt,
       };
-    }),
+    })
   );
 }
 
@@ -197,7 +197,7 @@ export const requestDataExport = authMutation({
 
     if (existing && existing.status === "processing") {
       throw new ConvexError(
-        "A data export is already in progress. Please wait for it to complete.",
+        "A data export is already in progress. Please wait for it to complete."
       );
     }
 
@@ -208,10 +208,14 @@ export const requestDataExport = authMutation({
       requestedAt: Date.now(),
     });
 
-    await ctx.scheduler.runAfter(0, internal.user_data_export.generateDataExport, {
-      userId,
-      exportId,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.user_data_export.generateDataExport,
+      {
+        userId,
+        exportId,
+      }
+    );
 
     return { exportId };
   },
@@ -303,9 +307,12 @@ export const generateDataExport = internalAction({
   handler: async (ctx, args) => {
     try {
       // 1. Gather all user data
-      const data = await ctx.runQuery(internal.user_data_export.gatherUserData, {
-        userId: args.userId,
-      });
+      const data = await ctx.runQuery(
+        internal.user_data_export.gatherUserData,
+        {
+          userId: args.userId,
+        }
+      );
 
       // 2. Serialize to JSON
       const jsonString = JSON.stringify(data, null, 2);

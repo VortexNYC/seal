@@ -21,7 +21,7 @@ function verifyDocumentIsDraft(document: Doc<"documents">): void {
   const workflowStatus = document.workflowStatus ?? "draft";
   if (workflowStatus !== "draft") {
     throw new ConvexError(
-      `Cannot modify fields - document is ${workflowStatus}. Fields can only be modified in draft status.`,
+      `Cannot modify fields - document is ${workflowStatus}. Fields can only be modified in draft status.`
     );
   }
 }
@@ -38,14 +38,23 @@ async function ensureCreateFieldIsValid(
     height: number;
     page: number;
     properties?: Doc<"signature_fields">["properties"];
-  },
+  }
 ): Promise<void> {
-  const positionValidation = validateFieldPosition(args.x, args.y, args.width, args.height);
+  const positionValidation = validateFieldPosition(
+    args.x,
+    args.y,
+    args.width,
+    args.height
+  );
   if (!positionValidation.valid) {
     throw new Error(positionValidation.error);
   }
 
-  const pageValidation = await validatePageNumber(ctx, args.documentId, args.page);
+  const pageValidation = await validatePageNumber(
+    ctx,
+    args.documentId,
+    args.page
+  );
   if (!pageValidation.valid) {
     throw new Error(pageValidation.error);
   }
@@ -54,7 +63,7 @@ async function ensureCreateFieldIsValid(
     const assignmentValidation = await validateFieldAssignment(
       ctx,
       args.documentId,
-      args.recipientId,
+      args.recipientId
     );
     if (!assignmentValidation.valid) {
       throw new Error(assignmentValidation.error);
@@ -70,12 +79,12 @@ async function ensureCreateFieldIsValid(
 async function ensureRecipientHasNoPaymentField(
   ctx: MutationCtx,
   documentId: Id<"documents">,
-  recipientId: Id<"document_recipients">,
+  recipientId: Id<"document_recipients">
 ): Promise<void> {
   const existingPaymentField = await findExistingPaymentFieldForRecipient(
     ctx,
     documentId,
-    recipientId,
+    recipientId
   );
   if (existingPaymentField) {
     throw new ConvexError("Each recipient can only have one payment field");
@@ -86,7 +95,7 @@ async function determineMainSignatureField(
   ctx: MutationCtx,
   documentId: Id<"documents">,
   recipientId?: Id<"document_recipients">,
-  fieldType?: Doc<"signature_fields">["fieldType"],
+  fieldType?: Doc<"signature_fields">["fieldType"]
 ): Promise<boolean | undefined> {
   if (fieldType !== "signature" || !recipientId) {
     return undefined;
@@ -95,7 +104,7 @@ async function determineMainSignatureField(
   const existingSignatureFields = await ctx.db
     .query("signature_fields")
     .withIndex("by_document_recipient", (q) =>
-      q.eq("documentId", documentId).eq("recipientId", recipientId),
+      q.eq("documentId", documentId).eq("recipientId", recipientId)
     )
     .filter((q) => q.eq(q.field("fieldType"), "signature"))
     .collect();
@@ -135,7 +144,7 @@ export const createField = mutation({
         minLength: v.optional(v.number()),
         pattern: v.optional(v.string()),
         helpText: v.optional(v.string()),
-      }),
+      })
     ),
     validationRules: v.optional(
       v.object({
@@ -144,7 +153,7 @@ export const createField = mutation({
         max: v.optional(v.number()),
         pattern: v.optional(v.string()),
         customMessage: v.optional(v.string()),
-      }),
+      })
     ),
     templateFieldId: v.optional(v.id("template_fields")),
     ipAddress: v.optional(v.string()),
@@ -170,7 +179,11 @@ export const createField = mutation({
 
     // Guard: only one payment field per recipient (only when assigned)
     if (args.fieldType === "payment" && args.recipientId) {
-      await ensureRecipientHasNoPaymentField(ctx, args.documentId, args.recipientId);
+      await ensureRecipientHasNoPaymentField(
+        ctx,
+        args.documentId,
+        args.recipientId
+      );
     }
 
     // Auto-designate main signature if this is the first signature field for this recipient
@@ -178,7 +191,7 @@ export const createField = mutation({
       ctx,
       args.documentId,
       args.recipientId,
-      args.fieldType,
+      args.fieldType
     );
 
     // Create field
@@ -237,7 +250,7 @@ export const updateField = mutation({
         minLength: v.optional(v.number()),
         pattern: v.optional(v.string()),
         helpText: v.optional(v.string()),
-      }),
+      })
     ),
     validationRules: v.optional(
       v.object({
@@ -246,7 +259,7 @@ export const updateField = mutation({
         max: v.optional(v.number()),
         pattern: v.optional(v.string()),
         customMessage: v.optional(v.string()),
-      }),
+      })
     ),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
@@ -275,7 +288,10 @@ export const updateField = mutation({
 
     // Validate field type if properties are being updated
     if (args.properties) {
-      const typeValidation = validateFieldType(field.fieldType, args.properties);
+      const typeValidation = validateFieldType(
+        field.fieldType,
+        args.properties
+      );
       if (!typeValidation.valid) {
         throw new Error(typeValidation.error);
       }
@@ -369,14 +385,23 @@ export const repositionField = mutation({
     const newPage = args.page ?? field.page;
 
     // Validate new position
-    const positionValidation = validateFieldPosition(newX, newY, newWidth, newHeight);
+    const positionValidation = validateFieldPosition(
+      newX,
+      newY,
+      newWidth,
+      newHeight
+    );
     if (!positionValidation.valid) {
       throw new Error(positionValidation.error);
     }
 
     // Validate page number if changed
     if (args.page !== undefined) {
-      const pageValidation = await validatePageNumber(ctx, field.documentId, args.page);
+      const pageValidation = await validatePageNumber(
+        ctx,
+        field.documentId,
+        args.page
+      );
       if (!pageValidation.valid) {
         throw new Error(pageValidation.error);
       }
@@ -546,7 +571,7 @@ export const assignFieldToRecipient = mutation({
     const assignmentValidation = await validateFieldAssignment(
       ctx,
       field.documentId,
-      args.recipientId,
+      args.recipientId
     );
     if (!assignmentValidation.valid) {
       throw new Error(assignmentValidation.error);
@@ -564,10 +589,15 @@ export const assignFieldToRecipient = mutation({
       const existingSignatureFields = await ctx.db
         .query("signature_fields")
         .withIndex("by_document_recipient", (q) =>
-          q.eq("documentId", field.documentId).eq("recipientId", args.recipientId),
+          q
+            .eq("documentId", field.documentId)
+            .eq("recipientId", args.recipientId)
         )
         .filter((q) =>
-          q.and(q.eq(q.field("fieldType"), "signature"), q.eq(q.field("isMainSignature"), true)),
+          q.and(
+            q.eq(q.field("fieldType"), "signature"),
+            q.eq(q.field("isMainSignature"), true)
+          )
         )
         .first();
 
@@ -622,10 +652,10 @@ export const bulkCreateFields = mutation({
             minLength: v.optional(v.number()),
             pattern: v.optional(v.string()),
             helpText: v.optional(v.string()),
-          }),
+          })
         ),
         templateFieldId: v.optional(v.id("template_fields")),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -654,14 +684,20 @@ export const bulkCreateFields = mutation({
         fieldData.x,
         fieldData.y,
         fieldData.width,
-        fieldData.height,
+        fieldData.height
       );
       if (!positionValidation.valid) {
-        throw new Error(`Field "${fieldData.label}": ${positionValidation.error}`);
+        throw new Error(
+          `Field "${fieldData.label}": ${positionValidation.error}`
+        );
       }
 
       // Validate page number
-      const pageValidation = await validatePageNumber(ctx, fieldData.documentId, fieldData.page);
+      const pageValidation = await validatePageNumber(
+        ctx,
+        fieldData.documentId,
+        fieldData.page
+      );
       if (!pageValidation.valid) {
         throw new Error(`Field "${fieldData.label}": ${pageValidation.error}`);
       }
@@ -671,15 +707,20 @@ export const bulkCreateFields = mutation({
         const assignmentValidation = await validateFieldAssignment(
           ctx,
           fieldData.documentId,
-          fieldData.recipientId,
+          fieldData.recipientId
         );
         if (!assignmentValidation.valid) {
-          throw new Error(`Field "${fieldData.label}": ${assignmentValidation.error}`);
+          throw new Error(
+            `Field "${fieldData.label}": ${assignmentValidation.error}`
+          );
         }
       }
 
       // Validate field type
-      const typeValidation = validateFieldType(fieldData.fieldType, fieldData.properties);
+      const typeValidation = validateFieldType(
+        fieldData.fieldType,
+        fieldData.properties
+      );
       if (!typeValidation.valid) {
         throw new Error(`Field "${fieldData.label}": ${typeValidation.error}`);
       }
@@ -749,10 +790,15 @@ export const setMainSignature = mutation({
     const existingMainSignature = await ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
-        q.eq("documentId", field.documentId).eq("recipientId", field.recipientId),
+        q
+          .eq("documentId", field.documentId)
+          .eq("recipientId", field.recipientId)
       )
       .filter((q) =>
-        q.and(q.eq(q.field("fieldType"), "signature"), q.eq(q.field("isMainSignature"), true)),
+        q.and(
+          q.eq(q.field("fieldType"), "signature"),
+          q.eq(q.field("isMainSignature"), true)
+        )
       )
       .first();
 

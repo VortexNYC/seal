@@ -22,10 +22,13 @@ import {
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { sendEmailManuallyFromAction, sendResendEmail } from "../emails/resend_component";
+import {
+  sendEmailManuallyFromAction,
+  sendResendEmail,
+} from "../emails/resend_component";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -50,10 +53,13 @@ async function logEmailQueuedSafe(
     subject: string;
     documentId?: Id<"documents">;
     recipientId?: Id<"document_recipients">;
-  },
+  }
 ): Promise<void> {
   try {
-    await ctx.runMutation(internal.emails.resend_component.logEmailQueued, args);
+    await ctx.runMutation(
+      internal.emails.resend_component.logEmailQueued,
+      args
+    );
   } catch (error) {
     console.warn("[email] failed to write email.queued audit entry:", error);
   }
@@ -86,7 +92,7 @@ export interface SendDocumentInvitationParams {
  */
 export async function sendDocumentInvitation(
   ctx: ActionCtx,
-  params: SendDocumentInvitationParams,
+  params: SendDocumentInvitationParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const {
@@ -140,7 +146,7 @@ export async function sendDocumentInvitation(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     await logEmailQueuedSafe(ctx, {
@@ -179,11 +185,17 @@ export interface SendSigningCompleteParams {
  */
 export async function sendSigningComplete(
   ctx: ActionCtx,
-  params: SendSigningCompleteParams,
+  params: SendSigningCompleteParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { to, recipientName, documentName, signedAt, role, downloadUrl } = params;
-    const actionText = role === "signer" ? "signed" : role === "approver" ? "approved" : "viewed";
+    const { to, recipientName, documentName, signedAt, role, downloadUrl } =
+      params;
+    const actionText =
+      role === "signer"
+        ? "signed"
+        : role === "approver"
+          ? "approved"
+          : "viewed";
 
     const html = await renderSigningComplete({
       recipientName,
@@ -208,7 +220,7 @@ export async function sendSigningComplete(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     await logEmailQueuedSafe(ctx, {
@@ -252,10 +264,17 @@ export interface SendDocumentCompletedParams {
  */
 export async function sendDocumentCompleted(
   ctx: ActionCtx,
-  params: SendDocumentCompletedParams,
+  params: SendDocumentCompletedParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { to, senderName, documentName, documentUrl, completedAt, recipientsSummary } = params;
+    const {
+      to,
+      senderName,
+      documentName,
+      documentUrl,
+      completedAt,
+      recipientsSummary,
+    } = params;
 
     const html = await renderDocumentCompleted({
       senderName,
@@ -280,7 +299,7 @@ export async function sendDocumentCompleted(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     await logEmailQueuedSafe(ctx, {
@@ -318,7 +337,7 @@ export interface SendReminderParams {
  */
 export async function sendReminder(
   ctx: ActionCtx,
-  params: SendReminderParams,
+  params: SendReminderParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const {
@@ -368,7 +387,7 @@ export async function sendReminder(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -392,7 +411,7 @@ export interface SendWelcomeParams {
  */
 export async function sendWelcome(
   ctx: ActionCtx,
-  params: SendWelcomeParams,
+  params: SendWelcomeParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const { to, userName, dashboardUrl } = params;
@@ -403,7 +422,8 @@ export async function sendWelcome(
       dashboardUrl,
     });
 
-    const subject = "Welcome to Seal - Your document signing journey starts here";
+    const subject =
+      "Welcome to Seal - Your document signing journey starts here";
 
     const emailId = await sendEmailManuallyFromAction(
       ctx,
@@ -418,7 +438,7 @@ export async function sendWelcome(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -446,10 +466,18 @@ export interface SendTeamInvitationParams {
  */
 export async function sendTeamInvitation(
   ctx: ActionCtx,
-  params: SendTeamInvitationParams,
+  params: SendTeamInvitationParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { to, inviterName, inviterEmail, organizationName, role, inviteUrl, expiresAt } = params;
+    const {
+      to,
+      inviterName,
+      inviterEmail,
+      organizationName,
+      role,
+      inviteUrl,
+      expiresAt,
+    } = params;
 
     const html = await renderTeamInvitation({
       inviteeEmail: to,
@@ -476,7 +504,7 @@ export async function sendTeamInvitation(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -502,7 +530,7 @@ export interface SendCancellationNotificationParams {
  */
 export async function sendCancellationNotification(
   ctx: ActionCtx,
-  params: SendCancellationNotificationParams,
+  params: SendCancellationNotificationParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const { to, recipientName, documentName, senderName, reason } = params;
@@ -531,7 +559,7 @@ export async function sendCancellationNotification(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -559,7 +587,7 @@ export interface SendExpirationAlertParams {
  */
 export async function sendExpirationAlert(
   ctx: ActionCtx,
-  params: SendExpirationAlertParams,
+  params: SendExpirationAlertParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const {
@@ -596,7 +624,7 @@ export async function sendExpirationAlert(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -624,11 +652,18 @@ export interface SendDocumentViewedParams {
  */
 export async function sendDocumentViewed(
   ctx: ActionCtx,
-  params: SendDocumentViewedParams,
+  params: SendDocumentViewedParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { to, ownerName, documentName, documentUrl, recipientName, recipientEmail, viewedAt } =
-      params;
+    const {
+      to,
+      ownerName,
+      documentName,
+      documentUrl,
+      recipientName,
+      recipientEmail,
+      viewedAt,
+    } = params;
 
     const html = await renderDocumentViewed({
       ownerName,
@@ -654,7 +689,7 @@ export async function sendDocumentViewed(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -682,7 +717,7 @@ export interface SendDocumentSharedParams {
  */
 export async function sendDocumentShared(
   ctx: ActionCtx,
-  params: SendDocumentSharedParams,
+  params: SendDocumentSharedParams
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const {
@@ -720,7 +755,7 @@ export async function sendDocumentShared(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true, messageId: emailId };
@@ -745,7 +780,7 @@ export interface SendDocumentExpiredNotificationParams {
  */
 export async function sendDocumentExpiredNotification(
   ctx: ActionCtx,
-  params: SendDocumentExpiredNotificationParams,
+  params: SendDocumentExpiredNotificationParams
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const html = await renderDocumentExpired({
@@ -773,7 +808,7 @@ export async function sendDocumentExpiredNotification(
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
 
     return { success: true };

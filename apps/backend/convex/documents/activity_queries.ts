@@ -10,7 +10,11 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth";
-import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
+import {
+  ACCESS_ERRORS,
+  checkDocumentAccess,
+  getDocumentOrThrow,
+} from "../auth/access_control";
 
 type ActivityQueryDbCtx = Pick<QueryCtx, "db">;
 
@@ -46,7 +50,7 @@ const activityEventTypeValidator = v.union(
   v.literal("cancelled"),
   v.literal("reminder_sent"),
   v.literal("shared"),
-  v.literal("access_revoked"),
+  v.literal("access_revoked")
 );
 
 interface ActivityEvent {
@@ -76,7 +80,7 @@ function addDocumentEvents(
   events: ActivityEvent[],
   document: Doc<"documents">,
   owner: OwnerActivityContext,
-  recipientCount: number,
+  recipientCount: number
 ): void {
   addActivityEvent(events, {
     type: "created",
@@ -120,8 +124,11 @@ function addRecipientStatusEvents(
   recipientName: string,
   recipientActorId: string,
   timestamps: Partial<
-    Record<Extract<ActivityEventType, "viewed" | "signed" | "approved" | "declined">, number>
-  >,
+    Record<
+      Extract<ActivityEventType, "viewed" | "signed" | "approved" | "declined">,
+      number
+    >
+  >
 ): void {
   if (timestamps.viewed) {
     addActivityEvent(events, {
@@ -167,7 +174,7 @@ function addRecipientStatusEvents(
 function addRecipientEvents(
   events: ActivityEvent[],
   recipients: Doc<"document_recipients">[],
-  owner: OwnerActivityContext,
+  owner: OwnerActivityContext
 ): void {
   for (const recipient of recipients) {
     const recipientName = recipient.name || recipient.email;
@@ -195,7 +202,7 @@ async function addReminderEvents(
   events: ActivityEvent[],
   documentId: Doc<"documents">["_id"],
   recipients: Doc<"document_recipients">[],
-  owner: OwnerActivityContext,
+  owner: OwnerActivityContext
 ): Promise<void> {
   const reminders = await ctx.db
     .query("document_reminders")
@@ -208,7 +215,9 @@ async function addReminderEvents(
       continue;
     }
 
-    const recipient = recipients.find((item) => item._id === reminder.recipientId);
+    const recipient = recipients.find(
+      (item) => item._id === reminder.recipientId
+    );
     const recipientName = recipient?.name || recipient?.email || "Recipient";
     addActivityEvent(events, {
       type: "reminder_sent",
@@ -224,7 +233,7 @@ async function addAccessEvents(
   ctx: ActivityQueryDbCtx,
   events: ActivityEvent[],
   documentId: Doc<"documents">["_id"],
-  owner: OwnerActivityContext,
+  owner: OwnerActivityContext
 ): Promise<void> {
   const accessRecords = await ctx.db
     .query("document_access")
@@ -235,7 +244,8 @@ async function addAccessEvents(
     const accessUser = await ctx.db.get(access.userId);
     const grantedByUser = await ctx.db.get(access.grantedBy);
     const accessUserName = accessUser?.name || accessUser?.email || "User";
-    const grantedByName = grantedByUser?.name || grantedByUser?.email || "Someone";
+    const grantedByName =
+      grantedByUser?.name || grantedByUser?.email || "Someone";
 
     addActivityEvent(events, {
       type: "shared",
@@ -260,17 +270,21 @@ async function addAccessEvents(
 function applyActivityFilters(
   events: ActivityEvent[],
   actorId?: string,
-  eventTypes?: ActivityEventType[],
+  eventTypes?: ActivityEventType[]
 ): ActivityEvent[] {
   let filteredEvents = events;
 
   if (actorId) {
-    filteredEvents = filteredEvents.filter((event) => event.actorId === actorId);
+    filteredEvents = filteredEvents.filter(
+      (event) => event.actorId === actorId
+    );
   }
 
   if (eventTypes && eventTypes.length > 0) {
     const eventTypeSet = new Set(eventTypes);
-    filteredEvents = filteredEvents.filter((event) => eventTypeSet.has(event.type));
+    filteredEvents = filteredEvents.filter((event) =>
+      eventTypeSet.has(event.type)
+    );
   }
 
   return filteredEvents;
@@ -315,13 +329,19 @@ export const getDocumentActivity = authQuery({
 
     addDocumentEvents(events, document, ownerActivity, recipients.length);
     addRecipientEvents(events, recipients, ownerActivity);
-    await addReminderEvents(ctx, events, args.documentId, recipients, ownerActivity);
+    await addReminderEvents(
+      ctx,
+      events,
+      args.documentId,
+      recipients,
+      ownerActivity
+    );
     await addAccessEvents(ctx, events, args.documentId, ownerActivity);
 
     const filteredEvents = applyActivityFilters(
       events,
       args.actorId?.toString(),
-      args.eventTypes ?? undefined,
+      args.eventTypes ?? undefined
     );
 
     filteredEvents.sort((a, b) => b.timestamp - a.timestamp);
@@ -347,7 +367,7 @@ export const getDocumentActors = authQuery({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<Array<{ id: string; name: string; type: "owner" | "member" }>> => {
     const userId = ctx.auth.user._id;
 
@@ -359,7 +379,10 @@ export const getDocumentActors = authQuery({
     }
 
     // Build list of unique actors
-    const actorsMap = new Map<string, { id: string; name: string; type: "owner" | "member" }>();
+    const actorsMap = new Map<
+      string,
+      { id: string; name: string; type: "owner" | "member" }
+    >();
 
     // Add owner
     const owner = await ctx.db.get(document.ownerId);

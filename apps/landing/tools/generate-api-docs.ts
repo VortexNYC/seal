@@ -33,5 +33,9 @@ await generateFiles({
   }),
 });
 
-console.info("API docs generated. Note: generated pages require RSC to render.");
-console.info("For interactive docs, the /api-reference Scalar route is used instead.");
+console.info(
+  "API docs generated. Note: generated pages require RSC to render."
+);
+console.info(
+  "For interactive docs, the /api-reference Scalar route is used instead."
+);

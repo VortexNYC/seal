@@ -76,7 +76,7 @@ const mockFetch: typeof fetch = async (input) => {
       data: { checkoutSession: { checkoutUrl: "https://pay.vortex.test/abc" } },
       requestId: "req_1",
     }),
-    { status: 201, headers: { "content-type": "application/json" } },
+    { status: 201, headers: { "content-type": "application/json" } }
   );
 };
 // Inject the FETCH (3rd arg) — the function builds the client with env-derived headers,
@@ -86,15 +86,19 @@ const checkoutUrl = await createVortexBillingCheckoutSession(
   {
     /* same VORTEX_BILLING_* env stub as the existing test (apiBaseUrl=https://billing.vortex.test, apiKey=..., price/account/customer maps) */
   },
-  mockFetch,
+  mockFetch
 );
 expect(checkoutUrl).toBe("https://pay.vortex.test/abc");
 expect(captured).toBeInstanceOf(Request);
 expect(captured?.url).toBe("https://billing.vortex.test/v1/checkout/sessions");
 expect(captured?.method).toBe("POST");
-expect(captured?.headers.get("authorization")).toBe("Bearer <apiKey-from-env-stub>");
+expect(captured?.headers.get("authorization")).toBe(
+  "Bearer <apiKey-from-env-stub>"
+);
 expect(captured?.headers.get("x-vortex-service")).toBe("billing");
-expect(captured?.headers.get("idempotency-key")).toBe("seal-saas-checkout:org_1:pro_monthly");
+expect(captured?.headers.get("idempotency-key")).toBe(
+  "seal-saas-checkout:org_1:pro_monthly"
+);
 const sentBody = JSON.parse(await captured!.clone().text());
 expect(sentBody).toEqual({
   /* same payload asserted today: mode/customerExternalId/billingAccountId/subscriptionExternalId/collectionMode/lineItems/createdByRef/metadata */
@@ -143,7 +147,7 @@ const { data, error, response } = await createCheckoutSession({
 if (error !== undefined || response === undefined || !response.ok) {
   const status = response?.status ?? "no-response";
   throw new ConvexError(
-    `Vortex Billing checkout failed (${status}): ${summarizeJson(error ?? data)}`,
+    `Vortex Billing checkout failed (${status}): ${summarizeJson(error ?? data)}`
   );
 }
 return readCheckoutUrl(data);

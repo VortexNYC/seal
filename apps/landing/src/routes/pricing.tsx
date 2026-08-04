@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { StaticCta } from "~/components/sections/cta-block";
 import { StaticPricing } from "~/components/sections/pricing-block";
 
@@ -14,7 +15,8 @@ export const Route = createFileRoute("/pricing")({
       { property: "og:title", content: "Pricing — Seal" },
       {
         property: "og:description",
-        content: "No per-envelope surprises. No seat minimums. Just documents, signed.",
+        content:
+          "No per-envelope surprises. No seat minimums. Just documents, signed.",
       },
       { property: "og:url", content: "https://seal.co/pricing" },
     ],

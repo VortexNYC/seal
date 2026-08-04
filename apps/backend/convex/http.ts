@@ -17,7 +17,10 @@
  * ```
  */
 
-import { createMcpOAuthAccessRuntime, createMcpOAuthHttpHandlers } from "@vortexnyc/auth/mcp";
+import {
+  createMcpOAuthAccessRuntime,
+  createMcpOAuthHttpHandlers,
+} from "@vortexnyc/auth/mcp";
 import { httpRouter } from "convex/server";
 
 import { internal } from "./_generated/api";
@@ -66,7 +69,7 @@ import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
 import { handleVortexBillingWebhookRequest } from "./vortex_billing/webhook_handlers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -129,16 +132,28 @@ function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
         provider: getBetterAuthIdentityProvider(),
         issuer,
         subject: betterAuthUserId,
-        tokenIdentifier: buildBetterAuthTokenIdentifier(betterAuthUserId, issuer),
+        tokenIdentifier: buildBetterAuthTokenIdentifier(
+          betterAuthUserId,
+          issuer
+        ),
       });
     },
     getAccessibleOrganizations: async (userId) =>
-      await ctx.runQuery(internal.apiAuth.getAccessibleOrganizationsForApiAuth, { userId }),
-    getOrganizationAccess: async ({ userId, requestedOrganizationId, organizationHintId }) =>
+      await ctx.runQuery(
+        internal.apiAuth.getAccessibleOrganizationsForApiAuth,
+        { userId }
+      ),
+    getOrganizationAccess: async ({
+      userId,
+      requestedOrganizationId,
+      organizationHintId,
+    }) =>
       await ctx.runQuery(internal.apiAuth.getOrganizationAccessForApiAuth, {
         userId,
-        requestedOrganizationId: (requestedOrganizationId as Id<"organizations"> | null) ?? null,
-        organizationHintId: (organizationHintId as Id<"organizations"> | null) ?? null,
+        requestedOrganizationId:
+          (requestedOrganizationId as Id<"organizations"> | null) ?? null,
+        organizationHintId:
+          (organizationHintId as Id<"organizations"> | null) ?? null,
       }),
     normalizeScopes: (requestedScopes) => requireAllowedScopes(requestedScopes),
     validateScopes: ({ permissions, requestedScopes }) =>
@@ -147,8 +162,16 @@ function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
         requestedScopes: requireAllowedScopes(requestedScopes),
       }),
     requireAccessibleOrganization: (organizationId) =>
-      requireAccessibleOrganization((organizationId as Id<"organizations"> | null) ?? null),
-    signAccessToken: async ({ betterAuthUserId, clientId, organizationId, scopes, audience }) =>
+      requireAccessibleOrganization(
+        (organizationId as Id<"organizations"> | null) ?? null
+      ),
+    signAccessToken: async ({
+      betterAuthUserId,
+      clientId,
+      organizationId,
+      scopes,
+      audience,
+    }) =>
       await ctx.runAction(internal.mcpOAuthNode.signAccessToken, {
         betterAuthUserId,
         clientId,
@@ -174,7 +197,7 @@ async function createStoredMcpAuthorizationCode(
     audience: string;
     resourceId: string;
     expiresAt: number;
-  },
+  }
 ): Promise<void> {
   await ctx.runMutation(internal.mcpOAuthAuth.createAuthorizationCode, {
     code: input.code,
@@ -198,18 +221,23 @@ function createBoundMcpOAuthHttpHandlers(ctx: McpHttpActionCtx) {
     authorize: {
       defaultAudience: MCP_OAUTH_AUDIENCE,
       defaultResourceId: MCP_OAUTH_RESOURCE_ID,
-      allowTestingExpiresInMs: process.env.ENABLE_DEVELOPMENT_TESTING_MUTATIONS === "true",
+      allowTestingExpiresInMs:
+        process.env.ENABLE_DEVELOPMENT_TESTING_MUTATIONS === "true",
       resolveClient: async (clientId) => {
         return requireKnownClient(
-          await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId }),
+          await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId })
         );
       },
       requireAllowedRedirectUri,
-      resolveRequestedScopes: (scope) => requireAllowedScopes(scope.split(" ").filter(Boolean)),
+      resolveRequestedScopes: (scope) =>
+        requireAllowedScopes(scope.split(" ").filter(Boolean)),
       resolveSessionFromToken: async (sessionToken) => {
-        return await ctx.runQuery(internal.mcpOAuthAuth.resolveBetterAuthSessionFromToken, {
-          sessionToken,
-        });
+        return await ctx.runQuery(
+          internal.mcpOAuthAuth.resolveBetterAuthSessionFromToken,
+          {
+            sessionToken,
+          }
+        );
       },
       resolveIdentityForSession: accessRuntime.resolveIdentityForSession,
       authorize: accessRuntime.authorize,
@@ -220,24 +248,34 @@ function createBoundMcpOAuthHttpHandlers(ctx: McpHttpActionCtx) {
     clientRegistration: {
       supportedScopes: MCP_OAUTH_ALLOWED_SCOPES,
       createDynamicClient: async (input) => {
-        return await ctx.runMutation(internal.mcpOAuthAuth.createDynamicClient, {
-          clientName: input.clientName,
-          redirectUris: [...input.redirectUris],
-          scope: input.scope ?? undefined,
-          tokenEndpointAuthMethod: input.tokenEndpointAuthMethod ?? undefined,
-          grantTypes: input.grantTypes ? [...input.grantTypes] : undefined,
-          responseTypes: input.responseTypes ? [...input.responseTypes] : undefined,
-          softwareId: input.softwareId ?? undefined,
-          softwareVersion: input.softwareVersion ?? undefined,
-        });
+        return await ctx.runMutation(
+          internal.mcpOAuthAuth.createDynamicClient,
+          {
+            clientName: input.clientName,
+            redirectUris: [...input.redirectUris],
+            scope: input.scope ?? undefined,
+            tokenEndpointAuthMethod: input.tokenEndpointAuthMethod ?? undefined,
+            grantTypes: input.grantTypes ? [...input.grantTypes] : undefined,
+            responseTypes: input.responseTypes
+              ? [...input.responseTypes]
+              : undefined,
+            softwareId: input.softwareId ?? undefined,
+            softwareVersion: input.softwareVersion ?? undefined,
+          }
+        );
       },
     },
     token: {
       resolveClient: async (clientId) => {
-        return await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId });
+        return await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, {
+          clientId,
+        });
       },
       consumeAuthorizationCode: async (input) => {
-        return await ctx.runMutation(internal.mcpOAuthAuth.consumeAuthorizationCode, input);
+        return await ctx.runMutation(
+          internal.mcpOAuthAuth.consumeAuthorizationCode,
+          input
+        );
       },
       redeemRefreshToken: async ({ client, refreshGrant }) => {
         return await ctx.runMutation(internal.mcpOAuthAuth.redeemRefreshToken, {
@@ -286,7 +324,7 @@ http.route({
   path: MCP_OAUTH_JWKS_PATH,
   method: "GET",
   handler: httpAction(async (ctx) =>
-    mcpJson(200, await ctx.runAction(internal.mcpOAuthNode.getPublicJwks, {})),
+    mcpJson(200, await ctx.runAction(internal.mcpOAuthNode.getPublicJwks, {}))
   ),
 });
 
@@ -295,7 +333,7 @@ http.route({
   method: "GET",
   handler: httpAction(
     async (ctx, request) =>
-      await createBoundMcpOAuthHttpHandlers(ctx).handleAuthorizeRequest(request),
+      await createBoundMcpOAuthHttpHandlers(ctx).handleAuthorizeRequest(request)
   ),
 });
 
@@ -304,7 +342,9 @@ http.route({
   method: "POST",
   handler: httpAction(
     async (ctx, request) =>
-      await createBoundMcpOAuthHttpHandlers(ctx).handleClientRegistrationRequest(request),
+      await createBoundMcpOAuthHttpHandlers(
+        ctx
+      ).handleClientRegistrationRequest(request)
   ),
 });
 
@@ -312,7 +352,8 @@ http.route({
   path: MCP_OAUTH_TOKEN_PATH,
   method: "POST",
   handler: httpAction(
-    async (ctx, request) => await createBoundMcpOAuthHttpHandlers(ctx).handleTokenRequest(request),
+    async (ctx, request) =>
+      await createBoundMcpOAuthHttpHandlers(ctx).handleTokenRequest(request)
   ),
 });
 
@@ -469,20 +510,27 @@ http.route({
     async ({ ctx, auth, query }) => {
       const { limit, cursor } = parsePagination(query);
 
-      const result = await ctx.runQuery(internal.api.v1.documents.listDocuments, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        limit,
-        cursor,
-        status: query.status,
-        title_search: query.title_search,
-        created_after: query.created_after,
-        created_before: query.created_before,
-      });
+      const result = await ctx.runQuery(
+        internal.api.v1.documents.listDocuments,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          limit,
+          cursor,
+          status: query.status,
+          title_search: query.title_search,
+          created_after: query.created_after,
+          created_before: query.created_before,
+        }
+      );
 
-      return paginatedResponse(result.documents, result.hasMore, result.nextCursor);
+      return paginatedResponse(
+        result.documents,
+        result.hasMore,
+        result.nextCursor
+      );
     },
-    { scope: API_SCOPES.DOCUMENTS_READ },
+    { scope: API_SCOPES.DOCUMENTS_READ }
   ),
 });
 
@@ -519,33 +567,41 @@ http.route({
 
       validateRequiredFields(body, ["title", "storage_id", "file_size"]);
 
-      const deadline = body.deadline ? new Date(body.deadline).getTime() : undefined;
+      const deadline = body.deadline
+        ? new Date(body.deadline).getTime()
+        : undefined;
 
-      const documentId = await ctx.runMutation(internal.api.v1.documents.createDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        title: body.title as string,
-        description: body.description,
-        storageId: body.storage_id as string,
-        fileSize: body.file_size as number,
-        fileType: body.file_type ?? "application/pdf",
-        pageCount: body.page_count,
-        deadline,
-      });
+      const documentId = await ctx.runMutation(
+        internal.api.v1.documents.createDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          title: body.title as string,
+          description: body.description,
+          storageId: body.storage_id as string,
+          fileSize: body.file_size as number,
+          fileType: body.file_type ?? "application/pdf",
+          pageCount: body.page_count,
+          deadline,
+        }
+      );
 
       // Fetch the created document
-      const document = await ctx.runQuery(internal.api.v1.documents.getDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: documentId as Id<"documents">,
-        includeRecipients: false,
-      });
+      const document = await ctx.runQuery(
+        internal.api.v1.documents.getDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: documentId as Id<"documents">,
+          includeRecipients: false,
+        }
+      );
 
       return apiResponse(201, document, {
         Location: `/api/v1/documents/${documentId}`,
       });
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -572,12 +628,15 @@ http.route({
         throw new ApiError(400, "Document ID is required", "VALIDATION_ERROR");
       }
 
-      const document = await ctx.runQuery(internal.api.v1.documents.getDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        includeRecipients: query.include_recipients === "true",
-      });
+      const document = await ctx.runQuery(
+        internal.api.v1.documents.getDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          includeRecipients: query.include_recipients === "true",
+        }
+      );
 
       if (!document) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
@@ -585,7 +644,7 @@ http.route({
 
       return apiResponse(200, document);
     },
-    { scope: API_SCOPES.DOCUMENTS_READ },
+    { scope: API_SCOPES.DOCUMENTS_READ }
   ),
 });
 
@@ -617,32 +676,44 @@ http.route({
         deadline?: string;
       }>(request);
 
-      const deadline = body.deadline ? new Date(body.deadline).getTime() : undefined;
+      const deadline = body.deadline
+        ? new Date(body.deadline).getTime()
+        : undefined;
 
-      const result = await ctx.runMutation(internal.api.v1.documents.updateDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        title: body.title,
-        description: body.description,
-        deadline,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.documents.updateDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          title: body.title,
+          description: body.description,
+          deadline,
+        }
+      );
 
       if (!result.success) {
-        throw new ApiError(404, result.error ?? "Document not found", "DOCUMENT_NOT_FOUND");
+        throw new ApiError(
+          404,
+          result.error ?? "Document not found",
+          "DOCUMENT_NOT_FOUND"
+        );
       }
 
       // Fetch the updated document
-      const document = await ctx.runQuery(internal.api.v1.documents.getDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        includeRecipients: false,
-      });
+      const document = await ctx.runQuery(
+        internal.api.v1.documents.getDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          includeRecipients: false,
+        }
+      );
 
       return apiResponse(200, document);
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -667,22 +738,29 @@ http.route({
         throw new ApiError(400, "Document ID is required", "VALIDATION_ERROR");
       }
 
-      const result = await ctx.runMutation(internal.api.v1.documents.deleteDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.documents.deleteDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("Only draft")) {
           throw new ApiError(400, result.error, "RESOURCE_CONFLICT");
         }
-        throw new ApiError(404, result.error ?? "Document not found", "DOCUMENT_NOT_FOUND");
+        throw new ApiError(
+          404,
+          result.error ?? "Document not found",
+          "DOCUMENT_NOT_FOUND"
+        );
       }
 
       return apiResponse(200, { deleted: true });
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -708,12 +786,15 @@ http.route({
 
       const body = await parseJsonBody<{ message?: string }>(request);
 
-      const result = await ctx.runMutation(internal.api.v1.documents.sendDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        message: body.message,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.documents.sendDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          message: body.message,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("at least one recipient")) {
@@ -722,20 +803,27 @@ http.route({
         if (result.error?.includes("Cannot send")) {
           throw new ApiError(409, result.error, "DOCUMENT_ALREADY_SENT");
         }
-        throw new ApiError(404, result.error ?? "Document not found", "DOCUMENT_NOT_FOUND");
+        throw new ApiError(
+          404,
+          result.error ?? "Document not found",
+          "DOCUMENT_NOT_FOUND"
+        );
       }
 
       // Fetch the updated document
-      const document = await ctx.runQuery(internal.api.v1.documents.getDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        includeRecipients: true,
-      });
+      const document = await ctx.runQuery(
+        internal.api.v1.documents.getDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          includeRecipients: true,
+        }
+      );
 
       return apiResponse(200, document);
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -763,12 +851,15 @@ http.route({
 
       validateRequiredFields(body, ["reason"]);
 
-      const result = await ctx.runMutation(internal.api.v1.documents.voidDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        reason: body.reason as string,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.documents.voidDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          reason: body.reason as string,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("Cannot void")) {
@@ -777,20 +868,27 @@ http.route({
         if (result.error?.includes("already cancelled")) {
           throw new ApiError(409, result.error, "RESOURCE_CONFLICT");
         }
-        throw new ApiError(404, result.error ?? "Document not found", "DOCUMENT_NOT_FOUND");
+        throw new ApiError(
+          404,
+          result.error ?? "Document not found",
+          "DOCUMENT_NOT_FOUND"
+        );
       }
 
       // Fetch the updated document
-      const document = await ctx.runQuery(internal.api.v1.documents.getDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-        includeRecipients: false,
-      });
+      const document = await ctx.runQuery(
+        internal.api.v1.documents.getDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+          includeRecipients: false,
+        }
+      );
 
       return apiResponse(200, document);
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -815,11 +913,14 @@ http.route({
         throw new ApiError(400, "Document ID is required", "VALIDATION_ERROR");
       }
 
-      const result = await ctx.runQuery(internal.api.v1.documents.getDocumentDownloadUrl, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.id as Id<"documents">,
-      });
+      const result = await ctx.runQuery(
+        internal.api.v1.documents.getDocumentDownloadUrl,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Id<"documents">,
+        }
+      );
 
       if (!result) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
@@ -828,7 +929,7 @@ http.route({
       // Return the download URL
       return apiResponse(200, { download_url: result.url });
     },
-    { scope: API_SCOPES.DOCUMENTS_READ },
+    { scope: API_SCOPES.DOCUMENTS_READ }
   ),
 });
 
@@ -855,11 +956,14 @@ http.route({
         throw new ApiError(400, "document_id is required", "VALIDATION_ERROR");
       }
 
-      const recipients = await ctx.runQuery(internal.api.v1.recipients.listRecipients, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-      });
+      const recipients = await ctx.runQuery(
+        internal.api.v1.recipients.listRecipients,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+        }
+      );
 
       if (recipients === null) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
@@ -867,7 +971,7 @@ http.route({
 
       return apiResponse(200, { data: recipients });
     },
-    { scope: API_SCOPES.RECIPIENTS_READ },
+    { scope: API_SCOPES.RECIPIENTS_READ }
   ),
 });
 
@@ -910,20 +1014,23 @@ http.route({
         throw new ApiError(
           400,
           "role must be one of: signer, approver, viewer",
-          "VALIDATION_ERROR",
+          "VALIDATION_ERROR"
         );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.recipients.addRecipient, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        email: body.email as string,
-        name: body.name as string,
-        role: body.role as "signer" | "approver" | "viewer",
-        order: body.order,
-        customMessage: body.message,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.recipients.addRecipient,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          email: body.email as string,
+          name: body.name as string,
+          role: body.role as "signer" | "approver" | "viewer",
+          order: body.order,
+          customMessage: body.message,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("already exists")) {
@@ -932,20 +1039,27 @@ http.route({
         if (result.error?.includes("Cannot add")) {
           throw new ApiError(400, result.error, "RESOURCE_CONFLICT");
         }
-        throw new ApiError(404, result.error ?? "Document not found", "DOCUMENT_NOT_FOUND");
+        throw new ApiError(
+          404,
+          result.error ?? "Document not found",
+          "DOCUMENT_NOT_FOUND"
+        );
       }
 
       // Fetch the created recipient
-      const recipient = await ctx.runQuery(internal.api.v1.recipients.getRecipient, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        recipientId: result.recipientId as Id<"document_recipients">,
-      });
+      const recipient = await ctx.runQuery(
+        internal.api.v1.recipients.getRecipient,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          recipientId: result.recipientId as Id<"document_recipients">,
+        }
+      );
 
       return apiResponse(201, recipient);
     },
-    { scope: API_SCOPES.RECIPIENTS_WRITE },
+    { scope: API_SCOPES.RECIPIENTS_WRITE }
   ),
 });
 
@@ -972,12 +1086,15 @@ http.route({
         throw new ApiError(400, "Recipient ID is required", "VALIDATION_ERROR");
       }
 
-      const recipient = await ctx.runQuery(internal.api.v1.recipients.getRecipient, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        recipientId: query.id as Id<"document_recipients">,
-      });
+      const recipient = await ctx.runQuery(
+        internal.api.v1.recipients.getRecipient,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          recipientId: query.id as Id<"document_recipients">,
+        }
+      );
 
       if (!recipient) {
         throw new ApiError(404, "Recipient not found", "RECIPIENT_NOT_FOUND");
@@ -985,7 +1102,7 @@ http.route({
 
       return apiResponse(200, recipient);
     },
-    { scope: API_SCOPES.RECIPIENTS_READ },
+    { scope: API_SCOPES.RECIPIENTS_READ }
   ),
 });
 
@@ -1028,20 +1145,23 @@ http.route({
         throw new ApiError(
           400,
           "role must be one of: signer, approver, viewer",
-          "VALIDATION_ERROR",
+          "VALIDATION_ERROR"
         );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.recipients.updateRecipient, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        recipientId: query.id as Id<"document_recipients">,
-        name: body.name,
-        role: body.role,
-        order: body.order,
-        customMessage: body.message,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.recipients.updateRecipient,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          recipientId: query.id as Id<"document_recipients">,
+          name: body.name,
+          role: body.role,
+          order: body.order,
+          customMessage: body.message,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("Cannot update")) {
@@ -1050,20 +1170,27 @@ http.route({
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "RECIPIENT_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Update failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Update failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       // Fetch the updated recipient
-      const recipient = await ctx.runQuery(internal.api.v1.recipients.getRecipient, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        recipientId: query.id as Id<"document_recipients">,
-      });
+      const recipient = await ctx.runQuery(
+        internal.api.v1.recipients.getRecipient,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          recipientId: query.id as Id<"document_recipients">,
+        }
+      );
 
       return apiResponse(200, recipient);
     },
-    { scope: API_SCOPES.RECIPIENTS_WRITE },
+    { scope: API_SCOPES.RECIPIENTS_WRITE }
   ),
 });
 
@@ -1090,12 +1217,15 @@ http.route({
         throw new ApiError(400, "Recipient ID is required", "VALIDATION_ERROR");
       }
 
-      const result = await ctx.runMutation(internal.api.v1.recipients.removeRecipient, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        recipientId: query.id as Id<"document_recipients">,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.recipients.removeRecipient,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          recipientId: query.id as Id<"document_recipients">,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("Cannot remove")) {
@@ -1104,12 +1234,16 @@ http.route({
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "RECIPIENT_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Delete failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Delete failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       return apiResponse(200, { deleted: true });
     },
-    { scope: API_SCOPES.RECIPIENTS_WRITE },
+    { scope: API_SCOPES.RECIPIENTS_WRITE }
   ),
 });
 
@@ -1139,13 +1273,16 @@ http.route({
 
       const body = await parseJsonBody<{ message?: string }>(request);
 
-      const result = await ctx.runMutation(internal.api.v1.recipients.sendReminder, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        recipientId: query.id as Id<"document_recipients">,
-        message: body.message,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.recipients.sendReminder,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          recipientId: query.id as Id<"document_recipients">,
+          message: body.message,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("Cannot send")) {
@@ -1157,12 +1294,16 @@ http.route({
         if (result.error?.includes("Can only")) {
           throw new ApiError(400, result.error, "RESOURCE_CONFLICT");
         }
-        throw new ApiError(400, result.error ?? "Reminder failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Reminder failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       return apiResponse(200, { reminder_sent: true });
     },
-    { scope: API_SCOPES.RECIPIENTS_WRITE },
+    { scope: API_SCOPES.RECIPIENTS_WRITE }
   ),
 });
 
@@ -1189,17 +1330,24 @@ http.route({
     async ({ ctx, auth, query }) => {
       const { limit, cursor } = parsePagination(query);
 
-      const result = await ctx.runQuery(internal.api.v1.templates.listTemplates, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        limit,
-        cursor,
-        status: query.status,
-      });
+      const result = await ctx.runQuery(
+        internal.api.v1.templates.listTemplates,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          limit,
+          cursor,
+          status: query.status,
+        }
+      );
 
-      return paginatedResponse(result.templates, result.hasMore, result.nextCursor);
+      return paginatedResponse(
+        result.templates,
+        result.hasMore,
+        result.nextCursor
+      );
     },
-    { scope: API_SCOPES.TEMPLATES_READ },
+    { scope: API_SCOPES.TEMPLATES_READ }
   ),
 });
 
@@ -1228,34 +1376,44 @@ http.route({
 
       validateRequiredFields(body, ["document_id", "name"]);
 
-      const result = await ctx.runMutation(internal.api.v1.templates.createFromDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: body.document_id as Id<"documents">,
-        name: body.name as string,
-        description: body.description,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.templates.createFromDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: body.document_id as Id<"documents">,
+          name: body.name as string,
+          description: body.description,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "DOCUMENT_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Failed to create template", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Failed to create template",
+          "VALIDATION_ERROR"
+        );
       }
 
       // Fetch the created template
-      const template = await ctx.runQuery(internal.api.v1.templates.getTemplate, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: result.templateId as Id<"templates">,
-        includeFields: true,
-      });
+      const template = await ctx.runQuery(
+        internal.api.v1.templates.getTemplate,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: result.templateId as Id<"templates">,
+          includeFields: true,
+        }
+      );
 
       return apiResponse(201, template, {
         Location: `/api/v1/templates?id=${result.templateId}`,
       });
     },
-    { scope: API_SCOPES.TEMPLATES_WRITE },
+    { scope: API_SCOPES.TEMPLATES_WRITE }
   ),
 });
 
@@ -1279,12 +1437,15 @@ http.route({
         throw new ApiError(400, "Template ID is required", "VALIDATION_ERROR");
       }
 
-      const template = await ctx.runQuery(internal.api.v1.templates.getTemplate, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: query.id as Id<"templates">,
-        includeFields: query.include_fields === "true",
-      });
+      const template = await ctx.runQuery(
+        internal.api.v1.templates.getTemplate,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: query.id as Id<"templates">,
+          includeFields: query.include_fields === "true",
+        }
+      );
 
       if (!template) {
         throw new ApiError(404, "Template not found", "TEMPLATE_NOT_FOUND");
@@ -1292,7 +1453,7 @@ http.route({
 
       return apiResponse(200, template);
     },
-    { scope: API_SCOPES.TEMPLATES_READ },
+    { scope: API_SCOPES.TEMPLATES_READ }
   ),
 });
 
@@ -1315,11 +1476,14 @@ http.route({
         throw new ApiError(400, "Template ID is required", "VALIDATION_ERROR");
       }
 
-      const fields = await ctx.runQuery(internal.api.v1.templates.getTemplateFields, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: query.id as Id<"templates">,
-      });
+      const fields = await ctx.runQuery(
+        internal.api.v1.templates.getTemplateFields,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: query.id as Id<"templates">,
+        }
+      );
 
       if (fields === null) {
         throw new ApiError(404, "Template not found", "TEMPLATE_NOT_FOUND");
@@ -1327,7 +1491,7 @@ http.route({
 
       return apiResponse(200, { data: fields });
     },
-    { scope: API_SCOPES.TEMPLATES_READ },
+    { scope: API_SCOPES.TEMPLATES_READ }
   ),
 });
 
@@ -1361,36 +1525,50 @@ http.route({
 
       // Validate status if provided
       if (body.status && !["active", "archived"].includes(body.status)) {
-        throw new ApiError(400, "status must be one of: active, archived", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "status must be one of: active, archived",
+          "VALIDATION_ERROR"
+        );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.templates.updateTemplate, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: query.id as Id<"templates">,
-        name: body.name,
-        description: body.description,
-        status: body.status,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.templates.updateTemplate,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: query.id as Id<"templates">,
+          name: body.name,
+          description: body.description,
+          status: body.status,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "TEMPLATE_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Update failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Update failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       // Fetch the updated template
-      const template = await ctx.runQuery(internal.api.v1.templates.getTemplate, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: query.id as Id<"templates">,
-        includeFields: false,
-      });
+      const template = await ctx.runQuery(
+        internal.api.v1.templates.getTemplate,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: query.id as Id<"templates">,
+          includeFields: false,
+        }
+      );
 
       return apiResponse(200, template);
     },
-    { scope: API_SCOPES.TEMPLATES_WRITE },
+    { scope: API_SCOPES.TEMPLATES_WRITE }
   ),
 });
 
@@ -1413,22 +1591,29 @@ http.route({
         throw new ApiError(400, "Template ID is required", "VALIDATION_ERROR");
       }
 
-      const result = await ctx.runMutation(internal.api.v1.templates.deleteTemplate, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: query.id as Id<"templates">,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.templates.deleteTemplate,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: query.id as Id<"templates">,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "TEMPLATE_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Delete failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Delete failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       return apiResponse(200, { deleted: true });
     },
-    { scope: API_SCOPES.TEMPLATES_WRITE },
+    { scope: API_SCOPES.TEMPLATES_WRITE }
   ),
 });
 
@@ -1458,13 +1643,16 @@ http.route({
         description?: string;
       }>(request);
 
-      const result = await ctx.runMutation(internal.api.v1.templates.useTemplate, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        templateId: query.id as Id<"templates">,
-        documentName: body.title,
-        description: body.description,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.templates.useTemplate,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          templateId: query.id as Id<"templates">,
+          documentName: body.title,
+          description: body.description,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
@@ -1473,16 +1661,23 @@ http.route({
         if (result.error?.includes("archived")) {
           throw new ApiError(400, result.error, "RESOURCE_CONFLICT");
         }
-        throw new ApiError(400, result.error ?? "Failed to use template", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Failed to use template",
+          "VALIDATION_ERROR"
+        );
       }
 
       // Fetch the created document
-      const document = await ctx.runQuery(internal.api.v1.documents.getDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: result.documentId as Id<"documents">,
-        includeRecipients: false,
-      });
+      const document = await ctx.runQuery(
+        internal.api.v1.documents.getDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: result.documentId as Id<"documents">,
+          includeRecipients: false,
+        }
+      );
 
       return apiResponse(
         201,
@@ -1492,10 +1687,10 @@ http.route({
         },
         {
           Location: `/api/v1/documents?id=${result.documentId}`,
-        },
+        }
       );
     },
-    { scope: API_SCOPES.TEMPLATES_READ }, // Also requires documents:write but uses template context
+    { scope: API_SCOPES.TEMPLATES_READ } // Also requires documents:write but uses template context
   ),
 });
 
@@ -1522,11 +1717,14 @@ http.route({
         throw new ApiError(400, "document_id is required", "VALIDATION_ERROR");
       }
 
-      const signatures = await ctx.runQuery(internal.api.v1.signatures.listSignatures, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-      });
+      const signatures = await ctx.runQuery(
+        internal.api.v1.signatures.listSignatures,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+        }
+      );
 
       if (signatures === null) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
@@ -1534,7 +1732,7 @@ http.route({
 
       return apiResponse(200, { data: signatures });
     },
-    { scope: API_SCOPES.SIGNATURES_READ },
+    { scope: API_SCOPES.SIGNATURES_READ }
   ),
 });
 
@@ -1561,12 +1759,15 @@ http.route({
         throw new ApiError(400, "Signature ID is required", "VALIDATION_ERROR");
       }
 
-      const signature = await ctx.runQuery(internal.api.v1.signatures.getSignature, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        signatureId: query.id as Id<"signatures">,
-      });
+      const signature = await ctx.runQuery(
+        internal.api.v1.signatures.getSignature,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          signatureId: query.id as Id<"signatures">,
+        }
+      );
 
       if (!signature) {
         throw new ApiError(404, "Signature not found", "SIGNATURE_NOT_FOUND");
@@ -1574,7 +1775,7 @@ http.route({
 
       return apiResponse(200, signature);
     },
-    { scope: API_SCOPES.SIGNATURES_READ },
+    { scope: API_SCOPES.SIGNATURES_READ }
   ),
 });
 
@@ -1597,11 +1798,14 @@ http.route({
         throw new ApiError(400, "document_id is required", "VALIDATION_ERROR");
       }
 
-      const result = await ctx.runQuery(internal.api.v1.signatures.verifyDocument, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-      });
+      const result = await ctx.runQuery(
+        internal.api.v1.signatures.verifyDocument,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+        }
+      );
 
       if (!result) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
@@ -1609,7 +1813,7 @@ http.route({
 
       return apiResponse(200, result);
     },
-    { scope: API_SCOPES.SIGNATURES_READ },
+    { scope: API_SCOPES.SIGNATURES_READ }
   ),
 });
 
@@ -1635,12 +1839,15 @@ http.route({
 
       const limit = query.limit ? Number.parseInt(query.limit, 10) : 100;
 
-      const result = await ctx.runQuery(internal.api.v1.signatures.getAuditTrail, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        documentId: query.document_id as Id<"documents">,
-        limit,
-      });
+      const result = await ctx.runQuery(
+        internal.api.v1.signatures.getAuditTrail,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.document_id as Id<"documents">,
+          limit,
+        }
+      );
 
       if (!result) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
@@ -1648,7 +1855,7 @@ http.route({
 
       return apiResponse(200, result);
     },
-    { scope: API_SCOPES.SIGNATURES_READ },
+    { scope: API_SCOPES.SIGNATURES_READ }
   ),
 });
 
@@ -1679,10 +1886,13 @@ http.route({
   method: "POST",
   handler: apiHttpAction(
     async ({ ctx }) => {
-      const uploadUrl = await ctx.runMutation(internal.api.v1.uploads.generateUploadUrl, {});
+      const uploadUrl = await ctx.runMutation(
+        internal.api.v1.uploads.generateUploadUrl,
+        {}
+      );
       return apiResponse(200, { upload_url: uploadUrl });
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -1703,14 +1913,17 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth }) => {
-      const endpoints = await ctx.runQuery(internal.api.v1.webhooks.listEndpoints, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-      });
+      const endpoints = await ctx.runQuery(
+        internal.api.v1.webhooks.listEndpoints,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+        }
+      );
 
       return apiResponse(200, { data: endpoints });
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1730,22 +1943,33 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Webhook endpoint ID is required", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Webhook endpoint ID is required",
+          "VALIDATION_ERROR"
+        );
       }
 
-      const endpoint = await ctx.runQuery(internal.api.v1.webhooks.getEndpoint, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        endpointId: query.id as Id<"webhook_endpoints">,
-      });
+      const endpoint = await ctx.runQuery(
+        internal.api.v1.webhooks.getEndpoint,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          endpointId: query.id as Id<"webhook_endpoints">,
+        }
+      );
 
       if (!endpoint) {
-        throw new ApiError(404, "Webhook endpoint not found", "WEBHOOK_NOT_FOUND");
+        throw new ApiError(
+          404,
+          "Webhook endpoint not found",
+          "WEBHOOK_NOT_FOUND"
+        );
       }
 
       return apiResponse(200, endpoint);
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1776,36 +2000,42 @@ http.route({
 
       validateRequiredFields(body, ["name", "url", "events"]);
 
-      const result = await ctx.runMutation(internal.api.v1.webhooks.createEndpoint, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        name: body.name as string,
-        url: body.url as string,
-        events: body.events as string[],
-        description: body.description,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.webhooks.createEndpoint,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          name: body.name as string,
+          url: body.url as string,
+          events: body.events as string[],
+          description: body.description,
+        }
+      );
 
       if (!result.success) {
         throw new ApiError(
           400,
           result.error ?? "Failed to create webhook endpoint",
-          "VALIDATION_ERROR",
+          "VALIDATION_ERROR"
         );
       }
 
       // Fetch the created endpoint
-      const endpoint = await ctx.runQuery(internal.api.v1.webhooks.getEndpoint, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        endpointId: result.endpointId as Id<"webhook_endpoints">,
-      });
+      const endpoint = await ctx.runQuery(
+        internal.api.v1.webhooks.getEndpoint,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          endpointId: result.endpointId as Id<"webhook_endpoints">,
+        }
+      );
 
       return apiResponse(201, {
         ...endpoint,
         secret: result.secret,
       });
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1830,7 +2060,11 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query, request }) => {
       if (!query.id) {
-        throw new ApiError(400, "Webhook endpoint ID is required", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Webhook endpoint ID is required",
+          "VALIDATION_ERROR"
+        );
       }
 
       const body = await parseJsonBody<{
@@ -1841,34 +2075,44 @@ http.route({
         status?: "active" | "paused" | "disabled";
       }>(request);
 
-      const result = await ctx.runMutation(internal.api.v1.webhooks.updateEndpoint, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        endpointId: query.id as Id<"webhook_endpoints">,
-        name: body.name,
-        url: body.url,
-        events: body.events,
-        description: body.description,
-        status: body.status,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.webhooks.updateEndpoint,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          endpointId: query.id as Id<"webhook_endpoints">,
+          name: body.name,
+          url: body.url,
+          events: body.events,
+          description: body.description,
+          status: body.status,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "WEBHOOK_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Update failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Update failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       // Fetch the updated endpoint
-      const endpoint = await ctx.runQuery(internal.api.v1.webhooks.getEndpoint, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        endpointId: query.id as Id<"webhook_endpoints">,
-      });
+      const endpoint = await ctx.runQuery(
+        internal.api.v1.webhooks.getEndpoint,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          endpointId: query.id as Id<"webhook_endpoints">,
+        }
+      );
 
       return apiResponse(200, endpoint);
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1888,25 +2132,36 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Webhook endpoint ID is required", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Webhook endpoint ID is required",
+          "VALIDATION_ERROR"
+        );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.webhooks.deleteEndpoint, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        endpointId: query.id as Id<"webhook_endpoints">,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.webhooks.deleteEndpoint,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          endpointId: query.id as Id<"webhook_endpoints">,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "WEBHOOK_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Delete failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Delete failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       return apiResponse(200, { deleted: true });
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1926,25 +2181,36 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Webhook endpoint ID is required", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Webhook endpoint ID is required",
+          "VALIDATION_ERROR"
+        );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.webhooks.rotateSecret, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        endpointId: query.id as Id<"webhook_endpoints">,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.webhooks.rotateSecret,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          endpointId: query.id as Id<"webhook_endpoints">,
+        }
+      );
 
       if (!result.success) {
         if (result.error?.includes("not found")) {
           throw new ApiError(404, result.error, "WEBHOOK_NOT_FOUND");
         }
-        throw new ApiError(400, result.error ?? "Rotation failed", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          result.error ?? "Rotation failed",
+          "VALIDATION_ERROR"
+        );
       }
 
       return apiResponse(200, { secret: result.secret });
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1961,11 +2227,14 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx }) => {
-      const eventTypes = await ctx.runQuery(internal.api.v1.webhooks.getEventTypes, {});
+      const eventTypes = await ctx.runQuery(
+        internal.api.v1.webhooks.getEventTypes,
+        {}
+      );
 
       return apiResponse(200, { data: eventTypes });
     },
-    { scope: API_SCOPES.WEBHOOKS_MANAGE },
+    { scope: API_SCOPES.WEBHOOKS_MANAGE }
   ),
 });
 
@@ -1984,7 +2253,12 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
-      const role = query.role as "owner" | "admin" | "member" | "viewer" | undefined;
+      const role = query.role as
+        | "owner"
+        | "admin"
+        | "member"
+        | "viewer"
+        | undefined;
       const members = await ctx.runQuery(internal.api.v1.members.listMembers, {
         userId: auth.userId,
         organizationId: auth.organizationId,
@@ -1992,7 +2266,7 @@ http.route({
       });
       return apiResponse(200, { data: members });
     },
-    { scope: API_SCOPES.MEMBERS_READ },
+    { scope: API_SCOPES.MEMBERS_READ }
   ),
 });
 
@@ -2008,7 +2282,11 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Missing required parameter: id",
+          "VALIDATION_ERROR"
+        );
       }
       let member = null;
       try {
@@ -2025,7 +2303,7 @@ http.route({
       }
       return apiResponse(200, member);
     },
-    { scope: API_SCOPES.MEMBERS_READ },
+    { scope: API_SCOPES.MEMBERS_READ }
   ),
 });
 
@@ -2044,13 +2322,16 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth }) => {
-      const settings = await ctx.runQuery(internal.api.v1.settings.getSettings, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-      });
+      const settings = await ctx.runQuery(
+        internal.api.v1.settings.getSettings,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+        }
+      );
       return apiResponse(200, settings);
     },
-    { scope: API_SCOPES.SETTINGS_READ },
+    { scope: API_SCOPES.SETTINGS_READ }
   ),
 });
 
@@ -2075,15 +2356,21 @@ http.route({
       await ctx.runMutation(internal.api.v1.settings.updateSettings, {
         userId: auth.userId,
         organizationId: auth.organizationId,
-        signing: body.signing as Parameters<typeof ctx.runMutation>[1]["signing"],
-        notifications: body.notifications as Parameters<typeof ctx.runMutation>[1]["notifications"],
+        signing: body.signing as Parameters<
+          typeof ctx.runMutation
+        >[1]["signing"],
+        notifications: body.notifications as Parameters<
+          typeof ctx.runMutation
+        >[1]["notifications"],
         ai: body.ai as Parameters<typeof ctx.runMutation>[1]["ai"],
-        security: body.security as Parameters<typeof ctx.runMutation>[1]["security"],
+        security: body.security as Parameters<
+          typeof ctx.runMutation
+        >[1]["security"],
       });
 
       return apiResponse(200, { success: true });
     },
-    { scope: API_SCOPES.SETTINGS_WRITE },
+    { scope: API_SCOPES.SETTINGS_WRITE }
   ),
 });
 
@@ -2108,14 +2395,20 @@ http.route({
         organizationId: auth.organizationId,
         limit,
         cursor,
-        document_id: query.document_id as Parameters<typeof ctx.runQuery>[1]["document_id"],
+        document_id: query.document_id as Parameters<
+          typeof ctx.runQuery
+        >[1]["document_id"],
         action: query.action,
-        created_after: query.created_after ? new Date(query.created_after).getTime() : undefined,
-        created_before: query.created_before ? new Date(query.created_before).getTime() : undefined,
+        created_after: query.created_after
+          ? new Date(query.created_after).getTime()
+          : undefined,
+        created_before: query.created_before
+          ? new Date(query.created_before).getTime()
+          : undefined,
       });
       return apiResponse(200, result);
     },
-    { scope: API_SCOPES.AUDIT_READ },
+    { scope: API_SCOPES.AUDIT_READ }
   ),
 });
 
@@ -2145,7 +2438,7 @@ http.route({
       });
       return apiResponse(200, result);
     },
-    { scope: API_SCOPES.CONTACTS_READ },
+    { scope: API_SCOPES.CONTACTS_READ }
   ),
 });
 
@@ -2161,14 +2454,20 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Missing required parameter: id",
+          "VALIDATION_ERROR"
+        );
       }
       let contact = null;
       try {
         contact = await ctx.runQuery(internal.api.v1.contacts.getContact, {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          contactId: query.id as Parameters<typeof ctx.runQuery>[1]["contactId"],
+          contactId: query.id as Parameters<
+            typeof ctx.runQuery
+          >[1]["contactId"],
         });
       } catch {
         // Invalid ID format — treat as not found
@@ -2178,7 +2477,7 @@ http.route({
       }
       return apiResponse(200, contact);
     },
-    { scope: API_SCOPES.CONTACTS_READ },
+    { scope: API_SCOPES.CONTACTS_READ }
   ),
 });
 
@@ -2204,7 +2503,11 @@ http.route({
         notes?: string;
         tags?: string[];
       }>(request);
-      validateRequiredFields(body as Record<string, unknown>, ["first_name", "last_name", "email"]);
+      validateRequiredFields(body as Record<string, unknown>, [
+        "first_name",
+        "last_name",
+        "email",
+      ]);
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (body.email && !emailRegex.test(body.email)) {
@@ -2213,23 +2516,28 @@ http.route({
         });
       }
 
-      const result = await ctx.runMutation(internal.api.v1.contacts.createContact, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        first_name: sealAssertPresent(body.first_name),
-        last_name: sealAssertPresent(body.last_name),
-        email: sealAssertPresent(body.email),
-        phone: body.phone,
-        company: body.company,
-        title: body.title,
-        status: body.status as Parameters<typeof ctx.runMutation>[1]["status"],
-        notes: body.notes,
-        tags: body.tags,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.contacts.createContact,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          first_name: sealAssertPresent(body.first_name),
+          last_name: sealAssertPresent(body.last_name),
+          email: sealAssertPresent(body.email),
+          phone: body.phone,
+          company: body.company,
+          title: body.title,
+          status: body.status as Parameters<
+            typeof ctx.runMutation
+          >[1]["status"],
+          notes: body.notes,
+          tags: body.tags,
+        }
+      );
 
       return apiResponse(201, result);
     },
-    { scope: API_SCOPES.CONTACTS_WRITE },
+    { scope: API_SCOPES.CONTACTS_WRITE }
   ),
 });
 
@@ -2245,20 +2553,26 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Missing required parameter: id",
+          "VALIDATION_ERROR"
+        );
       }
       try {
         await ctx.runMutation(internal.api.v1.contacts.deleteContact, {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          contactId: query.id as Parameters<typeof ctx.runMutation>[1]["contactId"],
+          contactId: query.id as Parameters<
+            typeof ctx.runMutation
+          >[1]["contactId"],
         });
       } catch {
         throw new ApiError(404, "Contact not found", "RESOURCE_NOT_FOUND");
       }
       return apiResponse(200, { success: true });
     },
-    { scope: API_SCOPES.CONTACTS_WRITE },
+    { scope: API_SCOPES.CONTACTS_WRITE }
   ),
 });
 
@@ -2278,15 +2592,24 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
       if (!query.id) {
-        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Missing required parameter: id",
+          "VALIDATION_ERROR"
+        );
       }
       let access = null;
       try {
-        access = await ctx.runQuery(internal.api.v1.documents.getDocumentAccess, {
-          userId: auth.userId,
-          organizationId: auth.organizationId,
-          documentId: query.id as Parameters<typeof ctx.runQuery>[1]["documentId"],
-        });
+        access = await ctx.runQuery(
+          internal.api.v1.documents.getDocumentAccess,
+          {
+            userId: auth.userId,
+            organizationId: auth.organizationId,
+            documentId: query.id as Parameters<
+              typeof ctx.runQuery
+            >[1]["documentId"],
+          }
+        );
       } catch {
         // Invalid ID format — treat as not found
       }
@@ -2295,7 +2618,7 @@ http.route({
       }
       return apiResponse(200, access);
     },
-    { scope: API_SCOPES.DOCUMENTS_READ },
+    { scope: API_SCOPES.DOCUMENTS_READ }
   ),
 });
 
@@ -2311,7 +2634,11 @@ http.route({
   handler: apiHttpAction(
     async ({ ctx, auth, query, request }) => {
       if (!query.id) {
-        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Missing required parameter: id",
+          "VALIDATION_ERROR"
+        );
       }
       const body = await parseJsonBody<{ sharing_mode?: string }>(request);
       validateRequiredFields(body as Record<string, unknown>, ["sharing_mode"]);
@@ -2319,12 +2646,16 @@ http.route({
       await ctx.runMutation(internal.api.v1.documents.updateDocumentAccess, {
         userId: auth.userId,
         organizationId: auth.organizationId,
-        documentId: query.id as Parameters<typeof ctx.runMutation>[1]["documentId"],
-        sharing_mode: body.sharing_mode as Parameters<typeof ctx.runMutation>[1]["sharing_mode"],
+        documentId: query.id as Parameters<
+          typeof ctx.runMutation
+        >[1]["documentId"],
+        sharing_mode: body.sharing_mode as Parameters<
+          typeof ctx.runMutation
+        >[1]["sharing_mode"],
       });
       return apiResponse(200, { success: true });
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -2343,25 +2674,44 @@ http.route({
   method: "POST",
   handler: apiHttpAction(
     async ({ ctx, auth, request }) => {
-      const body = await parseJsonBody<{ document_ids?: string[]; reason?: string }>(request);
-      validateRequiredFields(body as Record<string, unknown>, ["document_ids", "reason"]);
+      const body = await parseJsonBody<{
+        document_ids?: string[];
+        reason?: string;
+      }>(request);
+      validateRequiredFields(body as Record<string, unknown>, [
+        "document_ids",
+        "reason",
+      ]);
 
       if (!Array.isArray(body.document_ids) || body.document_ids.length === 0) {
-        throw new ApiError(400, "document_ids must be a non-empty array", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "document_ids must be a non-empty array",
+          "VALIDATION_ERROR"
+        );
       }
       if (body.document_ids.length > 50) {
-        throw new ApiError(400, "Cannot void more than 50 documents at once", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Cannot void more than 50 documents at once",
+          "VALIDATION_ERROR"
+        );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.documents.bulkVoidDocuments, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        document_ids: body.document_ids as Parameters<typeof ctx.runMutation>[1]["document_ids"],
-        reason: sealAssertPresent(body.reason),
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.documents.bulkVoidDocuments,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          document_ids: body.document_ids as Parameters<
+            typeof ctx.runMutation
+          >[1]["document_ids"],
+          reason: sealAssertPresent(body.reason),
+        }
+      );
       return apiResponse(200, result);
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -2376,25 +2726,41 @@ http.route({
   method: "POST",
   handler: apiHttpAction(
     async ({ ctx, auth, request }) => {
-      const body = await parseJsonBody<{ document_ids?: string[]; message?: string }>(request);
+      const body = await parseJsonBody<{
+        document_ids?: string[];
+        message?: string;
+      }>(request);
       validateRequiredFields(body as Record<string, unknown>, ["document_ids"]);
 
       if (!Array.isArray(body.document_ids) || body.document_ids.length === 0) {
-        throw new ApiError(400, "document_ids must be a non-empty array", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "document_ids must be a non-empty array",
+          "VALIDATION_ERROR"
+        );
       }
       if (body.document_ids.length > 50) {
-        throw new ApiError(400, "Cannot send more than 50 documents at once", "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Cannot send more than 50 documents at once",
+          "VALIDATION_ERROR"
+        );
       }
 
-      const result = await ctx.runMutation(internal.api.v1.documents.bulkSendDocuments, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        document_ids: body.document_ids as Parameters<typeof ctx.runMutation>[1]["document_ids"],
-        message: body.message,
-      });
+      const result = await ctx.runMutation(
+        internal.api.v1.documents.bulkSendDocuments,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          document_ids: body.document_ids as Parameters<
+            typeof ctx.runMutation
+          >[1]["document_ids"],
+          message: body.message,
+        }
+      );
       return apiResponse(200, result);
     },
-    { scope: API_SCOPES.DOCUMENTS_WRITE },
+    { scope: API_SCOPES.DOCUMENTS_WRITE }
   ),
 });
 
@@ -2413,15 +2779,18 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
-      const analytics = await ctx.runQuery(internal.api.v1.analytics.getAnalytics, {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-        from: query.from ? new Date(query.from).getTime() : undefined,
-        to: query.to ? new Date(query.to).getTime() : undefined,
-      });
+      const analytics = await ctx.runQuery(
+        internal.api.v1.analytics.getAnalytics,
+        {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          from: query.from ? new Date(query.from).getTime() : undefined,
+          to: query.to ? new Date(query.to).getTime() : undefined,
+        }
+      );
       return apiResponse(200, analytics);
     },
-    { scope: API_SCOPES.DOCUMENTS_READ },
+    { scope: API_SCOPES.DOCUMENTS_READ }
   ),
 });
 
@@ -2466,9 +2835,12 @@ http.route({
     }
 
     // Validate token and get document ID
-    const result = await ctx.runMutation(internal.documents.download_tokens.validateAndUseToken, {
-      token,
-    });
+    const result = await ctx.runMutation(
+      internal.documents.download_tokens.validateAndUseToken,
+      {
+        token,
+      }
+    );
 
     if (!result.valid) {
       return new Response(JSON.stringify({ error: result.error }), {
@@ -2478,9 +2850,12 @@ http.route({
     }
 
     // Get the document to find its storage ID
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: result.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: result.documentId,
+      }
+    );
 
     if (!document || !document.storageId) {
       return new Response(JSON.stringify({ error: "Document not found" }), {
@@ -2527,10 +2902,13 @@ http.route({
     };
     const messages = body.messages ?? (body.prompt ? [body.prompt] : []);
     if (messages.length === 0) {
-      return new Response(JSON.stringify({ error: "prompt or messages is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "prompt or messages is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     const result = await ctx.runAction(internal.ai.eval.runEval, {
@@ -2584,15 +2962,21 @@ http.route({
 
     const body = (await request.json()) as { contractText?: string };
     if (!body.contractText) {
-      return new Response(JSON.stringify({ error: "contractText is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "contractText is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    const result = await ctx.runAction(internal.ai.evalExtraction.extractPaymentFromText, {
-      contractText: body.contractText,
-    });
+    const result = await ctx.runAction(
+      internal.ai.evalExtraction.extractPaymentFromText,
+      {
+        contractText: body.contractText,
+      }
+    );
 
     return new Response(JSON.stringify(result), {
       status: 200,
@@ -2614,13 +2998,18 @@ const corsPreflightHandler = httpAction(async (_ctx, _request) => {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Version",
+      "Access-Control-Allow-Headers":
+        "Authorization, Content-Type, X-API-Version",
       "Access-Control-Max-Age": "86400",
     },
   });
 });
 
-http.route({ pathPrefix: "/api/v1/", method: "OPTIONS", handler: corsPreflightHandler });
+http.route({
+  pathPrefix: "/api/v1/",
+  method: "OPTIONS",
+  handler: corsPreflightHandler,
+});
 
 // ---------------------------------------------------------------------------
 // BUG-12 fix: RFC 7807 fallback for unmatched /api/v1/* paths.
@@ -2645,7 +3034,7 @@ const apiNotFoundHandler = httpAction(async (_ctx, request) => {
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "no-store",
       },
-    },
+    }
   );
 });
 

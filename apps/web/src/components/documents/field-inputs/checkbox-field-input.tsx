@@ -46,17 +46,20 @@ export function CheckboxFieldInput({
       }
       return { isValid: true };
     },
-    [isRequired],
+    [isRequired]
   );
 
   const validateMulti = useCallback(
     (selected: string[]): { isValid: boolean; error?: string } => {
       if (isRequired && selected.length === 0) {
-        return { isValid: false, error: "At least one option must be selected" };
+        return {
+          isValid: false,
+          error: "At least one option must be selected",
+        };
       }
       return { isValid: true };
     },
-    [isRequired],
+    [isRequired]
   );
 
   const [error, setError] = useState<string | undefined>(() => {
@@ -113,7 +116,9 @@ export function CheckboxFieldInput({
             </div>
           ))}
         </div>
-        {helpText && !error && <p className="text-muted-foreground text-xs">{helpText}</p>}
+        {helpText && !error && (
+          <p className="text-muted-foreground text-xs">{helpText}</p>
+        )}
         {error && <p className="text-destructive text-xs">{error}</p>}
       </div>
     );
@@ -136,7 +141,9 @@ export function CheckboxFieldInput({
           {isRequired && <span className="text-destructive ml-1">*</span>}
         </Label>
       </div>
-      {helpText && !error && <p className="text-muted-foreground ml-6 text-xs">{helpText}</p>}
+      {helpText && !error && (
+        <p className="text-muted-foreground ml-6 text-xs">{helpText}</p>
+      )}
       {error && <p className="text-destructive ml-6 text-xs">{error}</p>}
     </div>
   );

@@ -15,7 +15,11 @@ import type { SealAICtx } from "./types";
 const READ_TOOLS = { searchDocuments };
 
 /** All tools: read + write (analyze stores suggestions, extract configures payment). */
-const ALL_TOOLS = { analyzeDocumentFields, extractPaymentTerms, searchDocuments };
+const ALL_TOOLS = {
+  analyzeDocumentFields,
+  extractPaymentTerms,
+  searchDocuments,
+};
 
 // ── Routing classifier ────────────────────────────────────────────────────────
 // Shared by threads.ts and eval.ts. Single source of truth for tier routing.
@@ -33,7 +37,9 @@ export const EXPERT_INTENT =
 export const CONFIRM_INTENT =
   /^(yes|yeah|yep|yup|ok|okay|sure|confirm|go ahead|do it|sounds good|correct|right|proceed|please do|that works|that's right|absolutely|definitely)[\s!.,]*$/i;
 
-export function classifyLocally(message: string): "TIER_1" | "TIER_2" | "TIER_3" {
+export function classifyLocally(
+  message: string
+): "TIER_1" | "TIER_2" | "TIER_3" {
   if (EXPERT_INTENT.test(message)) return "TIER_3";
   if (WRITE_INTENT.test(message)) return "TIER_2";
   if (CONFIRM_INTENT.test(message)) return "TIER_2";

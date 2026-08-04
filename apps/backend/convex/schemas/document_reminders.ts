@@ -6,7 +6,7 @@ import { type Infer, v } from "convex/values";
  */
 export const reminderTypeTuple = v.union(
   v.literal("manual"), // Manually sent by document owner
-  v.literal("automated"), // Automatically scheduled reminder
+  v.literal("automated") // Automatically scheduled reminder
 );
 export type ReminderType = Infer<typeof reminderTypeTuple>;
 
@@ -18,7 +18,7 @@ export const reminderStatusTuple = v.union(
   v.literal("pending"), // Queued for sending
   v.literal("sent"), // Successfully sent (or would be if email enabled)
   v.literal("failed"), // Failed to send
-  v.literal("cancelled"), // Cancelled before sending
+  v.literal("cancelled") // Cancelled before sending
 );
 export type ReminderStatus = Infer<typeof reminderStatusTuple>;
 

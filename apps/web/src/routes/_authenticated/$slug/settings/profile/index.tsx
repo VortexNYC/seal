@@ -13,15 +13,23 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")({
-  component: ProfileSettings,
-});
+export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
+  {
+    component: ProfileSettings,
+  }
+);
 
 const MAX_BIO_LENGTH = 500;
 
@@ -65,7 +73,9 @@ function ProfileSettings() {
       toast.success("Profile updated successfully");
       setHasChanges(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -87,7 +97,9 @@ function ProfileSettings() {
           </div>
           <div className="space-y-1">
             <Label>Email</Label>
-            <p className="text-sm">{user?.primaryEmailAddress?.emailAddress ?? "—"}</p>
+            <p className="text-sm">
+              {user?.primaryEmailAddress?.emailAddress ?? "—"}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -100,7 +112,8 @@ function ProfileSettings() {
             <CardTitle>About You</CardTitle>
           </div>
           <CardDescription>
-            Tell others a bit about yourself. This will be visible to your team members.
+            Tell others a bit about yourself. This will be visible to your team
+            members.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -115,11 +128,15 @@ function ProfileSettings() {
               maxLength={MAX_BIO_LENGTH}
             />
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">A brief description about yourself</p>
+              <p className="text-muted-foreground text-sm">
+                A brief description about yourself
+              </p>
               <p
                 className={cn(
                   "text-sm",
-                  bio.length >= MAX_BIO_LENGTH * 0.9 ? "text-destructive" : "text-muted-foreground",
+                  bio.length >= MAX_BIO_LENGTH * 0.9
+                    ? "text-destructive"
+                    : "text-muted-foreground"
                 )}
               >
                 {bio.length}/{MAX_BIO_LENGTH}
@@ -128,7 +145,10 @@ function ProfileSettings() {
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={handleSaveBio} disabled={isSubmitting || !hasChanges}>
+            <Button
+              onClick={handleSaveBio}
+              disabled={isSubmitting || !hasChanges}
+            >
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting ? "Saving..." : "Save Bio"}
             </Button>

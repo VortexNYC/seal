@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar, Tag } from "lucide-react";
+
 import { Badge } from "~/components/ui/badge";
-import { getChangelogEntries, type ChangelogManifestEntry } from "~/lib/changelog/manifest";
+import {
+  getChangelogEntries,
+  type ChangelogManifestEntry,
+} from "~/lib/changelog/manifest";
 
 export const Route = createFileRoute("/changelog")({
   head: () => ({
@@ -56,24 +60,34 @@ function ChangelogPage() {
 
                     <div className="flex-1 pb-8">
                       <div className="mb-3 flex flex-wrap items-center gap-3">
-                        <Badge className="border-primary/30 text-primary" variant="outline">
+                        <Badge
+                          className="border-primary/30 text-primary"
+                          variant="outline"
+                        >
                           <Tag className="mr-1 size-3" />
                           {entry.version}
                         </Badge>
                         <span className="text-muted-foreground flex items-center gap-1 text-sm">
                           <Calendar className="size-3" />
-                          {new Date(entry.releaseDate).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {new Date(entry.releaseDate).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
                         </span>
                       </div>
 
-                      <h2 className="text-foreground mb-2 text-2xl font-bold">{entry.title}</h2>
+                      <h2 className="text-foreground mb-2 text-2xl font-bold">
+                        {entry.title}
+                      </h2>
 
                       {entry.summary && (
-                        <p className="text-muted-foreground mb-4 text-pretty">{entry.summary}</p>
+                        <p className="text-muted-foreground mb-4 text-pretty">
+                          {entry.summary}
+                        </p>
                       )}
 
                       {entry.coverImage && (

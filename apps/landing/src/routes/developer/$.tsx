@@ -1,10 +1,19 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
+import {
+  DocsBody,
+  DocsDescription,
+  DocsPage,
+  DocsTitle,
+} from "fumadocs-ui/page";
 import { Suspense } from "react";
+
 import { ClientAPIPage } from "~/components/api-page";
 import { PageLastUpdate } from "~/components/docs/page-last-update";
-import { renderDeveloperPageContent, preloadDeveloperPageContent } from "~/lib/docs/client-loader";
+import {
+  renderDeveloperPageContent,
+  preloadDeveloperPageContent,
+} from "~/lib/docs/client-loader";
 import { developerSource } from "~/lib/docs/server-source";
 
 export const Route = createFileRoute("/developer/$")({
@@ -55,7 +64,9 @@ function DevPageRoute() {
     return (
       <DocsPage full>
         <DocsTitle>{loaderData.title}</DocsTitle>
-        {loaderData.description && <DocsDescription>{loaderData.description}</DocsDescription>}
+        {loaderData.description && (
+          <DocsDescription>{loaderData.description}</DocsDescription>
+        )}
         <DocsBody>
           <ClientAPIPage {...loaderData.props} />
         </DocsBody>
@@ -63,12 +74,16 @@ function DevPageRoute() {
     );
   }
 
-  const lastModified = loaderData.lastModified ? new Date(loaderData.lastModified) : undefined;
+  const lastModified = loaderData.lastModified
+    ? new Date(loaderData.lastModified)
+    : undefined;
 
   return (
     <DocsPage key={loaderData.path} toc={loaderData.toc}>
       <DocsTitle>{loaderData.title}</DocsTitle>
-      {loaderData.description && <DocsDescription>{loaderData.description}</DocsDescription>}
+      {loaderData.description && (
+        <DocsDescription>{loaderData.description}</DocsDescription>
+      )}
       <DocsBody>
         <Suspense fallback={<div>Loading...</div>}>
           {renderDeveloperPageContent(loaderData.path)}

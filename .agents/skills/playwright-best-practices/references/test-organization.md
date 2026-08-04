@@ -133,7 +133,7 @@ test("displays mocked users", async ({ page }) => {
     route.fulfill({
       status: 200,
       json: [{ id: 1, name: "Test User" }],
-    }),
+    })
   );
 
   await page.goto("/users");
@@ -146,7 +146,7 @@ test("handles API errors", async ({ page }) => {
     route.fulfill({
       status: 500,
       json: { error: "Server error" },
-    }),
+    })
   );
 
   await page.goto("/users");
@@ -170,7 +170,7 @@ test("handles slow API", async ({ page }) => {
     route.fulfill({
       json: { data: "test" },
       delay: 2000, // 2 second delay
-    }),
+    })
   );
 
   await page.goto("/dashboard");
@@ -229,7 +229,11 @@ test("page with dynamic content", async ({ page }) => {
 
   // Mask elements that change
   await expect(page).toHaveScreenshot("profile.png", {
-    mask: [page.getByTestId("timestamp"), page.getByTestId("avatar"), page.getByRole("img")],
+    mask: [
+      page.getByTestId("timestamp"),
+      page.getByTestId("avatar"),
+      page.getByRole("img"),
+    ],
   });
 });
 

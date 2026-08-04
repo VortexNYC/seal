@@ -5,7 +5,7 @@ import { createTestContext } from "../../test.setup";
 import { publishWebhookEvent } from "../publish";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -52,7 +52,7 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
       format?: "json" | "slack";
       name?: string;
       url?: string;
-    } = {},
+    } = {}
   ) {
     return await t.run(async (ctx) => {
       return await ctx.db.insert("webhook_endpoints", {
@@ -94,7 +94,9 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
     });
 
     expect(deliveries).toHaveLength(1);
-    expect(sealAssertPresent(deliveries[0]).eventType).toBe("document.completed");
+    expect(sealAssertPresent(deliveries[0]).eventType).toBe(
+      "document.completed"
+    );
     expect(sealAssertPresent(deliveries[0]).status).toBe("pending");
   });
 
@@ -166,7 +168,9 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
 
     expect(deliveries).toHaveLength(2);
     // Both deliveries share the same eventId
-    expect(sealAssertPresent(deliveries[0]).eventId).toBe(sealAssertPresent(deliveries[1]).eventId);
+    expect(sealAssertPresent(deliveries[0]).eventId).toBe(
+      sealAssertPresent(deliveries[1]).eventId
+    );
   });
 
   // ---------------------------------------------------------------------------

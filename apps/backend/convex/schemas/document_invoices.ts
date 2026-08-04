@@ -7,14 +7,14 @@ export const documentInvoiceStatusTuple = v.union(
   v.literal("paid"),
   v.literal("void"),
   v.literal("uncollectible"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
 
 export const dunningStatusTuple = v.union(
   v.literal("none"),
   v.literal("active"),
   v.literal("completed"),
-  v.literal("cancelled"),
+  v.literal("cancelled")
 );
 
 export const documentInvoiceProviderTuple = v.literal("vortex_billing");

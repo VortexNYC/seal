@@ -1,9 +1,9 @@
 // VAL-REAL-1776573534487
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
 import { ConvexReactClient } from "convex/react";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
@@ -16,6 +16,7 @@ import { NotFound } from "./components/not-found";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthRuntimeProvider } from "./lib/auth-runtime.better-auth";
 import { routeTree } from "./routeTree.gen";
+
 import "./styles.css";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
@@ -30,7 +31,8 @@ const convexQueryClient = new ConvexQueryClient(convex);
 // Expose Convex client & API on `window` in dev/test/staging/preview so E2E
 // tests (and agent-browser sessions) can call mutations/queries directly.
 const isPreviewDeployment =
-  typeof window !== "undefined" && window.location.hostname.includes("vercel.app");
+  typeof window !== "undefined" &&
+  window.location.hostname.includes("vercel.app");
 const isStagingDomain =
   typeof window !== "undefined" && window.location.hostname.includes("staging");
 const shouldExposeConvexApi =
@@ -40,7 +42,8 @@ const shouldExposeConvexApi =
   (import.meta.env.VITE_EXPOSE_CONVEX_API === "true" && isPreviewDeployment);
 
 if (shouldExposeConvexApi) {
-  (window as Window & { __convexClient?: typeof convex }).__convexClient = convex;
+  (window as Window & { __convexClient?: typeof convex }).__convexClient =
+    convex;
   (window as Window & { __convexApi?: typeof api }).__convexApi = api;
 }
 
@@ -69,7 +72,9 @@ const router = createRouter({
     return (
       <ThemeProvider>
         <AuthRuntimeProvider convex={convex}>
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
         </AuthRuntimeProvider>
       </ThemeProvider>
     );
@@ -120,6 +125,6 @@ if (!rootElement.innerHTML) {
   root.render(
     <PostHogProvider client={posthog}>
       <RouterProvider router={router} />
-    </PostHogProvider>,
+    </PostHogProvider>
   );
 }

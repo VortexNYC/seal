@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Bot, Code2, Webhook } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 
@@ -62,19 +63,28 @@ function IntegrationsPage() {
               Built to connect
             </h1>
             <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg text-pretty">
-              Seal is API-first from day one. Build document signing into your product, automate
-              workflows with webhooks, or let AI agents handle it through MCP.
+              Seal is API-first from day one. Build document signing into your
+              product, automate workflows with webhooks, or let AI agents handle
+              it through MCP.
             </p>
           </div>
         </FadeIn>
 
         {/* Integration cards */}
-        <div className="grid gap-6 lg:grid-cols-3" data-testid="integrations-grid">
+        <div
+          className="grid gap-6 lg:grid-cols-3"
+          data-testid="integrations-grid"
+        >
           {integrations.map((integration, i) => (
             <FadeIn delay={i * 0.1} key={integration.title}>
               <div className="border-border bg-card flex h-full flex-col rounded-2xl border p-8 sm:p-10">
-                <integration.icon aria-hidden="true" className="text-primary mb-6 size-8" />
-                <h2 className="text-foreground mb-3 text-xl font-semibold">{integration.title}</h2>
+                <integration.icon
+                  aria-hidden="true"
+                  className="text-primary mb-6 size-8"
+                />
+                <h2 className="text-foreground mb-3 text-xl font-semibold">
+                  {integration.title}
+                </h2>
                 <p className="text-muted-foreground mb-8 flex-1 text-sm leading-relaxed text-pretty">
                   {integration.description}
                 </p>
@@ -99,9 +109,9 @@ function IntegrationsPage() {
               Payments powered by Vortex
             </h2>
             <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
-              Collect payments alongside signatures. Attach a payment request to any document and
-              recipients pay through Vortex-hosted checkout before or after signing. No separate
-              invoicing tool needed.
+              Collect payments alongside signatures. Attach a payment request to
+              any document and recipients pay through Vortex-hosted checkout
+              before or after signing. No separate invoicing tool needed.
             </p>
           </div>
         </FadeIn>
@@ -113,8 +123,8 @@ function IntegrationsPage() {
               Ready to build?
             </h2>
             <p className="text-muted-foreground mx-auto mt-4 max-w-lg text-pretty">
-              Get early access to the API, then generate an API key and send your first document
-              once you&apos;re invited.
+              Get early access to the API, then generate an API key and send
+              your first document once you&apos;re invited.
             </p>
             <div
               className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"

@@ -5,7 +5,7 @@ import { createTestContext } from "../../test.setup";
 import { createVersionSnapshot } from "../version_helpers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -144,10 +144,12 @@ describe("createVersionSnapshot", () => {
     });
 
     expect(sealAssertPresent(versionRecord).snapshot.description).toBe(
-      "A test document description",
+      "A test document description"
     );
     expect(sealAssertPresent(versionRecord).snapshot.pageCount).toBe(5);
-    expect(sealAssertPresent(versionRecord).snapshot.documentHash).toBe("sha256-abc123def456");
+    expect(sealAssertPresent(versionRecord).snapshot.documentHash).toBe(
+      "sha256-abc123def456"
+    );
   });
 
   test("optional fields omitted when not on document", async () => {
@@ -182,9 +184,13 @@ describe("createVersionSnapshot", () => {
         .first();
     });
 
-    expect(sealAssertPresent(versionRecord).snapshot.description).toBeUndefined();
+    expect(
+      sealAssertPresent(versionRecord).snapshot.description
+    ).toBeUndefined();
     expect(sealAssertPresent(versionRecord).snapshot.pageCount).toBeUndefined();
-    expect(sealAssertPresent(versionRecord).snapshot.documentHash).toBeUndefined();
+    expect(
+      sealAssertPresent(versionRecord).snapshot.documentHash
+    ).toBeUndefined();
   });
 
   test("changeDescription and restoredFromVersion stored correctly", async () => {
@@ -205,7 +211,9 @@ describe("createVersionSnapshot", () => {
         .first();
     });
 
-    expect(sealAssertPresent(versionRecord).changeDescription).toBe("Restored from version 2");
+    expect(sealAssertPresent(versionRecord).changeDescription).toBe(
+      "Restored from version 2"
+    );
     expect(sealAssertPresent(versionRecord).restoredFromVersion).toBe(2);
   });
 
@@ -219,29 +227,30 @@ describe("createVersionSnapshot", () => {
           createdBy: ownerId,
           changeType: "created",
         });
-      }),
+      })
     ).rejects.toThrow("not found");
   });
 
-  test.each<"created" | "replaced" | "restored">(["created", "replaced", "restored"])(
-    "changeType '%s' stored correctly",
-    async (changeType) => {
-      await t.run(async (ctx) => {
-        return await createVersionSnapshot(ctx, {
-          documentId,
-          createdBy: ownerId,
-          changeType,
-        });
+  test.each<"created" | "replaced" | "restored">([
+    "created",
+    "replaced",
+    "restored",
+  ])("changeType '%s' stored correctly", async (changeType) => {
+    await t.run(async (ctx) => {
+      return await createVersionSnapshot(ctx, {
+        documentId,
+        createdBy: ownerId,
+        changeType,
       });
+    });
 
-      const versionRecord = await t.run(async (ctx) => {
-        return await ctx.db
-          .query("document_versions")
-          .withIndex("by_document", (q) => q.eq("documentId", documentId))
-          .first();
-      });
+    const versionRecord = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("document_versions")
+        .withIndex("by_document", (q) => q.eq("documentId", documentId))
+        .first();
+    });
 
-      expect(sealAssertPresent(versionRecord).changeType).toBe(changeType);
-    },
-  );
+    expect(sealAssertPresent(versionRecord).changeType).toBe(changeType);
+  });
 });

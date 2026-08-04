@@ -177,16 +177,25 @@ describe("pipeline_mutations", () => {
       const { internal } = await import("../_generated/api");
 
       const paymentExtraction = {
-        lineItems: [{ description: "Consulting fee", quantity: 1, unitPriceCents: 500000 }],
+        lineItems: [
+          {
+            description: "Consulting fee",
+            quantity: 1,
+            unitPriceCents: 500000,
+          },
+        ],
         currency: "usd",
         paymentType: "one_time" as const,
         dueDateTerms: "net_30" as const,
       };
 
-      await t.mutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {
-        suggestionId,
-        paymentExtraction,
-      });
+      await t.mutation(
+        internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion,
+        {
+          suggestionId,
+          paymentExtraction,
+        }
+      );
 
       const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
       expect(suggestion?.paymentExtraction).toMatchObject({
@@ -204,15 +213,20 @@ describe("pipeline_mutations", () => {
         await ctx.db.patch(suggestionId, { status: "applied" });
       });
 
-      await t.mutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {
-        suggestionId,
-        paymentExtraction: {
-          lineItems: [{ description: "Fee", quantity: 1, unitPriceCents: 1000 }],
-          currency: "usd",
-          paymentType: "one_time" as const,
-          dueDateTerms: "on_receipt" as const,
-        },
-      });
+      await t.mutation(
+        internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion,
+        {
+          suggestionId,
+          paymentExtraction: {
+            lineItems: [
+              { description: "Fee", quantity: 1, unitPriceCents: 1000 },
+            ],
+            currency: "usd",
+            paymentType: "one_time" as const,
+            dueDateTerms: "on_receipt" as const,
+          },
+        }
+      );
 
       const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
       expect(suggestion?.paymentExtraction).toBeUndefined();
@@ -225,15 +239,20 @@ describe("pipeline_mutations", () => {
         await ctx.db.patch(suggestionId, { status: "dismissed" });
       });
 
-      await t.mutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {
-        suggestionId,
-        paymentExtraction: {
-          lineItems: [{ description: "Fee", quantity: 1, unitPriceCents: 1000 }],
-          currency: "usd",
-          paymentType: "one_time" as const,
-          dueDateTerms: "on_receipt" as const,
-        },
-      });
+      await t.mutation(
+        internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion,
+        {
+          suggestionId,
+          paymentExtraction: {
+            lineItems: [
+              { description: "Fee", quantity: 1, unitPriceCents: 1000 },
+            ],
+            currency: "usd",
+            paymentType: "one_time" as const,
+            dueDateTerms: "on_receipt" as const,
+          },
+        }
+      );
 
       const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
       expect(suggestion?.paymentExtraction).toBeUndefined();
@@ -243,7 +262,13 @@ describe("pipeline_mutations", () => {
       const { internal } = await import("../_generated/api");
 
       const paymentExtraction = {
-        lineItems: [{ description: "Monthly retainer", quantity: 1, unitPriceCents: 300000 }],
+        lineItems: [
+          {
+            description: "Monthly retainer",
+            quantity: 1,
+            unitPriceCents: 300000,
+          },
+        ],
         currency: "usd",
         paymentType: "recurring" as const,
         dueDateTerms: "on_receipt" as const,
@@ -251,10 +276,13 @@ describe("pipeline_mutations", () => {
         lateFee: { type: "percentage" as const, amount: 2, gracePeriodDays: 5 },
       };
 
-      await t.mutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {
-        suggestionId,
-        paymentExtraction,
-      });
+      await t.mutation(
+        internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion,
+        {
+          suggestionId,
+          paymentExtraction,
+        }
+      );
 
       const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
       expect(suggestion?.paymentExtraction?.recurringConfig).toMatchObject({

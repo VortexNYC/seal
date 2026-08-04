@@ -12,11 +12,21 @@ import { aiProgressTable } from "./schemas/ai_progress";
 import { aiRoutingLogsTable } from "./schemas/ai_routing_logs";
 import { aiThreadsTable } from "./schemas/ai_threads";
 import { aiUsageLogTable } from "./schemas/ai_usage_log";
-import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
-import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
+import {
+  connectedAppsTable,
+  integrationActivityLogsTable,
+} from "./schemas/api_keys";
+import {
+  type AuditAction,
+  type AuditResourceType,
+  auditLogsTable,
+} from "./schemas/audit_logs";
 import { type ContactStatus, contactsTable } from "./schemas/contacts";
 import { dataExportsTable } from "./schemas/data_exports";
-import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
+import {
+  type DocumentPermissionLevel,
+  documentAccessTable,
+} from "./schemas/document_access";
 import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
   type RecipientStatus as DocumentRecipientStatus,
@@ -28,7 +38,10 @@ import {
   type ReminderStatus,
   type ReminderType,
 } from "./schemas/document_reminders";
-import { type DocumentVersionChangeType, documentVersionsTable } from "./schemas/document_versions";
+import {
+  type DocumentVersionChangeType,
+  documentVersionsTable,
+} from "./schemas/document_versions";
 import {
   type DocumentSharingMode,
   type DocumentStatus,
@@ -37,8 +50,20 @@ import {
 } from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
-import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
-import { type NotificationType, notificationsTable } from "./schemas/notifications";
+import {
+  foldersTable,
+  type FolderType,
+  type FolderVisibility,
+} from "./schemas/folders";
+import {
+  type MerchantAccountType,
+  type MerchantFeeHandling,
+  merchantAccountsTable,
+} from "./schemas/merchant_accounts";
+import {
+  type NotificationType,
+  notificationsTable,
+} from "./schemas/notifications";
 import {
   type OrganizationMemberRole,
   type OrganizationMemberStatus,
@@ -62,14 +87,15 @@ import {
   recipientsTable,
   type RecipientStatus as WorkflowRecipientStatus,
 } from "./schemas/recipients";
-import { type SignatureType, savedSignaturesTable } from "./schemas/saved_signatures";
-import { type FieldType, signatureFieldsTable } from "./schemas/signature_fields";
-import { signaturesTable } from "./schemas/signatures";
 import {
-  type MerchantAccountType,
-  type MerchantFeeHandling,
-  merchantAccountsTable,
-} from "./schemas/merchant_accounts";
+  type SignatureType,
+  savedSignaturesTable,
+} from "./schemas/saved_signatures";
+import {
+  type FieldType,
+  signatureFieldsTable,
+} from "./schemas/signature_fields";
+import { signaturesTable } from "./schemas/signatures";
 import {
   type SubscriptionCouponDuration,
   type SubscriptionCouponType,
@@ -82,7 +108,11 @@ import {
   subscriptionPromoCodesTable,
 } from "./schemas/subscription_promo_codes";
 import { subscriptionsTable } from "./schemas/subscriptions";
-import { type TemplateStatus, templateFieldsTable, templatesTable } from "./schemas/templates";
+import {
+  type TemplateStatus,
+  templateFieldsTable,
+  templatesTable,
+} from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
 import { vortexBillingWebhookEventsTable } from "./schemas/vortex_billing_webhook_events";
@@ -121,7 +151,12 @@ export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 // Re-export signature workflow types
-export type { AuthenticationMethod, FieldType, SignatureType, WorkflowRecipientStatus };
+export type {
+  AuthenticationMethod,
+  FieldType,
+  SignatureType,
+  WorkflowRecipientStatus,
+};
 
 // Re-export template types
 export type { TemplateStatus };
@@ -145,7 +180,11 @@ export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 export type { MerchantAccountType, MerchantFeeHandling };
 
 // Re-export subscription coupon/promo types
-export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
+export type {
+  SubscriptionCouponDuration,
+  SubscriptionCouponType,
+  SubscriptionPromoCodeStatus,
+};
 
 // Re-export payment field config types
 export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };

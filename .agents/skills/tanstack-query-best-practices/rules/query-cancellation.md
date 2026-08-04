@@ -91,7 +91,10 @@ function SearchResults() {
 
   return (
     <div>
-      <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      <input
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
       <button onClick={handleClear}>Clear</button>
       <Results data={data} />
     </div>

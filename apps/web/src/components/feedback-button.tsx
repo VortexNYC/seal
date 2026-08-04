@@ -55,12 +55,22 @@ export function FeedbackButton() {
     <div className="fixed right-6 bottom-6 z-50">
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2 shadow-md" aria-label="Feedback">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 shadow-md"
+            aria-label="Feedback"
+          >
             <MessageSquare className="size-4" />
             Feedback
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" align="end" side="top" sideOffset={8}>
+        <PopoverContent
+          className="w-64 p-3"
+          align="end"
+          side="top"
+          sideOffset={8}
+        >
           {submitted ? (
             <p className="text-muted-foreground py-2 text-center text-sm">
               Thanks for the suggestion!
@@ -96,7 +106,9 @@ export function FeedbackButton() {
             </div>
           ) : (
             <div className="space-y-1">
-              <p className="text-muted-foreground mb-2 text-xs">How can we improve?</p>
+              <p className="text-muted-foreground mb-2 text-xs">
+                How can we improve?
+              </p>
               <button
                 type="button"
                 className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm transition-colors"
@@ -110,7 +122,7 @@ export function FeedbackButton() {
                 className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm transition-colors"
                 onClick={() => setMode("suggestion")}
               >
-                <Lightbulb className="size-4 shrink-0 text-warning" />
+                <Lightbulb className="text-warning size-4 shrink-0" />
                 <span>Make a suggestion</span>
               </button>
             </div>

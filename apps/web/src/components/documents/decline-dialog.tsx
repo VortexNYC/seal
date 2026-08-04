@@ -19,7 +19,12 @@ interface DeclineDialogProps {
   isSubmitting: boolean;
 }
 
-export function DeclineDialog({ open, onOpenChange, onDecline, isSubmitting }: DeclineDialogProps) {
+export function DeclineDialog({
+  open,
+  onOpenChange,
+  onDecline,
+  isSubmitting,
+}: DeclineDialogProps) {
   const [reason, setReason] = useState("");
 
   const handleConfirm = async () => {
@@ -41,8 +46,8 @@ export function DeclineDialog({ open, onOpenChange, onDecline, isSubmitting }: D
         <DialogHeader>
           <DialogTitle>Decline Document</DialogTitle>
           <DialogDescription>
-            Please provide a reason for declining this document. This will be visible to the
-            document owner.
+            Please provide a reason for declining this document. This will be
+            visible to the document owner.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
@@ -57,7 +62,8 @@ export function DeclineDialog({ open, onOpenChange, onDecline, isSubmitting }: D
             aria-describedby="decline-reason-help"
           />
           <p id="decline-reason-help" className="text-muted-foreground text-xs">
-            Please provide a short reason so the sender understands why you declined.
+            Please provide a short reason so the sender understands why you
+            declined.
           </p>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">

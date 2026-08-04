@@ -33,7 +33,8 @@ export const Route = createFileRoute("/products")({
     return {
       page: Number(search.page) || 1,
       sort: search.sort === "desc" ? "desc" : "asc",
-      category: typeof search.category === "string" ? search.category : undefined,
+      category:
+        typeof search.category === "string" ? search.category : undefined,
       minPrice: Number(search.minPrice) || undefined,
       maxPrice: Number(search.maxPrice) || undefined,
     };
@@ -87,7 +88,9 @@ function ProductsPage() {
         category: search.category,
         search: search.search,
         priceRange:
-          search.minPrice && search.maxPrice ? [search.minPrice, search.maxPrice] : undefined,
+          search.minPrice && search.maxPrice
+            ? [search.minPrice, search.maxPrice]
+            : undefined,
       }}
     />
   );
@@ -134,7 +137,9 @@ function ProductFilters() {
     <div>
       <select
         value={search.sort}
-        onChange={(e) => updateFilters({ sort: e.target.value as ProductSearch["sort"] })}
+        onChange={(e) =>
+          updateFilters({ sort: e.target.value as ProductSearch["sort"] })
+        }
       >
         <option value="name">Name</option>
         <option value="price">Price</option>

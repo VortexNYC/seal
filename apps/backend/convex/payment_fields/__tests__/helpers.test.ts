@@ -6,18 +6,31 @@ import { computeTotalAmountCents, validatePaymentConfig } from "../helpers";
 
 interface PaymentConfigInput {
   paymentType: "one_time" | "recurring" | "installments" | "deposit_balance";
-  items: Array<{ id: string; description: string; quantity: number; unitPrice: number }>;
+  items: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
   totalAmountCents: number;
   allowedPaymentMethods: string[];
-  recurringConfig?: { intervalCount: number; endCondition: string; endAfterCount?: number };
+  recurringConfig?: {
+    intervalCount: number;
+    endCondition: string;
+    endAfterCount?: number;
+  };
   installmentsConfig?: { count: number };
   depositBalanceConfig?: { depositPercent: number; balanceDueDays: number };
 }
 
-function validOneTimeConfig(overrides: Partial<PaymentConfigInput> = {}): PaymentConfigInput {
+function validOneTimeConfig(
+  overrides: Partial<PaymentConfigInput> = {}
+): PaymentConfigInput {
   return {
     paymentType: "one_time",
-    items: [{ id: "item-1", description: "Widget", quantity: 1, unitPrice: 1000 }],
+    items: [
+      { id: "item-1", description: "Widget", quantity: 1, unitPrice: 1000 },
+    ],
     totalAmountCents: 1000,
     allowedPaymentMethods: ["card"],
     ...overrides,
@@ -32,7 +45,9 @@ describe("computeTotalAmountCents", () => {
   });
 
   test("computes total for a single item", () => {
-    expect(computeTotalAmountCents([{ quantity: 2, unitPrice: 500 }])).toBe(1000);
+    expect(computeTotalAmountCents([{ quantity: 2, unitPrice: 500 }])).toBe(
+      1000
+    );
   });
 
   test("computes total for multiple items", () => {
@@ -58,7 +73,9 @@ describe("computeTotalAmountCents", () => {
   });
 
   test("handles large quantities and prices", () => {
-    expect(computeTotalAmountCents([{ quantity: 9999, unitPrice: 9999 }])).toBe(9999 * 9999);
+    expect(computeTotalAmountCents([{ quantity: 9999, unitPrice: 9999 }])).toBe(
+      9999 * 9999
+    );
   });
 });
 
@@ -82,7 +99,11 @@ describe("validatePaymentConfig", () => {
   test("accepts a valid recurring config with after_count end condition", () => {
     const config = validOneTimeConfig({
       paymentType: "recurring",
-      recurringConfig: { intervalCount: 1, endCondition: "after_count", endAfterCount: 12 },
+      recurringConfig: {
+        intervalCount: 1,
+        endCondition: "after_count",
+        endAfterCount: 12,
+      },
     });
     expect(validatePaymentConfig(config)).toBeNull();
   });
@@ -121,7 +142,7 @@ describe("validatePaymentConfig", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
         items: [{ id: "1", description: "", quantity: 1, unitPrice: 100 }],
-      }),
+      })
     );
     expect(result).toBe("Each line item must have a description");
   });
@@ -130,7 +151,7 @@ describe("validatePaymentConfig", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
         items: [{ id: "1", description: "   ", quantity: 1, unitPrice: 100 }],
-      }),
+      })
     );
     expect(result).toBe("Each line item must have a description");
   });
@@ -138,8 +159,10 @@ describe("validatePaymentConfig", () => {
   test("rejects item with quantity zero", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
-        items: [{ id: "1", description: "Widget", quantity: 0, unitPrice: 100 }],
-      }),
+        items: [
+          { id: "1", description: "Widget", quantity: 0, unitPrice: 100 },
+        ],
+      })
     );
     expect(result).toBe("Quantity must be greater than zero");
   });
@@ -147,8 +170,10 @@ describe("validatePaymentConfig", () => {
   test("rejects item with negative quantity", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
-        items: [{ id: "1", description: "Widget", quantity: -1, unitPrice: 100 }],
-      }),
+        items: [
+          { id: "1", description: "Widget", quantity: -1, unitPrice: 100 },
+        ],
+      })
     );
     expect(result).toBe("Quantity must be greater than zero");
   });
@@ -156,8 +181,10 @@ describe("validatePaymentConfig", () => {
   test("rejects item with negative unit price", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
-        items: [{ id: "1", description: "Widget", quantity: 1, unitPrice: -50 }],
-      }),
+        items: [
+          { id: "1", description: "Widget", quantity: 1, unitPrice: -50 },
+        ],
+      })
     );
     expect(result).toBe("Unit price cannot be negative");
   });
@@ -180,7 +207,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         items: [{ id: "1", description: "Cheap", quantity: 1, unitPrice: 49 }],
         totalAmountCents: 49,
-      }),
+      })
     );
     expect(result).toContain("Total amount must be at least");
   });
@@ -196,16 +223,25 @@ describe("validatePaymentConfig", () => {
   test("rejects total amount above maximum (99_999_999)", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
-        items: [{ id: "1", description: "Expensive", quantity: 1, unitPrice: 100_000_000 }],
+        items: [
+          {
+            id: "1",
+            description: "Expensive",
+            quantity: 1,
+            unitPrice: 100_000_000,
+          },
+        ],
         totalAmountCents: 100_000_000,
-      }),
+      })
     );
     expect(result).toContain("Total amount cannot exceed");
   });
 
   test("accepts total amount at exact maximum (99_999_999)", () => {
     const config = validOneTimeConfig({
-      items: [{ id: "1", description: "Max", quantity: 1, unitPrice: 99_999_999 }],
+      items: [
+        { id: "1", description: "Max", quantity: 1, unitPrice: 99_999_999 },
+      ],
       totalAmountCents: 99_999_999,
     });
     expect(validatePaymentConfig(config)).toBeNull();
@@ -214,7 +250,9 @@ describe("validatePaymentConfig", () => {
   // ── Payment methods ───────────────────────────────────────────────────────
 
   test("rejects empty allowed payment methods", () => {
-    const result = validatePaymentConfig(validOneTimeConfig({ allowedPaymentMethods: [] }));
+    const result = validatePaymentConfig(
+      validOneTimeConfig({ allowedPaymentMethods: [] })
+    );
     expect(result).toBe("At least one payment method must be selected");
   });
 
@@ -225,9 +263,11 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "recurring",
         recurringConfig: undefined,
-      }),
+      })
     );
-    expect(result).toBe("Recurring configuration is required for recurring payments");
+    expect(result).toBe(
+      "Recurring configuration is required for recurring payments"
+    );
   });
 
   test("rejects recurring with intervalCount < 1", () => {
@@ -235,7 +275,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "recurring",
         recurringConfig: { intervalCount: 0, endCondition: "never" },
-      }),
+      })
     );
     expect(result).toBe("Recurring interval count must be at least 1");
   });
@@ -245,7 +285,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "recurring",
         recurringConfig: { intervalCount: 1, endCondition: "after_count" },
-      }),
+      })
     );
     expect(result).toBe("End after count must be at least 1");
   });
@@ -254,8 +294,12 @@ describe("validatePaymentConfig", () => {
     const result = validatePaymentConfig(
       validOneTimeConfig({
         paymentType: "recurring",
-        recurringConfig: { intervalCount: 1, endCondition: "after_count", endAfterCount: 0 },
-      }),
+        recurringConfig: {
+          intervalCount: 1,
+          endCondition: "after_count",
+          endAfterCount: 0,
+        },
+      })
     );
     expect(result).toBe("End after count must be at least 1");
   });
@@ -267,9 +311,11 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "installments",
         installmentsConfig: undefined,
-      }),
+      })
     );
-    expect(result).toBe("Installments configuration is required for installment payments");
+    expect(result).toBe(
+      "Installments configuration is required for installment payments"
+    );
   });
 
   test("rejects installments with count < 2", () => {
@@ -277,7 +323,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "installments",
         installmentsConfig: { count: 1 },
-      }),
+      })
     );
     expect(result).toBe("Number of installments must be at least 2");
   });
@@ -297,7 +343,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "deposit_balance",
         depositBalanceConfig: undefined,
-      }),
+      })
     );
     expect(result).toBe("Deposit/balance configuration is required");
   });
@@ -307,7 +353,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "deposit_balance",
         depositBalanceConfig: { depositPercent: 0, balanceDueDays: 30 },
-      }),
+      })
     );
     expect(result).toBe("Deposit percentage must be between 1 and 99");
   });
@@ -317,7 +363,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "deposit_balance",
         depositBalanceConfig: { depositPercent: 100, balanceDueDays: 30 },
-      }),
+      })
     );
     expect(result).toBe("Deposit percentage must be between 1 and 99");
   });
@@ -343,7 +389,7 @@ describe("validatePaymentConfig", () => {
       validOneTimeConfig({
         paymentType: "deposit_balance",
         depositBalanceConfig: { depositPercent: 50, balanceDueDays: 0 },
-      }),
+      })
     );
     expect(result).toBe("Balance due days must be at least 1");
   });
@@ -376,7 +422,7 @@ describe("validatePaymentConfig", () => {
           { id: "2", description: "", quantity: 1, unitPrice: 100 },
         ],
         totalAmountCents: 200,
-      }),
+      })
     );
     expect(result).toBe("Each line item must have a description");
   });

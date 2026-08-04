@@ -31,8 +31,8 @@ export const signaturesTable = defineTable({
     v.union(
       v.literal("draw"), // Hand-drawn signature
       v.literal("type"), // Typed signature
-      v.literal("upload"), // Uploaded signature image
-    ),
+      v.literal("upload") // Uploaded signature image
+    )
   ),
 
   // Audit Information
@@ -44,7 +44,7 @@ export const signaturesTable = defineTable({
       method: authenticationMethodTuple, // Authentication method used
       verified: v.boolean(), // Whether authentication was verified
       verifiedAt: v.optional(v.number()), // When authentication was verified
-    }),
+    })
   ),
 
   // Timestamps

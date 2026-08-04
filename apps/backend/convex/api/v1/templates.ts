@@ -83,7 +83,7 @@ export const listTemplates = internalQuery({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     templates: ApiTemplate[];
     hasMore: boolean;
@@ -92,19 +92,23 @@ export const listTemplates = internalQuery({
     const limit = args.limit ?? 20;
 
     // convex-cost-guard-allow: convex-aliased-db-handle — the aliased builder is consumed exclusively by .take(limit + 1) below (bounded page read); no unbounded collect flows through this alias. bound=per-tenant
-    let query = ctx.db.query("templates").withIndex("by_organization_status", (q) => {
-      const base = q.eq("organizationId", args.organizationId);
-      if (args.status === "active" || args.status === "archived") {
-        return base.eq("status", args.status);
-      }
-      return base.eq("status", "active");
-    });
+    let query = ctx.db
+      .query("templates")
+      .withIndex("by_organization_status", (q) => {
+        const base = q.eq("organizationId", args.organizationId);
+        if (args.status === "active" || args.status === "archived") {
+          return base.eq("status", args.status);
+        }
+        return base.eq("status", "active");
+      });
 
     // Apply cursor if provided
     if (args.cursor) {
       const cursorDoc = await ctx.db.get(args.cursor as Id<"templates">);
       if (cursorDoc) {
-        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+        query = query.filter((q) =>
+          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
+        );
       }
     }
 
@@ -118,11 +122,14 @@ export const listTemplates = internalQuery({
       resultTemplates.map(async (template) => {
         const lastField = await ctx.db
           .query("template_fields")
-          .withIndex("by_template_order", (q) => q.eq("templateId", template._id))
+          .withIndex("by_template_order", (q) =>
+            q.eq("templateId", template._id)
+          )
           .order("desc")
           .take(1);
 
-        const field_count = lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
+        const field_count =
+          lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
 
         return {
           id: template._id,
@@ -135,11 +142,12 @@ export const listTemplates = internalQuery({
           created_at: new Date(template.createdAt).toISOString(),
           updated_at: new Date(template.updatedAt).toISOString(),
         };
-      }),
+      })
     );
 
     const lastTemplate = resultTemplates[resultTemplates.length - 1];
-    const nextCursor = hasMore && lastTemplate ? (lastTemplate._id as string) : undefined;
+    const nextCursor =
+      hasMore && lastTemplate ? (lastTemplate._id as string) : undefined;
 
     return {
       templates: templatesWithCounts,
@@ -161,7 +169,10 @@ export const getTemplate = internalQuery({
     templateId: v.id("templates"),
     includeFields: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<(ApiTemplate & { fields?: ApiTemplateField[] }) | null> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<(ApiTemplate & { fields?: ApiTemplateField[] }) | null> => {
     const template = await ctx.db.get(args.templateId);
 
     if (!template || template.status === "deleted") {
@@ -175,11 +186,14 @@ export const getTemplate = internalQuery({
     // Get field count using highest order value
     const lastField = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .order("desc")
       .take(1);
 
-    const field_count = lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
+    const field_count =
+      lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
 
     const result: ApiTemplate & { fields?: ApiTemplateField[] } = {
       id: template._id,
@@ -198,7 +212,9 @@ export const getTemplate = internalQuery({
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows bound=global
       const fields = await ctx.db
         .query("template_fields")
-        .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+        .withIndex("by_template_order", (q) =>
+          q.eq("templateId", args.templateId)
+        )
         .collect();
 
       result.fields = fields.map((f) => ({
@@ -252,7 +268,9 @@ export const getTemplateFields = internalQuery({
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows bound=global
     const fields = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
 
     return fields.map((f) => ({
@@ -292,7 +310,7 @@ export const createFromDocument = internalMutation({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{ success: boolean; templateId?: string; error?: string }> => {
     // Validate name
     if (args.name.trim().length === 0) {
@@ -467,7 +485,7 @@ export const useTemplate = internalMutation({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     success: boolean;
     documentId?: string;
@@ -502,7 +520,9 @@ export const useTemplate = internalMutation({
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and required for a complete document copy bound=global
     const templateFields = await ctx.db
       .query("template_fields")
-      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .withIndex("by_template_order", (q) =>
+        q.eq("templateId", args.templateId)
+      )
       .collect();
 
     const now = Date.now();

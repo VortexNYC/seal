@@ -76,7 +76,9 @@ export const getAccountInfo = internalQuery({
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to one organization and required for exact account counts across statuses bound=per-tenant
     const allDocuments = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .collect();
 
     const docsByStatus = {
@@ -88,7 +90,8 @@ export const getAccountInfo = internalQuery({
       declined: 0,
     };
     for (const doc of allDocuments) {
-      const status = (doc.workflowStatus ?? "draft") as keyof typeof docsByStatus;
+      const status = (doc.workflowStatus ??
+        "draft") as keyof typeof docsByStatus;
       if (status in docsByStatus) {
         docsByStatus[status]++;
       }

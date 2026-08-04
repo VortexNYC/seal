@@ -36,7 +36,7 @@ export class AppError extends Error {
   constructor(
     message: string,
     public code: string,
-    public status: number = 400,
+    public status: number = 400
   ) {
     super(message);
     this.name = "AppError";
@@ -58,7 +58,7 @@ export class UnauthorizedError extends AppError {
 export class ValidationError extends AppError {
   constructor(
     message: string,
-    public fields?: Record<string, string>,
+    public fields?: Record<string, string>
   ) {
     super(message, "VALIDATION_ERROR", 400);
   }
@@ -97,7 +97,11 @@ export const createPost = createServerFn({ method: "POST" })
         if (error.code === "P2002") {
           // Unique constraint violation
           setResponseStatus(409);
-          throw new AppError("A post with this title already exists", "DUPLICATE", 409);
+          throw new AppError(
+            "A post with this title already exists",
+            "DUPLICATE",
+            409
+          );
         }
       }
 

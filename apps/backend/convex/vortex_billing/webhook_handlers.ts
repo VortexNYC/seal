@@ -2,7 +2,10 @@ import type { GenericActionCtx } from "convex/server";
 
 import { internal } from "../_generated/api";
 import type { DataModel, Id } from "../_generated/dataModel";
-import { parseVortexInvoiceEvent, parseVortexPayableObjectEvent } from "./projection";
+import {
+  parseVortexInvoiceEvent,
+  parseVortexPayableObjectEvent,
+} from "./projection";
 import { verifyVortexWebhookSignature } from "./webhook_signature";
 
 type HttpActionCtx = GenericActionCtx<DataModel>;
@@ -50,7 +53,10 @@ function stringField(record: UnknownRecord, key: string): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function optionalStringField(record: UnknownRecord, key: string): string | undefined {
+function optionalStringField(
+  record: UnknownRecord,
+  key: string
+): string | undefined {
   const value = record[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
@@ -60,7 +66,9 @@ function booleanField(record: UnknownRecord, key: string): boolean | null {
   return typeof value === "boolean" ? value : null;
 }
 
-function parseVortexWebhookEnvelope(payload: string): VortexWebhookEnvelope | null {
+function parseVortexWebhookEnvelope(
+  payload: string
+): VortexWebhookEnvelope | null {
   const parsed = JSON.parse(payload) as unknown;
   if (!isRecord(parsed)) {
     return null;
@@ -71,13 +79,22 @@ function parseVortexWebhookEnvelope(payload: string): VortexWebhookEnvelope | nu
   const apiVersion = parsed.apiVersion;
   const environment = parsed.environment;
   const createdAt = parsed.createdAt;
-  if (typeof id !== "string" || id.length === 0 || typeof type !== "string" || type.length === 0) {
+  if (
+    typeof id !== "string" ||
+    id.length === 0 ||
+    typeof type !== "string" ||
+    type.length === 0
+  ) {
     return null;
   }
   if (apiVersion !== undefined && typeof apiVersion !== "string") {
     return null;
   }
-  if (environment !== undefined && environment !== "sandbox" && environment !== "production") {
+  if (
+    environment !== undefined &&
+    environment !== "sandbox" &&
+    environment !== "production"
+  ) {
     return null;
   }
   if (createdAt !== undefined && typeof createdAt !== "number") {
@@ -88,7 +105,7 @@ function parseVortexWebhookEnvelope(payload: string): VortexWebhookEnvelope | nu
 }
 
 export function parseVortexSubscriptionUpdatedProjection(
-  event: VortexWebhookEnvelope,
+  event: VortexWebhookEnvelope
 ): VortexSubscriptionUpdatedProjection | null {
   if (event.type !== "subscription.updated" || !isRecord(event.data)) {
     return null;
@@ -101,8 +118,12 @@ export function parseVortexSubscriptionUpdatedProjection(
 
   const metadata = isRecord(subscription.metadata) ? subscription.metadata : {};
   const sealOrganizationId =
-    stringField(metadata, "sealOrganizationId") ?? stringField(subscription, "sealOrganizationId");
-  const subscriptionExternalId = stringField(subscription, "subscriptionExternalId");
+    stringField(metadata, "sealOrganizationId") ??
+    stringField(subscription, "sealOrganizationId");
+  const subscriptionExternalId = stringField(
+    subscription,
+    "subscriptionExternalId"
+  );
   const customerExternalId = stringField(subscription, "customerExternalId");
   const planCode = stringField(subscription, "planCode");
   const status = stringField(subscription, "status");
@@ -151,10 +172,12 @@ type VortexWebhookDispatchType =
 
 type VortexWebhookDispatcher = (
   ctx: HttpActionCtx,
-  event: VortexWebhookEnvelope,
+  event: VortexWebhookEnvelope
 ) => Promise<Response>;
 
-function isVortexWebhookDispatchType(type: string): type is VortexWebhookDispatchType {
+function isVortexWebhookDispatchType(
+  type: string
+): type is VortexWebhookDispatchType {
   return (
     type === "subscription.updated" ||
     type === "invoice.paid" ||
@@ -163,41 +186,62 @@ function isVortexWebhookDispatchType(type: string): type is VortexWebhookDispatc
   );
 }
 
-const vortexWebhookDispatchers: Record<VortexWebhookDispatchType, VortexWebhookDispatcher> = {
+const vortexWebhookDispatchers: Record<
+  VortexWebhookDispatchType,
+  VortexWebhookDispatcher
+> = {
   "subscription.updated": async (ctx, event): Promise<Response> => {
     const projection = parseVortexSubscriptionUpdatedProjection(event);
     if (projection === null) {
-      return jsonResponse({ error: "invalid_subscription_payload", eventId: event.id }, 400);
+      return jsonResponse(
+        { error: "invalid_subscription_payload", eventId: event.id },
+        400
+      );
     }
 
     const result = await ctx.runMutation(
       internal.vortex_billing.projection.projectSubscriptionUpdated,
-      projection,
+      projection
     );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
   "invoice.paid": async (ctx, event): Promise<Response> => {
     const projection = parseVortexInvoiceEvent(event);
     if (projection === null) {
-      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+      return jsonResponse(
+        { error: "invalid_invoice_payload", eventId: event.id },
+        400
+      );
     }
     if (projection.eventType !== "invoice.paid") {
-      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+      return jsonResponse(
+        { error: "invalid_invoice_payload", eventId: event.id },
+        400
+      );
     }
 
-    const result = await ctx.runMutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      ...projection,
-      eventType: "invoice.paid",
-    });
+    const result = await ctx.runMutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        ...projection,
+        eventType: "invoice.paid",
+      }
+    );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
   "invoice.payment_failed": async (ctx, event): Promise<Response> => {
     const projection = parseVortexInvoiceEvent(event);
     if (projection === null) {
-      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+      return jsonResponse(
+        { error: "invalid_invoice_payload", eventId: event.id },
+        400
+      );
     }
     if (projection.eventType !== "invoice.payment_failed") {
-      return jsonResponse({ error: "invalid_invoice_payload", eventId: event.id }, 400);
+      return jsonResponse(
+        { error: "invalid_invoice_payload", eventId: event.id },
+        400
+      );
     }
 
     const result = await ctx.runMutation(
@@ -205,19 +249,22 @@ const vortexWebhookDispatchers: Record<VortexWebhookDispatchType, VortexWebhookD
       {
         ...projection,
         eventType: "invoice.payment_failed",
-      },
+      }
     );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
   "payable_object.updated": async (ctx, event): Promise<Response> => {
     const projection = parseVortexPayableObjectEvent(event);
     if (projection === null) {
-      return jsonResponse({ error: "invalid_payable_object_payload", eventId: event.id }, 400);
+      return jsonResponse(
+        { error: "invalid_payable_object_payload", eventId: event.id },
+        400
+      );
     }
 
     const result = await ctx.runMutation(
       internal.vortex_billing.projection.projectPayableObjectUpdated,
-      projection,
+      projection
     );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
@@ -226,7 +273,7 @@ const vortexWebhookDispatchers: Record<VortexWebhookDispatchType, VortexWebhookD
 export async function handleVortexBillingWebhookRequest(
   ctx: HttpActionCtx,
   request: Request,
-  secret: string,
+  secret: string
 ): Promise<Response> {
   const payload = await request.text();
   const signature = await verifyVortexWebhookSignature({
@@ -236,7 +283,10 @@ export async function handleVortexBillingWebhookRequest(
   });
 
   if (!signature.ok) {
-    return jsonResponse({ error: "invalid_signature", reason: signature.reason }, 400);
+    return jsonResponse(
+      { error: "invalid_signature", reason: signature.reason },
+      400
+    );
   }
 
   let event: VortexWebhookEnvelope | null;
@@ -250,7 +300,10 @@ export async function handleVortexBillingWebhookRequest(
   }
 
   if (!isVortexWebhookDispatchType(event.type)) {
-    return jsonResponse({ received: true, eventId: event.id, ignored: true }, 200);
+    return jsonResponse(
+      { received: true, eventId: event.id, ignored: true },
+      200
+    );
   }
 
   return await vortexWebhookDispatchers[event.type](ctx, event);

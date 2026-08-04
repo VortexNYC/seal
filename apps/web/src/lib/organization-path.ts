@@ -80,13 +80,19 @@ function ensureOrganizationPathname(slug: string, pathname: string): string {
   return `/${slug}`;
 }
 
-export function buildOrganizationPath(slug: string, target?: string | null): string {
+export function buildOrganizationPath(
+  slug: string,
+  target?: string | null
+): string {
   const { pathname, search, hash } = splitTargetPath(target);
   const normalizedPathname = ensureOrganizationPathname(slug, pathname);
   return `${normalizedPathname}${search}${hash}`;
 }
 
-export function isPathWithinOrganization(slug: string, target?: string | null): boolean {
+export function isPathWithinOrganization(
+  slug: string,
+  target?: string | null
+): boolean {
   const { pathname } = splitTargetPath(target);
   return pathname === `/${slug}` || pathname.startsWith(`/${slug}/`);
 }

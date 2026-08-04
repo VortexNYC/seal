@@ -65,7 +65,7 @@ export function validateFileForUpload(file: File): {
     errors.push("File is empty");
   } else if (file.size > MAX_FILE_SIZE) {
     errors.push(
-      `File size (${formatFileSize(file.size)}) exceeds maximum allowed size of ${getMaxFileSizeDisplay()}`,
+      `File size (${formatFileSize(file.size)}) exceeds maximum allowed size of ${getMaxFileSizeDisplay()}`
     );
   }
 

@@ -16,7 +16,12 @@ interface CitationChipProps {
   slug: string;
 }
 
-export function CitationChip({ documentId, pageNumber, documentName, slug }: CitationChipProps) {
+export function CitationChip({
+  documentId,
+  pageNumber,
+  documentName,
+  slug,
+}: CitationChipProps) {
   return (
     <Link
       to="/$slug/documents/$documentId"
@@ -25,7 +30,9 @@ export function CitationChip({ documentId, pageNumber, documentName, slug }: Cit
     >
       <FileTextIcon className="h-3 w-3" />
       {documentName}
-      {pageNumber > 0 && <span className="text-ai-accent/70">p.{pageNumber}</span>}
+      {pageNumber > 0 && (
+        <span className="text-ai-accent/70">p.{pageNumber}</span>
+      )}
     </Link>
   );
 }
@@ -37,7 +44,10 @@ const CITATION_REGEX = /<<cite:([^:]+):(\d+):([^>]+)>>/g;
  * Parse agent text and replace citation markers with CitationChip components.
  * Returns an array of React nodes (strings and CitationChip elements).
  */
-export function parseTextWithCitations(text: string, slug: string): ReactNode[] {
+export function parseTextWithCitations(
+  text: string,
+  slug: string
+): ReactNode[] {
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
 
@@ -61,7 +71,7 @@ export function parseTextWithCitations(text: string, slug: string): ReactNode[] 
         pageNumber={pageNumber}
         documentName={documentName ?? "Document"}
         slug={slug}
-      />,
+      />
     );
 
     lastIndex = match.index + match[0].length;

@@ -47,7 +47,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/formatting";
 
-export const Route = createFileRoute("/_authenticated/$slug/contacts/$contactId")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/contacts/$contactId"
+)({
   component: ContactDetailPage,
 });
 
@@ -85,14 +87,24 @@ function RelatedDocumentsSkeleton() {
   );
 }
 
-function RelatedDocumentsContent({ email, slug }: { email: string; slug: string }) {
+function RelatedDocumentsContent({
+  email,
+  slug,
+}: {
+  email: string;
+  slug: string;
+}) {
   const router = useRouter();
   const { data: documents } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.getRelatedDocuments, { email }),
+    convexQuery(api.contacts.queries.getRelatedDocuments, { email })
   );
 
   if (documents.length === 0) {
-    return <p className="text-muted-foreground py-4 text-center text-sm">No documents found</p>;
+    return (
+      <p className="text-muted-foreground py-4 text-center text-sm">
+        No documents found
+      </p>
+    );
   }
 
   return (
@@ -111,7 +123,9 @@ function RelatedDocumentsContent({ email, slug }: { email: string; slug: string 
         >
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{doc.name}</p>
-            <p className="text-muted-foreground text-xs capitalize">{doc.role}</p>
+            <p className="text-muted-foreground text-xs capitalize">
+              {doc.role}
+            </p>
           </div>
           <WorkflowStatusBadge status={doc.workflowStatus} />
         </button>
@@ -128,7 +142,9 @@ function ContactDetailContent() {
   const deleteContact = useMutation(api.contacts.mutations.remove);
 
   const { data: contact } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.getById, { id: contactId as Doc<"contacts">["_id"] }),
+    convexQuery(api.contacts.queries.getById, {
+      id: contactId as Doc<"contacts">["_id"],
+    })
   );
 
   const [editOpen, setEditOpen] = useState(false);
@@ -142,7 +158,8 @@ function ContactDetailContent() {
       toast.success("Contact deleted");
       router.navigate({ to: "/$slug/contacts", params: { slug } });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete contact";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete contact";
       toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -158,7 +175,9 @@ function ContactDetailContent() {
           variant="ghost"
           size="sm"
           className="text-muted-foreground hover:text-foreground gap-1"
-          onClick={() => router.navigate({ to: "/$slug/contacts", params: { slug } })}
+          onClick={() =>
+            router.navigate({ to: "/$slug/contacts", params: { slug } })
+          }
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back to Contacts
@@ -174,7 +193,11 @@ function ContactDetailContent() {
                 <CardTitle>{contact.fullName}</CardTitle>
                 <ContactStatusBadge status={contact.status} />
               </div>
-              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditOpen(true)}
+              >
                 <PencilIcon className="mr-2 h-4 w-4" />
                 Edit
               </Button>
@@ -184,7 +207,11 @@ function ContactDetailContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoRow icon={MailIcon} label="Email" value={contact.email} />
                 <InfoRow icon={PhoneIcon} label="Phone" value={contact.phone} />
-                <InfoRow icon={BuildingIcon} label="Company" value={contact.company} />
+                <InfoRow
+                  icon={BuildingIcon}
+                  label="Company"
+                  value={contact.company}
+                />
                 <InfoRow icon={UserIcon} label="Title" value={contact.title} />
               </div>
 
@@ -194,7 +221,9 @@ function ContactDetailContent() {
                     <StickyNoteIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                     <div>
                       <p className="text-muted-foreground text-xs">Notes</p>
-                      <p className="text-sm whitespace-pre-wrap">{contact.notes}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {contact.notes}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -233,8 +262,12 @@ function ContactDetailContent() {
                     <div className="flex items-start gap-3">
                       <CalendarIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                       <div>
-                        <p className="text-muted-foreground text-xs">Last Contacted</p>
-                        <p className="text-sm">{formatDate(contact.lastContactedAt)}</p>
+                        <p className="text-muted-foreground text-xs">
+                          Last Contacted
+                        </p>
+                        <p className="text-sm">
+                          {formatDate(contact.lastContactedAt)}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -243,7 +276,11 @@ function ContactDetailContent() {
 
               {/* Delete button */}
               <div className="mt-6 border-t pt-4">
-                <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteOpen(true)}
+                >
                   <TrashIcon className="mr-2 h-4 w-4" />
                   Delete Contact
                 </Button>
@@ -271,7 +308,11 @@ function ContactDetailContent() {
       </div>
 
       {/* Edit dialog */}
-      <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
+      <EditContactDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        contact={contact}
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -279,13 +320,17 @@ function ContactDetailContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{contact.fullName}&rdquo;? This action cannot
-              be undone.
+              Are you sure you want to delete &ldquo;{contact.fullName}&rdquo;?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} variant="destructive" disabled={isDeleting}>
+            <AlertDialogAction
+              onClick={handleDelete}
+              variant="destructive"
+              disabled={isDeleting}
+            >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

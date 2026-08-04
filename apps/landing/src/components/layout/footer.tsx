@@ -132,25 +132,37 @@ function LegalModal({
             .map((line, i) => {
               if (line.startsWith("## "))
                 return (
-                  <h2 key={i} className="text-foreground mt-0 mb-4 font-serif text-xl">
+                  <h2
+                    key={i}
+                    className="text-foreground mt-0 mb-4 font-serif text-xl"
+                  >
                     {line.slice(3)}
                   </h2>
                 );
               if (line.startsWith("### "))
                 return (
-                  <h3 key={i} className="text-foreground mt-6 mb-2 text-base font-medium">
+                  <h3
+                    key={i}
+                    className="text-foreground mt-6 mb-2 text-base font-medium"
+                  >
                     {line.slice(4)}
                   </h3>
                 );
               if (line.startsWith("- "))
                 return (
-                  <li key={i} className="text-muted-foreground ml-4 list-disc text-sm">
+                  <li
+                    key={i}
+                    className="text-muted-foreground ml-4 list-disc text-sm"
+                  >
                     {parseInline(line.slice(2), i)}
                   </li>
                 );
               if (line === "") return <div key={i} className="h-2" />;
               return (
-                <p key={i} className="text-muted-foreground text-sm leading-relaxed">
+                <p
+                  key={i}
+                  className="text-muted-foreground text-sm leading-relaxed"
+                >
                   {parseInline(line, i)}
                 </p>
               );
@@ -170,7 +182,7 @@ function parseInline(text: string, lineIndex: number): React.ReactNode {
       </strong>
     ) : (
       part
-    ),
+    )
   );
 }
 
@@ -181,7 +193,15 @@ const companyLinks = [
   { label: "Status", href: "https://status.seal.co" },
 ];
 
-function FooterNavLink({ label, to, href }: { label: string; to?: string; href?: string }) {
+function FooterNavLink({
+  label,
+  to,
+  href,
+}: {
+  label: string;
+  to?: string;
+  href?: string;
+}) {
   if (href) {
     return (
       <a
@@ -195,7 +215,10 @@ function FooterNavLink({ label, to, href }: { label: string; to?: string; href?:
     );
   }
   return (
-    <a className="text-muted-foreground hover:text-foreground text-sm transition-colors" href={to}>
+    <a
+      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+      href={to}
+    >
       {label}
     </a>
   );
@@ -205,9 +228,15 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-border border-t px-6 py-16" data-testid="site-footer">
+    <footer
+      className="border-border border-t px-6 py-16"
+      data-testid="site-footer"
+    >
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-12 sm:grid-cols-2 md:grid-cols-3" data-testid="site-footer-inner">
+        <div
+          className="grid gap-12 sm:grid-cols-2 md:grid-cols-3"
+          data-testid="site-footer-inner"
+        >
           {/* Brand */}
           <div data-testid="site-footer-brand">
             <a href="/" className="mb-4 flex items-center gap-1.5">

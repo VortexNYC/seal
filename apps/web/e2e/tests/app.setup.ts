@@ -1,6 +1,9 @@
 import { test as setup } from "@playwright/test";
 
-import { ensureWorkspace, getTestWorkspaceConfig } from "../fixtures/auth-helpers";
+import {
+  ensureWorkspace,
+  getTestWorkspaceConfig,
+} from "../fixtures/auth-helpers";
 import { authStatePath } from "../fixtures/paths";
 import { assertAppEnv } from "../fixtures/preflight";
 import {

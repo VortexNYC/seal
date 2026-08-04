@@ -76,24 +76,30 @@ describe("SendDocumentDialog", () => {
     render(<SendDocumentDialog {...buildProps({ open: true })} />);
     // The title is an <h2> with data-slot="dialog-title"; use heading role to distinguish
     // it from the "Send Document" button text also present in the DOM.
-    expect(screen.getByRole("heading", { name: "Send Document" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Send Document" })
+    ).toBeInTheDocument();
   });
 
   test("shows error when signatureFieldCount is 0", () => {
     render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 0 })} />);
-    expect(screen.getByText("Cannot send document without signature fields.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Cannot send document without signature fields.")
+    ).toBeInTheDocument();
   });
 
   test("does not show signature field error when signatureFieldCount > 0", () => {
     render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 1 })} />);
     expect(
-      screen.queryByText("Cannot send document without signature fields."),
+      screen.queryByText("Cannot send document without signature fields.")
     ).not.toBeInTheDocument();
   });
 
   test("Send button text shows 'Send Document'", () => {
     render(<SendDocumentDialog {...buildProps()} />);
-    expect(screen.getByRole("button", { name: /Send Document/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Send Document/i })
+    ).toBeInTheDocument();
   });
 
   test("Send button is disabled when signatureFieldCount is 0", () => {
@@ -111,14 +117,18 @@ describe("SendDocumentDialog", () => {
   test("shows info box about email links when signatureFieldCount > 0", () => {
     render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 1 })} />);
     expect(
-      screen.getByText(/Recipients will receive an email with a link to sign the document/i),
+      screen.getByText(
+        /Recipients will receive an email with a link to sign the document/i
+      )
     ).toBeInTheDocument();
   });
 
   test("does not show email info box when signatureFieldCount is 0", () => {
     render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 0 })} />);
     expect(
-      screen.queryByText(/Recipients will receive an email with a link to sign the document/i),
+      screen.queryByText(
+        /Recipients will receive an email with a link to sign the document/i
+      )
     ).not.toBeInTheDocument();
   });
 

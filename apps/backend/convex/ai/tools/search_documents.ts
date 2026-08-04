@@ -10,9 +10,9 @@
 import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
 
+import { toActionCacheCtx } from "../component_ctx";
 import type { SearchResult } from "../search";
 import { searchCache } from "../search";
-import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
 export const searchDocuments = createTool({
@@ -22,7 +22,9 @@ export const searchDocuments = createTool({
     "Use this when the user asks about document contents, specific clauses, terms, dates, " +
     "or any information that might be in their uploaded documents.",
   inputSchema: z.object({
-    query: z.string().describe("The search query — what to look for across documents"),
+    query: z
+      .string()
+      .describe("The search query — what to look for across documents"),
   }),
   execute: async (ctx: SealAICtx, { query }): Promise<string> => {
     try {

@@ -1,8 +1,13 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
-import type { ComponentPropsWithoutRef, ComponentRef, HTMLAttributes } from "react";
+import type {
+  ComponentPropsWithoutRef,
+  ComponentRef,
+  HTMLAttributes,
+} from "react";
 import { forwardRef } from "react";
+
 import { cn } from "~/utils/cn";
 
 const Sheet = DialogPrimitive.Root;
@@ -18,7 +23,7 @@ const SheetOverlay = forwardRef<
     className={cn(
       // vortex-allow-color: sheet scrim dims content uniformly in both themes
       "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80",
-      className,
+      className
     )}
     ref={ref}
     {...props}
@@ -42,7 +47,7 @@ const sheetVariants = cva(
     defaultVariants: {
       side: "right",
     },
-  },
+  }
 );
 
 interface SheetContentProps
@@ -50,29 +55,36 @@ interface SheetContentProps
     ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
     VariantProps<typeof sheetVariants> {}
 
-const SheetContent = forwardRef<ComponentRef<typeof DialogPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => (
-    <SheetPortal>
-      <SheetOverlay />
-      <DialogPrimitive.Content
-        className={cn(sheetVariants({ side }), className)}
-        ref={ref}
-        {...props}
-      >
-        <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none">
-          <X className="size-4" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
-        {children}
-      </DialogPrimitive.Content>
-    </SheetPortal>
-  ),
-);
+const SheetContent = forwardRef<
+  ComponentRef<typeof DialogPrimitive.Content>,
+  SheetContentProps
+>(({ side = "right", className, children, ...props }, ref) => (
+  <SheetPortal>
+    <SheetOverlay />
+    <DialogPrimitive.Content
+      className={cn(sheetVariants({ side }), className)}
+      ref={ref}
+      {...props}
+    >
+      <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none">
+        <X className="size-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+      {children}
+    </DialogPrimitive.Content>
+  </SheetPortal>
+));
 SheetContent.displayName = DialogPrimitive.Content.displayName;
 
 function SheetHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
+    <div
+      className={cn(
+        "flex flex-col space-y-2 text-center sm:text-left",
+        className
+      )}
+      {...props}
+    />
   );
 }
 

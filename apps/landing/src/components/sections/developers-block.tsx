@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 
@@ -38,14 +39,17 @@ export function StaticDevelopers() {
                 API-first, from day one
               </h2>
               <p className="text-muted-foreground mt-6 text-lg text-pretty">
-                Build document signing into your product with a few API calls. Create documents, add
-                recipients, collect signatures, and get webhook notifications — all
-                programmatically.
+                Build document signing into your product with a few API calls.
+                Create documents, add recipients, collect signatures, and get
+                webhook notifications — all programmatically.
               </p>
 
               <ul className="mt-8 space-y-3">
                 {highlights.map((item) => (
-                  <li className="text-foreground flex items-center gap-3 text-sm" key={item}>
+                  <li
+                    className="text-foreground flex items-center gap-3 text-sm"
+                    key={item}
+                  >
                     <span className="bg-primary size-1.5 shrink-0 rounded-full" />
                     {item}
                   </li>
@@ -78,10 +82,14 @@ export function StaticDevelopers() {
                   <div className="bg-border size-3 rounded-full" />
                   <div className="bg-border size-3 rounded-full" />
                 </div>
-                <span className="text-muted-foreground ml-3 text-xs font-medium">Terminal</span>
+                <span className="text-muted-foreground ml-3 text-xs font-medium">
+                  Terminal
+                </span>
               </div>
               <pre className="overflow-x-auto p-6 text-sm leading-relaxed">
-                <code className="text-foreground/80 font-mono">{codeExample}</code>
+                <code className="text-foreground/80 font-mono">
+                  {codeExample}
+                </code>
               </pre>
             </div>
           </FadeIn>

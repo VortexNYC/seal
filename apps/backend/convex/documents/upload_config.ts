@@ -114,7 +114,7 @@ export function validateFileType(fileType: string): {
  */
 export function validateFileExtension(
   fileName: string,
-  fileType: string,
+  fileType: string
 ): {
   valid: boolean;
   error?: string;
@@ -128,7 +128,8 @@ export function validateFileExtension(
     };
   }
 
-  const mimeInfo = ALLOWED_MIME_TYPES[fileType as keyof typeof ALLOWED_MIME_TYPES];
+  const mimeInfo =
+    ALLOWED_MIME_TYPES[fileType as keyof typeof ALLOWED_MIME_TYPES];
   if (mimeInfo && mimeInfo.ext !== fileExt) {
     return {
       valid: false,
@@ -145,7 +146,7 @@ export function validateFileExtension(
 export function validateFile(
   fileName: string,
   fileType: string,
-  fileSize: number,
+  fileSize: number
 ): {
   valid: boolean;
   errors: string[];

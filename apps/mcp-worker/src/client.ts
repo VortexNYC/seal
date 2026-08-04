@@ -22,7 +22,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getStringValue(
   record: Record<string, unknown>,
-  keys: readonly string[],
+  keys: readonly string[]
 ): string | undefined {
   for (const key of keys) {
     const value = record[key];
@@ -125,7 +125,10 @@ export class SealApiClient {
     });
   }
 
-  private buildUrl(path: string, query?: Record<string, RequestQueryValue>): URL {
+  private buildUrl(
+    path: string,
+    query?: Record<string, RequestQueryValue>
+  ): URL {
     const url = new URL(`${this.baseUrl}${path}`);
     if (!query) {
       return url;
@@ -144,7 +147,7 @@ export class SealApiClient {
     method: string,
     authToken: string,
     body: Record<string, unknown> | undefined,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): RequestInit {
     return {
       method,
@@ -166,11 +169,16 @@ export class SealApiClient {
     };
   }
 
-  private parseApiErrorBody(json: Record<string, unknown>, response: Response): ApiError {
+  private parseApiErrorBody(
+    json: Record<string, unknown>,
+    response: Response
+  ): ApiError {
     return {
       type: getStringValue(json, ["type", "code"]) ?? "UNKNOWN_ERROR",
       status: typeof json.status === "number" ? json.status : response.status,
-      title: getStringValue(json, ["title", "message", "detail"]) ?? response.statusText,
+      title:
+        getStringValue(json, ["title", "message", "detail"]) ??
+        response.statusText,
       details: isRecord(json.details)
         ? json.details
         : isRecord(json.errors)
@@ -224,7 +232,11 @@ export class SealApiClient {
   /**
    * Options for API requests.
    */
-  private async request<T>(method: string, path: string, options?: RequestOptions): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    options?: RequestOptions
+  ): Promise<T> {
     const url = this.buildUrl(path, options?.query);
 
     if (this.debug) {
@@ -242,8 +254,8 @@ export class SealApiClient {
           method,
           this.resolveAuthToken(options?.authToken),
           options?.body,
-          controller.signal,
-        ),
+          controller.signal
+        )
       );
 
       if (!response.ok) {
@@ -273,7 +285,7 @@ export class SealApiClient {
     path: string,
     query?: Record<string, RequestQueryValue>,
     authToken?: string,
-    timeout?: number,
+    timeout?: number
   ): Promise<T> {
     return this.request<T>("GET", path, { query, authToken, timeout });
   }
@@ -291,7 +303,7 @@ export class SealApiClient {
     body?: Record<string, unknown>,
     query?: Record<string, RequestQueryValue>,
     authToken?: string,
-    timeout?: number,
+    timeout?: number
   ): Promise<T> {
     return this.request<T>("POST", path, { body, query, authToken, timeout });
   }
@@ -309,7 +321,7 @@ export class SealApiClient {
     body?: Record<string, unknown>,
     query?: Record<string, RequestQueryValue>,
     authToken?: string,
-    timeout?: number,
+    timeout?: number
   ): Promise<T> {
     return this.request<T>("PUT", path, { body, query, authToken, timeout });
   }
@@ -326,7 +338,7 @@ export class SealApiClient {
     path: string,
     body?: Record<string, unknown>,
     authToken?: string,
-    timeout?: number,
+    timeout?: number
   ): Promise<T> {
     return this.request<T>("PATCH", path, { body, authToken, timeout });
   }
@@ -342,7 +354,7 @@ export class SealApiClient {
     path: string,
     query?: Record<string, RequestQueryValue>,
     authToken?: string,
-    timeout?: number,
+    timeout?: number
   ): Promise<T> {
     return this.request<T>("DELETE", path, { query, authToken, timeout });
   }
@@ -361,7 +373,7 @@ export class SealApiClient {
     uploadUrl: string,
     fileBuffer: Buffer,
     contentType: string,
-    timeout?: number,
+    timeout?: number
   ): Promise<string> {
     if (this.debug) {
       logger.debug(`Uploading file to storage (${fileBuffer.length} bytes)`);
@@ -436,10 +448,12 @@ export class SealApiClient {
     fileStream: ReadableStream<Uint8Array>,
     contentType: string,
     contentLength?: number,
-    timeout?: number,
+    timeout?: number
   ): Promise<string> {
     if (this.debug) {
-      logger.debug(`Streaming file upload to storage (${contentLength ?? "unknown"} bytes)`);
+      logger.debug(
+        `Streaming file upload to storage (${contentLength ?? "unknown"} bytes)`
+      );
     }
 
     // Use longer timeout for uploads (default 60s)
@@ -452,7 +466,9 @@ export class SealApiClient {
         method: "POST",
         headers: {
           "Content-Type": contentType,
-          ...(contentLength ? { "Content-Length": contentLength.toString() } : {}),
+          ...(contentLength
+            ? { "Content-Length": contentLength.toString() }
+            : {}),
         },
         body: fileStream,
         signal: controller.signal,

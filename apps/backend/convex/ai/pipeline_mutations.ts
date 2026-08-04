@@ -10,7 +10,7 @@ export const setAiProcessingStatus = internalMutation({
       v.literal("pending"),
       v.literal("processing"),
       v.literal("completed"),
-      v.literal("failed"),
+      v.literal("failed")
     ),
   },
   handler: async (ctx, args) => {

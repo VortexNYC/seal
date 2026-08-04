@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+
 import { PageBuilder } from "~/components/page-builder";
 import { getPage } from "~/lib/content/pages";
 import { generateJsonLd } from "~/lib/content/structured-data";

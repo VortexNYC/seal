@@ -54,7 +54,7 @@ type UpdateEndpointResult = { success: boolean; error?: string };
 
 function applyEndpointNameUpdate(
   updates: Record<string, unknown>,
-  name: string | undefined,
+  name: string | undefined
 ): string | null {
   if (name === undefined) {
     return null;
@@ -71,7 +71,7 @@ function applyEndpointNameUpdate(
 
 function applyEndpointUrlUpdate(
   updates: Record<string, unknown>,
-  urlValue: string | undefined,
+  urlValue: string | undefined
 ): string | null {
   if (urlValue === undefined) {
     return null;
@@ -92,7 +92,7 @@ function applyEndpointUrlUpdate(
 
 function applyEndpointEventsUpdate(
   updates: Record<string, unknown>,
-  events: string[] | undefined,
+  events: string[] | undefined
 ): string | null {
   if (events === undefined) {
     return null;
@@ -112,7 +112,7 @@ function applyEndpointEventsUpdate(
 function applyEndpointOptionalUpdates(
   updates: Record<string, unknown>,
   endpointStatus: "active" | "paused" | "disabled",
-  args: UpdateEndpointArgs,
+  args: UpdateEndpointArgs
 ): void {
   if (args.description !== undefined) {
     updates.description = args.description;
@@ -128,7 +128,7 @@ function applyEndpointOptionalUpdates(
 
 function buildEndpointUpdates(
   endpointStatus: "active" | "paused" | "disabled",
-  args: UpdateEndpointArgs,
+  args: UpdateEndpointArgs
 ): { updates: Record<string, unknown>; error?: string } {
   const updates: Record<string, unknown> = {
     updatedAt: Date.now(),
@@ -160,7 +160,9 @@ export const listEndpoints = internalQuery({
   handler: async (ctx, args): Promise<ApiWebhookEndpoint[]> => {
     const endpoints = await ctx.db
       .query("webhook_endpoints")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .collect();
 
     // Get delivery stats for each endpoint
@@ -168,13 +170,17 @@ export const listEndpoints = internalQuery({
       endpoints.map(async (endpoint) => {
         const recentDeliveries = await ctx.db
           .query("webhook_deliveries")
-          .withIndex("by_endpoint_created", (q) => q.eq("endpointId", endpoint._id))
+          .withIndex("by_endpoint_created", (q) =>
+            q.eq("endpointId", endpoint._id)
+          )
           .order("desc")
           .take(100);
 
-        const delivered = recentDeliveries.filter((d) => d.status === "delivered").length;
+        const delivered = recentDeliveries.filter(
+          (d) => d.status === "delivered"
+        ).length;
         const failed = recentDeliveries.filter(
-          (d) => d.status === "failed" || d.status === "abandoned",
+          (d) => d.status === "failed" || d.status === "abandoned"
         ).length;
 
         return {
@@ -197,7 +203,7 @@ export const listEndpoints = internalQuery({
                 : 100,
           },
         };
-      }),
+      })
     );
 
     return endpointsWithStats;
@@ -229,13 +235,17 @@ export const getEndpoint = internalQuery({
     // Get delivery stats
     const recentDeliveries = await ctx.db
       .query("webhook_deliveries")
-      .withIndex("by_endpoint_created", (q) => q.eq("endpointId", args.endpointId))
+      .withIndex("by_endpoint_created", (q) =>
+        q.eq("endpointId", args.endpointId)
+      )
       .order("desc")
       .take(100);
 
-    const delivered = recentDeliveries.filter((d) => d.status === "delivered").length;
+    const delivered = recentDeliveries.filter(
+      (d) => d.status === "delivered"
+    ).length;
     const failed = recentDeliveries.filter(
-      (d) => d.status === "failed" || d.status === "abandoned",
+      (d) => d.status === "failed" || d.status === "abandoned"
     ).length;
 
     return {
@@ -265,7 +275,8 @@ export const getEndpoint = internalQuery({
  * Generates a cryptographically secure random string.
  */
 function generateSecret(length: number): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   const randomValues = new Uint8Array(length);
   crypto.getRandomValues(randomValues);
@@ -305,7 +316,7 @@ export const createEndpoint = internalMutation({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     success: boolean;
     endpointId?: string;
@@ -341,7 +352,9 @@ export const createEndpoint = internalMutation({
     // Check endpoint limit
     const existingEndpoints = await ctx.db
       .query("webhook_endpoints")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .collect();
 
     if (existingEndpoints.length >= 10) {
@@ -392,7 +405,9 @@ export const updateEndpoint = internalMutation({
     url: v.optional(v.string()),
     events: v.optional(v.array(v.string())),
     description: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("disabled"))),
+    status: v.optional(
+      v.union(v.literal("active"), v.literal("paused"), v.literal("disabled"))
+    ),
   },
   handler: async (ctx, args): Promise<UpdateEndpointResult> => {
     const endpoint = await ctx.db.get(args.endpointId);
@@ -466,7 +481,10 @@ export const rotateSecret = internalMutation({
     organizationId: v.id("organizations"),
     endpointId: v.id("webhook_endpoints"),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; secret?: string; error?: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; secret?: string; error?: string }> => {
     const endpoint = await ctx.db.get(args.endpointId);
 
     if (!endpoint) {

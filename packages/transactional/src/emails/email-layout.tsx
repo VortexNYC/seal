@@ -23,13 +23,20 @@ interface EmailLayoutProps {
   footerText?: string;
 }
 
-export function EmailLayout({ preview, subtitle, children, footerText }: EmailLayoutProps) {
+export function EmailLayout({
+  preview,
+  subtitle,
+  children,
+  footerText,
+}: EmailLayoutProps) {
   return (
     <Html>
       <Head />
       <Preview>{preview}</Preview>
       <Tailwind>
-        <Body style={{ backgroundColor: email.background, fontFamily: FONT_STACK }}>
+        <Body
+          style={{ backgroundColor: email.background, fontFamily: FONT_STACK }}
+        >
           <Container style={containerStyle}>
             {/* Header */}
             <Section className="text-center">
@@ -53,7 +60,12 @@ export function EmailLayout({ preview, subtitle, children, footerText }: EmailLa
             {/* Footer */}
             <Section>
               {footerText && <Text style={footerTextStyle}>{footerText}</Text>}
-              <Text style={{ ...footerTextStyle, marginTop: footerText ? "12px" : "0" }}>
+              <Text
+                style={{
+                  ...footerTextStyle,
+                  marginTop: footerText ? "12px" : "0",
+                }}
+              >
                 &copy; {new Date().getFullYear()} Seal. All rights reserved.
               </Text>
             </Section>
@@ -64,7 +76,8 @@ export function EmailLayout({ preview, subtitle, children, footerText }: EmailLa
   );
 }
 
-const FONT_STACK = '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const FONT_STACK =
+  '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 const containerStyle = {
   backgroundColor: email.card,

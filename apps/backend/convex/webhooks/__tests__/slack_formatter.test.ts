@@ -8,7 +8,7 @@ type SlackContextBlock = Extract<SlackBlock, { type: "context" }>;
 
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -68,8 +68,12 @@ describe("formatSlackMessage", () => {
     });
 
     const headerBlock = result.blocks[0];
-    expect(expectSectionBlock(headerBlock).text.text).toContain(":white_check_mark:");
-    expect(expectSectionBlock(headerBlock).text.text).toContain("Document Completed");
+    expect(expectSectionBlock(headerBlock).text.text).toContain(
+      ":white_check_mark:"
+    );
+    expect(expectSectionBlock(headerBlock).text.text).toContain(
+      "Document Completed"
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -86,7 +90,9 @@ describe("formatSlackMessage", () => {
     });
 
     const detailBlock = result.blocks[1];
-    expect(expectSectionBlock(detailBlock).text.text).toContain("Service Agreement");
+    expect(expectSectionBlock(detailBlock).text.text).toContain(
+      "Service Agreement"
+    );
     expect(expectSectionBlock(detailBlock).text.text).toContain("doc_abc");
   });
 
@@ -105,7 +111,9 @@ describe("formatSlackMessage", () => {
 
     const detailBlock = result.blocks[1];
     expect(expectSectionBlock(detailBlock).text.text).toContain("Jane Doe");
-    expect(expectSectionBlock(detailBlock).text.text).toContain("jane@example.com");
+    expect(expectSectionBlock(detailBlock).text.text).toContain(
+      "jane@example.com"
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -122,7 +130,9 @@ describe("formatSlackMessage", () => {
     });
 
     const detailBlock = result.blocks[1];
-    expect(expectSectionBlock(detailBlock).text.text).toContain("Terms unacceptable");
+    expect(expectSectionBlock(detailBlock).text.text).toContain(
+      "Terms unacceptable"
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -139,7 +149,9 @@ describe("formatSlackMessage", () => {
     });
 
     const lastBlock = result.blocks[result.blocks.length - 1];
-    const firstElement = sealAssertPresent(expectContextBlock(lastBlock).elements[0]);
+    const firstElement = sealAssertPresent(
+      expectContextBlock(lastBlock).elements[0]
+    );
     expect(firstElement.text).toContain("document.sent");
     expect(firstElement.text).toContain("Seal");
   });
@@ -159,7 +171,9 @@ describe("formatSlackMessage", () => {
 
     const headerBlock = result.blocks[0];
     expect(expectSectionBlock(headerBlock).text.text).toContain(":bell:");
-    expect(expectSectionBlock(headerBlock).text.text).toContain("custom.unknown_event");
+    expect(expectSectionBlock(headerBlock).text.text).toContain(
+      "custom.unknown_event"
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -179,7 +193,9 @@ describe("formatSlackMessage", () => {
     expect(expectSectionBlock(headerBlock).text.text).toContain(":wave:");
 
     const detailBlock = result.blocks[1];
-    expect(expectSectionBlock(detailBlock).text.text).toContain("This is a test webhook from Seal");
+    expect(expectSectionBlock(detailBlock).text.text).toContain(
+      "This is a test webhook from Seal"
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -224,18 +240,21 @@ describe("formatSlackMessage", () => {
     "test.ping",
   ];
 
-  test.each(knownEvents)("event %s produces a valid message without bell fallback", (eventType) => {
-    const result = formatSlackMessage({
-      id: "evt_123",
-      type: eventType,
-      api_version: "2025-01-01",
-      created_at: "2026-03-12T00:00:00.000Z",
-      organization_id: "org_123",
-      data: {},
-    });
+  test.each(knownEvents)(
+    "event %s produces a valid message without bell fallback",
+    (eventType) => {
+      const result = formatSlackMessage({
+        id: "evt_123",
+        type: eventType,
+        api_version: "2025-01-01",
+        created_at: "2026-03-12T00:00:00.000Z",
+        organization_id: "org_123",
+        data: {},
+      });
 
-    const headerBlock = result.blocks[0];
-    // Should NOT use the fallback :bell: emoji for known events
-    expect(expectSectionBlock(headerBlock).text.text).not.toContain(":bell:");
-  });
+      const headerBlock = result.blocks[0];
+      // Should NOT use the fallback :bell: emoji for known events
+      expect(expectSectionBlock(headerBlock).text.text).not.toContain(":bell:");
+    }
+  );
 });

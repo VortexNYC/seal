@@ -54,3 +54,4 @@ minimumReleaseAgeExclude:
 
 overrides:
   "@tanstack/router-core": "1.171.16"
+  "@convex-dev/agent": "0.6.4"

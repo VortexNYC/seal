@@ -58,7 +58,8 @@ export const ACCESS_ERRORS = {
   DOCUMENT_NOT_FOUND: "Document not found",
   NO_ACCESS: "You don't have access to this document",
   NOT_ORG_MEMBER: "You are not a member of this organization",
-  MANAGE_REQUIRED: "Only the document owner or managers can perform this action",
+  MANAGE_REQUIRED:
+    "Only the document owner or managers can perform this action",
   OWNER_REQUIRED: "Only the document owner can perform this action",
 } as const;
 
@@ -82,7 +83,7 @@ export const ACCESS_ERRORS = {
 export async function checkDocumentAccess(
   ctx: DbContext,
   userId: Id<"users">,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ): Promise<DocumentAccessResult> {
   const result: DocumentAccessResult = {
     hasAccess: false,
@@ -101,7 +102,11 @@ export async function checkDocumentAccess(
   }
 
   // 2. Check organization membership
-  const member = await getActiveMembership(ctx, userId, document.organizationId);
+  const member = await getActiveMembership(
+    ctx,
+    userId,
+    document.organizationId
+  );
   if (!member) {
     return result; // Not an active member, no access
   }
@@ -118,7 +123,9 @@ export async function checkDocumentAccess(
   if (document.sharingMode === "specific") {
     const access = await ctx.db
       .query("document_access")
-      .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+      .withIndex("by_document_user", (q) =>
+        q.eq("documentId", document._id).eq("userId", userId)
+      )
       .first();
 
     if (access && access.revokedAt === undefined) {
@@ -155,7 +162,7 @@ export async function requireDocumentAccess(
   ctx: DbContext,
   userId: Id<"users">,
   document: Doc<"documents">,
-  errorMessage?: string,
+  errorMessage?: string
 ): Promise<DocumentAccessResult> {
   const result = await checkDocumentAccess(ctx, userId, document);
 
@@ -180,7 +187,7 @@ export async function requireDocumentAccess(
 export async function canManageDocument(
   ctx: DbContext,
   userId: Id<"users">,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ): Promise<boolean> {
   // Owner can always manage
   if (document.ownerId === userId) {
@@ -190,10 +197,16 @@ export async function canManageDocument(
   // Check for "manage" permission level
   const access = await ctx.db
     .query("document_access")
-    .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+    .withIndex("by_document_user", (q) =>
+      q.eq("documentId", document._id).eq("userId", userId)
+    )
     .first();
 
-  return access !== null && access.permissionLevel === "manage" && access.revokedAt === undefined;
+  return (
+    access !== null &&
+    access.permissionLevel === "manage" &&
+    access.revokedAt === undefined
+  );
 }
 
 /**
@@ -209,7 +222,7 @@ export async function requireManageAccess(
   ctx: DbContext,
   userId: Id<"users">,
   document: Doc<"documents">,
-  errorMessage?: string,
+  errorMessage?: string
 ): Promise<void> {
   const canManage = await canManageDocument(ctx, userId, document);
 
@@ -229,7 +242,7 @@ export async function requireManageAccess(
 export function requireOwnership(
   userId: Id<"users">,
   document: Doc<"documents">,
-  errorMessage?: string,
+  errorMessage?: string
 ): void {
   if (document.ownerId !== userId) {
     throw new ConvexError(errorMessage ?? ACCESS_ERRORS.OWNER_REQUIRED);
@@ -247,13 +260,20 @@ export function requireOwnership(
 export async function getActiveMembership(
   ctx: DbContext,
   userId: Id<"users">,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<AuthMember | null> {
-  const [user, organization] = await Promise.all([ctx.db.get(userId), ctx.db.get(organizationId)]);
+  const [user, organization] = await Promise.all([
+    ctx.db.get(userId),
+    ctx.db.get(organizationId),
+  ]);
   if (!user || !organization) {
     return null;
   }
-  const member = await resolveComponentMembershipForOrganization(ctx, user, organization);
+  const member = await resolveComponentMembershipForOrganization(
+    ctx,
+    user,
+    organization
+  );
 
   if (!member || member.status !== "active") {
     return null;
@@ -283,7 +303,7 @@ export async function requireActiveMembership(
   ctx: DbContext,
   userId: Id<"users">,
   organizationId: Id<"organizations">,
-  errorMessage?: string,
+  errorMessage?: string
 ): Promise<AuthMember> {
   const member = await getActiveMembership(ctx, userId, organizationId);
 
@@ -308,7 +328,7 @@ export async function requireActiveMembership(
 export async function getDocumentOrThrow(
   ctx: DbContext,
   documentId: Id<"documents">,
-  errorMessage?: string,
+  errorMessage?: string
 ): Promise<Doc<"documents">> {
   const document = await ctx.db.get(documentId);
 
@@ -337,7 +357,7 @@ export async function getDocumentOrThrow(
 export async function getDocumentWithAccessCheck(
   ctx: DbContext,
   userId: Id<"users">,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<{ document: Doc<"documents">; access: DocumentAccessResult }> {
   const document = await getDocumentOrThrow(ctx, documentId);
   const access = await requireDocumentAccess(ctx, userId, document);
@@ -359,7 +379,7 @@ export async function getDocumentWithAccessCheck(
 export async function getDocumentWithManageCheck(
   ctx: DbContext,
   userId: Id<"users">,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<Doc<"documents">> {
   const document = await getDocumentOrThrow(ctx, documentId);
   await requireManageAccess(ctx, userId, document);
@@ -381,7 +401,7 @@ export async function getDocumentWithManageCheck(
 export async function filterAccessibleDocuments(
   ctx: DbContext,
   userId: Id<"users">,
-  documents: Doc<"documents">[],
+  documents: Doc<"documents">[]
 ): Promise<Doc<"documents">[]> {
   const accessible: Doc<"documents">[] = [];
 

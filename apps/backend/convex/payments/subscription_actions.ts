@@ -21,7 +21,7 @@ async function resolveAuthContext(ctx: ActionCtx): Promise<{
 
   const user: Doc<"users"> | null = await ctx.runQuery(
     internal.organizations.helpers.getUserByAuthSubject,
-    { authSubject: identity.subject },
+    { authSubject: identity.subject }
   );
 
   if (!user) {
@@ -34,7 +34,7 @@ async function resolveAuthContext(ctx: ActionCtx): Promise<{
 
   const organization: Doc<"organizations"> | null = await ctx.runQuery(
     internal.organizations.helpers.getOrganizationById,
-    { organizationId: user.activeOrganizationId },
+    { organizationId: user.activeOrganizationId }
   );
 
   if (!organization) {
@@ -46,11 +46,14 @@ async function resolveAuthContext(ctx: ActionCtx): Promise<{
 
 async function getOrgMemberCount(
   ctx: ActionCtx,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<number> {
-  const count: number = await ctx.runQuery(internal.organizations.helpers.getActiveMemberCount, {
-    organizationId,
-  });
+  const count: number = await ctx.runQuery(
+    internal.organizations.helpers.getActiveMemberCount,
+    {
+      organizationId,
+    }
+  );
   return Math.max(count, 1);
 }
 
@@ -66,12 +69,13 @@ export const createCheckoutSession = action({
     const memberCount = await getOrgMemberCount(ctx, organization._id);
 
     const catalogPrice = await ctx.runQuery(
-      internal.vortex_billing.catalog_queries.getActiveVortexSubscriptionPriceByLookupKey,
-      { lookupKey: args.lookupKey },
+      internal.vortex_billing.catalog_queries
+        .getActiveVortexSubscriptionPriceByLookupKey,
+      { lookupKey: args.lookupKey }
     );
     if (catalogPrice === null || catalogPrice.vortexPriceId === undefined) {
       throw new ConvexError(
-        `Seal subscription price not found for Vortex checkout lookupKey: ${args.lookupKey}. Run Vortex catalog sync before creating checkout.`,
+        `Seal subscription price not found for Vortex checkout lookupKey: ${args.lookupKey}. Run Vortex catalog sync before creating checkout.`
       );
     }
 
@@ -94,7 +98,9 @@ export const createCustomerPortalSession = action({
   },
   handler: async (ctx, _args): Promise<{ url: string }> => {
     const { organization } = await resolveAuthContext(ctx);
-    const url = await createVortexBillingPortalSession({ organizationId: organization._id });
+    const url = await createVortexBillingPortalSession({
+      organizationId: organization._id,
+    });
 
     return { url };
   },
@@ -106,7 +112,9 @@ export const pauseSubscription = action({
     subscriptionId: v.string(),
   },
   handler: async (_ctx, _args) => {
-    throw new ConvexError("Subscription pause must be handled by Vortex Billing");
+    throw new ConvexError(
+      "Subscription pause must be handled by Vortex Billing"
+    );
   },
 });
 
@@ -116,7 +124,9 @@ export const resumeSubscription = action({
     subscriptionId: v.string(),
   },
   handler: async (_ctx, _args) => {
-    throw new ConvexError("Subscription resume must be handled by Vortex Billing");
+    throw new ConvexError(
+      "Subscription resume must be handled by Vortex Billing"
+    );
   },
 });
 
@@ -126,6 +136,8 @@ export const cancelSubscription = action({
     subscriptionId: v.string(),
   },
   handler: async (_ctx, _args) => {
-    throw new ConvexError("Subscription cancellation must be handled by Vortex Billing");
+    throw new ConvexError(
+      "Subscription cancellation must be handled by Vortex Billing"
+    );
   },
 });

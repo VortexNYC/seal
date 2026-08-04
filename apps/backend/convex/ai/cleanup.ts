@@ -47,7 +47,10 @@ export const cleanupDismissedSuggestions = internalMutation({
     const old = await ctx.db
       .query("ai_field_suggestions")
       .filter((q) =>
-        q.and(q.eq(q.field("status"), "dismissed"), q.lt(q.field("_creationTime"), cutoff)),
+        q.and(
+          q.eq(q.field("status"), "dismissed"),
+          q.lt(q.field("_creationTime"), cutoff)
+        )
       )
       .take(BATCH_SIZE);
 
@@ -56,7 +59,9 @@ export const cleanupDismissedSuggestions = internalMutation({
     }
 
     if (old.length > 0) {
-      console.info(`[AI Cleanup] Deleted ${old.length} old dismissed suggestions`);
+      console.info(
+        `[AI Cleanup] Deleted ${old.length} old dismissed suggestions`
+      );
     }
   },
 });
@@ -71,7 +76,10 @@ export const cleanupDismissedAnnotations = internalMutation({
     const old = await ctx.db
       .query("ai_document_annotations")
       .filter((q) =>
-        q.and(q.eq(q.field("status"), "dismissed"), q.lt(q.field("createdAt"), cutoff)),
+        q.and(
+          q.eq(q.field("status"), "dismissed"),
+          q.lt(q.field("createdAt"), cutoff)
+        )
       )
       .take(BATCH_SIZE);
 
@@ -80,7 +88,9 @@ export const cleanupDismissedAnnotations = internalMutation({
     }
 
     if (old.length > 0) {
-      console.info(`[AI Cleanup] Deleted ${old.length} old dismissed annotations`);
+      console.info(
+        `[AI Cleanup] Deleted ${old.length} old dismissed annotations`
+      );
     }
   },
 });

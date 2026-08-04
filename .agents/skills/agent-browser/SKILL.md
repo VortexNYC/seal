@@ -332,7 +332,10 @@ export AGENT_BROWSER_ACTION_POLICY=./policy.json
 Example `policy.json`:
 
 ```json
-{ "default": "deny", "allow": ["navigate", "snapshot", "click", "scroll", "wait", "get"] }
+{
+  "default": "deny",
+  "allow": ["navigate", "snapshot", "click", "scroll", "wait", "get"]
+}
 ```
 
 Auth vault operations (`auth login`, etc.) bypass action policy but domain allowlist still applies.

@@ -84,7 +84,9 @@ export function TeamSwitcher({
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
-            <DropdownMenuLabel className="text-muted-foreground text-xs">Teams</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
+              Teams
+            </DropdownMenuLabel>
             {teams.map((team, index) => (
               <DropdownMenuItem
                 key={team.slug}

@@ -1,7 +1,12 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { BadgeDollarSign, CircleDollarSign, Clock, Receipt } from "lucide-react";
+import {
+  BadgeDollarSign,
+  CircleDollarSign,
+  Clock,
+  Receipt,
+} from "lucide-react";
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -44,7 +49,10 @@ function formatDate(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const STATUS_VARIANTS: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
   paid: "default",
   open: "secondary",
   void: "outline",
@@ -55,22 +63,27 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 
 function PaymentsOverviewPage() {
   const { slug } = Route.useParams();
-  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
-    slug,
-  });
+  const merchantAccount = useQuery(
+    api.payments.merchant_account_queries.getMerchantAccount,
+    {
+      slug,
+    }
+  );
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "open" | "void">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "paid" | "open" | "void"
+  >("all");
 
   const stats = useQuery(
     api.payments.queries.getRevenueStats,
-    merchantAccount?.status === "connected" ? { slug } : "skip",
+    merchantAccount?.status === "connected" ? { slug } : "skip"
   );
 
   const transactions = useQuery(
     api.payments.queries.getTransactionList,
     merchantAccount?.status === "connected"
       ? { slug, statusFilter: statusFilter === "all" ? "all" : statusFilter }
-      : "skip",
+      : "skip"
   );
 
   if (merchantAccount === undefined) {
@@ -78,11 +91,16 @@ function PaymentsOverviewPage() {
   }
 
   if (merchantAccount.status !== "connected") {
-    return <NoVortexMerchantAccountState slug={slug} title="Payments Overview" />;
+    return (
+      <NoVortexMerchantAccountState slug={slug} title="Payments Overview" />
+    );
   }
 
   return (
-    <PageWrapper title="Payments Overview" description="Revenue summary and recent transactions.">
+    <PageWrapper
+      title="Payments Overview"
+      description="Revenue summary and recent transactions."
+    >
       {/* Revenue Cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -103,7 +121,9 @@ function PaymentsOverviewPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Monthly Revenue
+            </CardTitle>
             <BadgeDollarSign className="text-muted-foreground size-4" />
           </CardHeader>
           <CardContent>
@@ -170,7 +190,10 @@ function PaymentsOverviewPage() {
         {transactions === undefined ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton className="h-12 w-full" key={`skeleton-${i.toString()}`} />
+              <Skeleton
+                className="h-12 w-full"
+                key={`skeleton-${i.toString()}`}
+              />
             ))}
           </div>
         ) : transactions.length === 0 ? (
@@ -178,7 +201,8 @@ function PaymentsOverviewPage() {
             <Receipt className="mx-auto mb-3 size-8 opacity-50" />
             <p className="text-sm">No transactions yet</p>
             <p className="mt-1 text-xs">
-              Transactions will appear here when recipients make payments on your documents.
+              Transactions will appear here when recipients make payments on
+              your documents.
             </p>
           </div>
         ) : (
@@ -201,7 +225,9 @@ function PaymentsOverviewPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {tx.customerName && <span className="text-sm">{tx.customerName}</span>}
+                        {tx.customerName && (
+                          <span className="text-sm">{tx.customerName}</span>
+                        )}
                         <span className="text-muted-foreground block text-xs">
                           {tx.customerEmail}
                         </span>
@@ -211,10 +237,14 @@ function PaymentsOverviewPage() {
                       {formatCurrency(tx.amountDue, tx.currency)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANTS[tx.status] ?? "outline"}>{tx.status}</Badge>
+                      <Badge variant={STATUS_VARIANTS[tx.status] ?? "outline"}>
+                        {tx.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {tx.paidAt ? formatDate(tx.paidAt) : formatDate(tx.createdAt)}
+                      {tx.paidAt
+                        ? formatDate(tx.paidAt)
+                        : formatDate(tx.createdAt)}
                     </TableCell>
                   </TableRow>
                 ))}

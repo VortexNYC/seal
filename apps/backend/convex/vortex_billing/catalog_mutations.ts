@@ -5,13 +5,13 @@ import { internalMutation } from "../_generated/server";
 const productStatusValidator = v.union(
   v.literal("active"),
   v.literal("archived"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
 
 const priceStatusValidator = v.union(
   v.literal("active"),
   v.literal("archived"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
 
 const productMetadataValidator = v.object({
@@ -37,7 +37,9 @@ export const upsertProductByVortexId = internalMutation({
     const now = Date.now();
     const existingProduct = await ctx.db
       .query("subscription_products")
-      .withIndex("by_vortex_product_id", (q) => q.eq("vortexProductId", args.vortexProductId))
+      .withIndex("by_vortex_product_id", (q) =>
+        q.eq("vortexProductId", args.vortexProductId)
+      )
       .first();
 
     if (existingProduct !== null) {
@@ -87,7 +89,7 @@ export const upsertPriceByVortexId = internalMutation({
       v.object({
         interval: v.string(),
         intervalCount: v.number(),
-      }),
+      })
     ),
     unitAmount: v.optional(v.number()),
     usageType: v.optional(v.string()),
@@ -103,7 +105,9 @@ export const upsertPriceByVortexId = internalMutation({
     const now = Date.now();
     const existingPrice = await ctx.db
       .query("subscription_prices")
-      .withIndex("by_vortex_price_id", (q) => q.eq("vortexPriceId", args.vortexPriceId))
+      .withIndex("by_vortex_price_id", (q) =>
+        q.eq("vortexPriceId", args.vortexPriceId)
+      )
       .first();
 
     if (existingPrice !== null) {

@@ -203,7 +203,7 @@ export interface ApiAuthContext {
  */
 export async function resolveApiAuth(
   ctx: ActionCtx,
-  authHeader: string | null,
+  authHeader: string | null
 ): Promise<ApiAuthContext> {
   if (!authHeader) {
     throw new ApiError(401, "Missing Authorization header");
@@ -211,7 +211,10 @@ export async function resolveApiAuth(
 
   const [scheme, token] = authHeader.split(" ");
   if (scheme?.toLowerCase() !== "bearer" || !token) {
-    throw new ApiError(401, "Invalid Authorization format. Use: Bearer <api_key>");
+    throw new ApiError(
+      401,
+      "Invalid Authorization format. Use: Bearer <api_key>"
+    );
   }
 
   // Step 1: Verify API key with Clerk
@@ -309,8 +312,10 @@ export async function resolveApiAuth(
     clerkUserId,
     subjectType: isOrgKey ? "organization" : "user",
     hasScope: (scope: string) => scopes.includes(scope),
-    hasAnyScope: (checkScopes: string[]) => checkScopes.some((s) => scopes.includes(s)),
-    hasAllScopes: (checkScopes: string[]) => checkScopes.every((s) => scopes.includes(s)),
+    hasAnyScope: (checkScopes: string[]) =>
+      checkScopes.some((s) => scopes.includes(s)),
+    hasAllScopes: (checkScopes: string[]) =>
+      checkScopes.every((s) => scopes.includes(s)),
   };
 }
 ````
@@ -372,7 +377,7 @@ export const getMembership = internalQuery({
     return ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId)
       )
       .first();
   },
@@ -444,9 +449,17 @@ API scopes are **separate** from internal permissions but can be mapped:
  */
 export const SCOPE_PERMISSION_MAP = {
   "seal:documents:read": ["documents:view"],
-  "seal:documents:write": ["documents:create", "documents:edit", "documents:delete"],
+  "seal:documents:write": [
+    "documents:create",
+    "documents:edit",
+    "documents:delete",
+  ],
   "seal:templates:read": ["templates:view", "templates:read"],
-  "seal:templates:write": ["templates:create", "templates:edit", "templates:delete"],
+  "seal:templates:write": [
+    "templates:create",
+    "templates:edit",
+    "templates:delete",
+  ],
   "seal:recipients:read": ["documents:view"], // Recipients are part of documents
   "seal:recipients:write": ["documents:edit"],
   "seal:signatures:read": ["documents:view", "audit:view"],
@@ -459,7 +472,7 @@ export const SCOPE_PERMISSION_MAP = {
  */
 export function canUserUseScope(
   userPermissions: string[],
-  scope: keyof typeof SCOPE_PERMISSION_MAP,
+  scope: keyof typeof SCOPE_PERMISSION_MAP
 ): boolean {
   const requiredPerms = SCOPE_PERMISSION_MAP[scope];
   return requiredPerms.some((perm) => userPermissions.includes(perm));
@@ -610,14 +623,19 @@ export interface ApiKeyContext {
  * console.log(`Request from: ${apiKey.subject}`);
  * ```
  */
-export async function validateApiKey(authHeader: string | null): Promise<ApiKeyContext> {
+export async function validateApiKey(
+  authHeader: string | null
+): Promise<ApiKeyContext> {
   if (!authHeader) {
     throw new ApiError(401, "Missing Authorization header");
   }
 
   const [scheme, token] = authHeader.split(" ");
   if (scheme?.toLowerCase() !== "bearer" || !token) {
-    throw new ApiError(401, "Invalid Authorization header format. Use: Bearer <api_key>");
+    throw new ApiError(
+      401,
+      "Invalid Authorization header format. Use: Bearer <api_key>"
+    );
   }
 
   try {
@@ -634,8 +652,10 @@ export async function validateApiKey(authHeader: string | null): Promise<ApiKeyC
       claims: apiKey.claims || {},
       expiresAt: apiKey.expiresAt ? new Date(apiKey.expiresAt) : null,
       hasScope: (scope: string) => context.scopes.includes(scope),
-      hasAnyScope: (scopes: string[]) => scopes.some((s) => context.scopes.includes(s)),
-      hasAllScopes: (scopes: string[]) => scopes.every((s) => context.scopes.includes(s)),
+      hasAnyScope: (scopes: string[]) =>
+        scopes.some((s) => context.scopes.includes(s)),
+      hasAllScopes: (scopes: string[]) =>
+        scopes.every((s) => context.scopes.includes(s)),
     };
 
     return context;
@@ -664,10 +684,15 @@ export async function validateApiKey(authHeader: string | null): Promise<ApiKeyC
  * });
  * ```
  */
-export async function authenticateApiRequest(request: Request): Promise<ApiKeyContext> {
-  const { isAuthenticated, toAuth } = await clerkClient.authenticateRequest(request, {
-    acceptsToken: "api_key",
-  });
+export async function authenticateApiRequest(
+  request: Request
+): Promise<ApiKeyContext> {
+  const { isAuthenticated, toAuth } = await clerkClient.authenticateRequest(
+    request,
+    {
+      acceptsToken: "api_key",
+    }
+  );
 
   if (!isAuthenticated) {
     throw new ApiError(401, "Invalid or missing API key");
@@ -1323,7 +1348,11 @@ export const webhookEndpoints = defineTable({
    * - disabled: Disabled due to repeated failures
    * @type {"active" | "paused" | "disabled"}
    */
-  status: v.union(v.literal("active"), v.literal("paused"), v.literal("disabled")),
+  status: v.union(
+    v.literal("active"),
+    v.literal("paused"),
+    v.literal("disabled")
+  ),
 
   /**
    * API version for webhook payload format.
@@ -1412,7 +1441,7 @@ export const webhookDeliveries = defineTable({
     v.literal("pending"),
     v.literal("delivered"),
     v.literal("failed"),
-    v.literal("abandoned"),
+    v.literal("abandoned")
   ),
 
   /**

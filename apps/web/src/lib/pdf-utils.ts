@@ -16,7 +16,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
 export async function generateThumbnailFromUrl(
   url: string,
   maxWidth = 200,
-  maxHeight = 300,
+  maxHeight = 300
 ): Promise<string | null> {
   try {
     const response = await fetch(url);
@@ -32,7 +32,10 @@ export async function generateThumbnailFromUrl(
 
     // Calculate viewport scale to fit within maxWidth x maxHeight
     const viewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(maxWidth / viewport.width, maxHeight / viewport.height);
+    const scale = Math.min(
+      maxWidth / viewport.width,
+      maxHeight / viewport.height
+    );
     const scaledViewport = page.getViewport({ scale });
 
     // Create canvas

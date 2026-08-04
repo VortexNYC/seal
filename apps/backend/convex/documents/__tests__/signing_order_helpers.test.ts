@@ -16,7 +16,7 @@ function makeRecipient(
   overrides: Partial<Doc<"document_recipients">> & {
     order?: number;
     status?: Doc<"document_recipients">["status"];
-  } = {},
+  } = {}
 ): Doc<"document_recipients"> {
   idCounter++;
   return {
@@ -150,7 +150,9 @@ describe("isRecipientGroupActive", () => {
     const group2 = makeRecipient({ order: 2, status: "pending" }); // Not terminal!
     const group3 = makeRecipient({ order: 3, status: "pending" });
 
-    expect(isRecipientGroupActive(group3, [group1, group2, group3])).toBe(false);
+    expect(isRecipientGroupActive(group3, [group1, group2, group3])).toBe(
+      false
+    );
   });
 
   test("handles recipient with undefined order (treated as 0)", () => {
@@ -174,7 +176,9 @@ describe("isRecipientGroupActive", () => {
     const prev2 = makeRecipient({ order: 1, status: "pending" });
     const current = makeRecipient({ order: 2, status: "pending" });
 
-    expect(isRecipientGroupActive(current, [prev1, prev2, current])).toBe(false);
+    expect(isRecipientGroupActive(current, [prev1, prev2, current])).toBe(
+      false
+    );
   });
 });
 
@@ -195,7 +199,11 @@ describe("findFirstIncompleteGroup", () => {
 
   test("returns empty array when all groups are complete", () => {
     const r1 = makeRecipient({ order: 1, status: "signed" });
-    const r2 = makeRecipient({ order: 2, status: "approved", role: "approver" });
+    const r2 = makeRecipient({
+      order: 2,
+      status: "approved",
+      role: "approver",
+    });
 
     const result = findFirstIncompleteGroup([r1, r2]);
     expect(result).toEqual([]);

@@ -3,7 +3,11 @@ import { v } from "convex/values";
 
 export const dataExportsTable = defineTable({
   userId: v.id("users"),
-  status: v.union(v.literal("processing"), v.literal("completed"), v.literal("failed")),
+  status: v.union(
+    v.literal("processing"),
+    v.literal("completed"),
+    v.literal("failed")
+  ),
   storageId: v.optional(v.string()),
   error: v.optional(v.string()),
   requestedAt: v.number(),

@@ -41,7 +41,9 @@ describe("PaymentFieldSummary", () => {
   test("shows loading spinner when query returns undefined", () => {
     mockUseQuery.mockReturnValue(undefined);
 
-    const { container } = render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} />);
+    const { container } = render(
+      <PaymentFieldSummary fieldId={FAKE_FIELD_ID} />
+    );
 
     const spinner = container.querySelector(".animate-spin");
     expect(spinner).toBeInTheDocument();
@@ -81,13 +83,18 @@ describe("PaymentFieldSummary", () => {
       makeConfig({
         paymentStatus: "awaiting",
         hostedInvoiceUrl: "https://billing.vortex.test/test",
-      }),
+      })
     );
 
-    render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />);
+    render(
+      <PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />
+    );
 
     const payNowLink = screen.getByRole("link");
-    expect(payNowLink).toHaveAttribute("href", "https://billing.vortex.test/test");
+    expect(payNowLink).toHaveAttribute(
+      "href",
+      "https://billing.vortex.test/test"
+    );
     expect(payNowLink).toHaveTextContent("Pay with Vortex Payments");
   });
 
@@ -96,16 +103,22 @@ describe("PaymentFieldSummary", () => {
       makeConfig({
         paymentStatus: "awaiting",
         hostedInvoiceUrl: "https://billing.vortex.test/test",
-      }),
+      })
     );
 
-    render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} token="signing-token" showInlinePayment />);
+    render(
+      <PaymentFieldSummary
+        fieldId={FAKE_FIELD_ID}
+        token="signing-token"
+        showInlinePayment
+      />
+    );
 
     expect(screen.getByText("Pay with Vortex Payments")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Payment is collected through Vortex Payments before this document can be completed.",
-      ),
+        "Payment is collected through Vortex Payments before this document can be completed."
+      )
     ).toBeInTheDocument();
   });
 
@@ -114,20 +127,26 @@ describe("PaymentFieldSummary", () => {
       makeConfig({
         paymentStatus: "paid",
         hostedInvoiceUrl: "https://billing.vortex.test/test",
-      }),
+      })
     );
 
-    render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />);
+    render(
+      <PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />
+    );
 
-    expect(screen.queryByText("Pay with Vortex Payments")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Pay with Vortex Payments")
+    ).not.toBeInTheDocument();
   });
 
   test("shows quantity multiplier for items with quantity > 1", () => {
     mockUseQuery.mockReturnValue(
       makeConfig({
-        items: [{ id: "1", description: "Widget", quantity: 3, unitPrice: 1000 }],
+        items: [
+          { id: "1", description: "Widget", quantity: 3, unitPrice: 1000 },
+        ],
         totalAmountCents: 3000,
-      }),
+      })
     );
 
     render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} />);

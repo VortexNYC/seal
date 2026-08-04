@@ -44,7 +44,9 @@ function AcceptInviteRoute() {
     redeemInvitation({ token })
       .then(() => navigate({ to: "/app", replace: true }))
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to accept invitation");
+        setError(
+          err instanceof Error ? err.message : "Failed to accept invitation"
+        );
       });
   }, [isLoaded, isSignedIn, token, redeemInvitation, navigate]);
 
@@ -70,7 +72,9 @@ function AcceptInviteRoute() {
         ) : (
           <>
             <Loader />
-            <p className="text-muted-foreground text-sm">Joining workspace...</p>
+            <p className="text-muted-foreground text-sm">
+              Joining workspace...
+            </p>
           </>
         )}
       </div>

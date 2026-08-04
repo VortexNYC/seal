@@ -5,7 +5,7 @@ const repoRoot = new URL("..", import.meta.url).pathname;
 const webSrcPath = join(repoRoot, "apps/web/src");
 const vortexSurfacePath = join(
   repoRoot,
-  "apps/web/src/components/payments/vortex-merchant-operational-surface.tsx",
+  "apps/web/src/components/payments/vortex-merchant-operational-surface.tsx"
 );
 const operationalRoutePaths = [
   "apps/web/src/routes/_authenticated/$slug/payments/balances.tsx",
@@ -38,7 +38,7 @@ for (const sourcePath of collectSourceFiles(webSrcPath)) {
   for (const forbiddenFragment of forbiddenRouteFragments) {
     if (source.includes(forbiddenFragment)) {
       failures.push(
-        `${relativePath} still contains non-Vortex Connect fragment: ${forbiddenFragment}`,
+        `${relativePath} still contains non-Vortex Connect fragment: ${forbiddenFragment}`
       );
     }
   }
@@ -73,7 +73,9 @@ for (const requiredSurfaceFragment of [
   "merchant-tax-documents-replacement",
 ]) {
   if (!vortexSurface.includes(requiredSurfaceFragment)) {
-    failures.push(`Vortex operational surface missing fragment: ${requiredSurfaceFragment}`);
+    failures.push(
+      `Vortex operational surface missing fragment: ${requiredSurfaceFragment}`
+    );
   }
 }
 
@@ -86,13 +88,17 @@ if (failures.length > 0) {
 }
 
 console.log("Vortex operational payments adoption proof passed:");
-console.log("- Non-Vortex embeds are removed from Seal operational payment routes.");
 console.log(
-  "- Balances, payouts, and history render through @vortexnyc/payments-react components.",
+  "- Non-Vortex embeds are removed from Seal operational payment routes."
 );
-console.log("- Disputes and tax documents render explicit Vortex-owned replacement states.");
 console.log(
-  "- Non-Vortex Connect packages, theme helpers, and shared wrapper components stay deleted.",
+  "- Balances, payouts, and history render through @vortexnyc/payments-react components."
+);
+console.log(
+  "- Disputes and tax documents render explicit Vortex-owned replacement states."
+);
+console.log(
+  "- Non-Vortex Connect packages, theme helpers, and shared wrapper components stay deleted."
 );
 
 function collectSourceFiles(root: string): string[] {

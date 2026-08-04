@@ -17,8 +17,12 @@ interface NeedsAttentionProps {
   slug: string;
 }
 
-export function NeedsAttention({ slug }: NeedsAttentionProps): React.ReactElement | null {
-  const attention = useQuery(api.dashboard.analytics_queries.getDocumentsNeedingAttention);
+export function NeedsAttention({
+  slug,
+}: NeedsAttentionProps): React.ReactElement | null {
+  const attention = useQuery(
+    api.dashboard.analytics_queries.getDocumentsNeedingAttention
+  );
 
   if (!attention || attention.totalIssues === 0) return null;
 
@@ -37,7 +41,8 @@ export function NeedsAttention({ slug }: NeedsAttentionProps): React.ReactElemen
           </div>
           <CardTitle className="text-base">Needs Attention</CardTitle>
           <span className="bg-warning/10 text-warning rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
-            {attention.totalIssues} issue{attention.totalIssues !== 1 ? "s" : ""}
+            {attention.totalIssues} issue
+            {attention.totalIssues !== 1 ? "s" : ""}
           </span>
         </div>
       </CardHeader>
@@ -53,11 +58,13 @@ export function NeedsAttention({ slug }: NeedsAttentionProps): React.ReactElemen
               <ClockIcon className="text-warning h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
-                  <span className="font-medium">{item.recipientName}</span> hasn&apos;t viewed{" "}
+                  <span className="font-medium">{item.recipientName}</span>{" "}
+                  hasn&apos;t viewed{" "}
                   <span className="font-medium">{item.documentName}</span>
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  Pending for {item.daysPending} day{item.daysPending !== 1 ? "s" : ""}
+                  Pending for {item.daysPending} day
+                  {item.daysPending !== 1 ? "s" : ""}
                 </p>
               </div>
             </Link>
@@ -73,11 +80,13 @@ export function NeedsAttention({ slug }: NeedsAttentionProps): React.ReactElemen
               <AlertTriangleIcon className="text-destructive h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
-                  <span className="font-medium">{item.documentName}</span> deadline in{" "}
-                  {item.daysRemaining} day{item.daysRemaining !== 1 ? "s" : ""}
+                  <span className="font-medium">{item.documentName}</span>{" "}
+                  deadline in {item.daysRemaining} day
+                  {item.daysRemaining !== 1 ? "s" : ""}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {item.unsignedCount} unsigned recipient{item.unsignedCount !== 1 ? "s" : ""}
+                  {item.unsignedCount} unsigned recipient
+                  {item.unsignedCount !== 1 ? "s" : ""}
                 </p>
               </div>
             </Link>
@@ -93,9 +102,12 @@ export function NeedsAttention({ slug }: NeedsAttentionProps): React.ReactElemen
               <MailXIcon className="text-destructive h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
-                  Email bounced for <span className="font-medium">{item.recipientEmail}</span>
+                  Email bounced for{" "}
+                  <span className="font-medium">{item.recipientEmail}</span>
                 </p>
-                <p className="text-muted-foreground text-xs">{item.documentName}</p>
+                <p className="text-muted-foreground text-xs">
+                  {item.documentName}
+                </p>
               </div>
             </Link>
           ))}

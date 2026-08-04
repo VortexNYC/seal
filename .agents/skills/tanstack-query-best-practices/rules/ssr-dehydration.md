@@ -33,7 +33,11 @@ function PostsPage({ posts }: { posts: Post[] }) {
 
 ```tsx
 // app/posts/page.tsx
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from "@tanstack/react-query";
 import { postQueries } from "@/lib/queries";
 
 export default async function PostsPage() {
@@ -115,7 +119,7 @@ export async function render(url: string) {
   const html = renderToString(
     <QueryClientProvider client={queryClient}>
       <App />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 
   // Serialize safely - JSON.stringify is XSS vulnerable
@@ -132,7 +136,11 @@ export async function render(url: string) {
 }
 
 // client.tsx
-import { hydrate, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  hydrate,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 hydrate(queryClient, window.__DEHYDRATED_STATE__);
@@ -141,7 +149,7 @@ hydrateRoot(
   document.getElementById("app"),
   <QueryClientProvider client={queryClient}>
     <App />
-  </QueryClientProvider>,
+  </QueryClientProvider>
 );
 ```
 

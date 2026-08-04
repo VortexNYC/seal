@@ -61,31 +61,69 @@ export const DocumentAnalysisSchema = z.object({
         "payment",
       ]),
       page: z.number().int().positive().describe("1-indexed page number"),
-      x: z.number().min(0).max(100).describe("X position as percentage of page width"),
-      y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
-      width: z.number().min(1).max(50).describe("Width as percentage of page width"),
-      height: z.number().min(1).max(20).describe("Height as percentage of page height"),
-      label: z.string().describe("Descriptive label for the field, e.g. 'Buyer Signature'"),
+      x: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("X position as percentage of page width"),
+      y: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("Y position as percentage of page height"),
+      width: z
+        .number()
+        .min(1)
+        .max(50)
+        .describe("Width as percentage of page width"),
+      height: z
+        .number()
+        .min(1)
+        .max(20)
+        .describe("Height as percentage of page height"),
+      label: z
+        .string()
+        .describe("Descriptive label for the field, e.g. 'Buyer Signature'"),
       confidence: z.number().min(0).max(1).describe("Confidence score 0-1"),
-      isRequired: z.boolean().describe("Whether the field appears to be required"),
-    }),
+      isRequired: z
+        .boolean()
+        .describe("Whether the field appears to be required"),
+    })
   ),
   annotations: z.array(
     z.object({
       page: z.number().int().positive().describe("1-indexed page number"),
-      x: z.number().min(0).max(100).describe("X position as percentage of page width"),
-      y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
-      width: z.number().min(1).max(100).describe("Width as percentage of page width"),
-      height: z.number().min(0.5).max(30).describe("Height as percentage of page height"),
+      x: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("X position as percentage of page width"),
+      y: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe("Y position as percentage of page height"),
+      width: z
+        .number()
+        .min(1)
+        .max(100)
+        .describe("Width as percentage of page width"),
+      height: z
+        .number()
+        .min(0.5)
+        .max(30)
+        .describe("Height as percentage of page height"),
       category: z
         .enum(["obligation", "payment", "risk", "dates", "terms"])
         .describe("Clause category"),
-      severity: z.enum(["informational", "important", "critical"]).describe("Severity level"),
+      severity: z
+        .enum(["informational", "important", "critical"])
+        .describe("Severity level"),
       text: z.string().describe("The exact clause text being annotated"),
       summary: z
         .string()
         .max(120)
         .describe("One-sentence plain-English explanation of this clause"),
-    }),
+    })
   ),
 });

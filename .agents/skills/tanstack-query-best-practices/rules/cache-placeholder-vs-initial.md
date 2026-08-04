@@ -52,7 +52,11 @@ function PostDetail({ postId }: { postId: string }) {
   return (
     <article className={isPlaceholderData ? "opacity-50" : ""}>
       <h1>{data?.title}</h1>
-      {isPlaceholderData ? <p>Loading full content...</p> : <div>{data?.content}</div>}
+      {isPlaceholderData ? (
+        <p>Loading full content...</p>
+      ) : (
+        <div>{data?.content}</div>
+      )}
     </article>
   );
 }

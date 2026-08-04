@@ -1,7 +1,11 @@
 import { ConvexError, v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, mutation, type MutationCtx } from "../_generated/server";
+import {
+  internalMutation,
+  mutation,
+  type MutationCtx,
+} from "../_generated/server";
 import {
   dueDateTermsTuple,
   type PaymentStatus,
@@ -12,7 +16,7 @@ import {
 import { computeTotalAmountCents, validatePaymentConfig } from "./helpers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -45,7 +49,11 @@ const lateFeeArg = v.object({
 const recurringConfigArg = v.object({
   interval: v.union(v.literal("week"), v.literal("month"), v.literal("year")),
   intervalCount: v.number(),
-  endCondition: v.union(v.literal("never"), v.literal("after_count"), v.literal("on_date")),
+  endCondition: v.union(
+    v.literal("never"),
+    v.literal("after_count"),
+    v.literal("on_date")
+  ),
   endAfterCount: v.optional(v.number()),
   endOnDate: v.optional(v.number()),
 });
@@ -81,7 +89,9 @@ export const upsertPaymentConfig = mutation({
     allowedPaymentMethods: v.array(paymentMethodTuple),
     feeHandling: v.union(v.literal("absorb"), v.literal("pass_to_recipient")),
     taxEnabled: v.boolean(),
-    taxBehavior: v.optional(v.union(v.literal("inclusive"), v.literal("exclusive"))),
+    taxBehavior: v.optional(
+      v.union(v.literal("inclusive"), v.literal("exclusive"))
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -104,7 +114,9 @@ export const upsertPaymentConfig = mutation({
       throw new ConvexError("Document not found");
     }
     if ((document.workflowStatus ?? "draft") !== "draft") {
-      throw new ConvexError("Payment config can only be modified in draft status");
+      throw new ConvexError(
+        "Payment config can only be modified in draft status"
+      );
     }
 
     // Compute total
@@ -225,7 +237,9 @@ export const updatePaymentStatus = mutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
-      ...(args.providerInvoiceId !== undefined && { providerInvoiceId: args.providerInvoiceId }),
+      ...(args.providerInvoiceId !== undefined && {
+        providerInvoiceId: args.providerInvoiceId,
+      }),
       ...(args.providerSubscriptionId !== undefined && {
         providerSubscriptionId: args.providerSubscriptionId,
       }),
@@ -252,7 +266,10 @@ export const updatePaymentStatusFromProviderInvoice = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const statusMap: Record<string, "open" | "paid" | "void" | "uncollectible"> = {
+    const statusMap: Record<
+      string,
+      "open" | "paid" | "void" | "uncollectible"
+    > = {
       awaiting: "open",
       paid: "paid",
       failed: "uncollectible",
@@ -261,14 +278,18 @@ export const updatePaymentStatusFromProviderInvoice = internalMutation({
 
     const config = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
+      .withIndex("by_provider_invoice", (q) =>
+        q.eq("providerInvoiceId", args.providerInvoiceId)
+      )
       .first();
 
     // Always look up document_invoices — cycle 2+ invoices may exist here
     // even when config doesn't match (config stores the initial invoice ID)
     const invoiceRecord = await ctx.db
       .query("document_invoices")
-      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
+      .withIndex("by_provider_invoice", (q) =>
+        q.eq("providerInvoiceId", args.providerInvoiceId)
+      )
       .first();
 
     if (config) {
@@ -346,7 +367,7 @@ function isTerminalPaymentStatus(status: PaymentStatus | undefined): boolean {
 
 function shouldSkipTerminalInvoiceUpdate(
   currentStatus: string,
-  incomingStatus: DocumentInvoiceWebhookStatus,
+  incomingStatus: DocumentInvoiceWebhookStatus
 ): boolean {
   if (!isTerminalInvoiceStatus(currentStatus)) {
     return false;
@@ -359,7 +380,7 @@ function shouldSkipTerminalInvoiceUpdate(
 
 function shouldSkipTerminalConfigUpdate(
   currentStatus: PaymentStatus | undefined,
-  incomingStatus: PaymentStatus,
+  incomingStatus: PaymentStatus
 ): boolean {
   if (!isTerminalPaymentStatus(currentStatus)) {
     return false;
@@ -375,22 +396,29 @@ export async function updateVortexPaymentStatusFromWebhookInDb(
   args: {
     readonly vortexPayableId: string;
     readonly paymentStatus: PaymentStatus;
-  },
+  }
 ): Promise<PaymentWebhookUpdateResult | null> {
   const now = Date.now();
-  const invoiceStatus = documentInvoiceStatusByPaymentStatus[args.paymentStatus];
-  const { config, invoiceRecord } = await getVortexPaymentWebhookRecords(ctx, args.vortexPayableId);
+  const invoiceStatus =
+    documentInvoiceStatusByPaymentStatus[args.paymentStatus];
+  const { config, invoiceRecord } = await getVortexPaymentWebhookRecords(
+    ctx,
+    args.vortexPayableId
+  );
 
   if (!config && !invoiceRecord) return null;
   assertVortexWebhookDocumentMatch(config, invoiceRecord, args.vortexPayableId);
   if (shouldSkipInvoiceWebhookUpdate(invoiceRecord, invoiceStatus)) {
     return paymentWebhookUpdateResult(config, invoiceRecord);
   }
-  if (shouldSkipConfigWebhookUpdate(config, invoiceRecord, args.paymentStatus)) {
+  if (
+    shouldSkipConfigWebhookUpdate(config, invoiceRecord, args.paymentStatus)
+  ) {
     return paymentWebhookUpdateResult(config, invoiceRecord);
   }
 
-  if (config) await patchPaymentConfigStatus(ctx, config, args.paymentStatus, now);
+  if (config)
+    await patchPaymentConfigStatus(ctx, config, args.paymentStatus, now);
   if (invoiceRecord && invoiceStatus !== undefined) {
     await patchDocumentInvoiceStatus(ctx, invoiceRecord, invoiceStatus, now);
   }
@@ -400,20 +428,32 @@ export async function updateVortexPaymentStatusFromWebhookInDb(
 
 async function getVortexPaymentWebhookRecords(
   ctx: Pick<MutationCtx, "db">,
-  vortexPayableId: string,
+  vortexPayableId: string
 ): Promise<VortexPaymentWebhookRecords> {
   const configMatches = await ctx.db
     .query("payment_field_configs")
-    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
+    .withIndex("by_vortex_payable", (q) =>
+      q.eq("vortexPayableId", vortexPayableId)
+    )
     .collect();
-  assertUniqueVortexPayableMatch("payment_field_configs", vortexPayableId, configMatches.length);
+  assertUniqueVortexPayableMatch(
+    "payment_field_configs",
+    vortexPayableId,
+    configMatches.length
+  );
 
   const invoiceMatches = await ctx.db
     .query("document_invoices")
-    .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
+    .withIndex("by_vortex_payable", (q) =>
+      q.eq("vortexPayableId", vortexPayableId)
+    )
     .collect();
 
-  assertUniqueVortexPayableMatch("document_invoices", vortexPayableId, invoiceMatches.length);
+  assertUniqueVortexPayableMatch(
+    "document_invoices",
+    vortexPayableId,
+    invoiceMatches.length
+  );
 
   return {
     config: configMatches[0] ?? null,
@@ -424,28 +464,34 @@ async function getVortexPaymentWebhookRecords(
 function assertUniqueVortexPayableMatch(
   tableName: "payment_field_configs" | "document_invoices",
   vortexPayableId: string,
-  matchCount: number,
+  matchCount: number
 ) {
   if (matchCount > 1) {
-    throw new Error(`ambiguous vortexPayableId across ${tableName}: ${vortexPayableId}`);
+    throw new Error(
+      `ambiguous vortexPayableId across ${tableName}: ${vortexPayableId}`
+    );
   }
 }
 
 function assertVortexWebhookDocumentMatch(
   config: PaymentFieldConfig | null,
   invoiceRecord: DocumentInvoice | null,
-  vortexPayableId: string,
+  vortexPayableId: string
 ) {
-  if (config && invoiceRecord && config.documentId !== invoiceRecord.documentId) {
+  if (
+    config &&
+    invoiceRecord &&
+    config.documentId !== invoiceRecord.documentId
+  ) {
     throw new Error(
-      `vortexPayableId ${vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`,
+      `vortexPayableId ${vortexPayableId} maps to mismatched documents (config ${config.documentId} vs invoice ${invoiceRecord.documentId})`
     );
   }
 }
 
 function shouldSkipInvoiceWebhookUpdate(
   invoiceRecord: DocumentInvoice | null,
-  invoiceStatus: DocumentInvoiceWebhookStatus | undefined,
+  invoiceStatus: DocumentInvoiceWebhookStatus | undefined
 ): boolean {
   return (
     invoiceRecord !== null &&
@@ -457,7 +503,7 @@ function shouldSkipInvoiceWebhookUpdate(
 function shouldSkipConfigWebhookUpdate(
   config: PaymentFieldConfig | null,
   invoiceRecord: DocumentInvoice | null,
-  paymentStatus: PaymentStatus,
+  paymentStatus: PaymentStatus
 ): boolean {
   return (
     invoiceRecord === null &&
@@ -470,7 +516,7 @@ async function patchPaymentConfigStatus(
   ctx: Pick<MutationCtx, "db">,
   config: PaymentFieldConfig,
   paymentStatus: PaymentStatus,
-  now: number,
+  now: number
 ) {
   await ctx.db.patch(config._id, { paymentStatus, updatedAt: now });
 }
@@ -479,15 +525,18 @@ async function patchDocumentInvoiceStatus(
   ctx: Pick<MutationCtx, "db">,
   invoiceRecord: DocumentInvoice,
   invoiceStatus: DocumentInvoiceWebhookStatus,
-  now: number,
+  now: number
 ) {
-  await ctx.db.patch(invoiceRecord._id, documentInvoicePatch(invoiceRecord, invoiceStatus, now));
+  await ctx.db.patch(
+    invoiceRecord._id,
+    documentInvoicePatch(invoiceRecord, invoiceStatus, now)
+  );
 }
 
 function documentInvoicePatch(
   invoiceRecord: DocumentInvoice,
   invoiceStatus: DocumentInvoiceWebhookStatus,
-  now: number,
+  now: number
 ): DocumentInvoicePatch {
   return {
     status: invoiceStatus,
@@ -503,7 +552,7 @@ function documentInvoicePatch(
 
 function paymentWebhookUpdateResult(
   config: PaymentFieldConfig | null,
-  invoiceRecord: DocumentInvoice | null,
+  invoiceRecord: DocumentInvoice | null
 ): PaymentWebhookUpdateResult {
   return {
     configId: config?._id,
@@ -536,7 +585,7 @@ export const updatePaymentStatusFromProviderSubscription = internalMutation({
     const config = await ctx.db
       .query("payment_field_configs")
       .withIndex("by_provider_subscription", (q) =>
-        q.eq("providerSubscriptionId", args.providerSubscriptionId),
+        q.eq("providerSubscriptionId", args.providerSubscriptionId)
       )
       .first();
 
@@ -581,24 +630,32 @@ export const storeProviderPaymentIds = internalMutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
-      ...(args.providerInvoiceId !== undefined && { providerInvoiceId: args.providerInvoiceId }),
+      ...(args.providerInvoiceId !== undefined && {
+        providerInvoiceId: args.providerInvoiceId,
+      }),
       ...(args.providerSubscriptionId !== undefined && {
         providerSubscriptionId: args.providerSubscriptionId,
       }),
       ...(args.providerPaymentIntentId !== undefined && {
         providerPaymentIntentId: args.providerPaymentIntentId,
       }),
-      ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
+      ...(args.hostedInvoiceUrl !== undefined && {
+        hostedInvoiceUrl: args.hostedInvoiceUrl,
+      }),
       updatedAt: now,
     });
 
     // Create document_invoices record for revenue tracking
-    if (args.providerInvoiceId && args.providerAccountId && args.customerEmail) {
+    if (
+      args.providerInvoiceId &&
+      args.providerAccountId &&
+      args.customerEmail
+    ) {
       // Check if record already exists (idempotent)
       const existing = await ctx.db
         .query("document_invoices")
         .withIndex("by_provider_invoice", (q) =>
-          q.eq("providerInvoiceId", sealAssertPresent(args.providerInvoiceId)),
+          q.eq("providerInvoiceId", sealAssertPresent(args.providerInvoiceId))
         )
         .first();
 
@@ -667,14 +724,20 @@ export const storeVortexPayableIds = internalMutation({
       ...(args.vortexPaymentRequestId !== undefined && {
         vortexPaymentRequestId: args.vortexPaymentRequestId,
       }),
-      ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
+      ...(args.hostedInvoiceUrl !== undefined && {
+        hostedInvoiceUrl: args.hostedInvoiceUrl,
+      }),
       updatedAt: now,
     });
 
-    const invoiceStatus = documentInvoiceStatusForPaymentStatus(args.paymentStatus);
+    const invoiceStatus = documentInvoiceStatusForPaymentStatus(
+      args.paymentStatus
+    );
     const existing = await ctx.db
       .query("document_invoices")
-      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .withIndex("by_vortex_payable", (q) =>
+        q.eq("vortexPayableId", args.vortexPayableId)
+      )
       .first();
 
     if (existing) {
@@ -688,7 +751,8 @@ export const storeVortexPayableIds = internalMutation({
         vortexPaymentRequestId: args.vortexPaymentRequestId,
         amountDue: config.totalAmountCents,
         hostedInvoiceUrl: args.hostedInvoiceUrl,
-        ...(invoiceStatus === "open" && existing.finalizedAt === undefined && { finalizedAt: now }),
+        ...(invoiceStatus === "open" &&
+          existing.finalizedAt === undefined && { finalizedAt: now }),
         updatedAt: now,
       });
       return null;
@@ -716,7 +780,13 @@ export const storeVortexPayableIds = internalMutation({
 });
 
 function documentInvoiceStatusForPaymentStatus(
-  paymentStatus: "pending" | "created" | "awaiting" | "paid" | "failed" | "cancelled",
+  paymentStatus:
+    | "pending"
+    | "created"
+    | "awaiting"
+    | "paid"
+    | "failed"
+    | "cancelled"
 ): "draft" | "open" | "paid" | "void" | "uncollectible" {
   switch (paymentStatus) {
     case "pending":
@@ -754,7 +824,7 @@ export const upsertRecurringInvoice = internalMutation({
       v.literal("open"),
       v.literal("paid"),
       v.literal("void"),
-      v.literal("uncollectible"),
+      v.literal("uncollectible")
     ),
     customerEmail: v.string(),
     customerName: v.optional(v.string()),
@@ -768,7 +838,7 @@ export const upsertRecurringInvoice = internalMutation({
     const config = await ctx.db
       .query("payment_field_configs")
       .withIndex("by_provider_subscription", (q) =>
-        q.eq("providerSubscriptionId", args.providerSubscriptionId),
+        q.eq("providerSubscriptionId", args.providerSubscriptionId)
       )
       .first();
 
@@ -781,7 +851,9 @@ export const upsertRecurringInvoice = internalMutation({
     // Check if record already exists (idempotent)
     const existing = await ctx.db
       .query("document_invoices")
-      .withIndex("by_provider_invoice", (q) => q.eq("providerInvoiceId", args.providerInvoiceId))
+      .withIndex("by_provider_invoice", (q) =>
+        q.eq("providerInvoiceId", args.providerInvoiceId)
+      )
       .first();
 
     if (existing) {
@@ -797,7 +869,8 @@ export const upsertRecurringInvoice = internalMutation({
         amountDue: args.amountDue,
         hostedInvoiceUrl: args.hostedInvoiceUrl,
         invoicePdf: args.invoicePdf,
-        ...(args.status === "open" && !existing.finalizedAt && { finalizedAt: now }),
+        ...(args.status === "open" &&
+          !existing.finalizedAt && { finalizedAt: now }),
         updatedAt: now,
       });
       return { invoiceId: existing._id, created: false };

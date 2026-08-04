@@ -1,6 +1,9 @@
 import { describe, test, expect } from "vitest";
 
-import { buildOrganizationPath, isPathWithinOrganization } from "./organization-path";
+import {
+  buildOrganizationPath,
+  isPathWithinOrganization,
+} from "./organization-path";
 
 describe("buildOrganizationPath", () => {
   describe("slug only (no target)", () => {
@@ -23,7 +26,9 @@ describe("buildOrganizationPath", () => {
 
   describe("with known route segments", () => {
     test("builds path with a known segment", () => {
-      expect(buildOrganizationPath("acme", "/documents")).toBe("/acme/documents");
+      expect(buildOrganizationPath("acme", "/documents")).toBe(
+        "/acme/documents"
+      );
     });
 
     test("builds path with another known segment", () => {
@@ -47,12 +52,16 @@ describe("buildOrganizationPath", () => {
       ];
 
       for (const segment of knownSegments) {
-        expect(buildOrganizationPath("acme", `/${segment}`)).toBe(`/acme/${segment}`);
+        expect(buildOrganizationPath("acme", `/${segment}`)).toBe(
+          `/acme/${segment}`
+        );
       }
     });
 
     test("handles known segment without leading slash", () => {
-      expect(buildOrganizationPath("acme", "documents")).toBe("/acme/documents");
+      expect(buildOrganizationPath("acme", "documents")).toBe(
+        "/acme/documents"
+      );
     });
   });
 
@@ -68,7 +77,9 @@ describe("buildOrganizationPath", () => {
 
   describe("when target already contains the slug", () => {
     test("does not double the slug prefix", () => {
-      expect(buildOrganizationPath("acme", "/acme/documents")).toBe("/acme/documents");
+      expect(buildOrganizationPath("acme", "/acme/documents")).toBe(
+        "/acme/documents"
+      );
     });
 
     test("preserves slug-only path", () => {
@@ -76,46 +87,58 @@ describe("buildOrganizationPath", () => {
     });
 
     test("preserves slug path with nested route", () => {
-      expect(buildOrganizationPath("acme", "/acme/settings")).toBe("/acme/settings");
+      expect(buildOrganizationPath("acme", "/acme/settings")).toBe(
+        "/acme/settings"
+      );
     });
   });
 
   describe("with a different slug as first segment followed by known segment", () => {
     test("replaces foreign slug and keeps known segment", () => {
-      expect(buildOrganizationPath("acme", "/other-org/documents")).toBe("/acme/documents");
+      expect(buildOrganizationPath("acme", "/other-org/documents")).toBe(
+        "/acme/documents"
+      );
     });
   });
 
   describe("with query params", () => {
     test("preserves query string on known segment path", () => {
-      expect(buildOrganizationPath("acme", "/documents?page=2")).toBe("/acme/documents?page=2");
+      expect(buildOrganizationPath("acme", "/documents?page=2")).toBe(
+        "/acme/documents?page=2"
+      );
     });
 
     test("preserves query string on slug-only fallback", () => {
-      expect(buildOrganizationPath("acme", "/unknown?foo=bar")).toBe("/acme?foo=bar");
+      expect(buildOrganizationPath("acme", "/unknown?foo=bar")).toBe(
+        "/acme?foo=bar"
+      );
     });
 
     test("preserves complex query string", () => {
-      expect(buildOrganizationPath("acme", "/documents?page=2&sort=date&dir=asc")).toBe(
-        "/acme/documents?page=2&sort=date&dir=asc",
-      );
+      expect(
+        buildOrganizationPath("acme", "/documents?page=2&sort=date&dir=asc")
+      ).toBe("/acme/documents?page=2&sort=date&dir=asc");
     });
   });
 
   describe("with hash", () => {
     test("preserves hash on known segment path", () => {
-      expect(buildOrganizationPath("acme", "/settings#profile")).toBe("/acme/settings#profile");
+      expect(buildOrganizationPath("acme", "/settings#profile")).toBe(
+        "/acme/settings#profile"
+      );
     });
 
     test("preserves hash on slug-only fallback", () => {
-      expect(buildOrganizationPath("acme", "/unknown#section")).toBe("/acme#section");
+      expect(buildOrganizationPath("acme", "/unknown#section")).toBe(
+        "/acme#section"
+      );
     });
   });
 
   describe("with both query params and hash", () => {
     test("preserves both query string and hash", () => {
       expect(buildOrganizationPath("acme", "/documents?page=1#results")).toBe(
-        "/acme/documents?page=1#results",
+        "/acme/documents?page=1#results"
       );
     });
   });
@@ -138,13 +161,17 @@ describe("isPathWithinOrganization", () => {
     });
 
     test("returns true for deeply nested path under slug", () => {
-      expect(isPathWithinOrganization("acme", "/acme/settings/profile")).toBe(true);
+      expect(isPathWithinOrganization("acme", "/acme/settings/profile")).toBe(
+        true
+      );
     });
   });
 
   describe("non-matching paths", () => {
     test("returns false for a different slug", () => {
-      expect(isPathWithinOrganization("acme", "/other-org/documents")).toBe(false);
+      expect(isPathWithinOrganization("acme", "/other-org/documents")).toBe(
+        false
+      );
     });
 
     test("returns false for root path", () => {
@@ -152,7 +179,9 @@ describe("isPathWithinOrganization", () => {
     });
 
     test("returns false for path that starts with slug as prefix but is a different org", () => {
-      expect(isPathWithinOrganization("acme", "/acme-corp/documents")).toBe(false);
+      expect(isPathWithinOrganization("acme", "/acme-corp/documents")).toBe(
+        false
+      );
     });
   });
 

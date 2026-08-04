@@ -85,7 +85,9 @@ export const Route = createFileRoute("/dashboard")({
 export const Route = createFileRoute("/users/$userId/posts")({
   loader: async ({ params, context: { queryClient } }) => {
     // First query needed for second
-    const user = await queryClient.ensureQueryData(userQueries.detail(params.userId));
+    const user = await queryClient.ensureQueryData(
+      userQueries.detail(params.userId)
+    );
 
     // Dependent query uses result
     await queryClient.ensureQueryData(postQueries.byAuthor(user.id));

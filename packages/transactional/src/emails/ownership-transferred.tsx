@@ -40,12 +40,14 @@ export function OwnershipTransferred({
         {/* Document card */}
         <Section style={emailStyles.documentCard}>
           <Text style={emailStyles.documentTitle}>{documentName}</Text>
-          <Text style={emailStyles.documentMeta}>Transferred on: {formattedDate}</Text>
+          <Text style={emailStyles.documentMeta}>
+            Transferred on: {formattedDate}
+          </Text>
         </Section>
 
         <Text style={{ ...emailStyles.infoText, marginBottom: "24px" }}>
-          As the new owner, you have full control over this document including editing, sharing, and
-          managing recipients.
+          As the new owner, you have full control over this document including
+          editing, sharing, and managing recipients.
         </Text>
 
         {/* CTA Button */}

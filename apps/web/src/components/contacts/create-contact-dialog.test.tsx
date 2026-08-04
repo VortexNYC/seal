@@ -16,7 +16,9 @@ vi.mock("sonner", () => ({
 
 import { CreateContactDialog } from "./create-contact-dialog";
 
-function renderDialog(overrides: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
+function renderDialog(
+  overrides: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}
+) {
   const props = {
     open: true,
     onOpenChange: vi.fn(),
@@ -40,7 +42,9 @@ describe("CreateContactDialog", () => {
 
     test("renders description text", () => {
       renderDialog();
-      expect(screen.getByText("Create a new contact for your organization.")).toBeDefined();
+      expect(
+        screen.getByText("Create a new contact for your organization.")
+      ).toBeDefined();
     });
 
     test("renders required field labels with asterisk", () => {
@@ -61,7 +65,9 @@ describe("CreateContactDialog", () => {
     test("renders Cancel and Create Contact buttons", () => {
       renderDialog();
       expect(screen.getByRole("button", { name: /cancel/i })).toBeDefined();
-      expect(screen.getByRole("button", { name: /create contact/i })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: /create contact/i })
+      ).toBeDefined();
     });
 
     test("renders status select trigger", () => {
@@ -105,7 +111,9 @@ describe("CreateContactDialog", () => {
       await user.type(screen.getByLabelText(/last name/i), "Doe");
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-      expect(screen.getByText("Please enter a valid email address")).toBeDefined();
+      expect(
+        screen.getByText("Please enter a valid email address")
+      ).toBeDefined();
       expect(mockCreateContact).not.toHaveBeenCalled();
     });
 
@@ -118,7 +126,9 @@ describe("CreateContactDialog", () => {
       // Leave email empty
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-      expect(screen.getByText("Please enter a valid email address")).toBeDefined();
+      expect(
+        screen.getByText("Please enter a valid email address")
+      ).toBeDefined();
       expect(mockCreateContact).not.toHaveBeenCalled();
     });
 
@@ -139,7 +149,10 @@ describe("CreateContactDialog", () => {
   describe("form submission", () => {
     test("calls createContact mutation with correct data", async () => {
       const user = userEvent.setup();
-      mockCreateContact.mockResolvedValue({ _id: "contact_1", isDuplicate: false });
+      mockCreateContact.mockResolvedValue({
+        _id: "contact_1",
+        isDuplicate: false,
+      });
 
       renderDialog();
 
@@ -156,14 +169,17 @@ describe("CreateContactDialog", () => {
           email: "john@test.com",
           phone: "+1-555-1234",
           status: "active",
-        }),
+        })
       );
     });
 
     test("calls onOpenChange(false) after successful submission", async () => {
       const user = userEvent.setup();
       const onOpenChange = vi.fn();
-      mockCreateContact.mockResolvedValue({ _id: "contact_1", isDuplicate: false });
+      mockCreateContact.mockResolvedValue({
+        _id: "contact_1",
+        isDuplicate: false,
+      });
 
       renderDialog({ onOpenChange });
 
@@ -178,7 +194,10 @@ describe("CreateContactDialog", () => {
     test("shows success toast on successful creation", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockCreateContact.mockResolvedValue({ _id: "contact_1", isDuplicate: false });
+      mockCreateContact.mockResolvedValue({
+        _id: "contact_1",
+        isDuplicate: false,
+      });
 
       renderDialog();
 
@@ -193,7 +212,10 @@ describe("CreateContactDialog", () => {
     test("shows warning toast when duplicate is created", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockCreateContact.mockResolvedValue({ _id: "contact_1", isDuplicate: true });
+      mockCreateContact.mockResolvedValue({
+        _id: "contact_1",
+        isDuplicate: true,
+      });
 
       renderDialog();
 

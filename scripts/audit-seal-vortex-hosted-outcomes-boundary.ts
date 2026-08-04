@@ -6,7 +6,7 @@ import { join } from "node:path";
 const repoRoot = new URL("..", import.meta.url).pathname;
 const proofDocPath = join(
   repoRoot,
-  "docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md",
+  "docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md"
 );
 const proofDoc = readFileSync(proofDocPath, "utf8");
 
@@ -169,6 +169,6 @@ console.log(
       ],
     },
     null,
-    2,
-  ),
+    2
+  )
 );

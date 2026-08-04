@@ -68,7 +68,10 @@ export const listDocumentsSchema = z.object({
     .max(100)
     .optional()
     .describe("Maximum number of documents to return (1-100, default 20)"),
-  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  cursor: z
+    .string()
+    .optional()
+    .describe("Pagination cursor from previous response"),
   status: documentStatusSchema.optional().describe("Filter by workflow status"),
   title_search: z
     .string()
@@ -77,12 +80,14 @@ export const listDocumentsSchema = z.object({
   created_after: z
     .string()
     .optional()
-    .describe("Return documents created after this ISO 8601 timestamp (e.g. 2025-01-01T00:00:00Z)"),
+    .describe(
+      "Return documents created after this ISO 8601 timestamp (e.g. 2025-01-01T00:00:00Z)"
+    ),
   created_before: z
     .string()
     .optional()
     .describe(
-      "Return documents created before this ISO 8601 timestamp (e.g. 2025-12-31T23:59:59Z)",
+      "Return documents created before this ISO 8601 timestamp (e.g. 2025-12-31T23:59:59Z)"
     ),
 });
 export type ListDocumentsInput = z.infer<typeof listDocumentsSchema>;
@@ -101,11 +106,19 @@ export type GetDocumentInput = z.infer<typeof getDocumentSchema>;
 export const createDocumentSchema = z.object({
   title: z.string().describe("Document title"),
   description: z.string().optional().describe("Document description"),
-  storage_id: z.string().describe("Convex storage ID for the uploaded PDF file"),
+  storage_id: z
+    .string()
+    .describe("Convex storage ID for the uploaded PDF file"),
   file_size: z.number().describe("File size in bytes"),
-  file_type: z.string().optional().describe("MIME type (default: application/pdf)"),
+  file_type: z
+    .string()
+    .optional()
+    .describe("MIME type (default: application/pdf)"),
   page_count: z.number().optional().describe("Number of pages in the document"),
-  deadline: z.string().optional().describe("Signing deadline as ISO 8601 timestamp"),
+  deadline: z
+    .string()
+    .optional()
+    .describe("Signing deadline as ISO 8601 timestamp"),
 });
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 
@@ -114,7 +127,10 @@ export const updateDocumentSchema = z.object({
   id: z.string().describe("The document ID"),
   title: z.string().optional().describe("New document title"),
   description: z.string().optional().describe("New document description"),
-  deadline: z.string().optional().describe("New signing deadline as ISO 8601 timestamp"),
+  deadline: z
+    .string()
+    .optional()
+    .describe("New signing deadline as ISO 8601 timestamp"),
 });
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 
@@ -127,7 +143,10 @@ export type DocumentIdInput = z.infer<typeof documentIdSchema>;
 /** Schema for sending a document */
 export const sendDocumentSchema = z.object({
   id: z.string().describe("The document ID"),
-  message: z.string().optional().describe("Custom message to include in the signing email"),
+  message: z
+    .string()
+    .optional()
+    .describe("Custom message to include in the signing email"),
 });
 export type SendDocumentInput = z.infer<typeof sendDocumentSchema>;
 
@@ -161,9 +180,12 @@ export const addRecipientSchema = z.object({
   email: z.string().email().describe("Recipient email address"),
   name: z.string().describe("Recipient display name"),
   role: recipientRoleSchema.describe(
-    "Recipient role: signer (needs to sign), approver (needs to approve), viewer (view only)",
+    "Recipient role: signer (needs to sign), approver (needs to approve), viewer (view only)"
   ),
-  order: z.number().optional().describe("Signing order (for sequential signing workflows)"),
+  order: z
+    .number()
+    .optional()
+    .describe("Signing order (for sequential signing workflows)"),
   message: z.string().optional().describe("Custom message for this recipient"),
 });
 export type AddRecipientInput = z.infer<typeof addRecipientSchema>;
@@ -210,11 +232,13 @@ export const updateRecipientsBulkSchema = z.object({
     .array(
       updateRecipientSchema.omit({ document_id: true }).extend({
         id: z.string().describe("The recipient ID to update"),
-      }),
+      })
     )
     .describe("Array of recipient updates"),
 });
-export type UpdateRecipientsBulkInput = z.infer<typeof updateRecipientsBulkSchema>;
+export type UpdateRecipientsBulkInput = z.infer<
+  typeof updateRecipientsBulkSchema
+>;
 
 // =============================================================================
 // Template Schemas
@@ -228,7 +252,10 @@ export const listTemplatesSchema = z.object({
     .max(100)
     .optional()
     .describe("Maximum number of templates to return (1-100, default 20)"),
-  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  cursor: z
+    .string()
+    .optional()
+    .describe("Pagination cursor from previous response"),
   status: templateStatusSchema.optional().describe("Filter by template status"),
 });
 export type ListTemplatesInput = z.infer<typeof listTemplatesSchema>;
@@ -251,7 +278,9 @@ export type TemplateIdInput = z.infer<typeof templateIdSchema>;
 
 /** Schema for creating a template */
 export const createTemplateSchema = z.object({
-  document_id: z.string().describe("Source document ID to create template from"),
+  document_id: z
+    .string()
+    .describe("Source document ID to create template from"),
   name: z.string().describe("Template name"),
   description: z.string().optional().describe("Template description"),
 });
@@ -269,8 +298,14 @@ export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
 /** Schema for using a template */
 export const useTemplateSchema = z.object({
   id: z.string().describe("The template ID"),
-  title: z.string().optional().describe("Title for the new document (defaults to template name)"),
-  description: z.string().optional().describe("Description for the new document"),
+  title: z
+    .string()
+    .optional()
+    .describe("Title for the new document (defaults to template name)"),
+  description: z
+    .string()
+    .optional()
+    .describe("Description for the new document"),
 });
 export type UseTemplateInput = z.infer<typeof useTemplateSchema>;
 
@@ -282,7 +317,9 @@ export type UseTemplateInput = z.infer<typeof useTemplateSchema>;
 export const signatureDocumentIdSchema = z.object({
   document_id: z.string().describe("The document ID"),
 });
-export type SignatureDocumentIdInput = z.infer<typeof signatureDocumentIdSchema>;
+export type SignatureDocumentIdInput = z.infer<
+  typeof signatureDocumentIdSchema
+>;
 
 /** Schema for getting a signature */
 export const getSignatureSchema = z.object({
@@ -380,12 +417,19 @@ export type GetWebhookInput = z.infer<typeof getWebhookSchema>;
 
 /** Schema for creating a webhook */
 export const createWebhookSchema = z.object({
-  name: z.string().describe("Friendly name for the webhook endpoint (max 100 chars)"),
+  name: z
+    .string()
+    .describe("Friendly name for the webhook endpoint (max 100 chars)"),
   url: z.string().url().describe("HTTPS URL to send webhook events to"),
   events: z
     .array(webhookEventTypeSchema)
-    .describe("Event types to subscribe to. Pass an empty array to receive all events."),
-  description: z.string().optional().describe("Optional description of this webhook endpoint"),
+    .describe(
+      "Event types to subscribe to. Pass an empty array to receive all events."
+    ),
+  description: z
+    .string()
+    .optional()
+    .describe("Optional description of this webhook endpoint"),
 });
 export type CreateWebhookInput = z.infer<typeof createWebhookSchema>;
 
@@ -401,7 +445,9 @@ export const updateWebhookSchema = z.object({
   description: z.string().optional().describe("New description"),
   status: webhookStatusSchema
     .optional()
-    .describe("New status: active (delivering), paused (temporarily stopped), disabled (failed)"),
+    .describe(
+      "New status: active (delivering), paused (temporarily stopped), disabled (failed)"
+    ),
 });
 export type UpdateWebhookInput = z.infer<typeof updateWebhookSchema>;
 
@@ -659,7 +705,10 @@ export const updateSettingsSchema = z.object({
   ai: z
     .object({
       enabled: z.boolean().optional().describe("Enable AI features"),
-      auto_analyze: z.boolean().optional().describe("Auto-analyze new documents"),
+      auto_analyze: z
+        .boolean()
+        .optional()
+        .describe("Auto-analyze new documents"),
     })
     .optional()
     .describe("AI configuration"),
@@ -668,9 +717,17 @@ export const updateSettingsSchema = z.object({
       ip_allowlist: z
         .array(z.string())
         .optional()
-        .describe("Allowed IP ranges in CIDR notation (empty = all IPs allowed)"),
-      allow_api_access: z.boolean().optional().describe("Whether API access is enabled"),
-      require_mfa: z.boolean().optional().describe("Require MFA for all members"),
+        .describe(
+          "Allowed IP ranges in CIDR notation (empty = all IPs allowed)"
+        ),
+      allow_api_access: z
+        .boolean()
+        .optional()
+        .describe("Whether API access is enabled"),
+      require_mfa: z
+        .boolean()
+        .optional()
+        .describe("Require MFA for all members"),
       session_timeout_minutes: z
         .number()
         .nullable()
@@ -713,12 +770,29 @@ export interface ApiSettings {
 
 /** Schema for listing org-wide audit log */
 export const listAuditLogSchema = z.object({
-  limit: z.number().min(1).max(100).optional().describe("Number of entries (1–100, default 20)"),
-  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe("Number of entries (1–100, default 20)"),
+  cursor: z
+    .string()
+    .optional()
+    .describe("Pagination cursor from previous response"),
   document_id: z.string().optional().describe("Filter by document ID"),
-  action: z.string().optional().describe("Filter by action type (e.g. document.signed)"),
-  created_after: z.string().optional().describe("Return entries after this ISO 8601 timestamp"),
-  created_before: z.string().optional().describe("Return entries before this ISO 8601 timestamp"),
+  action: z
+    .string()
+    .optional()
+    .describe("Filter by action type (e.g. document.signed)"),
+  created_after: z
+    .string()
+    .optional()
+    .describe("Return entries after this ISO 8601 timestamp"),
+  created_before: z
+    .string()
+    .optional()
+    .describe("Return entries before this ISO 8601 timestamp"),
 });
 export type ListAuditLogInput = z.infer<typeof listAuditLogSchema>;
 
@@ -747,8 +821,16 @@ export type ContactStatus = z.infer<typeof contactStatusSchema>;
 
 /** Schema for listing contacts */
 export const listContactsSchema = z.object({
-  limit: z.number().min(1).max(100).optional().describe("Number of results (1–100, default 20)"),
-  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe("Number of results (1–100, default 20)"),
+  cursor: z
+    .string()
+    .optional()
+    .describe("Pagination cursor from previous response"),
   status: contactStatusSchema.optional().describe("Filter by status"),
   search: z.string().optional().describe("Search by name or email"),
 });
@@ -768,7 +850,9 @@ export const createContactSchema = z.object({
   phone: z.string().optional().describe("Phone number"),
   company: z.string().optional().describe("Company or organization"),
   title: z.string().optional().describe("Job title"),
-  status: contactStatusSchema.optional().describe("Contact status (default: active)"),
+  status: contactStatusSchema
+    .optional()
+    .describe("Contact status (default: active)"),
   notes: z.string().optional().describe("Free-form notes"),
   tags: z.array(z.string()).optional().describe("Tags for categorization"),
 });
@@ -803,7 +887,11 @@ export interface ApiContact {
 // =============================================================================
 
 /** Document sharing mode values */
-export const documentSharingModeSchema = z.enum(["private", "workspace", "specific"]);
+export const documentSharingModeSchema = z.enum([
+  "private",
+  "workspace",
+  "specific",
+]);
 export type DocumentSharingMode = z.infer<typeof documentSharingModeSchema>;
 
 /** Schema for getting document access */
@@ -816,10 +904,12 @@ export type GetDocumentAccessInput = z.infer<typeof getDocumentAccessSchema>;
 export const updateDocumentAccessSchema = z.object({
   id: z.string().describe("Document ID"),
   sharing_mode: documentSharingModeSchema.describe(
-    "Who can access: private (owner only), workspace (all members), specific (granted users only)",
+    "Who can access: private (owner only), workspace (all members), specific (granted users only)"
   ),
 });
-export type UpdateDocumentAccessInput = z.infer<typeof updateDocumentAccessSchema>;
+export type UpdateDocumentAccessInput = z.infer<
+  typeof updateDocumentAccessSchema
+>;
 
 /** Document access response */
 export interface ApiDocumentAccess {
@@ -848,8 +938,13 @@ export const bulkSendDocumentsSchema = z.object({
     .array(z.string())
     .min(1)
     .max(50)
-    .describe("Array of draft document IDs to send (max 50, each must have recipients)"),
-  message: z.string().optional().describe("Custom message to include in signing emails"),
+    .describe(
+      "Array of draft document IDs to send (max 50, each must have recipients)"
+    ),
+  message: z
+    .string()
+    .optional()
+    .describe("Custom message to include in signing emails"),
 });
 export type BulkSendDocumentsInput = z.infer<typeof bulkSendDocumentsSchema>;
 
@@ -877,8 +972,13 @@ export const getAnalyticsSchema = z.object({
   from: z
     .string()
     .optional()
-    .describe("Start of date range as ISO 8601 timestamp (default: 30 days ago)"),
-  to: z.string().optional().describe("End of date range as ISO 8601 timestamp (default: now)"),
+    .describe(
+      "Start of date range as ISO 8601 timestamp (default: 30 days ago)"
+    ),
+  to: z
+    .string()
+    .optional()
+    .describe("End of date range as ISO 8601 timestamp (default: now)"),
 });
 export type GetAnalyticsInput = z.infer<typeof getAnalyticsSchema>;
 

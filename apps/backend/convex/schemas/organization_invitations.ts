@@ -8,6 +8,8 @@ export const organizationInvitationStatusTuple = v.union(
   v.literal("pending"),
   v.literal("accepted"),
   v.literal("declined"),
-  v.literal("expired"),
+  v.literal("expired")
 );
-export type OrganizationInvitationStatus = Infer<typeof organizationInvitationStatusTuple>;
+export type OrganizationInvitationStatus = Infer<
+  typeof organizationInvitationStatusTuple
+>;

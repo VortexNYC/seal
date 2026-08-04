@@ -16,7 +16,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 import { DeclineDialog } from "./decline-dialog";
 import { FieldInputManager } from "./field-input-manager";
 import { SignatureCapture } from "./signature-capture";
@@ -87,14 +91,17 @@ export function InAppSigningSection({
   onOpenChange,
   onFieldsRefetch,
 }: InAppSigningSectionProps) {
-  const [activeFieldId, setActiveFieldId] = useState<Id<"signature_fields"> | null>(null);
+  const [activeFieldId, setActiveFieldId] =
+    useState<Id<"signature_fields"> | null>(null);
   const [showSignatureCapture, setShowSignatureCapture] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const saveFieldValue = useMutation(api.signatures.mutations.saveFieldValueAuthenticated);
+  const saveFieldValue = useMutation(
+    api.signatures.mutations.saveFieldValueAuthenticated
+  );
   const submitSignature = useMutation(
-    api.documents.recipients_mutations.submitSignatureAuthenticated,
+    api.documents.recipients_mutations.submitSignatureAuthenticated
   );
 
   // Calculate progress
@@ -104,15 +111,20 @@ export function InAppSigningSection({
     requiredFields.length > 0
       ? Math.round((filledRequiredFields.length / requiredFields.length) * 100)
       : 100;
-  const allRequiredFilled = filledRequiredFields.length === requiredFields.length;
+  const allRequiredFilled =
+    filledRequiredFields.length === requiredFields.length;
   const completionLabel = `${filledRequiredFields.length} of ${requiredFields.length} required fields complete`;
 
   // Get main signature field for final submission
-  const mainSignatureField = fields.find((f) => f.isMainSignature && f.fieldType === "signature");
+  const mainSignatureField = fields.find(
+    (f) => f.isMainSignature && f.fieldType === "signature"
+  );
 
   // Check if signing is allowed
-  const canSign = recipient.status === "pending" || recipient.status === "viewed";
-  const isCompleted = recipient.status === "signed" || recipient.status === "approved";
+  const canSign =
+    recipient.status === "pending" || recipient.status === "viewed";
+  const isCompleted =
+    recipient.status === "signed" || recipient.status === "approved";
   const isDeclined = recipient.status === "declined";
 
   const handleFieldClick = (fieldId: Id<"signature_fields">) => {
@@ -120,7 +132,10 @@ export function InAppSigningSection({
     setActiveFieldId(fieldId);
   };
 
-  const handleFieldSave = async (value?: string, signatureImageUrl?: string) => {
+  const handleFieldSave = async (
+    value?: string,
+    signatureImageUrl?: string
+  ) => {
     if (!activeFieldId) return;
 
     // Determine signature method from the data
@@ -143,7 +158,7 @@ export function InAppSigningSection({
 
   const handleSignDocument = async (
     signatureData: string,
-    signatureType: "drawn" | "typed" | "uploaded",
+    signatureType: "drawn" | "typed" | "uploaded"
   ) => {
     setIsSubmitting(true);
     try {
@@ -154,7 +169,11 @@ export function InAppSigningSection({
           fieldId: mainSignatureField._id,
           signatureImageUrl: signatureData,
           signatureMethod:
-            signatureType === "drawn" ? "draw" : signatureType === "typed" ? "type" : "upload",
+            signatureType === "drawn"
+              ? "draw"
+              : signatureType === "typed"
+                ? "type"
+                : "upload",
           userAgent: navigator.userAgent,
         });
       }
@@ -170,12 +189,14 @@ export function InAppSigningSection({
       toast.success(
         recipient.role === "approver"
           ? "Document approved successfully"
-          : "Document signed successfully",
+          : "Document signed successfully"
       );
       setShowSignatureCapture(false);
       onFieldsRefetch();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to sign document");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to sign document"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -193,14 +214,18 @@ export function InAppSigningSection({
       setShowDeclineDialog(false);
       onFieldsRefetch();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to decline document");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to decline document"
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // Get the active field for the input manager
-  const activeField = activeFieldId ? fields.find((f) => f._id === activeFieldId) : null;
+  const activeField = activeFieldId
+    ? fields.find((f) => f._id === activeFieldId)
+    : null;
 
   // Status colors
   const getStatusConfig = () => {
@@ -250,7 +275,7 @@ export function InAppSigningSection({
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg",
                   statusConfig.bgColor,
-                  statusConfig.textColor,
+                  statusConfig.textColor
                 )}
               >
                 <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
@@ -262,7 +287,7 @@ export function InAppSigningSection({
                 <span
                   className={cn(
                     "flex items-center gap-1 font-sans text-xs",
-                    statusConfig.textColor,
+                    statusConfig.textColor
                   )}
                 >
                   <StatusIcon className="h-3 w-3" />
@@ -273,7 +298,7 @@ export function InAppSigningSection({
             <ChevronDownIcon
               className={cn(
                 "text-muted-foreground h-4 w-4 transition-transform duration-200",
-                isOpen && "rotate-180",
+                isOpen && "rotate-180"
               )}
             />
           </button>
@@ -289,8 +314,12 @@ export function InAppSigningSection({
                 <span className="text-muted-foreground font-sans text-xs font-medium">
                   Progress
                 </span>
-                <span className="text-muted-foreground font-sans text-xs" aria-live="polite">
-                  {filledRequiredFields.length} of {requiredFields.length} required fields
+                <span
+                  className="text-muted-foreground font-sans text-xs"
+                  aria-live="polite"
+                >
+                  {filledRequiredFields.length} of {requiredFields.length}{" "}
+                  required fields
                 </span>
               </div>
               <div className="bg-muted h-2 overflow-hidden rounded-full">
@@ -319,7 +348,7 @@ export function InAppSigningSection({
                     "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
                     field.isFilled
                       ? "border-success/30 bg-success-surface cursor-default"
-                      : "border-border bg-card hover:border-warning/50 hover:bg-warning-surface cursor-pointer",
+                      : "border-border bg-card hover:border-warning/50 hover:bg-warning-surface cursor-pointer"
                   )}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
@@ -335,7 +364,7 @@ export function InAppSigningSection({
                       "flex h-6 w-6 items-center justify-center rounded-md",
                       field.isFilled
                         ? "bg-success-surface text-success"
-                        : "bg-muted text-muted-foreground",
+                        : "bg-muted text-muted-foreground"
                     )}
                   >
                     {field.isFilled ? (
@@ -395,7 +424,9 @@ export function InAppSigningSection({
               <Button
                 onClick={() => setShowSignatureCapture(true)}
                 disabled={!allRequiredFilled || isSubmitting}
-                aria-label={allRequiredFilled ? "Open signature capture" : completionLabel}
+                aria-label={
+                  allRequiredFilled ? "Open signature capture" : completionLabel
+                }
                 className="h-11 w-full text-sm font-medium shadow-sm transition-shadow hover:shadow"
               >
                 <PenLineIcon className="mr-2 h-4 w-4" />

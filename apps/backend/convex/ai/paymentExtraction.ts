@@ -33,38 +33,47 @@ export const extractPaymentTermsForSuggestion = internalAction({
     userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
     if (!document) throw new Error("Document not found");
 
     // Use shared cache — same storageId yields same result across pipeline and agent paths.
     // Cache miss calls extractPaymentInternal which has retry + the latest prompt.
-    const extracted = await paymentExtractionCache.fetch(toActionCacheCtx(ctx), {
-      storageId: document.storageId as Id<"_storage">,
-    });
+    const extracted = await paymentExtractionCache.fetch(
+      toActionCacheCtx(ctx),
+      {
+        storageId: document.storageId as Id<"_storage">,
+      }
+    );
 
     // Store extracted payment data on the suggestion row
-    await ctx.runMutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {
-      suggestionId: args.suggestionId,
-      paymentExtraction: {
-        lineItems: extracted.lineItems,
-        currency: extracted.currency,
-        paymentType: extracted.paymentType,
-        dueDateTerms: extracted.dueDateTerms,
-        customDueDays: extracted.customDueDays,
-        lateFee: extracted.lateFee,
-        recurringConfig: extracted.recurringConfig,
-        installmentsConfig: extracted.installmentsConfig,
-        depositBalanceConfig: extracted.depositBalanceConfig,
-      },
-    });
+    await ctx.runMutation(
+      internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion,
+      {
+        suggestionId: args.suggestionId,
+        paymentExtraction: {
+          lineItems: extracted.lineItems,
+          currency: extracted.currency,
+          paymentType: extracted.paymentType,
+          dueDateTerms: extracted.dueDateTerms,
+          customDueDays: extracted.customDueDays,
+          lateFee: extracted.lateFee,
+          recurringConfig: extracted.recurringConfig,
+          installmentsConfig: extracted.installmentsConfig,
+          depositBalanceConfig: extracted.depositBalanceConfig,
+        },
+      }
+    );
 
     return {
       lineItemCount: extracted.lineItems.length,
       totalCents: extracted.lineItems.reduce(
         (sum, item) => sum + item.quantity * item.unitPriceCents,
-        0,
+        0
       ),
       currency: extracted.currency,
       paymentType: extracted.paymentType,

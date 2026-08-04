@@ -21,7 +21,7 @@ export const sendWelcomeEmail = internalAction({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     success: boolean;
     messageId?: string;

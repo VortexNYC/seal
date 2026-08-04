@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -22,12 +22,18 @@ interface FeatureGateProps {
   children: ReactNode;
 }
 
-export function FeatureGate({ tier, feature, description, children }: FeatureGateProps) {
+export function FeatureGate({
+  tier,
+  feature,
+  description,
+  children,
+}: FeatureGateProps) {
   const { isPro, isEnterprise, isLoading } = useSubscriptionLimits();
   const { slug } = useParams({ strict: false });
 
   // Show locked state while loading to prevent flash of unlocked content
-  if (isLoading) return <div className="pointer-events-none opacity-50">{children}</div>;
+  if (isLoading)
+    return <div className="pointer-events-none opacity-50">{children}</div>;
 
   const hasAccess = tier === "pro" ? isPro : isEnterprise;
 
@@ -42,11 +48,15 @@ export function FeatureGate({ tier, feature, description, children }: FeatureGat
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium">
-              {feature} — available on {tier === "pro" ? "Professional" : "Enterprise"}
+              {feature} — available on{" "}
+              {tier === "pro" ? "Professional" : "Enterprise"}
             </p>
             <p className="text-muted-foreground text-sm">{description}</p>
             <Button variant="outline" size="sm" className="mt-2" asChild>
-              <Link to="/$slug/settings/billing" params={{ slug: sealAssertPresent(slug) }}>
+              <Link
+                to="/$slug/settings/billing"
+                params={{ slug: sealAssertPresent(slug) }}
+              >
                 {tier === "pro" ? "Start free trial" : "Contact sales"}
               </Link>
             </Button>

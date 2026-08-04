@@ -27,22 +27,28 @@ type VortexAuthMutationCtx = Pick<MutationCtx, "db" | "runMutation">;
 export async function ensureVortexAuthOrganization(
   ctx: VortexAuthMutationCtx,
   organizationId: Id<"organizations">,
-  createdByVortexAuthUserId?: string,
+  createdByVortexAuthUserId?: string
 ) {
   const organization = await ctx.db.get(organizationId);
   if (organization === null) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "Organization not found" });
+    throw new ConvexError({
+      code: "NOT_FOUND",
+      message: "Organization not found",
+    });
   }
 
-  const result = await ctx.runMutation(components.vortexAuth.organizations.upsertOrganization, {
-    organizationId: organization.vortexAuthOrganizationId,
-    name: organization.name,
-    slug: organization.slug,
-    imageUrl: organization.logo ?? null,
-    status: organization.status ?? "active",
-    createdBy: createdByVortexAuthUserId,
-    metadataJson: JSON.stringify({ type: organization.type }),
-  });
+  const result = await ctx.runMutation(
+    components.vortexAuth.organizations.upsertOrganization,
+    {
+      organizationId: organization.vortexAuthOrganizationId,
+      name: organization.name,
+      slug: organization.slug,
+      imageUrl: organization.logo ?? null,
+      status: organization.status ?? "active",
+      createdBy: createdByVortexAuthUserId,
+      metadataJson: JSON.stringify({ type: organization.type }),
+    }
+  );
 
   if (organization.vortexAuthOrganizationId !== result.organizationId) {
     await ctx.db.patch(organization._id, {
@@ -65,12 +71,12 @@ type ComponentMemberStatus = "active" | "invited" | "suspended";
 export async function ensureVortexAuthSystemRoles(
   ctx: VortexAuthMutationCtx,
   organizationId: Id<"organizations">,
-  createdByVortexAuthUserId?: string,
+  createdByVortexAuthUserId?: string
 ) {
   const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
     ctx,
     organizationId,
-    createdByVortexAuthUserId,
+    createdByVortexAuthUserId
   );
   await ctx.runMutation(components.vortexAuth.organizations.seedDefaultRoles, {
     organizationId: vortexAuthOrganizationId,
@@ -92,16 +98,22 @@ export async function ensureVortexAuthSystemRoles(
 export async function ensureComponentRoleForTemplate(
   ctx: VortexAuthMutationCtx,
   organizationId: Id<"organizations">,
-  role: OrganizationMemberRole,
+  role: OrganizationMemberRole
 ) {
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(ctx, organizationId);
-  const result = await ctx.runMutation(components.vortexAuth.organizations.ensureRole, {
-    organizationId: vortexAuthOrganizationId,
-    key: role,
-    name: role,
-    permissions: [...ROLE_PERMISSIONS[role]],
-    isSystem: true,
-  });
+  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
+    ctx,
+    organizationId
+  );
+  const result = await ctx.runMutation(
+    components.vortexAuth.organizations.ensureRole,
+    {
+      organizationId: vortexAuthOrganizationId,
+      key: role,
+      name: role,
+      permissions: [...ROLE_PERMISSIONS[role]],
+      isSystem: true,
+    }
+  );
   return result.roleId;
 }
 
@@ -121,11 +133,14 @@ export async function upsertVortexAuthMember(
     invitedBy?: Id<"users">;
     assignedBy?: Id<"users">;
     acceptedAt?: number;
-  },
+  }
 ) {
   const user = await ctx.db.get(args.userId);
   if (user === null) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "Organization member user not found" });
+    throw new ConvexError({
+      code: "NOT_FOUND",
+      message: "Organization member user not found",
+    });
   }
   if (!user.vortexAuthUserId) {
     throw new ConvexError({
@@ -137,19 +152,26 @@ export async function upsertVortexAuthMember(
   const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
     ctx,
     args.organizationId,
-    user.vortexAuthUserId,
+    user.vortexAuthUserId
   );
-  const roleId = await ensureComponentRoleForTemplate(ctx, args.organizationId, args.role);
+  const roleId = await ensureComponentRoleForTemplate(
+    ctx,
+    args.organizationId,
+    args.role
+  );
 
-  const result = await ctx.runMutation(components.vortexAuth.organizations.upsertMember, {
-    organizationId: vortexAuthOrganizationId,
-    userId: user.vortexAuthUserId as Id<"users">,
-    roleId,
-    status: args.status,
-    invitedBy: await getOptionalVortexAuthUserId(ctx, args.invitedBy),
-    assignedBy: await getOptionalVortexAuthUserId(ctx, args.assignedBy),
-    acceptedAt: args.acceptedAt,
-  });
+  const result = await ctx.runMutation(
+    components.vortexAuth.organizations.upsertMember,
+    {
+      organizationId: vortexAuthOrganizationId,
+      userId: user.vortexAuthUserId as Id<"users">,
+      roleId,
+      status: args.status,
+      invitedBy: await getOptionalVortexAuthUserId(ctx, args.invitedBy),
+      assignedBy: await getOptionalVortexAuthUserId(ctx, args.assignedBy),
+      acceptedAt: args.acceptedAt,
+    }
+  );
   return result.memberId;
 }
 
@@ -168,11 +190,19 @@ export async function upsertVortexAuthMember(
  */
 export async function anchorNewOrganizationOwner(
   ctx: VortexAuthMutationCtx,
-  args: { organizationId: Id<"organizations">; ownerUserId: Id<"users"> },
+  args: { organizationId: Id<"organizations">; ownerUserId: Id<"users"> }
 ): Promise<void> {
   const owner = await ctx.db.get(args.ownerUserId);
-  await ensureVortexAuthOrganization(ctx, args.organizationId, owner?.vortexAuthUserId);
-  await ensureVortexAuthSystemRoles(ctx, args.organizationId, owner?.vortexAuthUserId);
+  await ensureVortexAuthOrganization(
+    ctx,
+    args.organizationId,
+    owner?.vortexAuthUserId
+  );
+  await ensureVortexAuthSystemRoles(
+    ctx,
+    args.organizationId,
+    owner?.vortexAuthUserId
+  );
   if (owner?.vortexAuthUserId) {
     await upsertVortexAuthMember(ctx, {
       organizationId: args.organizationId,
@@ -212,11 +242,14 @@ export async function createVortexAuthInvitation(
     status: ComponentInvitationStatus;
     invitedBy: Id<"users">;
     expiresAt: number;
-  },
+  }
 ): Promise<string> {
   const invitedBy = await ctx.db.get(args.invitedBy);
   if (invitedBy === null) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "Invitation creator not found" });
+    throw new ConvexError({
+      code: "NOT_FOUND",
+      message: "Invitation creator not found",
+    });
   }
   if (!invitedBy.vortexAuthUserId) {
     throw new ConvexError({
@@ -228,19 +261,26 @@ export async function createVortexAuthInvitation(
   const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
     ctx,
     args.organizationId,
-    invitedBy.vortexAuthUserId,
+    invitedBy.vortexAuthUserId
   );
-  const roleId = await ensureComponentRoleForTemplate(ctx, args.organizationId, args.role);
+  const roleId = await ensureComponentRoleForTemplate(
+    ctx,
+    args.organizationId,
+    args.role
+  );
 
-  const result = await ctx.runMutation(components.vortexAuth.organizations.upsertInvitation, {
-    organizationId: vortexAuthOrganizationId,
-    roleId,
-    email: args.email,
-    tokenHash: args.tokenHash,
-    status: args.status,
-    invitedBy: invitedBy.vortexAuthUserId as Id<"users">,
-    expiresAt: args.expiresAt,
-  });
+  const result = await ctx.runMutation(
+    components.vortexAuth.organizations.upsertInvitation,
+    {
+      organizationId: vortexAuthOrganizationId,
+      roleId,
+      email: args.email,
+      tokenHash: args.tokenHash,
+      status: args.status,
+      invitedBy: invitedBy.vortexAuthUserId as Id<"users">,
+      expiresAt: args.expiresAt,
+    }
+  );
   return String(result.invitationId);
 }
 
@@ -256,16 +296,25 @@ export async function setVortexAuthInvitationStatus(
     status: ComponentInvitationStatus;
     acceptedByUserId?: Id<"users">;
     acceptedAt?: number;
-  },
+  }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
-  await ctx.runMutation(components.vortexAuth.organizations.setInvitationStatus, {
-    invitationId: args.invitationId as GenericId<"organization_invitations">,
-    organizationId,
-    status: args.status,
-    acceptedByUserId: await getOptionalVortexAuthUserId(ctx, args.acceptedByUserId),
-    acceptedAt: args.acceptedAt,
-  });
+  const organizationId = await ensureVortexAuthOrganization(
+    ctx,
+    args.organizationId
+  );
+  await ctx.runMutation(
+    components.vortexAuth.organizations.setInvitationStatus,
+    {
+      invitationId: args.invitationId as GenericId<"organization_invitations">,
+      organizationId,
+      status: args.status,
+      acceptedByUserId: await getOptionalVortexAuthUserId(
+        ctx,
+        args.acceptedByUserId
+      ),
+      acceptedAt: args.acceptedAt,
+    }
+  );
 }
 
 /**
@@ -281,17 +330,23 @@ export async function recordVortexAuthInvitationEmailDelivery(
     emailDeliveryStatus: ComponentInvitationEmailDeliveryStatus;
     emailDeliveryEvent?: string | null;
     emailDeliveryError?: string | null;
-  },
+  }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
-  await ctx.runMutation(components.vortexAuth.organizations.recordInvitationEmailDelivery, {
-    invitationId: args.invitationId as GenericId<"organization_invitations">,
-    organizationId,
-    emailId: args.emailId ?? null,
-    emailDeliveryStatus: args.emailDeliveryStatus,
-    emailDeliveryEvent: args.emailDeliveryEvent ?? null,
-    emailDeliveryError: args.emailDeliveryError ?? null,
-  });
+  const organizationId = await ensureVortexAuthOrganization(
+    ctx,
+    args.organizationId
+  );
+  await ctx.runMutation(
+    components.vortexAuth.organizations.recordInvitationEmailDelivery,
+    {
+      invitationId: args.invitationId as GenericId<"organization_invitations">,
+      organizationId,
+      emailId: args.emailId ?? null,
+      emailDeliveryStatus: args.emailDeliveryStatus,
+      emailDeliveryEvent: args.emailDeliveryEvent ?? null,
+      emailDeliveryError: args.emailDeliveryError ?? null,
+    }
+  );
 }
 
 /** Component apiKey status enum (mirrors the component schema). */
@@ -315,11 +370,14 @@ export async function createVortexAuthApiKey(
     allowedIpRanges?: readonly string[];
     expiresAt?: number;
     status?: ComponentApiKeyStatus;
-  },
+  }
 ): Promise<string> {
   const user = await ctx.db.get(args.userId);
   if (user === null) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "API key user not found" });
+    throw new ConvexError({
+      code: "NOT_FOUND",
+      message: "API key user not found",
+    });
   }
   if (!user.vortexAuthUserId) {
     throw new ConvexError({
@@ -328,23 +386,26 @@ export async function createVortexAuthApiKey(
     });
   }
 
-  const result = await ctx.runMutation(components.vortexAuth.apiKeys.upsertApiKey, {
-    organizationId: await ensureVortexAuthOrganization(
-      ctx,
-      args.organizationId,
-      user.vortexAuthUserId,
-    ),
-    userId: user.vortexAuthUserId,
-    name: args.name,
-    keyPrefix: args.keyPrefix,
-    keyHash: args.keyHash,
-    requestId: null,
-    requestIdExpiresAt: null,
-    scopes: [...args.scopes],
-    allowedIpRanges: args.allowedIpRanges ? [...args.allowedIpRanges] : null,
-    expiresAt: args.expiresAt ?? null,
-    status: args.status ?? "active",
-  });
+  const result = await ctx.runMutation(
+    components.vortexAuth.apiKeys.upsertApiKey,
+    {
+      organizationId: await ensureVortexAuthOrganization(
+        ctx,
+        args.organizationId,
+        user.vortexAuthUserId
+      ),
+      userId: user.vortexAuthUserId,
+      name: args.name,
+      keyPrefix: args.keyPrefix,
+      keyHash: args.keyHash,
+      requestId: null,
+      requestIdExpiresAt: null,
+      scopes: [...args.scopes],
+      allowedIpRanges: args.allowedIpRanges ? [...args.allowedIpRanges] : null,
+      expiresAt: args.expiresAt ?? null,
+      status: args.status ?? "active",
+    }
+  );
 
   return String(result.apiKeyId);
 }
@@ -352,9 +413,12 @@ export async function createVortexAuthApiKey(
 /** Revoke a COMPONENT apiKey (idempotent). `apiKeyId` is the COMPONENT id. */
 export async function revokeVortexAuthApiKey(
   ctx: VortexAuthMutationCtx,
-  args: { apiKeyId: string; organizationId: Id<"organizations"> },
+  args: { apiKeyId: string; organizationId: Id<"organizations"> }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
+  const organizationId = await ensureVortexAuthOrganization(
+    ctx,
+    args.organizationId
+  );
   await ctx.runMutation(components.vortexAuth.apiKeys.revokeApiKey, {
     apiKeyId: args.apiKeyId,
     organizationId,
@@ -364,9 +428,16 @@ export async function revokeVortexAuthApiKey(
 /** Record lastUsed timestamp/ip on a COMPONENT apiKey (hot auth path). */
 export async function touchVortexAuthApiKeyLastUsed(
   ctx: VortexAuthMutationCtx,
-  args: { apiKeyId: string; organizationId: Id<"organizations">; ip?: string | null },
+  args: {
+    apiKeyId: string;
+    organizationId: Id<"organizations">;
+    ip?: string | null;
+  }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(ctx, args.organizationId);
+  const organizationId = await ensureVortexAuthOrganization(
+    ctx,
+    args.organizationId
+  );
   await ctx.runMutation(components.vortexAuth.apiKeys.touchApiKeyLastUsed, {
     apiKeyId: args.apiKeyId,
     organizationId,
@@ -376,7 +447,7 @@ export async function touchVortexAuthApiKeyLastUsed(
 
 async function getOptionalVortexAuthUserId(
   ctx: VortexAuthMutationCtx,
-  userId: Id<"users"> | undefined,
+  userId: Id<"users"> | undefined
 ): Promise<Id<"users"> | undefined> {
   if (userId === undefined) {
     return undefined;

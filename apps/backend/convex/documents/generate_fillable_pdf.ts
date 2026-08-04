@@ -15,13 +15,16 @@ export const generateFillablePdfAction = action({
   args: {
     documentId: v.id("documents"),
   },
-  handler: async (ctx, args): Promise<{ pdfBase64: string; fileName: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ pdfBase64: string; fileName: string }> => {
     // Get document using internal query
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     if (!document) {
@@ -33,7 +36,7 @@ export const generateFillablePdfAction = action({
       internal.signature_fields.queries.getFieldsByDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     // Get recipients for this document
@@ -41,12 +44,12 @@ export const generateFillablePdfAction = action({
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     // Create a map of recipient IDs to recipient info
     const recipientMap = new Map(
-      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }]),
+      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }])
     );
 
     // Fetch the original PDF file from storage
@@ -67,7 +70,7 @@ export const generateFillablePdfAction = action({
     const fillablePdfBytes = await generateFillablePdf(
       pdfArrayBuffer,
       signatureFields,
-      recipientMap,
+      recipientMap
     );
 
     // Convert Uint8Array to base64 for transmission
@@ -90,13 +93,16 @@ export const generateAndStoreFillablePdf = action({
   args: {
     documentId: v.id("documents"),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; fillableStorageId: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; fillableStorageId: string }> => {
     // Get document using internal query
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     if (!document) {
@@ -108,13 +114,13 @@ export const generateAndStoreFillablePdf = action({
       internal.signature_fields.queries.getFieldsByDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     // If no fields, no need to generate fillable PDF
     if (signatureFields.length === 0) {
       throw new ConvexError(
-        "Document has no signature fields. Add fields before generating fillable PDF.",
+        "Document has no signature fields. Add fields before generating fillable PDF."
       );
     }
 
@@ -123,12 +129,12 @@ export const generateAndStoreFillablePdf = action({
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     // Create a map of recipient IDs to recipient info
     const recipientMap = new Map(
-      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }]),
+      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }])
     );
 
     // Fetch the original PDF file from storage
@@ -149,7 +155,7 @@ export const generateAndStoreFillablePdf = action({
     const fillablePdfBytes = await generateFillablePdf(
       pdfArrayBuffer,
       signatureFields,
-      recipientMap,
+      recipientMap
     );
 
     // Store the fillable PDF in Convex storage
@@ -159,10 +165,13 @@ export const generateAndStoreFillablePdf = action({
     const fillableStorageId = await ctx.storage.store(fillableBlob);
 
     // Update the document record with the fillable storage ID
-    await ctx.runMutation(internal.documents.mutations.updateFillableStorageId, {
-      documentId: args.documentId,
-      fillableStorageId: fillableStorageId as unknown as string,
-    });
+    await ctx.runMutation(
+      internal.documents.mutations.updateFillableStorageId,
+      {
+        documentId: args.documentId,
+        fillableStorageId: fillableStorageId as unknown as string,
+      }
+    );
 
     return {
       success: true,
@@ -182,7 +191,7 @@ export const getDocumentPdfUrls = action({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     originalUrl: string | null;
     fillableUrl: string | null;
@@ -193,7 +202,7 @@ export const getDocumentPdfUrls = action({
       internal.documents.queries.getDocumentInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     if (!document) {

@@ -63,7 +63,12 @@ describe("ApiError", () => {
 
   test("toResponse includes instance and errors when provided", () => {
     const fieldErrors = { email: ["Invalid format"] };
-    const error = new ApiError(422, "Validation failed", "VALIDATION_ERROR", fieldErrors);
+    const error = new ApiError(
+      422,
+      "Validation failed",
+      "VALIDATION_ERROR",
+      fieldErrors
+    );
     const response = error.toResponse("/api/v1/documents");
 
     expect(response.instance).toBe("/api/v1/documents");
@@ -87,7 +92,11 @@ describe("apiErrorResponse", () => {
   });
 
   test("body matches expected JSON structure", async () => {
-    const res = apiErrorResponse(403, "Insufficient scope", "INSUFFICIENT_SCOPE");
+    const res = apiErrorResponse(
+      403,
+      "Insufficient scope",
+      "INSUFFICIENT_SCOPE"
+    );
     const body = (await res.json()) as Record<string, unknown>;
 
     expect(body.type).toBe("https://api.seal.app/errors/insufficient-scope");
@@ -125,7 +134,11 @@ describe("apiResponse", () => {
   });
 
   test("includes custom headers", () => {
-    const res = apiResponse(201, { id: "doc_123" }, { Location: "/api/v1/documents/doc_123" });
+    const res = apiResponse(
+      201,
+      { id: "doc_123" },
+      { Location: "/api/v1/documents/doc_123" }
+    );
 
     expect(res.status).toBe(201);
     expect(res.headers.get("Location")).toBe("/api/v1/documents/doc_123");
@@ -149,7 +162,12 @@ describe("handleApiError", () => {
 
   test("preserves field errors from ApiError", async () => {
     const fieldErrors = { email: ["Invalid"] };
-    const error = new ApiError(422, "Validation failed", "VALIDATION_ERROR", fieldErrors);
+    const error = new ApiError(
+      422,
+      "Validation failed",
+      "VALIDATION_ERROR",
+      fieldErrors
+    );
     const res = handleApiError(error);
 
     const body = (await res.json()) as Record<string, unknown>;

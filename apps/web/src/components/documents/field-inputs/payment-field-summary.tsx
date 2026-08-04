@@ -30,7 +30,10 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 
 const PAYMENT_STATUS_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+  {
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+  }
 > = {
   pending: { label: "Pending", variant: "secondary" },
   created: { label: "Created", variant: "secondary" },
@@ -51,7 +54,9 @@ export function PaymentFieldSummary({
   token,
   showInlinePayment,
 }: PaymentFieldSummaryProps) {
-  const config = useQuery(api.payment_fields.queries.getPaymentConfigByField, { fieldId });
+  const config = useQuery(api.payment_fields.queries.getPaymentConfigByField, {
+    fieldId,
+  });
 
   if (config === undefined) {
     return (
@@ -65,21 +70,29 @@ export function PaymentFieldSummary({
     return (
       <div className="flex flex-col items-center gap-2 py-4 text-center">
         <CreditCardIcon className="text-muted-foreground h-6 w-6" />
-        <p className="text-muted-foreground text-sm">Payment not yet configured</p>
+        <p className="text-muted-foreground text-sm">
+          Payment not yet configured
+        </p>
       </div>
     );
   }
 
-  const isPayable = config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled";
+  const isPayable =
+    config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled";
 
   return (
     <div className="border-field-payment-border bg-field-payment-surface/50 space-y-3 rounded-lg border p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CreditCardIcon className="text-field-payment h-4 w-4" />
-          <span className="text-field-payment text-sm font-semibold">Payment Required</span>
+          <span className="text-field-payment text-sm font-semibold">
+            Payment Required
+          </span>
         </div>
-        <Badge variant="outline" className="border-field-payment-border text-field-payment">
+        <Badge
+          variant="outline"
+          className="border-field-payment-border text-field-payment"
+        >
           {PAYMENT_TYPE_LABELS[config.paymentType] ?? config.paymentType}
         </Badge>
       </div>
@@ -113,8 +126,14 @@ export function PaymentFieldSummary({
       {config.paymentStatus && (
         <div className="border-field-payment-border flex items-center justify-between border-t pt-2">
           <span className="text-muted-foreground text-xs">Status</span>
-          <Badge variant={PAYMENT_STATUS_CONFIG[config.paymentStatus]?.variant ?? "secondary"}>
-            {PAYMENT_STATUS_CONFIG[config.paymentStatus]?.label ?? config.paymentStatus}
+          <Badge
+            variant={
+              PAYMENT_STATUS_CONFIG[config.paymentStatus]?.variant ??
+              "secondary"
+            }
+          >
+            {PAYMENT_STATUS_CONFIG[config.paymentStatus]?.label ??
+              config.paymentStatus}
           </Badge>
         </div>
       )}
@@ -140,10 +159,14 @@ function VortexPaymentCollectionHandoff({
     <div className="border-field-payment-border space-y-2 border-t pt-3">
       {signingMode && (
         <p className="text-muted-foreground text-xs text-pretty">
-          Payment is collected through Vortex Payments before this document can be completed.
+          Payment is collected through Vortex Payments before this document can
+          be completed.
         </p>
       )}
-      <Button asChild className="bg-field-payment hover:bg-field-payment/90 w-full text-primary-foreground">
+      <Button
+        asChild
+        className="bg-field-payment hover:bg-field-payment/90 text-primary-foreground w-full"
+      >
         <a href={hostedInvoiceUrl} target="_blank" rel="noopener noreferrer">
           <CreditCardIcon className="size-4" />
           Pay with Vortex Payments

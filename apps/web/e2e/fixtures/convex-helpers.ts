@@ -10,12 +10,14 @@ import type { Page } from "@playwright/test";
 export async function waitForConvexQuery(
   page: Page,
   queryName: string,
-  timeout = 10000,
+  timeout = 10000
 ): Promise<void> {
   // Wait for network request to the Convex API
   await page.waitForResponse(
-    (response) => response.url().includes("convex.cloud") && response.url().includes(queryName),
-    { timeout },
+    (response) =>
+      response.url().includes("convex.cloud") &&
+      response.url().includes(queryName),
+    { timeout }
   );
 
   // Allow time for React to re-render
@@ -28,16 +30,20 @@ export async function waitForConvexQuery(
 export async function waitForConvexMutation(
   page: Page,
   mutationName?: string,
-  timeout = 10000,
+  timeout = 10000
 ): Promise<void> {
   const isConvexRequest = (url: string) =>
-    url.includes("convex") || url.includes("api.convex") || url.includes("convex.cloud");
+    url.includes("convex") ||
+    url.includes("api.convex") ||
+    url.includes("convex.cloud");
 
   try {
     if (mutationName) {
       await page.waitForResponse(
-        (response) => isConvexRequest(response.url()) && response.url().includes(mutationName),
-        { timeout: timeout * 0.6 },
+        (response) =>
+          isConvexRequest(response.url()) &&
+          response.url().includes(mutationName),
+        { timeout: timeout * 0.6 }
       );
       return;
     }
@@ -46,7 +52,9 @@ export async function waitForConvexMutation(
   }
 
   try {
-    await page.waitForResponse((response) => isConvexRequest(response.url()), { timeout: timeout });
+    await page.waitForResponse((response) => isConvexRequest(response.url()), {
+      timeout: timeout,
+    });
   } catch (_error) {
     // If Convex doesn't emit a matching request (for example due local no-op
     // transitions), let the call continue and rely on subsequent UI assertions.
@@ -62,7 +70,7 @@ export async function waitForConvexMutation(
 export async function mockConvexQuery(
   page: Page,
   queryName: string,
-  mockData: unknown,
+  mockData: unknown
 ): Promise<void> {
   await page.route("**/convex.cloud/**", (route) => {
     const url = route.request().url();

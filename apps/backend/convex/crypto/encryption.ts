@@ -38,7 +38,7 @@ async function getEncryptionKey(keyBase64: string): Promise<CryptoKey> {
  */
 export async function encryptSignatureData(
   plaintext: string | undefined,
-  keyBase64: string | undefined,
+  keyBase64: string | undefined
 ): Promise<string | undefined> {
   if (!plaintext || !keyBase64) return plaintext;
 
@@ -49,7 +49,11 @@ export async function encryptSignatureData(
   // Generate random 12-byte IV (standard for AES-GCM)
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
-  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
 
   // Encode IV as hex, ciphertext as base64
   const ivHex = Array.from(iv, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -70,7 +74,7 @@ export async function encryptSignatureData(
  */
 export async function decryptSignatureData(
   encrypted: string | undefined,
-  keyBase64: string | undefined,
+  keyBase64: string | undefined
 ): Promise<string | undefined> {
   if (!encrypted) return encrypted;
 
@@ -98,7 +102,11 @@ export async function decryptSignatureData(
   // Decode ciphertext from base64
   const ctBytes = Uint8Array.from(atob(ctBase64), (c) => c.charCodeAt(0));
 
-  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ctBytes);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    ctBytes
+  );
 
   return new TextDecoder().decode(plaintext);
 }

@@ -50,12 +50,16 @@ describe("parseConvexError", () => {
     });
 
     test("detects 'permission' message", () => {
-      const result = parseConvexError(new Error("Insufficient permission to edit"));
+      const result = parseConvexError(
+        new Error("Insufficient permission to edit")
+      );
       expect(result.type).toBe("permission");
     });
 
     test("detects 'access denied' message", () => {
-      const result = parseConvexError(new Error("Access denied for this resource"));
+      const result = parseConvexError(
+        new Error("Access denied for this resource")
+      );
       expect(result.type).toBe("permission");
     });
 
@@ -77,9 +81,13 @@ describe("parseConvexError", () => {
 
   describe("subscription errors", () => {
     test("detects 'pro plan' message", () => {
-      const result = parseConvexError(new Error("This feature requires a Professional plan"));
+      const result = parseConvexError(
+        new Error("This feature requires a Professional plan")
+      );
       expect(result.type).toBe("subscription");
-      expect(result.userFriendlyMessage).toBe("This feature requires a Professional plan");
+      expect(result.userFriendlyMessage).toBe(
+        "This feature requires a Professional plan"
+      );
     });
 
     test("detects 'upgrade' message", () => {
@@ -88,7 +96,9 @@ describe("parseConvexError", () => {
     });
 
     test("detects 'subscription' message", () => {
-      const result = parseConvexError(new Error("Active subscription required"));
+      const result = parseConvexError(
+        new Error("Active subscription required")
+      );
       expect(result.type).toBe("subscription");
     });
 
@@ -152,7 +162,9 @@ describe("parseConvexError", () => {
     test("falls back to default message when error message is empty", () => {
       const result = parseConvexError(new Error(""));
       expect(result.type).toBe("unknown");
-      expect(result.userFriendlyMessage).toBe("An unexpected error occurred. Please try again.");
+      expect(result.userFriendlyMessage).toBe(
+        "An unexpected error occurred. Please try again."
+      );
     });
   });
 
@@ -164,7 +176,10 @@ describe("parseConvexError", () => {
     });
 
     test("handles ConvexError-like object with data string", () => {
-      const convexLikeError = { data: "Document not found", message: "Document not found" };
+      const convexLikeError = {
+        data: "Document not found",
+        message: "Document not found",
+      };
       // parseConvexError uses String() for non-Error objects
       const result = parseConvexError(convexLikeError);
       expect(result.type).toBe("unknown");
@@ -192,13 +207,17 @@ describe("parseConvexError", () => {
   describe("priority ordering", () => {
     test("permission takes precedence over not_found when both match", () => {
       // "not authorized" matches permission before "not found" check
-      const result = parseConvexError(new Error("not authorized, resource not found"));
+      const result = parseConvexError(
+        new Error("not authorized, resource not found")
+      );
       expect(result.type).toBe("permission");
     });
 
     test("subscription takes precedence over validation", () => {
       // "upgrade" matches subscription before "required"
-      const result = parseConvexError(new Error("Upgrade required for this feature"));
+      const result = parseConvexError(
+        new Error("Upgrade required for this feature")
+      );
       expect(result.type).toBe("subscription");
     });
   });

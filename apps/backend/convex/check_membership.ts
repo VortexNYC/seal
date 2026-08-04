@@ -30,7 +30,9 @@ export const hasOrganization = query({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -89,7 +91,9 @@ export const ensureActiveOrganization = mutation({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -151,7 +155,9 @@ export const setActiveOrganizationBySlug = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -173,7 +179,9 @@ export const setActiveOrganizationBySlug = mutation({
 
     const memberships = await resolveComponentMemberships(ctx, user);
     const membership = memberships.find(
-      (candidate) => candidate.organizationId === organization._id && candidate.status === "active",
+      (candidate) =>
+        candidate.organizationId === organization._id &&
+        candidate.status === "active"
     );
 
     if (!membership) {
@@ -205,7 +213,9 @@ export const listUserOrganizations = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -227,7 +237,7 @@ export const listUserOrganizations = query({
           organizationSlug: organization.slug,
           role: membership.role,
         };
-      }),
+      })
     );
 
     return organizations.filter((org) => org !== null);

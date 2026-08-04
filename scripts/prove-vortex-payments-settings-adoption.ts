@@ -4,12 +4,12 @@ import { join } from "node:path";
 const repoRoot = new URL("..", import.meta.url).pathname;
 const paymentsRoutePath = join(
   repoRoot,
-  "apps/web/src/routes/_authenticated/$slug/settings/payments.tsx",
+  "apps/web/src/routes/_authenticated/$slug/settings/payments.tsx"
 );
 const webPackagePath = join(repoRoot, "apps/web/package.json");
 const vortexComponentsPath = join(
   repoRoot,
-  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js",
+  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js"
 );
 
 const paymentsRoute = readFileSync(paymentsRoutePath, "utf8");
@@ -32,7 +32,9 @@ for (const requiredFragment of [
   'feeHandling === "pass_to_recipient" ? "customer_pays" : "merchant_pays"',
 ]) {
   if (!paymentsRoute.includes(requiredFragment)) {
-    failures.push(`payments route missing required Vortex adoption fragment: ${requiredFragment}`);
+    failures.push(
+      `payments route missing required Vortex adoption fragment: ${requiredFragment}`
+    );
   }
 }
 
@@ -43,7 +45,7 @@ const feePolicyHandlerWired =
 
 if (!feePolicyHandlerWired) {
   failures.push(
-    "payments route must wire VortexFeePolicyPanel policy changes to Vortex fee handling",
+    "payments route must wire VortexFeePolicyPanel policy changes to Vortex fee handling"
   );
 }
 
@@ -55,7 +57,7 @@ for (const requiredPackageFragment of [
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
-      `@vortexnyc/payments-react missing required fee-policy selector fragment: ${requiredPackageFragment}`,
+      `@vortexnyc/payments-react missing required fee-policy selector fragment: ${requiredPackageFragment}`
     );
   }
 }
@@ -69,7 +71,7 @@ for (const forbiddenFragment of [
 ]) {
   if (paymentsRoute.includes(forbiddenFragment)) {
     failures.push(
-      `payments route still contains local fee-policy/provider fragment: ${forbiddenFragment}`,
+      `payments route still contains local fee-policy/provider fragment: ${forbiddenFragment}`
     );
   }
 }
@@ -95,7 +97,10 @@ function parseJsonObject(source: string): Record<string, unknown> {
   return parsed;
 }
 
-function getObject(source: Record<string, unknown>, key: string): Record<string, unknown> {
+function getObject(
+  source: Record<string, unknown>,
+  key: string
+): Record<string, unknown> {
   const value = source[key];
   if (!isRecord(value)) {
     return {};

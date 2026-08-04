@@ -1,5 +1,8 @@
 import { getTestWorkspaceConfig } from "./auth-helpers";
-import { assertConvexE2eHelperAvailability, ensurePdfStorageId } from "./convex-test-api";
+import {
+  assertConvexE2eHelperAvailability,
+  ensurePdfStorageId,
+} from "./convex-test-api";
 import { sampleDocumentPath } from "./paths";
 import { readCachedWorkspaceSlug } from "./workspace-state";
 
@@ -8,9 +11,11 @@ function getConvexSetupContext(): {
   deployKey: string;
   organizationSlug: string;
 } {
-  const convexUrl = process.env.VITE_CONVEX_URL || "https://coordinated-lemur-768.convex.cloud";
+  const convexUrl =
+    process.env.VITE_CONVEX_URL || "https://coordinated-lemur-768.convex.cloud";
   const deployKey = process.env.CONVEX_DEPLOY_KEY || "";
-  const organizationSlug = readCachedWorkspaceSlug() || getTestWorkspaceConfig().organizationSlug;
+  const organizationSlug =
+    readCachedWorkspaceSlug() || getTestWorkspaceConfig().organizationSlug;
 
   return { convexUrl, deployKey, organizationSlug };
 }
@@ -18,7 +23,9 @@ function getConvexSetupContext(): {
 export async function cleanupPendingInvitations(): Promise<void> {
   const { convexUrl, deployKey, organizationSlug } = getConvexSetupContext();
   if (!deployKey) {
-    console.warn("[setup] CONVEX_DEPLOY_KEY not set — skipping E2E invitation cleanup");
+    console.warn(
+      "[setup] CONVEX_DEPLOY_KEY not set — skipping E2E invitation cleanup"
+    );
     return;
   }
 
@@ -42,7 +49,7 @@ export async function cleanupPendingInvitations(): Promise<void> {
         console.warn(
           "[setup] purgeE2EPendingInvitations HTTP error:",
           cleanupRes.status,
-          await cleanupRes.text(),
+          await cleanupRes.text()
         );
         break;
       }
@@ -70,7 +77,9 @@ export async function cleanupPendingInvitations(): Promise<void> {
 export async function purgeE2eDocuments(): Promise<void> {
   const { convexUrl, deployKey, organizationSlug } = getConvexSetupContext();
   if (!deployKey) {
-    console.warn("[setup] CONVEX_DEPLOY_KEY not set — skipping E2E document purge");
+    console.warn(
+      "[setup] CONVEX_DEPLOY_KEY not set — skipping E2E document purge"
+    );
     return;
   }
 
@@ -94,7 +103,7 @@ export async function purgeE2eDocuments(): Promise<void> {
         console.warn(
           "[setup] purgeE2EDocuments HTTP error:",
           purgeRes.status,
-          await purgeRes.text(),
+          await purgeRes.text()
         );
         break;
       }
@@ -122,7 +131,9 @@ export async function purgeE2eDocuments(): Promise<void> {
 export async function seedProSubscription(): Promise<void> {
   const { convexUrl, deployKey, organizationSlug } = getConvexSetupContext();
   if (!deployKey) {
-    console.warn("[setup] CONVEX_DEPLOY_KEY not set — skipping pro subscription seed");
+    console.warn(
+      "[setup] CONVEX_DEPLOY_KEY not set — skipping pro subscription seed"
+    );
     return;
   }
 
@@ -140,7 +151,11 @@ export async function seedProSubscription(): Promise<void> {
       }),
     });
     if (!res.ok) {
-      console.warn("[setup] seedProSubscriptionForE2E HTTP error:", res.status, await res.text());
+      console.warn(
+        "[setup] seedProSubscriptionForE2E HTTP error:",
+        res.status,
+        await res.text()
+      );
     }
   } catch (err) {
     console.warn("[setup] seedProSubscriptionForE2E failed:", err);
@@ -157,6 +172,9 @@ export async function prepareBackendState(): Promise<void> {
     const storageId = await ensurePdfStorageId(sampleDocumentPath);
     console.info(`[setup] PDF storageId cached: ${storageId}`);
   } catch (err) {
-    console.warn("[setup] PDF upload failed — API document creation will fall back to UI:", err);
+    console.warn(
+      "[setup] PDF upload failed — API document creation will fall back to UI:",
+      err
+    );
   }
 }

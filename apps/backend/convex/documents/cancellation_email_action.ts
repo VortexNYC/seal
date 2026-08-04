@@ -25,7 +25,7 @@ export const sendCancellationEmails = internalAction({
     // Get document
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document) return;
@@ -33,15 +33,18 @@ export const sendCancellationEmails = internalAction({
     // Get recipients
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (recipients.length === 0) return;
 
     // Get sender information
-    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: document.ownerId,
-    });
+    const senderUser = await ctx.runQuery(
+      internal.organizations.helpers.getUserById,
+      {
+        userId: document.ownerId,
+      }
+    );
     const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
     // Notify all recipients who haven't completed their action

@@ -16,14 +16,18 @@ type CheckoutArgs = {
   readonly cancelUrl: string;
 };
 
-type CheckoutHandler = (ctx: ActionCtx, args: CheckoutArgs) => Promise<{ checkoutUrl: string }>;
+type CheckoutHandler = (
+  ctx: ActionCtx,
+  args: CheckoutArgs
+) => Promise<{ checkoutUrl: string }>;
 
-const checkoutHandler = (createCheckoutSession as unknown as { readonly _handler: CheckoutHandler })
-  ._handler;
+const checkoutHandler = (
+  createCheckoutSession as unknown as { readonly _handler: CheckoutHandler }
+)._handler;
 
 type PortalHandler = (
   ctx: ActionCtx,
-  args: { readonly returnUrl: string },
+  args: { readonly returnUrl: string }
 ) => Promise<{ url: string }>;
 
 const portalHandler = (
@@ -32,15 +36,18 @@ const portalHandler = (
 
 type LifecycleHandler = (
   ctx: ActionCtx,
-  args: { readonly slug: string; readonly subscriptionId: string },
+  args: { readonly slug: string; readonly subscriptionId: string }
 ) => Promise<unknown>;
 
-const pauseHandler = (pauseSubscription as unknown as { readonly _handler: LifecycleHandler })
-  ._handler;
-const resumeHandler = (resumeSubscription as unknown as { readonly _handler: LifecycleHandler })
-  ._handler;
-const cancelHandler = (cancelSubscription as unknown as { readonly _handler: LifecycleHandler })
-  ._handler;
+const pauseHandler = (
+  pauseSubscription as unknown as { readonly _handler: LifecycleHandler }
+)._handler;
+const resumeHandler = (
+  resumeSubscription as unknown as { readonly _handler: LifecycleHandler }
+)._handler;
+const cancelHandler = (
+  cancelSubscription as unknown as { readonly _handler: LifecycleHandler }
+)._handler;
 
 const organizationId = "org_seal_123" as Id<"organizations">;
 const baseCheckoutArgs = {
@@ -77,9 +84,10 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     const mockFetch: typeof fetch = Object.assign(
       async (
         input: Parameters<typeof fetch>[0],
-        init?: Parameters<typeof fetch>[1],
+        init?: Parameters<typeof fetch>[1]
       ): Promise<Response> => {
-        captured = input instanceof Request ? input : new Request(String(input), init);
+        captured =
+          input instanceof Request ? input : new Request(String(input), init);
         return new Response(
           JSON.stringify({
             data: {
@@ -91,10 +99,10 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
               },
             },
           }),
-          { status: 201, headers: { "content-type": "application/json" } },
+          { status: 201, headers: { "content-type": "application/json" } }
         );
       },
-      { preconnect: fetch.preconnect },
+      { preconnect: () => undefined }
     );
     vi.stubGlobal("fetch", mockFetch);
 
@@ -136,7 +144,7 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     });
 
     await expect(checkoutHandler(ctx, baseCheckoutArgs)).rejects.toThrow(
-      "Seal subscription price not found for Vortex checkout lookupKey: pro:monthly:v2",
+      "Seal subscription price not found for Vortex checkout lookupKey: pro:monthly:v2"
     );
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
@@ -151,9 +159,12 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     });
 
     await expect(
-      checkoutHandler(ctx, { ...baseCheckoutArgs, lookupKey: "unknown:monthly:v2" }),
+      checkoutHandler(ctx, {
+        ...baseCheckoutArgs,
+        lookupKey: "unknown:monthly:v2",
+      })
     ).rejects.toThrow(
-      "Seal subscription price not found for Vortex checkout lookupKey: unknown:monthly:v2",
+      "Seal subscription price not found for Vortex checkout lookupKey: unknown:monthly:v2"
     );
     expect(ctx.runMutation).not.toHaveBeenCalled();
   });
@@ -207,7 +218,9 @@ function createCheckoutActionCtx(args: {
     }
     return next;
   });
-  const runMutation = vi.fn(async (): Promise<unknown> => args.priceLookupResult);
+  const runMutation = vi.fn(
+    async (): Promise<unknown> => args.priceLookupResult
+  );
 
   return {
     auth,
@@ -242,15 +255,17 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
               },
             },
           }),
-          { status: 201, headers: { "content-type": "application/json" } },
+          { status: 201, headers: { "content-type": "application/json" } }
         ),
-      { preconnect: fetch.preconnect },
+      { preconnect: () => undefined }
     );
     vi.stubGlobal("fetch", mockFetch);
 
     const ctx = createCheckoutActionCtx({ priceLookupResult: null });
 
-    await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({
+    await expect(
+      portalHandler(ctx, { returnUrl: "https://seal.test/billing" })
+    ).resolves.toEqual({
       url: "https://pay.vortex.test/portal/plink_123",
     });
     expect(ctx.runMutation).not.toHaveBeenCalled();
@@ -272,9 +287,9 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
               },
             },
           }),
-          { status: 201, headers: { "content-type": "application/json" } },
+          { status: 201, headers: { "content-type": "application/json" } }
         ),
-      { preconnect: fetch.preconnect },
+      { preconnect: () => undefined }
     );
     vi.stubGlobal("fetch", mockFetch);
 
@@ -283,7 +298,9 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
       organizationOverrides: { billingCustomerId: "cus_existing" },
     });
 
-    await expect(portalHandler(ctx, { returnUrl: "https://seal.test/billing" })).resolves.toEqual({
+    await expect(
+      portalHandler(ctx, { returnUrl: "https://seal.test/billing" })
+    ).resolves.toEqual({
       url: "https://pay.vortex.test/portal/default",
     });
     expect(ctx.runMutation).not.toHaveBeenCalled();
@@ -299,19 +316,19 @@ describe("payments/subscription_actions Vortex lifecycle guards", () => {
 
   test("blocks pause locally until Vortex Billing owns the lifecycle action", async () => {
     await expect(pauseHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
-      "Subscription pause must be handled by Vortex Billing",
+      "Subscription pause must be handled by Vortex Billing"
     );
   });
 
   test("blocks resume locally until Vortex Billing owns the lifecycle action", async () => {
     await expect(resumeHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
-      "Subscription resume must be handled by Vortex Billing",
+      "Subscription resume must be handled by Vortex Billing"
     );
   });
 
   test("blocks cancellation locally until Vortex Billing owns the lifecycle action", async () => {
     await expect(cancelHandler(lifecycleCtx, lifecycleArgs)).rejects.toThrow(
-      "Subscription cancellation must be handled by Vortex Billing",
+      "Subscription cancellation must be handled by Vortex Billing"
     );
   });
 });

@@ -37,7 +37,9 @@ function TodoList() {
 
   return (
     <div>
-      {fetchStatus === "paused" && <Banner>You're offline. Showing cached data.</Banner>}
+      {fetchStatus === "paused" && (
+        <Banner>You're offline. Showing cached data.</Banner>
+      )}
       <TodoItems todos={data} />
     </div>
   );
@@ -147,10 +149,14 @@ import { onlineManager } from "@tanstack/react-query";
 
 // React to online/offline changes
 function NetworkStatus() {
-  const isOnline = useSyncExternalStore(onlineManager.subscribe, () => onlineManager.isOnline());
+  const isOnline = useSyncExternalStore(onlineManager.subscribe, () =>
+    onlineManager.isOnline()
+  );
 
   return (
-    <div className={isOnline ? "online" : "offline"}>{isOnline ? "Connected" : "Offline"}</div>
+    <div className={isOnline ? "online" : "offline"}>
+      {isOnline ? "Connected" : "Offline"}
+    </div>
   );
 }
 

@@ -14,7 +14,7 @@ export const paymentTypeTuple = v.union(
   v.literal("one_time"),
   v.literal("recurring"),
   v.literal("installments"),
-  v.literal("deposit_balance"),
+  v.literal("deposit_balance")
 );
 export type PaymentType = Infer<typeof paymentTypeTuple>;
 
@@ -23,7 +23,7 @@ export const dueDateTermsTuple = v.union(
   v.literal("net_15"),
   v.literal("net_30"),
   v.literal("net_60"),
-  v.literal("custom"),
+  v.literal("custom")
 );
 export type DueDateTerms = Infer<typeof dueDateTermsTuple>;
 
@@ -32,7 +32,7 @@ export const paymentMethodTuple = v.union(
   v.literal("ach_debit"),
   v.literal("apple_pay"),
   v.literal("google_pay"),
-  v.literal("link"),
+  v.literal("link")
 );
 export type PaymentMethod = Infer<typeof paymentMethodTuple>;
 
@@ -42,7 +42,7 @@ export const paymentStatusTuple = v.union(
   v.literal("awaiting"),
   v.literal("paid"),
   v.literal("failed"),
-  v.literal("cancelled"),
+  v.literal("cancelled")
 );
 export type PaymentStatus = Infer<typeof paymentStatusTuple>;
 
@@ -65,7 +65,11 @@ const lateFeeValidator = v.object({
 const recurringConfigValidator = v.object({
   interval: v.union(v.literal("week"), v.literal("month"), v.literal("year")),
   intervalCount: v.number(),
-  endCondition: v.union(v.literal("never"), v.literal("after_count"), v.literal("on_date")),
+  endCondition: v.union(
+    v.literal("never"),
+    v.literal("after_count"),
+    v.literal("on_date")
+  ),
   endAfterCount: v.optional(v.number()),
   endOnDate: v.optional(v.number()),
 });
@@ -113,7 +117,9 @@ export const paymentFieldConfigsTable = defineTable({
 
   // Tax
   taxEnabled: v.boolean(),
-  taxBehavior: v.optional(v.union(v.literal("inclusive"), v.literal("exclusive"))),
+  taxBehavior: v.optional(
+    v.union(v.literal("inclusive"), v.literal("exclusive"))
+  ),
 
   // Denormalized total for display
   totalAmountCents: v.number(),

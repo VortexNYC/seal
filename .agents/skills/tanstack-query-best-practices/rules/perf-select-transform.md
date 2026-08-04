@@ -19,7 +19,8 @@ function CompletedTodos() {
   // This filtering runs on every render
   const completedTodos = todos?.filter((todo) => todo.completed) ?? [];
   const sortedTodos = [...completedTodos].sort(
-    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
+    (a, b) =>
+      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
   );
 
   return <TodoList todos={sortedTodos} />;
@@ -37,7 +38,11 @@ function CompletedTodos() {
     select: (todos) =>
       todos
         .filter((todo) => todo.completed)
-        .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()),
+        .sort(
+          (a, b) =>
+            new Date(b.completedAt).getTime() -
+            new Date(a.completedAt).getTime()
+        ),
   });
 
   return <TodoList todos={completedTodos ?? []} />;
@@ -89,7 +94,7 @@ function FilteredTodos({ status }: { status: "all" | "active" | "completed" }) {
           return todos;
       }
     },
-    [status],
+    [status]
   );
 
   const { data: filteredTodos } = useQuery({

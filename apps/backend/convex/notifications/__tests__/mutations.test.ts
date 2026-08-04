@@ -6,7 +6,7 @@ import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -113,8 +113,10 @@ describe("Notifications mutations", () => {
       expect(result.items).toHaveLength(3);
       // Verify descending order by createdAt
       for (let i = 0; i < result.items.length - 1; i++) {
-        expect(sealAssertPresent(result.items[i]).createdAt).toBeGreaterThanOrEqual(
-          sealAssertPresent(result.items[i + 1]).createdAt,
+        expect(
+          sealAssertPresent(result.items[i]).createdAt
+        ).toBeGreaterThanOrEqual(
+          sealAssertPresent(result.items[i + 1]).createdAt
         );
       }
     });

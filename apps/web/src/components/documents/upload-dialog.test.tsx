@@ -21,7 +21,9 @@ vi.mock("../../hooks/use-analytics", () => ({
 }));
 
 vi.mock("../../lib/pdf-utils", () => ({
-  extractPdfMetadata: vi.fn().mockResolvedValue({ pageCount: 1, thumbnail: null }),
+  extractPdfMetadata: vi
+    .fn()
+    .mockResolvedValue({ pageCount: 1, thumbnail: null }),
 }));
 
 vi.mock("../../lib/upload-validation", () => ({
@@ -41,7 +43,7 @@ function renderDialog(
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
     onSuccess?: () => void;
-  } = {},
+  } = {}
 ) {
   const props = {
     organizationId: FAKE_ORG_ID,
@@ -102,7 +104,7 @@ describe("UploadDialog", () => {
     });
     renderDialog();
     expect(
-      screen.queryByText(/You've reached your monthly document limit/),
+      screen.queryByText(/You've reached your monthly document limit/)
     ).not.toBeInTheDocument();
   });
 
@@ -113,7 +115,9 @@ describe("UploadDialog", () => {
       plan: "free",
     });
     renderDialog();
-    expect(screen.getByText(/You've reached your monthly document limit/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/You've reached your monthly document limit/)
+    ).toBeInTheDocument();
   });
 
   test("shows upgrade prompt for free plan when at limit", () => {
@@ -124,7 +128,9 @@ describe("UploadDialog", () => {
     });
     renderDialog();
     expect(
-      screen.getByText(/Upgrade to Professional for up to 500 documents per month/),
+      screen.getByText(
+        /Upgrade to Professional for up to 500 documents per month/
+      )
     ).toBeInTheDocument();
   });
 
@@ -136,7 +142,9 @@ describe("UploadDialog", () => {
     });
     renderDialog();
     expect(
-      screen.queryByText(/Upgrade to Professional for up to 500 documents per month/),
+      screen.queryByText(
+        /Upgrade to Professional for up to 500 documents per month/
+      )
     ).not.toBeInTheDocument();
   });
 
@@ -173,8 +181,12 @@ describe("UploadDialog", () => {
   test("renders dropzone area with PDF instructions", () => {
     mockUseQuery.mockReturnValue(undefined);
     renderDialog();
-    expect(screen.getByText("Drag & drop a PDF file here, or click to select")).toBeInTheDocument();
-    expect(screen.getByText("PDF files only, one at a time")).toBeInTheDocument();
+    expect(
+      screen.getByText("Drag & drop a PDF file here, or click to select")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("PDF files only, one at a time")
+    ).toBeInTheDocument();
   });
 
   test("renders cancel button", () => {

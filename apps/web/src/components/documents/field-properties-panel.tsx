@@ -29,7 +29,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 import type { FieldType } from "./field-toolbar";
@@ -91,22 +97,32 @@ interface FieldPropertiesPanelProps {
 
 function resolvePatternToSave(
   validationPattern: string,
-  customPattern: string,
+  customPattern: string
 ): string | undefined {
   if (validationPattern === "custom") return customPattern || undefined;
   if (!validationPattern || validationPattern === "none") return undefined;
-  return VALIDATION_PATTERNS.find((pattern) => pattern.value === validationPattern)?.pattern;
+  return VALIDATION_PATTERNS.find(
+    (pattern) => pattern.value === validationPattern
+  )?.pattern;
 }
 
-function resolveValidationPattern(pattern?: string): { value: string; custom: string } {
+function resolveValidationPattern(pattern?: string): {
+  value: string;
+  custom: string;
+} {
   if (!pattern) return { value: "none", custom: "" };
-  const found = VALIDATION_PATTERNS.find((option) => option.pattern === pattern);
-  return found ? { value: found.value, custom: "" } : { value: "custom", custom: pattern };
+  const found = VALIDATION_PATTERNS.find(
+    (option) => option.pattern === pattern
+  );
+  return found
+    ? { value: found.value, custom: "" }
+    : { value: "custom", custom: pattern };
 }
 
 function getFieldVisibility(fieldType: FieldType) {
   return {
-    showPlaceholder: fieldType === "text" || fieldType === "number" || fieldType === "date",
+    showPlaceholder:
+      fieldType === "text" || fieldType === "number" || fieldType === "date",
     showValidation: fieldType === "text",
     showLengthLimits: fieldType === "text",
     showValueRange: fieldType === "number",
@@ -117,18 +133,32 @@ function useFieldPropertiesState(field: FieldData) {
   const initialPattern = resolveValidationPattern(field.properties?.pattern);
   const [label, setLabel] = useState(field.label);
   const [isRequired, setIsRequired] = useState(field.isRequired);
-  const [placeholder, setPlaceholder] = useState(field.properties?.placeholder ?? "");
+  const [placeholder, setPlaceholder] = useState(
+    field.properties?.placeholder ?? ""
+  );
   const [helpText, setHelpText] = useState(field.properties?.helpText ?? "");
-  const [maxLength, setMaxLength] = useState<number | undefined>(field.properties?.maxLength);
-  const [minLength, setMinLength] = useState<number | undefined>(field.properties?.minLength);
-  const [validationPattern, setValidationPattern] = useState(initialPattern.value);
+  const [maxLength, setMaxLength] = useState<number | undefined>(
+    field.properties?.maxLength
+  );
+  const [minLength, setMinLength] = useState<number | undefined>(
+    field.properties?.minLength
+  );
+  const [validationPattern, setValidationPattern] = useState(
+    initialPattern.value
+  );
   const [customPattern, setCustomPattern] = useState(initialPattern.custom);
-  const [customMessage, setCustomMessage] = useState(field.validationRules?.customMessage ?? "");
-  const [minValue, setMinValue] = useState<number | undefined>(field.validationRules?.min);
-  const [maxValue, setMaxValue] = useState<number | undefined>(field.validationRules?.max);
+  const [customMessage, setCustomMessage] = useState(
+    field.validationRules?.customMessage ?? ""
+  );
+  const [minValue, setMinValue] = useState<number | undefined>(
+    field.validationRules?.min
+  );
+  const [maxValue, setMaxValue] = useState<number | undefined>(
+    field.validationRules?.max
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string>(
-    field.recipientId ?? "unassigned",
+    field.recipientId ?? "unassigned"
   );
 
   useEffect(() => {
@@ -189,7 +219,9 @@ function useFieldPropertiesActions({
   onClose: () => void;
 }) {
   const updateField = useMutation(api.signature_fields.mutations.updateField);
-  const assignField = useMutation(api.signature_fields.mutations.assignFieldToRecipient);
+  const assignField = useMutation(
+    api.signature_fields.mutations.assignFieldToRecipient
+  );
 
   const handleRecipientChange = async (value: string) => {
     if (value === "unassigned" || value === state.selectedRecipientId) return;
@@ -203,13 +235,18 @@ function useFieldPropertiesActions({
       onSave?.();
     } catch (error) {
       state.setSelectedRecipientId(field.recipientId ?? "unassigned");
-      toast.error(error instanceof Error ? error.message : "Failed to assign field");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to assign field"
+      );
     }
   };
 
   const handleSave = async () => {
     state.setIsSaving(true);
-    const patternToSave = resolvePatternToSave(state.validationPattern, state.customPattern);
+    const patternToSave = resolvePatternToSave(
+      state.validationPattern,
+      state.customPattern
+    );
     try {
       await updateField({
         fieldId: field._id,
@@ -236,7 +273,9 @@ function useFieldPropertiesActions({
       onSave?.();
       onClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update field");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update field"
+      );
     } finally {
       state.setIsSaving(false);
     }
@@ -264,11 +303,22 @@ function useFieldPropertiesForm({
   };
 }
 
-function FieldPanelHeader({ field, onClose }: { field: FieldData; onClose: () => void }) {
+function FieldPanelHeader({
+  field,
+  onClose,
+}: {
+  field: FieldData;
+  onClose: () => void;
+}) {
   return (
     <div className="flex items-center justify-between border-b p-4">
       <div className="flex items-center gap-2">
-        <div className={cn("rounded-md border p-1.5", FIELD_COLORS[field.fieldType])}>
+        <div
+          className={cn(
+            "rounded-md border p-1.5",
+            FIELD_COLORS[field.fieldType]
+          )}
+        >
           {FIELD_ICONS[field.fieldType]}
         </div>
         <div>
@@ -278,7 +328,12 @@ function FieldPanelHeader({ field, onClose }: { field: FieldData; onClose: () =>
           </p>
         </div>
       </div>
-      <Button variant="ghost" size="icon" aria-label="Close field properties" onClick={onClose}>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Close field properties"
+        onClick={onClose}
+      >
         <XIcon className="h-4 w-4" />
       </Button>
     </div>
@@ -302,7 +357,9 @@ function RecipientAssignmentSection({
           <SelectTrigger
             id="field-recipient"
             className={
-              selectedRecipientId === "unassigned" ? "border-warning/50 text-warning" : undefined
+              selectedRecipientId === "unassigned"
+                ? "border-warning/50 text-warning"
+                : undefined
             }
           >
             <SelectValue placeholder="Select a recipient" />
@@ -313,13 +370,17 @@ function RecipientAssignmentSection({
             </SelectItem>
             {recipients.map((recipient) => (
               <SelectItem key={recipient._id} value={recipient._id}>
-                {recipient.name ? `${recipient.name} (${recipient.email})` : recipient.email}
+                {recipient.name
+                  ? `${recipient.name} (${recipient.email})`
+                  : recipient.email}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       ) : (
-        <p className="text-muted-foreground text-xs">Add a recipient to the document first</p>
+        <p className="text-muted-foreground text-xs">
+          Add a recipient to the document first
+        </p>
       )}
       {selectedRecipientId === "unassigned" && recipients.length > 0 && (
         <p className="text-warning flex items-center gap-1 text-xs">
@@ -350,7 +411,9 @@ function PaymentConfigurationSection({
         <CreditCardIcon className="mr-2 h-4 w-4" />
         Configure Payment
       </Button>
-      <p className="text-muted-foreground text-xs">Set up line items, payment terms, and methods</p>
+      <p className="text-muted-foreground text-xs">
+        Set up line items, payment terms, and methods
+      </p>
     </div>
   );
 }
@@ -386,15 +449,23 @@ function BasicFieldSettings({
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Enter field label"
         />
-        <p className="text-muted-foreground text-xs">The name displayed on the field</p>
+        <p className="text-muted-foreground text-xs">
+          The name displayed on the field
+        </p>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="field-required">Required</Label>
-          <p className="text-muted-foreground text-xs">Must be filled before submission</p>
+          <p className="text-muted-foreground text-xs">
+            Must be filled before submission
+          </p>
         </div>
-        <Switch id="field-required" checked={isRequired} onCheckedChange={setIsRequired} />
+        <Switch
+          id="field-required"
+          checked={isRequired}
+          onCheckedChange={setIsRequired}
+        />
       </div>
 
       {showPlaceholder && (
@@ -406,7 +477,9 @@ function BasicFieldSettings({
             onChange={(event) => setPlaceholder(event.target.value)}
             placeholder="Enter placeholder text"
           />
-          <p className="text-muted-foreground text-xs">Shown when the field is empty</p>
+          <p className="text-muted-foreground text-xs">
+            Shown when the field is empty
+          </p>
         </div>
       )}
 
@@ -424,7 +497,9 @@ function BasicFieldSettings({
           placeholder="Add instructions for the signer"
           rows={2}
         />
-        <p className="text-muted-foreground text-xs">Additional guidance for the recipient</p>
+        <p className="text-muted-foreground text-xs">
+          Additional guidance for the recipient
+        </p>
       </div>
     </>
   );
@@ -497,7 +572,9 @@ function ValidationSettings({
             onChange={(event) => setCustomMessage(event.target.value)}
             placeholder="Please enter a valid value"
           />
-          <p className="text-muted-foreground text-xs">Shown when validation fails</p>
+          <p className="text-muted-foreground text-xs">
+            Shown when validation fails
+          </p>
         </div>
       )}
     </div>
@@ -540,7 +617,11 @@ function NumberInputPair({
               min={0}
               value={input.value ?? ""}
               onChange={(event) =>
-                input.onChange(event.target.value ? input.parse(event.target.value) : undefined)
+                input.onChange(
+                  event.target.value
+                    ? input.parse(event.target.value)
+                    : undefined
+                )
               }
               placeholder={input.placeholder}
             />
@@ -587,15 +668,21 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
-  signature: "bg-field-signature-surface text-field-signature border-field-signature-border",
+  signature:
+    "bg-field-signature-surface text-field-signature border-field-signature-border",
   text: "bg-field-text-surface text-field-text border-field-text-border",
-  number: "bg-field-number-surface text-field-number border-field-number-border",
+  number:
+    "bg-field-number-surface text-field-number border-field-number-border",
   date: "bg-field-date-surface text-field-date border-field-date-border",
-  checkbox: "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
-  dropdown: "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
+  checkbox:
+    "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
+  dropdown:
+    "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
   radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
-  attachment: "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
-  payment: "bg-field-payment-surface text-field-payment border-field-payment-border",
+  attachment:
+    "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
+  payment:
+    "bg-field-payment-surface text-field-payment border-field-payment-border",
 };
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
@@ -629,7 +716,10 @@ export function FieldPropertiesPanel({
           selectedRecipientId={form.selectedRecipientId}
           onRecipientChange={form.handleRecipientChange}
         />
-        <PaymentConfigurationSection field={field} onConfigurePayment={onConfigurePayment} />
+        <PaymentConfigurationSection
+          field={field}
+          onConfigurePayment={onConfigurePayment}
+        />
         <BasicFieldSettings
           label={form.label}
           setLabel={form.setLabel}
@@ -694,7 +784,11 @@ export function FieldPropertiesPanel({
         )}
       </div>
 
-      <FieldPropertiesFooter isSaving={form.isSaving} onClose={onClose} onSave={form.handleSave} />
+      <FieldPropertiesFooter
+        isSaving={form.isSaving}
+        onClose={onClose}
+        onSave={form.handleSave}
+      />
     </div>
   );
 }

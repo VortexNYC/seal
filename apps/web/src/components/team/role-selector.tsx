@@ -31,7 +31,9 @@ export function RoleSelector({
   organizationId: _organizationId,
 }: RoleSelectorProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const updateMemberRole = useMutation(api.organizations.mutations.updateMemberRole);
+  const updateMemberRole = useMutation(
+    api.organizations.mutations.updateMemberRole
+  );
 
   const handleRoleChange = async (newRole: string) => {
     if (newRole === currentRole) return;
@@ -48,7 +50,8 @@ export function RoleSelector({
         description: `Member role has been changed to ${newRole}`,
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to update role";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update role";
       toast.error("Failed to update role", {
         description: errorMessage,
       });
@@ -77,7 +80,11 @@ export function RoleSelector({
   }
 
   return (
-    <Select value={currentRole} onValueChange={handleRoleChange} disabled={isUpdating}>
+    <Select
+      value={currentRole}
+      onValueChange={handleRoleChange}
+      disabled={isUpdating}
+    >
       <SelectTrigger className="w-[120px]">
         <SelectValue>
           <Badge variant="outline" className={getRoleBadgeClass(currentRole)}>
@@ -89,19 +96,25 @@ export function RoleSelector({
         <SelectItem value="viewer">
           <div className="flex flex-col items-start">
             <span className="font-medium">Viewer</span>
-            <span className="text-muted-foreground text-xs">Read-only access</span>
+            <span className="text-muted-foreground text-xs">
+              Read-only access
+            </span>
           </div>
         </SelectItem>
         <SelectItem value="member">
           <div className="flex flex-col items-start">
             <span className="font-medium">Member</span>
-            <span className="text-muted-foreground text-xs">Can create documents</span>
+            <span className="text-muted-foreground text-xs">
+              Can create documents
+            </span>
           </div>
         </SelectItem>
         <SelectItem value="admin">
           <div className="flex flex-col items-start">
             <span className="font-medium">Admin</span>
-            <span className="text-muted-foreground text-xs">Manage team & settings</span>
+            <span className="text-muted-foreground text-xs">
+              Manage team & settings
+            </span>
           </div>
         </SelectItem>
       </SelectContent>

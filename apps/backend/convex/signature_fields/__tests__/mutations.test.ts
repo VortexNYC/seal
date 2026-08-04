@@ -158,18 +158,21 @@ describe("Signature field mutations", () => {
         page: 1,
       });
 
-      const secondFieldId = await authed.mutation(api.signature_fields.mutations.createField, {
-        documentId,
-        recipientId,
-        fieldType: "signature",
-        label: "Signature 2",
-        isRequired: true,
-        x: 10,
-        y: 70,
-        width: 30,
-        height: 10,
-        page: 1,
-      });
+      const secondFieldId = await authed.mutation(
+        api.signature_fields.mutations.createField,
+        {
+          documentId,
+          recipientId,
+          fieldType: "signature",
+          label: "Signature 2",
+          isRequired: true,
+          x: 10,
+          y: 70,
+          width: 30,
+          height: 10,
+          page: 1,
+        }
+      );
 
       const secondField = (await t.run(async (ctx) => {
         return await ctx.db.get(secondFieldId);
@@ -206,7 +209,7 @@ describe("Signature field mutations", () => {
           width: 30,
           height: 10,
           page: 1,
-        }),
+        })
       ).rejects.toThrow("Each recipient can only have one payment field");
     });
 
@@ -229,7 +232,7 @@ describe("Signature field mutations", () => {
             width: 20,
             height: 5,
             page: 1,
-          }),
+          })
       ).rejects.toThrow("Cannot modify fields");
     });
 
@@ -246,7 +249,7 @@ describe("Signature field mutations", () => {
           width: 20,
           height: 5,
           page: 1,
-        }),
+        })
       ).rejects.toThrow();
     });
 
@@ -265,7 +268,7 @@ describe("Signature field mutations", () => {
             width: -10,
             height: 5,
             page: 1,
-          }),
+          })
       ).rejects.toThrow("Width must be between 0 and 100");
     });
   });
@@ -321,7 +324,7 @@ describe("Signature field mutations", () => {
           .mutation(api.signature_fields.mutations.updateField, {
             fieldId,
             label: "Should Fail",
-          }),
+          })
       ).rejects.toThrow("Cannot modify fields");
     });
   });
@@ -451,7 +454,7 @@ describe("Signature field mutations", () => {
       await expect(
         t
           .withIdentity({ subject: "test_owner" })
-          .mutation(api.signature_fields.mutations.deleteField, { fieldId }),
+          .mutation(api.signature_fields.mutations.deleteField, { fieldId })
       ).rejects.toThrow("Cannot delete field that has been signed");
     });
 
@@ -478,7 +481,7 @@ describe("Signature field mutations", () => {
       await expect(
         t
           .withIdentity({ subject: "test_owner" })
-          .mutation(api.signature_fields.mutations.deleteField, { fieldId }),
+          .mutation(api.signature_fields.mutations.deleteField, { fieldId })
       ).rejects.toThrow("Cannot modify fields");
     });
   });
@@ -534,7 +537,7 @@ describe("Signature field mutations", () => {
           .mutation(api.signature_fields.mutations.repositionField, {
             fieldId,
             x: -5,
-          }),
+          })
       ).rejects.toThrow();
     });
 
@@ -549,7 +552,7 @@ describe("Signature field mutations", () => {
           .mutation(api.signature_fields.mutations.repositionField, {
             fieldId,
             x: 50,
-          }),
+          })
       ).rejects.toThrow("Cannot modify fields");
     });
   });
@@ -645,7 +648,7 @@ describe("Signature field mutations", () => {
           .mutation(api.signature_fields.mutations.assignFieldToRecipient, {
             fieldId,
             recipientId,
-          }),
+          })
       ).rejects.toThrow("Cannot modify fields");
     });
   });
@@ -728,7 +731,7 @@ describe("Signature field mutations", () => {
               page: 1,
             },
           ],
-        }),
+        })
       ).rejects.toThrow();
     });
 
@@ -755,7 +758,7 @@ describe("Signature field mutations", () => {
                 page: 1,
               },
             ],
-          }),
+          })
       ).rejects.toThrow("Cannot modify fields");
     });
   });

@@ -14,7 +14,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers all organization settings tools with the MCP server.
  */
-export function registerSettingsTools(server: McpServer, client: SealApiClient): void {
+export function registerSettingsTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // Get settings
   server.tool(
     "seal_get_settings",
@@ -22,31 +25,10 @@ export function registerSettingsTools(server: McpServer, client: SealApiClient):
     {},
     async (_args, extra) => {
       const authToken = getAuthToken(extra);
-      const response = await client.get<ApiSettings>("/settings", {}, authToken);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
-    },
-  );
-
-  // Update settings
-  server.tool(
-    "seal_update_settings",
-    "Update organization settings. All fields are optional — only provide the categories and fields you want to change. Supports partial updates within each category (e.g. only update default_deadline_days without touching other signing settings). Categories: signing, notifications, ai, security.",
-    updateSettingsSchema.shape,
-    async (args, extra) => {
-      const { signing, notifications, ai, security } = args as UpdateSettingsInput;
-      const authToken = getAuthToken(extra);
-      const response = await client.patch<{ success: boolean }>(
+      const response = await client.get<ApiSettings>(
         "/settings",
-        { signing, notifications, ai, security },
-        authToken,
+        {},
+        authToken
       );
 
       return {
@@ -57,6 +39,32 @@ export function registerSettingsTools(server: McpServer, client: SealApiClient):
           },
         ],
       };
-    },
+    }
+  );
+
+  // Update settings
+  server.tool(
+    "seal_update_settings",
+    "Update organization settings. All fields are optional — only provide the categories and fields you want to change. Supports partial updates within each category (e.g. only update default_deadline_days without touching other signing settings). Categories: signing, notifications, ai, security.",
+    updateSettingsSchema.shape,
+    async (args, extra) => {
+      const { signing, notifications, ai, security } =
+        args as UpdateSettingsInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.patch<{ success: boolean }>(
+        "/settings",
+        { signing, notifications, ai, security },
+        authToken
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
   );
 }

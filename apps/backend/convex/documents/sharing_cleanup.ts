@@ -7,7 +7,11 @@
 import { v } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
-import { internalMutation, type MutationCtx, type QueryCtx } from "../_generated/server";
+import {
+  internalMutation,
+  type MutationCtx,
+  type QueryCtx,
+} from "../_generated/server";
 import {
   listComponentMembersByOrganization,
   resolveComponentMemberships,
@@ -19,10 +23,11 @@ type OrganizationReadCtx = Pick<QueryCtx | MutationCtx, "db" | "runQuery">;
 async function revokeAllDocumentAccess(
   ctx: MutationCtx,
   documentId: Id<"documents">,
-  reason: string,
+  reason: string
 ): Promise<Array<{ userId: Id<"users">; permissionLevel: string }>> {
   const now = Date.now();
-  const revokedUsers: Array<{ userId: Id<"users">; permissionLevel: string }> = [];
+  const revokedUsers: Array<{ userId: Id<"users">; permissionLevel: string }> =
+    [];
 
   const accessRecords = await ctx.db
     .query("document_access")
@@ -54,7 +59,7 @@ async function revokeAllDocumentAccess(
         revokedCount: revokedUsers.length,
         revokedUserIds: revokedUsers.map((u) => u.userId),
         timestamp: now,
-      }),
+      })
     );
   }
 
@@ -64,18 +69,22 @@ async function revokeAllDocumentAccess(
 async function getOrganizationAdmin(
   ctx: OrganizationReadCtx,
   organizationId: Id<"organizations">,
-  excludeUserId?: Id<"users">,
+  excludeUserId?: Id<"users">
 ): Promise<Id<"users"> | null> {
   const organization = await ctx.db.get(organizationId);
   if (!organization) {
     return null;
   }
 
-  const activeMembers = await listComponentMembersByOrganization(ctx, organization, {
-    status: "active",
-  });
+  const activeMembers = await listComponentMembersByOrganization(
+    ctx,
+    organization,
+    {
+      status: "active",
+    }
+  );
   const assignableMembers = activeMembers.filter(
-    (member) => member.userId !== null && member.userId !== excludeUserId,
+    (member) => member.userId !== null && member.userId !== excludeUserId
   );
 
   const owner = assignableMembers.find((member) => member.role === "owner");
@@ -103,12 +112,17 @@ export const downgradeUserSharing = internalMutation({
       .query("documents")
       .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))
       .filter((q) =>
-        q.and(q.neq(q.field("sharingMode"), "private"), q.neq(q.field("status"), "deleted")),
+        q.and(
+          q.neq(q.field("sharingMode"), "private"),
+          q.neq(q.field("status"), "deleted")
+        )
       )
       .collect();
 
     if (sharedDocuments.length === 0) {
-      console.warn(`[downgradeUserSharing] No shared documents found for user ${args.userId}`);
+      console.warn(
+        `[downgradeUserSharing] No shared documents found for user ${args.userId}`
+      );
       return { downgraded: 0, accessRevoked: 0 };
     }
 
@@ -120,7 +134,11 @@ export const downgradeUserSharing = internalMutation({
         updatedAt: now,
       });
 
-      const revokedUsers = await revokeAllDocumentAccess(ctx, document._id, args.reason);
+      const revokedUsers = await revokeAllDocumentAccess(
+        ctx,
+        document._id,
+        args.reason
+      );
       totalAccessRevoked += revokedUsers.length;
 
       for (const { userId } of revokedUsers) {
@@ -132,7 +150,8 @@ export const downgradeUserSharing = internalMutation({
             documentId: document._id,
             documentName: document.name,
             reason: "subscription_lapsed",
-            message: "Your access was revoked because the document owner's subscription ended",
+            message:
+              "Your access was revoked because the document owner's subscription ended",
           },
         });
       }
@@ -142,8 +161,9 @@ export const downgradeUserSharing = internalMutation({
     if (user) {
       const memberships = await resolveComponentMemberships(ctx, user);
       const membership =
-        memberships.find((candidate) => candidate.organizationId === user.activeOrganizationId) ??
-        memberships[0];
+        memberships.find(
+          (candidate) => candidate.organizationId === user.activeOrganizationId
+        ) ?? memberships[0];
 
       if (membership) {
         await createNotification(ctx, {
@@ -168,7 +188,7 @@ export const downgradeUserSharing = internalMutation({
         documentsDowngraded: sharedDocuments.length,
         accessRecordsRevoked: totalAccessRevoked,
         timestamp: now,
-      }),
+      })
     );
 
     return {
@@ -192,15 +212,20 @@ export const downgradeOrgSharing = internalMutation({
 
     const sharedDocuments = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .filter((q) =>
-        q.and(q.neq(q.field("sharingMode"), "private"), q.neq(q.field("status"), "deleted")),
+        q.and(
+          q.neq(q.field("sharingMode"), "private"),
+          q.neq(q.field("status"), "deleted")
+        )
       )
       .collect();
 
     if (sharedDocuments.length === 0) {
       console.warn(
-        `[downgradeOrgSharing] No shared documents found for org ${args.organizationId}`,
+        `[downgradeOrgSharing] No shared documents found for org ${args.organizationId}`
       );
       return { downgraded: 0, accessRevoked: 0 };
     }
@@ -213,7 +238,11 @@ export const downgradeOrgSharing = internalMutation({
         updatedAt: now,
       });
 
-      const revokedUsers = await revokeAllDocumentAccess(ctx, document._id, args.reason);
+      const revokedUsers = await revokeAllDocumentAccess(
+        ctx,
+        document._id,
+        args.reason
+      );
       totalAccessRevoked += revokedUsers.length;
 
       for (const { userId } of revokedUsers) {
@@ -225,7 +254,8 @@ export const downgradeOrgSharing = internalMutation({
             documentId: document._id,
             documentName: document.name,
             reason: "subscription_lapsed",
-            message: "Your access was revoked because the organization's subscription ended",
+            message:
+              "Your access was revoked because the organization's subscription ended",
           },
         });
       }
@@ -254,7 +284,7 @@ export const downgradeOrgSharing = internalMutation({
         documentsDowngraded: sharedDocuments.length,
         accessRecordsRevoked: totalAccessRevoked,
         timestamp: now,
-      }),
+      })
     );
 
     return {
@@ -301,7 +331,7 @@ export const cleanupMemberDocumentAccess = internalMutation({
       const access = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", documentId).eq("userId", args.userId),
+          q.eq("documentId", documentId).eq("userId", args.userId)
         )
         .first();
 
@@ -342,7 +372,7 @@ export const cleanupMemberDocumentAccess = internalMutation({
         accessRecordsRevoked: revokedCount,
         ownersNotified: notifiedOwners.size,
         timestamp: now,
-      }),
+      })
     );
 
     return { revokedCount, ownersNotified: notifiedOwners.size };
@@ -361,7 +391,11 @@ export const transferOrphanedDocuments = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const newOwnerId = await getOrganizationAdmin(ctx, args.organizationId, args.userId);
+    const newOwnerId = await getOrganizationAdmin(
+      ctx,
+      args.organizationId,
+      args.userId
+    );
 
     if (!newOwnerId) {
       console.error(
@@ -372,7 +406,7 @@ export const transferOrphanedDocuments = internalMutation({
           organizationId: args.organizationId,
           error: "No organization admin found to transfer documents to",
           timestamp: now,
-        }),
+        })
       );
       return { transferred: 0, error: "No organization admin found" };
     }
@@ -383,8 +417,8 @@ export const transferOrphanedDocuments = internalMutation({
       .filter((q) =>
         q.and(
           q.eq(q.field("organizationId"), args.organizationId),
-          q.neq(q.field("status"), "deleted"),
-        ),
+          q.neq(q.field("status"), "deleted")
+        )
       )
       .collect();
 
@@ -426,7 +460,7 @@ export const transferOrphanedDocuments = internalMutation({
         documentsTransferred: userDocuments.length,
         documentIds: userDocuments.map((d) => d._id),
         timestamp: now,
-      }),
+      })
     );
 
     return { transferred: userDocuments.length, newOwnerId };
@@ -464,7 +498,11 @@ export const fullMemberRemovalCleanup = internalMutation({
       revokedCount++;
     }
 
-    const newOwnerId = await getOrganizationAdmin(ctx, args.organizationId, args.userId);
+    const newOwnerId = await getOrganizationAdmin(
+      ctx,
+      args.organizationId,
+      args.userId
+    );
 
     let transferredCount = 0;
     if (newOwnerId) {
@@ -474,8 +512,8 @@ export const fullMemberRemovalCleanup = internalMutation({
         .filter((q) =>
           q.and(
             q.eq(q.field("organizationId"), args.organizationId),
-            q.neq(q.field("status"), "deleted"),
-          ),
+            q.neq(q.field("status"), "deleted")
+          )
         )
         .collect();
 
@@ -516,7 +554,7 @@ export const fullMemberRemovalCleanup = internalMutation({
         documentsTransferred: transferredCount,
         newOwnerId: newOwnerId ?? null,
         timestamp: now,
-      }),
+      })
     );
 
     return {

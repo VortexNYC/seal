@@ -52,8 +52,8 @@ export function DeleteFieldDialog({
               </div>
 
               <AlertDialogPrimitive.Description className="text-muted-foreground text-sm">
-                This action cannot be undone. The field will be permanently removed from your
-                document.
+                This action cannot be undone. The field will be permanently
+                removed from your document.
               </AlertDialogPrimitive.Description>
             </div>
 

@@ -31,7 +31,9 @@ export function DropdownFieldInput({
   const [selectedValue, setSelectedValue] = useState(value);
   const [error, setError] = useState<string | undefined>();
 
-  const validateValue = (val?: string): { isValid: boolean; error?: string } => {
+  const validateValue = (
+    val?: string
+  ): { isValid: boolean; error?: string } => {
     if (isRequired && !val) {
       return { isValid: false, error: "This field is required" };
     }
@@ -55,7 +57,10 @@ export function DropdownFieldInput({
         {isRequired && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Select value={selectedValue} onValueChange={handleChange}>
-        <SelectTrigger id="dropdown-field" className={error ? "border-destructive" : ""}>
+        <SelectTrigger
+          id="dropdown-field"
+          className={error ? "border-destructive" : ""}
+        >
           <SelectValue placeholder="Select an option..." />
         </SelectTrigger>
         <SelectContent>
@@ -66,7 +71,9 @@ export function DropdownFieldInput({
           ))}
         </SelectContent>
       </Select>
-      {helpText && !error && <p className="text-muted-foreground text-xs">{helpText}</p>}
+      {helpText && !error && (
+        <p className="text-muted-foreground text-xs">{helpText}</p>
+      )}
       {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );

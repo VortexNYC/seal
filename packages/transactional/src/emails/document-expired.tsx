@@ -35,7 +35,12 @@ export function DocumentExpired({
       >
         <Text style={{ margin: "0 0 8px 0", fontSize: "32px" }}>&#x23F0;</Text>
         <Text
-          style={{ margin: "0", fontSize: "18px", fontWeight: "600", color: status.destructive }}
+          style={{
+            margin: "0",
+            fontSize: "18px",
+            fontWeight: "600",
+            color: status.destructive,
+          }}
         >
           Document Expired
         </Text>
@@ -46,13 +51,13 @@ export function DocumentExpired({
 
         <Text style={emailStyles.bodyTextSpaced}>
           Your document <strong>&ldquo;{documentName}&rdquo;</strong> expired on{" "}
-          <strong>{expiredAt}</strong>. All unsigned recipients have been marked as expired and can
-          no longer sign this document.
+          <strong>{expiredAt}</strong>. All unsigned recipients have been marked
+          as expired and can no longer sign this document.
         </Text>
 
         <Text style={emailStyles.bodyTextMuted}>
-          If you still need signatures, you can re-send the document with a new expiration period
-          from your dashboard.
+          If you still need signatures, you can re-send the document with a new
+          expiration period from your dashboard.
         </Text>
       </Section>
     </EmailLayout>

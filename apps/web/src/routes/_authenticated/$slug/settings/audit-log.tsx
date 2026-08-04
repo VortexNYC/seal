@@ -9,7 +9,13 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { AuditAction } from "@seal/backend/convex/schemas/audit_logs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { DownloadIcon, FileTextIcon, ShieldCheckIcon, UserIcon, UsersIcon } from "lucide-react";
+import {
+  DownloadIcon,
+  FileTextIcon,
+  ShieldCheckIcon,
+  UserIcon,
+  UsersIcon,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -35,14 +41,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/audit-log")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/audit-log"
+)({
   component: AuditLogPage,
   pendingComponent: FormSkeleton,
 });
 
 // ─── Action metadata ────────────────────────────────────────────────────────
 
-type ActionCategory = "all" | "document" | "recipient" | "signature" | "member" | "organization";
+type ActionCategory =
+  | "all"
+  | "document"
+  | "recipient"
+  | "signature"
+  | "member"
+  | "organization";
 
 const ACTION_CATEGORY_LABELS: Record<ActionCategory, string> = {
   all: "All actions",
@@ -79,7 +93,12 @@ const ACTIONS_BY_CATEGORY: Record<ActionCategory, AuditAction[]> = {
     "recipient.dictated",
   ],
   signature: ["signature.created", "signature.updated"],
-  member: ["member.invited", "member.joined", "member.removed", "member.role_changed"],
+  member: [
+    "member.invited",
+    "member.joined",
+    "member.removed",
+    "member.role_changed",
+  ],
   organization: [
     "organization.created",
     "organization.updated",
@@ -167,7 +186,9 @@ function getActionBadgeVariant(action: AuditAction): BadgeVariant {
 
 type DatePreset = "7d" | "30d" | "90d" | "custom";
 
-function presetToRange(preset: DatePreset): { from: number; to: number } | null {
+function presetToRange(
+  preset: DatePreset
+): { from: number; to: number } | null {
   if (preset === "custom") return null;
   const now = Date.now();
   const days = preset === "7d" ? 7 : preset === "30d" ? 30 : 90;
@@ -210,10 +231,12 @@ function downloadCsv(rows: AuditLogRow[]) {
         r.metadata?.description ?? "",
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
+        .join(",")
     ),
   ];
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([lines.join("\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -260,10 +283,12 @@ function AuditLogPage() {
     return ACTIONS_BY_CATEGORY[actionCategory];
   }, [actionCategory]);
 
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    slug,
+  });
   const members = useQuery(
     api.organizations.queries.getOrganizationMembers,
-    organization ? { organizationId: organization._id } : "skip",
+    organization ? { organizationId: organization._id } : "skip"
   );
 
   const logs = useQuery(api.audit_logs.queries.listOrgAuditLogs, {
@@ -274,7 +299,8 @@ function AuditLogPage() {
     limit: 200,
   });
 
-  const isAdmin = organization?.userRole === "admin" || organization?.userRole === "owner";
+  const isAdmin =
+    organization?.userRole === "admin" || organization?.userRole === "owner";
 
   if (!isAdmin) {
     return (
@@ -323,7 +349,9 @@ function AuditLogPage() {
               {datePreset === "custom" && (
                 <div className="flex gap-2">
                   <div className="flex-1 space-y-1">
-                    <Label className="text-muted-foreground text-xs">From</Label>
+                    <Label className="text-muted-foreground text-xs">
+                      From
+                    </Label>
                     <Input
                       type="date"
                       value={customFrom}
@@ -354,7 +382,9 @@ function AuditLogPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(ACTION_CATEGORY_LABELS) as ActionCategory[]).map((cat) => (
+                    {(
+                      Object.keys(ACTION_CATEGORY_LABELS) as ActionCategory[]
+                    ).map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {ACTION_CATEGORY_LABELS[cat]}
                       </SelectItem>
@@ -411,7 +441,9 @@ function AuditLogPage() {
             ) : logs.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center">
                 <ShieldCheckIcon className="text-muted-foreground h-8 w-8" />
-                <p className="text-muted-foreground text-sm">No events found for this period.</p>
+                <p className="text-muted-foreground text-sm">
+                  No events found for this period.
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -420,15 +452,25 @@ function AuditLogPage() {
                     <TableRow>
                       <TableHead className="w-[140px]">Date</TableHead>
                       <TableHead>Action</TableHead>
-                      <TableHead className="hidden md:table-cell">Actor</TableHead>
-                      <TableHead className="hidden lg:table-cell">Resource</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Actor
+                      </TableHead>
+                      <TableHead className="hidden lg:table-cell">
+                        Resource
+                      </TableHead>
                       <TableHead className="hidden xl:table-cell">IP</TableHead>
-                      <TableHead className="hidden xl:table-cell">Details</TableHead>
+                      <TableHead className="hidden xl:table-cell">
+                        Details
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {logs.map((log) => (
-                      <AuditLogTableRow key={log._id} log={log} members={members} />
+                      <AuditLogTableRow
+                        key={log._id}
+                        log={log}
+                        members={members}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -443,7 +485,11 @@ function AuditLogPage() {
 
 // ─── Row component ───────────────────────────────────────────────────────────
 
-type Member = { userId: string; name: string | null | undefined; email: string };
+type Member = {
+  userId: string;
+  name: string | null | undefined;
+  email: string;
+};
 
 function AuditLogTableRow({
   log,
@@ -465,8 +511,10 @@ function AuditLogTableRow({
   const [expanded, setExpanded] = useState(false);
 
   const actor = useMemo(() => {
-    if (log.actorType === "system") return { label: "System", icon: ShieldCheckIcon };
-    if (log.actorType === "recipient") return { label: "Recipient", icon: UserIcon };
+    if (log.actorType === "system")
+      return { label: "System", icon: ShieldCheckIcon };
+    if (log.actorType === "recipient")
+      return { label: "Recipient", icon: UserIcon };
     const member = members?.find((m) => m.userId === log.userId);
     return {
       label: member ? (member.name ?? member.email) : (log.userId ?? "Unknown"),
@@ -478,14 +526,20 @@ function AuditLogTableRow({
 
   return (
     <>
-      <TableRow className="hover:bg-muted/50 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
+      <TableRow
+        className="hover:bg-muted/50 cursor-pointer"
+        onClick={() => setExpanded((v) => !v)}
+      >
         <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
           <span title={new Date(log.createdAt).toLocaleString()}>
             {relativeTime(log.createdAt)}
           </span>
         </TableCell>
         <TableCell>
-          <Badge variant={getActionBadgeVariant(log.action)} className="text-xs">
+          <Badge
+            variant={getActionBadgeVariant(log.action)}
+            className="text-xs"
+          >
             {getActionLabel(log.action)}
           </Badge>
         </TableCell>
@@ -499,7 +553,9 @@ function AuditLogTableRow({
           {log.documentId ? (
             <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <FileTextIcon className="h-3.5 w-3.5 shrink-0" />
-              <span className="max-w-[120px] truncate font-mono">{log.documentId.slice(-8)}</span>
+              <span className="max-w-[120px] truncate font-mono">
+                {log.documentId.slice(-8)}
+              </span>
             </div>
           ) : (
             <span className="text-muted-foreground text-xs">—</span>
@@ -517,46 +573,62 @@ function AuditLogTableRow({
           <TableCell colSpan={6} className="bg-muted/30 p-4">
             <div className="grid gap-1 text-xs">
               <div className="flex gap-2">
-                <span className="text-muted-foreground w-24 shrink-0">Time</span>
+                <span className="text-muted-foreground w-24 shrink-0">
+                  Time
+                </span>
                 <span>{new Date(log.createdAt).toLocaleString()}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-muted-foreground w-24 shrink-0">Actor type</span>
+                <span className="text-muted-foreground w-24 shrink-0">
+                  Actor type
+                </span>
                 <span className="capitalize">{log.actorType}</span>
               </div>
               {log.userId && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">User ID</span>
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    User ID
+                  </span>
                   <span className="font-mono">{log.userId}</span>
                 </div>
               )}
               {log.documentId && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">Document</span>
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    Document
+                  </span>
                   <span className="font-mono">{log.documentId}</span>
                 </div>
               )}
               {log.ipAddress !== "unknown" && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">IP address</span>
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    IP address
+                  </span>
                   <span className="font-mono">{log.ipAddress}</span>
                 </div>
               )}
               {log.metadata?.source && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">Source</span>
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    Source
+                  </span>
                   <span className="capitalize">{log.metadata.source}</span>
                 </div>
               )}
               {log.metadata?.description && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">Description</span>
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    Description
+                  </span>
                   <span>{log.metadata.description}</span>
                 </div>
               )}
               {log.userAgent && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">User agent</span>
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    User agent
+                  </span>
                   <span className="break-all">{log.userAgent}</span>
                 </div>
               )}

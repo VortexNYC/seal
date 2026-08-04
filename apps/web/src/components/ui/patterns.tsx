@@ -15,7 +15,7 @@ export function RailColumn({ className, position = "left" }: RailColumnProps) {
           "bg-[size:10px_10px] bg-fixed",
           position === "left" ? "col-start-1" : "col-start-3",
           "row-span-full row-start-1",
-          className,
+          className
         )}
         style={{
           backgroundImage:
@@ -29,7 +29,7 @@ export function RailColumn({ className, position = "left" }: RailColumnProps) {
           "bg-[size:10px_10px] bg-fixed",
           position === "left" ? "col-start-1" : "col-start-3",
           "row-span-full row-start-1",
-          className,
+          className
         )}
         style={{
           backgroundImage:
@@ -46,13 +46,17 @@ interface GridLayoutProps {
   showRails?: boolean;
 }
 
-export function GridLayout({ children, className, showRails = true }: GridLayoutProps) {
+export function GridLayout({
+  children,
+  className,
+  showRails = true,
+}: GridLayoutProps) {
   return (
     <div
       className={cn(
         "grid min-h-dvh",
         showRails ? "grid-cols-1 md:grid-cols-[40px_1fr_40px]" : "grid-cols-1",
-        className,
+        className
       )}
     >
       {showRails && <RailColumn position="left" />}
@@ -70,15 +74,25 @@ export function DotPattern({ className }: DotPatternProps) {
   return (
     <>
       <div
-        className={cn("pointer-events-none dark:hidden", "bg-[size:16px_16px]", className)}
+        className={cn(
+          "pointer-events-none dark:hidden",
+          "bg-[size:16px_16px]",
+          className
+        )}
         style={{
-          backgroundImage: "radial-gradient(circle, rgb(0 0 0 / 0.35) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(circle, rgb(0 0 0 / 0.35) 1px, transparent 1px)",
         }}
       />
       <div
-        className={cn("pointer-events-none hidden dark:block", "bg-[size:16px_16px]", className)}
+        className={cn(
+          "pointer-events-none hidden dark:block",
+          "bg-[size:16px_16px]",
+          className
+        )}
         style={{
-          backgroundImage: "radial-gradient(circle, rgb(255 255 255 / 0.15) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(circle, rgb(255 255 255 / 0.15) 1px, transparent 1px)",
         }}
       />
     </>
@@ -99,7 +113,7 @@ export function CardWithDots({ children, className }: CardWithDotsProps) {
         "bg-brand-950/[2.5%] dark:bg-white/[2.5%]",
         // vortex-allow-color: decorative pattern hairline; alpha-white reads as neutral over the pattern in both themes
         "ring-brand-950/5 ring-1 ring-inset dark:ring-white/5",
-        className,
+        className
       )}
     >
       <DotPattern />

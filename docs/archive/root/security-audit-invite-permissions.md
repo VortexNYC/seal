@@ -86,9 +86,12 @@ export const clerkInvite = action({
     }
 
     // ✅ Line 40-46: Check organization exists
-    const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
-      organizationId: args.organizationId,
-    });
+    const organization = await ctx.runQuery(
+      internal.organizations.helpers.getOrganizationById,
+      {
+        organizationId: args.organizationId,
+      }
+    );
 
     if (!organization) {
       throw new ConvexError("Organization not found");
@@ -267,7 +270,7 @@ export const clerkInvite = action({
       {
         userId: identity.subject, // or ctx.auth.user._id if available
         organizationId: args.organizationId,
-      },
+      }
     );
 
     if (!userMember) {
@@ -278,10 +281,13 @@ export const clerkInvite = action({
     }
 
     // Check if user has permission to invite members
-    if (!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
+    if (
+      !hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)
+    ) {
       throw new ConvexError({
         code: "INSUFFICIENT_PERMISSIONS",
-        message: "You don't have permission to invite members to this organization",
+        message:
+          "You don't have permission to invite members to this organization",
       });
     }
     // ===== END OF NEW SECTION =====
@@ -295,9 +301,12 @@ export const clerkInvite = action({
     }
 
     // Get organization via internal query
-    const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
-      organizationId: args.organizationId,
-    });
+    const organization = await ctx.runQuery(
+      internal.organizations.helpers.getOrganizationById,
+      {
+        organizationId: args.organizationId,
+      }
+    );
 
     if (!organization) {
       throw new ConvexError("Organization not found");
@@ -331,7 +340,8 @@ export const clerkInvite = action({
       console.error("[clerkInvite] Error:", error);
       throw new ConvexError({
         code: "INVITATION_ERROR",
-        message: error instanceof Error ? error.message : "Failed to send invitation",
+        message:
+          error instanceof Error ? error.message : "Failed to send invitation",
       });
     }
   },
@@ -356,7 +366,7 @@ export const getOrganizationMemberByUserIdAndOrgId = internalQuery({
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId)
       )
       .first();
 
@@ -403,7 +413,12 @@ if (member.role === "owner") {
 
 ```typescript
 // Check if current user has permission to remove members
-if (!hasPermission(currentUserMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE)) {
+if (
+  !hasPermission(
+    currentUserMember,
+    DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE
+  )
+) {
   throw new ConvexError({
     code: "INSUFFICIENT_PERMISSIONS",
     message: "You don't have permission to remove members",

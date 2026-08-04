@@ -40,7 +40,7 @@ const updateRecipientsBulkSchema = z.object({
     .array(
       updateRecipientSchema.omit({ document_id: true }).extend({
         id: z.string().describe("The recipient ID to update"),
-      }),
+      })
     )
     .describe("Array of recipient updates"),
 });
@@ -80,7 +80,7 @@ async function wait(ms: number): Promise<void> {
 
 async function processInBatches<TItem, TResult extends BulkOperationResult>(
   items: TItem[],
-  processItem: (item: TItem) => Promise<TResult>,
+  processItem: (item: TItem) => Promise<TResult>
 ): Promise<{ results: TResult[]; successCount: number }> {
   const results: TResult[] = [];
   let successCount = 0;
@@ -103,14 +103,14 @@ async function addRecipientWithResult(
   client: SealApiClient,
   documentId: string,
   recipient: AddRecipientsBulkInput["recipients"][number],
-  authToken: string | undefined,
+  authToken: string | undefined
 ): Promise<AddRecipientBulkResult> {
   try {
     const response = await client.post<{ id: string }>(
       "/recipients",
       recipient,
       { document_id: documentId },
-      authToken,
+      authToken
     );
 
     return {
@@ -134,7 +134,7 @@ async function updateRecipientWithResult(
   client: SealApiClient,
   documentId: string,
   update: UpdateRecipientsBulkInput["updates"][number],
-  authToken: string | undefined,
+  authToken: string | undefined
 ): Promise<UpdateRecipientBulkResult> {
   try {
     await client.put<{ success: boolean }>(
@@ -146,7 +146,7 @@ async function updateRecipientWithResult(
         message: update.message,
       },
       { document_id: documentId, id: update.id },
-      authToken,
+      authToken
     );
 
     return {
@@ -164,7 +164,10 @@ async function updateRecipientWithResult(
   }
 }
 
-function registerListRecipientsTool(server: McpServer, client: SealApiClient): void {
+function registerListRecipientsTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_list_recipients",
     "List all recipients for a document. Returns each recipient's role (signer, approver, or viewer), signing status (pending, completed, declined), signing order for sequential workflows, and contact details. Use this to check who still needs to sign or to find recipient IDs for sending reminders.",
@@ -175,15 +178,18 @@ function registerListRecipientsTool(server: McpServer, client: SealApiClient): v
       const response = await client.get<{ recipients: ApiRecipient[] }>(
         "/recipients",
         { document_id },
-        authToken,
+        authToken
       );
 
       return createToolResponse(response);
-    },
+    }
   );
 }
 
-function registerGetRecipientTool(server: McpServer, client: SealApiClient): void {
+function registerGetRecipientTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_get_recipient",
     "Get detailed information about a specific recipient on a document. Returns name, email, role (signer/approver/viewer), signing status, signing order, completion timestamp, and any custom message. Use this when you need full details about one recipient rather than listing all of them.",
@@ -194,55 +200,66 @@ function registerGetRecipientTool(server: McpServer, client: SealApiClient): voi
       const response = await client.get<ApiRecipient>(
         "/recipients/get",
         { document_id, id },
-        authToken,
+        authToken
       );
 
       return createToolResponse(response);
-    },
+    }
   );
 }
 
-function registerAddRecipientTool(server: McpServer, client: SealApiClient): void {
+function registerAddRecipientTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_add_recipient",
     "Add a recipient to a document. The document must be in draft status.",
     addRecipientSchema.shape,
     async (args, extra) => {
-      const { document_id, email, name, role, order, message } = args as AddRecipientInput;
+      const { document_id, email, name, role, order, message } =
+        args as AddRecipientInput;
       const authToken = getAuthToken(extra);
       const response = await client.post<{ id: string }>(
         "/recipients",
         { email, name, role, order, message },
         { document_id },
-        authToken,
+        authToken
       );
 
       return createToolResponse(response);
-    },
+    }
   );
 }
 
-function registerUpdateRecipientTool(server: McpServer, client: SealApiClient): void {
+function registerUpdateRecipientTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_update_recipient",
     "Update a recipient's details. The document must be in draft status.",
     updateRecipientSchema.shape,
     async (args, extra) => {
-      const { document_id, id, name, role, order, message } = args as UpdateRecipientInput;
+      const { document_id, id, name, role, order, message } =
+        args as UpdateRecipientInput;
       const authToken = getAuthToken(extra);
       const response = await client.put<{ success: boolean }>(
         "/recipients/update",
         { name, role, order, message },
         { document_id, id },
-        authToken,
+        authToken
       );
 
       return createToolResponse(response);
-    },
+    }
   );
 }
 
-function registerRemoveRecipientTool(server: McpServer, client: SealApiClient): void {
+function registerRemoveRecipientTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_remove_recipient",
     "Remove a recipient from a document. The document must be in draft status.",
@@ -253,15 +270,18 @@ function registerRemoveRecipientTool(server: McpServer, client: SealApiClient): 
       const response = await client.delete<{ success: boolean }>(
         "/recipients/delete",
         { document_id, id },
-        authToken,
+        authToken
       );
 
       return createToolResponse(response);
-    },
+    }
   );
 }
 
-function registerSendReminderTool(server: McpServer, client: SealApiClient): void {
+function registerSendReminderTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_send_reminder",
     "Send a signing reminder to a recipient. Only works for recipients who haven't signed yet.",
@@ -273,15 +293,18 @@ function registerSendReminderTool(server: McpServer, client: SealApiClient): voi
         "/recipients/remind",
         { message },
         { document_id, id },
-        authToken,
+        authToken
       );
 
       return createToolResponse(response);
-    },
+    }
   );
 }
 
-function registerAddRecipientsBulkTool(server: McpServer, client: SealApiClient): void {
+function registerAddRecipientsBulkTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_add_recipients_bulk",
     "Add multiple recipients to a document at once. Useful for setting up complex signing workflows with many participants.",
@@ -289,8 +312,10 @@ function registerAddRecipientsBulkTool(server: McpServer, client: SealApiClient)
     async (args, extra) => {
       const { document_id, recipients } = args as AddRecipientsBulkInput;
       const authToken = getAuthToken(extra);
-      const { results, successCount } = await processInBatches(recipients, (recipient) =>
-        addRecipientWithResult(client, document_id, recipient, authToken),
+      const { results, successCount } = await processInBatches(
+        recipients,
+        (recipient) =>
+          addRecipientWithResult(client, document_id, recipient, authToken)
       );
 
       return createToolResponse({
@@ -299,11 +324,14 @@ function registerAddRecipientsBulkTool(server: McpServer, client: SealApiClient)
         total_requested: recipients.length,
         recipients: results,
       });
-    },
+    }
   );
 }
 
-function registerUpdateRecipientsBulkTool(server: McpServer, client: SealApiClient): void {
+function registerUpdateRecipientsBulkTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
   server.tool(
     "seal_update_recipients_bulk",
     "Update multiple recipients for a document at once. Useful for making batch changes to recipient details.",
@@ -311,8 +339,10 @@ function registerUpdateRecipientsBulkTool(server: McpServer, client: SealApiClie
     async (args, extra) => {
       const { document_id, updates } = args as UpdateRecipientsBulkInput;
       const authToken = getAuthToken(extra);
-      const { results, successCount } = await processInBatches(updates, (update) =>
-        updateRecipientWithResult(client, document_id, update, authToken),
+      const { results, successCount } = await processInBatches(
+        updates,
+        (update) =>
+          updateRecipientWithResult(client, document_id, update, authToken)
       );
 
       return createToolResponse({
@@ -321,14 +351,17 @@ function registerUpdateRecipientsBulkTool(server: McpServer, client: SealApiClie
         total_requested: updates.length,
         recipients: results,
       });
-    },
+    }
   );
 }
 
 /**
  * Registers all recipient-related tools with the MCP server.
  */
-export function registerRecipientTools(server: McpServer, client: SealApiClient): void {
+export function registerRecipientTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   registerListRecipientsTool(server, client);
   registerGetRecipientTool(server, client);
   registerAddRecipientTool(server, client);

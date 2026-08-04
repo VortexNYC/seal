@@ -92,12 +92,14 @@ export function FieldOptionsDialog({
   const config = FIELD_TYPE_CONFIG[fieldType];
 
   // Options state
-  const [options, setOptions] = useState<FieldOption[]>(initialConfig?.options || []);
+  const [options, setOptions] = useState<FieldOption[]>(
+    initialConfig?.options || []
+  );
   const [allowMultiple, setAllowMultiple] = useState(
-    initialConfig?.allowMultiple ?? fieldType === "checkbox",
+    initialConfig?.allowMultiple ?? fieldType === "checkbox"
   );
   const [defaultOptionId, setDefaultOptionId] = useState<string | undefined>(
-    initialConfig?.defaultOptionId,
+    initialConfig?.defaultOptionId
   );
 
   // Drag state
@@ -112,7 +114,9 @@ export function FieldOptionsDialog({
   useEffect(() => {
     if (open) {
       setOptions(initialConfig?.options || []);
-      setAllowMultiple(initialConfig?.allowMultiple ?? fieldType === "checkbox");
+      setAllowMultiple(
+        initialConfig?.allowMultiple ?? fieldType === "checkbox"
+      );
       setDefaultOptionId(initialConfig?.defaultOptionId);
     }
   }, [open, initialConfig, fieldType]);
@@ -135,8 +139,10 @@ export function FieldOptionsDialog({
   const handleOptionChange = useCallback((id: string, label: string) => {
     setOptions((prev) =>
       prev.map((opt) =>
-        opt.id === id ? { ...opt, label, value: label.toLowerCase().replace(/\s+/g, "_") } : opt,
-      ),
+        opt.id === id
+          ? { ...opt, label, value: label.toLowerCase().replace(/\s+/g, "_") }
+          : opt
+      )
     );
   }, []);
 
@@ -148,7 +154,7 @@ export function FieldOptionsDialog({
         setDefaultOptionId(undefined);
       }
     },
-    [defaultOptionId],
+    [defaultOptionId]
   );
 
   // Drag handlers
@@ -163,11 +169,15 @@ export function FieldOptionsDialog({
         setDragOverIndex(index);
       }
     },
-    [draggedIndex],
+    [draggedIndex]
   );
 
   const handleDragEnd = useCallback(() => {
-    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+    if (
+      draggedIndex !== null &&
+      dragOverIndex !== null &&
+      draggedIndex !== dragOverIndex
+    ) {
       setOptions((prev) => {
         const newOptions = [...prev];
         const [removed] = newOptions.splice(draggedIndex, 1);
@@ -192,7 +202,7 @@ export function FieldOptionsDialog({
         }
       }
     },
-    [options, handleAddOption, handleDeleteOption],
+    [options, handleAddOption, handleDeleteOption]
   );
 
   // Confirm handler
@@ -240,7 +250,9 @@ export function FieldOptionsDialog({
 
               {options.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="text-muted-foreground max-w-[220px] text-sm">{config.emptyText}</p>
+                  <p className="text-muted-foreground max-w-[220px] text-sm">
+                    {config.emptyText}
+                  </p>
                 </div>
               ) : (
                 <div className="bg-muted flex flex-col gap-0.5 rounded-lg p-0.5">
@@ -250,7 +262,7 @@ export function FieldOptionsDialog({
                       className={cn(
                         "group bg-card flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors",
                         draggedIndex === index && "opacity-50",
-                        dragOverIndex === index && "bg-muted",
+                        dragOverIndex === index && "bg-muted"
                       )}
                       draggable
                       onDragStart={() => handleDragStart(index)}
@@ -265,7 +277,9 @@ export function FieldOptionsDialog({
                         type="text"
                         className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 border-none bg-transparent py-1 text-sm focus:outline-none"
                         value={option.label}
-                        onChange={(e) => handleOptionChange(option.id, e.target.value)}
+                        onChange={(e) =>
+                          handleOptionChange(option.id, e.target.value)
+                        }
                         onKeyDown={(e) => handleKeyDown(e, index)}
                         placeholder="Enter option label..."
                         autoComplete="off"
@@ -313,7 +327,10 @@ export function FieldOptionsDialog({
                     }}
                     className="border-border text-foreground mt-0.5 h-4 w-4 rounded focus:ring-offset-0"
                   />
-                  <label htmlFor={defaultOptionToggleId} className="flex-1 cursor-pointer">
+                  <label
+                    htmlFor={defaultOptionToggleId}
+                    className="flex-1 cursor-pointer"
+                  >
                     <div className="text-foreground text-sm font-medium">
                       Pre-select first option
                     </div>

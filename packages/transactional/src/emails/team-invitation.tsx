@@ -39,7 +39,9 @@ function InvitationIcon() {
           justifyContent: "center",
         }}
       >
-        <Text style={{ margin: "0", fontSize: "32px", lineHeight: "64px" }}>&#x2709;&#xFE0F;</Text>
+        <Text style={{ margin: "0", fontSize: "32px", lineHeight: "64px" }}>
+          &#x2709;&#xFE0F;
+        </Text>
       </div>
     </Section>
   );
@@ -56,12 +58,16 @@ function OrganizationCard({
 }) {
   return (
     <Section style={emailStyles.documentCard}>
-      <Text style={{ ...emailStyles.documentTitle, marginBottom: "8px" }}>{organizationName}</Text>
+      <Text style={{ ...emailStyles.documentTitle, marginBottom: "8px" }}>
+        {organizationName}
+      </Text>
       <Text style={{ ...emailStyles.documentMeta, marginBottom: "4px" }}>
         Your role: <strong style={emailStyles.strong}>{role}</strong>
       </Text>
       {expirationDate && (
-        <Text style={{ ...emailStyles.documentMeta, color: status.destructive }}>
+        <Text
+          style={{ ...emailStyles.documentMeta, color: status.destructive }}
+        >
           Invitation expires: {expirationDate}
         </Text>
       )}
@@ -82,13 +88,34 @@ function MemberBenefitsSection() {
       >
         As a team member, you&apos;ll be able to:
       </Text>
-      <Text style={{ margin: "0 0 4px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+      <Text
+        style={{
+          margin: "0 0 4px 0",
+          fontSize: "14px",
+          lineHeight: "24px",
+          color: "#6b6560",
+        }}
+      >
         &bull; Access shared documents and templates
       </Text>
-      <Text style={{ margin: "0 0 4px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+      <Text
+        style={{
+          margin: "0 0 4px 0",
+          fontSize: "14px",
+          lineHeight: "24px",
+          color: "#6b6560",
+        }}
+      >
         &bull; Collaborate with team members
       </Text>
-      <Text style={{ margin: "0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+      <Text
+        style={{
+          margin: "0",
+          fontSize: "14px",
+          lineHeight: "24px",
+          color: "#6b6560",
+        }}
+      >
         &bull; Send documents for signature
       </Text>
     </Section>
@@ -136,8 +163,9 @@ export function TeamInvitation({
           >
             {inviterEmail}
           </Link>
-          ) has invited you to join <strong style={emailStyles.strong}>{organizationName}</strong>{" "}
-          on Seal.
+          ) has invited you to join{" "}
+          <strong style={emailStyles.strong}>{organizationName}</strong> on
+          Seal.
         </Text>
 
         <OrganizationCard
@@ -155,10 +183,16 @@ export function TeamInvitation({
           </Button>
         </Section>
 
-        <Text style={emailStyles.smallText}>Or copy and paste this link into your browser:</Text>
+        <Text style={emailStyles.smallText}>
+          Or copy and paste this link into your browser:
+        </Text>
         <Link
           href={inviteUrl}
-          style={{ fontSize: "14px", color: emailStyles.linkColor, wordBreak: "break-all" }}
+          style={{
+            fontSize: "14px",
+            color: emailStyles.linkColor,
+            wordBreak: "break-all",
+          }}
         >
           {inviteUrl}
         </Link>

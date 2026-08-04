@@ -16,13 +16,15 @@ import { verifyDocumentOwnership } from "./recipient_helpers";
 type WorkflowMutationDbCtx = Pick<MutationCtx, "db" | "runQuery">;
 type WorkflowMutationSchedulerCtx = Pick<MutationCtx, "db" | "scheduler">;
 
-function isRecipientFinished(status: Doc<"document_recipients">["status"]): boolean {
+function isRecipientFinished(
+  status: Doc<"document_recipients">["status"]
+): boolean {
   return status === "signed" || status === "approved" || status === "declined";
 }
 
 async function getActiveReminders(
   ctx: WorkflowMutationDbCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<Doc<"document_reminders">[]> {
   const reminders = await ctx.db
     .query("document_reminders")
@@ -30,13 +32,14 @@ async function getActiveReminders(
     .collect();
 
   return reminders.filter(
-    (reminder) => reminder.status === "scheduled" || reminder.status === "pending",
+    (reminder) =>
+      reminder.status === "scheduled" || reminder.status === "pending"
   );
 }
 
 async function cancelReminders(
   ctx: WorkflowMutationDbCtx,
-  reminders: Doc<"document_reminders">[],
+  reminders: Doc<"document_reminders">[]
 ): Promise<void> {
   for (const reminder of reminders) {
     await ctx.db.patch(reminder._id, {
@@ -52,7 +55,7 @@ async function shareDocumentWithRecipientUsers(
   document: Doc<"documents">,
   recipients: Doc<"document_recipients">[],
   documentId: Id<"documents">,
-  userId: Id<"users">,
+  userId: Id<"users">
 ): Promise<number> {
   let sharedWithCount = 0;
 
@@ -68,14 +71,18 @@ async function shareDocumentWithRecipientUsers(
 
     const organization = await ctx.db.get(document.organizationId);
     const orgMember = organization
-      ? await resolveComponentMembershipForOrganization(ctx, existingUser, organization)
+      ? await resolveComponentMembershipForOrganization(
+          ctx,
+          existingUser,
+          organization
+        )
       : null;
 
     if (orgMember && orgMember.status === "active") {
       const existingAccess = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", documentId).eq("userId", existingUser._id),
+          q.eq("documentId", documentId).eq("userId", existingUser._id)
         )
         .first();
 
@@ -117,7 +124,7 @@ async function scheduleAutomaticReminders(
   documentId: Id<"documents">,
   userId: Id<"users">,
   now: number,
-  autoRemindAfterDays?: number,
+  autoRemindAfterDays?: number
 ): Promise<void> {
   if (!autoRemindAfterDays || autoRemindAfterDays <= 0) {
     return;
@@ -145,7 +152,7 @@ async function scheduleAutomaticReminders(
       internal.documents?.reminders.processReminder,
       {
         reminderId,
-      },
+      }
     );
   }
 }
@@ -180,7 +187,9 @@ export const sendDocument = permissionMutation("documents:edit")({
       .collect();
 
     if (recipients.length === 0) {
-      throw new ConvexError("Document must have at least one recipient before sending");
+      throw new ConvexError(
+        "Document must have at least one recipient before sending"
+      );
     }
 
     // 4. Share document with recipients who have existing accounts
@@ -189,7 +198,7 @@ export const sendDocument = permissionMutation("documents:edit")({
       document,
       recipients,
       args.documentId,
-      userId,
+      userId
     );
 
     // 5. Update document status
@@ -208,7 +217,7 @@ export const sendDocument = permissionMutation("documents:edit")({
       args.documentId,
       userId,
       now,
-      args.autoRemindAfterDays,
+      args.autoRemindAfterDays
     );
 
     return {
@@ -247,10 +256,14 @@ export const completeDocument = permissionMutation("documents:edit")({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    const allCompleted = recipients.every((recipient) => isRecipientFinished(recipient.status));
+    const allCompleted = recipients.every((recipient) =>
+      isRecipientFinished(recipient.status)
+    );
 
     if (!allCompleted) {
-      throw new ConvexError("Cannot complete document - not all recipients have taken action");
+      throw new ConvexError(
+        "Cannot complete document - not all recipients have taken action"
+      );
     }
 
     // 4. Mark document as completed
@@ -373,7 +386,9 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       return { success: true, completed: false, reason: "no_recipients" };
     }
 
-    const allCompleted = recipients.every((recipient) => isRecipientFinished(recipient.status));
+    const allCompleted = recipients.every((recipient) =>
+      isRecipientFinished(recipient.status)
+    );
 
     if (!allCompleted) {
       return { success: true, completed: false, reason: "pending_recipients" };
@@ -386,7 +401,8 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       .collect();
 
     const hasUnpaidPayments = paymentConfigs.some(
-      (config) => config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled",
+      (config) =>
+        config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled"
     );
 
     if (hasUnpaidPayments) {
@@ -464,7 +480,8 @@ export const checkPaymentCompletionAndFinalize = internalMutation({
       .collect();
 
     const allPaid = paymentConfigs.every(
-      (config) => config.paymentStatus === "paid" || config.paymentStatus === "cancelled",
+      (config) =>
+        config.paymentStatus === "paid" || config.paymentStatus === "cancelled"
     );
 
     if (!allPaid) {

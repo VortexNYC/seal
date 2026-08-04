@@ -64,10 +64,18 @@ export function MembersList({
   const { slug } = useParams({ strict: false });
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRoles, setSelectedRoles] = useState<Set<Member["role"]>>(new Set());
+  const [selectedRoles, setSelectedRoles] = useState<Set<Member["role"]>>(
+    new Set()
+  );
 
   // Available roles for filtering
-  const availableRoles: Member["role"][] = ["owner", "admin", "member", "viewer", "system"];
+  const availableRoles: Member["role"][] = [
+    "owner",
+    "admin",
+    "member",
+    "viewer",
+    "system",
+  ];
 
   // Filter members based on search query and selected roles
   const filteredMembers = useMemo(() => {
@@ -85,7 +93,9 @@ export function MembersList({
         const name = member.name?.toLowerCase() || "";
         const email = member.email.toLowerCase();
         const role = member.role.toLowerCase();
-        return name.includes(query) || email.includes(query) || role.includes(query);
+        return (
+          name.includes(query) || email.includes(query) || role.includes(query)
+        );
       });
     }
 
@@ -121,14 +131,16 @@ export function MembersList({
   };
 
   const getStatusBadge = (status: Member["status"]) => {
-    const variants: Record<Member["status"], "default" | "secondary" | "destructive" | "outline"> =
-      {
-        active: "default",
-        inactive: "secondary",
-        suspended: "destructive",
-        pending: "outline",
-        blocked: "destructive",
-      };
+    const variants: Record<
+      Member["status"],
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
+      active: "default",
+      inactive: "secondary",
+      suspended: "destructive",
+      pending: "outline",
+      blocked: "destructive",
+    };
 
     return (
       <Badge variant={variants[status]} className="capitalize">
@@ -141,9 +153,13 @@ export function MembersList({
     if (!user) return false;
 
     const currentEmail =
-      user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress;
+      user.primaryEmailAddress?.emailAddress ||
+      user.emailAddresses[0]?.emailAddress;
 
-    return Boolean(currentEmail) && member.email.toLowerCase() === currentEmail.toLowerCase();
+    return (
+      Boolean(currentEmail) &&
+      member.email.toLowerCase() === currentEmail.toLowerCase()
+    );
   };
 
   const getRoleBadge = (role: Member["role"]) => {
@@ -156,7 +172,11 @@ export function MembersList({
     };
 
     return (
-      <Badge variant="outline" className={colors[role]} data-testid="member-role">
+      <Badge
+        variant="outline"
+        className={colors[role]}
+        data-testid="member-role"
+      >
         {role}
       </Badge>
     );
@@ -228,7 +248,11 @@ export function MembersList({
         {selectedRoles.size > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             {Array.from(selectedRoles).map((role) => (
-              <Badge key={role} variant="secondary" className="gap-1 capitalize">
+              <Badge
+                key={role}
+                variant="secondary"
+                className="gap-1 capitalize"
+              >
                 {role}
                 <button
                   type="button"
@@ -268,8 +292,12 @@ export function MembersList({
                 <TableRow>
                   <TableHead className="min-w-[200px]">Member</TableHead>
                   <TableHead className="min-w-[120px]">Role</TableHead>
-                  <TableHead className="hidden min-w-[100px] sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden min-w-[120px] md:table-cell">Joined</TableHead>
+                  <TableHead className="hidden min-w-[100px] sm:table-cell">
+                    Status
+                  </TableHead>
+                  <TableHead className="hidden min-w-[120px] md:table-cell">
+                    Joined
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -290,11 +318,15 @@ export function MembersList({
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                           <AvatarImage src={member.avatarUrl ?? undefined} />
-                          <AvatarFallback>{getInitials(member.name, member.email)}</AvatarFallback>
+                          <AvatarFallback>
+                            {getInitials(member.name, member.email)}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 truncate font-medium">
-                            <span className="truncate">{member.name || "Unknown"}</span>
+                            <span className="truncate">
+                              {member.name || "Unknown"}
+                            </span>
                             {isCurrentUser(member) ? (
                               <Badge variant="secondary" className="shrink-0">
                                 You

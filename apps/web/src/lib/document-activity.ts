@@ -36,7 +36,7 @@ type Recipient = {
  */
 export function buildActivityEvents(
   documentData: DocumentData,
-  recipients: Recipient[],
+  recipients: Recipient[]
 ): ActivityEvent[] {
   const events: ActivityEvent[] = [];
 

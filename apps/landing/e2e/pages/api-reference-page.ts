@@ -18,7 +18,9 @@ export class ApiReferencePage {
   }
 
   downloadJsonButton(): Locator {
-    return this.page.getByRole("button", { name: /download openapi document json/i }).first();
+    return this.page
+      .getByRole("button", { name: /download openapi document json/i })
+      .first();
   }
 
   loadingFallback(): Locator {
@@ -26,7 +28,9 @@ export class ApiReferencePage {
   }
 
   navigationMenuButton(): Locator {
-    return this.page.getByRole("button", { name: /open sidebar|collapse sidebar/i }).first();
+    return this.page
+      .getByRole("button", { name: /open sidebar|collapse sidebar/i })
+      .first();
   }
 
   titleHeading(): Locator {

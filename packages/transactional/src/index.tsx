@@ -1,21 +1,45 @@
 import { render } from "@react-email/render";
 
-import { DocumentCompleted, type DocumentCompletedProps } from "./emails/document-completed.js";
+import {
+  DocumentCompleted,
+  type DocumentCompletedProps,
+} from "./emails/document-completed.js";
 import {
   DocumentExpirationAlert,
   type DocumentExpirationAlertProps,
 } from "./emails/document-expiration-alert.js";
-import { DocumentExpired, type DocumentExpiredProps } from "./emails/document-expired.js";
-import { DocumentInvitation, type DocumentInvitationProps } from "./emails/document-invitation.js";
-import { DocumentReminder, type DocumentReminderProps } from "./emails/document-reminder.js";
-import { DocumentShared, type DocumentSharedProps } from "./emails/document-shared.js";
-import { DocumentViewed, type DocumentViewedProps } from "./emails/document-viewed.js";
+import {
+  DocumentExpired,
+  type DocumentExpiredProps,
+} from "./emails/document-expired.js";
+import {
+  DocumentInvitation,
+  type DocumentInvitationProps,
+} from "./emails/document-invitation.js";
+import {
+  DocumentReminder,
+  type DocumentReminderProps,
+} from "./emails/document-reminder.js";
+import {
+  DocumentShared,
+  type DocumentSharedProps,
+} from "./emails/document-shared.js";
+import {
+  DocumentViewed,
+  type DocumentViewedProps,
+} from "./emails/document-viewed.js";
 import {
   OwnershipTransferred,
   type OwnershipTransferredProps,
 } from "./emails/ownership-transferred.js";
-import { SigningComplete, type SigningCompleteProps } from "./emails/signing-complete.js";
-import { TeamInvitation, type TeamInvitationProps } from "./emails/team-invitation.js";
+import {
+  SigningComplete,
+  type SigningCompleteProps,
+} from "./emails/signing-complete.js";
+import {
+  TeamInvitation,
+  type TeamInvitationProps,
+} from "./emails/team-invitation.js";
 import { Welcome, type WelcomeProps } from "./emails/welcome.js";
 
 // Re-export components for direct use
@@ -51,28 +75,36 @@ export type {
 /**
  * Render DocumentInvitation email to HTML string
  */
-export async function renderDocumentInvitation(props: DocumentInvitationProps): Promise<string> {
+export async function renderDocumentInvitation(
+  props: DocumentInvitationProps
+): Promise<string> {
   return render(<DocumentInvitation {...props} />);
 }
 
 /**
  * Render SigningComplete email to HTML string
  */
-export async function renderSigningComplete(props: SigningCompleteProps): Promise<string> {
+export async function renderSigningComplete(
+  props: SigningCompleteProps
+): Promise<string> {
   return render(<SigningComplete {...props} />);
 }
 
 /**
  * Render DocumentCompleted email to HTML string
  */
-export async function renderDocumentCompleted(props: DocumentCompletedProps): Promise<string> {
+export async function renderDocumentCompleted(
+  props: DocumentCompletedProps
+): Promise<string> {
   return render(<DocumentCompleted {...props} />);
 }
 
 /**
  * Render DocumentReminder email to HTML string
  */
-export async function renderDocumentReminder(props: DocumentReminderProps): Promise<string> {
+export async function renderDocumentReminder(
+  props: DocumentReminderProps
+): Promise<string> {
   return render(<DocumentReminder {...props} />);
 }
 
@@ -86,21 +118,27 @@ export async function renderWelcome(props: WelcomeProps): Promise<string> {
 /**
  * Render TeamInvitation email to HTML string
  */
-export async function renderTeamInvitation(props: TeamInvitationProps): Promise<string> {
+export async function renderTeamInvitation(
+  props: TeamInvitationProps
+): Promise<string> {
   return render(<TeamInvitation {...props} />);
 }
 
 /**
  * Render DocumentShared email to HTML string
  */
-export async function renderDocumentShared(props: DocumentSharedProps): Promise<string> {
+export async function renderDocumentShared(
+  props: DocumentSharedProps
+): Promise<string> {
   return render(<DocumentShared {...props} />);
 }
 
 /**
  * Render DocumentExpired email to HTML string
  */
-export async function renderDocumentExpired(props: DocumentExpiredProps): Promise<string> {
+export async function renderDocumentExpired(
+  props: DocumentExpiredProps
+): Promise<string> {
   return render(<DocumentExpired {...props} />);
 }
 
@@ -108,7 +146,7 @@ export async function renderDocumentExpired(props: DocumentExpiredProps): Promis
  * Render DocumentExpirationAlert email to HTML string
  */
 export async function renderDocumentExpirationAlert(
-  props: DocumentExpirationAlertProps,
+  props: DocumentExpirationAlertProps
 ): Promise<string> {
   return render(<DocumentExpirationAlert {...props} />);
 }
@@ -116,7 +154,9 @@ export async function renderDocumentExpirationAlert(
 /**
  * Render DocumentViewed email to HTML string
  */
-export async function renderDocumentViewed(props: DocumentViewedProps): Promise<string> {
+export async function renderDocumentViewed(
+  props: DocumentViewedProps
+): Promise<string> {
   return render(<DocumentViewed {...props} />);
 }
 
@@ -124,7 +164,7 @@ export async function renderDocumentViewed(props: DocumentViewedProps): Promise<
  * Render OwnershipTransferred email to HTML string
  */
 export async function renderOwnershipTransferred(
-  props: OwnershipTransferredProps,
+  props: OwnershipTransferredProps
 ): Promise<string> {
   return render(<OwnershipTransferred {...props} />);
 }

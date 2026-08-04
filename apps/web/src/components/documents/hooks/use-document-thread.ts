@@ -12,7 +12,9 @@ export function useDocumentThread(documentId: Id<"documents">) {
     documentId,
   });
 
-  const getOrCreateThreadMutation = useMutation(api.ai.threads.getOrCreateThread);
+  const getOrCreateThreadMutation = useMutation(
+    api.ai.threads.getOrCreateThread
+  );
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 

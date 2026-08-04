@@ -58,7 +58,10 @@ test("not on CI", async ({ page }) => {
 
 ```typescript
 test.describe("Admin features", () => {
-  test.skip(({ browserName }) => browserName === "firefox", "Firefox admin bug");
+  test.skip(
+    ({ browserName }) => browserName === "firefox",
+    "Firefox admin bug"
+  );
 
   test("admin dashboard", async ({ page }) => {
     // Skipped in Firefox

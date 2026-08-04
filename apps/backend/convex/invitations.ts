@@ -29,7 +29,11 @@ import {
   upsertVortexAuthMember,
 } from "./lib/vortexAuthOrganizations";
 
-const inviteRoleValidator = v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"));
+const inviteRoleValidator = v.union(
+  v.literal("admin"),
+  v.literal("member"),
+  v.literal("viewer")
+);
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -54,7 +58,10 @@ export const createInvitation = mutation({
     email: v.string(),
     role: inviteRoleValidator,
   },
-  handler: async (ctx, args): Promise<{ invitationId: string; acceptUrl: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ invitationId: string; acceptUrl: string }> => {
     const auth = await getAuthContext(ctx);
     if (!auth.hasPermission("org:users:invite")) {
       throw new ConvexError("You do not have permission to invite members");
@@ -68,10 +75,12 @@ export const createInvitation = mutation({
     const existing = await listComponentInvitationsByOrganization(
       ctx,
       auth.organization,
-      "pending",
+      "pending"
     );
     if (existing.some((inv) => inv.email.toLowerCase() === email)) {
-      throw new ConvexError("An invitation has already been sent to this email");
+      throw new ConvexError(
+        "An invitation has already been sent to this email"
+      );
     }
 
     const token = crypto.randomUUID();
@@ -119,7 +128,7 @@ export const sendInviteEmail = internalAction({
   },
   handler: async (ctx, args) => {
     const from = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
-    const draft = createOrganizationInvitationEmailDraft({
+    const draft = await createOrganizationInvitationEmailDraft({
       from,
       to: args.to,
       acceptUrl: args.acceptUrl,
@@ -144,8 +153,8 @@ export const listInvitations = query({
         v.literal("pending"),
         v.literal("accepted"),
         v.literal("revoked"),
-        v.literal("expired"),
-      ),
+        v.literal("expired")
+      )
     ),
   },
   handler: async (ctx, args) => {
@@ -153,7 +162,7 @@ export const listInvitations = query({
     const invitations = await listComponentInvitationsByOrganization(
       ctx,
       auth.organization,
-      args.status,
+      args.status
     );
     return invitations.map((inv) => ({
       id: inv._id,
@@ -175,7 +184,10 @@ export const revokeInvitation = mutation({
       throw new ConvexError("You do not have permission to revoke invitations");
     }
     const invitation = await getComponentInvitationById(ctx, args.invitationId);
-    if (invitation === null || invitation.organizationId !== auth.organization._id) {
+    if (
+      invitation === null ||
+      invitation.organizationId !== auth.organization._id
+    ) {
       throw new ConvexError("Invitation not found in this organization");
     }
     if (invitation.status !== "pending") {
@@ -216,7 +228,10 @@ export const getInvitationByToken = query({
  */
 export const redeemInvitation = mutation({
   args: { token: v.string() },
-  handler: async (ctx: MutationCtx, args): Promise<{ organizationId: string }> => {
+  handler: async (
+    ctx: MutationCtx,
+    args
+  ): Promise<{ organizationId: string }> => {
     // The invitee is authenticated but typically has NO org yet, so resolve
     // the user directly (getAuthContext would require an active org).
     const identity = await ctx.auth.getUserIdentity();
@@ -225,7 +240,9 @@ export const redeemInvitation = mutation({
     }
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
     if (user === null) {
       throw new ConvexError("User record not found");

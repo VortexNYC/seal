@@ -20,7 +20,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers all contact directory tools with the MCP server.
  */
-export function registerContactTools(server: McpServer, client: SealApiClient): void {
+export function registerContactTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // List contacts
   server.tool(
     "seal_list_contacts",
@@ -43,7 +46,7 @@ export function registerContactTools(server: McpServer, client: SealApiClient): 
           },
         ],
       };
-    },
+    }
   );
 
   // Get contact
@@ -54,33 +57,10 @@ export function registerContactTools(server: McpServer, client: SealApiClient): 
     async (args, extra) => {
       const { id } = args as GetContactInput;
       const authToken = getAuthToken(extra);
-      const response = await client.get<ApiContact>("/contacts/get", { id }, authToken);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
-    },
-  );
-
-  // Create contact
-  server.tool(
-    "seal_create_contact",
-    "Add a new contact to your workspace directory. Contacts can be referenced when adding document recipients. Required: first_name, last_name, email. Optional: phone, company, title, status (active/inactive/lead), notes, tags.",
-    createContactSchema.shape,
-    async (args, extra) => {
-      const { first_name, last_name, email, phone, company, title, status, notes, tags } =
-        args as CreateContactInput;
-      const authToken = getAuthToken(extra);
-      const response = await client.post<{ id: string }>(
-        "/contacts",
-        { first_name, last_name, email, phone, company, title, status, notes, tags },
-        undefined,
-        authToken,
+      const response = await client.get<ApiContact>(
+        "/contacts/get",
+        { id },
+        authToken
       );
 
       return {
@@ -91,7 +71,53 @@ export function registerContactTools(server: McpServer, client: SealApiClient): 
           },
         ],
       };
-    },
+    }
+  );
+
+  // Create contact
+  server.tool(
+    "seal_create_contact",
+    "Add a new contact to your workspace directory. Contacts can be referenced when adding document recipients. Required: first_name, last_name, email. Optional: phone, company, title, status (active/inactive/lead), notes, tags.",
+    createContactSchema.shape,
+    async (args, extra) => {
+      const {
+        first_name,
+        last_name,
+        email,
+        phone,
+        company,
+        title,
+        status,
+        notes,
+        tags,
+      } = args as CreateContactInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.post<{ id: string }>(
+        "/contacts",
+        {
+          first_name,
+          last_name,
+          email,
+          phone,
+          company,
+          title,
+          status,
+          notes,
+          tags,
+        },
+        undefined,
+        authToken
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
   );
 
   // Delete contact
@@ -105,7 +131,7 @@ export function registerContactTools(server: McpServer, client: SealApiClient): 
       const response = await client.delete<{ success: boolean }>(
         "/contacts/delete",
         { id },
-        authToken,
+        authToken
       );
 
       return {
@@ -116,6 +142,6 @@ export function registerContactTools(server: McpServer, client: SealApiClient): 
           },
         ],
       };
-    },
+    }
   );
 }

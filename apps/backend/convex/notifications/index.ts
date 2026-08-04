@@ -5,7 +5,11 @@ import type { Id } from "../_generated/dataModel";
 import type { DatabaseWriter } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
 import { authMutation, authQuery } from "../auth";
-import type { EmailStatus, NotificationData, NotificationType } from "../schemas/notifications";
+import type {
+  EmailStatus,
+  NotificationData,
+  NotificationType,
+} from "../schemas/notifications";
 import { emailStatusTuple } from "../schemas/notifications";
 
 const DEFAULT_LIMIT = 20;
@@ -29,7 +33,9 @@ export const list = authQuery({
     if (args.unreadOnly) {
       query = ctx.db
         .query("notifications")
-        .withIndex("by_user_unread", (q) => q.eq("userId", userId).eq("read", false))
+        .withIndex("by_user_unread", (q) =>
+          q.eq("userId", userId).eq("read", false)
+        )
         .order("desc");
     }
 
@@ -54,7 +60,9 @@ export const getUnreadCount = authQuery({
 
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user_unread", (q) => q.eq("userId", userId).eq("read", false))
+      .withIndex("by_user_unread", (q) =>
+        q.eq("userId", userId).eq("read", false)
+      )
       .take(1000);
 
     return unreadNotifications.length;
@@ -97,12 +105,16 @@ export const markAllAsRead = authMutation({
 
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user_unread", (q) => q.eq("userId", userId).eq("read", false))
+      .withIndex("by_user_unread", (q) =>
+        q.eq("userId", userId).eq("read", false)
+      )
       .collect();
 
     const now = Date.now();
     await Promise.all(
-      unreadNotifications.map((n) => ctx.db.patch(n._id, { read: true, readAt: now })),
+      unreadNotifications.map((n) =>
+        ctx.db.patch(n._id, { read: true, readAt: now })
+      )
     );
 
     return { success: true, count: unreadNotifications.length };
@@ -150,7 +162,9 @@ export const clearAll = authMutation({
  * Maps notification types to user preference categories.
  * Returns null if the notification type should always be delivered.
  */
-function getPreferenceCategory(type: NotificationType): "documentEvents" | "reminders" | null {
+function getPreferenceCategory(
+  type: NotificationType
+): "documentEvents" | "reminders" | null {
   switch (type) {
     case "document_signed":
     case "document_completed":
@@ -177,7 +191,7 @@ export async function createNotification(
     type: NotificationType;
     data: NotificationData;
     emailStatus?: EmailStatus;
-  },
+  }
 ): Promise<Id<"notifications"> | null> {
   // Check user notification preferences before creating
   const category = getPreferenceCategory(params.type);
@@ -186,7 +200,9 @@ export async function createNotification(
     if (user) {
       const profile = await ctx.db
         .query("user_profiles")
-        .withIndex("by_auth_subject", (q) => q.eq("authSubject", user.authSubject))
+        .withIndex("by_auth_subject", (q) =>
+          q.eq("authSubject", user.authSubject)
+        )
         .unique();
 
       if (profile?.notificationPreferences) {
@@ -198,7 +214,10 @@ export async function createNotification(
         }
 
         // Check email-specific preferences to suppress email
-        if (prefs.email?.enabled === false || prefs.email?.[category] === false) {
+        if (
+          prefs.email?.enabled === false ||
+          prefs.email?.[category] === false
+        ) {
           // Still create in-app notification, but skip email
           return await ctx.db.insert("notifications", {
             userId: params.userId,
@@ -260,11 +279,18 @@ export const updateEmailStatus = internalMutation({
 
     await ctx.db.patch(args.notificationId, updates);
 
-    if (args.status === "failed" && (updates.emailAttempts ?? 0) < MAX_EMAIL_ATTEMPTS) {
+    if (
+      args.status === "failed" &&
+      (updates.emailAttempts ?? 0) < MAX_EMAIL_ATTEMPTS
+    ) {
       const delayMs = 2 ** (updates.emailAttempts ?? 1) * 60 * 1000;
-      await ctx.scheduler.runAfter(delayMs, internal.notifications.index.retryEmailNotification, {
-        notificationId: args.notificationId,
-      });
+      await ctx.scheduler.runAfter(
+        delayMs,
+        internal.notifications.index.retryEmailNotification,
+        {
+          notificationId: args.notificationId,
+        }
+      );
     }
 
     return { success: true };
@@ -315,7 +341,7 @@ export const retryEmailNotification = internalMutation({
         sharedByUserId: data.sharedBy,
         permissionLevel: data.permissionLevel,
         notificationId: args.notificationId,
-      },
+      }
     );
 
     return { success: true };

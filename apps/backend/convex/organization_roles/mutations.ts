@@ -20,7 +20,9 @@ export const create = permissionMutation("users:roles")({
   },
   handler: async (ctx, args) => {
     // Validate permissions
-    const validPermissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
+    const validPermissions = Array.from(
+      new Set(args.permissions.filter(isValidPermission))
+    );
 
     if (validPermissions.length === 0) {
       throw new ConvexError({
@@ -29,7 +31,11 @@ export const create = permissionMutation("users:roles")({
       });
     }
 
-    const existing = await getComponentRoleByKey(ctx, ctx.auth.organization, args.name);
+    const existing = await getComponentRoleByKey(
+      ctx,
+      ctx.auth.organization,
+      args.name
+    );
     if (existing !== null) {
       throw new ConvexError({
         code: "CONFLICT",
@@ -40,16 +46,21 @@ export const create = permissionMutation("users:roles")({
     const organizationId = await ensureVortexAuthOrganization(
       ctx,
       ctx.auth.organizationId,
-      ctx.auth.user.vortexAuthUserId,
+      ctx.auth.user.vortexAuthUserId
     );
-    const result = await ctx.runMutation(components.vortexAuth.organizations.ensureRole, {
-      organizationId: organizationId as GenericId<"organizations">,
-      key: args.name,
-      name: args.name,
-      permissions: validPermissions,
-      isSystem: false,
-      createdBy: ctx.auth.user.vortexAuthUserId as GenericId<"users"> | undefined,
-    });
+    const result = await ctx.runMutation(
+      components.vortexAuth.organizations.ensureRole,
+      {
+        organizationId: organizationId as GenericId<"organizations">,
+        key: args.name,
+        name: args.name,
+        permissions: validPermissions,
+        isSystem: false,
+        createdBy: ctx.auth.user.vortexAuthUserId as
+          | GenericId<"users">
+          | undefined,
+      }
+    );
 
     return { roleId: String(result.roleId) };
   },
@@ -65,7 +76,8 @@ export const update = permissionMutation("users:roles")({
     permissions: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const componentOrganizationId = ctx.auth.organization.vortexAuthOrganizationId;
+    const componentOrganizationId =
+      ctx.auth.organization.vortexAuthOrganizationId;
     if (!componentOrganizationId) {
       throw new ConvexError({
         code: "NOT_FOUND",
@@ -73,10 +85,13 @@ export const update = permissionMutation("users:roles")({
       });
     }
 
-    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
-      roleId: args.roleId as GenericId<"organization_roles">,
-      organizationId: componentOrganizationId as GenericId<"organizations">,
-    });
+    const role = await ctx.runQuery(
+      components.vortexAuth.organizations.getRole,
+      {
+        roleId: args.roleId as GenericId<"organization_roles">,
+        organizationId: componentOrganizationId as GenericId<"organizations">,
+      }
+    );
 
     if (!role) {
       throw new ConvexError({
@@ -105,7 +120,11 @@ export const update = permissionMutation("users:roles")({
 
     if (args.name !== undefined) {
       const newName = args.name;
-      const duplicate = await getComponentRoleByKey(ctx, ctx.auth.organization, newName);
+      const duplicate = await getComponentRoleByKey(
+        ctx,
+        ctx.auth.organization,
+        newName
+      );
 
       if (duplicate && duplicate.roleId !== args.roleId) {
         throw new ConvexError({
@@ -118,7 +137,9 @@ export const update = permissionMutation("users:roles")({
     }
 
     if (args.permissions !== undefined) {
-      const validPermissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
+      const validPermissions = Array.from(
+        new Set(args.permissions.filter(isValidPermission))
+      );
 
       if (validPermissions.length === 0) {
         throw new ConvexError({
@@ -145,7 +166,8 @@ export const update = permissionMutation("users:roles")({
 export const remove = permissionMutation("users:roles")({
   args: { roleId: v.string() },
   handler: async (ctx, args) => {
-    const componentOrganizationId = ctx.auth.organization.vortexAuthOrganizationId;
+    const componentOrganizationId =
+      ctx.auth.organization.vortexAuthOrganizationId;
     if (!componentOrganizationId) {
       throw new ConvexError({
         code: "NOT_FOUND",
@@ -153,10 +175,13 @@ export const remove = permissionMutation("users:roles")({
       });
     }
 
-    const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
-      roleId: args.roleId as GenericId<"organization_roles">,
-      organizationId: componentOrganizationId as GenericId<"organizations">,
-    });
+    const role = await ctx.runQuery(
+      components.vortexAuth.organizations.getRole,
+      {
+        roleId: args.roleId as GenericId<"organization_roles">,
+        organizationId: componentOrganizationId as GenericId<"organizations">,
+      }
+    );
 
     if (!role) {
       throw new ConvexError({

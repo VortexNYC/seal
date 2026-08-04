@@ -174,7 +174,10 @@ await page.waitForURL("/dashboard");
 await page.waitForURL(/\/dashboard/);
 
 // Wait for navigation after action
-await Promise.all([page.waitForURL("**/dashboard"), page.click('a[href="/dashboard"]')]);
+await Promise.all([
+  page.waitForURL("**/dashboard"),
+  page.click('a[href="/dashboard"]'),
+]);
 
 // Or without Promise.all
 const urlPromise = page.waitForURL("**/dashboard");
@@ -227,7 +230,7 @@ await page.waitForFunction(() => {
 // With arguments
 await page.waitForFunction(
   (selector) => document.querySelector(selector)?.textContent === "Ready",
-  ".status",
+  ".status"
 );
 ```
 
@@ -265,7 +268,7 @@ await expect
     {
       intervals: [1000, 2000, 5000],
       timeout: 30000,
-    },
+    }
   )
   .toBe("completed");
 

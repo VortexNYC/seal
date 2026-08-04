@@ -3,13 +3,15 @@ import { type Infer, v } from "convex/values";
 
 export const subscriptionProductPriceTypeTuple = v.union(
   v.literal("recurring"),
-  v.literal("one_time"),
+  v.literal("one_time")
 );
-export type SubscriptionProductPriceTypeTuple = Infer<typeof subscriptionProductPriceTypeTuple>;
+export type SubscriptionProductPriceTypeTuple = Infer<
+  typeof subscriptionProductPriceTypeTuple
+>;
 
 export const subscriptionProductPriceTypeBillingSchemeTuple = v.union(
   v.literal("per_unit"),
-  v.literal("tiered"),
+  v.literal("tiered")
 );
 export type SubscriptionProductPriceTypeBillingSchemeTuple = Infer<
   typeof subscriptionProductPriceTypeBillingSchemeTuple
@@ -18,9 +20,11 @@ export type SubscriptionProductPriceTypeBillingSchemeTuple = Infer<
 export const subscriptionProductPriceStatusTuple = v.union(
   v.literal("active"),
   v.literal("archived"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
-export type SubscriptionProductPriceStatusTuple = Infer<typeof subscriptionProductPriceStatusTuple>;
+export type SubscriptionProductPriceStatusTuple = Infer<
+  typeof subscriptionProductPriceStatusTuple
+>;
 
 export const subscriptionPricesTable = defineTable({
   externalPriceId: v.string(), // Billing price ID (price_xxx)
@@ -38,7 +42,7 @@ export const subscriptionPricesTable = defineTable({
     v.object({
       interval: v.string(), // "month" | "year"
       intervalCount: v.number(), // 1 for monthly, 12 for yearly
-    }),
+    })
   ),
 
   // Pricing

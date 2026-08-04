@@ -14,14 +14,16 @@ function requireAnyEnv(primaryName: string, fallbackName: string): string {
   }
 
   throw new Error(
-    `[E2E preflight] Missing required Vortex Auth test credential: ${primaryName} or ${fallbackName}`,
+    `[E2E preflight] Missing required Vortex Auth test credential: ${primaryName} or ${fallbackName}`
   );
 }
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
-    throw new Error(`[E2E preflight] Missing required environment variable: ${name}`);
+    throw new Error(
+      `[E2E preflight] Missing required environment variable: ${name}`
+    );
   }
   return value;
 }
@@ -32,12 +34,15 @@ function logResolvedEnvironment(scope: string): void {
   }
 
   const convexTarget = describeConvexE2eTarget();
-  const testEmail = process.env.E2E_TEST_USER_EMAIL || process.env.TEST_USER_EMAIL || "<missing>";
+  const testEmail =
+    process.env.E2E_TEST_USER_EMAIL ||
+    process.env.TEST_USER_EMAIL ||
+    "<missing>";
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5180";
 
   console.info(`[setup:${scope}] Base URL: ${baseUrl}`);
   console.info(
-    `[setup:${scope}] Convex target: ${convexTarget.deploymentName} (${convexTarget.convexUrl})`,
+    `[setup:${scope}] Convex target: ${convexTarget.deploymentName} (${convexTarget.convexUrl})`
   );
   console.info(`[setup:${scope}] Test user: ${testEmail}`);
 
@@ -46,9 +51,13 @@ function logResolvedEnvironment(scope: string): void {
 
 export function assertAppEnv(): void {
   const baseUrl =
-    process.env.PLAYWRIGHT_BASE_URL || process.env.VITE_APP_URL || "http://localhost:5180";
+    process.env.PLAYWRIGHT_BASE_URL ||
+    process.env.VITE_APP_URL ||
+    "http://localhost:5180";
   if (!baseUrl.trim()) {
-    throw new Error("[E2E preflight] Missing PLAYWRIGHT_BASE_URL / VITE_APP_URL for app setup");
+    throw new Error(
+      "[E2E preflight] Missing PLAYWRIGHT_BASE_URL / VITE_APP_URL for app setup"
+    );
   }
   logResolvedEnvironment("app");
 }

@@ -4,11 +4,16 @@ import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 
 function isDocumentQuotaLimitError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes("monthly document limit");
+  return (
+    error instanceof Error && error.message.includes("monthly document limit")
+  );
 }
 
 test.describe("Document Management", () => {
-  test("should create a new document", async ({ authenticatedPage, organizationSlug }) => {
+  test("should create a new document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
     await documentsPage.goto(organizationSlug);
 
@@ -26,7 +31,9 @@ test.describe("Document Management", () => {
 
     try {
       await documentsPage.waitForAnyDocumentRow();
-      await expect(await documentsPage.waitForDocumentRowByName(createdName)).toBeVisible();
+      await expect(
+        await documentsPage.waitForDocumentRowByName(createdName)
+      ).toBeVisible();
     } finally {
       await documentsPage.goto(organizationSlug);
       await documentsPage.deleteDocument(createdName).catch(() => {});
@@ -110,7 +117,9 @@ test.describe("Document Editing", () => {
     await documentPage.addSignatureField(100, 100);
 
     await expect(
-      authenticatedPage.getByRole("button", { name: /open field properties/i }).first(),
+      authenticatedPage
+        .getByRole("button", { name: /open field properties/i })
+        .first()
     ).toBeVisible();
     // createApiDocument fixture auto-deletes after test
   });
@@ -151,7 +160,9 @@ test.describe("Document Lifecycle", () => {
     await expect(documentPage.sendButton).toBeEnabled();
 
     await documentsPage.goto(organizationSlug);
-    await expect(await documentsPage.waitForDocumentRowByName(docName)).toBeVisible();
+    await expect(
+      await documentsPage.waitForDocumentRowByName(docName)
+    ).toBeVisible();
     // createApiDocument fixture auto-deletes after test
   });
 });

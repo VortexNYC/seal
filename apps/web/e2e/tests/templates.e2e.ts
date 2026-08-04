@@ -1,8 +1,14 @@
-import { createSignableDocument, type SignableDocument } from "../factories/document-factory";
+import {
+  createSignableDocument,
+  type SignableDocument,
+} from "../factories/document-factory";
 import { test as authTest, expect } from "../fixtures/auth";
 import { ensurePdfStorageId } from "../fixtures/convex-test-api";
 import { sampleDocumentPath } from "../fixtures/paths";
-import { saveDocumentAsTemplate, TemplatesPage } from "../pages/templates/templates-page";
+import {
+  saveDocumentAsTemplate,
+  TemplatesPage,
+} from "../pages/templates/templates-page";
 
 /**
  * Template Management E2E.
@@ -42,8 +48,12 @@ test.describe("Template Management", () => {
   }) => {
     // The seeded doc has one signature field, which is what unblocks the
     // "Save as Template" button (it requires `signatureFields.length > 0`).
-    await authenticatedPage.goto(`/${organizationSlug}/documents/${signableDoc.documentId}`);
-    await expect(authenticatedPage.getByRole("button", { name: /send document/i })).toBeVisible({
+    await authenticatedPage.goto(
+      `/${organizationSlug}/documents/${signableDoc.documentId}`
+    );
+    await expect(
+      authenticatedPage.getByRole("button", { name: /send document/i })
+    ).toBeVisible({
       timeout: 15_000,
     });
 
@@ -75,7 +85,9 @@ test.describe("Templates list", () => {
     const templatesPage = new TemplatesPage(authenticatedPage);
     await templatesPage.goto(organizationSlug);
     await expect(templatesPage.heading).toBeVisible({ timeout: 10_000 });
-    await expect(authenticatedPage.getByText(/something went wrong/i)).not.toBeVisible({
+    await expect(
+      authenticatedPage.getByText(/something went wrong/i)
+    ).not.toBeVisible({
       timeout: 1_000,
     });
   });

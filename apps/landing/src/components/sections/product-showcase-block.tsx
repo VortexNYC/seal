@@ -1,6 +1,7 @@
 import { GripVertical, Layout, PenTool } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ComponentType, type SVGProps, useState } from "react";
+
 import { FadeIn } from "~/components/ui/fade-in";
 import { cn } from "~/utils/cn";
 
@@ -22,10 +23,15 @@ const tabs: TabData[] = [
     headline: "Create and send in minutes",
     description:
       "Upload a PDF, let AI place the fields, then fine-tune with drag-and-drop. Templates save your setup for next time.",
-    features: ["AI field detection", "Drag-and-drop placement", "Reusable templates"],
+    features: [
+      "AI field detection",
+      "Drag-and-drop placement",
+      "Reusable templates",
+    ],
     icon: GripVertical,
     imageSrc: "/images/showcase-editor.webp",
-    imageAlt: "Seal document editor with AI-placed signature fields on a contract",
+    imageAlt:
+      "Seal document editor with AI-placed signature fields on a contract",
   },
   {
     id: "signing",
@@ -33,10 +39,15 @@ const tabs: TabData[] = [
     headline: "Sign from any device",
     description:
       "A clean, focused signing page that works on any screen size. Recipients are guided field by field — no confusion.",
-    features: ["Mobile-optimized", "Guided field navigation", "ESIGN compliant"],
+    features: [
+      "Mobile-optimized",
+      "Guided field navigation",
+      "ESIGN compliant",
+    ],
     icon: PenTool,
     imageSrc: "/images/showcase-signing.webp",
-    imageAlt: "Mobile signing experience showing guided field-by-field signing flow",
+    imageAlt:
+      "Mobile signing experience showing guided field-by-field signing flow",
   },
   {
     id: "dashboard",
@@ -47,7 +58,8 @@ const tabs: TabData[] = [
     features: ["Real-time tracking", "Full audit trails", "Team workspaces"],
     icon: Layout,
     imageSrc: "/images/showcase-dashboard.webp",
-    imageAlt: "Seal dashboard showing document status tracking and team activity",
+    imageAlt:
+      "Seal dashboard showing document status tracking and team activity",
   },
 ];
 
@@ -58,8 +70,13 @@ function ShowcaseImage({ tab }: { tab: TabData }) {
     return (
       <div className="bg-muted flex aspect-video w-full items-center justify-center rounded-xl">
         <div className="text-center">
-          <tab.icon aria-hidden="true" className="text-muted-foreground mx-auto mb-3 size-10" />
-          <p className="text-muted-foreground text-sm">Screenshot coming soon</p>
+          <tab.icon
+            aria-hidden="true"
+            className="text-muted-foreground mx-auto mb-3 size-10"
+          />
+          <p className="text-muted-foreground text-sm">
+            Screenshot coming soon
+          </p>
         </div>
       </div>
     );
@@ -97,7 +114,8 @@ export function StaticProductShowcase() {
               See it in action
             </h2>
             <p className="text-muted-foreground mx-auto mt-6 max-w-xl text-lg text-pretty">
-              From upload to signed — every step is designed to be fast, clear, and delightful.
+              From upload to signed — every step is designed to be fast, clear,
+              and delightful.
             </p>
           </div>
         </FadeIn>
@@ -112,7 +130,7 @@ export function StaticProductShowcase() {
                     "rounded-full px-5 py-2.5 text-sm font-medium transition-colors",
                     activeTab === index
                       ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                   key={tab.id}
                   onClick={() => setActiveTab(index)}
@@ -129,10 +147,16 @@ export function StaticProductShowcase() {
         <FadeIn delay={0.2}>
           <AnimatePresence mode="wait">
             <motion.div
-              animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
+              animate={
+                prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }
+              }
               className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16"
-              exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.98 }}
-              initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.98 }}
+              exit={
+                prefersReducedMotion ? undefined : { opacity: 0, scale: 0.98 }
+              }
+              initial={
+                prefersReducedMotion ? undefined : { opacity: 0, scale: 0.98 }
+              }
               key={currentTab.id}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
@@ -146,13 +170,16 @@ export function StaticProductShowcase() {
                 </p>
                 <ul className="space-y-3">
                   {currentTab.features.map((feature) => (
-                    <li className="text-foreground flex items-center gap-3 text-sm" key={feature}>
+                    <li
+                      className="text-foreground flex items-center gap-3 text-sm"
+                      key={feature}
+                    >
                       <span
                         aria-hidden="true"
                         className="bg-primary flex size-5 shrink-0 items-center justify-center rounded-full"
                       >
                         <svg
-                          className="size-3 text-primary-foreground"
+                          className="text-primary-foreground size-3"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"

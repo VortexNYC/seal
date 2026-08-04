@@ -10,7 +10,7 @@ export function validateRequestedOAuthScopes(args: {
   requestedScopes: readonly ApiScope[];
 }): McpOAuthScopeAuthorizationError | null {
   const deniedScope = args.requestedScopes.find(
-    (scope) => !canUserUseScope([...args.permissions], scope),
+    (scope) => !canUserUseScope([...args.permissions], scope)
   );
   if (deniedScope === undefined) {
     return null;

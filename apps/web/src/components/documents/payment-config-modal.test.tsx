@@ -34,7 +34,9 @@ describe("PaymentConfigModal", () => {
   test("does not render dialog content when closed", () => {
     mockUseQuery.mockReturnValue(null);
 
-    render(<PaymentConfigModal open={false} onOpenChange={vi.fn()} fieldId={null} />);
+    render(
+      <PaymentConfigModal open={false} onOpenChange={vi.fn()} fieldId={null} />
+    );
 
     expect(screen.queryByText("Configure Payment")).not.toBeInTheDocument();
   });
@@ -42,7 +44,13 @@ describe("PaymentConfigModal", () => {
   test("renders loading spinner when config is loading", () => {
     mockUseQuery.mockReturnValue(undefined);
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     // Should show spinner, not the full form
     expect(screen.queryByText("Configure Payment")).not.toBeInTheDocument();
@@ -53,13 +61,19 @@ describe("PaymentConfigModal", () => {
   test("renders full form when open with no existing config", () => {
     mockUseQuery.mockReturnValue(null);
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     expect(screen.getByText("Configure Payment")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Set up line items, payment terms, and accepted methods for this payment field.",
-      ),
+        "Set up line items, payment terms, and accepted methods for this payment field."
+      )
     ).toBeInTheDocument();
     // Tab labels
     expect(screen.getByText("Invoice Items")).toBeInTheDocument();
@@ -72,7 +86,9 @@ describe("PaymentConfigModal", () => {
   test("shows total badge with correct amount from existing config", () => {
     mockUseQuery.mockReturnValue({
       paymentType: "one_time",
-      items: [{ id: "1", description: "Consulting", quantity: 2, unitPrice: 7500 }],
+      items: [
+        { id: "1", description: "Consulting", quantity: 2, unitPrice: 7500 },
+      ],
       dueDateTerms: "on_receipt",
       currency: "usd",
       allowedPaymentMethods: ["card"],
@@ -80,7 +96,13 @@ describe("PaymentConfigModal", () => {
       taxEnabled: false,
     });
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     // 2 * $75.00 = $150.00
     expect(screen.getByText("Total: $150.00")).toBeInTheDocument();
@@ -89,7 +111,14 @@ describe("PaymentConfigModal", () => {
   test("renders without crashing when existing config has customDueDate", () => {
     mockUseQuery.mockReturnValue({
       paymentType: "one_time",
-      items: [{ id: "1", description: "Design services", quantity: 1, unitPrice: 500000 }],
+      items: [
+        {
+          id: "1",
+          description: "Design services",
+          quantity: 1,
+          unitPrice: 500000,
+        },
+      ],
       dueDateTerms: "custom",
       customDueDate: "2026-04-01",
       currency: "usd",
@@ -98,7 +127,13 @@ describe("PaymentConfigModal", () => {
       taxEnabled: false,
     });
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     // Title appears in both the visible heading and aria-label — just confirm one exists
     expect(screen.getAllByText("Configure Payment").length).toBeGreaterThan(0);
@@ -108,7 +143,9 @@ describe("PaymentConfigModal", () => {
   test("when dueDateTerms is custom, both mode toggle buttons are in the DOM", async () => {
     mockUseQuery.mockReturnValue({
       paymentType: "one_time",
-      items: [{ id: "1", description: "Service", quantity: 1, unitPrice: 100000 }],
+      items: [
+        { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
+      ],
       dueDateTerms: "custom",
       customDueDays: 45,
       currency: "usd",
@@ -117,7 +154,13 @@ describe("PaymentConfigModal", () => {
       taxEnabled: false,
     });
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     // Create user after render so DOM is ready
     const user = userEvent.setup();
@@ -133,7 +176,9 @@ describe("PaymentConfigModal", () => {
     // Config with customDueDate puts modal into "date" mode
     mockUseQuery.mockReturnValue({
       paymentType: "one_time",
-      items: [{ id: "1", description: "Service", quantity: 1, unitPrice: 100000 }],
+      items: [
+        { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
+      ],
       dueDateTerms: "custom",
       customDueDate: "2026-06-15",
       currency: "usd",
@@ -142,7 +187,13 @@ describe("PaymentConfigModal", () => {
       taxEnabled: false,
     });
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     // Create user after render so DOM is ready
     const user = userEvent.setup();
@@ -160,7 +211,9 @@ describe("PaymentConfigModal", () => {
   test("loads customDueDate from existing config and displays the formatted date", async () => {
     mockUseQuery.mockReturnValue({
       paymentType: "one_time",
-      items: [{ id: "1", description: "Service", quantity: 1, unitPrice: 100000 }],
+      items: [
+        { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
+      ],
       dueDateTerms: "custom",
       customDueDate: "2026-04-01",
       currency: "usd",
@@ -169,7 +222,13 @@ describe("PaymentConfigModal", () => {
       taxEnabled: false,
     });
 
-    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
+    render(
+      <PaymentConfigModal
+        open={true}
+        onOpenChange={vi.fn()}
+        fieldId={FAKE_FIELD_ID}
+      />
+    );
 
     // Create user after render so DOM is ready
     const user = userEvent.setup();

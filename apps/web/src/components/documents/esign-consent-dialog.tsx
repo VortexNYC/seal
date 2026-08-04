@@ -11,7 +11,13 @@
  * 3. Declined with alternative options
  */
 
-import { CheckCircle2Icon, DownloadIcon, FileTextIcon, MailIcon, XCircleIcon } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  DownloadIcon,
+  FileTextIcon,
+  MailIcon,
+  XCircleIcon,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { SealLogo } from "@/components/seal-logo";
@@ -72,11 +78,13 @@ export function EsignConsentDialog({
           <div className="space-y-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <XCircleIcon className="text-destructive size-6" />
-              <h1 className="text-2xl font-bold text-balance">Electronic Signature Declined</h1>
+              <h1 className="text-2xl font-bold text-balance">
+                Electronic Signature Declined
+              </h1>
             </div>
             <p className="text-muted-foreground text-sm text-pretty">
-              You have declined to use electronic signatures. Unfortunately, this document requires
-              electronic signatures to proceed.
+              You have declined to use electronic signatures. Unfortunately,
+              this document requires electronic signatures to proceed.
             </p>
           </div>
 
@@ -135,7 +143,10 @@ export function EsignConsentDialog({
 
           <p className="text-muted-foreground text-center text-xs">
             For assistance, please contact:{" "}
-            <a href="mailto:support@seal.nyc" className="underline underline-offset-2">
+            <a
+              href="mailto:support@seal.nyc"
+              className="underline underline-offset-2"
+            >
               support@seal.nyc
             </a>
           </p>
@@ -156,7 +167,9 @@ export function EsignConsentDialog({
           <div className="space-y-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2Icon className="text-success size-6" />
-              <h1 className="text-2xl font-bold text-balance">Consent Accepted</h1>
+              <h1 className="text-2xl font-bold text-balance">
+                Consent Accepted
+              </h1>
             </div>
             <p className="text-muted-foreground text-sm text-pretty">
               Thank you for providing your consent. Loading your document...
@@ -165,7 +178,9 @@ export function EsignConsentDialog({
 
           <Card className="border-status-completed-border bg-status-completed-surface">
             <CardContent className="space-y-1 p-5 text-center">
-              <p className="text-status-completed-text text-sm font-medium">{recipientEmail}</p>
+              <p className="text-status-completed-text text-sm font-medium">
+                {recipientEmail}
+              </p>
               <p className="text-status-completed-text/80 text-xs">
                 Consent Date:{" "}
                 {new Date().toLocaleDateString("en-US", {
@@ -194,12 +209,15 @@ export function EsignConsentDialog({
             Electronic Signature Consent
           </h1>
           <p className="text-muted-foreground text-sm text-pretty">
-            Before you can sign documents electronically, please review and accept the following:
+            Before you can sign documents electronically, please review and
+            accept the following:
           </p>
         </div>
 
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Electronic Signature Agreement</h2>
+          <h2 className="mb-3 text-lg font-semibold">
+            Electronic Signature Agreement
+          </h2>
           <Card className="border-info-surface bg-info-surface/50">
             <CardContent className="space-y-4 p-5">
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -208,12 +226,14 @@ export function EsignConsentDialog({
               </p>
 
               <div>
-                <p className="mb-2 text-sm font-medium">You acknowledge that:</p>
+                <p className="mb-2 text-sm font-medium">
+                  You acknowledge that:
+                </p>
                 <ul className="text-muted-foreground space-y-1.5 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />
-                    Electronic signatures have the same legal effect as handwritten signatures under
-                    the ESIGN Act
+                    Electronic signatures have the same legal effect as
+                    handwritten signatures under the ESIGN Act
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />
@@ -227,7 +247,9 @@ export function EsignConsentDialog({
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">Technical Requirements:</p>
+                <p className="mb-2 text-sm font-medium">
+                  Technical Requirements:
+                </p>
                 <ul className="text-muted-foreground space-y-1 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />

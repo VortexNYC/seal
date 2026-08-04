@@ -150,7 +150,9 @@ export const test = base.extend<GraphQLFixtures>({
 
           // Optionally match variables
           if (m.variables) {
-            return JSON.stringify(m.variables) === JSON.stringify(postData.variables);
+            return (
+              JSON.stringify(m.variables) === JSON.stringify(postData.variables)
+            );
           }
           return true;
         });
@@ -207,7 +209,7 @@ test("mock GraphQL mutation", async ({ page }) => {
               items: input.items,
               total: input.items.reduce(
                 (sum: number, item: any) => sum + item.price * item.quantity,
-                0,
+                0
               ),
             },
           },

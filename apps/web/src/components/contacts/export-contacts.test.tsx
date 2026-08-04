@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ExportContacts } from "./export-contacts";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -14,7 +14,9 @@ function sealAssertPresent<T>(
   return value;
 }
 
-function makeContact(overrides: Partial<Doc<"contacts">> = {}): Doc<"contacts"> {
+function makeContact(
+  overrides: Partial<Doc<"contacts">> = {}
+): Doc<"contacts"> {
   return {
     _id: "contact_1" as Id<"contacts">,
     _creationTime: 1700000000000,
@@ -64,7 +66,9 @@ describe("ExportContacts", () => {
           capturedBlob = blob instanceof Blob ? blob : undefined;
           return "blob:test";
         });
-      revokeObjectURLSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+      revokeObjectURLSpy = vi
+        .spyOn(URL, "revokeObjectURL")
+        .mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -101,7 +105,7 @@ describe("ExportContacts", () => {
       const csvText = await sealAssertPresent(capturedBlob).text();
 
       expect(csvText).toContain(
-        "First Name,Last Name,Email,Phone,Company,Title,Status,Notes,Created",
+        "First Name,Last Name,Email,Phone,Company,Title,Status,Notes,Created"
       );
       expect(csvText).toContain("Jane");
       expect(csvText).toContain("Smith");

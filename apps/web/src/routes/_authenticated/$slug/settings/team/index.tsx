@@ -11,7 +11,13 @@ import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
 import { MembersList } from "@/components/team/members-list";
 import { PendingInvitationsList } from "@/components/team/pending-invitations-list";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 
@@ -33,17 +39,19 @@ function TeamSettings() {
 
   const permissions = useQuery(
     api.organizations.queries.getUserPermissions,
-    orgId ? { organizationId: orgId } : "skip",
+    orgId ? { organizationId: orgId } : "skip"
   );
 
   const members = useQuery(
     api.organizations.queries.getOrganizationMembers,
-    orgId ? { organizationId: orgId } : "skip",
+    orgId ? { organizationId: orgId } : "skip"
   );
 
   const invitations = useQuery(
     api.invitations.listInvitations,
-    orgId && permissions?.permissions.canInviteMembers ? { status: "pending" } : "skip",
+    orgId && permissions?.permissions.canInviteMembers
+      ? { status: "pending" }
+      : "skip"
   );
 
   // Loading state handled by pendingComponent
@@ -94,8 +102,8 @@ function TeamSettings() {
             <CardHeader>
               <CardTitle>Team Members</CardTitle>
               <CardDescription>
-                {members?.length ?? 0} {members?.length === 1 ? "member" : "members"} in this
-                workspace
+                {members?.length ?? 0}{" "}
+                {members?.length === 1 ? "member" : "members"} in this workspace
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -121,7 +129,8 @@ function TeamSettings() {
               <CardHeader>
                 <CardTitle>Pending Invitations</CardTitle>
                 <CardDescription>
-                  {invitationCount} pending {invitationCount === 1 ? "invitation" : "invitations"}
+                  {invitationCount} pending{" "}
+                  {invitationCount === 1 ? "invitation" : "invitations"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -129,7 +138,10 @@ function TeamSettings() {
                   invitations={
                     invitations?.map((inv) => ({
                       ...inv,
-                      role: inv.role === "system" || inv.role === "owner" ? "admin" : inv.role,
+                      role:
+                        inv.role === "system" || inv.role === "owner"
+                          ? "admin"
+                          : inv.role,
                     })) ?? []
                   }
                 />

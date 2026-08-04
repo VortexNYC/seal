@@ -10,7 +10,7 @@ import { v } from "convex/values";
 import { internalQuery } from "../../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -77,7 +77,9 @@ export const getAnalytics = internalQuery({
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to one organization and required for exact analytics snapshots; no date cutoff is imposed bound=per-tenant
     const allDocs = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .collect();
 
     // Workspace snapshot (all-time counts)
@@ -95,32 +97,46 @@ export const getAnalytics = internalQuery({
     }
 
     // Period-filtered documents (by creation date)
-    const periodDocs = allDocs.filter((doc) => doc.createdAt >= fromMs && doc.createdAt <= toMs);
+    const periodDocs = allDocs.filter(
+      (doc) => doc.createdAt >= fromMs && doc.createdAt <= toMs
+    );
 
     const total_created = periodDocs.length;
     const total_sent = periodDocs.filter(
-      (d) => d.sentAt !== undefined && d.sentAt >= fromMs && d.sentAt <= toMs,
+      (d) => d.sentAt !== undefined && d.sentAt >= fromMs && d.sentAt <= toMs
     ).length;
     const completedInPeriod = periodDocs.filter(
-      (d) => d.completedAt !== undefined && d.completedAt >= fromMs && d.completedAt <= toMs,
+      (d) =>
+        d.completedAt !== undefined &&
+        d.completedAt >= fromMs &&
+        d.completedAt <= toMs
     );
     const total_completed = completedInPeriod.length;
     const total_cancelled = periodDocs.filter(
-      (d) => d.cancelledAt !== undefined && d.cancelledAt >= fromMs && d.cancelledAt <= toMs,
+      (d) =>
+        d.cancelledAt !== undefined &&
+        d.cancelledAt >= fromMs &&
+        d.cancelledAt <= toMs
     ).length;
     const total_declined = periodDocs.filter(
-      (d) => d.declinedAt !== undefined && d.declinedAt >= fromMs && d.declinedAt <= toMs,
+      (d) =>
+        d.declinedAt !== undefined &&
+        d.declinedAt >= fromMs &&
+        d.declinedAt <= toMs
     ).length;
 
     const resolved = total_completed + total_cancelled + total_declined;
-    const completion_rate = resolved === 0 ? 0 : Math.round((total_completed / resolved) * 100);
+    const completion_rate =
+      resolved === 0 ? 0 : Math.round((total_completed / resolved) * 100);
 
     // Median signing time for completed docs that have both sentAt and completedAt
     let median_signing_hours: number | null = null;
     const signingTimes = completedInPeriod
       .filter((d) => d.sentAt !== undefined && d.completedAt !== undefined)
       .map(
-        (d) => (sealAssertPresent(d.completedAt) - sealAssertPresent(d.sentAt)) / (1000 * 60 * 60),
+        (d) =>
+          (sealAssertPresent(d.completedAt) - sealAssertPresent(d.sentAt)) /
+          (1000 * 60 * 60)
       );
 
     if (signingTimes.length >= 2) {
@@ -129,9 +145,10 @@ export const getAnalytics = internalQuery({
       median_signing_hours =
         signingTimes.length % 2 === 0
           ? Math.round(
-              ((sealAssertPresent(signingTimes[mid - 1]) + sealAssertPresent(signingTimes[mid])) /
+              ((sealAssertPresent(signingTimes[mid - 1]) +
+                sealAssertPresent(signingTimes[mid])) /
                 2) *
-                10,
+                10
             ) / 10
           : Math.round(sealAssertPresent(signingTimes[mid]) * 10) / 10;
     }

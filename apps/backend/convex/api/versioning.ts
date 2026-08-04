@@ -110,7 +110,7 @@ export function getApiVersion(request: Request): ApiVersion {
   if (!config) {
     // Invalid version, fall back to latest
     console.warn(
-      `[API] Invalid API version requested: ${requestedVersion}, using ${LATEST_API_VERSION}`,
+      `[API] Invalid API version requested: ${requestedVersion}, using ${LATEST_API_VERSION}`
     );
     return {
       version: LATEST_API_VERSION,
@@ -154,7 +154,9 @@ export function isVersionSunset(version: string): boolean {
  * @param version - The API version
  * @returns Headers to include in response, or null if not deprecated
  */
-export function getDeprecationHeaders(version: string): Record<string, string> | null {
+export function getDeprecationHeaders(
+  version: string
+): Record<string, string> | null {
   const config = API_VERSIONS[version];
 
   if (!config || config.status === "current") {
@@ -162,7 +164,9 @@ export function getDeprecationHeaders(version: string): Record<string, string> |
   }
 
   const headers: Record<string, string> = {
-    Deprecation: config.deprecationDate ? `date="${config.deprecationDate}"` : "true",
+    Deprecation: config.deprecationDate
+      ? `date="${config.deprecationDate}"`
+      : "true",
   };
 
   if (config.sunsetDate) {
@@ -181,7 +185,10 @@ export function getDeprecationHeaders(version: string): Record<string, string> |
  * @param version - The API version used
  * @returns Response with version headers
  */
-export function addVersionHeaders(response: Response, version: ApiVersion): Response {
+export function addVersionHeaders(
+  response: Response,
+  version: ApiVersion
+): Response {
   const headers = new Headers(response.headers);
 
   // Always include the version used

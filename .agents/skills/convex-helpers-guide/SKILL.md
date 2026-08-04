@@ -44,7 +44,13 @@ export const getTaskWithUser = query({
     const user = await getOneFrom(ctx.db, "users", "by_id", task.userId, "_id");
 
     // Get related comments
-    const comments = await getManyFrom(ctx.db, "comments", "by_task", task._id, "taskId");
+    const comments = await getManyFrom(
+      ctx.db,
+      "comments",
+      "by_task",
+      task._id,
+      "taskId"
+    );
 
     return { ...task, user, comments };
   },
@@ -98,7 +104,9 @@ export const authenticatedQuery = customQuery(query, {
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .withIndex("by_token", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)
+      )
       .unique();
 
     if (!user) throw new Error("User not found");
@@ -135,7 +143,9 @@ export const orgQuery = customQuery(query, {
     // Verify user is a member of this organization
     const member = await ctx.db
       .query("organizationMembers")
-      .withIndex("by_org_and_user", (q) => q.eq("orgId", args.orgId).eq("userId", user._id))
+      .withIndex("by_org_and_user", (q) =>
+        q.eq("orgId", args.orgId).eq("userId", user._id)
+      )
       .unique();
 
     if (!member) {
@@ -219,7 +229,10 @@ export const getActiveTasks = query({
 
     return await filter(
       ctx.db.query("tasks"),
-      (task) => !task.completed && task.createdAt > threeDaysAgo && task.priority === "high",
+      (task) =>
+        !task.completed &&
+        task.createdAt > threeDaysAgo &&
+        task.priority === "high"
     ).collect();
   },
 });
@@ -431,7 +444,8 @@ export const getTaskStats = query({
     const stats = await aggregation(ctx.db.query("tasks"), {
       total: "count",
       completed: (task) => (task.completed ? 1 : 0),
-      totalPriority: (task) => (task.priority === "high" ? 3 : task.priority === "medium" ? 2 : 1),
+      totalPriority: (task) =>
+        task.priority === "high" ? 3 : task.priority === "medium" ? 2 : 1,
     });
 
     return {
@@ -482,16 +496,36 @@ export const getPostWithDetails = query({
     if (!post) return null;
 
     // Load author
-    const author = await getOneFrom(ctx.db, "users", "by_id", post.authorId, "_id");
+    const author = await getOneFrom(
+      ctx.db,
+      "users",
+      "by_id",
+      post.authorId,
+      "_id"
+    );
 
     // Load comments
-    const comments = await getManyFrom(ctx.db, "comments", "by_post", post._id, "postId");
+    const comments = await getManyFrom(
+      ctx.db,
+      "comments",
+      "by_post",
+      post._id,
+      "postId"
+    );
 
     // Load tags (many-to-many)
-    const tagLinks = await getManyFrom(ctx.db, "postTags", "by_post", post._id, "postId");
+    const tagLinks = await getManyFrom(
+      ctx.db,
+      "postTags",
+      "by_post",
+      post._id,
+      "postId"
+    );
 
     const tags = await Promise.all(
-      tagLinks.map((link) => getOneFrom(ctx.db, "tags", "by_id", link.tagId, "_id")),
+      tagLinks.map((link) =>
+        getOneFrom(ctx.db, "tags", "by_id", link.tagId, "_id")
+      )
     );
 
     return { ...post, author, comments, tags };

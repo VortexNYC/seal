@@ -34,7 +34,9 @@ const mutation = useMutation({
 
     // 3. Optimistically update the cache
     queryClient.setQueryData(["todos"], (old: Todo[]) =>
-      old.map((todo) => (todo.id === todoId ? { ...todo, completed: !todo.completed } : todo)),
+      old.map((todo) =>
+        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
+      )
     );
 
     // 4. Return context for rollback
@@ -76,7 +78,9 @@ function TodoItem({ todo }: { todo: Todo }) {
         disabled={mutation.isPending}
         onChange={() => mutation.mutate(todo.id)}
       />
-      <span style={{ opacity: mutation.isPending ? 0.5 : 1 }}>{todo.title}</span>
+      <span style={{ opacity: mutation.isPending ? 0.5 : 1 }}>
+        {todo.title}
+      </span>
     </div>
   );
 }
@@ -99,7 +103,10 @@ const createTodo = useMutation({
       createdAt: new Date().toISOString(),
     };
 
-    queryClient.setQueryData(["todos"], (old: Todo[]) => [...old, optimisticTodo]);
+    queryClient.setQueryData(["todos"], (old: Todo[]) => [
+      ...old,
+      optimisticTodo,
+    ]);
 
     return { previousTodos, optimisticTodo };
   },
@@ -109,7 +116,7 @@ const createTodo = useMutation({
   onSuccess: (data, variables, context) => {
     // Replace temp todo with real one
     queryClient.setQueryData(["todos"], (old: Todo[]) =>
-      old.map((todo) => (todo.id === context?.optimisticTodo.id ? data : todo)),
+      old.map((todo) => (todo.id === context?.optimisticTodo.id ? data : todo))
     );
   },
 });

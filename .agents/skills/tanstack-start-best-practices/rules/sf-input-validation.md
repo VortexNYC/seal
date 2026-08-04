@@ -10,25 +10,27 @@ Server functions receive data across the network boundary. Always validate input
 
 ```tsx
 // No validation - trusting client input directly
-export const updateUser = createServerFn({ method: "POST" }).handler(async ({ data }) => {
-  // data is unknown/any - no type safety
-  // SQL injection, invalid data, type errors all possible
-  await db.users.update({
-    where: { id: data.id },
-    data: {
-      name: data.name,
-      email: data.email,
-      role: data.role, // Could be set to 'admin' by malicious client!
-    },
-  });
-});
+export const updateUser = createServerFn({ method: "POST" }).handler(
+  async ({ data }) => {
+    // data is unknown/any - no type safety
+    // SQL injection, invalid data, type errors all possible
+    await db.users.update({
+      where: { id: data.id },
+      data: {
+        name: data.name,
+        email: data.email,
+        role: data.role, // Could be set to 'admin' by malicious client!
+      },
+    });
+  }
+);
 
 // Weak validation - type assertion without runtime check
 export const deletePost = createServerFn({ method: "POST" }).handler(
   async ({ data }: { data: { id: string } }) => {
     // Type assertion doesn't validate at runtime
     await db.posts.delete({ where: { id: data.id } });
-  },
+  }
 );
 ```
 
@@ -72,7 +74,7 @@ const createOrderSchema = z.object({
       z.object({
         productId: z.string().uuid(),
         quantity: z.number().int().min(1).max(100),
-      }),
+      })
     )
     .min(1)
     .max(50),

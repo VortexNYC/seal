@@ -18,7 +18,7 @@ export function validateFieldPosition(
   x: number,
   y: number,
   width: number,
-  height: number,
+  height: number
 ): { valid: boolean; error?: string } {
   if (x < 0 || x > 100) {
     return { valid: false, error: "X coordinate must be between 0 and 100" };
@@ -61,7 +61,7 @@ export function validateFieldPosition(
 export async function validateFieldAssignment(
   ctx: QueryCtx,
   documentId: Id<"documents">,
-  recipientId: Id<"document_recipients">,
+  recipientId: Id<"document_recipients">
 ): Promise<{ valid: boolean; error?: string }> {
   const recipient = await ctx.db.get(recipientId);
 
@@ -93,7 +93,7 @@ export function validateFieldType(
     minLength?: number;
     pattern?: string;
     helpText?: string;
-  },
+  }
 ): { valid: boolean; error?: string } {
   // Payment fields don't use standard properties — config lives in payment_field_configs
   if (fieldType === "payment") {
@@ -111,7 +111,10 @@ export function validateFieldType(
   }
 
   // Validate maxLength is greater than minLength
-  if (properties?.maxLength !== undefined && properties?.minLength !== undefined) {
+  if (
+    properties?.maxLength !== undefined &&
+    properties?.minLength !== undefined
+  ) {
     if (properties.maxLength < properties.minLength) {
       return {
         valid: false,
@@ -129,7 +132,7 @@ export function validateFieldType(
 export async function validatePageNumber(
   ctx: QueryCtx,
   documentId: Id<"documents">,
-  pageNumber: number,
+  pageNumber: number
 ): Promise<{ valid: boolean; error?: string }> {
   const document = await ctx.db.get(documentId);
 
@@ -155,7 +158,10 @@ export async function validatePageNumber(
  * Convert pixel coordinates to percentage coordinates
  * Used when placing fields from canvas (which uses pixels) to database (which uses percentages)
  */
-export function pixelsToPercentage(pixels: number, totalPixels: number): number {
+export function pixelsToPercentage(
+  pixels: number,
+  totalPixels: number
+): number {
   return (pixels / totalPixels) * 100;
 }
 
@@ -163,7 +169,10 @@ export function pixelsToPercentage(pixels: number, totalPixels: number): number 
  * Convert percentage coordinates to pixel coordinates
  * Used when rendering fields on canvas from database
  */
-export function percentageToPixels(percentage: number, totalPixels: number): number {
+export function percentageToPixels(
+  percentage: number,
+  totalPixels: number
+): number {
   return (percentage / 100) * totalPixels;
 }
 
@@ -178,7 +187,7 @@ export function calculateFieldBounds(
     height: number;
   },
   pageWidth: number,
-  pageHeight: number,
+  pageHeight: number
 ): {
   x: number;
   y: number;
@@ -199,7 +208,7 @@ export function calculateFieldBounds(
  */
 export function fieldsOverlap(
   field1: { x: number; y: number; width: number; height: number },
-  field2: { x: number; y: number; width: number; height: number },
+  field2: { x: number; y: number; width: number; height: number }
 ): boolean {
   return !(
     field1.x + field1.width < field2.x ||

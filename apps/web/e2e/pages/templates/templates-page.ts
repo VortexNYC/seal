@@ -14,7 +14,10 @@ export class TemplatesPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.heading = page.getByRole("heading", { name: /^Templates$/, exact: true });
+    this.heading = page.getByRole("heading", {
+      name: /^Templates$/,
+      exact: true,
+    });
     // The page renders templates either as table rows or grid cards depending
     // on view mode; both surface a per-row/per-card "Template actions for X"
     // button, which is the most stable cross-view anchor.
@@ -32,10 +35,15 @@ export class TemplatesPage {
    * view because both render `aria-label="Template actions for <name>"`.
    */
   templateActionsButton(templateName: string): Locator {
-    return this.page.getByRole("button", { name: `Template actions for ${templateName}` });
+    return this.page.getByRole("button", {
+      name: `Template actions for ${templateName}`,
+    });
   }
 
-  async expectTemplateVisible(templateName: string, timeoutMs = 10_000): Promise<void> {
+  async expectTemplateVisible(
+    templateName: string,
+    timeoutMs = 10_000
+  ): Promise<void> {
     await this.page.getByText(templateName, { exact: false }).first().waitFor({
       state: "visible",
       timeout: timeoutMs,
@@ -51,7 +59,7 @@ export class TemplatesPage {
  */
 export async function saveDocumentAsTemplate(
   page: Page,
-  options: { templateName: string; description?: string },
+  options: { templateName: string; description?: string }
 ): Promise<void> {
   await page.getByRole("button", { name: /save as template/i }).click();
 

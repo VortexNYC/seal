@@ -24,16 +24,18 @@ test.describe("Authentication", () => {
     // Users are redirected to the sign-in flow when not authenticated.
     await expect(page).toHaveURL("/sign-in");
     await expect(
-      page.getByRole("heading", { name: getSignInPromptMatcher() }).first(),
+      page.getByRole("heading", { name: getSignInPromptMatcher() }).first()
     ).toBeVisible();
   });
 
-  test("should keep unauthenticated users on sign-in when accessing app", async ({ page }) => {
+  test("should keep unauthenticated users on sign-in when accessing app", async ({
+    page,
+  }) => {
     await page.goto("/app");
 
     await expect(page).toHaveURL("/sign-in", { timeout: 30000 });
     await expect(
-      page.getByRole("heading", { name: getSignInPromptMatcher() }).first(),
+      page.getByRole("heading", { name: getSignInPromptMatcher() }).first()
     ).toBeVisible();
   });
 
@@ -44,7 +46,9 @@ test.describe("Authentication", () => {
     await signInTestUser(page);
 
     await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(/\/(app|.*\/home|.*\/onboarding)/, { timeout: 30000 });
+    await expect(page).toHaveURL(/\/(app|.*\/home|.*\/onboarding)/, {
+      timeout: 30000,
+    });
     expect(isAuthenticatedUrl(page.url())).toBe(true);
   });
 
@@ -53,7 +57,7 @@ test.describe("Authentication", () => {
 
     await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: getSignInPromptMatcher() }).first(),
+      page.getByRole("heading", { name: getSignInPromptMatcher() }).first()
     ).toBeVisible();
 
     await page.fill('input[type="email"]', email);

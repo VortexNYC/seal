@@ -15,7 +15,8 @@ export function searchIndexPlugin(): Plugin {
     configureServer(server: ViteDevServer) {
       server.middlewares.use(SEARCH_INDEX_ROUTE, async (_req, res) => {
         try {
-          const { searchAPI } = await server.ssrLoadModule("/src/lib/source.ts");
+          const { searchAPI } =
+            await server.ssrLoadModule("/src/lib/source.ts");
           const response = await searchAPI.staticGET();
           const data = await response.json();
 

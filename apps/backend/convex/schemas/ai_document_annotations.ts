@@ -6,16 +6,21 @@ export const annotationCategoryTuple = v.union(
   v.literal("payment"),
   v.literal("risk"),
   v.literal("dates"),
-  v.literal("terms"),
+  v.literal("terms")
 );
 
 export const annotationSeverityTuple = v.union(
   v.literal("informational"),
   v.literal("important"),
-  v.literal("critical"),
+  v.literal("critical")
 );
 
-export type AnnotationCategory = "obligation" | "payment" | "risk" | "dates" | "terms";
+export type AnnotationCategory =
+  | "obligation"
+  | "payment"
+  | "risk"
+  | "dates"
+  | "terms";
 export type AnnotationSeverity = "informational" | "important" | "critical";
 
 export const aiDocumentAnnotationsTable = defineTable({
@@ -32,12 +37,16 @@ export const aiDocumentAnnotationsTable = defineTable({
       severity: annotationSeverityTuple,
       text: v.string(),
       summary: v.string(),
-    }),
+    })
   ),
   modelUsed: v.string(),
   tokensUsed: v.number(),
   processingTimeMs: v.number(),
-  status: v.union(v.literal("pending"), v.literal("active"), v.literal("dismissed")),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("active"),
+    v.literal("dismissed")
+  ),
   createdAt: v.number(),
 })
   .index("by_document", ["documentId"])

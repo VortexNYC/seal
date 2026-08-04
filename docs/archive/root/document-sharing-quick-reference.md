@@ -165,7 +165,9 @@ export const getDocument = authQuery({
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", ctx.auth.user._id).eq("organizationId", doc.organizationId),
+        q
+          .eq("userId", ctx.auth.user._id)
+          .eq("organizationId", doc.organizationId)
       )
       .first();
 
@@ -180,7 +182,7 @@ export const getDocument = authQuery({
       const access = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", doc._id).eq("userId", ctx.auth.user._id),
+          q.eq("documentId", doc._id).eq("userId", ctx.auth.user._id)
         )
         .first();
 
@@ -205,7 +207,9 @@ if (!hasPermission(member, "documents:update")) {
 if (doc.sharingMode === "specific") {
   const access = await ctx.db
     .query("document_access")
-    .withIndex("by_document_user", (q) => q.eq("documentId", docId).eq("userId", ctx.auth.user._id))
+    .withIndex("by_document_user", (q) =>
+      q.eq("documentId", docId).eq("userId", ctx.auth.user._id)
+    )
     .first();
 
   if (!access || access.permissionLevel === "view") {

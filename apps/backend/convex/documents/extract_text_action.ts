@@ -24,7 +24,7 @@ export const extractDocumentText = internalAction({
   handler: async (ctx, args): Promise<{ charCount: number }> => {
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document) {

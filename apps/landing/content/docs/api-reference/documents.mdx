@@ -64,11 +64,14 @@ GET /api/v1/documents
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/documents?limit=20&status=sent", {
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents?limit=20&status=sent",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 
 const { data, has_more, next_cursor } = await response.json();
 ```
@@ -130,7 +133,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const document = await response.json();
@@ -301,7 +304,7 @@ const response = await fetch(
       title: "Updated Service Agreement",
       deadline: "2024-02-15T23:59:59Z",
     }),
-  },
+  }
 );
 
 const document = await response.json();
@@ -349,7 +352,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const result = await response.json();
@@ -372,8 +375,8 @@ curl -X DELETE "https://seal.convex.site/api/v1/documents/delete?id=jd7k8l9m0n1p
 ```
 
 <Callout type="warn">
-  **Warning**: Deleting a document is permanent and cannot be undone. All associated recipients,
-  signatures, and audit trail data will also be deleted.
+  **Warning**: Deleting a document is permanent and cannot be undone. All
+  associated recipients, signatures, and audit trail data will also be deleted.
 </Callout>
 
 ## Send Document
@@ -414,9 +417,10 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: "Please review and sign this agreement at your earliest convenience.",
+      message:
+        "Please review and sign this agreement at your earliest convenience.",
     }),
-  },
+  }
 );
 
 const result = await response.json();
@@ -490,7 +494,7 @@ const response = await fetch(
     body: JSON.stringify({
       reason: "Contract terms changed, new version required",
     }),
-  },
+  }
 );
 
 const result = await response.json();
@@ -519,8 +523,8 @@ curl -X POST "https://seal.convex.site/api/v1/documents/void?id=jd7k8l9m0n1p2q3r
 ```
 
 <Callout type="info">
-  **Note**: Voiding a document prevents recipients from signing but preserves the document and audit
-  trail for record-keeping.
+  **Note**: Voiding a document prevents recipients from signing but preserves
+  the document and audit trail for record-keeping.
 </Callout>
 
 ## Download Document
@@ -552,7 +556,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const { download_url, expires_at } = await response.json();
@@ -579,8 +583,8 @@ curl -X GET "https://seal.convex.site/api/v1/documents/download?id=jd7k8l9m0n1p2
 ```
 
 <Callout type="info">
-  **Note**: Download URLs are temporary and expire after a short period (typically 1 hour). Generate
-  a new URL if the previous one has expired.
+  **Note**: Download URLs are temporary and expire after a short period
+  (typically 1 hour). Generate a new URL if the previous one has expired.
 </Callout>
 
 ## Get Document Access
@@ -612,7 +616,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const access = await response.json();
@@ -679,7 +683,7 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ sharing_mode: "workspace" }),
-  },
+  }
 );
 
 const result = await response.json();
@@ -727,17 +731,20 @@ POST /api/v1/documents/bulk-void
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/documents/bulk-void", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    document_ids: ["jd7k8l9m0n1p2q3r4s5t6u7v", "ab1cd2ef3gh4ij5kl6mn7op8"],
-    reason: "Contract terms updated — please sign the revised version",
-  }),
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/bulk-void",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_ids: ["jd7k8l9m0n1p2q3r4s5t6u7v", "ab1cd2ef3gh4ij5kl6mn7op8"],
+      reason: "Contract terms updated — please sign the revised version",
+    }),
+  }
+);
 
 const result = await response.json();
 console.log(`Voided: ${result.succeeded} / ${result.total_requested}`);
@@ -777,8 +784,8 @@ curl -X POST "https://seal.convex.site/api/v1/documents/bulk-void" \
 ```
 
 <Callout type="warn">
-  Documents that are already `completed`, `cancelled`, or `declined` cannot be voided and will
-  appear in `results` with `success: false`.
+  Documents that are already `completed`, `cancelled`, or `declined` cannot be
+  voided and will appear in `results` with `success: false`.
 </Callout>
 
 ## Bulk Send Documents
@@ -804,20 +811,23 @@ POST /api/v1/documents/bulk-send
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/documents/bulk-send", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    document_ids: [
-      "jd7k8l9m0n1p2q3r4s5t6u7v",
-      "ab1cd2ef3gh4ij5kl6mn7op8",
-      "cd3ef4gh5ij6kl7mn8op9qr0",
-    ],
-  }),
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/bulk-send",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_ids: [
+        "jd7k8l9m0n1p2q3r4s5t6u7v",
+        "ab1cd2ef3gh4ij5kl6mn7op8",
+        "cd3ef4gh5ij6kl7mn8op9qr0",
+      ],
+    }),
+  }
+);
 
 const result = await response.json();
 console.log(`Sent: ${result.succeeded} / ${result.total_requested}`);
@@ -857,8 +867,9 @@ curl -X POST "https://seal.convex.site/api/v1/documents/bulk-send" \
 ```
 
 <Callout type="info">
-  Only `draft` documents with at least one recipient can be bulk-sent. Documents that are already
-  sent, completed, or cancelled will appear in `results` with `success: false`.
+  Only `draft` documents with at least one recipient can be bulk-sent. Documents
+  that are already sent, completed, or cancelled will appear in `results` with
+  `success: false`.
 </Callout>
 
 ## Document Status Workflow

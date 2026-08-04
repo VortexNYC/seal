@@ -17,11 +17,14 @@ export function DocumentExpiredPage({ ownerName }: DocumentExpiredPageProps) {
             <ClockIcon className="text-destructive h-6 w-6" />
           </div>
 
-          <h1 className="text-xl font-semibold text-balance">This document has expired</h1>
+          <h1 className="text-xl font-semibold text-balance">
+            This document has expired
+          </h1>
 
           <p className="text-muted-foreground mt-2 text-sm text-pretty">
             The sender set an expiration date that has passed. Please contact{" "}
-            <span className="font-medium">{ownerName}</span> for a new signing link.
+            <span className="font-medium">{ownerName}</span> for a new signing
+            link.
           </p>
         </div>
       </div>

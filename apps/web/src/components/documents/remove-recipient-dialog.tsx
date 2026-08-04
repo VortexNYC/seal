@@ -69,9 +69,13 @@ export function RemoveRecipientDialog({
 
               <div className="bg-muted border-border mt-3 rounded-md border px-3 py-2">
                 {recipientName && (
-                  <div className="text-foreground text-sm font-medium">{recipientName}</div>
+                  <div className="text-foreground text-sm font-medium">
+                    {recipientName}
+                  </div>
                 )}
-                <div className="text-muted-foreground text-sm">{recipientEmail}</div>
+                <div className="text-muted-foreground text-sm">
+                  {recipientEmail}
+                </div>
                 {recipientRole && (
                   <div className="text-muted-foreground mt-1 text-xs">
                     {formatRole(recipientRole)}
@@ -84,11 +88,12 @@ export function RemoveRecipientDialog({
                   <AlertTriangleIcon className="text-warning mt-0.5 h-4 w-4 shrink-0" />
                   <div>
                     <div className="text-warning text-sm font-medium">
-                      {fieldCount} {fieldCount === 1 ? "field" : "fields"} will be deleted
+                      {fieldCount} {fieldCount === 1 ? "field" : "fields"} will
+                      be deleted
                     </div>
                     <div className="text-warning mt-0.5 text-xs opacity-80">
-                      All fields assigned to this recipient will be permanently removed from the
-                      document.
+                      All fields assigned to this recipient will be permanently
+                      removed from the document.
                     </div>
                   </div>
                 </div>
@@ -109,9 +114,13 @@ export function RemoveRecipientDialog({
                 type="button"
                 onClick={handleConfirm}
                 disabled={isRemoving}
-                className="bg-destructive hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium text-primary-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-destructive hover:bg-destructive/90 text-primary-foreground rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isRemoving ? "Removing..." : hasFields ? "Remove with fields" : "Remove"}
+                {isRemoving
+                  ? "Removing..."
+                  : hasFields
+                    ? "Remove with fields"
+                    : "Remove"}
               </button>
             </div>
           </div>

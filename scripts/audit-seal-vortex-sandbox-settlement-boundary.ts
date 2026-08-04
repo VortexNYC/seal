@@ -13,18 +13,19 @@ type CapturedProof = {
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 const localVortexRepoRoot =
-  readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? resolve(repoRoot, "../vortex-payments");
+  readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ??
+  resolve(repoRoot, "../vortex-payments");
 const proofDocPath = join(
   repoRoot,
-  "docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md",
+  "docs/test-sessions/session-2026-07-07-seal-document-payment-vortex-live.md"
 );
 const finalGateScriptPath = join(
   localVortexRepoRoot,
-  "scripts/prove-seal-vortex-final-sandbox-launch-gate.ts",
+  "scripts/prove-seal-vortex-final-sandbox-launch-gate.ts"
 );
 const finalGateDocPath = join(
   localVortexRepoRoot,
-  "docs/test-sessions/session-2026-07-07-seal-vortex-final-sandbox-launch-gate.md",
+  "docs/test-sessions/session-2026-07-07-seal-vortex-final-sandbox-launch-gate.md"
 );
 const proofDoc = readFileSync(proofDocPath, "utf8");
 
@@ -53,7 +54,11 @@ function assertContains(fragment: string, label: string): void {
   }
 }
 
-function assertFileContains(path: string, fragment: string, label: string): void {
+function assertFileContains(
+  path: string,
+  fragment: string,
+  label: string
+): void {
   if (!existsSync(path)) {
     fail(`Missing ${label}: ${path}`);
   }
@@ -64,36 +69,54 @@ function assertFileContains(path: string, fragment: string, label: string): void
 }
 
 const captured: CapturedProof = {
-  merchantAccountId: readRequiredMatch(/^merchantAccountId:\s*(\S+)$/m, "merchant account id"),
-  vortexPayableId: readRequiredMatch(/^vortexPayableId:\s*(\S+)$/m, "Vortex payable id"),
-  hostedInvoiceUrl: readRequiredMatch(/^hostedInvoiceUrl:\s*(\S+)$/m, "hosted invoice URL"),
+  merchantAccountId: readRequiredMatch(
+    /^merchantAccountId:\s*(\S+)$/m,
+    "merchant account id"
+  ),
+  vortexPayableId: readRequiredMatch(
+    /^vortexPayableId:\s*(\S+)$/m,
+    "Vortex payable id"
+  ),
+  hostedInvoiceUrl: readRequiredMatch(
+    /^hostedInvoiceUrl:\s*(\S+)$/m,
+    "hosted invoice URL"
+  ),
   paymentId: readRequiredMatch(/^paymentId:\s*(\S+)$/m, "payment id"),
-  readyToSettleAt: readRequiredMatch(/"readyToSettleAt":\s*"([^"]+)"/, "ready-to-settle timestamp"),
+  readyToSettleAt: readRequiredMatch(
+    /"readyToSettleAt":\s*"([^"]+)"/,
+    "ready-to-settle timestamp"
+  ),
 };
 
 assertContains("--require-settled", "settled paid-state proof flag");
-assertContains("--reconcile-if-ready", "explicit settlement reconciliation flag");
-assertContains("waiting_for_provider_ready_to_settle", "provider settlement readiness state");
+assertContains(
+  "--reconcile-if-ready",
+  "explicit settlement reconciliation flag"
+);
+assertContains(
+  "waiting_for_provider_ready_to_settle",
+  "provider settlement readiness state"
+);
 
 assertFileContains(
   finalGateScriptPath,
   "inspect:vortex-payment-settlement-readiness",
-  "Vortex final sandbox launch gate settlement step",
+  "Vortex final sandbox launch gate settlement step"
 );
 assertFileContains(
   finalGateScriptPath,
   "prove:seal-document-payment-vortex-paid-state",
-  "Vortex final sandbox launch gate Seal proof step",
+  "Vortex final sandbox launch gate Seal proof step"
 );
 assertFileContains(
   finalGateScriptPath,
   "--reconcile-if-ready",
-  "Vortex final sandbox launch gate reconcile flag",
+  "Vortex final sandbox launch gate reconcile flag"
 );
 assertFileContains(
   finalGateScriptPath,
   "--require-settled",
-  "Vortex final sandbox launch gate settled flag",
+  "Vortex final sandbox launch gate settled flag"
 );
 
 for (const [label, value] of Object.entries({
@@ -103,7 +126,11 @@ for (const [label, value] of Object.entries({
   hostedInvoiceUrl: captured.hostedInvoiceUrl,
   readyToSettleAt: captured.readyToSettleAt,
 })) {
-  assertFileContains(finalGateDocPath, value, `Vortex final sandbox launch gate ${label}`);
+  assertFileContains(
+    finalGateDocPath,
+    value,
+    `Vortex final sandbox launch gate ${label}`
+  );
 }
 
 const readyToSettleDate = new Date(captured.readyToSettleAt);
@@ -112,7 +139,8 @@ if (Number.isNaN(readyToSettleDate.getTime())) {
 }
 
 const now = new Date();
-const readinessWindow = now.getTime() >= readyToSettleDate.getTime() ? "elapsed" : "waiting";
+const readinessWindow =
+  now.getTime() >= readyToSettleDate.getTime() ? "elapsed" : "waiting";
 const nextAction =
   readinessWindow === "elapsed"
     ? "Inspect provider readiness now, run reconciliation only with --reconcile-if-ready if provider readiness is confirmed, then run the settled paid-state proof and record fullySettled evidence."
@@ -173,6 +201,6 @@ console.log(
       nextAction,
     },
     null,
-    2,
-  ),
+    2
+  )
 );

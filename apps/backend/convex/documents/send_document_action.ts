@@ -82,7 +82,10 @@ type MarkDocumentAsSentArgs = {
 };
 
 /** Convert expiration period to milliseconds */
-export function expirationPeriodToMs(amount: number, unit: "day" | "week" | "month"): number {
+export function expirationPeriodToMs(
+  amount: number,
+  unit: "day" | "week" | "month"
+): number {
   const MS_PER_DAY = 86_400_000;
   switch (unit) {
     case "day":
@@ -94,13 +97,15 @@ export function expirationPeriodToMs(amount: number, unit: "day" | "week" | "mon
   }
 }
 
-function isRecipientDone(status: Doc<"document_recipients">["status"]): boolean {
+function isRecipientDone(
+  status: Doc<"document_recipients">["status"]
+): boolean {
   return status === "signed" || status === "approved" || status === "declined";
 }
 
 function getRecipientsToEmail(
   document: Doc<"documents">,
-  recipients: Doc<"document_recipients">[],
+  recipients: Doc<"document_recipients">[]
 ): Doc<"document_recipients">[] {
   if (document.signingMode === "sequential") {
     return findFirstIncompleteGroup(recipients);
@@ -110,12 +115,17 @@ function getRecipientsToEmail(
 }
 
 function buildRecipientMessageMap(
-  recipientMessages: Array<{ recipientId: Id<"document_recipients">; message: string }> | undefined,
+  recipientMessages:
+    | Array<{ recipientId: Id<"document_recipients">; message: string }>
+    | undefined
 ): Map<Id<"document_recipients">, string> {
   const recipientMessageMap = new Map<Id<"document_recipients">, string>();
 
   for (const recipientMessage of recipientMessages ?? []) {
-    recipientMessageMap.set(recipientMessage.recipientId, recipientMessage.message);
+    recipientMessageMap.set(
+      recipientMessage.recipientId,
+      recipientMessage.message
+    );
   }
 
   return recipientMessageMap;
@@ -124,14 +134,17 @@ function buildRecipientMessageMap(
 async function getSenderEmailContext(
   ctx: ActionCtx,
   userId: Id<"users">,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ) {
-  const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-    userId,
-  });
+  const senderUser = await ctx.runQuery(
+    internal.organizations.helpers.getUserById,
+    {
+      userId,
+    }
+  );
   const brandingSettings = await ctx.runQuery(
     internal.organizations.queries.getBrandingSettingsInternal,
-    { organizationId },
+    { organizationId }
   );
 
   return {
@@ -148,7 +161,7 @@ async function getSenderEmailContext(
 
 function getEmailDeadline(
   deadline: number | undefined,
-  expirationPeriod: ExpirationPeriod | undefined,
+  expirationPeriod: ExpirationPeriod | undefined
 ): number | undefined {
   if (deadline) {
     return deadline;
@@ -158,11 +171,19 @@ function getEmailDeadline(
     return undefined;
   }
 
-  return Date.now() + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
+  return (
+    Date.now() +
+    expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit)
+  );
 }
 
-function resolvePaymentHandoffDetails(paymentLinks: PaymentHandoffLink[], recipientEmail: string) {
-  const paymentLink = paymentLinks.find((link) => link.recipientEmail === recipientEmail);
+function resolvePaymentHandoffDetails(
+  paymentLinks: PaymentHandoffLink[],
+  recipientEmail: string
+) {
+  const paymentLink = paymentLinks.find(
+    (link) => link.recipientEmail === recipientEmail
+  );
   return {
     invoiceUrl: paymentLink?.hostedPaymentUrl ?? undefined,
     invoiceAmount: paymentLink?.totalAmountCents,
@@ -188,7 +209,7 @@ async function sendInvitationBatch(
       | undefined;
     paymentLinks: PaymentHandoffLink[];
     deadline: number | undefined;
-  },
+  }
 ): Promise<InvitationEmailResult[]> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
   const results: InvitationEmailResult[] = [];
@@ -199,15 +220,20 @@ async function sendInvitationBatch(
     }
 
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-    const invoiceDetails = resolvePaymentHandoffDetails(params.paymentLinks, recipient.email);
+    const invoiceDetails = resolvePaymentHandoffDetails(
+      params.paymentLinks,
+      recipient.email
+    );
     const emailResult = await sendDocumentInvitation(ctx, {
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
       documentName: params.documentName,
       senderName: params.senderName,
       signingUrl,
-      customMessage: params.recipientMessageMap.get(recipient._id) || params.customMessage,
-      expiresAt: params.deadline || recipient.expiresAt || recipient.tokenExpiresAt,
+      customMessage:
+        params.recipientMessageMap.get(recipient._id) || params.customMessage,
+      expiresAt:
+        params.deadline || recipient.expiresAt || recipient.tokenExpiresAt,
       invoiceUrl: invoiceDetails.invoiceUrl,
       invoiceAmount: invoiceDetails.invoiceAmount,
       invoiceCurrency: invoiceDetails.invoiceCurrency,
@@ -229,11 +255,11 @@ async function sendInvitationBatch(
 
 async function getRecipientsOrThrow(
   ctx: ActionCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<Doc<"document_recipients">[]> {
   const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
     internal.documents.recipients_queries.getDocumentRecipientsInternal,
-    { documentId },
+    { documentId }
   );
 
   if (recipients.length === 0) {
@@ -249,27 +275,28 @@ async function getPaymentHandoffLinksForDocument(
     documentId: Id<"documents">;
     organizationId: Id<"organizations">;
     userId: Id<"users">;
-  },
+  }
 ): Promise<PaymentHandoffLink[]> {
   const signatureFields = await ctx.runQuery(
     internal.signature_fields.queries.getFieldsByDocumentInternal,
     {
       documentId: params.documentId,
-    },
+    }
   );
 
   if (
     !signatureFields.some(
-      (field: (typeof signatureFields)[number]) => field.fieldType === "signature",
+      (field: (typeof signatureFields)[number]) =>
+        field.fieldType === "signature"
     )
   ) {
     throw new ConvexError(
-      "Cannot send document without signature fields. Please add at least one signature field before sending.",
+      "Cannot send document without signature fields. Please add at least one signature field before sending."
     );
   }
 
   const paymentFields = signatureFields.filter(
-    (field: (typeof signatureFields)[number]) => field.fieldType === "payment",
+    (field: (typeof signatureFields)[number]) => field.fieldType === "payment"
   );
   if (paymentFields.length === 0) {
     return [];
@@ -277,29 +304,33 @@ async function getPaymentHandoffLinksForDocument(
 
   const paymentConfigs = await ctx.runQuery(
     internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
-    { documentId: params.documentId },
+    { documentId: params.documentId }
   );
   const configuredFieldIds = new Set(
-    paymentConfigs.map((config: (typeof paymentConfigs)[number]) => config.fieldId.toString()),
+    paymentConfigs.map((config: (typeof paymentConfigs)[number]) =>
+      config.fieldId.toString()
+    )
   );
 
   if (
     paymentFields.some(
-      (field: (typeof paymentFields)[number]) => !configuredFieldIds.has(field._id.toString()),
+      (field: (typeof paymentFields)[number]) =>
+        !configuredFieldIds.has(field._id.toString())
     )
   ) {
     throw new ConvexError(
-      "All payment fields must be configured before sending. Please configure payment details for each payment field.",
+      "All payment fields must be configured before sending. Please configure payment details for each payment field."
     );
   }
 
   const paymentResult = await ctx.runAction(
-    internal.payments.payment_field_actions.createPaymentObjectsForDocumentFields,
+    internal.payments.payment_field_actions
+      .createPaymentObjectsForDocumentFields,
     {
       documentId: params.documentId,
       organizationId: params.organizationId,
       userId: params.userId,
-    },
+    }
   );
 
   return paymentResult.paymentLinks;
@@ -319,7 +350,7 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         paymentObjectId: v.optional(v.string()),
         totalAmountCents: v.number(),
         currency: v.string(),
-      }),
+      })
     ),
     configs: v.array(
       v.object({
@@ -334,14 +365,14 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         providerInvoiceId: v.optional(v.string()),
         providerPaymentIntentId: v.optional(v.string()),
         providerSubscriptionId: v.optional(v.string()),
-      }),
+      })
     ),
   }),
   handler: async (ctx, args): Promise<ProvePaymentInvoiceLinksResult> => {
     const paymentLinks = await getPaymentHandoffLinksForDocument(ctx, args);
     const configs = await ctx.runQuery(
       internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     return {
@@ -354,7 +385,9 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
       })),
       configs: configs.map((config) => ({
         configId: config._id,
-        ...(config.paymentStatus !== undefined ? { paymentStatus: config.paymentStatus } : {}),
+        ...(config.paymentStatus !== undefined
+          ? { paymentStatus: config.paymentStatus }
+          : {}),
         ...(config.vortexRecurringPayableId !== undefined
           ? { vortexRecurringPayableId: config.vortexRecurringPayableId }
           : {}),
@@ -362,7 +395,10 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
           ? { vortexInstallmentPayableId: config.vortexInstallmentPayableId }
           : {}),
         ...(config.vortexDepositBalancePayableId !== undefined
-          ? { vortexDepositBalancePayableId: config.vortexDepositBalancePayableId }
+          ? {
+              vortexDepositBalancePayableId:
+                config.vortexDepositBalancePayableId,
+            }
           : {}),
         ...(config.vortexPayableId !== undefined
           ? { vortexPayableId: config.vortexPayableId }
@@ -389,7 +425,7 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
 
 function buildSendDocumentEmailsResult(
   recipients: Doc<"document_recipients">[],
-  emailResults: InvitationEmailResult[],
+  emailResults: InvitationEmailResult[]
 ): SendDocumentEmailsResult {
   const failures = emailResults.filter((result) => !result.success);
 
@@ -406,7 +442,7 @@ async function syncRecipientAccess(
   ctx: DocumentMutationCtx,
   document: Doc<"documents">,
   recipient: Doc<"document_recipients">,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<boolean> {
   const existingUser = await ctx.db
     .query("users")
@@ -419,7 +455,11 @@ async function syncRecipientAccess(
 
   const organization = await ctx.db.get(document.organizationId);
   const orgMember = organization
-    ? await resolveComponentMembershipForOrganization(ctx, existingUser, organization)
+    ? await resolveComponentMembershipForOrganization(
+        ctx,
+        existingUser,
+        organization
+      )
     : null;
 
   let grantedAccess = false;
@@ -427,7 +467,7 @@ async function syncRecipientAccess(
     const existingAccess = await ctx.db
       .query("document_access")
       .withIndex("by_document_user", (q) =>
-        q.eq("documentId", documentId).eq("userId", existingUser._id),
+        q.eq("documentId", documentId).eq("userId", existingUser._id)
       )
       .first();
 
@@ -466,7 +506,7 @@ async function shareDocumentWithRecipients(
   ctx: DocumentMutationCtx,
   document: Doc<"documents">,
   recipients: Doc<"document_recipients">[],
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ) {
   let sharedWithAnyUser = false;
 
@@ -486,14 +526,15 @@ async function shareDocumentWithRecipients(
 async function applyRecipientExpirationPeriod(
   ctx: DocumentMutationCtx,
   recipients: Doc<"document_recipients">[],
-  expirationPeriod: ExpirationPeriod | undefined,
+  expirationPeriod: ExpirationPeriod | undefined
 ) {
   if (!expirationPeriod) {
     return;
   }
 
   const now = Date.now();
-  const expiresAt = now + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
+  const expiresAt =
+    now + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
 
   for (const recipient of recipients) {
     await ctx.db.patch(recipient._id, {
@@ -507,7 +548,10 @@ async function applyRecipientExpirationPeriod(
   }
 }
 
-function buildSentDocumentPatch(document: Doc<"documents">, args: MarkDocumentAsSentArgs) {
+function buildSentDocumentPatch(
+  document: Doc<"documents">,
+  args: MarkDocumentAsSentArgs
+) {
   const now = Date.now();
 
   return {
@@ -528,32 +572,41 @@ function buildSentDocumentPatch(document: Doc<"documents">, args: MarkDocumentAs
 async function resetExpiredRecipientForResend(
   ctx: ActionCtx,
   documentId: Id<"documents">,
-  recipient: Doc<"document_recipients">,
+  recipient: Doc<"document_recipients">
 ) {
   if (recipient.status !== "expired") {
     return undefined;
   }
 
-  const latestDocument = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-    documentId,
-  });
+  const latestDocument = await ctx.runQuery(
+    internal.documents.queries.getDocumentInternal,
+    {
+      documentId,
+    }
+  );
   const expiresAt = latestDocument?.expirationPeriod
     ? Date.now() +
       expirationPeriodToMs(
         latestDocument.expirationPeriod.amount,
-        latestDocument.expirationPeriod.unit,
+        latestDocument.expirationPeriod.unit
       )
     : undefined;
 
-  await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
-    recipientId: recipient._id,
-    expiresAt,
-  });
+  await ctx.runMutation(
+    internal.documents.send_document_action.resetExpiredRecipient,
+    {
+      recipientId: recipient._id,
+      expiresAt,
+    }
+  );
 
   if (latestDocument?.workflowStatus === "expired") {
-    await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
-      documentId,
-    });
+    await ctx.runMutation(
+      internal.documents.send_document_action.reactivateExpiredDocument,
+      {
+        documentId,
+      }
+    );
   }
 
   return expiresAt;
@@ -561,24 +614,30 @@ async function resetExpiredRecipientForResend(
 
 async function authorizeDocumentOwner(
   ctx: ActionCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<{ document: Doc<"documents">; userId: Id<"users"> }> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
   }
 
-  const user = await ctx.runQuery(internal.organizations.helpers.getUserByAuthSubject, {
-    authSubject: identity.subject,
-  });
+  const user = await ctx.runQuery(
+    internal.organizations.helpers.getUserByAuthSubject,
+    {
+      authSubject: identity.subject,
+    }
+  );
 
   if (!user) {
     throw new ConvexError("User not found");
   }
 
-  const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-    documentId,
-  });
+  const document = await ctx.runQuery(
+    internal.documents.queries.getDocumentInternal,
+    {
+      documentId,
+    }
+  );
 
   if (!document) {
     throw new ConvexError("Document not found");
@@ -589,7 +648,7 @@ async function authorizeDocumentOwner(
     {
       userId: user._id,
       organizationId: document.organizationId,
-    },
+    }
   );
 
   if (!membership) {
@@ -613,13 +672,15 @@ export const markDocumentAsSent = internalMutation({
     documentId: v.id("documents"),
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
     userId: v.optional(v.string()), // auth subject for audit trail
-    signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
+    signingMode: v.optional(
+      v.union(v.literal("parallel"), v.literal("sequential"))
+    ),
     allowDictateNextSigner: v.optional(v.boolean()),
     expirationPeriod: v.optional(
       v.object({
         amount: v.number(),
         unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -634,8 +695,17 @@ export const markDocumentAsSent = internalMutation({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    await shareDocumentWithRecipients(ctx, document, recipients, args.documentId);
-    await applyRecipientExpirationPeriod(ctx, recipients, args.expirationPeriod);
+    await shareDocumentWithRecipients(
+      ctx,
+      document,
+      recipients,
+      args.documentId
+    );
+    await applyRecipientExpirationPeriod(
+      ctx,
+      recipients,
+      args.expirationPeriod
+    );
     await ctx.db.patch(args.documentId, buildSentDocumentPatch(document, args));
 
     // Audit trail
@@ -681,33 +751,38 @@ export const sendDocumentEmails = action({
         v.object({
           recipientId: v.id("document_recipients"),
           message: v.string(),
-        }),
-      ),
+        })
+      )
     ), // SEA-119: Per-recipient custom messages
     deadline: v.optional(v.number()), // SEA-119: Signing deadline timestamp
-    signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
+    signingMode: v.optional(
+      v.union(v.literal("parallel"), v.literal("sequential"))
+    ),
     allowDictateNextSigner: v.optional(v.boolean()),
     expirationPeriod: v.optional(
       v.object({
         amount: v.number(),
         unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
-      }),
+      })
     ),
   },
   handler: async (ctx, args): Promise<SendDocumentEmailsResult> => {
-    const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { document, userId } = await authorizeDocumentOwner(
+      ctx,
+      args.documentId
+    );
     const recipients = await getRecipientsOrThrow(ctx, args.documentId);
     const paymentLinks = await getPaymentHandoffLinksForDocument(ctx, {
       documentId: args.documentId,
       organizationId: document.organizationId,
       userId,
     });
-    const { senderUser, senderName, emailBranding } = await getSenderEmailContext(
-      ctx,
-      userId,
-      document.organizationId,
+    const { senderUser, senderName, emailBranding } =
+      await getSenderEmailContext(ctx, userId, document.organizationId);
+    const emailDeadline = getEmailDeadline(
+      args.deadline,
+      args.expirationPeriod
     );
-    const emailDeadline = getEmailDeadline(args.deadline, args.expirationPeriod);
     const emailResults = await sendInvitationBatch(ctx, {
       recipients: getRecipientsToEmail(document, recipients),
       documentName: document.name,
@@ -724,14 +799,17 @@ export const sendDocumentEmails = action({
 
     // 8. Mark document as sent only when all emails succeed so edits remain possible on failures
     if (result.success) {
-      await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
-        documentId: args.documentId,
-        deadline: emailDeadline,
-        userId: senderUser?.authSubject,
-        signingMode: args.signingMode,
-        allowDictateNextSigner: args.allowDictateNextSigner,
-        expirationPeriod: args.expirationPeriod,
-      });
+      await ctx.runMutation(
+        internal.documents.send_document_action.markDocumentAsSent,
+        {
+          documentId: args.documentId,
+          deadline: emailDeadline,
+          userId: senderUser?.authSubject,
+          signingMode: args.signingMode,
+          allowDictateNextSigner: args.allowDictateNextSigner,
+          expirationPeriod: args.expirationPeriod,
+        }
+      );
     }
 
     return result;
@@ -750,13 +828,16 @@ export const resendRecipientEmail = action({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     success: boolean;
     error?: string;
   }> => {
     // 1. Authenticate and authorize
-    const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { document, userId } = await authorizeDocumentOwner(
+      ctx,
+      args.documentId
+    );
 
     // 2. Verify document has been sent (not in draft)
     const workflowStatus = document.workflowStatus ?? "draft";
@@ -772,7 +853,7 @@ export const resendRecipientEmail = action({
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
       {
         documentId: args.documentId,
-      },
+      }
     );
 
     const recipient = recipients.find((r) => r._id === args.recipientId);
@@ -788,13 +869,17 @@ export const resendRecipientEmail = action({
       };
     }
 
-    const newExpiresAt = await resetExpiredRecipientForResend(ctx, args.documentId, recipient);
+    const newExpiresAt = await resetExpiredRecipientForResend(
+      ctx,
+      args.documentId,
+      recipient
+    );
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
     const { senderName, emailBranding } = await getSenderEmailContext(
       ctx,
       userId,
-      document.organizationId,
+      document.organizationId
     );
     const emailExpiresAt =
       recipient.status === "expired"
@@ -834,14 +919,14 @@ export const sendDocumentEmailsInternal = internalAction({
       v.object({
         amount: v.number(),
         unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
-      }),
+      })
     ),
   },
   handler: async (ctx, args): Promise<void> => {
     // Get document
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document) return;
@@ -849,7 +934,7 @@ export const sendDocumentEmailsInternal = internalAction({
     // Get recipients
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (recipients.length === 0) return;
@@ -857,7 +942,7 @@ export const sendDocumentEmailsInternal = internalAction({
     const { senderName, emailBranding } = await getSenderEmailContext(
       ctx,
       document.ownerId,
-      document.organizationId,
+      document.organizationId
     );
 
     await sendInvitationBatch(ctx, {

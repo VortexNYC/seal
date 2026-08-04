@@ -40,12 +40,16 @@ import {
 // =============================================================================
 
 describe("documentStatusSchema", () => {
-  test.each(["draft", "sent", "in_progress", "completed", "cancelled", "declined"])(
-    "accepts valid status: %s",
-    (status) => {
-      expect(documentStatusSchema.parse(status)).toBe(status);
-    },
-  );
+  test.each([
+    "draft",
+    "sent",
+    "in_progress",
+    "completed",
+    "cancelled",
+    "declined",
+  ])("accepts valid status: %s", (status) => {
+    expect(documentStatusSchema.parse(status)).toBe(status);
+  });
 
   test("rejects invalid status", () => {
     const result = documentStatusSchema.safeParse("unknown");
@@ -62,9 +66,12 @@ describe("documentStatusSchema", () => {
 });
 
 describe("recipientRoleSchema", () => {
-  test.each(["signer", "approver", "viewer"])("accepts valid role: %s", (role) => {
-    expect(recipientRoleSchema.parse(role)).toBe(role);
-  });
+  test.each(["signer", "approver", "viewer"])(
+    "accepts valid role: %s",
+    (role) => {
+      expect(recipientRoleSchema.parse(role)).toBe(role);
+    }
+  );
 
   test("rejects carbon_copy (not in schema)", () => {
     expect(recipientRoleSchema.safeParse("carbon_copy").success).toBe(false);
@@ -80,7 +87,7 @@ describe("recipientStatusSchema", () => {
     "accepts valid status: %s",
     (status) => {
       expect(recipientStatusSchema.parse(status)).toBe(status);
-    },
+    }
   );
 
   test("rejects invalid status", () => {
@@ -99,9 +106,12 @@ describe("templateStatusSchema", () => {
 });
 
 describe("signatureMethodSchema", () => {
-  test.each(["draw", "type", "upload"])("accepts valid method: %s", (method) => {
-    expect(signatureMethodSchema.parse(method)).toBe(method);
-  });
+  test.each(["draw", "type", "upload"])(
+    "accepts valid method: %s",
+    (method) => {
+      expect(signatureMethodSchema.parse(method)).toBe(method);
+    }
+  );
 
   test("rejects invalid method", () => {
     expect(signatureMethodSchema.safeParse("stamp").success).toBe(false);
@@ -109,12 +119,17 @@ describe("signatureMethodSchema", () => {
 });
 
 describe("fieldTypeSchema", () => {
-  test.each(["signature", "text", "date", "checkbox", "dropdown", "radio", "attachment"])(
-    "accepts valid type: %s",
-    (type) => {
-      expect(fieldTypeSchema.parse(type)).toBe(type);
-    },
-  );
+  test.each([
+    "signature",
+    "text",
+    "date",
+    "checkbox",
+    "dropdown",
+    "radio",
+    "attachment",
+  ])("accepts valid type: %s", (type) => {
+    expect(fieldTypeSchema.parse(type)).toBe(type);
+  });
 
   test("rejects invalid type", () => {
     expect(fieldTypeSchema.safeParse("number").success).toBe(false);
@@ -156,7 +171,9 @@ describe("listDocumentsSchema", () => {
   });
 
   test("accepts valid cursor", () => {
-    expect(listDocumentsSchema.parse({ cursor: "abc123" }).cursor).toBe("abc123");
+    expect(listDocumentsSchema.parse({ cursor: "abc123" }).cursor).toBe(
+      "abc123"
+    );
   });
 
   test("accepts valid status filter", () => {
@@ -164,7 +181,9 @@ describe("listDocumentsSchema", () => {
   });
 
   test("rejects invalid status filter", () => {
-    expect(listDocumentsSchema.safeParse({ status: "invalid" }).success).toBe(false);
+    expect(listDocumentsSchema.safeParse({ status: "invalid" }).success).toBe(
+      false
+    );
   });
 
   test("accepts all fields together", () => {
@@ -176,11 +195,16 @@ describe("listDocumentsSchema", () => {
 
 describe("getDocumentSchema", () => {
   test("accepts valid input", () => {
-    expect(getDocumentSchema.parse({ id: "doc_123" })).toEqual({ id: "doc_123" });
+    expect(getDocumentSchema.parse({ id: "doc_123" })).toEqual({
+      id: "doc_123",
+    });
   });
 
   test("accepts with include_recipients", () => {
-    const result = getDocumentSchema.parse({ id: "doc_123", include_recipients: true });
+    const result = getDocumentSchema.parse({
+      id: "doc_123",
+      include_recipients: true,
+    });
     expect(result.include_recipients).toBe(true);
   });
 
@@ -234,22 +258,31 @@ describe("createDocumentSchema", () => {
 
 describe("updateDocumentSchema", () => {
   test("accepts id only (no updates)", () => {
-    expect(updateDocumentSchema.parse({ id: "doc_123" })).toEqual({ id: "doc_123" });
+    expect(updateDocumentSchema.parse({ id: "doc_123" })).toEqual({
+      id: "doc_123",
+    });
   });
 
   test("accepts with optional title", () => {
-    const result = updateDocumentSchema.parse({ id: "doc_123", title: "Updated" });
+    const result = updateDocumentSchema.parse({
+      id: "doc_123",
+      title: "Updated",
+    });
     expect(result.title).toBe("Updated");
   });
 
   test("rejects missing id", () => {
-    expect(updateDocumentSchema.safeParse({ title: "Updated" }).success).toBe(false);
+    expect(updateDocumentSchema.safeParse({ title: "Updated" }).success).toBe(
+      false
+    );
   });
 });
 
 describe("documentIdSchema", () => {
   test("accepts valid id", () => {
-    expect(documentIdSchema.parse({ id: "doc_123" })).toEqual({ id: "doc_123" });
+    expect(documentIdSchema.parse({ id: "doc_123" })).toEqual({
+      id: "doc_123",
+    });
   });
 
   test("rejects missing id", () => {
@@ -263,18 +296,26 @@ describe("documentIdSchema", () => {
 
 describe("sendDocumentSchema", () => {
   test("accepts id only", () => {
-    expect(sendDocumentSchema.parse({ id: "doc_123" })).toEqual({ id: "doc_123" });
+    expect(sendDocumentSchema.parse({ id: "doc_123" })).toEqual({
+      id: "doc_123",
+    });
   });
 
   test("accepts with optional message", () => {
-    const result = sendDocumentSchema.parse({ id: "doc_123", message: "Please sign" });
+    const result = sendDocumentSchema.parse({
+      id: "doc_123",
+      message: "Please sign",
+    });
     expect(result.message).toBe("Please sign");
   });
 });
 
 describe("voidDocumentSchema", () => {
   test("accepts valid input", () => {
-    const result = voidDocumentSchema.parse({ id: "doc_123", reason: "No longer needed" });
+    const result = voidDocumentSchema.parse({
+      id: "doc_123",
+      reason: "No longer needed",
+    });
     expect(result.reason).toBe("No longer needed");
   });
 
@@ -283,7 +324,9 @@ describe("voidDocumentSchema", () => {
   });
 
   test("rejects missing id", () => {
-    expect(voidDocumentSchema.safeParse({ reason: "test" }).success).toBe(false);
+    expect(voidDocumentSchema.safeParse({ reason: "test" }).success).toBe(
+      false
+    );
   });
 });
 
@@ -305,7 +348,10 @@ describe("listRecipientsSchema", () => {
 
 describe("getRecipientSchema", () => {
   test("accepts valid input", () => {
-    const result = getRecipientSchema.parse({ document_id: "doc_123", id: "rec_456" });
+    const result = getRecipientSchema.parse({
+      document_id: "doc_123",
+      id: "rec_456",
+    });
     expect(result.document_id).toBe("doc_123");
     expect(result.id).toBe("rec_456");
   });
@@ -315,7 +361,9 @@ describe("getRecipientSchema", () => {
   });
 
   test("rejects missing id", () => {
-    expect(getRecipientSchema.safeParse({ document_id: "doc_123" }).success).toBe(false);
+    expect(
+      getRecipientSchema.safeParse({ document_id: "doc_123" }).success
+    ).toBe(false);
   });
 });
 
@@ -340,18 +388,24 @@ describe("addRecipientSchema", () => {
   });
 
   test("accepts with optional message", () => {
-    const result = addRecipientSchema.parse({ ...validInput, message: "Please review" });
+    const result = addRecipientSchema.parse({
+      ...validInput,
+      message: "Please review",
+    });
     expect(result.message).toBe("Please review");
   });
 
   test("rejects invalid email", () => {
-    expect(addRecipientSchema.safeParse({ ...validInput, email: "not-an-email" }).success).toBe(
-      false,
-    );
+    expect(
+      addRecipientSchema.safeParse({ ...validInput, email: "not-an-email" })
+        .success
+    ).toBe(false);
   });
 
   test("rejects empty email", () => {
-    expect(addRecipientSchema.safeParse({ ...validInput, email: "" }).success).toBe(false);
+    expect(
+      addRecipientSchema.safeParse({ ...validInput, email: "" }).success
+    ).toBe(false);
   });
 
   test("rejects missing email", () => {
@@ -365,7 +419,9 @@ describe("addRecipientSchema", () => {
   });
 
   test("rejects invalid role", () => {
-    expect(addRecipientSchema.safeParse({ ...validInput, role: "editor" }).success).toBe(false);
+    expect(
+      addRecipientSchema.safeParse({ ...validInput, role: "editor" }).success
+    ).toBe(false);
   });
 
   test("rejects missing role", () => {
@@ -382,7 +438,10 @@ describe("addRecipientSchema", () => {
 
 describe("updateRecipientSchema", () => {
   test("accepts minimal input (ids only)", () => {
-    const result = updateRecipientSchema.parse({ document_id: "doc_123", id: "rec_456" });
+    const result = updateRecipientSchema.parse({
+      document_id: "doc_123",
+      id: "rec_456",
+    });
     expect(result.document_id).toBe("doc_123");
     expect(result.id).toBe("rec_456");
   });
@@ -407,22 +466,29 @@ describe("updateRecipientSchema", () => {
         document_id: "doc_123",
         id: "rec_456",
         role: "invalid",
-      }).success,
+      }).success
     ).toBe(false);
   });
 });
 
 describe("removeRecipientSchema", () => {
   test("accepts valid input", () => {
-    const result = removeRecipientSchema.parse({ document_id: "doc_123", id: "rec_456" });
+    const result = removeRecipientSchema.parse({
+      document_id: "doc_123",
+      id: "rec_456",
+    });
     expect(result.document_id).toBe("doc_123");
     expect(result.id).toBe("rec_456");
   });
 
   test("rejects missing fields", () => {
     expect(removeRecipientSchema.safeParse({}).success).toBe(false);
-    expect(removeRecipientSchema.safeParse({ document_id: "doc_123" }).success).toBe(false);
-    expect(removeRecipientSchema.safeParse({ id: "rec_456" }).success).toBe(false);
+    expect(
+      removeRecipientSchema.safeParse({ document_id: "doc_123" }).success
+    ).toBe(false);
+    expect(removeRecipientSchema.safeParse({ id: "rec_456" }).success).toBe(
+      false
+    );
   });
 });
 
@@ -437,7 +503,10 @@ describe("sendReminderSchema", () => {
   });
 
   test("accepts without message", () => {
-    const result = sendReminderSchema.parse({ document_id: "doc_123", id: "rec_456" });
+    const result = sendReminderSchema.parse({
+      document_id: "doc_123",
+      id: "rec_456",
+    });
     expect(result.message).toBeUndefined();
   });
 });
@@ -476,7 +545,7 @@ describe("addRecipientsBulkSchema", () => {
       addRecipientsBulkSchema.safeParse({
         document_id: "doc_123",
         recipients: [{ email: "invalid", name: "Alice", role: "signer" }],
-      }).success,
+      }).success
     ).toBe(false);
   });
 
@@ -485,7 +554,7 @@ describe("addRecipientsBulkSchema", () => {
       addRecipientsBulkSchema.safeParse({
         document_id: "doc_123",
         recipients: [{ email: "a@example.com" }],
-      }).success,
+      }).success
     ).toBe(false);
   });
 
@@ -493,7 +562,7 @@ describe("addRecipientsBulkSchema", () => {
     expect(
       addRecipientsBulkSchema.safeParse({
         recipients: [{ email: "a@example.com", name: "Alice", role: "signer" }],
-      }).success,
+      }).success
     ).toBe(false);
   });
 });
@@ -524,7 +593,7 @@ describe("updateRecipientsBulkSchema", () => {
       updateRecipientsBulkSchema.safeParse({
         document_id: "doc_123",
         updates: [{ name: "No ID" }],
-      }).success,
+      }).success
     ).toBe(false);
   });
 });
@@ -551,22 +620,33 @@ describe("listTemplatesSchema", () => {
   });
 
   test("accepts valid template status filter", () => {
-    expect(listTemplatesSchema.parse({ status: "active" }).status).toBe("active");
-    expect(listTemplatesSchema.parse({ status: "archived" }).status).toBe("archived");
+    expect(listTemplatesSchema.parse({ status: "active" }).status).toBe(
+      "active"
+    );
+    expect(listTemplatesSchema.parse({ status: "archived" }).status).toBe(
+      "archived"
+    );
   });
 
   test("rejects invalid template status", () => {
-    expect(listTemplatesSchema.safeParse({ status: "draft" }).success).toBe(false);
+    expect(listTemplatesSchema.safeParse({ status: "draft" }).success).toBe(
+      false
+    );
   });
 });
 
 describe("getTemplateSchema", () => {
   test("accepts valid input", () => {
-    expect(getTemplateSchema.parse({ id: "tpl_123" })).toEqual({ id: "tpl_123" });
+    expect(getTemplateSchema.parse({ id: "tpl_123" })).toEqual({
+      id: "tpl_123",
+    });
   });
 
   test("accepts with include_fields", () => {
-    const result = getTemplateSchema.parse({ id: "tpl_123", include_fields: true });
+    const result = getTemplateSchema.parse({
+      id: "tpl_123",
+      include_fields: true,
+    });
     expect(result.include_fields).toBe(true);
   });
 
@@ -577,7 +657,9 @@ describe("getTemplateSchema", () => {
 
 describe("templateIdSchema", () => {
   test("accepts valid id", () => {
-    expect(templateIdSchema.parse({ id: "tpl_123" })).toEqual({ id: "tpl_123" });
+    expect(templateIdSchema.parse({ id: "tpl_123" })).toEqual({
+      id: "tpl_123",
+    });
   });
 
   test("rejects missing id", () => {
@@ -604,34 +686,46 @@ describe("createTemplateSchema", () => {
   });
 
   test("rejects missing document_id", () => {
-    expect(createTemplateSchema.safeParse({ name: "My Template" }).success).toBe(false);
+    expect(
+      createTemplateSchema.safeParse({ name: "My Template" }).success
+    ).toBe(false);
   });
 
   test("rejects missing name", () => {
-    expect(createTemplateSchema.safeParse({ document_id: "doc_123" }).success).toBe(false);
+    expect(
+      createTemplateSchema.safeParse({ document_id: "doc_123" }).success
+    ).toBe(false);
   });
 });
 
 describe("updateTemplateSchema", () => {
   test("accepts id only", () => {
-    expect(updateTemplateSchema.parse({ id: "tpl_123" })).toEqual({ id: "tpl_123" });
+    expect(updateTemplateSchema.parse({ id: "tpl_123" })).toEqual({
+      id: "tpl_123",
+    });
   });
 
   test("accepts with status update", () => {
-    const result = updateTemplateSchema.parse({ id: "tpl_123", status: "archived" });
+    const result = updateTemplateSchema.parse({
+      id: "tpl_123",
+      status: "archived",
+    });
     expect(result.status).toBe("archived");
   });
 
   test("rejects invalid status", () => {
-    expect(updateTemplateSchema.safeParse({ id: "tpl_123", status: "deleted" }).success).toBe(
-      false,
-    );
+    expect(
+      updateTemplateSchema.safeParse({ id: "tpl_123", status: "deleted" })
+        .success
+    ).toBe(false);
   });
 });
 
 describe("useTemplateSchema", () => {
   test("accepts id only", () => {
-    expect(useTemplateSchema.parse({ id: "tpl_123" })).toEqual({ id: "tpl_123" });
+    expect(useTemplateSchema.parse({ id: "tpl_123" })).toEqual({
+      id: "tpl_123",
+    });
   });
 
   test("accepts with optional title and description", () => {
@@ -651,9 +745,11 @@ describe("useTemplateSchema", () => {
 
 describe("signatureDocumentIdSchema", () => {
   test("accepts valid document_id", () => {
-    expect(signatureDocumentIdSchema.parse({ document_id: "doc_123" })).toEqual({
-      document_id: "doc_123",
-    });
+    expect(signatureDocumentIdSchema.parse({ document_id: "doc_123" })).toEqual(
+      {
+        document_id: "doc_123",
+      }
+    );
   });
 
   test("rejects missing document_id", () => {
@@ -663,7 +759,10 @@ describe("signatureDocumentIdSchema", () => {
 
 describe("getSignatureSchema", () => {
   test("accepts valid input", () => {
-    const result = getSignatureSchema.parse({ document_id: "doc_123", id: "sig_789" });
+    const result = getSignatureSchema.parse({
+      document_id: "doc_123",
+      id: "sig_789",
+    });
     expect(result.document_id).toBe("doc_123");
     expect(result.id).toBe("sig_789");
   });
@@ -673,7 +772,9 @@ describe("getSignatureSchema", () => {
   });
 
   test("rejects missing id", () => {
-    expect(getSignatureSchema.safeParse({ document_id: "doc_123" }).success).toBe(false);
+    expect(
+      getSignatureSchema.safeParse({ document_id: "doc_123" }).success
+    ).toBe(false);
   });
 });
 
@@ -685,18 +786,25 @@ describe("getAuditTrailSchema", () => {
   });
 
   test("accepts with valid limit", () => {
-    const result = getAuditTrailSchema.parse({ document_id: "doc_123", limit: 50 });
+    const result = getAuditTrailSchema.parse({
+      document_id: "doc_123",
+      limit: 50,
+    });
     expect(result.limit).toBe(50);
   });
 
   test("rejects limit of 0", () => {
-    expect(getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 0 }).success).toBe(false);
+    expect(
+      getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 0 })
+        .success
+    ).toBe(false);
   });
 
   test("rejects limit over 100", () => {
-    expect(getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 101 }).success).toBe(
-      false,
-    );
+    expect(
+      getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 101 })
+        .success
+    ).toBe(false);
   });
 });
 
@@ -731,13 +839,16 @@ describe("uploadFileContentSchema", () => {
   });
 
   test("rejects missing file_name", () => {
-    expect(uploadFileContentSchema.safeParse({ content_base64: "JVBERi0xLjQK" }).success).toBe(
-      false,
-    );
+    expect(
+      uploadFileContentSchema.safeParse({ content_base64: "JVBERi0xLjQK" })
+        .success
+    ).toBe(false);
   });
 
   test("rejects missing content_base64", () => {
-    expect(uploadFileContentSchema.safeParse({ file_name: "document.pdf" }).success).toBe(false);
+    expect(
+      uploadFileContentSchema.safeParse({ file_name: "document.pdf" }).success
+    ).toBe(false);
   });
 
   test("rejects empty object", () => {

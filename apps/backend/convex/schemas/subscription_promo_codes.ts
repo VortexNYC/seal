@@ -14,9 +14,11 @@ export const subscriptionPromoCodeStatus = v.union(
   v.literal("inactive"),
   v.literal("expired"),
   v.literal("exhausted"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
-export type SubscriptionPromoCodeStatus = Infer<typeof subscriptionPromoCodeStatus>;
+export type SubscriptionPromoCodeStatus = Infer<
+  typeof subscriptionPromoCodeStatus
+>;
 
 export const subscriptionPromoCodesTable = defineTable({
   // External IDs (source of truth from Vortex Billing)
@@ -45,7 +47,7 @@ export const subscriptionPromoCodesTable = defineTable({
       firstTimeTransaction: v.optional(v.boolean()),
       minimumAmount: v.optional(v.number()), // In cents
       minimumAmountCurrency: v.optional(v.string()),
-    }),
+    })
   ),
 
   // Metadata (custom fields)
@@ -53,7 +55,7 @@ export const subscriptionPromoCodesTable = defineTable({
     v.object({
       notes: v.optional(v.string()),
       createdBy: v.optional(v.string()),
-    }),
+    })
   ),
 
   // Timestamps

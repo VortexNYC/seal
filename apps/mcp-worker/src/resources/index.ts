@@ -8,7 +8,10 @@ import { registerTemplateResources } from "./templates";
 /**
  * Registers all resources with the MCP server.
  */
-export function registerAllResources(server: McpServer, client: SealApiClient): void {
+export function registerAllResources(
+  server: McpServer,
+  client: SealApiClient
+): void {
   registerDocumentResources(server, client);
   registerTemplateResources(server, client);
   registerDocsResources(server);

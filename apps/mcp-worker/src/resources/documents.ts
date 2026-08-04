@@ -1,6 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ApiDocument, PaginatedResponse } from "@seal/backend/convex/validations/api";
+import type {
+  ApiDocument,
+  PaginatedResponse,
+} from "@seal/backend/convex/validations/api";
 
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
@@ -8,7 +11,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers document resources with the MCP server.
  */
-export function registerDocumentResources(server: McpServer, client: SealApiClient): void {
+export function registerDocumentResources(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // List all documents resource
   server.resource(
     "documents",
@@ -22,13 +28,13 @@ export function registerDocumentResources(server: McpServer, client: SealApiClie
       const response = await client.get<PaginatedResponse<ApiDocument>>(
         "/documents",
         { limit: 50 },
-        authToken,
+        authToken
       );
 
       const text = response.data
         .map(
           (doc) =>
-            `- ${doc.title} (${doc.id})\n  Status: ${doc.status} | Recipients: ${doc.recipients_count} | Signed: ${doc.signed_count}`,
+            `- ${doc.title} (${doc.id})\n  Status: ${doc.status} | Recipients: ${doc.recipients_count} | Signed: ${doc.signed_count}`
         )
         .join("\n\n");
 
@@ -41,7 +47,7 @@ export function registerDocumentResources(server: McpServer, client: SealApiClie
           },
         ],
       };
-    },
+    }
   );
 
   // Resource template for individual documents
@@ -61,7 +67,7 @@ export function registerDocumentResources(server: McpServer, client: SealApiClie
           id: documentId,
           include_recipients: true,
         },
-        authToken,
+        authToken
       );
 
       let text = `# ${doc.title}\n\n`;
@@ -102,6 +108,6 @@ export function registerDocumentResources(server: McpServer, client: SealApiClie
           },
         ],
       };
-    },
+    }
   );
 }

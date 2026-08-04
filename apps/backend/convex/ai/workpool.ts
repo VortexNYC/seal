@@ -21,10 +21,15 @@ export const aiPoolFree = new Workpool(components.aiPoolFree, {
   maxParallelism: 2,
 });
 
-/** Ctx shape needed by workpool — just runMutation + runQuery. */
+/**
+ * Ctx shape needed by workpool enqueue — mutation wrappers omit parts of
+ * MutationCtx/ActionCtx, so accept the structural run* surface and cast at
+ * the enqueue boundary.
+ */
+type WorkpoolEnqueueCtx = Parameters<typeof aiPoolPro.enqueueAction>[0];
 type WorkpoolCtx = {
-  runMutation: Parameters<typeof aiPoolPro.enqueueAction>[0]["runMutation"];
-  runQuery: Parameters<typeof aiPoolPro.enqueueAction>[0]["runQuery"];
+  runMutation: WorkpoolEnqueueCtx["runMutation"];
+  runQuery: WorkpoolEnqueueCtx["runQuery"];
 };
 
 /**
@@ -38,16 +43,20 @@ export async function enqueueAiPipeline(
   db: DatabaseReader,
   documentId: Id<"documents">,
   organizationId: Id<"organizations">,
-  userId?: Id<"users">,
+  userId?: Id<"users">
 ) {
   const isPro = await isProOrganization(db, organizationId);
   const pool = isPro ? aiPoolPro : aiPoolFree;
 
-  await pool.enqueueAction(ctx, internal.ai.pipeline.processDocument, {
-    documentId,
-    organizationId,
-    userId,
-  });
+  await pool.enqueueAction(
+    ctx as WorkpoolEnqueueCtx,
+    internal.ai.pipeline.processDocument,
+    {
+      documentId,
+      organizationId,
+      userId,
+    }
+  );
 }
 
 /**
@@ -55,20 +64,20 @@ export async function enqueueAiPipeline(
  */
 async function isProOrganization(
   db: DatabaseReader,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<boolean> {
   const subscription =
     (await db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "active"),
+        q.eq("organizationId", organizationId).eq("status", "active")
       )
       .order("desc")
       .first()) ??
     (await db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "trialing"),
+        q.eq("organizationId", organizationId).eq("status", "trialing")
       )
       .order("desc")
       .first());

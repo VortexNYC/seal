@@ -154,7 +154,7 @@ export function getRecipientColor(index: number): RecipientColor {
  */
 export function getRecipientColorById(
   recipientId: string | null | undefined,
-  recipientIndexMap: Map<string, number>,
+  recipientIndexMap: Map<string, number>
 ): RecipientColor {
   if (!recipientId) return UNASSIGNED_COLOR;
   const index = recipientIndexMap.get(recipientId);

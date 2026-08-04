@@ -25,7 +25,8 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
     authProvider: betterAuthConvexProvider,
     refs: {
       upsertUserFromBetterAuth: internal.users.upsertFromBetterAuth,
-      provisionIdentityFromIdentity: components.vortexAuth.identity.provisionFromIdentity,
+      provisionIdentityFromIdentity:
+        components.vortexAuth.identity.provisionFromIdentity,
       // rateLimitAuthRequest intentionally omitted for P0 (pile pattern) —
       // the runtime's built-in rateLimit below still applies.
     },
@@ -47,17 +48,25 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
       const from = authEmailFromAddress();
       const draft =
         kind === "verify-email"
-          ? createEmailVerificationEmailDraft({ from, to, verifyUrl: url })
-          : createPasswordResetEmailDraft({ from, to, resetUrl: url });
+          ? await createEmailVerificationEmailDraft({
+              from,
+              to,
+              verifyUrl: url,
+            })
+          : await createPasswordResetEmailDraft({ from, to, resetUrl: url });
       if ("status" in draft) {
         // not_configured (missing from/url) — log loudly, don't silently drop.
-        console.error(`[auth-email] ${kind} not sent to ${to}: ${draft.reason}`);
+        console.error(
+          `[auth-email] ${kind} not sent to ${to}: ${draft.reason}`
+        );
         return;
       }
       // Better Auth invokes sendEmail inside a mutation-capable handler ctx;
       // the seam types it as the broad GenericCtx, so narrow to the sender's
       // expected ctx (which needs runMutation).
-      const sendCtx = ctx as unknown as Parameters<typeof sendEmailFromAction>[0];
+      const sendCtx = ctx as unknown as Parameters<
+        typeof sendEmailFromAction
+      >[0];
       await sendEmailFromAction(sendCtx, draft);
     },
     // Captcha is a PROVEN opt-in capability (Cloudflare Turnstile,

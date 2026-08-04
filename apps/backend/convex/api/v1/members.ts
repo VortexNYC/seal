@@ -43,7 +43,12 @@ export const listMembers = internalQuery({
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     role: v.optional(
-      v.union(v.literal("owner"), v.literal("admin"), v.literal("member"), v.literal("viewer")),
+      v.union(
+        v.literal("owner"),
+        v.literal("admin"),
+        v.literal("member"),
+        v.literal("viewer")
+      )
     ),
   },
   handler: async (ctx, args): Promise<ApiMember[]> => {

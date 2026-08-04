@@ -6,7 +6,11 @@ import { ConvexError, type GenericId, v } from "convex/values";
 
 import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
+import {
+  internalMutation,
+  type MutationCtx,
+  mutation,
+} from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
 import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
@@ -23,7 +27,7 @@ import {
 import { organizationBaseSchema } from "../validations/organizations";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -35,7 +39,13 @@ function sealAssertPresent<T>(
 type OrganizationUpdateData = Partial<
   Pick<
     Doc<"organizations">,
-    "name" | "logo" | "metadata" | "timezone" | "isActive" | "currency" | "currencyKind"
+    | "name"
+    | "logo"
+    | "metadata"
+    | "timezone"
+    | "isActive"
+    | "currency"
+    | "currencyKind"
   >
 > & {
   updatedAt: number;
@@ -46,7 +56,9 @@ type EnsurePersonalOrganizationArgs = {
   organizationSlug?: string;
 };
 
-async function requireUserForPersonalOrganization(ctx: MutationCtx): Promise<Doc<"users">> {
+async function requireUserForPersonalOrganization(
+  ctx: MutationCtx
+): Promise<Doc<"users">> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
@@ -66,7 +78,7 @@ async function requireUserForPersonalOrganization(ctx: MutationCtx): Promise<Doc
 
 async function findExistingOrganizationForPersonalWorkspace(
   ctx: MutationCtx,
-  args: EnsurePersonalOrganizationArgs,
+  args: EnsurePersonalOrganizationArgs
 ): Promise<Doc<"organizations"> | null> {
   if (!args.organizationSlug) {
     return null;
@@ -74,7 +86,9 @@ async function findExistingOrganizationForPersonalWorkspace(
 
   return ctx.db
     .query("organizations")
-    .withIndex("by_slug", (q) => q.eq("slug", sealAssertPresent(args.organizationSlug)))
+    .withIndex("by_slug", (q) =>
+      q.eq("slug", sealAssertPresent(args.organizationSlug))
+    )
     .first();
 }
 
@@ -82,9 +96,10 @@ async function upsertPersonalOrganization(
   ctx: MutationCtx,
   user: Doc<"users">,
   args: EnsurePersonalOrganizationArgs,
-  preferredName: string,
+  preferredName: string
 ): Promise<Doc<"organizations">> {
-  const existingOrganization = await findExistingOrganizationForPersonalWorkspace(ctx, args);
+  const existingOrganization =
+    await findExistingOrganizationForPersonalWorkspace(ctx, args);
 
   if (!existingOrganization) {
     const baseSlug = args.organizationSlug ?? slugify(preferredName);
@@ -123,7 +138,7 @@ async function upsertPersonalOrganization(
 async function ensurePrimaryOwnerMembership(
   ctx: MutationCtx,
   userId: Id<"users">,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): Promise<void> {
   await upsertVortexAuthMember(ctx, {
     organizationId,
@@ -136,21 +151,26 @@ async function ensurePrimaryOwnerMembership(
 async function clearOtherPrimaryMemberships(
   _ctx: MutationCtx,
   _userId: Id<"users">,
-  _organizationId: Id<"organizations">,
+  _organizationId: Id<"organizations">
 ): Promise<void> {
   // Component auth owns membership truth. Active organization is stored on the
   // local user anchor, so no per-membership primary flag is maintained here.
 }
 
 type ComponentMemberStatus = "active" | "invited" | "suspended";
-type ComponentMemberMutationCtx = Pick<MutationCtx, "db" | "runQuery" | "runMutation">;
-type SealComponentMember = NonNullable<Awaited<ReturnType<typeof getComponentMemberById>>> & {
+type ComponentMemberMutationCtx = Pick<
+  MutationCtx,
+  "db" | "runQuery" | "runMutation"
+>;
+type SealComponentMember = NonNullable<
+  Awaited<ReturnType<typeof getComponentMemberById>>
+> & {
   userId: Id<"users">;
   role: "system" | "owner" | "admin" | "member" | "viewer";
 };
 
 function toComponentMemberStatus(
-  status: "active" | "inactive" | "suspended" | "pending",
+  status: "active" | "inactive" | "suspended" | "pending"
 ): ComponentMemberStatus {
   if (status === "pending") {
     return "invited";
@@ -164,10 +184,14 @@ function toComponentMemberStatus(
 async function requireComponentMemberInOrganization(
   ctx: ComponentMemberMutationCtx,
   organization: Doc<"organizations">,
-  memberId: string,
+  memberId: string
 ): Promise<SealComponentMember> {
   const membership = await getComponentMemberById(ctx, memberId);
-  if (!membership || membership.organizationId !== organization._id || !membership.userId) {
+  if (
+    !membership ||
+    membership.organizationId !== organization._id ||
+    !membership.userId
+  ) {
     throw new ConvexError("Member not found");
   }
   if (!membership.role) {
@@ -183,7 +207,7 @@ async function requireComponentMemberInOrganization(
 async function setComponentMemberStatus(
   ctx: ComponentMemberMutationCtx,
   memberId: string,
-  status: ComponentMemberStatus,
+  status: ComponentMemberStatus
 ): Promise<void> {
   await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
     memberId: memberId as GenericId<"organization_members">,
@@ -196,15 +220,20 @@ async function setComponentMemberRole(
   organization: Doc<"organizations">,
   memberId: string,
   role: "owner" | "admin" | "member" | "viewer",
-  assignedByVortexAuthUserId?: string,
+  assignedByVortexAuthUserId?: string
 ): Promise<void> {
   if (!organization.vortexAuthOrganizationId) {
     throw new ConvexError("Organization is not anchored to Vortex Auth");
   }
-  const roleId = await ensureComponentRoleForTemplate(ctx, organization._id, role);
+  const roleId = await ensureComponentRoleForTemplate(
+    ctx,
+    organization._id,
+    role
+  );
   await ctx.runMutation(components.vortexAuth.organizations.setMemberRole, {
     memberId: memberId as GenericId<"organization_members">,
-    organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
+    organizationId:
+      organization.vortexAuthOrganizationId as GenericId<"organizations">,
     roleId,
     assignedBy: assignedByVortexAuthUserId as GenericId<"users"> | undefined,
   });
@@ -219,7 +248,7 @@ async function resolveBrandingLogoState(
   args: {
     logoStorageId?: Id<"_storage">;
     removeLogo?: boolean;
-  },
+  }
 ): Promise<{ logoUrl?: string; logoStorageId?: Id<"_storage"> }> {
   if (args.removeLogo) {
     if (current.logoStorageId) {
@@ -249,7 +278,9 @@ async function resolveBrandingLogoState(
   };
 }
 
-function validateReminderSchedule(reminderSchedule: number[] | undefined): void {
+function validateReminderSchedule(
+  reminderSchedule: number[] | undefined
+): void {
   if (reminderSchedule === undefined) {
     return;
   }
@@ -281,8 +312,16 @@ export const ensurePersonalOrganization = mutation({
   handler: async (ctx, args) => {
     const user = await requireUserForPersonalOrganization(ctx);
     const preferredName =
-      args.organizationName?.trim() || user.name?.trim() || user.email.split("@")[0] || "user";
-    const organization = await upsertPersonalOrganization(ctx, user, args, preferredName);
+      args.organizationName?.trim() ||
+      user.name?.trim() ||
+      user.email.split("@")[0] ||
+      "user";
+    const organization = await upsertPersonalOrganization(
+      ctx,
+      user,
+      args,
+      preferredName
+    );
 
     await ensurePrimaryOwnerMembership(ctx, user._id, organization._id);
     await clearOtherPrimaryMemberships(ctx, user._id, organization._id);
@@ -313,7 +352,10 @@ function slugify(input: string): string {
   return slug || `user-${Date.now()}`;
 }
 
-async function generateUniqueSlug(db: MutationCtx["db"], desiredSlug: string): Promise<string> {
+async function generateUniqueSlug(
+  db: MutationCtx["db"],
+  desiredSlug: string
+): Promise<string> {
   let slug = desiredSlug;
   let suffix = 0;
 
@@ -339,7 +381,11 @@ export const createWorkspace = authMutation({
   args: {
     name: v.string(),
     slug: v.string(),
-    type: v.union(v.literal("personal"), v.literal("group"), v.literal("company")),
+    type: v.union(
+      v.literal("personal"),
+      v.literal("group"),
+      v.literal("company")
+    ),
     logo: v.optional(v.string()),
     metadata: v.optional(v.string()),
     currency: v.optional(v.string()),
@@ -419,7 +465,8 @@ export const updateWorkspace = adminMutation({
     if (args.metadata !== undefined) updateData.metadata = args.metadata;
     if (args.timezone !== undefined) updateData.timezone = args.timezone;
     if (args.currency !== undefined) updateData.currency = args.currency;
-    if (args.currencyKind !== undefined) updateData.currencyKind = args.currencyKind;
+    if (args.currencyKind !== undefined)
+      updateData.currencyKind = args.currencyKind;
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
     await ctx.db.patch(organization._id, updateData);
@@ -441,15 +488,24 @@ export const deleteWorkspace = authMutation({
       throw new ConvexError("Organization not found");
     }
 
-    if (ctx.auth.organization._id !== args.organizationId || ctx.auth.member.role !== "owner") {
-      throw new ConvexError("Only organization owners can delete the organization");
+    if (
+      ctx.auth.organization._id !== args.organizationId ||
+      ctx.auth.member.role !== "owner"
+    ) {
+      throw new ConvexError(
+        "Only organization owners can delete the organization"
+      );
     }
 
     if (organization.vortexAuthOrganizationId) {
-      await ctx.runMutation(components.vortexAuth.organizations.setOrganizationStatus, {
-        organizationId: organization.vortexAuthOrganizationId as GenericId<"organizations">,
-        status: "deleted",
-      });
+      await ctx.runMutation(
+        components.vortexAuth.organizations.setOrganizationStatus,
+        {
+          organizationId:
+            organization.vortexAuthOrganizationId as GenericId<"organizations">,
+          status: "deleted",
+        }
+      );
     }
 
     // Delete organization
@@ -482,7 +538,7 @@ export const addMember = adminMutation({
     const existingMembership = await getComponentMemberRefForUserOrganization(
       ctx,
       user,
-      organization,
+      organization
     );
     if (existingMembership !== null) {
       throw new ConvexError("User is already a member of this organization");
@@ -506,12 +562,21 @@ export const addMember = adminMutation({
 export const updateMemberRole = adminMutation({
   args: {
     memberId: v.string(),
-    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member"), v.literal("viewer")),
+    role: v.union(
+      v.literal("owner"),
+      v.literal("admin"),
+      v.literal("member"),
+      v.literal("viewer")
+    ),
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    const membership = await requireComponentMemberInOrganization(
+      ctx,
+      organization,
+      args.memberId
+    );
 
     // Don't allow changing own role
     if (membership.userId === currentUser._id) {
@@ -533,7 +598,7 @@ export const updateMemberRole = adminMutation({
       organization,
       args.memberId,
       args.role,
-      currentUser.vortexAuthUserId,
+      currentUser.vortexAuthUserId
     );
 
     await logAction(ctx, {
@@ -546,7 +611,9 @@ export const updateMemberRole = adminMutation({
       resourceId: membership.userId,
       oldValues: { role: previousRole },
       newValues: { role: args.role },
-      metadata: { description: `Role changed from ${previousRole} to ${args.role}` },
+      metadata: {
+        description: `Role changed from ${previousRole} to ${args.role}`,
+      },
       ipAddress: "web-authenticated",
     });
 
@@ -564,7 +631,11 @@ export const removeMember = adminMutation({
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    const membership = await requireComponentMemberInOrganization(
+      ctx,
+      organization,
+      args.memberId
+    );
 
     // Don't allow removing self
     if (membership.userId === currentUser._id) {
@@ -577,12 +648,16 @@ export const removeMember = adminMutation({
 
     // Check if this is the last owner
     if (membership.role === "owner") {
-      const ownerCount = (await listComponentMembersByOrganization(ctx, organization)).filter(
-        (member) => member.role === "owner" && member.status === "active",
+      const ownerCount = (
+        await listComponentMembersByOrganization(ctx, organization)
+      ).filter(
+        (member) => member.role === "owner" && member.status === "active"
       );
 
       if (ownerCount.length <= 1) {
-        throw new ConvexError("Cannot remove the last owner of the organization");
+        throw new ConvexError(
+          "Cannot remove the last owner of the organization"
+        );
       }
     }
 
@@ -618,13 +693,17 @@ export const updateMemberStatus = adminMutation({
       v.literal("active"),
       v.literal("inactive"),
       v.literal("suspended"),
-      v.literal("pending"),
+      v.literal("pending")
     ),
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    const membership = await requireComponentMemberInOrganization(
+      ctx,
+      organization,
+      args.memberId
+    );
 
     // Don't allow changing own status
     if (membership.userId === currentUser._id) {
@@ -636,7 +715,11 @@ export const updateMemberStatus = adminMutation({
       throw new ConvexError("Cannot suspend or deactivate organization owner");
     }
 
-    await setComponentMemberStatus(ctx, args.memberId, toComponentMemberStatus(args.status));
+    await setComponentMemberStatus(
+      ctx,
+      args.memberId,
+      toComponentMemberStatus(args.status)
+    );
 
     return { success: true };
   },
@@ -653,7 +736,11 @@ export const activateMember = adminMutation({
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
 
-    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    const membership = await requireComponentMemberInOrganization(
+      ctx,
+      organization,
+      args.memberId
+    );
 
     if (membership.status === "active") {
       throw new ConvexError("Member is already active");
@@ -664,7 +751,7 @@ export const activateMember = adminMutation({
       organization,
       args.memberId,
       args.role,
-      ctx.auth.user.vortexAuthUserId,
+      ctx.auth.user.vortexAuthUserId
     );
     await setComponentMemberStatus(ctx, args.memberId, "active");
 
@@ -682,7 +769,11 @@ export const suspendMember = adminMutation({
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
 
-    const membership = await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    const membership = await requireComponentMemberInOrganization(
+      ctx,
+      organization,
+      args.memberId
+    );
 
     if (membership.userId === currentUser._id) {
       throw new ConvexError("Cannot suspend yourself");
@@ -708,7 +799,11 @@ export const reactivateMember = adminMutation({
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
 
-    await requireComponentMemberInOrganization(ctx, organization, args.memberId);
+    await requireComponentMemberInOrganization(
+      ctx,
+      organization,
+      args.memberId
+    );
     await setComponentMemberStatus(ctx, args.memberId, "active");
 
     return { success: true };
@@ -723,8 +818,12 @@ export const bulkActivateMembers = adminMutation({
     memberUpdates: v.array(
       v.object({
         memberId: v.string(),
-        role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
-      }),
+        role: v.union(
+          v.literal("admin"),
+          v.literal("member"),
+          v.literal("viewer")
+        ),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -737,7 +836,7 @@ export const bulkActivateMembers = adminMutation({
         const membership = await requireComponentMemberInOrganization(
           ctx,
           organization,
-          update.memberId,
+          update.memberId
         );
 
         if (membership.status === "active") {
@@ -754,7 +853,7 @@ export const bulkActivateMembers = adminMutation({
           organization,
           update.memberId,
           update.role,
-          ctx.auth.user.vortexAuthUserId,
+          ctx.auth.user.vortexAuthUserId
         );
         await setComponentMemberStatus(ctx, update.memberId, "active");
 
@@ -785,7 +884,9 @@ export const cleanupExpiredInvitations = internalMutation({
     void ctx;
     const expiredCount = 0;
 
-    console.info(`[cleanupExpiredInvitations] Marked ${expiredCount} invitations as expired`);
+    console.info(
+      `[cleanupExpiredInvitations] Marked ${expiredCount} invitations as expired`
+    );
 
     return { expiredCount };
   },
@@ -815,7 +916,8 @@ export const updateAiSettings = adminMutation({
       aiSettings: {
         aiEnabled: args.aiEnabled ?? current.aiEnabled,
         aiAutoAnalyze: args.aiAutoAnalyze ?? current.aiAutoAnalyze,
-        aiShowRedlinesToSigners: args.aiShowRedlinesToSigners ?? current.aiShowRedlinesToSigners,
+        aiShowRedlinesToSigners:
+          args.aiShowRedlinesToSigners ?? current.aiShowRedlinesToSigners,
       },
       updatedAt: Date.now(),
     });
@@ -829,7 +931,11 @@ export const updateAiSettings = adminMutation({
 export const generateLogoUploadUrl = adminMutation({
   args: {},
   handler: async (ctx) => {
-    await ensureProFeature(ctx.db, ctx.auth.organization._id, "Custom branding");
+    await ensureProFeature(
+      ctx.db,
+      ctx.auth.organization._id,
+      "Custom branding"
+    );
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -849,7 +955,11 @@ export const updateBrandingSettings = adminMutation({
     enabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await ensureProFeature(ctx.db, ctx.auth.organization._id, "Custom branding");
+    await ensureProFeature(
+      ctx.db,
+      ctx.auth.organization._id,
+      "Custom branding"
+    );
 
     const org = await ctx.db.get(ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
@@ -858,7 +968,11 @@ export const updateBrandingSettings = adminMutation({
       enabled: false,
     };
 
-    const { logoUrl, logoStorageId } = await resolveBrandingLogoState(ctx.storage, current, args);
+    const { logoUrl, logoStorageId } = await resolveBrandingLogoState(
+      ctx.storage,
+      current,
+      args
+    );
 
     await ctx.db.patch(org._id, {
       brandingSettings: {
@@ -888,7 +1002,9 @@ export const updateBrandingSettings = adminMutation({
 export const updateSigningSettings = adminMutation({
   args: {
     allowedSignatureTypes: v.optional(
-      v.array(v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))),
+      v.array(
+        v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
+      )
     ),
     esignConsentText: v.optional(v.string()),
     defaultDeadlineDays: v.optional(v.number()),
@@ -899,7 +1015,11 @@ export const updateSigningSettings = adminMutation({
 
     const current = org.signingSettings ?? {
       defaultAuthMethod: "email" as const,
-      allowedSignatureTypes: ["draw" as const, "type" as const, "upload" as const],
+      allowedSignatureTypes: [
+        "draw" as const,
+        "type" as const,
+        "upload" as const,
+      ],
       esignConsentText: undefined,
       defaultDeadlineDays: 30,
     };
@@ -910,16 +1030,21 @@ export const updateSigningSettings = adminMutation({
       }
     }
 
-    if (args.allowedSignatureTypes !== undefined && args.allowedSignatureTypes.length === 0) {
+    if (
+      args.allowedSignatureTypes !== undefined &&
+      args.allowedSignatureTypes.length === 0
+    ) {
       throw new ConvexError("At least one signature type must be allowed");
     }
 
     await ctx.db.patch(org._id, {
       signingSettings: {
         defaultAuthMethod: "email",
-        allowedSignatureTypes: args.allowedSignatureTypes ?? current.allowedSignatureTypes,
+        allowedSignatureTypes:
+          args.allowedSignatureTypes ?? current.allowedSignatureTypes,
         esignConsentText: args.esignConsentText ?? current.esignConsentText,
-        defaultDeadlineDays: args.defaultDeadlineDays ?? current.defaultDeadlineDays,
+        defaultDeadlineDays:
+          args.defaultDeadlineDays ?? current.defaultDeadlineDays,
       },
       updatedAt: Date.now(),
     });
@@ -959,9 +1084,12 @@ export const updateNotificationSettings = adminMutation({
     await ctx.db.patch(org._id, {
       notificationSettings: {
         reminderSchedule: args.reminderSchedule ?? current.reminderSchedule,
-        expirationAlertDays: args.expirationAlertDays ?? current.expirationAlertDays,
-        sendCompletionEmail: args.sendCompletionEmail ?? current.sendCompletionEmail,
-        sendViewedNotification: args.sendViewedNotification ?? current.sendViewedNotification,
+        expirationAlertDays:
+          args.expirationAlertDays ?? current.expirationAlertDays,
+        sendCompletionEmail:
+          args.sendCompletionEmail ?? current.sendCompletionEmail,
+        sendViewedNotification:
+          args.sendViewedNotification ?? current.sendViewedNotification,
       },
       updatedAt: Date.now(),
     });
@@ -982,7 +1110,9 @@ export const updateSecuritySettings = adminMutation({
   handler: async (ctx, args) => {
     // Security settings require owner role — stricter than admin
     if (ctx.auth.member.role !== "owner") {
-      throw new ConvexError("Only organization owners can modify security settings");
+      throw new ConvexError(
+        "Only organization owners can modify security settings"
+      );
     }
 
     const org = await ctx.db.get(ctx.auth.organization._id);
@@ -1004,8 +1134,13 @@ export const updateSecuritySettings = adminMutation({
     }
 
     if (args.sessionTimeoutMinutes !== undefined) {
-      if (args.sessionTimeoutMinutes < 15 || args.sessionTimeoutMinutes > 10080) {
-        throw new ConvexError("Session timeout must be between 15 and 10080 minutes");
+      if (
+        args.sessionTimeoutMinutes < 15 ||
+        args.sessionTimeoutMinutes > 10080
+      ) {
+        throw new ConvexError(
+          "Session timeout must be between 15 and 10080 minutes"
+        );
       }
     }
 
@@ -1014,7 +1149,8 @@ export const updateSecuritySettings = adminMutation({
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
         requireMfa: args.requireMfa ?? current.requireMfa,
-        sessionTimeoutMinutes: args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
+        sessionTimeoutMinutes:
+          args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
       },
       updatedAt: Date.now(),
     });
@@ -1040,14 +1176,16 @@ export const resetOrgSettings = adminMutation({
       v.literal("branding"),
       v.literal("signing"),
       v.literal("notifications"),
-      v.literal("security"),
+      v.literal("security")
     ),
   },
   handler: async (ctx, args) => {
     // Security category requires owner role
     if (args.category === "security") {
       if (ctx.auth.member.role !== "owner") {
-        throw new ConvexError("Only organization owners can reset security settings");
+        throw new ConvexError(
+          "Only organization owners can reset security settings"
+        );
       }
     }
 

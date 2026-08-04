@@ -252,7 +252,7 @@ export type RoleTemplate = keyof typeof ROLE_TEMPLATES;
 // Helper functions
 export function hasPermission(
   userPermissions: readonly string[],
-  requiredPermission: string,
+  requiredPermission: string
 ): boolean {
   if (userPermissions.includes("*")) return true;
   if (userPermissions.includes(requiredPermission)) return true;
@@ -265,14 +265,14 @@ export function hasPermission(
 
 export function hasAnyPermission(
   userPermissions: readonly string[],
-  requiredPermissions: string[],
+  requiredPermissions: string[]
 ): boolean {
   return requiredPermissions.some((p) => hasPermission(userPermissions, p));
 }
 
 export function hasAllPermissions(
   userPermissions: readonly string[],
-  requiredPermissions: string[],
+  requiredPermissions: string[]
 ): boolean {
   return requiredPermissions.every((p) => hasPermission(userPermissions, p));
 }
@@ -325,7 +325,7 @@ export const organizationMemberTable = defineTable({
     v.object({
       add: v.optional(v.array(v.string())), // Additional permissions
       remove: v.optional(v.array(v.string())), // Remove specific permissions
-    }),
+    })
   ),
 });
 ```
@@ -339,7 +339,11 @@ export const organizationTable = defineTable({
   // ... existing fields ...
 
   // NEW: Organization status
-  status: v.union(v.literal("active"), v.literal("suspended"), v.literal("deleted")),
+  status: v.union(
+    v.literal("active"),
+    v.literal("suspended"),
+    v.literal("deleted")
+  ),
 });
 ```
 
@@ -421,7 +425,7 @@ export interface AuthContextWithPermissions {
 }
 
 export async function getAuthContextWithPermissions(
-  ctx: QueryCtx | MutationCtx,
+  ctx: QueryCtx | MutationCtx
 ): Promise<AuthContextWithPermissions> {
   // Step 1: Get Clerk identity
   const identity = await ctx.auth.getUserIdentity();
@@ -475,7 +479,7 @@ export async function getAuthContextWithPermissions(
   const membership = await ctx.db
     .query("organization_members")
     .withIndex("by_user_and_org", (q) =>
-      q.eq("userId", user._id).eq("organizationId", user.activeOrganization),
+      q.eq("userId", user._id).eq("organizationId", user.activeOrganization)
     )
     .first();
 
@@ -553,9 +557,11 @@ export async function getAuthContextWithPermissions(
     permissions,
     isOwner,
     isAdmin,
-    hasPermission: (permission: string) => hasPermission(permissions, permission),
+    hasPermission: (permission: string) =>
+      hasPermission(permissions, permission),
     hasAnyPermission: (perms: string[]) => hasAnyPermission(permissions, perms),
-    hasAllPermissions: (perms: string[]) => hasAllPermissions(permissions, perms),
+    hasAllPermissions: (perms: string[]) =>
+      hasAllPermissions(permissions, perms),
   };
 }
 ```
@@ -573,11 +579,18 @@ export async function getAuthContextWithPermissions(
 **File**: `convex/auth/wrappers.ts` (NEW)
 
 ```typescript
-import { customQuery, customMutation } from "convex-helpers/server/customFunctions";
+import {
+  customQuery,
+  customMutation,
+} from "convex-helpers/server/customFunctions";
 import { query, mutation } from "../_generated/server";
 import { ConvexError } from "convex/values";
 import { getAuthContextWithPermissions } from "./auth.utils";
-import { hasPermission, hasAnyPermission, hasAllPermissions } from "./permissions";
+import {
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+} from "./permissions";
 
 // Basic authenticated query (no permission check)
 export const authQuery = customQuery(
@@ -585,7 +598,7 @@ export const authQuery = customQuery(
   customCtx(async (ctx) => {
     const auth = await getAuthContextWithPermissions(ctx);
     return { auth };
-  }),
+  })
 );
 
 // Single permission required
@@ -604,7 +617,7 @@ export const permissionQuery = (requiredPermission: string) =>
       }
 
       return { auth };
-    }),
+    })
   );
 
 // Any of multiple permissions
@@ -623,7 +636,7 @@ export const permissionAnyQuery = (requiredPermissions: string[]) =>
       }
 
       return { auth };
-    }),
+    })
   );
 
 // All permissions required
@@ -642,7 +655,7 @@ export const permissionAllQuery = (requiredPermissions: string[]) =>
       }
 
       return { auth };
-    }),
+    })
   );
 
 // Admin only
@@ -659,7 +672,7 @@ export const adminQuery = customQuery(
     }
 
     return { auth };
-  }),
+  })
 );
 
 // Owner only
@@ -676,7 +689,7 @@ export const ownerQuery = customQuery(
     }
 
     return { auth };
-  }),
+  })
 );
 
 // === MUTATIONS ===
@@ -686,7 +699,7 @@ export const authMutation = customMutation(
   customCtx(async (ctx) => {
     const auth = await getAuthContextWithPermissions(ctx);
     return { auth };
-  }),
+  })
 );
 
 export const permissionMutation = (requiredPermission: string) =>
@@ -704,7 +717,7 @@ export const permissionMutation = (requiredPermission: string) =>
       }
 
       return { auth };
-    }),
+    })
   );
 
 export const permissionAnyMutation = (requiredPermissions: string[]) =>
@@ -722,7 +735,7 @@ export const permissionAnyMutation = (requiredPermissions: string[]) =>
       }
 
       return { auth };
-    }),
+    })
   );
 
 export const permissionAllMutation = (requiredPermissions: string[]) =>
@@ -740,7 +753,7 @@ export const permissionAllMutation = (requiredPermissions: string[]) =>
       }
 
       return { auth };
-    }),
+    })
   );
 
 export const adminMutation = customMutation(
@@ -756,7 +769,7 @@ export const adminMutation = customMutation(
     }
 
     return { auth };
-  }),
+  })
 );
 
 export const ownerMutation = customMutation(
@@ -772,7 +785,7 @@ export const ownerMutation = customMutation(
     }
 
     return { auth };
-  }),
+  })
 );
 ```
 
@@ -807,7 +820,7 @@ export function ensureAdmin(auth: AuthContextWithPermissions): void {
 
 export function ensureOrganizationScope(
   auth: AuthContextWithPermissions,
-  targetOrgId?: Id<"organizations">,
+  targetOrgId?: Id<"organizations">
 ): void {
   if (targetOrgId && targetOrgId !== auth.organizationId) {
     throw new ConvexError({
@@ -819,7 +832,7 @@ export function ensureOrganizationScope(
 
 export function ensureAdminForOrg(
   auth: AuthContextWithPermissions,
-  targetOrgId?: Id<"organizations">,
+  targetOrgId?: Id<"organizations">
 ): void {
   ensureAdmin(auth);
   ensureOrganizationScope(auth, targetOrgId);
@@ -862,7 +875,9 @@ export const list = permissionQuery("documents:view")({
     // ctx.auth is automatically available with permissions
     const documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organizationId)
+      )
       .collect();
     return documents;
   },
@@ -983,7 +998,9 @@ export const list = permissionQuery("users:roles")({
   handler: async (ctx) => {
     const roles = await ctx.db
       .query("organization_roles")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organizationId)
+      )
       .collect();
     return roles;
   },
@@ -1030,13 +1047,15 @@ export const create = permissionMutation("users:roles")({
   },
   handler: async (ctx, args) => {
     // Validate permissions
-    const validPermissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
+    const validPermissions = Array.from(
+      new Set(args.permissions.filter(isValidPermission))
+    );
 
     // Check for duplicate name
     const existing = await ctx.db
       .query("organization_roles")
       .withIndex("by_name", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
+        q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name)
       )
       .first();
 
@@ -1096,7 +1115,7 @@ export const update = permissionMutation("users:roles")({
       const duplicate = await ctx.db
         .query("organization_roles")
         .withIndex("by_name", (q) =>
-          q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
+          q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name)
         )
         .first();
 
@@ -1111,7 +1130,9 @@ export const update = permissionMutation("users:roles")({
     }
 
     if (args.permissions) {
-      updates.permissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
+      updates.permissions = Array.from(
+        new Set(args.permissions.filter(isValidPermission))
+      );
     }
 
     await ctx.db.patch(args.roleId, updates);
@@ -1147,7 +1168,9 @@ export const remove = permissionMutation("users:roles")({
     // Check if assigned to members
     const assigned = await ctx.db
       .query("organization_members")
-      .withIndex("by_organization_id", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .withIndex("by_organization_id", (q) =>
+        q.eq("organizationId", ctx.auth.organizationId)
+      )
       .filter((q) => q.eq(q.field("roleId"), args.roleId))
       .first();
 
@@ -2120,7 +2143,10 @@ export const myQuery = permissionQuery("documents:view")({
 ### Pattern 2: Multiple Permissions (Any)
 
 ```typescript
-export const myQuery = permissionAnyQuery(["documents:edit", "documents:delete"])({
+export const myQuery = permissionAnyQuery([
+  "documents:edit",
+  "documents:delete",
+])({
   args: {},
   handler: async (ctx) => {
     // User has at least one of the permissions
@@ -2132,7 +2158,10 @@ export const myQuery = permissionAnyQuery(["documents:edit", "documents:delete"]
 ### Pattern 3: Multiple Permissions (All)
 
 ```typescript
-export const myMutation = permissionAllMutation(["documents:edit", "documents:share"])({
+export const myMutation = permissionAllMutation([
+  "documents:edit",
+  "documents:share",
+])({
   args: { id: v.id("documents") },
   handler: async (ctx, args) => {
     // User has both permissions

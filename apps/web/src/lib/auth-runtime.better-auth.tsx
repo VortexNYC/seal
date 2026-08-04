@@ -1,11 +1,3 @@
-import { createBetterAuthConvexClient } from "@vortexnyc/auth/better-auth/client";
-import {
-  createVortexAuthEventCapture,
-  createVortexAuthFlowStorage,
-  createVortexAuthRoutePaths,
-  createVortexBetterAuthRuntime,
-  type VortexBetterAuthClient,
-} from "@vortexnyc/auth/react";
 /**
  * Seal vortex-auth (Better-Auth) web runtime — P4 foundation.
  *
@@ -16,11 +8,20 @@ import {
  * hooks the route/component swaps will consume.
  */
 import { api } from "@seal/backend/convex/_generated/api";
+import { createBetterAuthConvexClient } from "@vortexnyc/auth/better-auth/client";
+import {
+  createVortexAuthEventCapture,
+  createVortexAuthFlowStorage,
+  createVortexAuthRoutePaths,
+  createVortexBetterAuthRuntime,
+  type VortexBetterAuthClient,
+} from "@vortexnyc/auth/react";
 import type { ConvexReactClient } from "convex/react";
 import posthog from "posthog-js";
 import type { ReactNode } from "react";
 
-const betterAuthBaseUrl = (import.meta.env.VITE_BETTER_AUTH_URL as string | undefined) ?? "";
+const betterAuthBaseUrl =
+  (import.meta.env.VITE_BETTER_AUTH_URL as string | undefined) ?? "";
 const authFlow = createVortexAuthFlowStorage({ storageKeyPrefix: "seal.auth" });
 
 export const authRoutePaths = createVortexAuthRoutePaths();
@@ -44,15 +45,21 @@ export const runtime = createVortexBetterAuthRuntime({
     signInTitle: "Sign in",
     signInDescription: "Access Seal with your workspace account.",
     signInUnavailableTitle: "Sign-in is unavailable",
-    signInUnavailableDescription: "Seal couldn't load the authentication runtime for this page.",
+    signInUnavailableDescription:
+      "Seal couldn't load the authentication runtime for this page.",
     signUpTitle: "Create account",
-    signUpDescription: "Create your account, then continue into your Seal workspace.",
+    signUpDescription:
+      "Create your account, then continue into your Seal workspace.",
     signUpUnavailableTitle: "Sign-up is unavailable",
-    signUpUnavailableDescription: "Seal couldn't load the authentication runtime for this page.",
+    signUpUnavailableDescription:
+      "Seal couldn't load the authentication runtime for this page.",
   },
 });
 
-export function AuthRuntimeProvider(args: { children: ReactNode; convex: ConvexReactClient }) {
+export function AuthRuntimeProvider(args: {
+  children: ReactNode;
+  convex: ConvexReactClient;
+}) {
   return (
     <runtime.AuthRuntimeProvider
       convex={args.convex}
@@ -79,5 +86,6 @@ export const {
   toSafeRedirectPath,
 } = authFlow;
 export const captureAuthEvent = createVortexAuthEventCapture(
-  (event: string, properties?: Record<string, unknown>) => posthog.capture(event, properties),
+  (event: string, properties?: Record<string, unknown>) =>
+    posthog.capture(event, properties)
 );

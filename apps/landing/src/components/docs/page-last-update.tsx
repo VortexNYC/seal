@@ -14,7 +14,8 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 export function PageLastUpdate({ date }: PageLastUpdateProps): ReactElement {
   return (
     <p className="text-fd-muted-foreground text-sm">
-      Last updated on <time dateTime={date.toISOString()}>{dateFormatter.format(date)}</time>
+      Last updated on{" "}
+      <time dateTime={date.toISOString()}>{dateFormatter.format(date)}</time>
     </p>
   );
 }

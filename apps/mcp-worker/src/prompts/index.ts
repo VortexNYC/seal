@@ -29,11 +29,15 @@ function registerSendDocumentPrompt(server: McpServer): void {
       file_description: z
         .string()
         .optional()
-        .describe("What the document is (e.g. 'NDA', 'service agreement', 'employment contract')"),
+        .describe(
+          "What the document is (e.g. 'NDA', 'service agreement', 'employment contract')"
+        ),
       recipient_count: z
         .string()
         .optional()
-        .describe("Approximate number of signers (e.g. '1', '2-3', 'multiple')"),
+        .describe(
+          "Approximate number of signers (e.g. '1', '2-3', 'multiple')"
+        ),
     },
     ({ file_description, recipient_count }) => {
       const docDesc = file_description ? ` for a ${file_description}` : "";
@@ -50,7 +54,7 @@ Please guide me through the full workflow:
 4. Send it with seal_send_document
 
 Ask me for the file path or content, then for recipient details (name, email, and role: signer/approver/viewer). Walk me through each step.`);
-    },
+    }
   );
 }
 
@@ -65,7 +69,9 @@ function registerCheckSigningStatusPrompt(server: McpServer): void {
         .describe("Title or partial title of the document to check"),
     },
     ({ document_title }) => {
-      const docHint = document_title ? ` specifically looking for "${document_title}"` : "";
+      const docHint = document_title
+        ? ` specifically looking for "${document_title}"`
+        : "";
 
       return createPromptMessages(`I want to check the signing status of my documents${docHint}.
 
@@ -74,7 +80,7 @@ Please:
 2. Use seal_get_document with include_recipients=true to see who has signed and who is pending
 3. Summarize the status clearly: who signed, who hasn't, and the overall completion state
 4. If there are pending recipients, ask whether I want to send reminders using seal_send_reminder`);
-    },
+    }
   );
 }
 
@@ -83,7 +89,10 @@ function registerUseTemplatePrompt(server: McpServer): void {
     "use-template",
     "Create and send a document from a saved template — find the template, create the document, add recipients, and send.",
     {
-      template_name: z.string().optional().describe("Name or partial name of the template to use"),
+      template_name: z
+        .string()
+        .optional()
+        .describe("Name or partial name of the template to use"),
     },
     ({ template_name }) => {
       const templateHint = template_name
@@ -100,7 +109,7 @@ Please:
 5. Send with seal_send_document
 
 Walk me through each step.`);
-    },
+    }
   );
 }
 
@@ -109,7 +118,10 @@ function registerVerifyDocumentPrompt(server: McpServer): void {
     "verify-document",
     "Verify the cryptographic integrity of a signed document, review the full audit trail, and get the download URL.",
     {
-      document_id: z.string().optional().describe("The document ID to verify, if already known"),
+      document_id: z
+        .string()
+        .optional()
+        .describe("The document ID to verify, if already known"),
     },
     ({ document_id }) => {
       const idHint = document_id
@@ -124,7 +136,7 @@ Please:
 3. Use seal_get_audit_trail to show the full activity history (who viewed, signed, and when)
 4. Use seal_download_document to provide the download URL for the signed PDF
 5. Give me a clear summary: is the document tamper-proof? Who signed, when, and from where?`);
-    },
+    }
   );
 }
 
@@ -136,7 +148,9 @@ function registerSetupWebhooksPrompt(server: McpServer): void {
       endpoint_url: z
         .string()
         .optional()
-        .describe("The HTTPS URL of the endpoint that will receive webhook events"),
+        .describe(
+          "The HTTPS URL of the endpoint that will receive webhook events"
+        ),
     },
     ({ endpoint_url }) => {
       const urlHint = endpoint_url
@@ -152,7 +166,7 @@ Please:
 4. Confirm the setup with seal_get_webhook and show the delivery stats
 
 Important: After setup, tell me how to verify incoming webhooks — I'll need to check the X-Seal-Signature header using HMAC-SHA256 with my signing secret.`);
-    },
+    }
   );
 }
 
@@ -161,7 +175,10 @@ function registerVoidDocumentPrompt(server: McpServer): void {
     "void-document",
     "Cancel a sent document and notify all recipients that it has been voided.",
     {
-      document_title: z.string().optional().describe("Title of the document to void"),
+      document_title: z
+        .string()
+        .optional()
+        .describe("Title of the document to void"),
     },
     ({ document_title }) => {
       const hint = document_title ? ` for "${document_title}"` : "";
@@ -175,7 +192,7 @@ Please:
 4. Call seal_void_document with the reason
 
 Note: Completed documents cannot be voided. Drafts should be deleted with seal_delete_document instead.`);
-    },
+    }
   );
 }
 

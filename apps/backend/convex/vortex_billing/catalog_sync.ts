@@ -1,12 +1,11 @@
 "use node";
 
+import { getV1CatalogExact } from "@vortexnyc/payments-sdk";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
-import { getV1CatalogExact } from "@vortexnyc/payments-sdk";
-
 import { createVortexBillingClient } from "../payments/vortex_billing_processor";
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
@@ -102,14 +101,22 @@ function readProductMetadata(value: unknown): ProductMetadata | undefined {
     return undefined;
   }
   const metadata = readObject(value, "Vortex catalog product metadata");
-  const tier = readOptionalString(metadata.tier, "Vortex catalog product metadata.tier");
-  const useType = readOptionalString(metadata.useType, "Vortex catalog product metadata.useType");
+  const tier = readOptionalString(
+    metadata.tier,
+    "Vortex catalog product metadata.tier"
+  );
+  const useType = readOptionalString(
+    metadata.useType,
+    "Vortex catalog product metadata.useType"
+  );
   const rawFeatures = metadata.features;
   const features =
     typeof rawFeatures === "string"
       ? rawFeatures
       : Array.isArray(rawFeatures) &&
-          rawFeatures.every((feature): feature is string => typeof feature === "string")
+          rawFeatures.every(
+            (feature): feature is string => typeof feature === "string"
+          )
         ? rawFeatures.join(",")
         : undefined;
 
@@ -140,16 +147,25 @@ function readPriceType(value: unknown): PriceType | null {
 function readProduct(value: unknown): VortexCatalogProduct {
   const product = readObject(value, "Vortex catalog product");
   return {
-    productId: readString(product.productId, "Vortex catalog product.productId"),
+    productId: readString(
+      product.productId,
+      "Vortex catalog product.productId"
+    ),
     name: readString(product.name, "Vortex catalog product.name"),
-    description: readOptionalString(product.description, "Vortex catalog product.description"),
+    description: readOptionalString(
+      product.description,
+      "Vortex catalog product.description"
+    ),
     status: hasArchivedAt(product) ? "archived" : "active",
     metadata: readProductMetadata(product.metadata),
   };
 }
 
 function readPriceLookupKey(price: UnknownRecord): string | undefined {
-  const directLookupKey = readOptionalString(price.lookupKey, "Vortex catalog price.lookupKey");
+  const directLookupKey = readOptionalString(
+    price.lookupKey,
+    "Vortex catalog price.lookupKey"
+  );
   if (directLookupKey !== undefined) {
     return directLookupKey;
   }
@@ -159,7 +175,10 @@ function readPriceLookupKey(price: UnknownRecord): string | undefined {
   }
 
   const metadata = readObject(price.metadata, "Vortex catalog price metadata");
-  return readOptionalString(metadata.lookupKey, "Vortex catalog price metadata.lookupKey");
+  return readOptionalString(
+    metadata.lookupKey,
+    "Vortex catalog price metadata.lookupKey"
+  );
 }
 
 function readPrice(value: unknown): VortexCatalogPrice | null {
@@ -172,10 +191,13 @@ function readPrice(value: unknown): VortexCatalogPrice | null {
     priceId: readString(price.priceId, "Vortex catalog price.priceId"),
     productId: readString(price.productId, "Vortex catalog price.productId"),
     type,
-    currency: readString(price.currency, "Vortex catalog price.currency").toLowerCase(),
+    currency: readString(
+      price.currency,
+      "Vortex catalog price.currency"
+    ).toLowerCase(),
     billingInterval: readOptionalString(
       price.billingInterval,
-      "Vortex catalog price.billingInterval",
+      "Vortex catalog price.billingInterval"
     ),
     unitAmount: readNumber(price.unitAmount, "Vortex catalog price.unitAmount"),
     status: hasArchivedAt(price) ? "archived" : "active",
@@ -191,7 +213,9 @@ function readCatalogResponse(body: unknown): {
   const root = readObject(body, "Vortex catalog response");
   const data = readObject(root.data, "Vortex catalog response data");
   return {
-    products: readArray(data.products, "Vortex catalog products").map(readProduct),
+    products: readArray(data.products, "Vortex catalog products").map(
+      readProduct
+    ),
     prices: readArray(data.prices, "Vortex catalog prices")
       .map(readPrice)
       .filter((price): price is VortexCatalogPrice => price !== null),
@@ -200,13 +224,15 @@ function readCatalogResponse(body: unknown): {
 }
 
 function recurringForPrice(
-  price: VortexCatalogPrice,
+  price: VortexCatalogPrice
 ): { readonly interval: string; readonly intervalCount: number } | undefined {
   if (price.type === "one_time") {
     return undefined;
   }
   if (price.billingInterval === undefined) {
-    throw new ConvexError(`Vortex recurring price missing billingInterval: ${price.priceId}`);
+    throw new ConvexError(
+      `Vortex recurring price missing billingInterval: ${price.priceId}`
+    );
   }
   return {
     interval: price.billingInterval,
@@ -232,7 +258,7 @@ export const syncCatalogFromVortex = internalAction({
     const { data, error, response } = await getV1CatalogExact({ client });
     if (error !== undefined || response === undefined || !response.ok) {
       throw new ConvexError(
-        `Vortex Billing catalog sync failed (${response?.status ?? "no-response"})`,
+        `Vortex Billing catalog sync failed (${response?.status ?? "no-response"})`
       );
     }
     const catalog = readCatalogResponse(data);
@@ -249,7 +275,7 @@ export const syncCatalogFromVortex = internalAction({
           description: product.description,
           status: product.status,
           metadata: product.metadata,
-        },
+        }
       );
       productIdsByVortexId.set(product.productId, result.subscriptionProductId);
       if (product.status === "archived") {
@@ -261,23 +287,26 @@ export const syncCatalogFromVortex = internalAction({
       const subscriptionProductId = productIdsByVortexId.get(price.productId);
       if (subscriptionProductId === undefined) {
         throw new ConvexError(
-          `Vortex catalog price ${price.priceId} references missing product ${price.productId}`,
+          `Vortex catalog price ${price.priceId} references missing product ${price.productId}`
         );
       }
 
-      await ctx.runMutation(internal.vortex_billing.catalog_mutations.upsertPriceByVortexId, {
-        vortexPriceId: price.priceId,
-        vortexProductId: price.productId,
-        subscriptionProductId,
-        type: price.type,
-        billingScheme: "per_unit",
-        currency: price.currency,
-        recurring: recurringForPrice(price),
-        unitAmount: price.unitAmount,
-        usageType: price.type === "recurring" ? "licensed" : undefined,
-        status: price.status,
-        lookupKey: price.lookupKey ?? price.priceId,
-      });
+      await ctx.runMutation(
+        internal.vortex_billing.catalog_mutations.upsertPriceByVortexId,
+        {
+          vortexPriceId: price.priceId,
+          vortexProductId: price.productId,
+          subscriptionProductId,
+          type: price.type,
+          billingScheme: "per_unit",
+          currency: price.currency,
+          recurring: recurringForPrice(price),
+          unitAmount: price.unitAmount,
+          usageType: price.type === "recurring" ? "licensed" : undefined,
+          status: price.status,
+          lookupKey: price.lookupKey ?? price.priceId,
+        }
+      );
       if (price.status === "archived") {
         archivedPrices++;
       }

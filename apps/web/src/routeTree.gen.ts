@@ -9,94 +9,79 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
-import { Route as SignTokenRouteImport } from './routes/sign.$token'
-import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
-import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
-import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
+import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
+import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
+import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
+import { Route as SignTokenRouteImport } from './routes/sign.$token'
+import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
 import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authenticated/$slug/index'
-import { Route as AuthenticatedSlugTemplatesRouteImport } from './routes/_authenticated/$slug/templates'
-import { Route as AuthenticatedSlugPaymentsRouteImport } from './routes/_authenticated/$slug/payments'
-import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticated/$slug/home'
-import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
-import { Route as AuthenticatedSlugContactsRouteImport } from './routes/_authenticated/$slug/contacts'
-import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
 import { Route as AuthenticatedSlugSplatRouteImport } from './routes/_authenticated/$slug/$'
-import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
-import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
-import { Route as AuthenticatedSlugPaymentsIndexRouteImport } from './routes/_authenticated/$slug/payments/index'
-import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
+import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
+import { Route as AuthenticatedSlugContactsRouteImport } from './routes/_authenticated/$slug/contacts'
+import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
+import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticated/$slug/home'
+import { Route as AuthenticatedSlugPaymentsRouteImport } from './routes/_authenticated/$slug/payments'
+import { Route as AuthenticatedSlugTemplatesRouteImport } from './routes/_authenticated/$slug/templates'
 import { Route as AuthenticatedSlugContactsIndexRouteImport } from './routes/_authenticated/$slug/contacts/index'
-import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
-import { Route as AuthenticatedSlugSettingsSigningRouteImport } from './routes/_authenticated/$slug/settings/signing'
-import { Route as AuthenticatedSlugSettingsSecurityRouteImport } from './routes/_authenticated/$slug/settings/security'
-import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
-import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
-import { Route as AuthenticatedSlugSettingsNotificationsRouteImport } from './routes/_authenticated/$slug/settings/notifications'
-import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from './routes/_authenticated/$slug/settings/branding'
-import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
-import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
-import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
-import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from './routes/_authenticated/$slug/payments/tax'
-import { Route as AuthenticatedSlugPaymentsSubscriptionsRouteImport } from './routes/_authenticated/$slug/payments/subscriptions'
-import { Route as AuthenticatedSlugPaymentsPayoutsRouteImport } from './routes/_authenticated/$slug/payments/payouts'
-import { Route as AuthenticatedSlugPaymentsHistoryRouteImport } from './routes/_authenticated/$slug/payments/history'
-import { Route as AuthenticatedSlugPaymentsDisputesRouteImport } from './routes/_authenticated/$slug/payments/disputes'
-import { Route as AuthenticatedSlugPaymentsBalancesRouteImport } from './routes/_authenticated/$slug/payments/balances'
-import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
 import { Route as AuthenticatedSlugContactsContactIdRouteImport } from './routes/_authenticated/$slug/contacts/$contactId'
-import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
-import { Route as AuthenticatedSlugSettingsProfileIndexRouteImport } from './routes/_authenticated/$slug/settings/profile/index'
+import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
+import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
+import { Route as AuthenticatedSlugPaymentsIndexRouteImport } from './routes/_authenticated/$slug/payments/index'
+import { Route as AuthenticatedSlugPaymentsBalancesRouteImport } from './routes/_authenticated/$slug/payments/balances'
+import { Route as AuthenticatedSlugPaymentsDisputesRouteImport } from './routes/_authenticated/$slug/payments/disputes'
+import { Route as AuthenticatedSlugPaymentsHistoryRouteImport } from './routes/_authenticated/$slug/payments/history'
+import { Route as AuthenticatedSlugPaymentsPayoutsRouteImport } from './routes/_authenticated/$slug/payments/payouts'
+import { Route as AuthenticatedSlugPaymentsSubscriptionsRouteImport } from './routes/_authenticated/$slug/payments/subscriptions'
+import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from './routes/_authenticated/$slug/payments/tax'
+import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
+import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
+import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
+import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
+import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from './routes/_authenticated/$slug/settings/branding'
+import { Route as AuthenticatedSlugSettingsNotificationsRouteImport } from './routes/_authenticated/$slug/settings/notifications'
+import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
+import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
+import { Route as AuthenticatedSlugSettingsSecurityRouteImport } from './routes/_authenticated/$slug/settings/security'
+import { Route as AuthenticatedSlugSettingsSigningRouteImport } from './routes/_authenticated/$slug/settings/signing'
+import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
+import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
 import { Route as AuthenticatedSlugSettingsDeveloperIndexRouteImport } from './routes/_authenticated/$slug/settings/developer/index'
-import { Route as AuthenticatedSlugSettingsTeamMemberIdRouteImport } from './routes/_authenticated/$slug/settings/team/$memberId'
-import { Route as AuthenticatedSlugSettingsProfileUsageRouteImport } from './routes/_authenticated/$slug/settings/profile/usage'
-import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from './routes/_authenticated/$slug/settings/profile/security'
-import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } from './routes/_authenticated/$slug/settings/profile/notifications'
-import { Route as AuthenticatedSlugSettingsProfileIntegrationsRouteImport } from './routes/_authenticated/$slug/settings/profile/integrations'
-import { Route as AuthenticatedSlugSettingsDeveloperWebhooksRouteImport } from './routes/_authenticated/$slug/settings/developer/webhooks'
 import { Route as AuthenticatedSlugSettingsDeveloperApiKeysRouteImport } from './routes/_authenticated/$slug/settings/developer/api-keys'
+import { Route as AuthenticatedSlugSettingsDeveloperWebhooksRouteImport } from './routes/_authenticated/$slug/settings/developer/webhooks'
+import { Route as AuthenticatedSlugSettingsProfileIndexRouteImport } from './routes/_authenticated/$slug/settings/profile/index'
+import { Route as AuthenticatedSlugSettingsProfileIntegrationsRouteImport } from './routes/_authenticated/$slug/settings/profile/integrations'
+import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } from './routes/_authenticated/$slug/settings/profile/notifications'
+import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from './routes/_authenticated/$slug/settings/profile/security'
+import { Route as AuthenticatedSlugSettingsProfileUsageRouteImport } from './routes/_authenticated/$slug/settings/profile/usage'
+import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
+import { Route as AuthenticatedSlugSettingsTeamMemberIdRouteImport } from './routes/_authenticated/$slug/settings/team/$memberId'
 
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VerifyQrTokenRoute = VerifyQrTokenRouteImport.update({
-  id: '/verify/$qrToken',
-  path: '/verify/$qrToken',
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignTokenRoute = SignTokenRouteImport.update({
-  id: '/sign/$token',
-  path: '/sign/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthSignUpRoute = AuthSignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
+const AuthAcceptInviteRoute = AuthAcceptInviteRouteImport.update({
+  id: '/accept-invite',
+  path: '/accept-invite',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthSignInRoute = AuthSignInRouteImport.update({
@@ -104,37 +89,40 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthAcceptInviteRoute = AuthAcceptInviteRouteImport.update({
-  id: '/accept-invite',
-  path: '/accept-invite',
+const AuthSignUpRoute = AuthSignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => AuthRoute,
+} as any)
+const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const SignTokenRoute = SignTokenRouteImport.update({
+  id: '/sign/$token',
+  path: '/sign/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyQrTokenRoute = VerifyQrTokenRouteImport.update({
+  id: '/verify/$qrToken',
+  path: '/verify/$qrToken',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSlugIndexRoute = AuthenticatedSlugIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedSlugRoute,
 } as any)
-const AuthenticatedSlugTemplatesRoute =
-  AuthenticatedSlugTemplatesRouteImport.update({
-    id: '/templates',
-    path: '/templates',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugPaymentsRoute =
-  AuthenticatedSlugPaymentsRouteImport.update({
-    id: '/payments',
-    path: '/payments',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugHomeRoute = AuthenticatedSlugHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
+const AuthenticatedSlugSplatRoute = AuthenticatedSlugSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => AuthenticatedSlugRoute,
 } as any)
-const AuthenticatedSlugDocumentsRoute =
-  AuthenticatedSlugDocumentsRouteImport.update({
-    id: '/documents',
-    path: '/documents',
+const AuthenticatedSlugAnalyticsRoute =
+  AuthenticatedSlugAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
 const AuthenticatedSlugContactsRoute =
@@ -143,40 +131,28 @@ const AuthenticatedSlugContactsRoute =
     path: '/contacts',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
-const AuthenticatedSlugAnalyticsRoute =
-  AuthenticatedSlugAnalyticsRouteImport.update({
-    id: '/analytics',
-    path: '/analytics',
+const AuthenticatedSlugDocumentsRoute =
+  AuthenticatedSlugDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
-const AuthenticatedSlugSplatRoute = AuthenticatedSlugSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
+const AuthenticatedSlugHomeRoute = AuthenticatedSlugHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => AuthenticatedSlugRoute,
 } as any)
-const AuthenticatedOnboardingChooseOrganizationIndexRoute =
-  AuthenticatedOnboardingChooseOrganizationIndexRouteImport.update({
-    id: '/onboarding/choose-organization/',
-    path: '/onboarding/choose-organization/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSlugSettingsIndexRoute =
-  AuthenticatedSlugSettingsIndexRouteImport.update({
-    id: '/settings/',
-    path: '/settings/',
+const AuthenticatedSlugPaymentsRoute =
+  AuthenticatedSlugPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
-const AuthenticatedSlugPaymentsIndexRoute =
-  AuthenticatedSlugPaymentsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugDocumentsIndexRoute =
-  AuthenticatedSlugDocumentsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugDocumentsRoute,
+const AuthenticatedSlugTemplatesRoute =
+  AuthenticatedSlugTemplatesRouteImport.update({
+    id: '/templates',
+    path: '/templates',
+    getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
 const AuthenticatedSlugContactsIndexRoute =
   AuthenticatedSlugContactsIndexRouteImport.update({
@@ -184,94 +160,28 @@ const AuthenticatedSlugContactsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSlugContactsRoute,
   } as any)
-const AuthenticatedSlugSettingsTeamRoute =
-  AuthenticatedSlugSettingsTeamRouteImport.update({
-    id: '/settings/team',
-    path: '/settings/team',
-    getParentRoute: () => AuthenticatedSlugRoute,
+const AuthenticatedSlugContactsContactIdRoute =
+  AuthenticatedSlugContactsContactIdRouteImport.update({
+    id: '/$contactId',
+    path: '/$contactId',
+    getParentRoute: () => AuthenticatedSlugContactsRoute,
   } as any)
-const AuthenticatedSlugSettingsSigningRoute =
-  AuthenticatedSlugSettingsSigningRouteImport.update({
-    id: '/settings/signing',
-    path: '/settings/signing',
-    getParentRoute: () => AuthenticatedSlugRoute,
+const AuthenticatedSlugDocumentsIndexRoute =
+  AuthenticatedSlugDocumentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSlugDocumentsRoute,
   } as any)
-const AuthenticatedSlugSettingsSecurityRoute =
-  AuthenticatedSlugSettingsSecurityRouteImport.update({
-    id: '/settings/security',
-    path: '/settings/security',
-    getParentRoute: () => AuthenticatedSlugRoute,
+const AuthenticatedSlugDocumentsDocumentIdRoute =
+  AuthenticatedSlugDocumentsDocumentIdRouteImport.update({
+    id: '/$documentId',
+    path: '/$documentId',
+    getParentRoute: () => AuthenticatedSlugDocumentsRoute,
   } as any)
-const AuthenticatedSlugSettingsProfileRoute =
-  AuthenticatedSlugSettingsProfileRouteImport.update({
-    id: '/settings/profile',
-    path: '/settings/profile',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsPaymentsRoute =
-  AuthenticatedSlugSettingsPaymentsRouteImport.update({
-    id: '/settings/payments',
-    path: '/settings/payments',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsNotificationsRoute =
-  AuthenticatedSlugSettingsNotificationsRouteImport.update({
-    id: '/settings/notifications',
-    path: '/settings/notifications',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsBrandingRoute =
-  AuthenticatedSlugSettingsBrandingRouteImport.update({
-    id: '/settings/branding',
-    path: '/settings/branding',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsBillingRoute =
-  AuthenticatedSlugSettingsBillingRouteImport.update({
-    id: '/settings/billing',
-    path: '/settings/billing',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsAuditLogRoute =
-  AuthenticatedSlugSettingsAuditLogRouteImport.update({
-    id: '/settings/audit-log',
-    path: '/settings/audit-log',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsAiRoute =
-  AuthenticatedSlugSettingsAiRouteImport.update({
-    id: '/settings/ai',
-    path: '/settings/ai',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugPaymentsTaxRoute =
-  AuthenticatedSlugPaymentsTaxRouteImport.update({
-    id: '/tax',
-    path: '/tax',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsSubscriptionsRoute =
-  AuthenticatedSlugPaymentsSubscriptionsRouteImport.update({
-    id: '/subscriptions',
-    path: '/subscriptions',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsPayoutsRoute =
-  AuthenticatedSlugPaymentsPayoutsRouteImport.update({
-    id: '/payouts',
-    path: '/payouts',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsHistoryRoute =
-  AuthenticatedSlugPaymentsHistoryRouteImport.update({
-    id: '/history',
-    path: '/history',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsDisputesRoute =
-  AuthenticatedSlugPaymentsDisputesRouteImport.update({
-    id: '/disputes',
-    path: '/disputes',
+const AuthenticatedSlugPaymentsIndexRoute =
+  AuthenticatedSlugPaymentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
     getParentRoute: () => AuthenticatedSlugPaymentsRoute,
   } as any)
 const AuthenticatedSlugPaymentsBalancesRoute =
@@ -280,29 +190,107 @@ const AuthenticatedSlugPaymentsBalancesRoute =
     path: '/balances',
     getParentRoute: () => AuthenticatedSlugPaymentsRoute,
   } as any)
-const AuthenticatedSlugDocumentsDocumentIdRoute =
-  AuthenticatedSlugDocumentsDocumentIdRouteImport.update({
-    id: '/$documentId',
-    path: '/$documentId',
-    getParentRoute: () => AuthenticatedSlugDocumentsRoute,
+const AuthenticatedSlugPaymentsDisputesRoute =
+  AuthenticatedSlugPaymentsDisputesRouteImport.update({
+    id: '/disputes',
+    path: '/disputes',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
   } as any)
-const AuthenticatedSlugContactsContactIdRoute =
-  AuthenticatedSlugContactsContactIdRouteImport.update({
-    id: '/$contactId',
-    path: '/$contactId',
-    getParentRoute: () => AuthenticatedSlugContactsRoute,
+const AuthenticatedSlugPaymentsHistoryRoute =
+  AuthenticatedSlugPaymentsHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
   } as any)
-const AuthenticatedSlugSettingsTeamIndexRoute =
-  AuthenticatedSlugSettingsTeamIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
+const AuthenticatedSlugPaymentsPayoutsRoute =
+  AuthenticatedSlugPaymentsPayoutsRouteImport.update({
+    id: '/payouts',
+    path: '/payouts',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
   } as any)
-const AuthenticatedSlugSettingsProfileIndexRoute =
-  AuthenticatedSlugSettingsProfileIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+const AuthenticatedSlugPaymentsSubscriptionsRoute =
+  AuthenticatedSlugPaymentsSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugPaymentsTaxRoute =
+  AuthenticatedSlugPaymentsTaxRouteImport.update({
+    id: '/tax',
+    path: '/tax',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugSettingsIndexRoute =
+  AuthenticatedSlugSettingsIndexRouteImport.update({
+    id: '/settings/',
+    path: '/settings/',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsAiRoute =
+  AuthenticatedSlugSettingsAiRouteImport.update({
+    id: '/settings/ai',
+    path: '/settings/ai',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsAuditLogRoute =
+  AuthenticatedSlugSettingsAuditLogRouteImport.update({
+    id: '/settings/audit-log',
+    path: '/settings/audit-log',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsBillingRoute =
+  AuthenticatedSlugSettingsBillingRouteImport.update({
+    id: '/settings/billing',
+    path: '/settings/billing',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsBrandingRoute =
+  AuthenticatedSlugSettingsBrandingRouteImport.update({
+    id: '/settings/branding',
+    path: '/settings/branding',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsNotificationsRoute =
+  AuthenticatedSlugSettingsNotificationsRouteImport.update({
+    id: '/settings/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsPaymentsRoute =
+  AuthenticatedSlugSettingsPaymentsRouteImport.update({
+    id: '/settings/payments',
+    path: '/settings/payments',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsProfileRoute =
+  AuthenticatedSlugSettingsProfileRouteImport.update({
+    id: '/settings/profile',
+    path: '/settings/profile',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsSecurityRoute =
+  AuthenticatedSlugSettingsSecurityRouteImport.update({
+    id: '/settings/security',
+    path: '/settings/security',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsSigningRoute =
+  AuthenticatedSlugSettingsSigningRouteImport.update({
+    id: '/settings/signing',
+    path: '/settings/signing',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsTeamRoute =
+  AuthenticatedSlugSettingsTeamRouteImport.update({
+    id: '/settings/team',
+    path: '/settings/team',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedOnboardingChooseOrganizationIndexRoute =
+  AuthenticatedOnboardingChooseOrganizationIndexRouteImport.update({
+    id: '/onboarding/choose-organization/',
+    path: '/onboarding/choose-organization/',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedSlugSettingsDeveloperIndexRoute =
   AuthenticatedSlugSettingsDeveloperIndexRouteImport.update({
@@ -310,28 +298,22 @@ const AuthenticatedSlugSettingsDeveloperIndexRoute =
     path: '/settings/developer/',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
-const AuthenticatedSlugSettingsTeamMemberIdRoute =
-  AuthenticatedSlugSettingsTeamMemberIdRouteImport.update({
-    id: '/$memberId',
-    path: '/$memberId',
-    getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
+const AuthenticatedSlugSettingsDeveloperApiKeysRoute =
+  AuthenticatedSlugSettingsDeveloperApiKeysRouteImport.update({
+    id: '/settings/developer/api-keys',
+    path: '/settings/developer/api-keys',
+    getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
-const AuthenticatedSlugSettingsProfileUsageRoute =
-  AuthenticatedSlugSettingsProfileUsageRouteImport.update({
-    id: '/usage',
-    path: '/usage',
-    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+const AuthenticatedSlugSettingsDeveloperWebhooksRoute =
+  AuthenticatedSlugSettingsDeveloperWebhooksRouteImport.update({
+    id: '/settings/developer/webhooks',
+    path: '/settings/developer/webhooks',
+    getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
-const AuthenticatedSlugSettingsProfileSecurityRoute =
-  AuthenticatedSlugSettingsProfileSecurityRouteImport.update({
-    id: '/security',
-    path: '/security',
-    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
-  } as any)
-const AuthenticatedSlugSettingsProfileNotificationsRoute =
-  AuthenticatedSlugSettingsProfileNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
+const AuthenticatedSlugSettingsProfileIndexRoute =
+  AuthenticatedSlugSettingsProfileIndexRouteImport.update({
+    id: '/',
+    path: '/',
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
   } as any)
 const AuthenticatedSlugSettingsProfileIntegrationsRoute =
@@ -340,17 +322,35 @@ const AuthenticatedSlugSettingsProfileIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
   } as any)
-const AuthenticatedSlugSettingsDeveloperWebhooksRoute =
-  AuthenticatedSlugSettingsDeveloperWebhooksRouteImport.update({
-    id: '/settings/developer/webhooks',
-    path: '/settings/developer/webhooks',
-    getParentRoute: () => AuthenticatedSlugRoute,
+const AuthenticatedSlugSettingsProfileNotificationsRoute =
+  AuthenticatedSlugSettingsProfileNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
   } as any)
-const AuthenticatedSlugSettingsDeveloperApiKeysRoute =
-  AuthenticatedSlugSettingsDeveloperApiKeysRouteImport.update({
-    id: '/settings/developer/api-keys',
-    path: '/settings/developer/api-keys',
-    getParentRoute: () => AuthenticatedSlugRoute,
+const AuthenticatedSlugSettingsProfileSecurityRoute =
+  AuthenticatedSlugSettingsProfileSecurityRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+  } as any)
+const AuthenticatedSlugSettingsProfileUsageRoute =
+  AuthenticatedSlugSettingsProfileUsageRouteImport.update({
+    id: '/usage',
+    path: '/usage',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+  } as any)
+const AuthenticatedSlugSettingsTeamIndexRoute =
+  AuthenticatedSlugSettingsTeamIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
+  } as any)
+const AuthenticatedSlugSettingsTeamMemberIdRoute =
+  AuthenticatedSlugSettingsTeamMemberIdRouteImport.update({
+    id: '/$memberId',
+    path: '/$memberId',
+    getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -666,18 +666,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
+    '/': {
+      id: '/'
+      path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -687,39 +680,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/verify/$qrToken': {
-      id: '/verify/$qrToken'
-      path: '/verify/$qrToken'
-      fullPath: '/verify/$qrToken'
-      preLoaderRoute: typeof VerifyQrTokenRouteImport
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sign/$token': {
-      id: '/sign/$token'
-      path: '/sign/$token'
-      fullPath: '/sign/$token'
-      preLoaderRoute: typeof SignTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/$slug': {
-      id: '/_authenticated/$slug'
-      path: '/$slug'
-      fullPath: '/$slug'
-      preLoaderRoute: typeof AuthenticatedSlugRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_auth/sign-up': {
-      id: '/_auth/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof AuthSignUpRouteImport
+    '/_auth/accept-invite': {
+      id: '/_auth/accept-invite'
+      path: '/accept-invite'
+      fullPath: '/accept-invite'
+      preLoaderRoute: typeof AuthAcceptInviteRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/sign-in': {
@@ -729,60 +708,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/accept-invite': {
-      id: '/_auth/accept-invite'
-      path: '/accept-invite'
-      fullPath: '/accept-invite'
-      preLoaderRoute: typeof AuthAcceptInviteRouteImport
+    '/_auth/sign-up': {
+      id: '/_auth/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof AuthSignUpRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_authenticated/$slug': {
+      id: '/_authenticated/$slug'
+      path: '/$slug'
+      fullPath: '/$slug'
+      preLoaderRoute: typeof AuthenticatedSlugRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/sign/$token': {
+      id: '/sign/$token'
+      path: '/sign/$token'
+      fullPath: '/sign/$token'
+      preLoaderRoute: typeof SignTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$qrToken': {
+      id: '/verify/$qrToken'
+      path: '/verify/$qrToken'
+      fullPath: '/verify/$qrToken'
+      preLoaderRoute: typeof VerifyQrTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/$slug/': {
       id: '/_authenticated/$slug/'
       path: '/'
       fullPath: '/$slug/'
       preLoaderRoute: typeof AuthenticatedSlugIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/templates': {
-      id: '/_authenticated/$slug/templates'
-      path: '/templates'
-      fullPath: '/$slug/templates'
-      preLoaderRoute: typeof AuthenticatedSlugTemplatesRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/payments': {
-      id: '/_authenticated/$slug/payments'
-      path: '/payments'
-      fullPath: '/$slug/payments'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/home': {
-      id: '/_authenticated/$slug/home'
-      path: '/home'
-      fullPath: '/$slug/home'
-      preLoaderRoute: typeof AuthenticatedSlugHomeRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/documents': {
-      id: '/_authenticated/$slug/documents'
-      path: '/documents'
-      fullPath: '/$slug/documents'
-      preLoaderRoute: typeof AuthenticatedSlugDocumentsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/contacts': {
-      id: '/_authenticated/$slug/contacts'
-      path: '/contacts'
-      fullPath: '/$slug/contacts'
-      preLoaderRoute: typeof AuthenticatedSlugContactsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/analytics': {
-      id: '/_authenticated/$slug/analytics'
-      path: '/analytics'
-      fullPath: '/$slug/analytics'
-      preLoaderRoute: typeof AuthenticatedSlugAnalyticsRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/$': {
@@ -792,33 +750,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSplatRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
-    '/_authenticated/onboarding/choose-organization/': {
-      id: '/_authenticated/onboarding/choose-organization/'
-      path: '/onboarding/choose-organization'
-      fullPath: '/onboarding/choose-organization/'
-      preLoaderRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/$slug/settings/': {
-      id: '/_authenticated/$slug/settings/'
-      path: '/settings'
-      fullPath: '/$slug/settings/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport
+    '/_authenticated/$slug/analytics': {
+      id: '/_authenticated/$slug/analytics'
+      path: '/analytics'
+      fullPath: '/$slug/analytics'
+      preLoaderRoute: typeof AuthenticatedSlugAnalyticsRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
-    '/_authenticated/$slug/payments/': {
-      id: '/_authenticated/$slug/payments/'
-      path: '/'
-      fullPath: '/$slug/payments/'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    '/_authenticated/$slug/contacts': {
+      id: '/_authenticated/$slug/contacts'
+      path: '/contacts'
+      fullPath: '/$slug/contacts'
+      preLoaderRoute: typeof AuthenticatedSlugContactsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
     }
-    '/_authenticated/$slug/documents/': {
-      id: '/_authenticated/$slug/documents/'
-      path: '/'
-      fullPath: '/$slug/documents/'
-      preLoaderRoute: typeof AuthenticatedSlugDocumentsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugDocumentsRoute
+    '/_authenticated/$slug/documents': {
+      id: '/_authenticated/$slug/documents'
+      path: '/documents'
+      fullPath: '/$slug/documents'
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/home': {
+      id: '/_authenticated/$slug/home'
+      path: '/home'
+      fullPath: '/$slug/home'
+      preLoaderRoute: typeof AuthenticatedSlugHomeRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/payments': {
+      id: '/_authenticated/$slug/payments'
+      path: '/payments'
+      fullPath: '/$slug/payments'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/templates': {
+      id: '/_authenticated/$slug/templates'
+      path: '/templates'
+      fullPath: '/$slug/templates'
+      preLoaderRoute: typeof AuthenticatedSlugTemplatesRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/contacts/': {
       id: '/_authenticated/$slug/contacts/'
@@ -827,109 +799,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugContactsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugContactsRoute
     }
-    '/_authenticated/$slug/settings/team': {
-      id: '/_authenticated/$slug/settings/team'
-      path: '/settings/team'
-      fullPath: '/$slug/settings/team'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
+    '/_authenticated/$slug/contacts/$contactId': {
+      id: '/_authenticated/$slug/contacts/$contactId'
+      path: '/$contactId'
+      fullPath: '/$slug/contacts/$contactId'
+      preLoaderRoute: typeof AuthenticatedSlugContactsContactIdRouteImport
+      parentRoute: typeof AuthenticatedSlugContactsRoute
     }
-    '/_authenticated/$slug/settings/signing': {
-      id: '/_authenticated/$slug/settings/signing'
-      path: '/settings/signing'
-      fullPath: '/$slug/settings/signing'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsSigningRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
+    '/_authenticated/$slug/documents/': {
+      id: '/_authenticated/$slug/documents/'
+      path: '/'
+      fullPath: '/$slug/documents/'
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugDocumentsRoute
     }
-    '/_authenticated/$slug/settings/security': {
-      id: '/_authenticated/$slug/settings/security'
-      path: '/settings/security'
-      fullPath: '/$slug/settings/security'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsSecurityRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
+    '/_authenticated/$slug/documents/$documentId': {
+      id: '/_authenticated/$slug/documents/$documentId'
+      path: '/$documentId'
+      fullPath: '/$slug/documents/$documentId'
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsDocumentIdRouteImport
+      parentRoute: typeof AuthenticatedSlugDocumentsRoute
     }
-    '/_authenticated/$slug/settings/profile': {
-      id: '/_authenticated/$slug/settings/profile'
-      path: '/settings/profile'
-      fullPath: '/$slug/settings/profile'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/payments': {
-      id: '/_authenticated/$slug/settings/payments'
-      path: '/settings/payments'
-      fullPath: '/$slug/settings/payments'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsPaymentsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/notifications': {
-      id: '/_authenticated/$slug/settings/notifications'
-      path: '/settings/notifications'
-      fullPath: '/$slug/settings/notifications'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsNotificationsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/branding': {
-      id: '/_authenticated/$slug/settings/branding'
-      path: '/settings/branding'
-      fullPath: '/$slug/settings/branding'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsBrandingRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/billing': {
-      id: '/_authenticated/$slug/settings/billing'
-      path: '/settings/billing'
-      fullPath: '/$slug/settings/billing'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsBillingRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/audit-log': {
-      id: '/_authenticated/$slug/settings/audit-log'
-      path: '/settings/audit-log'
-      fullPath: '/$slug/settings/audit-log'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsAuditLogRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/ai': {
-      id: '/_authenticated/$slug/settings/ai'
-      path: '/settings/ai'
-      fullPath: '/$slug/settings/ai'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsAiRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/payments/tax': {
-      id: '/_authenticated/$slug/payments/tax'
-      path: '/tax'
-      fullPath: '/$slug/payments/tax'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsTaxRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/subscriptions': {
-      id: '/_authenticated/$slug/payments/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/$slug/payments/subscriptions'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/payouts': {
-      id: '/_authenticated/$slug/payments/payouts'
-      path: '/payouts'
-      fullPath: '/$slug/payments/payouts'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsPayoutsRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/history': {
-      id: '/_authenticated/$slug/payments/history'
-      path: '/history'
-      fullPath: '/$slug/payments/history'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsHistoryRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/disputes': {
-      id: '/_authenticated/$slug/payments/disputes'
-      path: '/disputes'
-      fullPath: '/$slug/payments/disputes'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsDisputesRouteImport
+    '/_authenticated/$slug/payments/': {
+      id: '/_authenticated/$slug/payments/'
+      path: '/'
+      fullPath: '/$slug/payments/'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugPaymentsRoute
     }
     '/_authenticated/$slug/payments/balances': {
@@ -939,33 +834,124 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugPaymentsBalancesRouteImport
       parentRoute: typeof AuthenticatedSlugPaymentsRoute
     }
-    '/_authenticated/$slug/documents/$documentId': {
-      id: '/_authenticated/$slug/documents/$documentId'
-      path: '/$documentId'
-      fullPath: '/$slug/documents/$documentId'
-      preLoaderRoute: typeof AuthenticatedSlugDocumentsDocumentIdRouteImport
-      parentRoute: typeof AuthenticatedSlugDocumentsRoute
+    '/_authenticated/$slug/payments/disputes': {
+      id: '/_authenticated/$slug/payments/disputes'
+      path: '/disputes'
+      fullPath: '/$slug/payments/disputes'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsDisputesRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
     }
-    '/_authenticated/$slug/contacts/$contactId': {
-      id: '/_authenticated/$slug/contacts/$contactId'
-      path: '/$contactId'
-      fullPath: '/$slug/contacts/$contactId'
-      preLoaderRoute: typeof AuthenticatedSlugContactsContactIdRouteImport
-      parentRoute: typeof AuthenticatedSlugContactsRoute
+    '/_authenticated/$slug/payments/history': {
+      id: '/_authenticated/$slug/payments/history'
+      path: '/history'
+      fullPath: '/$slug/payments/history'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsHistoryRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
     }
-    '/_authenticated/$slug/settings/team/': {
-      id: '/_authenticated/$slug/settings/team/'
-      path: '/'
-      fullPath: '/$slug/settings/team/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
+    '/_authenticated/$slug/payments/payouts': {
+      id: '/_authenticated/$slug/payments/payouts'
+      path: '/payouts'
+      fullPath: '/$slug/payments/payouts'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsPayoutsRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
     }
-    '/_authenticated/$slug/settings/profile/': {
-      id: '/_authenticated/$slug/settings/profile/'
-      path: '/'
-      fullPath: '/$slug/settings/profile/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    '/_authenticated/$slug/payments/subscriptions': {
+      id: '/_authenticated/$slug/payments/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/$slug/payments/subscriptions'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/payments/tax': {
+      id: '/_authenticated/$slug/payments/tax'
+      path: '/tax'
+      fullPath: '/$slug/payments/tax'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsTaxRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/settings/': {
+      id: '/_authenticated/$slug/settings/'
+      path: '/settings'
+      fullPath: '/$slug/settings/'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/ai': {
+      id: '/_authenticated/$slug/settings/ai'
+      path: '/settings/ai'
+      fullPath: '/$slug/settings/ai'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsAiRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/audit-log': {
+      id: '/_authenticated/$slug/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/$slug/settings/audit-log'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsAuditLogRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/billing': {
+      id: '/_authenticated/$slug/settings/billing'
+      path: '/settings/billing'
+      fullPath: '/$slug/settings/billing'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsBillingRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/branding': {
+      id: '/_authenticated/$slug/settings/branding'
+      path: '/settings/branding'
+      fullPath: '/$slug/settings/branding'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsBrandingRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/notifications': {
+      id: '/_authenticated/$slug/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/$slug/settings/notifications'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsNotificationsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/payments': {
+      id: '/_authenticated/$slug/settings/payments'
+      path: '/settings/payments'
+      fullPath: '/$slug/settings/payments'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsPaymentsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/profile': {
+      id: '/_authenticated/$slug/settings/profile'
+      path: '/settings/profile'
+      fullPath: '/$slug/settings/profile'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/security': {
+      id: '/_authenticated/$slug/settings/security'
+      path: '/settings/security'
+      fullPath: '/$slug/settings/security'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsSecurityRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/signing': {
+      id: '/_authenticated/$slug/settings/signing'
+      path: '/settings/signing'
+      fullPath: '/$slug/settings/signing'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsSigningRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/team': {
+      id: '/_authenticated/$slug/settings/team'
+      path: '/settings/team'
+      fullPath: '/$slug/settings/team'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/onboarding/choose-organization/': {
+      id: '/_authenticated/onboarding/choose-organization/'
+      path: '/onboarding/choose-organization'
+      fullPath: '/onboarding/choose-organization/'
+      preLoaderRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/$slug/settings/developer/': {
       id: '/_authenticated/$slug/settings/developer/'
@@ -974,32 +960,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperIndexRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
-    '/_authenticated/$slug/settings/team/$memberId': {
-      id: '/_authenticated/$slug/settings/team/$memberId'
-      path: '/$memberId'
-      fullPath: '/$slug/settings/team/$memberId'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
+    '/_authenticated/$slug/settings/developer/api-keys': {
+      id: '/_authenticated/$slug/settings/developer/api-keys'
+      path: '/settings/developer/api-keys'
+      fullPath: '/$slug/settings/developer/api-keys'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
     }
-    '/_authenticated/$slug/settings/profile/usage': {
-      id: '/_authenticated/$slug/settings/profile/usage'
-      path: '/usage'
-      fullPath: '/$slug/settings/profile/usage'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileUsageRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    '/_authenticated/$slug/settings/developer/webhooks': {
+      id: '/_authenticated/$slug/settings/developer/webhooks'
+      path: '/settings/developer/webhooks'
+      fullPath: '/$slug/settings/developer/webhooks'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
     }
-    '/_authenticated/$slug/settings/profile/security': {
-      id: '/_authenticated/$slug/settings/profile/security'
-      path: '/security'
-      fullPath: '/$slug/settings/profile/security'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileSecurityRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
-    }
-    '/_authenticated/$slug/settings/profile/notifications': {
-      id: '/_authenticated/$slug/settings/profile/notifications'
-      path: '/notifications'
-      fullPath: '/$slug/settings/profile/notifications'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRouteImport
+    '/_authenticated/$slug/settings/profile/': {
+      id: '/_authenticated/$slug/settings/profile/'
+      path: '/'
+      fullPath: '/$slug/settings/profile/'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIndexRouteImport
       parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
     }
     '/_authenticated/$slug/settings/profile/integrations': {
@@ -1009,19 +988,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRouteImport
       parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
     }
-    '/_authenticated/$slug/settings/developer/webhooks': {
-      id: '/_authenticated/$slug/settings/developer/webhooks'
-      path: '/settings/developer/webhooks'
-      fullPath: '/$slug/settings/developer/webhooks'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
+    '/_authenticated/$slug/settings/profile/notifications': {
+      id: '/_authenticated/$slug/settings/profile/notifications'
+      path: '/notifications'
+      fullPath: '/$slug/settings/profile/notifications'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
     }
-    '/_authenticated/$slug/settings/developer/api-keys': {
-      id: '/_authenticated/$slug/settings/developer/api-keys'
-      path: '/settings/developer/api-keys'
-      fullPath: '/$slug/settings/developer/api-keys'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
+    '/_authenticated/$slug/settings/profile/security': {
+      id: '/_authenticated/$slug/settings/profile/security'
+      path: '/security'
+      fullPath: '/$slug/settings/profile/security'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileSecurityRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    }
+    '/_authenticated/$slug/settings/profile/usage': {
+      id: '/_authenticated/$slug/settings/profile/usage'
+      path: '/usage'
+      fullPath: '/$slug/settings/profile/usage'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileUsageRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    }
+    '/_authenticated/$slug/settings/team/': {
+      id: '/_authenticated/$slug/settings/team/'
+      path: '/'
+      fullPath: '/$slug/settings/team/'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
+    }
+    '/_authenticated/$slug/settings/team/$memberId': {
+      id: '/_authenticated/$slug/settings/team/$memberId'
+      path: '/$memberId'
+      fullPath: '/$slug/settings/team/$memberId'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
     }
   }
 }

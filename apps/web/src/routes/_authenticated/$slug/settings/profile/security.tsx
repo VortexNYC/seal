@@ -9,9 +9,17 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/profile/security")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/profile/security"
+)({
   component: SecuritySettings,
 });
 
@@ -25,8 +33,8 @@ function SecuritySettings() {
         </CardHeader>
         <CardContent className="text-muted-foreground space-y-2 text-sm">
           <p>
-            To change your password, sign out and use the “Forgot password” link on the sign-in page
-            — we’ll email you a secure reset link.
+            To change your password, sign out and use the “Forgot password” link
+            on the sign-in page — we’ll email you a secure reset link.
           </p>
           <p>Two-factor authentication will be available here soon.</p>
         </CardContent>

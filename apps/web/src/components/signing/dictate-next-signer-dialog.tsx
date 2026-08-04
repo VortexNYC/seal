@@ -32,7 +32,9 @@ export function DictateNextSignerDialog({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dictateNextRecipient = useMutation(api.documents.recipients_mutations.dictateNextRecipient);
+  const dictateNextRecipient = useMutation(
+    api.documents.recipients_mutations.dictateNextRecipient
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +49,9 @@ export function DictateNextSignerDialog({
       toast.success("Invitation sent to the next signer");
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to send invitation");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send invitation"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -55,14 +59,20 @@ export function DictateNextSignerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onDefer()}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
             <UserPlusIcon className="text-info h-6 w-6" />
           </div>
-          <DialogTitle className="text-center">Who should sign next?</DialogTitle>
+          <DialogTitle className="text-center">
+            Who should sign next?
+          </DialogTitle>
           <DialogDescription className="text-center">
-            Please designate the next signer. They&apos;ll receive a signing invitation immediately.
+            Please designate the next signer. They&apos;ll receive a signing
+            invitation immediately.
           </DialogDescription>
         </DialogHeader>
 

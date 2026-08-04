@@ -133,7 +133,9 @@ function PostPage() {
   const { data: post } = useSuspenseQuery(postQueries.detail(postId));
 
   // Non-critical - may still be loading
-  const { data: comments, isLoading: commentsLoading } = useQuery(postQueries.comments(postId));
+  const { data: comments, isLoading: commentsLoading } = useQuery(
+    postQueries.comments(postId)
+  );
 
   return (
     <article>

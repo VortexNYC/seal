@@ -22,12 +22,15 @@ First, generate a secure upload URL for your PDF document:
 ### TypeScript
 
 ```typescript
-const uploadResponse = await fetch("https://seal.convex.site/api/v1/uploads/generate-url", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const uploadResponse = await fetch(
+  "https://seal.convex.site/api/v1/uploads/generate-url",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 
 const { upload_url } = await uploadResponse.json();
 ```
@@ -90,20 +93,23 @@ Create a document record, then add recipients separately via the Recipients API:
 #### TypeScript
 
 ```typescript
-const documentResponse = await fetch("https://seal.convex.site/api/v1/documents", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    title: "Service Agreement",
-    description: "Annual service contract for review and signature",
-    storage_id: storageId, // from Step 2
-    file_size: fileBlob.size,
-    file_type: "application/pdf",
-  }),
-});
+const documentResponse = await fetch(
+  "https://seal.convex.site/api/v1/documents",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      title: "Service Agreement",
+      description: "Annual service contract for review and signature",
+      storage_id: storageId, // from Step 2
+      file_size: fileBlob.size,
+      file_type: "application/pdf",
+    }),
+  }
+);
 
 const document = await documentResponse.json();
 console.log("Document created:", document.id);
@@ -152,14 +158,17 @@ const recipients = [
 ];
 
 for (const recipient of recipients) {
-  await fetch(`https://seal.convex.site/api/v1/recipients?document_id=${document.id}`, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(recipient),
-  });
+  await fetch(
+    `https://seal.convex.site/api/v1/recipients?document_id=${document.id}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer ak_your_api_key_here",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(recipient),
+    }
+  );
 }
 ```
 
@@ -203,9 +212,10 @@ const sendResponse = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: "Please review and sign this service agreement at your earliest convenience.",
+      message:
+        "Please review and sign this service agreement at your earliest convenience.",
     }),
-  },
+  }
 );
 
 const result = await sendResponse.json();
@@ -255,11 +265,13 @@ const statusResponse = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const doc = await statusResponse.json();
-console.log(`Status: ${doc.status}, Signed: ${doc.signed_count}/${doc.recipients_count}`);
+console.log(
+  `Status: ${doc.status}, Signed: ${doc.signed_count}/${doc.recipients_count}`
+);
 ```
 
 ## Next Steps
@@ -278,6 +290,7 @@ console.log(`Status: ${doc.status}, Signed: ${doc.signed_count}/${doc.recipients
 | `viewer`   | Can only view the document  | -        | -           | ✓        |
 
 <Callout type="info">
-  **Sequential Signing**: Set the `order` field on recipients to enforce a signing sequence.
-  Recipient 2 won't receive the document until Recipient 1 completes their action.
+  **Sequential Signing**: Set the `order` field on recipients to enforce a
+  signing sequence. Recipient 2 won't receive the document until Recipient 1
+  completes their action.
 </Callout>

@@ -20,7 +20,7 @@ export const developerSource = loader(
   {
     baseUrl: "/developer",
     plugins: [openapiPlugin()],
-  },
+  }
 );
 
 // Keep legacy export so manifest generator and other callers still work

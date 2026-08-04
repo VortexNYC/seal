@@ -78,7 +78,8 @@ export const test = base.extend<ExtensionFixtures>({
 
     // Wait for service worker to be registered
     const serviceWorker =
-      context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
+      context.serviceWorkers()[0] ||
+      (await context.waitForEvent("serviceworker"));
 
     extensionId = serviceWorker.url().split("/")[2];
 
@@ -88,7 +89,8 @@ export const test = base.extend<ExtensionFixtures>({
   backgroundPage: async ({ context }, use) => {
     // For Manifest V2 extensions
     const backgroundPage =
-      context.backgroundPages()[0] || (await context.waitForEvent("backgroundpage"));
+      context.backgroundPages()[0] ||
+      (await context.waitForEvent("backgroundpage"));
 
     await use(backgroundPage);
   },
@@ -107,7 +109,10 @@ test("load MV3 extension", async () => {
 
   const context = await chromium.launchPersistentContext("", {
     headless: false,
-    args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
+    args: [
+      `--disable-extensions-except=${pathToExtension}`,
+      `--load-extension=${pathToExtension}`,
+    ],
   });
 
   // Wait for service worker
@@ -126,7 +131,10 @@ test("load MV2 extension", async () => {
 
   const context = await chromium.launchPersistentContext("", {
     headless: false,
-    args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
+    args: [
+      `--disable-extensions-except=${pathToExtension}`,
+      `--load-extension=${pathToExtension}`,
+    ],
   });
 
   // Wait for background page
@@ -194,7 +202,9 @@ test("popup remembers state", async ({ context, extensionId }) => {
   await popup2.goto(`chrome-extension://${extensionId}/popup.html`);
 
   // State should persist
-  await expect(popup2.getByRole("checkbox", { name: "Dark Mode" })).toBeChecked();
+  await expect(
+    popup2.getByRole("checkbox", { name: "Dark Mode" })
+  ).toBeChecked();
 });
 ```
 
@@ -248,7 +258,8 @@ test("service worker handles messages", async ({ context, extensionId }) => {
 ```typescript
 test("background script logic", async ({ context }) => {
   const serviceWorker =
-    context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
+    context.serviceWorkers()[0] ||
+    (await context.waitForEvent("serviceworker"));
 
   // Evaluate in service worker context
   const result = await serviceWorker.evaluate(async () => {
@@ -305,14 +316,19 @@ test("content script injects UI", async ({ context }) => {
 
   // Interact with injected UI
   await page.locator("#my-extension-widget button").click();
-  await expect(page.locator("#my-extension-widget .result")).toHaveText("Success");
+  await expect(page.locator("#my-extension-widget .result")).toHaveText(
+    "Success"
+  );
 });
 ```
 
 ### Content Script Communication
 
 ```typescript
-test("content script communicates with background", async ({ context, extensionId }) => {
+test("content script communicates with background", async ({
+  context,
+  extensionId,
+}) => {
   const page = await context.newPage();
   await page.goto("https://example.com");
 
@@ -341,7 +357,9 @@ test("content script modifies page", async ({ context }) => {
   expect(hasModification).toBe(true);
 
   // Check DOM modifications
-  const modifiedElements = await page.locator("[data-modified-by-extension]").count();
+  const modifiedElements = await page
+    .locator("[data-modified-by-extension]")
+    .count();
   expect(modifiedElements).toBeGreaterThan(0);
 });
 ```
@@ -435,7 +453,7 @@ test("context menu actions", async ({ context, extensionId }) => {
     // Simulate the click handler
     chrome.contextMenus.onClicked.dispatch(
       { menuItemId: "test-menu", selectionText: "selected text" },
-      { id: 1, url: "https://example.com" },
+      { id: 1, url: "https://example.com" }
     );
   });
 });

@@ -30,8 +30,8 @@ See the [Authentication Guide](/developer/getting-started/authentication) for de
 Explore all endpoints in the interactive API playground:
 
 <Card title="Open API Playground →" href="/developer/openapi/listDocuments">
-  Try every endpoint live — browse schemas, fill in parameters, and run real requests against the
-  Seal API.
+  Try every endpoint live — browse schemas, fill in parameters, and run real
+  requests against the Seal API.
 </Card>
 
 ## API Resources
@@ -204,7 +204,7 @@ const { data, has_more, next_cursor } = await page1.json();
 // Next page
 if (has_more) {
   const page2 = await fetch(
-    `https://seal.convex.site/api/v1/documents?limit=20&cursor=${next_cursor}`,
+    `https://seal.convex.site/api/v1/documents?limit=20&cursor=${next_cursor}`
   );
 }
 ```

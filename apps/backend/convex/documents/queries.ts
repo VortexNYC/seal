@@ -33,7 +33,11 @@ export const getDocument = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+    const { document } = await getDocumentWithAccessCheck(
+      ctx,
+      userId,
+      args.documentId
+    );
     return document;
   },
 });
@@ -45,7 +49,11 @@ export const getDocumentUrl = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+    const { document } = await getDocumentWithAccessCheck(
+      ctx,
+      userId,
+      args.documentId
+    );
 
     const url = await ctx.storage.getUrl(document.storageId);
     if (!url) {
@@ -62,7 +70,9 @@ export const getDocumentUrl = authQuery({
 export const listDocuments = authQuery({
   args: {
     organizationId: v.id("organizations"),
-    filter: v.optional(v.union(v.literal("all"), v.literal("owned"), v.literal("shared"))),
+    filter: v.optional(
+      v.union(v.literal("all"), v.literal("owned"), v.literal("shared"))
+    ),
     workflowStatus: v.optional(documentWorkflowStatusTuple),
     folderId: v.optional(v.id("folders")),
     rootOnly: v.optional(v.boolean()),
@@ -77,7 +87,7 @@ export const listDocuments = authQuery({
     const allOrgDocuments = await ctx.db
       .query("documents")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
+        q.eq("organizationId", args.organizationId).eq("status", "active")
       )
       .collect();
 
@@ -133,12 +143,14 @@ export const getDocumentAccessList = authQuery({
       const access = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", args.documentId).eq("userId", userId),
+          q.eq("documentId", args.documentId).eq("userId", userId)
         )
         .first();
 
       if (!access || access.permissionLevel !== "manage") {
-        throw new ConvexError("Only the document owner or managers can view access list");
+        throw new ConvexError(
+          "Only the document owner or managers can view access list"
+        );
       }
     }
 
@@ -165,7 +177,7 @@ export const getDocumentAccessList = authQuery({
               }
             : null,
         };
-      }),
+      })
     );
 
     return {
@@ -194,7 +206,9 @@ export const getDocumentsByWorkflowStatus = authQuery({
     const documents = await ctx.db
       .query("documents")
       .withIndex("by_organization_workflow", (q) =>
-        q.eq("organizationId", args.organizationId).eq("workflowStatus", args.workflowStatus),
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("workflowStatus", args.workflowStatus)
       )
       .filter((q) => q.eq(q.field("status"), "active"))
       .collect();
@@ -225,7 +239,11 @@ export const getDocumentWithSignatures = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+    const { document } = await getDocumentWithAccessCheck(
+      ctx,
+      userId,
+      args.documentId
+    );
 
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature for this single documentId for exact signature counts; no caller receives fewer rows. bound=global
     const signatures = await ctx.db
@@ -249,7 +267,7 @@ export const getDocumentWithSignatures = authQuery({
           field,
           recipient,
         };
-      }),
+      })
     );
 
     return {
@@ -270,12 +288,18 @@ export const getDocumentWithAuditTrail = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+    const { document } = await getDocumentWithAccessCheck(
+      ctx,
+      userId,
+      args.documentId
+    );
 
     const auditLogs = await ctx.db
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
       .query("audit_logs")
-      .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+      .withIndex("by_document_created", (q) =>
+        q.eq("documentId", args.documentId)
+      )
       .order("desc")
       .collect();
 
@@ -296,7 +320,11 @@ export const getDocumentComplete = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+    const { document } = await getDocumentWithAccessCheck(
+      ctx,
+      userId,
+      args.documentId
+    );
 
     // Get all related data in parallel for performance
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentComplete must return all signatures, fields, and recipients for this single documentId for exact document-detail statistics; no caller receives fewer rows. bound=global
@@ -317,7 +345,9 @@ export const getDocumentComplete = authQuery({
         .collect(),
       ctx.db
         .query("audit_logs")
-        .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+        .withIndex("by_document_created", (q) =>
+          q.eq("documentId", args.documentId)
+        )
         .order("desc")
         .take(50), // Limit audit logs to most recent 50
     ]);
@@ -333,12 +363,14 @@ export const getDocumentComplete = authQuery({
           field,
           recipient,
         };
-      }),
+      })
     );
 
     // 5. Calculate completion statistics
     const requiredFields = fields.filter((f) => f.isRequired);
-    const completedFields = fields.filter((f) => signatures.some((s) => s.fieldId === f._id));
+    const completedFields = fields.filter((f) =>
+      signatures.some((s) => s.fieldId === f._id)
+    );
 
     return {
       document,
@@ -354,7 +386,9 @@ export const getDocumentComplete = authQuery({
         recipientCount: recipients.length,
         auditLogCount: auditLogs.length,
         completionPercentage:
-          fields.length > 0 ? Math.round((completedFields.length / fields.length) * 100) : 0,
+          fields.length > 0
+            ? Math.round((completedFields.length / fields.length) * 100)
+            : 0,
       },
     };
   },
@@ -386,10 +420,15 @@ export const getDocumentVersions = authQuery({
         return {
           ...version,
           creator: creator
-            ? { _id: creator._id, name: creator.name, email: creator.email, avatar: creator.avatar }
+            ? {
+                _id: creator._id,
+                name: creator.name,
+                email: creator.email,
+                avatar: creator.avatar,
+              }
             : null,
         };
-      }),
+      })
     );
 
     return enrichedVersions;
@@ -414,7 +453,9 @@ export const getDocumentVersion = authQuery({
     const version = await ctx.db
       .query("document_versions")
       .withIndex("by_document", (q) =>
-        q.eq("documentId", args.documentId).eq("versionNumber", args.versionNumber),
+        q
+          .eq("documentId", args.documentId)
+          .eq("versionNumber", args.versionNumber)
       )
       .first();
 
@@ -432,7 +473,12 @@ export const getDocumentVersion = authQuery({
       ...version,
       storageUrl,
       creator: creator
-        ? { _id: creator._id, name: creator.name, email: creator.email, avatar: creator.avatar }
+        ? {
+            _id: creator._id,
+            name: creator.name,
+            email: creator.email,
+            avatar: creator.avatar,
+          }
         : null,
     };
   },
@@ -492,7 +538,7 @@ export const searchDocuments = authQuery({
         q
           .search("extractedText", args.query)
           .eq("organizationId", organizationId)
-          .eq("status", "active"),
+          .eq("status", "active")
       )
       .take(maxResults);
 

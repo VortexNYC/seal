@@ -26,7 +26,8 @@ export const containers = {
   outer: {
     backgroundColor: email.background,
     padding: "40px 0",
-    fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontFamily:
+      '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   card: {
     backgroundColor: email.card,

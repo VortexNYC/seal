@@ -4,7 +4,10 @@ import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
 test.describe("Team Management - Overview", () => {
-  test("should display team settings page", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display team settings page", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -13,7 +16,10 @@ test.describe("Team Management - Overview", () => {
     await expect(teamPage.heading).toBeVisible();
   });
 
-  test("should display current team members", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display current team members", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -23,7 +29,10 @@ test.describe("Team Management - Overview", () => {
     expect(memberCount).toBeGreaterThan(0);
   });
 
-  test("should display invite member button", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display invite member button", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -33,14 +42,19 @@ test.describe("Team Management - Overview", () => {
 });
 
 test.describe("Team Management - Invite Members", () => {
-  test("should open invite member dialog", async ({ authenticatedPage, organizationSlug }) => {
+  test("should open invite member dialog", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
 
     await teamPage.inviteMemberButton.click();
 
-    await expect(authenticatedPage.getByRole("dialog", { name: /invite/i })).toBeVisible();
+    await expect(
+      authenticatedPage.getByRole("dialog", { name: /invite/i })
+    ).toBeVisible();
   });
 
   test("should validate email format when inviting", async ({
@@ -55,20 +69,27 @@ test.describe("Team Management - Invite Members", () => {
 
     await authenticatedPage.getByLabel(/email/i).fill("invalid-email");
 
-    await authenticatedPage.getByRole("button", { name: /send|invite/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /send|invite/i })
+      .click();
 
     await expect(authenticatedPage.getByText(/valid email/i)).toBeVisible();
   });
 });
 
 test.describe("Team Management - Member Roles", () => {
-  test("should display member roles", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display member roles", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
 
     // Each member should have a role badge (Owner, Admin, Member)
-    const roleElements = authenticatedPage.locator('[data-testid="member-role"]');
+    const roleElements = authenticatedPage.locator(
+      '[data-testid="member-role"]'
+    );
     // Wait for at least one role badge to render before counting
     await roleElements.first().waitFor({ state: "visible", timeout: 5000 });
     const count = await roleElements.count();
@@ -76,7 +97,10 @@ test.describe("Team Management - Member Roles", () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test.skip("should change member role", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should change member role", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     // BLOCKED: requires a second member "test-member@seal.com" in the E2E workspace.
     // Add a second test account + seed their membership before enabling.
     const teamPage = new TeamSettingsPage(authenticatedPage);
@@ -91,7 +115,9 @@ test.describe("Team Management - Member Roles", () => {
     await waitForToast(authenticatedPage, /role updated/i);
 
     // Verify role changed
-    const memberRow = authenticatedPage.locator(`[data-member-email="${memberEmail}"]`);
+    const memberRow = authenticatedPage.locator(
+      `[data-member-email="${memberEmail}"]`
+    );
     await expect(memberRow.getByText("Admin")).toBeVisible();
   });
 
@@ -127,7 +153,10 @@ test.describe("Team Management - Member Roles", () => {
 });
 
 test.describe("Team Management - Remove Members", () => {
-  test.skip("should remove team member", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should remove team member", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     // BLOCKED: hardcoded "removable-member@seal.com" doesn't exist in the E2E workspace.
     // Also blocked: MembersList doesn't render remove buttons (canRemove prop is unused).
     const teamPage = new TeamSettingsPage(authenticatedPage);
@@ -169,7 +198,9 @@ test.describe("Team Management - Remove Members", () => {
     await removeButton.click();
 
     // Verify confirmation dialog appears
-    await expect(authenticatedPage.getByRole("dialog", { name: /confirm/i })).toBeVisible();
+    await expect(
+      authenticatedPage.getByRole("dialog", { name: /confirm/i })
+    ).toBeVisible();
 
     await expect(authenticatedPage.getByText(/are you sure/i)).toBeVisible();
   });
@@ -185,7 +216,9 @@ test.describe("Team Management - Remove Members", () => {
     await teamPage.goto(organizationSlug);
 
     // If current user is only owner, remove button should be disabled
-    const currentUserRow = authenticatedPage.locator('[data-member-email="test@seal.com"]');
+    const currentUserRow = authenticatedPage.locator(
+      '[data-member-email="test@seal.com"]'
+    );
 
     const removeButton = currentUserRow.getByRole("button", {
       name: /remove/i,
@@ -200,7 +233,10 @@ test.describe("Team Management - Remove Members", () => {
 });
 
 test.describe("Team Management - Member Details", () => {
-  test.skip("should view member details", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should view member details", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     // BLOCKED: hardcoded "test-member@seal.com" doesn't exist in the E2E workspace.
     // Seed a second member account before enabling.
     const teamPage = new TeamSettingsPage(authenticatedPage);
@@ -238,7 +274,10 @@ test.describe("Team Management - Member Details", () => {
 });
 
 test.describe("Team Management - Pending Invitations", () => {
-  test("should display pending invitations", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display pending invitations", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -249,7 +288,9 @@ test.describe("Team Management - Pending Invitations", () => {
 
     // Match either the card title "Pending Invitations" or the empty state
     // "No pending invitations" — both confirm the section rendered correctly.
-    await expect(authenticatedPage.getByText(/pending invitations/i).first()).toBeVisible();
+    await expect(
+      authenticatedPage.getByText(/pending invitations/i).first()
+    ).toBeVisible();
   });
 });
 
@@ -305,14 +346,18 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
 
     await teamPage.goto(organizationSlug);
 
-    const email = testData.email(`revoke-target-${testInfo.retry}-${testInfo.workerIndex}`);
+    const email = testData.email(
+      `revoke-target-${testInfo.retry}-${testInfo.workerIndex}`
+    );
     await teamPage.inviteMember(email, "Member");
     await waitForToast(authenticatedPage, /invitation sent/i);
 
     // Navigate to the Invitations tab where pending invitations are displayed
     await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
 
-    const invitationRow = authenticatedPage.locator(`[data-invitation-email="${email}"]`);
+    const invitationRow = authenticatedPage.locator(
+      `[data-invitation-email="${email}"]`
+    );
     await expect(invitationRow).toBeVisible({ timeout: 10000 });
 
     await invitationRow.getByRole("button", { name: /revoke/i }).click();
@@ -323,7 +368,10 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
   // SKIPPED: "resend invitation" is not part of the component-based invitations
   // (the new PendingInvitationsList only supports revoke). Re-enable if/when a
   // resend action is added to the invitations component + UI.
-  test.skip("should resend invitation", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should resend invitation", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -335,9 +383,12 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
     // Navigate to the Invitations tab where pending invitations are displayed
     await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
 
-    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
-      hasText: email,
-    });
+    const invitationRow = authenticatedPage.locator(
+      '[data-testid="pending-invitation"]',
+      {
+        hasText: email,
+      }
+    );
     await expect(invitationRow).toBeVisible({ timeout: 5000 });
 
     await invitationRow.getByRole("button", { name: /resend/i }).click();

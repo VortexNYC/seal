@@ -4,12 +4,12 @@ import { join } from "node:path";
 const repoRoot = new URL("..", import.meta.url).pathname;
 const billingRoutePath = join(
   repoRoot,
-  "apps/web/src/routes/_authenticated/$slug/settings/billing.tsx",
+  "apps/web/src/routes/_authenticated/$slug/settings/billing.tsx"
 );
 const webPackagePath = join(repoRoot, "apps/web/package.json");
 const vortexComponentsPath = join(
   repoRoot,
-  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js",
+  "apps/web/node_modules/@vortexnyc/payments-react/dist/index.js"
 );
 
 const billingRoute = readFileSync(billingRoutePath, "utf8");
@@ -31,7 +31,9 @@ for (const requiredFragment of [
   "buildPlanComparison",
 ]) {
   if (!billingRoute.includes(requiredFragment)) {
-    failures.push(`billing route missing required Vortex adoption fragment: ${requiredFragment}`);
+    failures.push(
+      `billing route missing required Vortex adoption fragment: ${requiredFragment}`
+    );
   }
 }
 
@@ -41,7 +43,7 @@ for (const requiredPackageFragment of [
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
-      `@vortexnyc/payments-react missing required selector fragment: ${requiredPackageFragment}`,
+      `@vortexnyc/payments-react missing required selector fragment: ${requiredPackageFragment}`
     );
   }
 }
@@ -60,7 +62,7 @@ for (const forbiddenFragment of [
 ]) {
   if (billingRoute.includes(forbiddenFragment)) {
     failures.push(
-      `billing route still contains local replacement UI/provider fragment: ${forbiddenFragment}`,
+      `billing route still contains local replacement UI/provider fragment: ${forbiddenFragment}`
     );
   }
 }
@@ -69,14 +71,18 @@ if (
   billingRoute.includes("<VortexPlanComparison") &&
   !billingRoute.includes("onPlanSelect={handlePlanSelect}")
 ) {
-  failures.push("VortexPlanComparison must own plan selection through handlePlanSelect.");
+  failures.push(
+    "VortexPlanComparison must own plan selection through handlePlanSelect."
+  );
 }
 
 if (
   billingRoute.includes("<VortexSubscriptionActionSummary") &&
   !billingRoute.includes("onAction={handleSubscriptionAction}")
 ) {
-  failures.push("VortexSubscriptionActionSummary must own subscription action handoff.");
+  failures.push(
+    "VortexSubscriptionActionSummary must own subscription action handoff."
+  );
 }
 
 if (failures.length > 0) {
@@ -89,8 +95,12 @@ if (failures.length > 0) {
 
 console.log("Vortex billing settings adoption proof passed:");
 console.log("- Seal billing settings imports @vortexnyc/payments-react.");
-console.log("- Subscription and plan UI render through Vortex package components.");
-console.log("- Local plan comparison and subscription summary fragments stay deleted.");
+console.log(
+  "- Subscription and plan UI render through Vortex package components."
+);
+console.log(
+  "- Local plan comparison and subscription summary fragments stay deleted."
+);
 
 function parseJsonObject(source: string): Record<string, unknown> {
   const parsed: unknown = JSON.parse(source);
@@ -100,7 +110,10 @@ function parseJsonObject(source: string): Record<string, unknown> {
   return parsed;
 }
 
-function getObject(source: Record<string, unknown>, key: string): Record<string, unknown> {
+function getObject(
+  source: Record<string, unknown>,
+  key: string
+): Record<string, unknown> {
   const value = source[key];
   if (!isRecord(value)) {
     return {};

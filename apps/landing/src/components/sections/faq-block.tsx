@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
+
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FaqSectionBlock } from "~/lib/content/types";
 
@@ -13,7 +14,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
-            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-foreground sm:text-5xl">
+            <h2 className="text-foreground mb-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
               {block.headline}
             </h2>
           </div>
@@ -30,19 +31,23 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
                 <button
                   aria-controls={answerId}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 border-b border-foreground/10 py-6 text-left transition-colors hover:border-foreground/20"
+                  className="border-foreground/10 hover:border-foreground/20 flex w-full items-center justify-between gap-4 border-b py-6 text-left transition-colors"
                   id={questionId}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   type="button"
                 >
-                  <span className="text-lg font-medium text-foreground sm:text-xl">{faq.question}</span>
+                  <span className="text-foreground text-lg font-medium sm:text-xl">
+                    {faq.question}
+                  </span>
                   <div
                     className="shrink-0 transition-transform duration-200"
-                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    style={{
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
                   >
                     <ChevronDown
                       aria-hidden="true"
-                      className="size-5 text-foreground/50 transition-colors group-hover:text-info"
+                      className="text-foreground/50 group-hover:text-info size-5 transition-colors"
                     />
                   </div>
                 </button>
@@ -58,7 +63,9 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
                   }}
                 >
                   <div className="overflow-hidden">
-                    <p className="pt-4 pb-6 text-pretty text-foreground/60">{faq.answer}</p>
+                    <p className="text-foreground/60 pt-4 pb-6 text-pretty">
+                      {faq.answer}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -113,7 +120,9 @@ export function StaticFaq() {
       <div className="mx-auto max-w-3xl">
         <FadeIn>
           <div className="mb-16 text-center sm:mb-20">
-            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">FAQ</p>
+            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
+              FAQ
+            </p>
             <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
               Questions? <span className="text-primary">Answers.</span>
             </h2>
@@ -144,7 +153,9 @@ export function StaticFaq() {
                   </span>
                   <div
                     className="shrink-0 transition-transform duration-200"
-                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    style={{
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
                   >
                     <ChevronDown
                       aria-hidden="true"
@@ -164,7 +175,9 @@ export function StaticFaq() {
                   }}
                 >
                   <div className="overflow-hidden">
-                    <p className="text-muted-foreground pt-4 pb-6 text-pretty">{faq.answer}</p>
+                    <p className="text-muted-foreground pt-4 pb-6 text-pretty">
+                      {faq.answer}
+                    </p>
                   </div>
                 </div>
               </div>

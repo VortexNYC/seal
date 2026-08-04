@@ -4,7 +4,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -100,7 +100,7 @@ describe("AI mutations", () => {
       });
 
       const suggestion = (await t.run(async (ctx) =>
-        ctx.db.get(id),
+        ctx.db.get(id)
       )) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion).toBeTruthy();
       expect(suggestion?.status).toBe("pending");
@@ -112,30 +112,36 @@ describe("AI mutations", () => {
       const { internal } = await import("../_generated/api");
 
       // First analysis
-      const firstId = await t.mutation(internal.ai.mutations.saveFieldSuggestions, {
-        documentId,
-        organizationId,
-        fields: [validField],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1000,
-        processingTimeMs: 1500,
-      });
+      const firstId = await t.mutation(
+        internal.ai.mutations.saveFieldSuggestions,
+        {
+          documentId,
+          organizationId,
+          fields: [validField],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1000,
+          processingTimeMs: 1500,
+        }
+      );
 
       // Second analysis (e.g. after PDF replace)
-      const secondId = await t.mutation(internal.ai.mutations.saveFieldSuggestions, {
-        documentId,
-        organizationId,
-        fields: [{ ...validField, label: "Updated Signature" }],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1200,
-        processingTimeMs: 1800,
-      });
+      const secondId = await t.mutation(
+        internal.ai.mutations.saveFieldSuggestions,
+        {
+          documentId,
+          organizationId,
+          fields: [{ ...validField, label: "Updated Signature" }],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1200,
+          processingTimeMs: 1800,
+        }
+      );
 
       const first = (await t.run(async (ctx) =>
-        ctx.db.get(firstId),
+        ctx.db.get(firstId)
       )) as Doc<"ai_field_suggestions"> | null;
       const second = (await t.run(async (ctx) =>
-        ctx.db.get(secondId),
+        ctx.db.get(secondId)
       )) as Doc<"ai_field_suggestions"> | null;
 
       expect(first?.status).toBe("dismissed");
@@ -145,14 +151,17 @@ describe("AI mutations", () => {
     test("does not dismiss already-applied suggestions", async () => {
       const { internal } = await import("../_generated/api");
 
-      const firstId = await t.mutation(internal.ai.mutations.saveFieldSuggestions, {
-        documentId,
-        organizationId,
-        fields: [validField],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1000,
-        processingTimeMs: 1500,
-      });
+      const firstId = await t.mutation(
+        internal.ai.mutations.saveFieldSuggestions,
+        {
+          documentId,
+          organizationId,
+          fields: [validField],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1000,
+          processingTimeMs: 1500,
+        }
+      );
 
       // Simulate user applying the first suggestion
       await t.run(async (ctx) => {
@@ -170,7 +179,7 @@ describe("AI mutations", () => {
       });
 
       const first = (await t.run(async (ctx) =>
-        ctx.db.get(firstId),
+        ctx.db.get(firstId)
       )) as Doc<"ai_field_suggestions"> | null;
       expect(first?.status).toBe("applied");
     });
@@ -182,9 +191,18 @@ describe("AI mutations", () => {
         documentId,
         organizationId,
         fields: [
-          { ...validField, fieldType: "signature" as const, label: "Signature" },
+          {
+            ...validField,
+            fieldType: "signature" as const,
+            label: "Signature",
+          },
           { ...validField, fieldType: "date" as const, label: "Date", y: 85 },
-          { ...validField, fieldType: "payment" as const, label: "Amount Due", y: 60 },
+          {
+            ...validField,
+            fieldType: "payment" as const,
+            label: "Amount Due",
+            y: 60,
+          },
         ],
         modelUsed: "gemini-3-flash",
         tokensUsed: 2000,
@@ -192,11 +210,13 @@ describe("AI mutations", () => {
       });
 
       const suggestion = (await t.run(async (ctx) =>
-        ctx.db.get(id),
+        ctx.db.get(id)
       )) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.fields).toHaveLength(3);
       expect(
-        suggestion?.fields.map((f: Doc<"ai_field_suggestions">["fields"][number]) => f.fieldType),
+        suggestion?.fields.map(
+          (f: Doc<"ai_field_suggestions">["fields"][number]) => f.fieldType
+        )
       ).toEqual(["signature", "date", "payment"]);
     });
   });
@@ -207,18 +227,21 @@ describe("AI mutations", () => {
     test("saves annotations with active status", async () => {
       const { internal } = await import("../_generated/api");
 
-      const id = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [validAnnotation],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1500,
-        processingTimeMs: 2000,
-      });
+      const id = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [validAnnotation],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1500,
+          processingTimeMs: 2000,
+        }
+      );
 
       expect(id).toBeTruthy();
       const annotation = (await t.run(async (ctx) =>
-        ctx.db.get(sealAssertPresent(id)),
+        ctx.db.get(sealAssertPresent(id))
       )) as Doc<"ai_document_annotations"> | null;
       expect(annotation?.status).toBe("active");
       expect(annotation?.annotations).toHaveLength(1);
@@ -227,14 +250,17 @@ describe("AI mutations", () => {
     test("returns null for empty annotations", async () => {
       const { internal } = await import("../_generated/api");
 
-      const id = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 500,
-        processingTimeMs: 1000,
-      });
+      const id = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 500,
+          processingTimeMs: 1000,
+        }
+      );
 
       expect(id).toBeNull();
     });
@@ -242,32 +268,38 @@ describe("AI mutations", () => {
     test("dismisses existing active annotations on re-analysis", async () => {
       const { internal } = await import("../_generated/api");
 
-      const firstId = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [validAnnotation],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1000,
-        processingTimeMs: 1500,
-      });
+      const firstId = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [validAnnotation],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1000,
+          processingTimeMs: 1500,
+        }
+      );
 
-      const secondId = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [{ ...validAnnotation, summary: "Updated annotation" }],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1200,
-        processingTimeMs: 1800,
-        forceOverrideDismissal: true,
-      });
+      const secondId = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [{ ...validAnnotation, summary: "Updated annotation" }],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1200,
+          processingTimeMs: 1800,
+          forceOverrideDismissal: true,
+        }
+      );
 
       const first = (await t.run(async (ctx) =>
-        ctx.db.get(sealAssertPresent(firstId)),
+        ctx.db.get(sealAssertPresent(firstId))
       )) as Doc<"ai_document_annotations"> | null;
       expect(first?.status).toBe("dismissed");
 
       const second = (await t.run(async (ctx) =>
-        ctx.db.get(sealAssertPresent(secondId)),
+        ctx.db.get(sealAssertPresent(secondId))
       )) as Doc<"ai_document_annotations"> | null;
       expect(second?.status).toBe("active");
     });
@@ -276,28 +308,34 @@ describe("AI mutations", () => {
       const { internal } = await import("../_generated/api");
 
       // Save and dismiss annotations
-      const firstId = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [validAnnotation],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1000,
-        processingTimeMs: 1500,
-      });
+      const firstId = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [validAnnotation],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1000,
+          processingTimeMs: 1500,
+        }
+      );
 
       await t.run(async (ctx) => {
         await ctx.db.patch(sealAssertPresent(firstId), { status: "dismissed" });
       });
 
       // New analysis without force flag should be skipped
-      const secondId = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [{ ...validAnnotation, summary: "Should not be saved" }],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 800,
-        processingTimeMs: 1000,
-      });
+      const secondId = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [{ ...validAnnotation, summary: "Should not be saved" }],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 800,
+          processingTimeMs: 1000,
+        }
+      );
 
       expect(secondId).toBeNull();
     });
@@ -306,33 +344,39 @@ describe("AI mutations", () => {
       const { internal } = await import("../_generated/api");
 
       // Save and dismiss
-      const firstId = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [validAnnotation],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1000,
-        processingTimeMs: 1500,
-      });
+      const firstId = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [validAnnotation],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1000,
+          processingTimeMs: 1500,
+        }
+      );
 
       await t.run(async (ctx) => {
         await ctx.db.patch(sealAssertPresent(firstId), { status: "dismissed" });
       });
 
       // Force flag overrides
-      const secondId = await t.mutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId,
-        organizationId,
-        annotations: [{ ...validAnnotation, summary: "After PDF replace" }],
-        modelUsed: "gemini-3-flash",
-        tokensUsed: 1200,
-        processingTimeMs: 1800,
-        forceOverrideDismissal: true,
-      });
+      const secondId = await t.mutation(
+        internal.ai.mutations.saveDocumentAnnotations,
+        {
+          documentId,
+          organizationId,
+          annotations: [{ ...validAnnotation, summary: "After PDF replace" }],
+          modelUsed: "gemini-3-flash",
+          tokensUsed: 1200,
+          processingTimeMs: 1800,
+          forceOverrideDismissal: true,
+        }
+      );
 
       expect(secondId).toBeTruthy();
       const second = (await t.run(async (ctx) =>
-        ctx.db.get(sealAssertPresent(secondId)),
+        ctx.db.get(sealAssertPresent(secondId))
       )) as Doc<"ai_document_annotations"> | null;
       expect(second?.status).toBe("active");
     });
@@ -369,7 +413,13 @@ describe("AI mutations", () => {
         documentId,
         organizationId,
         extraction: {
-          lineItems: [{ description: "Consulting fee", quantity: 1, unitPriceCents: 500000 }],
+          lineItems: [
+            {
+              description: "Consulting fee",
+              quantity: 1,
+              unitPriceCents: 500000,
+            },
+          ],
           currency: "usd",
           paymentType: "one_time",
           dueDateTerms: "net_30",
@@ -400,7 +450,9 @@ describe("AI mutations", () => {
         documentId,
         organizationId,
         extraction: {
-          lineItems: [{ description: "First fee", quantity: 1, unitPriceCents: 100000 }],
+          lineItems: [
+            { description: "First fee", quantity: 1, unitPriceCents: 100000 },
+          ],
           currency: "usd",
           paymentType: "one_time",
           dueDateTerms: "net_30",
@@ -413,7 +465,9 @@ describe("AI mutations", () => {
         documentId,
         organizationId,
         extraction: {
-          lineItems: [{ description: "Updated fee", quantity: 2, unitPriceCents: 250000 }],
+          lineItems: [
+            { description: "Updated fee", quantity: 2, unitPriceCents: 250000 },
+          ],
           currency: "eur",
           paymentType: "recurring",
           dueDateTerms: "on_receipt",
@@ -460,12 +514,14 @@ describe("AI mutations", () => {
           documentId,
           organizationId,
           extraction: {
-            lineItems: [{ description: "Fee", quantity: 1, unitPriceCents: 1000 }],
+            lineItems: [
+              { description: "Fee", quantity: 1, unitPriceCents: 1000 },
+            ],
             currency: "usd",
             paymentType: "one_time",
             dueDateTerms: "net_30",
           },
-        }),
+        })
       ).rejects.toThrow("Field is not a payment type");
     });
 
@@ -477,7 +533,9 @@ describe("AI mutations", () => {
         documentId,
         organizationId,
         extraction: {
-          lineItems: [{ description: "Retainer", quantity: 1, unitPriceCents: 300000 }],
+          lineItems: [
+            { description: "Retainer", quantity: 1, unitPriceCents: 300000 },
+          ],
           currency: "usd",
           paymentType: "recurring",
           dueDateTerms: "on_receipt",
@@ -514,7 +572,9 @@ describe("AI mutations", () => {
         documentId,
         organizationId,
         extraction: {
-          lineItems: [{ description: "Fee", quantity: 1, unitPriceCents: 1000 }],
+          lineItems: [
+            { description: "Fee", quantity: 1, unitPriceCents: 1000 },
+          ],
           currency: "USD",
           paymentType: "one_time",
           dueDateTerms: "net_30",
@@ -600,7 +660,7 @@ describe("AI mutations", () => {
 
       // Verify suggestion data is correct for heuristic matching
       const suggestion = (await t.run(async (ctx) =>
-        ctx.db.get(suggestionId),
+        ctx.db.get(suggestionId)
       )) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.fields).toHaveLength(2);
       expect(suggestion?.status).toBe("pending");
@@ -651,7 +711,12 @@ describe("AI mutations", () => {
           organizationId,
           fields: [
             { ...validField, label: "Alice Johnson Signature" },
-            { ...validField, label: "Bob Smith Date", fieldType: "date" as const, y: 85 },
+            {
+              ...validField,
+              label: "Bob Smith Date",
+              fieldType: "date" as const,
+              y: 85,
+            },
           ],
           modelUsed: "gemini-3-flash",
           tokensUsed: 500,
@@ -661,7 +726,7 @@ describe("AI mutations", () => {
       });
 
       const suggestion = (await t.run(async (ctx) =>
-        ctx.db.get(suggestionId),
+        ctx.db.get(suggestionId)
       )) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.fields[0].label).toBe("Alice Johnson Signature");
       expect(suggestion?.fields[1].label).toBe("Bob Smith Date");
@@ -676,13 +741,25 @@ describe("AI mutations", () => {
         return await ctx.db.insert("ai_field_suggestions", {
           documentId,
           organizationId,
-          fields: [{ ...validField, fieldType: "payment" as const, label: "Amount Due" }],
+          fields: [
+            {
+              ...validField,
+              fieldType: "payment" as const,
+              label: "Amount Due",
+            },
+          ],
           modelUsed: "gemini-3-flash",
           tokensUsed: 500,
           processingTimeMs: 1200,
           status: "pending",
           paymentExtraction: {
-            lineItems: [{ description: "Consulting", quantity: 1, unitPriceCents: 500000 }],
+            lineItems: [
+              {
+                description: "Consulting",
+                quantity: 1,
+                unitPriceCents: 500000,
+              },
+            ],
             currency: "usd",
             paymentType: "one_time",
             dueDateTerms: "net_30",
@@ -691,7 +768,7 @@ describe("AI mutations", () => {
       });
 
       const suggestion = (await t.run(async (ctx) =>
-        ctx.db.get(suggestionId),
+        ctx.db.get(suggestionId)
       )) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.paymentExtraction).toBeTruthy();
       expect(suggestion?.paymentExtraction?.lineItems).toHaveLength(1);

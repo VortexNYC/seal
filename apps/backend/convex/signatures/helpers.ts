@@ -17,7 +17,7 @@ import type { QueryCtx } from "../_generated/server";
 export function validateSignature(
   fieldType: string,
   value?: string,
-  signatureImageUrl?: string,
+  signatureImageUrl?: string
 ): { valid: boolean; error?: string } {
   // Signature fields must have an image URL
   if (fieldType === "signature" || fieldType === "initial") {
@@ -62,7 +62,7 @@ export function validateSignature(
  */
 export async function checkFieldCompleted(
   ctx: QueryCtx,
-  fieldId: Id<"signature_fields">,
+  fieldId: Id<"signature_fields">
 ): Promise<boolean> {
   const signature = await ctx.db
     .query("signatures")
@@ -83,7 +83,7 @@ export function validateAgainstRules(
     max?: number;
     pattern?: string;
     customMessage?: string;
-  },
+  }
 ): { valid: boolean; error?: string } {
   if (!validationRules) {
     return { valid: true };
@@ -107,14 +107,14 @@ export function validateAgainstRules(
 
 function getValidationErrorMessage(
   validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
-  fallback: string,
+  fallback: string
 ): string {
   return validationRules.customMessage || fallback;
 }
 
 function getRequiredRuleError(
   value: string | undefined,
-  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>
 ): string | undefined {
   if (!validationRules.required || (value && value.trim() !== "")) {
     return undefined;
@@ -125,41 +125,56 @@ function getRequiredRuleError(
 
 function getMinRuleError(
   value: string | undefined,
-  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>
 ): string | undefined {
-  if (!value || validationRules.min === undefined || value.length >= validationRules.min) {
+  if (
+    !value ||
+    validationRules.min === undefined ||
+    value.length >= validationRules.min
+  ) {
     return undefined;
   }
 
   return getValidationErrorMessage(
     validationRules,
-    `Minimum length is ${validationRules.min} characters`,
+    `Minimum length is ${validationRules.min} characters`
   );
 }
 
 function getMaxRuleError(
   value: string | undefined,
-  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>
 ): string | undefined {
-  if (!value || validationRules.max === undefined || value.length <= validationRules.max) {
+  if (
+    !value ||
+    validationRules.max === undefined ||
+    value.length <= validationRules.max
+  ) {
     return undefined;
   }
 
   return getValidationErrorMessage(
     validationRules,
-    `Maximum length is ${validationRules.max} characters`,
+    `Maximum length is ${validationRules.max} characters`
   );
 }
 
 function getPatternRuleError(
   value: string | undefined,
-  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>
 ): string | undefined {
-  if (!value || !validationRules.pattern || new RegExp(validationRules.pattern).test(value)) {
+  if (
+    !value ||
+    !validationRules.pattern ||
+    new RegExp(validationRules.pattern).test(value)
+  ) {
     return undefined;
   }
 
-  return getValidationErrorMessage(validationRules, "Value does not match required pattern");
+  return getValidationErrorMessage(
+    validationRules,
+    "Value does not match required pattern"
+  );
 }
 
 /**
@@ -168,7 +183,7 @@ function getPatternRuleError(
  */
 export async function getDocumentCompletionStatus(
   ctx: QueryCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<{
   completionPercentage: number;
   totalFields: number;
@@ -195,7 +210,8 @@ export async function getDocumentCompletionStatus(
     }
   }
 
-  const completionPercentage = fields.length > 0 ? (completedCount / fields.length) * 100 : 0;
+  const completionPercentage =
+    fields.length > 0 ? (completedCount / fields.length) * 100 : 0;
   const requiredFieldsComplete = incompleteRequiredFields.length === 0;
 
   return {
@@ -213,7 +229,7 @@ export async function getDocumentCompletionStatus(
 export async function checkRecipientComplete(
   ctx: QueryCtx,
   documentId: Id<"documents">,
-  recipientId: Id<"document_recipients">,
+  recipientId: Id<"document_recipients">
 ): Promise<{
   complete: boolean;
   totalFields: number;
@@ -224,7 +240,7 @@ export async function checkRecipientComplete(
   const fields = await ctx.db
     .query("signature_fields")
     .withIndex("by_document_recipient", (q) =>
-      q.eq("documentId", documentId).eq("recipientId", recipientId),
+      q.eq("documentId", documentId).eq("recipientId", recipientId)
     )
     .collect();
 
@@ -261,7 +277,7 @@ export async function checkRecipientComplete(
  */
 export async function verifyDocumentIntegrityForSigning(
   ctx: Pick<QueryCtx, "db">,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ): Promise<void> {
   // If document has no hash yet, we can't verify integrity.
   // This shouldn't happen for documents created after the hash-on-upload feature,
@@ -278,7 +294,10 @@ export async function verifyDocumentIntegrityForSigning(
     .collect();
 
   for (const sig of existingSignatures) {
-    if (sig.documentHashAtSigning && sig.documentHashAtSigning !== document.documentHash) {
+    if (
+      sig.documentHashAtSigning &&
+      sig.documentHashAtSigning !== document.documentHash
+    ) {
       throw new ConvexError({
         code: "INTEGRITY_ERROR",
         message:

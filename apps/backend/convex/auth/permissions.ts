@@ -144,7 +144,7 @@ export type RoleTemplate = keyof typeof ROLE_TEMPLATES;
  */
 export function hasPermission(
   userPermissions: readonly string[],
-  requiredPermission: string,
+  requiredPermission: string
 ): boolean {
   // Global wildcard = all permissions
   if (userPermissions.includes("*")) {
@@ -174,9 +174,11 @@ export function hasPermission(
  */
 export function hasAnyPermission(
   userPermissions: readonly string[],
-  requiredPermissions: string[],
+  requiredPermissions: string[]
 ): boolean {
-  return requiredPermissions.some((permission) => hasPermission(userPermissions, permission));
+  return requiredPermissions.some((permission) =>
+    hasPermission(userPermissions, permission)
+  );
 }
 
 /**
@@ -188,9 +190,11 @@ export function hasAnyPermission(
  */
 export function hasAllPermissions(
   userPermissions: readonly string[],
-  requiredPermissions: string[],
+  requiredPermissions: string[]
 ): boolean {
-  return requiredPermissions.every((permission) => hasPermission(userPermissions, permission));
+  return requiredPermissions.every((permission) =>
+    hasPermission(userPermissions, permission)
+  );
 }
 
 /**
@@ -249,7 +253,10 @@ export function getPermissionsByDomain(): Record<
   string,
   Array<{ key: PermissionKey; description: string }>
 > {
-  const byDomain: Record<string, Array<{ key: PermissionKey; description: string }>> = {};
+  const byDomain: Record<
+    string,
+    Array<{ key: PermissionKey; description: string }>
+  > = {};
 
   for (const [key, description] of Object.entries(PERMISSIONS)) {
     const [domain] = key.split(":");

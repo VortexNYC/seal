@@ -35,7 +35,13 @@ interface AIChatPanelProps {
 // Message components
 // ---------------------------------------------------------------------------
 
-function StreamingText({ text, isStreaming }: { text: string; isStreaming: boolean }) {
+function StreamingText({
+  text,
+  isStreaming,
+}: {
+  text: string;
+  isStreaming: boolean;
+}) {
   const [visibleText] = useSmoothText(text, {
     startStreaming: isStreaming,
   });
@@ -58,27 +64,37 @@ function MessageBubble({
   const isStreaming = status === "streaming";
 
   return (
-    <div className={cn("flex gap-2.5", isUser ? "flex-row-reverse" : "flex-row")}>
+    <div
+      className={cn("flex gap-2.5", isUser ? "flex-row-reverse" : "flex-row")}
+    >
       <div
         className={cn(
           "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
-          isUser ? "bg-muted text-muted-foreground" : "bg-ai-accent text-ai-accent-foreground",
+          isUser
+            ? "bg-muted text-muted-foreground"
+            : "bg-ai-accent text-ai-accent-foreground"
         )}
       >
-        {isUser ? <UserIcon className="h-3.5 w-3.5" /> : <BotIcon className="h-3.5 w-3.5" />}
+        {isUser ? (
+          <UserIcon className="h-3.5 w-3.5" />
+        ) : (
+          <BotIcon className="h-3.5 w-3.5" />
+        )}
       </div>
       <div
         className={cn(
           "max-w-[85%] rounded-xl px-3.5 py-2.5 font-sans text-sm leading-relaxed",
           isUser
             ? "bg-muted text-foreground"
-            : "bg-card text-card-foreground ring-border/60 ring-1",
+            : "bg-card text-card-foreground ring-border/60 ring-1"
         )}
       >
         {isStreaming ? (
           <StreamingText text={text} isStreaming />
         ) : (
-          <span className="whitespace-pre-wrap">{parseTextWithCitations(text, slug)}</span>
+          <span className="whitespace-pre-wrap">
+            {parseTextWithCitations(text, slug)}
+          </span>
         )}
         {isStreaming && (
           <span className="bg-ai-accent/50 ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm" />
@@ -98,7 +114,11 @@ function ProgressIndicator({ threadId }: { threadId: string }) {
   if (!progress.isTracking) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2" aria-live="polite" role="status">
+    <div
+      className="flex items-center gap-2 px-3 py-2"
+      aria-live="polite"
+      role="status"
+    >
       <LoaderIcon className="text-ai-accent h-3.5 w-3.5 animate-spin" />
       <span className="text-muted-foreground font-sans text-xs">
         {progress.completedTools.length > 0
@@ -151,8 +171,10 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const sendMessageMutation = useMutation(api.ai.threads.sendMessage).withOptimisticUpdate(
-    optimisticallySendMessage(api.ai.threads.listMessages),
+  const sendMessageMutation = useMutation(
+    api.ai.threads.sendMessage
+  ).withOptimisticUpdate(
+    optimisticallySendMessage(api.ai.threads.listMessages)
   );
 
   const abortMutation = useMutation(api.ai.threads.abortCurrentStream);
@@ -160,7 +182,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
   const { results: messages, status: paginationStatus } = useUIMessages(
     api.ai.threads.listMessages,
     { threadId },
-    { initialNumItems: 50, stream: true },
+    { initialNumItems: 50, stream: true }
   );
 
   const progress = useAIProgress(threadId);
@@ -192,7 +214,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       // Re-focus input for quick follow-ups
       inputRef.current?.focus();
     },
-    [input, sendMessageMutation, threadId],
+    [input, sendMessageMutation, threadId]
   );
 
   const handleAbort = useCallback(async () => {
@@ -210,7 +232,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   const isEmpty = messages.length === 0;
@@ -224,8 +246,12 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
             <SparklesIcon className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-foreground font-sans text-sm font-semibold">Seal AI</div>
-            <div className="text-muted-foreground font-sans text-[10px]">Document assistant</div>
+            <div className="text-foreground font-sans text-sm font-semibold">
+              Seal AI
+            </div>
+            <div className="text-muted-foreground font-sans text-[10px]">
+              Document assistant
+            </div>
           </div>
         </div>
         <button
@@ -239,7 +265,11 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3" role="log" aria-label="Chat messages">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-3"
+        role="log"
+        aria-label="Chat messages"
+      >
         {paginationStatus === "LoadingFirstPage" ? (
           <div className="flex items-center justify-center py-8">
             <LoaderIcon className="text-muted-foreground h-5 w-5 animate-spin" />
@@ -250,9 +280,12 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
               <SparklesIcon className="text-ai-accent h-6 w-6" />
             </div>
             <div className="text-center">
-              <p className="text-foreground font-sans text-sm font-medium">How can I help?</p>
+              <p className="text-foreground font-sans text-sm font-medium">
+                How can I help?
+              </p>
               <p className="text-muted-foreground mt-1 font-sans text-xs">
-                I can analyze documents, suggest fields, and search across your workspace
+                I can analyze documents, suggest fields, and search across your
+                workspace
               </p>
             </div>
             <SuggestionChips onSelect={handleSend} />
@@ -262,7 +295,10 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
             {messages.map((message) => {
               const text =
                 message.parts
-                  ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+                  ?.filter(
+                    (p): p is { type: "text"; text: string } =>
+                      p.type === "text"
+                  )
                   .map((p) => p.text)
                   .join("") ?? "";
 

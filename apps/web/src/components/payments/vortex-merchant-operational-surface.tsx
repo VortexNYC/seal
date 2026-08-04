@@ -22,15 +22,35 @@ import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
+type ConnectionStatus =
+  | "not_connected"
+  | "pending"
+  | "restricted"
+  | "connected";
 type FeeHandling = "absorb" | "pass_to_recipient";
 type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
-type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
-type PayoutProfile = NonNullable<VortexPayoutReadinessPanelProps["payoutProfile"]>;
+type VortexMerchantState = NonNullable<
+  VortexMerchantAccountPanelProps["merchantState"]
+>;
+type PayoutProfile = NonNullable<
+  VortexPayoutReadinessPanelProps["payoutProfile"]
+>;
 type MoneyDirection = "credit" | "debit";
-type SettlementStatus = "accruing" | "closed" | "approved" | "paid_out" | "failed" | "reversed";
+type SettlementStatus =
+  | "accruing"
+  | "closed"
+  | "approved"
+  | "paid_out"
+  | "failed"
+  | "reversed";
 type PayoutStatus =
   | "pending"
   | "submitted"
@@ -184,7 +204,8 @@ type VortexOperationalPlaceholderProps = {
 
 const vortexPaymentsClassNames = {
   description: "text-muted-foreground text-sm text-pretty",
-  empty: "mt-4 rounded-md border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground",
+  empty:
+    "mt-4 rounded-md border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground",
   error:
     "mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive",
   header: "space-y-1.5",
@@ -194,7 +215,8 @@ const vortexPaymentsClassNames = {
   list: "mt-4 grid gap-3",
   loading: "mt-4 rounded-md border p-3 text-sm text-muted-foreground",
   metricLabel: "text-muted-foreground",
-  metrics: "mt-4 grid gap-3 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-2",
+  metrics:
+    "mt-4 grid gap-3 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-2",
   metricValue: "font-medium tabular-nums",
   root: "rounded-lg border bg-card p-6 text-card-foreground shadow-sm",
   status:
@@ -223,7 +245,10 @@ const surfaceCopy = {
     title: "Tax Documents",
     description: "Vortex tax document status for this merchant account.",
   },
-} satisfies Record<VortexMerchantOperationalSurfaceKind, { title: string; description: string }>;
+} satisfies Record<
+  VortexMerchantOperationalSurfaceKind,
+  { title: string; description: string }
+>;
 
 const derivedBalanceWalletCopy = {
   title: "Derived balance ledger",
@@ -243,8 +268,10 @@ const derivedBalanceWalletCopy = {
 
 const payoutReadinessCopy = {
   title: "Payout readiness",
-  readyDescription: "This merchant account is ready for payouts through Vortex Payments.",
-  blockedDescription: "This merchant account still has payout requirements to resolve.",
+  readyDescription:
+    "This merchant account is ready for payouts through Vortex Payments.",
+  blockedDescription:
+    "This merchant account still has payout requirements to resolve.",
   errorTitle: "Unable to load Vortex payout profile.",
   latestSettlementLabel: "Latest Vortex settlement",
   latestPayoutLabel: "Latest Vortex payout",
@@ -254,16 +281,21 @@ export function VortexMerchantOperationalSurface({
   slug,
   surface,
 }: VortexMerchantOperationalSurfaceProps) {
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+  const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
-  }) as MerchantAccountResult | undefined;
+  });
+  const merchantAccountResult = useQuery(
+    api.payments.merchant_account_queries.getMerchantAccount,
+    {
+      slug,
+    }
+  ) as MerchantAccountResult | undefined;
   const orgId = organization?._id as Id<"organizations"> | undefined;
   const account = merchantAccountResult?.account ?? null;
   const payoutDataState = useVortexMerchantPayoutData(
     orgId,
     account,
-    merchantAccountResult?.status,
+    merchantAccountResult?.status
   );
 
   if (organization === undefined || merchantAccountResult === undefined) {
@@ -299,8 +331,16 @@ function ConnectedOperationalSurface({
   status,
   surface,
 }: ConnectedOperationalSurfaceProps) {
-  const merchantAccount = buildMerchantAccount(account, organizationName, organizationId);
-  const merchantState = buildMerchantState(account, status, payoutDataState.data ?? undefined);
+  const merchantAccount = buildMerchantAccount(
+    account,
+    organizationName,
+    organizationId
+  );
+  const merchantState = buildMerchantState(
+    account,
+    status,
+    payoutDataState.data ?? undefined
+  );
 
   return (
     <PageWrapper title={copy.title} description={copy.description}>
@@ -337,26 +377,30 @@ function ConnectedOperationalSurface({
 }
 
 function hasConnectedMerchantAccount(
-  merchantAccountResult: MerchantAccountResult,
+  merchantAccountResult: MerchantAccountResult
 ): merchantAccountResult is MerchantAccountResult & {
   account: NonNullable<MerchantAccountResult["account"]>;
   status: "connected";
 } {
-  return merchantAccountResult.status === "connected" && merchantAccountResult.account !== null;
+  return (
+    merchantAccountResult.status === "connected" &&
+    merchantAccountResult.account !== null
+  );
 }
 
 function useVortexMerchantPayoutData(
   organizationId: Id<"organizations"> | undefined,
   account: MerchantAccountResult["account"],
-  status: ConnectionStatus | undefined,
+  status: ConnectionStatus | undefined
 ): VortexMerchantPayoutDataState {
   const getVortexMerchantPayoutData = useAction(
-    api.payments.vortex_merchant_actions.getVortexMerchantPayoutData,
+    api.payments.vortex_merchant_actions.getVortexMerchantPayoutData
   );
   const [data, setData] = useState<VortexMerchantPayoutData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
-  const shouldFetch = organizationId !== undefined && status === "connected" && account !== null;
+  const shouldFetch =
+    organizationId !== undefined && status === "connected" && account !== null;
 
   useEffect(() => {
     if (!shouldFetch || organizationId === undefined) {
@@ -379,7 +423,9 @@ function useVortexMerchantPayoutData(
       .catch((caught: unknown) => {
         if (!cancelled) {
           setData(null);
-          setError(caught instanceof Error ? caught.message : "Unable to load payouts");
+          setError(
+            caught instanceof Error ? caught.message : "Unable to load payouts"
+          );
         }
       })
       .finally(() => {
@@ -391,7 +437,12 @@ function useVortexMerchantPayoutData(
     return () => {
       cancelled = true;
     };
-  }, [account?.processorAccountId, getVortexMerchantPayoutData, organizationId, shouldFetch]);
+  }, [
+    account?.processorAccountId,
+    getVortexMerchantPayoutData,
+    organizationId,
+    shouldFetch,
+  ]);
 
   return { data, loading, error, shouldFetch };
 }
@@ -409,7 +460,7 @@ function OperationalSurfacePanels({
         balance={buildBalanceWalletState(
           merchantState,
           account.defaultCurrency,
-          payoutDataState.data ?? undefined,
+          payoutDataState.data ?? undefined
         )}
         classNames={vortexPaymentsClassNames}
         loading={payoutDataState.loading && payoutDataState.shouldFetch}
@@ -444,12 +495,16 @@ function OperationalSurfacePanels({
   if (surface === "history") {
     return (
       <VortexPaymentTimelineSummary
-        timeline={buildPaymentTimelineState(merchantState, account.defaultCurrency)}
+        timeline={buildPaymentTimelineState(
+          merchantState,
+          account.defaultCurrency
+        )}
         classNames={vortexPaymentsClassNames}
         readOnly
         copy={{
           title: "Payment timeline",
-          emptyDescription: "Payment event projection is owned by Vortex Payments.",
+          emptyDescription:
+            "Payment event projection is owned by Vortex Payments.",
           emptyEntriesDescription:
             "Receipts, refunds, and invoice events will appear here after Seal writes them into Vortex.",
         }}
@@ -480,15 +535,21 @@ function OperationalSurfacePanels({
   );
 }
 
-export function NoVortexMerchantAccountState({ slug, title }: NoVortexMerchantAccountStateProps) {
+export function NoVortexMerchantAccountState({
+  slug,
+  title,
+}: NoVortexMerchantAccountStateProps) {
   return (
     <PageWrapper title={title}>
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <WalletCards className="text-muted-foreground mb-4 size-12" />
-          <h3 className="mb-2 text-lg font-semibold text-balance">Vortex Connect not ready</h3>
+          <h3 className="mb-2 text-lg font-semibold text-balance">
+            Vortex Connect not ready
+          </h3>
           <p className="text-muted-foreground mb-6 max-w-sm text-center text-sm text-pretty">
-            Create or finish Vortex Connect setup before using payment operations.
+            Create or finish Vortex Connect setup before using payment
+            operations.
           </p>
           <Button asChild>
             <Link to="/$slug/settings/payments" params={{ slug }}>
@@ -533,7 +594,7 @@ function VortexOperationalPlaceholder({
 function buildMerchantAccount(
   account: NonNullable<MerchantAccountResult["account"]>,
   organizationName: string,
-  organizationId: Id<"organizations"> | undefined,
+  organizationId: Id<"organizations"> | undefined
 ): VortexMerchantAccount {
   const updatedAt = toIsoTimestamp(account.updatedAt);
 
@@ -550,10 +611,15 @@ function buildMerchantAccount(
       chargesEnabled: account.chargesEnabled,
       detailsSubmitted: account.detailsSubmitted,
       connectionStatus:
-        account.requirements?.disabledReason === undefined ? undefined : "restricted",
+        account.requirements?.disabledReason === undefined
+          ? undefined
+          : "restricted",
       routeStatus: undefined,
     }),
-    capabilityStatus: account.chargesEnabled && account.payoutsEnabled ? "active" : "restricted",
+    capabilityStatus:
+      account.chargesEnabled && account.payoutsEnabled
+        ? "active"
+        : "restricted",
     associatedIdentities: [],
     metadata: {},
     processorAccountRefs: [],
@@ -565,7 +631,7 @@ function buildMerchantAccount(
 function buildMerchantState(
   account: NonNullable<MerchantAccountResult["account"]>,
   status: ConnectionStatus,
-  payoutData: VortexMerchantPayoutData | undefined,
+  payoutData: VortexMerchantPayoutData | undefined
 ): VortexMerchantState {
   const openRequirementIds = [
     ...(account.requirements?.currentlyDue ?? []),
@@ -579,16 +645,22 @@ function buildMerchantState(
       chargesEnabled: account.chargesEnabled,
       detailsSubmitted: account.detailsSubmitted,
       connectionStatus:
-        account.requirements?.disabledReason === undefined ? undefined : "restricted",
+        account.requirements?.disabledReason === undefined
+          ? undefined
+          : "restricted",
       routeStatus: status,
     }),
     onboardingStatus: account.detailsSubmitted ? "approved" : "action_required",
     openRequirementIds,
     activeCapabilityKeys: buildActiveCapabilityKeys(account.capabilities),
-    restrictedCapabilityKeys: buildRestrictedCapabilityKeys(account.capabilities),
+    restrictedCapabilityKeys: buildRestrictedCapabilityKeys(
+      account.capabilities
+    ),
     canAcceptPayments: account.chargesEnabled,
     payoutReadiness: account.payoutsEnabled ? "ready" : "blocked",
-    payoutBlockReason: account.payoutsEnabled ? undefined : account.requirements?.disabledReason,
+    payoutBlockReason: account.payoutsEnabled
+      ? undefined
+      : account.requirements?.disabledReason,
     latestSettlementStatus: payoutData?.settlements[0]?.status,
     latestPayoutStatus: payoutData?.payouts[0]?.status,
     capabilitySnapshots: [],
@@ -597,49 +669,64 @@ function buildMerchantState(
 }
 
 function buildActiveCapabilityKeys(
-  capabilities: NonNullable<MerchantAccountResult["account"]>["capabilities"],
+  capabilities: NonNullable<MerchantAccountResult["account"]>["capabilities"]
 ): string[] {
   return compactCapabilities([
     capabilityWhenActive(capabilities?.cardPayments, "card_payments"),
     capabilityWhenActive(capabilities?.transfers, "transfers"),
-    capabilityWhenActive(capabilities?.usBankAccountAchPayments, "us_bank_account_ach_payments"),
+    capabilityWhenActive(
+      capabilities?.usBankAccountAchPayments,
+      "us_bank_account_ach_payments"
+    ),
   ]);
 }
 
 function buildRestrictedCapabilityKeys(
-  capabilities: NonNullable<MerchantAccountResult["account"]>["capabilities"],
+  capabilities: NonNullable<MerchantAccountResult["account"]>["capabilities"]
 ): string[] {
   return compactCapabilities([
     capabilityWhenRestricted(capabilities?.cardPayments, "card_payments"),
     capabilityWhenRestricted(capabilities?.transfers, "transfers"),
     capabilityWhenRestricted(
       capabilities?.usBankAccountAchPayments,
-      "us_bank_account_ach_payments",
+      "us_bank_account_ach_payments"
     ),
   ]);
 }
 
-function capabilityWhenActive(status: string | undefined, capability: string): string | null {
+function capabilityWhenActive(
+  status: string | undefined,
+  capability: string
+): string | null {
   return status === "active" ? capability : null;
 }
 
-function capabilityWhenRestricted(status: string | undefined, capability: string): string | null {
+function capabilityWhenRestricted(
+  status: string | undefined,
+  capability: string
+): string | null {
   return status !== undefined && status !== "active" ? capability : null;
 }
 
-function compactCapabilities(capabilities: readonly (string | null)[]): string[] {
-  return capabilities.filter((capability): capability is string => capability !== null);
+function compactCapabilities(
+  capabilities: readonly (string | null)[]
+): string[] {
+  return capabilities.filter(
+    (capability): capability is string => capability !== null
+  );
 }
 
 function buildBalanceWalletState(
   merchantState: VortexMerchantState,
   defaultCurrency: string | undefined,
-  payoutData: VortexMerchantPayoutData | undefined,
+  payoutData: VortexMerchantPayoutData | undefined
 ): VortexBalanceWalletState {
   const fallbackCurrency = defaultCurrency?.toUpperCase() ?? "USD";
   const selectedBalance =
-    findDerivedCurrencyBalance(payoutData?.derivedBalance.currencies, fallbackCurrency) ??
-    payoutData?.derivedBalance.currencies[0];
+    findDerivedCurrencyBalance(
+      payoutData?.derivedBalance.currencies,
+      fallbackCurrency
+    ) ?? payoutData?.derivedBalance.currencies[0];
   const currency = selectedBalance?.currency ?? fallbackCurrency;
   const entries =
     payoutData === undefined
@@ -657,22 +744,26 @@ function buildBalanceWalletState(
   return {
     customerId: merchantState.merchantAccountId,
     billingAccountId: merchantState.merchantAccountId,
-    status: entries.length > 0 || selectedBalance !== undefined ? "ready" : "empty",
+    status:
+      entries.length > 0 || selectedBalance !== undefined ? "ready" : "empty",
     currency,
     availableAmount: selectedBalance?.availableForPayout ?? 0,
     pendingAmount,
     entries,
     nextAction:
       "DERIVED from Vortex public settlements and payouts. Not a provider balance endpoint.",
-    message: "Derived balance: Vortex snapshots only, not direct provider balance.",
+    message:
+      "Derived balance: Vortex snapshots only, not direct provider balance.",
   };
 }
 
 function findDerivedCurrencyBalance(
   balances: readonly DerivedCurrencyBalance[] | undefined,
-  fallbackCurrency: string,
+  fallbackCurrency: string
 ): DerivedCurrencyBalance | undefined {
-  return balances?.find((balance) => balance.currency.toUpperCase() === fallbackCurrency);
+  return balances?.find(
+    (balance) => balance.currency.toUpperCase() === fallbackCurrency
+  );
 }
 
 function buildBalanceWalletEntries(input: {
@@ -690,7 +781,9 @@ function buildBalanceWalletEntries(input: {
   ].sort((left, right) => right.effectiveAt.localeCompare(left.effectiveAt));
 }
 
-function toSettlementWalletEntry(settlement: SettlementSnapshot): VortexBalanceWalletEntry {
+function toSettlementWalletEntry(
+  settlement: SettlementSnapshot
+): VortexBalanceWalletEntry {
   const amount = signedAmount(settlement.direction, settlement.netAmount);
   return {
     entryId: settlement.id,
@@ -698,9 +791,12 @@ function toSettlementWalletEntry(settlement: SettlementSnapshot): VortexBalanceW
     amount: Math.abs(amount),
     currency: settlement.currency,
     remainingAmount:
-      settlement.status === "closed" || settlement.status === "approved" ? Math.abs(amount) : 0,
+      settlement.status === "closed" || settlement.status === "approved"
+        ? Math.abs(amount)
+        : 0,
     description: `Derived settlement row: ${settlement.status}. Gross ${settlement.grossAmount}, fee ${settlement.feeAmount}, refund ${settlement.refundAmount}, adjustment ${settlement.adjustmentAmount}.`,
-    effectiveAt: settlement.approvedAt ?? settlement.closedAt ?? settlement.updatedAt,
+    effectiveAt:
+      settlement.approvedAt ?? settlement.closedAt ?? settlement.updatedAt,
     sourceEntryId: settlement.id,
     targets: { lineTypes: ["adjustment"] },
   };
@@ -709,7 +805,10 @@ function toSettlementWalletEntry(settlement: SettlementSnapshot): VortexBalanceW
 function toPayoutWalletEntry(payout: PayoutSnapshot): VortexBalanceWalletEntry {
   return {
     entryId: payout.id,
-    entryType: payout.status === "returned" || payout.status === "failed" ? "reverse" : "consume",
+    entryType:
+      payout.status === "returned" || payout.status === "failed"
+        ? "reverse"
+        : "consume",
     amount: Math.abs(signedAmount(payout.direction, payout.amount)),
     currency: payout.currency,
     remainingAmount: 0,
@@ -730,7 +829,7 @@ function signedAmount(direction: MoneyDirection, amount: number): number {
 
 function buildPaymentTimelineState(
   merchantState: VortexMerchantState,
-  defaultCurrency: string | undefined,
+  defaultCurrency: string | undefined
 ): VortexPaymentTimelineState {
   return {
     customerId: merchantState.merchantAccountId,
@@ -748,7 +847,10 @@ function mapMerchantAccountStatus(input: {
   connectionStatus: "restricted" | undefined;
   routeStatus: ConnectionStatus | undefined;
 }): VortexMerchantAccount["status"] {
-  if (input.routeStatus === "restricted" || input.connectionStatus === "restricted") {
+  if (
+    input.routeStatus === "restricted" ||
+    input.connectionStatus === "restricted"
+  ) {
     return "restricted";
   }
 

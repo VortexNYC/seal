@@ -6,17 +6,20 @@ export function LogoCloudBlockComponent({ block }: { block: LogoCloudBlock }) {
   }
 
   return (
-    <section className="relative overflow-hidden border-y border-foreground/5 bg-background/20 py-12">
+    <section className="border-foreground/5 bg-background/20 relative overflow-hidden border-y py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
-          <p className="mb-8 text-center text-sm tracking-widest text-foreground/40 uppercase">
+          <p className="text-foreground/40 mb-8 text-center text-sm tracking-widest uppercase">
             {block.headline}
           </p>
         )}
 
         <div className="flex flex-wrap items-center justify-center gap-12">
           {block.logos.map((logo) => (
-            <div className="flex shrink-0 items-center justify-center" key={logo.src}>
+            <div
+              className="flex shrink-0 items-center justify-center"
+              key={logo.src}
+            >
               {logo.src && (
                 <img
                   alt={logo.alt || "Partner logo"}

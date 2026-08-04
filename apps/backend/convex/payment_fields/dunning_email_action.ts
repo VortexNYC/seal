@@ -10,10 +10,13 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalQuery } from "../_generated/server";
-import { sendEmailManuallyFromAction, sendResendEmail } from "../emails/resend_component";
+import {
+  sendEmailManuallyFromAction,
+  sendResendEmail,
+} from "../emails/resend_component";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -48,7 +51,7 @@ interface DunningEmailContent {
 function getDunningEmailContent(
   step: number,
   documentName: string,
-  amount: string,
+  amount: string
 ): DunningEmailContent {
   switch (step) {
     case 0:
@@ -85,10 +88,14 @@ function getDunningEmailContent(
 function renderDunningHtml(
   content: DunningEmailContent,
   customerName: string,
-  paymentUrl: string | undefined,
+  paymentUrl: string | undefined
 ): string {
   const urgencyColor =
-    content.urgency === "high" ? "#dc2626" : content.urgency === "medium" ? "#d97706" : "#6b7280";
+    content.urgency === "high"
+      ? "#dc2626"
+      : content.urgency === "medium"
+        ? "#d97706"
+        : "#6b7280";
 
   const buttonHtml = paymentUrl
     ? `<p style="margin: 24px 0;"><a href="${paymentUrl}" style="display: inline-block; padding: 12px 24px; background-color: #A63D2F; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Pay Now</a></p>`
@@ -133,7 +140,7 @@ export const sendDunningEmail = internalAction({
   handler: async (ctx, args) => {
     const invoice: Doc<"document_invoices"> | null = await ctx.runQuery(
       internal.payment_fields.dunning_email_action.getInvoiceById,
-      { invoiceId: args.invoiceId },
+      { invoiceId: args.invoiceId }
     );
 
     if (!invoice) return { success: false, error: "Invoice not found" };
@@ -159,7 +166,7 @@ export const sendDunningEmail = internalAction({
     // Get document name for email
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.payment_fields.dunning_email_action.getDocumentById,
-      { documentId: invoice.documentId },
+      { documentId: invoice.documentId }
     );
 
     const documentName = document?.name || "your document";
@@ -167,12 +174,20 @@ export const sendDunningEmail = internalAction({
     const amount = formatCurrency(invoice.amountDue, invoice.currency);
 
     const content = getDunningEmailContent(args.step, documentName, amount);
-    const html = renderDunningHtml(content, customerName, invoice.hostedInvoiceUrl);
+    const html = renderDunningHtml(
+      content,
+      customerName,
+      invoice.hostedInvoiceUrl
+    );
 
     try {
       await sendEmailManuallyFromAction(
         ctx,
-        { from: FROM_EMAIL, to: [invoice.customerEmail], subject: content.subject },
+        {
+          from: FROM_EMAIL,
+          to: [invoice.customerEmail],
+          subject: content.subject,
+        },
         async (idempotencyKey: string) => {
           const { data, error } = await sendResendEmail({
             from: FROM_EMAIL,
@@ -183,14 +198,17 @@ export const sendDunningEmail = internalAction({
           });
           if (error) throw new Error(error.message ?? "Resend request failed");
           return sealAssertPresent(data).id;
-        },
+        }
       );
 
       // Advance to next step
-      await ctx.runMutation(internal.payment_fields.dunning.advanceDunningStep, {
-        invoiceId: args.invoiceId,
-        completedStep: args.step,
-      });
+      await ctx.runMutation(
+        internal.payment_fields.dunning.advanceDunningStep,
+        {
+          invoiceId: args.invoiceId,
+          completedStep: args.step,
+        }
+      );
 
       return { success: true };
     } catch (error) {

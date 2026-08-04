@@ -6,7 +6,7 @@ import { createTestContext } from "../test.setup";
 import { seedTestOrganizationMember } from "../testVortexAuth";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -21,7 +21,14 @@ function makeValidPaymentArgs(fieldId: Id<"signature_fields">) {
   return {
     fieldId,
     paymentType: "one_time" as const,
-    items: [{ id: "item-1", description: "Consulting fee", quantity: 1, unitPrice: 15000 }],
+    items: [
+      {
+        id: "item-1",
+        description: "Consulting fee",
+        quantity: 1,
+        unitPrice: 15000,
+      },
+    ],
     currency: "USD",
     dueDateTerms: "net_30" as const,
     allowedPaymentMethods: ["card" as const],
@@ -127,7 +134,7 @@ describe("Payment field mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
+          makeValidPaymentArgs(paymentFieldId)
         );
 
       expect(configId).toBeDefined();
@@ -150,13 +157,23 @@ describe("Payment field mutations", () => {
 
       const firstId = await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
-        makeValidPaymentArgs(paymentFieldId),
+        makeValidPaymentArgs(paymentFieldId)
       );
 
-      const secondId = await authed.mutation(api.payment_fields.mutations.upsertPaymentConfig, {
-        ...makeValidPaymentArgs(paymentFieldId),
-        items: [{ id: "item-1", description: "Updated fee", quantity: 2, unitPrice: 10000 }],
-      });
+      const secondId = await authed.mutation(
+        api.payment_fields.mutations.upsertPaymentConfig,
+        {
+          ...makeValidPaymentArgs(paymentFieldId),
+          items: [
+            {
+              id: "item-1",
+              description: "Updated fee",
+              quantity: 2,
+              unitPrice: 10000,
+            },
+          ],
+        }
+      );
 
       expect(secondId).toBe(firstId);
 
@@ -207,7 +224,8 @@ describe("Payment field mutations", () => {
           taxEnabled: false,
           totalAmountCents: 4200,
           paymentStatus: "awaiting",
-          hostedInvoiceUrl: "https://notable-leopard-969.convex.site/pay/pay_test",
+          hostedInvoiceUrl:
+            "https://notable-leopard-969.convex.site/pay/pay_test",
           vortexPayableId: "payable_test",
           vortexDepositBalancePayableId: "installment_payable_test",
           vortexInstallmentPayableId: "installment_payable_test",
@@ -224,8 +242,12 @@ describe("Payment field mutations", () => {
 
       expect(config?.providerInvoiceId).toBeUndefined();
       expect(config?.vortexPayableId).toBe("payable_test");
-      expect(config?.vortexDepositBalancePayableId).toBe("installment_payable_test");
-      expect(config?.vortexInstallmentPayableId).toBe("installment_payable_test");
+      expect(config?.vortexDepositBalancePayableId).toBe(
+        "installment_payable_test"
+      );
+      expect(config?.vortexInstallmentPayableId).toBe(
+        "installment_payable_test"
+      );
       expect(config?.vortexRecurringPayableId).toBe("recurring_payable_test");
       expect(config?.vortexPaymentRequestId).toBe("preq_test");
     });
@@ -234,8 +256,8 @@ describe("Payment field mutations", () => {
       await expect(
         t.mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
-        ),
+          makeValidPaymentArgs(paymentFieldId)
+        )
       ).rejects.toThrow();
     });
 
@@ -262,8 +284,8 @@ describe("Payment field mutations", () => {
           .withIdentity({ subject: "test_owner" })
           .mutation(
             api.payment_fields.mutations.upsertPaymentConfig,
-            makeValidPaymentArgs(textFieldId),
-          ),
+            makeValidPaymentArgs(textFieldId)
+          )
       ).rejects.toThrow("Field is not a payment field");
     });
 
@@ -274,7 +296,7 @@ describe("Payment field mutations", () => {
           .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
             ...makeValidPaymentArgs(paymentFieldId),
             items: [],
-          }),
+          })
       ).rejects.toThrow("At least one line item is required");
     });
 
@@ -284,8 +306,15 @@ describe("Payment field mutations", () => {
           .withIdentity({ subject: "test_owner" })
           .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
             ...makeValidPaymentArgs(paymentFieldId),
-            items: [{ id: "item-1", description: "Tiny fee", quantity: 1, unitPrice: 10 }],
-          }),
+            items: [
+              {
+                id: "item-1",
+                description: "Tiny fee",
+                quantity: 1,
+                unitPrice: 10,
+              },
+            ],
+          })
       ).rejects.toThrow("Total amount must be at least");
     });
 
@@ -296,7 +325,7 @@ describe("Payment field mutations", () => {
           .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
             ...makeValidPaymentArgs(paymentFieldId),
             paymentType: "recurring" as const,
-          }),
+          })
       ).rejects.toThrow("Recurring configuration is required");
     });
 
@@ -328,7 +357,7 @@ describe("Payment field mutations", () => {
 
       await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
-        makeValidPaymentArgs(paymentFieldId),
+        makeValidPaymentArgs(paymentFieldId)
       );
 
       await authed.mutation(api.payment_fields.mutations.deletePaymentConfig, {
@@ -348,7 +377,9 @@ describe("Payment field mutations", () => {
     test("succeeds silently when no config exists", async () => {
       const result = await t
         .withIdentity({ subject: "test_owner" })
-        .mutation(api.payment_fields.mutations.deletePaymentConfig, { fieldId: paymentFieldId });
+        .mutation(api.payment_fields.mutations.deletePaymentConfig, {
+          fieldId: paymentFieldId,
+        });
 
       expect(result).toEqual({ success: true });
     });
@@ -360,7 +391,7 @@ describe("Payment field mutations", () => {
 
       const configId = await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
-        makeValidPaymentArgs(paymentFieldId),
+        makeValidPaymentArgs(paymentFieldId)
       );
 
       await authed.mutation(api.payment_fields.mutations.updatePaymentStatus, {
@@ -382,15 +413,18 @@ describe("Payment field mutations", () => {
 
       const configId = await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
-        makeValidPaymentArgs(paymentFieldId),
+        makeValidPaymentArgs(paymentFieldId)
       );
 
       // pending -> created -> awaiting -> paid
       for (const status of ["created", "awaiting", "paid"] as const) {
-        await authed.mutation(api.payment_fields.mutations.updatePaymentStatus, {
-          configId,
-          paymentStatus: status,
-        });
+        await authed.mutation(
+          api.payment_fields.mutations.updatePaymentStatus,
+          {
+            configId,
+            paymentStatus: status,
+          }
+        );
       }
 
       const config = (await t.run(async (ctx) => {
@@ -407,16 +441,19 @@ describe("Payment field mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
+          makeValidPaymentArgs(paymentFieldId)
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-          configId,
-          paymentStatus: "created",
-          providerInvoiceId: "in_internal_123",
-          providerPaymentIntentId: "pi_internal_456",
-        });
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeProviderPaymentIds,
+          {
+            configId,
+            paymentStatus: "created",
+            providerInvoiceId: "in_internal_123",
+            providerPaymentIntentId: "pi_internal_456",
+          }
+        );
       });
 
       const config = (await t.run(async (ctx) => {
@@ -433,16 +470,19 @@ describe("Payment field mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
+          makeValidPaymentArgs(paymentFieldId)
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-          configId,
-          paymentStatus: "awaiting",
-          providerInvoiceId: "in_url_test_123",
-          hostedInvoiceUrl: "https://billing.vortex.test/i/acct_123/test_456",
-        });
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeProviderPaymentIds,
+          {
+            configId,
+            paymentStatus: "awaiting",
+            providerInvoiceId: "in_url_test_123",
+            hostedInvoiceUrl: "https://billing.vortex.test/i/acct_123/test_456",
+          }
+        );
       });
 
       const config = (await t.run(async (ctx) => {
@@ -451,7 +491,9 @@ describe("Payment field mutations", () => {
 
       expect(config?.paymentStatus).toBe("awaiting");
       expect(config?.providerInvoiceId).toBe("in_url_test_123");
-      expect(config?.hostedInvoiceUrl).toBe("https://billing.vortex.test/i/acct_123/test_456");
+      expect(config?.hostedInvoiceUrl).toBe(
+        "https://billing.vortex.test/i/acct_123/test_456"
+      );
     });
   });
 
@@ -461,51 +503,65 @@ describe("Payment field mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
+          makeValidPaymentArgs(paymentFieldId)
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
-          configId,
-          paymentStatus: "awaiting",
-          vortexPayableId: "payable_vortex_123",
-          vortexRecurringPayableId: "recurring_payable_vortex_123",
-          vortexInstallmentPayableId: "installment_payable_vortex_123",
-          vortexDepositBalancePayableId: "deposit_balance_payable_vortex_123",
-          vortexPaymentRequestId: "pr_vortex_123",
-          hostedInvoiceUrl: "https://payments.vortex.test/pay/token_123",
-          customerEmail: "signer@example.com",
-          customerName: "Test Signer",
-        });
-        await ctx.runMutation(internal.payment_fields.mutations.storeVortexPayableIds, {
-          configId,
-          paymentStatus: "awaiting",
-          vortexPayableId: "payable_vortex_123",
-          vortexPaymentRequestId: "pr_vortex_123",
-          hostedInvoiceUrl: "https://payments.vortex.test/pay/token_456",
-          customerEmail: "signer@example.com",
-          customerName: "Test Signer",
-        });
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeVortexPayableIds,
+          {
+            configId,
+            paymentStatus: "awaiting",
+            vortexPayableId: "payable_vortex_123",
+            vortexRecurringPayableId: "recurring_payable_vortex_123",
+            vortexInstallmentPayableId: "installment_payable_vortex_123",
+            vortexDepositBalancePayableId: "deposit_balance_payable_vortex_123",
+            vortexPaymentRequestId: "pr_vortex_123",
+            hostedInvoiceUrl: "https://payments.vortex.test/pay/token_123",
+            customerEmail: "signer@example.com",
+            customerName: "Test Signer",
+          }
+        );
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeVortexPayableIds,
+          {
+            configId,
+            paymentStatus: "awaiting",
+            vortexPayableId: "payable_vortex_123",
+            vortexPaymentRequestId: "pr_vortex_123",
+            hostedInvoiceUrl: "https://payments.vortex.test/pay/token_456",
+            customerEmail: "signer@example.com",
+            customerName: "Test Signer",
+          }
+        );
       });
 
       const result = await t.run(async (ctx) => {
         const config = await ctx.db.get(configId);
         const invoices = await ctx.db
           .query("document_invoices")
-          .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", "payable_vortex_123"))
+          .withIndex("by_vortex_payable", (q) =>
+            q.eq("vortexPayableId", "payable_vortex_123")
+          )
           .collect();
         return { config, invoices };
       });
 
       expect(result.config?.paymentStatus).toBe("awaiting");
       expect(result.config?.vortexPayableId).toBe("payable_vortex_123");
-      expect(result.config?.vortexRecurringPayableId).toBe("recurring_payable_vortex_123");
-      expect(result.config?.vortexInstallmentPayableId).toBe("installment_payable_vortex_123");
+      expect(result.config?.vortexRecurringPayableId).toBe(
+        "recurring_payable_vortex_123"
+      );
+      expect(result.config?.vortexInstallmentPayableId).toBe(
+        "installment_payable_vortex_123"
+      );
       expect(result.config?.vortexDepositBalancePayableId).toBe(
-        "deposit_balance_payable_vortex_123",
+        "deposit_balance_payable_vortex_123"
       );
       expect(result.config?.vortexPaymentRequestId).toBe("pr_vortex_123");
-      expect(result.config?.hostedInvoiceUrl).toBe("https://payments.vortex.test/pay/token_456");
+      expect(result.config?.hostedInvoiceUrl).toBe(
+        "https://payments.vortex.test/pay/token_456"
+      );
       expect(result.invoices).toHaveLength(1);
       expect(sealAssertPresent(result.invoices[0])).toMatchObject({
         documentId,
@@ -529,26 +585,30 @@ describe("Payment field mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
+          makeValidPaymentArgs(paymentFieldId)
         );
 
       // Store a subscription ID on the config
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-          configId,
-          paymentStatus: "awaiting",
-          providerSubscriptionId: "sub_webhook_test_123",
-        });
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeProviderPaymentIds,
+          {
+            configId,
+            paymentStatus: "awaiting",
+            providerSubscriptionId: "sub_webhook_test_123",
+          }
+        );
       });
 
       // Call the webhook mutation
       const result = await t.run(async (ctx) => {
         return await ctx.runMutation(
-          internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
+          internal.payment_fields.mutations
+            .updatePaymentStatusFromProviderSubscription,
           {
             providerSubscriptionId: "sub_webhook_test_123",
             paymentStatus: "paid",
-          },
+          }
         );
       });
 
@@ -564,11 +624,12 @@ describe("Payment field mutations", () => {
     test("returns null when no config matches", async () => {
       const result = await t.run(async (ctx) => {
         return await ctx.runMutation(
-          internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
+          internal.payment_fields.mutations
+            .updatePaymentStatusFromProviderSubscription,
           {
             providerSubscriptionId: "sub_nonexistent_999",
             paymentStatus: "paid",
-          },
+          }
         );
       });
 
@@ -580,15 +641,18 @@ describe("Payment field mutations", () => {
         .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId),
+          makeValidPaymentArgs(paymentFieldId)
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(internal.payment_fields.mutations.storeProviderPaymentIds, {
-          configId,
-          paymentStatus: "awaiting",
-          providerSubscriptionId: "sub_timestamp_test",
-        });
+        await ctx.runMutation(
+          internal.payment_fields.mutations.storeProviderPaymentIds,
+          {
+            configId,
+            paymentStatus: "awaiting",
+            providerSubscriptionId: "sub_timestamp_test",
+          }
+        );
       });
 
       const beforeUpdate = (await t.run(async (ctx) => {
@@ -601,11 +665,12 @@ describe("Payment field mutations", () => {
 
       await t.run(async (ctx) => {
         await ctx.runMutation(
-          internal.payment_fields.mutations.updatePaymentStatusFromProviderSubscription,
+          internal.payment_fields.mutations
+            .updatePaymentStatusFromProviderSubscription,
           {
             providerSubscriptionId: "sub_timestamp_test",
             paymentStatus: "cancelled",
-          },
+          }
         );
       });
 
@@ -613,7 +678,9 @@ describe("Payment field mutations", () => {
         return await ctx.db.get(configId);
       })) as Doc<"payment_field_configs"> | null;
 
-      expect(afterUpdate?.updatedAt).toBeGreaterThan(sealAssertPresent(beforeTimestamp));
+      expect(afterUpdate?.updatedAt).toBeGreaterThan(
+        sealAssertPresent(beforeTimestamp)
+      );
       expect(afterUpdate?.paymentStatus).toBe("cancelled");
     });
   });

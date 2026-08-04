@@ -35,7 +35,9 @@ export const seedAllOrganizations = internalMutation({
     for (const org of organizations) {
       await ensureVortexAuthSystemRoles(ctx, org._id);
       seededCount++;
-      console.info(`Seeded component roles for organization: ${org.name} (${org._id})`);
+      console.info(
+        `Seeded component roles for organization: ${org.name} (${org._id})`
+      );
     }
 
     return {

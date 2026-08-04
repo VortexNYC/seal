@@ -114,7 +114,9 @@ describe("Contact queries", () => {
     test("throws for non-existent contact", async () => {
       const fakeId = "k17abc123def456gh" as Id<"contacts">;
 
-      await expect(asOwner().query(api.contacts.queries.getById, { id: fakeId })).rejects.toThrow();
+      await expect(
+        asOwner().query(api.contacts.queries.getById, { id: fakeId })
+      ).rejects.toThrow();
     });
   });
 
@@ -151,17 +153,23 @@ describe("Contact queries", () => {
         email: "alice@test.com",
       });
 
-      const results = await asOwner().query(api.contacts.queries.suggestForRecipient, {
-        searchTerm: "A",
-      });
+      const results = await asOwner().query(
+        api.contacts.queries.suggestForRecipient,
+        {
+          searchTerm: "A",
+        }
+      );
 
       expect(results).toEqual([]);
     });
 
     test("returns empty for empty search term", async () => {
-      const results = await asOwner().query(api.contacts.queries.suggestForRecipient, {
-        searchTerm: "",
-      });
+      const results = await asOwner().query(
+        api.contacts.queries.suggestForRecipient,
+        {
+          searchTerm: "",
+        }
+      );
 
       expect(results).toEqual([]);
     });
@@ -174,9 +182,12 @@ describe("Contact queries", () => {
         company: "ChenCo",
       });
 
-      const results = await asOwner().query(api.contacts.queries.suggestForRecipient, {
-        searchTerm: "Charlie",
-      });
+      const results = await asOwner().query(
+        api.contacts.queries.suggestForRecipient,
+        {
+          searchTerm: "Charlie",
+        }
+      );
 
       expect(results.length).toBeGreaterThan(0);
       const first = results[0];
@@ -224,9 +235,12 @@ describe("Contact queries", () => {
         });
       });
 
-      const docs = await asOwner().query(api.contacts.queries.getRelatedDocuments, {
-        email: "linked@test.com",
-      });
+      const docs = await asOwner().query(
+        api.contacts.queries.getRelatedDocuments,
+        {
+          email: "linked@test.com",
+        }
+      );
 
       expect(docs).toHaveLength(1);
       expect(docs[0].name).toBe("Related Doc");
@@ -234,9 +248,12 @@ describe("Contact queries", () => {
     });
 
     test("returns empty array when no documents match", async () => {
-      const docs = await asOwner().query(api.contacts.queries.getRelatedDocuments, {
-        email: "unlinked@test.com",
-      });
+      const docs = await asOwner().query(
+        api.contacts.queries.getRelatedDocuments,
+        {
+          email: "unlinked@test.com",
+        }
+      );
 
       expect(docs).toEqual([]);
     });

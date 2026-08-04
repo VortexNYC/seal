@@ -63,7 +63,8 @@ export function CreateFolderDialog({
       setName("");
       setOpen(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create folder";
+      const message =
+        error instanceof Error ? error.message : "Failed to create folder";
       toast.error(message);
     } finally {
       setIsCreating(false);
@@ -77,7 +78,7 @@ export function CreateFolderDialog({
         void handleCreate();
       }
     },
-    [handleCreate],
+    [handleCreate]
   );
 
   return (
@@ -98,7 +99,8 @@ export function CreateFolderDialog({
         <DialogHeader>
           <DialogTitle>New Folder</DialogTitle>
           <DialogDescription>
-            Create a new folder to organize your {type === "document" ? "documents" : "templates"}.
+            Create a new folder to organize your{" "}
+            {type === "document" ? "documents" : "templates"}.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
@@ -116,7 +118,10 @@ export function CreateFolderDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void handleCreate()} disabled={!name.trim() || isCreating}>
+          <Button
+            onClick={() => void handleCreate()}
+            disabled={!name.trim() || isCreating}
+          >
             {isCreating ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>

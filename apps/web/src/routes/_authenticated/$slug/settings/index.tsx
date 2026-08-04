@@ -17,7 +17,13 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pageSEO } from "@/lib/seo";
@@ -40,7 +46,9 @@ function GeneralSettings() {
     slug,
   });
 
-  const updateWorkspace = useMutation(api.organizations.mutations.updateWorkspace);
+  const updateWorkspace = useMutation(
+    api.organizations.mutations.updateWorkspace
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -82,7 +90,11 @@ function GeneralSettings() {
 
       toast.success("Workspace settings updated successfully");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update workspace settings");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update workspace settings"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +114,9 @@ function GeneralSettings() {
               <Building2 className="h-5 w-5" />
               <CardTitle>Workspace Information</CardTitle>
             </div>
-            <CardDescription>Update your workspace name and identification</CardDescription>
+            <CardDescription>
+              Update your workspace name and identification
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -111,7 +125,9 @@ function GeneralSettings() {
                 id="name"
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="My Workspace"
                 required
               />

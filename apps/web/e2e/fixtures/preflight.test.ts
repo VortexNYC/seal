@@ -30,7 +30,7 @@ describe("E2E auth preflight", () => {
     vi.stubEnv("TEST_USER_PASSWORD", "");
 
     expect(() => assertAuthEnv()).toThrow(
-      "[E2E preflight] Missing required Vortex Auth test credential: E2E_TEST_USER_EMAIL or TEST_USER_EMAIL",
+      "[E2E preflight] Missing required Vortex Auth test credential: E2E_TEST_USER_EMAIL or TEST_USER_EMAIL"
     );
   });
 });

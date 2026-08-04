@@ -116,7 +116,10 @@ app.post("/webhooks/seal", async (req, res) => {
   const payload = JSON.stringify(req.body);
 
   const signedContent = `${eventId}.${timestamp}.${payload}`;
-  const expectedSignature = `v1=${createHmac("sha256", process.env.WEBHOOK_SECRET)
+  const expectedSignature = `v1=${createHmac(
+    "sha256",
+    process.env.WEBHOOK_SECRET
+  )
     .update(signedContent)
     .digest("hex")}`;
 
@@ -144,8 +147,8 @@ app.post("/webhooks/seal", async (req, res) => {
 ## Best Practices
 
 <Callout type="info">
-  **Respond Quickly**: Return 200 OK within 5 seconds. Process events asynchronously to avoid
-  timeouts.
+  **Respond Quickly**: Return 200 OK within 5 seconds. Process events
+  asynchronously to avoid timeouts.
 </Callout>
 
 1. **Always Verify Signatures**: Never trust webhook data without signature verification
@@ -181,12 +184,15 @@ ngrok http 3000
 Send test events from the Seal dashboard or use the API:
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123/test", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/webhooks/wh_abc123/test",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 ```
 
 ## Next Steps

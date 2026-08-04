@@ -6,7 +6,10 @@ import { useQuery } from "convex/react";
  * Returns step/tool tracking info and status.
  */
 export function useAIProgress(threadId: string | null) {
-  const progress = useQuery(api.ai.progress.get, threadId ? { threadId } : "skip");
+  const progress = useQuery(
+    api.ai.progress.get,
+    threadId ? { threadId } : "skip"
+  );
   const status = progress?.status ?? null;
 
   return {

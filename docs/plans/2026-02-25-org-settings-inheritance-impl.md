@@ -38,7 +38,7 @@ Add three new validators and their types after `brandingSettingsValidator` (line
 export const signingSettingsValidator = v.object({
   defaultAuthMethod: v.literal("email"), // Only "email" for v1
   allowedSignatureTypes: v.array(
-    v.union(v.literal("draw"), v.literal("type"), v.literal("upload")),
+    v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
   ),
   esignConsentText: v.optional(v.string()), // null = use Seal default
   defaultDeadlineDays: v.number(), // Default 30
@@ -223,7 +223,9 @@ Add three new `adminMutation` functions after `updateBrandingSettings` (after li
 export const updateSigningSettings = adminMutation({
   args: {
     allowedSignatureTypes: v.optional(
-      v.array(v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))),
+      v.array(
+        v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
+      )
     ),
     esignConsentText: v.optional(v.string()),
     defaultDeadlineDays: v.optional(v.number()),
@@ -234,7 +236,11 @@ export const updateSigningSettings = adminMutation({
 
     const current = org.signingSettings ?? {
       defaultAuthMethod: "email" as const,
-      allowedSignatureTypes: ["draw" as const, "type" as const, "upload" as const],
+      allowedSignatureTypes: [
+        "draw" as const,
+        "type" as const,
+        "upload" as const,
+      ],
       esignConsentText: undefined,
       defaultDeadlineDays: 30,
     };
@@ -247,16 +253,21 @@ export const updateSigningSettings = adminMutation({
     }
 
     // Validate at least one signature type
-    if (args.allowedSignatureTypes !== undefined && args.allowedSignatureTypes.length === 0) {
+    if (
+      args.allowedSignatureTypes !== undefined &&
+      args.allowedSignatureTypes.length === 0
+    ) {
       throw new ConvexError("At least one signature type must be allowed");
     }
 
     await ctx.db.patch(org._id, {
       signingSettings: {
         defaultAuthMethod: "email", // Hardcoded for v1
-        allowedSignatureTypes: args.allowedSignatureTypes ?? current.allowedSignatureTypes,
+        allowedSignatureTypes:
+          args.allowedSignatureTypes ?? current.allowedSignatureTypes,
         esignConsentText: args.esignConsentText ?? current.esignConsentText,
-        defaultDeadlineDays: args.defaultDeadlineDays ?? current.defaultDeadlineDays,
+        defaultDeadlineDays:
+          args.defaultDeadlineDays ?? current.defaultDeadlineDays,
       },
       updatedAt: Date.now(),
     });
@@ -288,7 +299,9 @@ export const updateNotificationSettings = adminMutation({
     // Validate reminder schedule
     if (args.reminderSchedule !== undefined) {
       if (args.reminderSchedule.length > 10) {
-        throw new ConvexError("Reminder schedule cannot have more than 10 entries");
+        throw new ConvexError(
+          "Reminder schedule cannot have more than 10 entries"
+        );
       }
       for (const day of args.reminderSchedule) {
         if (!Number.isInteger(day) || day < 1) {
@@ -312,9 +325,12 @@ export const updateNotificationSettings = adminMutation({
     await ctx.db.patch(org._id, {
       notificationSettings: {
         reminderSchedule: args.reminderSchedule ?? current.reminderSchedule,
-        expirationAlertDays: args.expirationAlertDays ?? current.expirationAlertDays,
-        sendCompletionEmail: args.sendCompletionEmail ?? current.sendCompletionEmail,
-        sendViewedNotification: args.sendViewedNotification ?? current.sendViewedNotification,
+        expirationAlertDays:
+          args.expirationAlertDays ?? current.expirationAlertDays,
+        sendCompletionEmail:
+          args.sendCompletionEmail ?? current.sendCompletionEmail,
+        sendViewedNotification:
+          args.sendViewedNotification ?? current.sendViewedNotification,
       },
       updatedAt: Date.now(),
     });
@@ -354,8 +370,13 @@ export const updateSecuritySettings = ownerMutation({
 
     // Validate session timeout
     if (args.sessionTimeoutMinutes !== undefined) {
-      if (args.sessionTimeoutMinutes < 15 || args.sessionTimeoutMinutes > 1440) {
-        throw new ConvexError("Session timeout must be between 15 minutes and 24 hours");
+      if (
+        args.sessionTimeoutMinutes < 15 ||
+        args.sessionTimeoutMinutes > 1440
+      ) {
+        throw new ConvexError(
+          "Session timeout must be between 15 minutes and 24 hours"
+        );
       }
     }
 
@@ -363,7 +384,8 @@ export const updateSecuritySettings = ownerMutation({
       securitySettings: {
         requireMfa: args.requireMfa ?? current.requireMfa,
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
-        sessionTimeoutMinutes: args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
+        sessionTimeoutMinutes:
+          args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
       },
       updatedAt: Date.now(),

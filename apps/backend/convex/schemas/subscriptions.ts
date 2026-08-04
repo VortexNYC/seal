@@ -14,7 +14,7 @@ export const subscriptionStatus = v.union(
   v.literal("trialing"),
   v.literal("incomplete"),
   v.literal("incomplete_expired"),
-  v.literal("unpaid"),
+  v.literal("unpaid")
 );
 export type SubscriptionStatus = Infer<typeof subscriptionStatus>;
 

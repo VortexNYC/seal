@@ -7,12 +7,12 @@
     "dev:web": "pnpm --dir apps/web run dev -- --host 0.0.0.0",
     "dev:landing": "pnpm --dir apps/landing run dev -- --host 0.0.0.0",
     "dev:all": "pnpm run dev",
-    "build": "vp run -r build --filter=!@seal/landing",
+    "build": "pnpm --filter @seal/web run build",
     "lint": "vp lint && pnpm run lint:convex",
     "lint:fix": "vp lint --fix && vp fmt",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
-    "typecheck": "vp run -r typecheck",
+    "typecheck": "pnpm --filter @seal/web --filter @seal/backend --filter @seal/react --filter @seal/transactional run typecheck",
     "prove:vortex-billing-settings-adoption": "pnpm exec tsx scripts/prove-vortex-billing-settings-adoption.ts",
     "prove:vortex-payments-settings-adoption": "pnpm exec tsx scripts/prove-vortex-payments-settings-adoption.ts",
     "prove:vortex-merchant-settings-adoption": "pnpm exec tsx scripts/prove-vortex-merchant-settings-adoption.ts",
@@ -43,7 +43,7 @@
     "knip:fix": "(cd apps/backend && pnpm run knip:fix) && (cd packages/react-sdk && pnpm run knip:fix) && (cd packages/transactional && pnpm run knip:fix) && (cd apps/web && pnpm run knip:fix)",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip && pnpm run check:ui-conformance && pnpm run verify:seal-vortex-migration",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip && pnpm run check:ui-conformance && pnpm run prove:zero-retired-provider-residue",
-    "test": "vp run -r test",
+    "test": "pnpm --filter @seal/web --filter @seal/backend run test",
     "clean": "(cd apps/backend && pnpm run clean) && (cd apps/web && pnpm run clean) && git clean -xdf .cache .turbo dist node_modules",
     "eval": "cd evals && pnpm dlx promptfoo eval",
     "eval:redteam": "cd evals && pnpm dlx promptfoo eval -c redteam.yaml",
@@ -67,7 +67,8 @@
     "precommit:check": "pnpm run lint:convex",
     "prepush:check": "pnpm run build && pnpm run typecheck && pnpm run format:check && pnpm run lint && pnpm run test",
     "fix": "vp lint --fix && vp fmt",
-    "check": "vp check"
+    "check": "vp check",
+    "build:all": "vp run -r build"
   },
   "dependencies": {
     "@tanstack/router-core": "1.171.16",

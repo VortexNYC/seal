@@ -5,7 +5,12 @@
  * Route: /{slug}/settings/profile/*
  */
 
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useLocation,
+} from "@tanstack/react-router";
 import { BarChart3, Bell, Plug, Shield, User } from "lucide-react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -77,13 +82,15 @@ function ProfileLayout() {
                     "flex items-start gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                     isActive
                       ? "bg-secondary text-secondary-foreground"
-                      : "text-muted-foreground hover:bg-secondary/50 hover:text-secondary-foreground",
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-secondary-foreground"
                   )}
                 >
                   <Icon className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="flex-1">
                     <div className="font-medium">{item.title}</div>
-                    <div className="text-muted-foreground text-xs">{item.description}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {item.description}
+                    </div>
                   </div>
                 </Link>
               );

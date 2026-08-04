@@ -20,7 +20,13 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 const outsiderSchema = z.object({
@@ -70,20 +76,27 @@ export function AddRecipientDialog({
 
   const members = useQuery(
     api.organizations.queries.getOrganizationMembers,
-    open ? { organizationId } : "skip",
+    open ? { organizationId } : "skip"
   );
 
   const contactSuggestions = useQuery(
     api.contacts.queries.suggestForRecipient,
-    activeTab === "outsider" && email.length >= 2 ? { searchTerm: email } : "skip",
+    activeTab === "outsider" && email.length >= 2
+      ? { searchTerm: email }
+      : "skip"
   );
 
   // Filter out contacts whose emails are already added as recipients
   const filteredSuggestions = contactSuggestions?.filter(
-    (c) => !existingRecipientEmails.some((e) => e.toLowerCase() === c.email.toLowerCase()),
+    (c) =>
+      !existingRecipientEmails.some(
+        (e) => e.toLowerCase() === c.email.toLowerCase()
+      )
   );
 
-  const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
+  const addRecipients = useMutation(
+    api.documents.recipients_mutations.addRecipients
+  );
 
   // Filter out current user and already-added recipients
   const eligibleMembers = members?.filter((member) => {
@@ -175,7 +188,10 @@ export function AddRecipientDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "team" | "outsider")}>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "team" | "outsider")}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="team">
                 Team{eligibleMembers ? ` (${eligibleMembers.length})` : ""}
@@ -203,7 +219,7 @@ export function AddRecipientDialog({
                       }
                       className={cn(
                         "hover:bg-accent flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors",
-                        selectedMember?.id === member.id && "bg-accent",
+                        selectedMember?.id === member.id && "bg-accent"
                       )}
                     >
                       <Avatar className="h-8 w-8">
@@ -213,8 +229,12 @@ export function AddRecipientDialog({
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{member.name || "Unknown"}</p>
-                        <p className="text-muted-foreground truncate text-xs">{member.email}</p>
+                        <p className="truncate text-sm font-medium">
+                          {member.name || "Unknown"}
+                        </p>
+                        <p className="text-muted-foreground truncate text-xs">
+                          {member.email}
+                        </p>
                       </div>
                       {selectedMember?.id === member.id && (
                         <CheckIcon className="text-primary h-4 w-4 shrink-0" />
@@ -254,28 +274,36 @@ export function AddRecipientDialog({
                       setTimeout(() => setShowSuggestions(false), 200);
                     }}
                   />
-                  {showSuggestions && filteredSuggestions && filteredSuggestions.length > 0 && (
-                    <div className="bg-popover absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
-                      {filteredSuggestions.map((contact) => (
-                        <button
-                          key={contact._id}
-                          type="button"
-                          className="hover:bg-accent flex w-full flex-col rounded-sm px-2 py-1.5 text-left text-sm"
-                          onClick={() => {
-                            setEmail(contact.email);
-                            setName(contact.fullName);
-                            setShowSuggestions(false);
-                          }}
-                        >
-                          <span className="font-medium">{contact.fullName}</span>
-                          <span className="text-muted-foreground text-xs">{contact.email}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {showSuggestions &&
+                    filteredSuggestions &&
+                    filteredSuggestions.length > 0 && (
+                      <div className="bg-popover absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
+                        {filteredSuggestions.map((contact) => (
+                          <button
+                            key={contact._id}
+                            type="button"
+                            className="hover:bg-accent flex w-full flex-col rounded-sm px-2 py-1.5 text-left text-sm"
+                            onClick={() => {
+                              setEmail(contact.email);
+                              setName(contact.fullName);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            <span className="font-medium">
+                              {contact.fullName}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                              {contact.email}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                 </div>
               </div>
-              {emailError && <p className="text-destructive text-sm">{emailError}</p>}
+              {emailError && (
+                <p className="text-destructive text-sm">{emailError}</p>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="name">Name (Optional)</Label>
@@ -292,20 +320,26 @@ export function AddRecipientDialog({
 
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+            <Select
+              value={role}
+              onValueChange={(v) => setRole(v as typeof role)}
+            >
               <SelectTrigger id="role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="signer">Signer (Must sign)</SelectItem>
                 <SelectItem value="viewer">Viewer (View only)</SelectItem>
-                <SelectItem value="approver">Approver (Must approve)</SelectItem>
+                <SelectItem value="approver">
+                  Approver (Must approve)
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
               {role === "signer" && "This person must sign the document."}
               {role === "viewer" && "This person can only view the document."}
-              {role === "approver" && "This person must approve before signing can proceed."}
+              {role === "approver" &&
+                "This person must approve before signing can proceed."}
             </p>
           </div>
 

@@ -23,7 +23,10 @@ import { components } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalQuery, type QueryCtx } from "./_generated/server";
 import { ROLE_PERMISSIONS } from "./auth.utils";
-import { getBetterAuthIdentityIssuer, getBetterAuthIdentityProvider } from "./lib/authIdentities";
+import {
+  getBetterAuthIdentityIssuer,
+  getBetterAuthIdentityProvider,
+} from "./lib/authIdentities";
 import {
   resolveComponentMemberships,
   type ComponentResolvedMembership,
@@ -44,7 +47,7 @@ type ApiAuthMembershipLike = {
 };
 
 function componentMembershipToApiAuth(
-  membership: ComponentResolvedMembership,
+  membership: ComponentResolvedMembership
 ): ApiAuthMembershipLike {
   return {
     _id: membership.vortexAuthMemberId,
@@ -68,9 +71,12 @@ async function resolveApiAuthMemberships(
   ctx: Pick<QueryCtx, "db" | "runQuery">,
   args: {
     user: Doc<"users">;
-  },
+  }
 ): Promise<ApiAuthMembershipLike[]> {
-  const componentMemberships = await resolveComponentMemberships(ctx, args.user);
+  const componentMemberships = await resolveComponentMemberships(
+    ctx,
+    args.user
+  );
   return componentMemberships.map(componentMembershipToApiAuth);
 }
 
@@ -80,13 +86,16 @@ async function resolveApiAuthMemberships(
  */
 async function resolveLocalActiveOrgId(
   ctx: Pick<QueryCtx, "db">,
-  user: Doc<"users">,
+  user: Doc<"users">
 ): Promise<Id<"organizations"> | null> {
   if (user.activeVortexAuthOrganizationId === undefined) return null;
   const anchor = await ctx.db
     .query("organizations")
     .withIndex("by_vortex_auth_organization", (q) =>
-      q.eq("vortexAuthOrganizationId", user.activeVortexAuthOrganizationId as string),
+      q.eq(
+        "vortexAuthOrganizationId",
+        user.activeVortexAuthOrganizationId as string
+      )
     )
     .unique();
   return anchor?._id ?? null;
@@ -108,9 +117,11 @@ function selectOrganizationId(args: {
   requestedOrganizationId: Id<"organizations"> | null;
   organizationHintId: Id<"organizations"> | null;
 }): Id<"organizations"> | null {
-  const activeMemberships = args.memberships.filter((membership) => membership.status === "active");
+  const activeMemberships = args.memberships.filter(
+    (membership) => membership.status === "active"
+  );
   const activeOrganizationIds = new Set(
-    activeMemberships.map((membership) => membership.organizationId),
+    activeMemberships.map((membership) => membership.organizationId)
   );
 
   if (
@@ -120,7 +131,10 @@ function selectOrganizationId(args: {
     return args.requestedOrganizationId;
   }
 
-  if (args.organizationHintId !== null && activeOrganizationIds.has(args.organizationHintId)) {
+  if (
+    args.organizationHintId !== null &&
+    activeOrganizationIds.has(args.organizationHintId)
+  ) {
     return args.organizationHintId;
   }
 
@@ -149,16 +163,21 @@ export const getUserByIdentityForApiAuth = internalQuery({
       return null;
     }
 
-    const linkedIdentity = await ctx.runQuery(components.vortexAuth.identity.getByTokenIdentifier, {
-      tokenIdentifier: args.tokenIdentifier,
-    });
+    const linkedIdentity = await ctx.runQuery(
+      components.vortexAuth.identity.getByTokenIdentifier,
+      {
+        tokenIdentifier: args.tokenIdentifier,
+      }
+    );
     if (linkedIdentity === null) {
       return null;
     }
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_vortex_auth_user", (q) => q.eq("vortexAuthUserId", linkedIdentity.userId))
+      .withIndex("by_vortex_auth_user", (q) =>
+        q.eq("vortexAuthUserId", linkedIdentity.userId)
+      )
       .first();
     if (user === null) {
       return null;
@@ -192,8 +211,8 @@ export const getAccessibleOrganizationsForApiAuth = internalQuery({
         new Set(
           memberships
             .filter((membership) => membership.status === "active")
-            .map((membership) => String(membership.organizationId)),
-        ),
+            .map((membership) => String(membership.organizationId))
+        )
       ),
     };
   },
@@ -211,8 +230,11 @@ export const getOrganizationMembershipAccessForApiAuth = internalQuery({
   },
   handler: async (
     ctx,
-    { userId, organizationId },
-  ): Promise<{ role: OrganizationMemberRole; permissions: string[] } | null> => {
+    { userId, organizationId }
+  ): Promise<{
+    role: OrganizationMemberRole;
+    permissions: string[];
+  } | null> => {
     const user = await ctx.db.get(userId);
     if (user === null) {
       return null;
@@ -221,7 +243,9 @@ export const getOrganizationMembershipAccessForApiAuth = internalQuery({
     const memberships = await resolveApiAuthMemberships(ctx, { user });
 
     const membership = memberships.find(
-      (candidate) => candidate.organizationId === organizationId && candidate.status === "active",
+      (candidate) =>
+        candidate.organizationId === organizationId &&
+        candidate.status === "active"
     );
     if (membership === undefined) {
       return null;
@@ -258,14 +282,16 @@ export const getOrganizationAccessForApiAuth = internalQuery({
     const organizationId = selectOrganizationId({
       memberships,
       userActiveOrganizationId: await resolveLocalActiveOrgId(ctx, user),
-      requestedOrganizationId: args.requestedOrganizationId as Id<"organizations"> | null,
+      requestedOrganizationId:
+        args.requestedOrganizationId as Id<"organizations"> | null,
       organizationHintId: args.organizationHintId as Id<"organizations"> | null,
     });
 
     return buildApiAuthOrganizationAccessResult({
       organizationId,
       memberships,
-      expandPermissions: (role) => expandRolePermissions(role as OrganizationMemberRole),
+      expandPermissions: (role) =>
+        expandRolePermissions(role as OrganizationMemberRole),
     });
   },
 });

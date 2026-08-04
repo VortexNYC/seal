@@ -8,7 +8,13 @@ import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Separator } from "../ui/separator";
 
-type RecipientStatus = "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
+type RecipientStatus =
+  | "pending"
+  | "viewed"
+  | "signed"
+  | "approved"
+  | "declined"
+  | "expired";
 
 type RecipientRole = "signer" | "viewer" | "approver";
 
@@ -123,23 +129,28 @@ export function RecipientOptionsDialog({
                   ? "bg-muted text-muted-foreground"
                   : recipient.status === "viewed"
                     ? "bg-info-surface text-info"
-                    : recipient.status === "signed" || recipient.status === "approved"
+                    : recipient.status === "signed" ||
+                        recipient.status === "approved"
                       ? "bg-success-surface text-success"
                       : recipient.status === "declined"
                         ? "bg-destructive/10 text-destructive"
-                        : "bg-muted text-muted-foreground",
+                        : "bg-muted text-muted-foreground"
               )}
             >
               {getInitials(recipient.name, recipient.email)}
             </div>
             <div className="min-w-0">
               {recipient.name && (
-                <div className="truncate text-sm font-medium">{recipient.name}</div>
+                <div className="truncate text-sm font-medium">
+                  {recipient.name}
+                </div>
               )}
               <div
                 className={cn(
                   "truncate text-xs",
-                  recipient.name ? "text-muted-foreground" : "text-sm font-medium",
+                  recipient.name
+                    ? "text-muted-foreground"
+                    : "text-sm font-medium"
                 )}
               >
                 {recipient.email}
@@ -153,14 +164,16 @@ export function RecipientOptionsDialog({
                       ? "text-muted-foreground"
                       : recipient.status === "viewed"
                         ? "text-info"
-                        : recipient.status === "signed" || recipient.status === "approved"
+                        : recipient.status === "signed" ||
+                            recipient.status === "approved"
                           ? "text-success"
                           : recipient.status === "declined"
                             ? "text-destructive"
-                            : "text-muted-foreground",
+                            : "text-muted-foreground"
                   )}
                 >
-                  {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
+                  {recipient.status.charAt(0).toUpperCase() +
+                    recipient.status.slice(1)}
                 </span>
               </div>
             </div>
@@ -206,7 +219,9 @@ export function RecipientOptionsDialog({
               </div>
               <div>
                 <div className="text-sm font-medium">Resend email</div>
-                <div className="text-muted-foreground text-xs">Send another notification email</div>
+                <div className="text-muted-foreground text-xs">
+                  Send another notification email
+                </div>
               </div>
             </button>
           )}
@@ -223,8 +238,12 @@ export function RecipientOptionsDialog({
                   <TrashIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-destructive text-sm font-medium">Remove recipient</div>
-                  <div className="text-muted-foreground text-xs">Remove from this document</div>
+                  <div className="text-destructive text-sm font-medium">
+                    Remove recipient
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    Remove from this document
+                  </div>
                 </div>
               </button>
             </>

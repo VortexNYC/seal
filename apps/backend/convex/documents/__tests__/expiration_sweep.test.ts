@@ -1,6 +1,6 @@
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -29,11 +29,17 @@ describe("sweepExpiredRecipients", () => {
     overrides: Partial<{
       email: string;
       name: string;
-      status: "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
+      status:
+        | "pending"
+        | "viewed"
+        | "signed"
+        | "approved"
+        | "declined"
+        | "expired";
       expiresAt: number;
       expirationNotifiedAt: number;
       order: number;
-    }> = {},
+    }> = {}
   ) {
     const now = Date.now();
     return {
@@ -47,7 +53,9 @@ describe("sweepExpiredRecipients", () => {
       tokenExpiresAt: now + 30 * ONE_DAY,
       createdAt: now,
       updatedAt: now,
-      ...(overrides.expiresAt !== undefined ? { expiresAt: overrides.expiresAt } : {}),
+      ...(overrides.expiresAt !== undefined
+        ? { expiresAt: overrides.expiresAt }
+        : {}),
       ...(overrides.expirationNotifiedAt !== undefined
         ? { expirationNotifiedAt: overrides.expirationNotifiedAt }
         : {}),
@@ -116,11 +124,14 @@ describe("sweepExpiredRecipients", () => {
         makeRecipientData({
           status: "pending",
           expiresAt: Date.now() - ONE_HOUR, // expired 1 hour ago
-        }),
+        })
       );
     });
 
-    await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -128,7 +139,9 @@ describe("sweepExpiredRecipients", () => {
 
     expect(recipient).not.toBeNull();
     expect(sealAssertPresent(recipient).status).toBe("expired");
-    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeTypeOf("number");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeTypeOf(
+      "number"
+    );
   });
 
   test("does NOT expire recipients with future expiresAt", async () => {
@@ -138,11 +151,14 @@ describe("sweepExpiredRecipients", () => {
         makeRecipientData({
           status: "pending",
           expiresAt: Date.now() + 7 * ONE_DAY, // expires in 7 days
-        }),
+        })
       );
     });
 
-    await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -160,11 +176,14 @@ describe("sweepExpiredRecipients", () => {
         makeRecipientData({
           status: "pending",
           expiresAt: Date.now() - ONE_HOUR,
-        }),
+        })
       );
     });
 
-    await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     const doc = await t.run(async (ctx) => {
       return await ctx.db.get(documentId);
@@ -185,7 +204,7 @@ describe("sweepExpiredRecipients", () => {
           status: "pending",
           expiresAt: Date.now() - ONE_HOUR,
           order: 0,
-        }),
+        })
       );
       // Recipient 2: still active (future expiry)
       await ctx.db.insert(
@@ -195,11 +214,14 @@ describe("sweepExpiredRecipients", () => {
           status: "pending",
           expiresAt: Date.now() + 7 * ONE_DAY,
           order: 1,
-        }),
+        })
       );
     });
 
-    await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     const doc = await t.run(async (ctx) => {
       return await ctx.db.get(documentId);
@@ -217,8 +239,12 @@ describe("sweepExpiredRecipients", () => {
         .collect();
     });
 
-    const expiredRecipient = recipients.find((r) => r.email === "expired@test.com");
-    const activeRecipient = recipients.find((r) => r.email === "active@test.com");
+    const expiredRecipient = recipients.find(
+      (r) => r.email === "expired@test.com"
+    );
+    const activeRecipient = recipients.find(
+      (r) => r.email === "active@test.com"
+    );
 
     expect(sealAssertPresent(expiredRecipient).status).toBe("expired");
     expect(sealAssertPresent(activeRecipient).status).toBe("pending");
@@ -231,11 +257,14 @@ describe("sweepExpiredRecipients", () => {
         makeRecipientData({
           status: "viewed",
           expiresAt: Date.now() - ONE_HOUR,
-        }),
+        })
       );
     });
 
-    await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -243,7 +272,9 @@ describe("sweepExpiredRecipients", () => {
 
     expect(recipient).not.toBeNull();
     expect(sealAssertPresent(recipient).status).toBe("expired");
-    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeTypeOf("number");
+    expect(sealAssertPresent(recipient).expirationNotifiedAt).toBeTypeOf(
+      "number"
+    );
   });
 
   test("skips already-notified recipients (idempotent)", async () => {
@@ -255,11 +286,14 @@ describe("sweepExpiredRecipients", () => {
           status: "expired",
           expiresAt: Date.now() - 3 * ONE_HOUR,
           expirationNotifiedAt: notifiedAt,
-        }),
+        })
       );
     });
 
-    const result = await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    const result = await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     // No recipients should have been processed
     expect(result.recipientsExpired).toBe(0);
@@ -280,11 +314,14 @@ describe("sweepExpiredRecipients", () => {
         makeRecipientData({
           status: "pending",
           // No expiresAt
-        }),
+        })
       );
     });
 
-    await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -303,7 +340,7 @@ describe("sweepExpiredRecipients", () => {
           status: "pending",
           expiresAt: Date.now() - ONE_HOUR,
           order: 0,
-        }),
+        })
       );
       await ctx.db.insert(
         "document_recipients",
@@ -312,11 +349,14 @@ describe("sweepExpiredRecipients", () => {
           status: "viewed",
           expiresAt: Date.now() - ONE_HOUR,
           order: 1,
-        }),
+        })
       );
     });
 
-    const result = await t.mutation(internal.documents.expiration_sweep.sweepExpiredRecipients, {});
+    const result = await t.mutation(
+      internal.documents.expiration_sweep.sweepExpiredRecipients,
+      {}
+    );
 
     expect(result.recipientsExpired).toBe(2);
     // All recipients are now expired and terminal, so document should also transition

@@ -67,7 +67,7 @@ export const listDocuments = internalQuery({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     documents: ApiDocument[];
     hasMore: boolean;
@@ -89,7 +89,7 @@ export const listDocuments = internalQuery({
     let query = ctx.db
       .query("documents")
       .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
+        q.eq("organizationId", args.organizationId).eq("status", "active")
       )
       .order("desc");
 
@@ -97,24 +97,32 @@ export const listDocuments = internalQuery({
     if (args.cursor) {
       const cursorDoc = await ctx.db.get(args.cursor as Id<"documents">);
       if (cursorDoc) {
-        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+        query = query.filter((q) =>
+          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
+        );
       }
     }
 
     const documents = await query.take(fetchLimit);
 
     // Apply post-filters
-    const createdAfterMs = args.created_after ? new Date(args.created_after).getTime() : undefined;
+    const createdAfterMs = args.created_after
+      ? new Date(args.created_after).getTime()
+      : undefined;
     const createdBeforeMs = args.created_before
       ? new Date(args.created_before).getTime()
       : undefined;
     const titleSearch = args.title_search?.toLowerCase();
 
     const filteredDocs = documents.filter((doc) => {
-      if (args.status && (doc.workflowStatus ?? "draft") !== args.status) return false;
-      if (titleSearch && !doc.name.toLowerCase().includes(titleSearch)) return false;
-      if (createdAfterMs !== undefined && doc.createdAt < createdAfterMs) return false;
-      if (createdBeforeMs !== undefined && doc.createdAt > createdBeforeMs) return false;
+      if (args.status && (doc.workflowStatus ?? "draft") !== args.status)
+        return false;
+      if (titleSearch && !doc.name.toLowerCase().includes(titleSearch))
+        return false;
+      if (createdAfterMs !== undefined && doc.createdAt < createdAfterMs)
+        return false;
+      if (createdBeforeMs !== undefined && doc.createdAt > createdBeforeMs)
+        return false;
       return true;
     });
 
@@ -132,7 +140,7 @@ export const listDocuments = internalQuery({
           .collect();
 
         const signedCount = recipients.filter(
-          (r) => r.status === "signed" || r.status === "approved",
+          (r) => r.status === "signed" || r.status === "approved"
         ).length;
 
         return {
@@ -144,9 +152,11 @@ export const listDocuments = internalQuery({
           updated_at: new Date(doc.updatedAt).toISOString(),
           recipients_count: recipients.length,
           signed_count: signedCount,
-          deadline: doc.deadline ? new Date(doc.deadline).toISOString() : undefined,
+          deadline: doc.deadline
+            ? new Date(doc.deadline).toISOString()
+            : undefined,
         };
-      }),
+      })
     );
 
     const lastDoc = resultDocs[resultDocs.length - 1];
@@ -192,7 +202,7 @@ export const getDocument = internalQuery({
       .collect();
 
     const signedCount = recipients.filter(
-      (r) => r.status === "signed" || r.status === "approved",
+      (r) => r.status === "signed" || r.status === "approved"
     ).length;
 
     const response: ApiDocument & {
@@ -214,7 +224,9 @@ export const getDocument = internalQuery({
       updated_at: new Date(document.updatedAt).toISOString(),
       recipients_count: recipients.length,
       signed_count: signedCount,
-      deadline: document.deadline ? new Date(document.deadline).toISOString() : undefined,
+      deadline: document.deadline
+        ? new Date(document.deadline).toISOString()
+        : undefined,
     };
 
     if (args.includeRecipients) {
@@ -359,7 +371,8 @@ export const deleteDocument = internalMutation({
     if (workflowStatus !== "draft") {
       return {
         success: false,
-        error: "Only draft documents can be deleted. Use void to cancel sent documents.",
+        error:
+          "Only draft documents can be deleted. Use void to cancel sent documents.",
       };
     }
 
@@ -454,7 +467,7 @@ export const sendDocument = internalMutation({
       {
         documentId: args.documentId,
         customMessage: args.message,
-      },
+      }
     );
 
     return { success: true };
@@ -520,7 +533,7 @@ export const voidDocument = internalMutation({
       {
         documentId: args.documentId,
         reason: args.reason,
-      },
+      }
     );
 
     return { success: true };
@@ -616,12 +629,18 @@ export const updateDocumentAccess = internalMutation({
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     documentId: v.id("documents"),
-    sharing_mode: v.union(v.literal("private"), v.literal("workspace"), v.literal("specific")),
+    sharing_mode: v.union(
+      v.literal("private"),
+      v.literal("workspace"),
+      v.literal("specific")
+    ),
   },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
     const document = await ctx.db.get(args.documentId);
-    if (!document || document.status === "deleted") throw new Error("Document not found");
-    if (document.organizationId !== args.organizationId) throw new Error("Document not found");
+    if (!document || document.status === "deleted")
+      throw new Error("Document not found");
+    if (document.organizationId !== args.organizationId)
+      throw new Error("Document not found");
 
     await ctx.db.patch(args.documentId, {
       sharingMode: args.sharing_mode,
@@ -670,17 +689,29 @@ export const bulkVoidDocuments = internalMutation({
       const document = await ctx.db.get(documentId);
 
       if (!document || document.status === "deleted") {
-        results.push({ id: documentId, success: false, error: "Document not found" });
+        results.push({
+          id: documentId,
+          success: false,
+          error: "Document not found",
+        });
         continue;
       }
 
       if (document.organizationId !== args.organizationId) {
-        results.push({ id: documentId, success: false, error: "Document not found" });
+        results.push({
+          id: documentId,
+          success: false,
+          error: "Document not found",
+        });
         continue;
       }
 
       const status = document.workflowStatus ?? "draft";
-      if (status === "completed" || status === "cancelled" || status === "declined") {
+      if (
+        status === "completed" ||
+        status === "cancelled" ||
+        status === "declined"
+      ) {
         results.push({
           id: documentId,
           success: false,
@@ -729,12 +760,20 @@ export const bulkSendDocuments = internalMutation({
       const document = await ctx.db.get(documentId);
 
       if (!document || document.status === "deleted") {
-        results.push({ id: documentId, success: false, error: "Document not found" });
+        results.push({
+          id: documentId,
+          success: false,
+          error: "Document not found",
+        });
         continue;
       }
 
       if (document.organizationId !== args.organizationId) {
-        results.push({ id: documentId, success: false, error: "Document not found" });
+        results.push({
+          id: documentId,
+          success: false,
+          error: "Document not found",
+        });
         continue;
       }
 
@@ -773,7 +812,7 @@ export const bulkSendDocuments = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.documents.send_document_action.sendDocumentEmailsInternal,
-        { documentId, customMessage: args.message },
+        { documentId, customMessage: args.message }
       );
 
       results.push({ id: documentId, success: true });

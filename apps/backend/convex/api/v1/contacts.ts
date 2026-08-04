@@ -10,7 +10,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -61,13 +61,19 @@ export const listContacts = internalQuery({
     organizationId: v.id("organizations"),
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("active"), v.literal("inactive"), v.literal("lead"))),
+    status: v.optional(
+      v.union(v.literal("active"), v.literal("inactive"), v.literal("lead"))
+    ),
     search: v.optional(v.string()),
   },
   handler: async (
     ctx,
-    args,
-  ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
+    args
+  ): Promise<{
+    contacts: ApiContact[];
+    has_more: boolean;
+    next_cursor?: string;
+  }> => {
     const limit = args.limit ?? 20;
 
     // When search is active, fetch more to ensure we can fill the page after post-filtering
@@ -79,21 +85,29 @@ export const listContacts = internalQuery({
       query = ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", sealAssertPresent(args.status)),
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("status", sealAssertPresent(args.status))
         )
         .order("desc");
     } else {
       query = ctx.db
         .query("contacts")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId)
+        )
         .order("desc");
     }
 
     // Apply cursor if provided (use _creationTime for index-based pagination)
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(args.cursor as Parameters<typeof ctx.db.get>[0]);
+      const cursorDoc = await ctx.db.get(
+        args.cursor as Parameters<typeof ctx.db.get>[0]
+      );
       if (cursorDoc) {
-        query = query.filter((q) => q.lt(q.field("_creationTime"), cursorDoc._creationTime));
+        query = query.filter((q) =>
+          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
+        );
       }
     }
 
@@ -103,8 +117,12 @@ export const listContacts = internalQuery({
     const filtered = args.search
       ? raw.filter(
           (c) =>
-            c.fullName.toLowerCase().includes(sealAssertPresent(args.search).toLowerCase()) ||
-            c.email.toLowerCase().includes(sealAssertPresent(args.search).toLowerCase()),
+            c.fullName
+              .toLowerCase()
+              .includes(sealAssertPresent(args.search).toLowerCase()) ||
+            c.email
+              .toLowerCase()
+              .includes(sealAssertPresent(args.search).toLowerCase())
         )
       : raw;
 
@@ -164,7 +182,9 @@ export const getContact = internalQuery({
       status: c.status,
       notes: c.notes,
       tags: c.tags,
-      last_contacted_at: c.lastContactedAt ? new Date(c.lastContactedAt).toISOString() : undefined,
+      last_contacted_at: c.lastContactedAt
+        ? new Date(c.lastContactedAt).toISOString()
+        : undefined,
       created_at: new Date(c.createdAt).toISOString(),
       updated_at: new Date(c.updatedAt).toISOString(),
     };
@@ -186,7 +206,9 @@ export const createContact = internalMutation({
     phone: v.optional(v.string()),
     company: v.optional(v.string()),
     title: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("active"), v.literal("inactive"), v.literal("lead"))),
+    status: v.optional(
+      v.union(v.literal("active"), v.literal("inactive"), v.literal("lead"))
+    ),
     notes: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
   },

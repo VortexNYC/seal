@@ -454,7 +454,10 @@ import { CheckoutProvider, useCheckout } from "@retired_provider/react-retired_p
 
 ```html
 <!-- Pricing Table -->
-<script async src="https://js.retired_provider.com/v3/pricing-table.js"></script>
+<script
+  async
+  src="https://js.retired_provider.com/v3/pricing-table.js"
+></script>
 <retired_provider-pricing-table
   pricing-table-id="prctbl_..."
   publishable-key="pk_..."
@@ -463,7 +466,10 @@ import { CheckoutProvider, useCheckout } from "@retired_provider/react-retired_p
 
 <!-- Buy Button -->
 <script async src="https://js.retired_provider.com/v3/buy-button.js"></script>
-<retired_provider-buy-button buy-button-id="buy_btn_..." publishable-key="pk_..." />
+<retired_provider-buy-button
+  buy-button-id="buy_btn_..."
+  publishable-key="pk_..."
+/>
 ```
 
 **Important limitation**: Pricing Table does **NOT** support retired provider Connect (cannot attribute to connected accounts). It only works for direct charges on the platform account.
@@ -561,7 +567,7 @@ This section maps each current redirect-based flow to its embedded component rep
 // Add after finalizeInvoice in each payment type function:
 const paymentIntent = await retired_provider.paymentIntents.retrieve(
   finalizedInvoice.payment_intent as string,
-  { retired_providerAccount: retired_providerAccountId },
+  { retired_providerAccount: retired_providerAccountId }
 );
 // Return both: hosted URL for email fallback, client_secret for inline payment
 ```

@@ -30,7 +30,7 @@ const supportedScopeValidator = v.union(
   v.literal(API_SCOPES.TEMPLATES_READ),
   v.literal(API_SCOPES.MEMBERS_READ),
   v.literal(API_SCOPES.CONTACTS_READ),
-  v.literal(API_SCOPES.AUDIT_READ),
+  v.literal(API_SCOPES.AUDIT_READ)
 );
 
 const resolveSessionArgsValidator = v.object({
@@ -80,7 +80,10 @@ const signingKeyDocValidator = v.object({
   privateJwkJson: v.string(),
 });
 
-const signingKeyStatusValidator = v.union(v.literal("active"), v.literal("retired"));
+const signingKeyStatusValidator = v.union(
+  v.literal("active"),
+  v.literal("retired")
+);
 
 type StoredMcpOAuthClient = {
   clientId: string;
@@ -297,7 +300,8 @@ type VortexAuthMcpRefs = {
   };
 };
 
-const vortexAuthMcp = (components.vortexAuth as unknown as VortexAuthMcpRefs).mcp;
+const vortexAuthMcp = (components.vortexAuth as unknown as VortexAuthMcpRefs)
+  .mcp;
 
 type QueryRunner = Pick<QueryCtx | MutationCtx, "runQuery">;
 
@@ -367,7 +371,10 @@ export const createAuthorizationCode = internalMutation({
 export const consumeAuthorizationCode = internalMutation({
   args: consumeAuthorizationCodeArgsValidator,
   handler: async (ctx, args) => {
-    const consumed = await ctx.runMutation(vortexAuthMcp.consumeAuthorizationCode, args);
+    const consumed = await ctx.runMutation(
+      vortexAuthMcp.consumeAuthorizationCode,
+      args
+    );
     if (consumed === null) {
       return null;
     }
@@ -413,7 +420,9 @@ export const redeemRefreshToken = internalMutation({
     const redeemed = await ctx.runMutation(vortexAuthMcp.redeemRefreshToken, {
       client: serializeClient(client),
       refreshToken: args.refreshToken,
-      requestedScopes: args.requestedScopes ? [...args.requestedScopes] : undefined,
+      requestedScopes: args.requestedScopes
+        ? [...args.requestedScopes]
+        : undefined,
     });
 
     if (!redeemed.ok) {
@@ -436,11 +445,14 @@ export const redeemRefreshToken = internalMutation({
 
 async function resolveClientInternal(
   ctx: QueryRunner,
-  clientId: string,
+  clientId: string
 ): Promise<McpOAuthClient | null> {
-  const stored: StoredMcpOAuthClient = await ctx.runQuery(vortexAuthMcp.resolveClient, {
-    clientId,
-  });
+  const stored: StoredMcpOAuthClient = await ctx.runQuery(
+    vortexAuthMcp.resolveClient,
+    {
+      clientId,
+    }
+  );
   if (stored !== null) {
     return {
       clientId: stored.clientId,
@@ -554,13 +566,18 @@ export const updateSigningKeyStatus = internalMutation({
 
 type SupportedScope = (typeof MCP_OAUTH_ALLOWED_SCOPES)[number];
 
-export function requireAllowedScopes(scopes: readonly string[]): SupportedScope[] {
+export function requireAllowedScopes(
+  scopes: readonly string[]
+): SupportedScope[] {
   const filtered = scopes.filter((scope): scope is SupportedScope =>
-    (MCP_OAUTH_ALLOWED_SCOPES as readonly string[]).includes(scope),
+    (MCP_OAUTH_ALLOWED_SCOPES as readonly string[]).includes(scope)
   );
 
   if (filtered.length === 0) {
-    throw new ConvexError({ code: "BAD_REQUEST", message: "No allowed scopes requested" });
+    throw new ConvexError({
+      code: "BAD_REQUEST",
+      message: "No allowed scopes requested",
+    });
   }
 
   return filtered;
@@ -568,26 +585,35 @@ export function requireAllowedScopes(scopes: readonly string[]): SupportedScope[
 
 export function requireKnownClient(client: McpOAuthClient | null) {
   if (client === null) {
-    throw new ConvexError({ code: "BAD_REQUEST", message: "Unknown OAuth client" });
+    throw new ConvexError({
+      code: "BAD_REQUEST",
+      message: "Unknown OAuth client",
+    });
   }
   return client;
 }
 
 export function requireAllowedRedirectUri(
   client: McpOAuthClientFixture | McpOAuthClient,
-  redirectUri: string,
+  redirectUri: string
 ): string {
   if (!client.redirectUris.includes(redirectUri)) {
-    throw new ConvexError({ code: "BAD_REQUEST", message: "Invalid redirect URI" });
+    throw new ConvexError({
+      code: "BAD_REQUEST",
+      message: "Invalid redirect URI",
+    });
   }
   return redirectUri;
 }
 
 export function requireAccessibleOrganization(
-  organizationId: Id<"organizations"> | null,
+  organizationId: Id<"organizations"> | null
 ): Id<"organizations"> {
   if (organizationId === null) {
-    throw new ConvexError({ code: "FORBIDDEN", message: "No accessible organization" });
+    throw new ConvexError({
+      code: "FORBIDDEN",
+      message: "No accessible organization",
+    });
   }
   return organizationId;
 }

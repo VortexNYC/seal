@@ -3,7 +3,7 @@ import type { DatabaseReader } from "./_generated/server";
 
 export async function resolveSubscriptionPriceByAnyId(
   db: DatabaseReader,
-  id: string,
+  id: string
 ): Promise<Doc<"subscription_prices"> | null> {
   const externallyKeyedPrice = await db
     .query("subscription_prices")
@@ -21,7 +21,7 @@ export async function resolveSubscriptionPriceByAnyId(
 
 export async function resolveSubscriptionPriceAndProductByAnyId(
   db: DatabaseReader,
-  id: string,
+  id: string
 ): Promise<{
   readonly price: Doc<"subscription_prices"> | null;
   readonly product: Doc<"subscription_products"> | null;

@@ -53,7 +53,9 @@ export function useCurrentUser(): {
       imageUrl: undefined,
       createdAt: undefined,
       primaryEmailAddress: primaryEmail,
-      emailAddresses: primaryEmail ? [{ emailAddress: primaryEmail.emailAddress }] : [],
+      emailAddresses: primaryEmail
+        ? [{ emailAddress: primaryEmail.emailAddress }]
+        : [],
     };
   }, [user]);
 

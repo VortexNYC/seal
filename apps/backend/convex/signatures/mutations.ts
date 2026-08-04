@@ -6,7 +6,10 @@ import { mutation } from "../_generated/server";
 import { logRecipientAction, logSignatureAction } from "../audit_logs/helpers";
 import { authMutation } from "../auth";
 import { encryptSignatureData } from "../crypto/encryption";
-import { generateSignatureHash, generateSignatureImageHash } from "../crypto/helpers";
+import {
+  generateSignatureHash,
+  generateSignatureImageHash,
+} from "../crypto/helpers";
 
 /** Get the signature encryption key from environment (undefined in dev = no encryption). */
 function getEncryptionKey(): string | undefined {
@@ -23,7 +26,11 @@ import {
 } from "./helpers";
 
 // Signature method type
-const signatureMethodTuple = v.union(v.literal("draw"), v.literal("type"), v.literal("upload"));
+const signatureMethodTuple = v.union(
+  v.literal("draw"),
+  v.literal("type"),
+  v.literal("upload")
+);
 
 interface SignatureSaveInput {
   fieldId: Id<"signature_fields">;
@@ -51,25 +58,30 @@ interface ComputedSignaturePayload {
 
 type SignatureDbCtx = Pick<MutationCtx, "db">;
 
-function ensureValueMeetsRules(field: Doc<"signature_fields">, value?: string): void {
+function ensureValueMeetsRules(
+  field: Doc<"signature_fields">,
+  value?: string
+): void {
   if (!value || !field.validationRules) {
     return;
   }
 
   const rulesValidation = validateAgainstRules(value, field.validationRules);
   if (!rulesValidation.valid) {
-    throw new Error(rulesValidation.error || "Value does not meet validation requirements");
+    throw new Error(
+      rulesValidation.error || "Value does not meet validation requirements"
+    );
   }
 }
 
 function ensureSignatureInputIsValid(
   field: Doc<"signature_fields">,
-  input: Pick<SignatureSaveInput, "value" | "signatureImageUrl">,
+  input: Pick<SignatureSaveInput, "value" | "signatureImageUrl">
 ): void {
   const signatureValidation = validateSignature(
     field.fieldType,
     input.value,
-    input.signatureImageUrl,
+    input.signatureImageUrl
   );
   if (!signatureValidation.valid) {
     throw new Error(signatureValidation.error || "Invalid field value");
@@ -81,7 +93,7 @@ function ensureSignatureInputIsValid(
 async function computeSignaturePayload(
   recipientId: Id<"document_recipients">,
   input: SignatureSaveInput,
-  documentHash: string,
+  documentHash: string
 ): Promise<ComputedSignaturePayload> {
   const signedAt = Date.now();
   const signatureData = input.value || input.signatureImageUrl || "";
@@ -90,10 +102,15 @@ async function computeSignaturePayload(
     recipientId,
     input.fieldId,
     documentHash,
-    signedAt,
+    signedAt
   );
-  const signatureImageHash = await generateSignatureImageHash(input.signatureImageUrl);
-  const encryptedImageUrl = await encryptSignatureData(input.signatureImageUrl, getEncryptionKey());
+  const signatureImageHash = await generateSignatureImageHash(
+    input.signatureImageUrl
+  );
+  const encryptedImageUrl = await encryptSignatureData(
+    input.signatureImageUrl,
+    getEncryptionKey()
+  );
 
   return {
     documentHash,
@@ -108,7 +125,7 @@ async function upsertSignatureRecord(
   ctx: SignatureDbCtx,
   signatureContext: PreparedSignatureContext,
   input: SignatureSaveInput,
-  payload: ComputedSignaturePayload,
+  payload: ComputedSignaturePayload
 ): Promise<{ signatureId: Id<"signatures">; isUpdate: boolean }> {
   const timestamp = Date.now();
   const { recipient, field, document, existingSignature } = signatureContext;
@@ -191,14 +208,18 @@ async function autoSubmitMainSignature(
   document: Doc<"documents">,
   field: Doc<"signature_fields">,
   signatureImageUrl: string | undefined,
-  ipAddress: string,
+  ipAddress: string
 ): Promise<void> {
   if (field.isMainSignature !== true || field.fieldType !== "signature") {
     return;
   }
 
   const status =
-    recipient.role === "signer" ? "signed" : recipient.role === "approver" ? "approved" : "viewed";
+    recipient.role === "signer"
+      ? "signed"
+      : recipient.role === "approver"
+        ? "approved"
+        : "viewed";
 
   await ctx.db.patch(recipient._id, {
     status,
@@ -256,7 +277,7 @@ async function autoSubmitMainSignature(
 async function prepareTokenSignatureSave(
   ctx: SignatureDbCtx,
   signingToken: string,
-  input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">,
+  input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">
 ): Promise<PreparedSignatureContext> {
   const recipient = await findRecipientByToken(ctx, signingToken);
   if (!recipient) {
@@ -301,7 +322,7 @@ async function prepareAuthenticatedSignatureSave(
   ctx: SignatureDbCtx,
   userId: Id<"users">,
   documentId: Id<"documents">,
-  input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">,
+  input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">
 ): Promise<PreparedSignatureContext> {
   const user = await ctx.db.get(userId);
   if (!user || !user.email) {
@@ -380,7 +401,7 @@ export const createSignature = mutation({
         method: authenticationMethodTuple,
         verified: v.boolean(),
         verifiedAt: v.optional(v.number()),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -408,7 +429,7 @@ export const createSignature = mutation({
     const signatureValidation = validateSignature(
       field.fieldType,
       args.value,
-      args.signatureImageUrl,
+      args.signatureImageUrl
     );
     if (!signatureValidation.valid) {
       throw new Error(signatureValidation.error);
@@ -416,7 +437,10 @@ export const createSignature = mutation({
 
     // Validate against field validation rules
     if (args.value) {
-      const rulesValidation = validateAgainstRules(args.value, field.validationRules);
+      const rulesValidation = validateAgainstRules(
+        args.value,
+        field.validationRules
+      );
       if (!rulesValidation.valid) {
         throw new Error(rulesValidation.error);
       }
@@ -433,11 +457,16 @@ export const createSignature = mutation({
     }
 
     // Compute signature image hash for reuse detection (hash raw data before encryption)
-    const signatureImageHash = await generateSignatureImageHash(args.signatureImageUrl);
+    const signatureImageHash = await generateSignatureImageHash(
+      args.signatureImageUrl
+    );
 
     // Encrypt signature image data before storage
     const encKey = getEncryptionKey();
-    const encryptedImageUrl = await encryptSignatureData(args.signatureImageUrl, encKey);
+    const encryptedImageUrl = await encryptSignatureData(
+      args.signatureImageUrl,
+      encKey
+    );
 
     // Create signature
     const signatureId = await ctx.db.insert("signatures", {
@@ -515,14 +544,21 @@ export const updateSignature = mutation({
     const newValue = args.value ?? signature.value;
     const newImageUrl = args.signatureImageUrl ?? signature.signatureImageUrl;
 
-    const signatureValidation = validateSignature(field.fieldType, newValue, newImageUrl);
+    const signatureValidation = validateSignature(
+      field.fieldType,
+      newValue,
+      newImageUrl
+    );
     if (!signatureValidation.valid) {
       throw new Error(signatureValidation.error);
     }
 
     // Validate against field validation rules
     if (newValue) {
-      const rulesValidation = validateAgainstRules(newValue, field.validationRules);
+      const rulesValidation = validateAgainstRules(
+        newValue,
+        field.validationRules
+      );
       if (!rulesValidation.valid) {
         throw new Error(rulesValidation.error);
       }
@@ -536,7 +572,7 @@ export const updateSignature = mutation({
 
     // Compute updated image hash for reuse detection (hash raw data before encryption)
     const updatedImageHash = await generateSignatureImageHash(
-      args.signatureImageUrl ?? signature.signatureImageUrl,
+      args.signatureImageUrl ?? signature.signatureImageUrl
     );
 
     // Encrypt signature image data before storage
@@ -657,7 +693,11 @@ export const saveFieldValue = mutation({
     userAgent: v.string(),
   },
   handler: async (ctx, args) => {
-    const signatureContext = await prepareTokenSignatureSave(ctx, args.signingToken, args);
+    const signatureContext = await prepareTokenSignatureSave(
+      ctx,
+      args.signingToken,
+      args
+    );
     const payload = await computeSignaturePayload(
       signatureContext.recipient._id,
       {
@@ -668,7 +708,7 @@ export const saveFieldValue = mutation({
         ipAddress: args.ipAddress,
         userAgent: args.userAgent,
       },
-      signatureContext.document.documentHash || "",
+      signatureContext.document.documentHash || ""
     );
 
     const result = await upsertSignatureRecord(
@@ -682,7 +722,7 @@ export const saveFieldValue = mutation({
         ipAddress: args.ipAddress,
         userAgent: args.userAgent,
       },
-      payload,
+      payload
     );
 
     await autoSubmitMainSignature(
@@ -691,7 +731,7 @@ export const saveFieldValue = mutation({
       signatureContext.document,
       signatureContext.field,
       args.signatureImageUrl,
-      args.ipAddress,
+      args.ipAddress
     );
 
     return result;
@@ -721,7 +761,7 @@ export const saveFieldValueAuthenticated = authMutation({
       ctx,
       userId,
       args.documentId,
-      args,
+      args
     );
     if (
       signatureContext.recipient.status === "signed" ||
@@ -741,7 +781,7 @@ export const saveFieldValueAuthenticated = authMutation({
         ipAddress,
         userAgent: args.userAgent,
       },
-      signatureContext.document.documentHash || "",
+      signatureContext.document.documentHash || ""
     );
 
     const result = await upsertSignatureRecord(
@@ -755,7 +795,7 @@ export const saveFieldValueAuthenticated = authMutation({
         ipAddress,
         userAgent: args.userAgent,
       },
-      payload,
+      payload
     );
 
     // Note: For authenticated users, we do NOT auto-sign on main signature field.

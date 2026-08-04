@@ -100,8 +100,22 @@ describe("getBucket", () => {
   });
 
   test("covers all bucket types", () => {
-    const buckets: TimingBucket[] = ["<1h", "1-6h", "6-24h", "1-3d", "3-7d", "7d+"];
-    const testValues = [0, 2 * HOUR, 12 * HOUR, 48 * HOUR, 120 * HOUR, 200 * HOUR];
+    const buckets: TimingBucket[] = [
+      "<1h",
+      "1-6h",
+      "6-24h",
+      "1-3d",
+      "3-7d",
+      "7d+",
+    ];
+    const testValues = [
+      0,
+      2 * HOUR,
+      12 * HOUR,
+      48 * HOUR,
+      120 * HOUR,
+      200 * HOUR,
+    ];
 
     for (let i = 0; i < testValues.length; i++) {
       expect(getBucket(testValues[i])).toBe(buckets[i]);

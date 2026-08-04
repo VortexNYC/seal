@@ -3,8 +3,16 @@ import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, mutation, type MutationCtx, query } from "./_generated/server";
-import { getBetterAuthIdentityIssuer, getBetterAuthIdentityProvider } from "./lib/authIdentities";
+import {
+  internalMutation,
+  mutation,
+  type MutationCtx,
+  query,
+} from "./_generated/server";
+import {
+  getBetterAuthIdentityIssuer,
+  getBetterAuthIdentityProvider,
+} from "./lib/authIdentities";
 
 type BetterAuthIdentity = Record<string, unknown> & {
   subject: string;
@@ -36,7 +44,9 @@ export const getCurrentUser = query({
     }
     return await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
   },
 });
@@ -49,16 +59,23 @@ export const getCurrentUser = query({
 export const provisionCurrentBetterAuthUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = (await ctx.auth.getUserIdentity()) as BetterAuthIdentity | null;
+    const identity =
+      (await ctx.auth.getUserIdentity()) as BetterAuthIdentity | null;
     if (identity === null) {
-      throw new ConvexError({ code: "UNAUTHORIZED", message: "Authentication required" });
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+      });
     }
 
     return await upsertBetterAuthUser(ctx, {
       betterAuthUserId: identity.subject,
       email: readRequiredIdentityEmail(identity),
       emailVerified: readIdentityEmailVerified(identity),
-      issuer: typeof identity.issuer === "string" ? identity.issuer : getBetterAuthIdentityIssuer(),
+      issuer:
+        typeof identity.issuer === "string"
+          ? identity.issuer
+          : getBetterAuthIdentityIssuer(),
       name: readOptionalIdentityString(identity, "name"),
       image: readIdentityImage(identity),
     });
@@ -93,18 +110,23 @@ export const deleteFromBetterAuth = internalMutation({
     betterAuthUserId: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.runQuery(components.vortexAuth.identity.getByIdentity, {
-      issuer: getBetterAuthIdentityIssuer(),
-      provider: getBetterAuthIdentityProvider(),
-      subject: args.betterAuthUserId,
-    });
+    const identity = await ctx.runQuery(
+      components.vortexAuth.identity.getByIdentity,
+      {
+        issuer: getBetterAuthIdentityIssuer(),
+        provider: getBetterAuthIdentityProvider(),
+        subject: args.betterAuthUserId,
+      }
+    );
     if (identity === null) {
       return { deleted: false };
     }
 
     const localUser = await ctx.db
       .query("users")
-      .withIndex("by_vortex_auth_user", (q) => q.eq("vortexAuthUserId", identity.userId))
+      .withIndex("by_vortex_auth_user", (q) =>
+        q.eq("vortexAuthUserId", identity.userId)
+      )
       .first();
     if (localUser === null) {
       return { deleted: false };
@@ -115,17 +137,22 @@ export const deleteFromBetterAuth = internalMutation({
   },
 });
 
-async function upsertBetterAuthUser(ctx: MutationCtx, args: UpsertBetterAuthUserArgs) {
+async function upsertBetterAuthUser(
+  ctx: MutationCtx,
+  args: UpsertBetterAuthUserArgs
+) {
   const provisionPayload = createBetterAuthIdentityProvisionPayload(args);
   const normalizedEmail = requireProvisionedEmail(provisionPayload.user.email);
   const vortexProvision = await ctx.runMutation(
     components.vortexAuth.identity.provisionFromIdentity,
-    provisionPayload,
+    provisionPayload
   );
 
   const existingByVortexAuth = await ctx.db
     .query("users")
-    .withIndex("by_vortex_auth_user", (q) => q.eq("vortexAuthUserId", vortexProvision.userId))
+    .withIndex("by_vortex_auth_user", (q) =>
+      q.eq("vortexAuthUserId", vortexProvision.userId)
+    )
     .first();
   const existingByEmail = await ctx.db
     .query("users")
@@ -189,7 +216,10 @@ function readIdentityEmailVerified(identity: BetterAuthIdentity): boolean {
   return identity.emailVerified === true;
 }
 
-function readOptionalIdentityString(identity: BetterAuthIdentity, key: string): string | undefined {
+function readOptionalIdentityString(
+  identity: BetterAuthIdentity,
+  key: string
+): string | undefined {
   const value = identity[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }

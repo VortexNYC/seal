@@ -26,8 +26,18 @@ export const readOrganizationVortexProductAccess = internalAction({
   args: { organizationId: v.id("organizations"), product: v.string() },
   handler: async (_ctx, { organizationId, product }) => {
     const env = readVortexBillingEnvFromProcess();
-    const customerExternalId = resolveVortexBillingCustomerExternalId(organizationId, process.env);
-    const client = createVortexBillingClient({ apiBaseUrl: env.apiBaseUrl, apiKey: env.apiKey });
-    return await readVortexProductAccess({ client, customerExternalId, product });
+    const customerExternalId = resolveVortexBillingCustomerExternalId(
+      organizationId,
+      process.env
+    );
+    const client = createVortexBillingClient({
+      apiBaseUrl: env.apiBaseUrl,
+      apiKey: env.apiKey,
+    });
+    return await readVortexProductAccess({
+      client,
+      customerExternalId,
+      product,
+    });
   },
 });

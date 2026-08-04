@@ -16,7 +16,11 @@ import { v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 
 // =============================================================================
 // RAG COMPONENT SETUP
@@ -29,11 +33,14 @@ import { internalAction, internalMutation, internalQuery } from "../_generated/s
  *
  * Filters: status (active/archived), documentId (single-doc scoping).
  */
-export const documentRag = new RAG<{ status: string; documentId: string }>(components.rag, {
-  textEmbeddingModel: gateway.textEmbeddingModel("google/text-embedding-005"),
-  embeddingDimension: 768,
-  filterNames: ["status", "documentId"],
-});
+export const documentRag = new RAG<{ status: string; documentId: string }>(
+  components.rag,
+  {
+    textEmbeddingModel: gateway.textEmbeddingModel("google/text-embedding-005"),
+    embeddingDimension: 768,
+    filterNames: ["status", "documentId"],
+  }
+);
 
 // =============================================================================
 // CONSTANTS
@@ -53,7 +60,9 @@ const PAGE_MARKER_REGEX = /\f/g;
  * Chunk extracted text by page boundaries.
  * If pages are too large, splits further at paragraph boundaries.
  */
-function chunkTextByPage(extractedText: string): Array<{ text: string; pageNumber: number }> {
+function chunkTextByPage(
+  extractedText: string
+): Array<{ text: string; pageNumber: number }> {
   const pages = extractedText.split(PAGE_MARKER_REGEX);
   const chunks: Array<{ text: string; pageNumber: number }> = [];
 
@@ -71,7 +80,10 @@ function chunkTextByPage(extractedText: string): Array<{ text: string; pageNumbe
       let currentChunk = "";
 
       for (const para of paragraphs) {
-        if (currentChunk.length + para.length > MAX_CHUNK_CHARS && currentChunk.length > 0) {
+        if (
+          currentChunk.length + para.length > MAX_CHUNK_CHARS &&
+          currentChunk.length > 0
+        ) {
           chunks.push({ text: currentChunk.trim(), pageNumber });
           currentChunk = para;
         } else {
@@ -102,12 +114,17 @@ export const indexDocumentForSearch = internalAction({
   },
   handler: async (ctx, args) => {
     // 1. Get the document to check for extractedText
-    const document = await ctx.runQuery(internal.ai.search.getDocumentForIndexing, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.ai.search.getDocumentForIndexing,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     if (!document || !document.extractedText) {
-      console.warn(`[Search] Skipping indexing for ${args.documentId}: no extracted text`);
+      console.warn(
+        `[Search] Skipping indexing for ${args.documentId}: no extracted text`
+      );
       return;
     }
 
@@ -162,7 +179,9 @@ export const indexDocumentForSearch = internalAction({
       documentId: args.documentId,
     });
 
-    console.info(`[Search] Indexed ${chunks.length} chunks for document ${args.documentId}`);
+    console.info(
+      `[Search] Indexed ${chunks.length} chunks for document ${args.documentId}`
+    );
   },
 });
 
@@ -216,7 +235,10 @@ type SearchIndexDocument = Pick<
   "_id" | "name" | "status" | "extractedText" | "pageCount"
 >;
 
-type SearchFilterDocument = Pick<Doc<"documents">, "_id" | "workflowStatus" | "createdAt">;
+type SearchFilterDocument = Pick<
+  Doc<"documents">,
+  "_id" | "workflowStatus" | "createdAt"
+>;
 
 const searchIndexDocumentValidator = v.union(
   v.object({
@@ -226,7 +248,7 @@ const searchIndexDocumentValidator = v.union(
     extractedText: v.optional(v.string()),
     pageCount: v.optional(v.number()),
   }),
-  v.null(),
+  v.null()
 );
 
 const searchFilterDocumentValidator = v.object({
@@ -241,13 +263,17 @@ function hasSearchFilters(args: {
   dateTo?: number;
 }): boolean {
   return Boolean(
-    (args.workflowStatus && args.workflowStatus !== "all") || args.dateFrom || args.dateTo,
+    (args.workflowStatus && args.workflowStatus !== "all") ||
+    args.dateFrom ||
+    args.dateTo
   );
 }
 
 function extractDocumentIds(entries: RagSearchEntry[]): Id<"documents">[] {
   const ids = new Set(
-    entries.map((entry) => entry.key?.split(":")[1]).filter((id): id is string => Boolean(id)),
+    entries
+      .map((entry) => entry.key?.split(":")[1])
+      .filter((id): id is string => Boolean(id))
   );
 
   return [...ids] as unknown as Id<"documents">[];
@@ -259,7 +285,7 @@ function matchesSearchFilters(
     workflowStatus?: string;
     dateFrom?: number;
     dateTo?: number;
-  },
+  }
 ): boolean {
   if (
     args.workflowStatus &&
@@ -277,7 +303,10 @@ function matchesSearchFilters(
   return true;
 }
 
-function buildSearchResults(entries: RagSearchEntry[], limit: number): SearchResult[] {
+function buildSearchResults(
+  entries: RagSearchEntry[],
+  limit: number
+): SearchResult[] {
   const results: SearchResult[] = [];
 
   for (const entry of entries) {
@@ -335,7 +364,10 @@ export const hybridSearchDocuments = internalAction({
         documentIds: extractDocumentIds(filtered),
       });
       const docMap = new Map(
-        docs.map((document: SearchFilterDocument) => [document._id.toString(), document]),
+        docs.map((document: SearchFilterDocument) => [
+          document._id.toString(),
+          document,
+        ])
       );
 
       filtered = filtered.filter((entry) => {
@@ -377,11 +409,14 @@ type SearchAction = FunctionReference<
 
 /** Cache for search queries — keyed on org + query + filters, 1-hour TTL.
  *  Same user asking "find GDPR" twice in a session hits cache on second call. */
-export const searchCache: ActionCache<SearchAction> = new ActionCache(components.actionCache, {
-  action: internal.ai.search.hybridSearchDocuments,
-  name: "documentSearch-v1",
-  ttl: 60 * 60 * 1000, // 1 hour
-} as ActionCacheConfig<SearchAction>);
+export const searchCache: ActionCache<SearchAction> = new ActionCache(
+  components.actionCache,
+  {
+    action: internal.ai.search.hybridSearchDocuments,
+    name: "documentSearch-v1",
+    ttl: 60 * 60 * 1000, // 1 hour
+  } as ActionCacheConfig<SearchAction>
+);
 
 // =============================================================================
 // HELPER QUERIES/MUTATIONS

@@ -30,6 +30,11 @@ export const getApplicationFeeForOrganization = internalQuery({
     isAch: v.boolean(),
   },
   handler: async (ctx, args) => {
-    return await getApplicationFee(ctx.db, args.organizationId, args.amountCents, args.isAch);
+    return await getApplicationFee(
+      ctx.db,
+      args.organizationId,
+      args.amountCents,
+      args.isAch
+    );
   },
 });

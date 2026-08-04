@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import { ThemeToggle } from "~/components/ui/theme-toggle";
 import { APP_URL } from "~/lib/constants";
@@ -38,12 +39,16 @@ export function Navbar() {
         "fixed top-0 z-50 w-full transition-all duration-200",
         isScrolled
           ? "bg-background/90 border-border border-b backdrop-blur-lg"
-          : "border-b border-transparent",
+          : "border-b border-transparent"
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         {/* Logo */}
-        <Link aria-label="Seal homepage" className="flex items-center gap-1.5" to="/">
+        <Link
+          aria-label="Seal homepage"
+          className="flex items-center gap-1.5"
+          to="/"
+        >
           <svg
             aria-hidden="true"
             fill="none"
@@ -65,12 +70,15 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="flex items-center gap-1 max-md:hidden" data-testid="desktop-nav">
+        <nav
+          className="flex items-center gap-1 max-md:hidden"
+          data-testid="desktop-nav"
+        >
           {navItems.map((item) => (
             <Link
               className={cn(
                 "text-foreground/70 hover:text-foreground rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                pathname === item.href && "text-foreground",
+                pathname === item.href && "text-foreground"
               )}
               key={item.label}
               to={item.href}

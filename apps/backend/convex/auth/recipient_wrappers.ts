@@ -11,7 +11,11 @@
  * via token validation which scopes access to the specific document.
  */
 
-import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import {
+  customCtx,
+  customMutation,
+  customQuery,
+} from "convex-helpers/server/customFunctions";
 import { ConvexError } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
@@ -53,7 +57,9 @@ export const recipientQuery = customQuery(
   query,
   customCtx(async (ctx) => {
     // Helper to validate token and get recipient context
-    const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
+    const validateRecipientToken = async (
+      signingToken: string
+    ): Promise<RecipientContext> => {
       // Hash-based lookup with plaintext fallback for pre-migration records
       const recipient = await findRecipientByToken(ctx, signingToken);
 
@@ -93,7 +99,7 @@ export const recipientQuery = customQuery(
       // Raw db access - access control via token validation
       db: ctx.db,
     };
-  }),
+  })
 );
 
 /**
@@ -124,7 +130,9 @@ export const recipientMutation = customMutation(
   mutation,
   customCtx(async (ctx) => {
     // Helper to validate token and get recipient context
-    const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
+    const validateRecipientToken = async (
+      signingToken: string
+    ): Promise<RecipientContext> => {
       // Hash-based lookup with plaintext fallback for pre-migration records
       const recipient = await findRecipientByToken(ctx, signingToken);
 
@@ -172,5 +180,5 @@ export const recipientMutation = customMutation(
       // Raw db access - access control via token validation
       db: ctx.db,
     };
-  }),
+  })
 );

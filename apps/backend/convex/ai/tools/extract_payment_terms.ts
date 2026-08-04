@@ -10,7 +10,10 @@ import type { SealAICtx } from "../types";
 
 // Re-export schema from standalone module (keeps imports stable for consumers
 // while letting tests import without side effects).
-export { PaymentExtractionSchema, type PaymentExtractionResult } from "./paymentExtractionSchema";
+export {
+  PaymentExtractionSchema,
+  type PaymentExtractionResult,
+} from "./paymentExtractionSchema";
 
 import type { PaymentExtractionResult } from "./paymentExtractionSchema";
 
@@ -31,14 +34,12 @@ type PaymentCacheAction = FunctionReference<
 
 /** Cache for payment extraction — keyed on storageId, 24-hour TTL.
  *  Same PDF analyzed for payment terms twice returns cached result. */
-export const paymentExtractionCache: ActionCache<PaymentCacheAction> = new ActionCache(
-  components.actionCache,
-  {
+export const paymentExtractionCache: ActionCache<PaymentCacheAction> =
+  new ActionCache(components.actionCache, {
     action: internal.ai.paymentExtractionAction.extractPaymentInternal,
     name: "paymentExtraction-v1",
     ttl: 24 * 60 * 60 * 1000, // 24 hours
-  } as ActionCacheConfig<PaymentCacheAction>,
-);
+  } as ActionCacheConfig<PaymentCacheAction>);
 
 // ---------------------------------------------------------------------------
 // Tool
@@ -56,32 +57,50 @@ export const extractPaymentTerms = createTool({
   }),
   execute: async (ctx: SealAICtx, args): Promise<string> => {
     try {
-      const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;
-      if (!docId) throw new Error("No document ID provided and no current document context");
+      const docId = (args.documentId ?? ctx.documentId) as
+        | Id<"documents">
+        | undefined;
+      if (!docId)
+        throw new Error(
+          "No document ID provided and no current document context"
+        );
 
       // Rate limit expensive Gemini extraction call (20 ops/min per org)
-      await ctx.runMutation(internal.ai.rateLimiting.checkExpensiveOperationLimit, {
-        organizationId: ctx.organizationId.toString(),
-      });
+      await ctx.runMutation(
+        internal.ai.rateLimiting.checkExpensiveOperationLimit,
+        {
+          organizationId: ctx.organizationId.toString(),
+        }
+      );
 
-      const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-        documentId: docId,
-      });
+      const document = await ctx.runQuery(
+        internal.documents.queries.getDocumentInternal,
+        {
+          documentId: docId,
+        }
+      );
       if (!document) throw new Error("Document not found");
 
       // Use cached payment extraction — same storageId = same result
-      const extracted = (await paymentExtractionCache.fetch(toActionCacheCtx(ctx), {
-        storageId: document.storageId as Id<"_storage">,
-      })) as PaymentExtractionResult;
+      const extracted = (await paymentExtractionCache.fetch(
+        toActionCacheCtx(ctx),
+        {
+          storageId: document.storageId as Id<"_storage">,
+        }
+      )) as PaymentExtractionResult;
 
       // Validate extracted amounts are reasonable
       for (const item of extracted.lineItems) {
         if (item.unitPriceCents < 0) {
-          throw new Error(`Invalid negative amount for line item: ${item.description}`);
+          throw new Error(
+            `Invalid negative amount for line item: ${item.description}`
+          );
         }
         if (item.unitPriceCents > 100_000_000_00) {
           // > $100M — likely a parsing error
-          throw new Error(`Suspiciously large amount for line item: ${item.description}`);
+          throw new Error(
+            `Suspiciously large amount for line item: ${item.description}`
+          );
         }
       }
 
@@ -105,7 +124,7 @@ export const extractPaymentTerms = createTool({
 
       const totalCents = extracted.lineItems.reduce(
         (sum, item) => sum + item.quantity * item.unitPriceCents,
-        0,
+        0
       );
       const totalFormatted = `$${(totalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 

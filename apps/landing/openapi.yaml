@@ -59,7 +59,16 @@ components:
 
     Document:
       type: object
-      required: [id, title, status, created_at, updated_at, recipients_count, signed_count]
+      required:
+        [
+          id,
+          title,
+          status,
+          created_at,
+          updated_at,
+          recipients_count,
+          signed_count,
+        ]
       properties:
         id:
           type: string
@@ -191,7 +200,8 @@ components:
 
     Signature:
       type: object
-      required: [id, field_id, recipient_id, document_id, signature_method, signed_at]
+      required:
+        [id, field_id, recipient_id, document_id, signature_method, signed_at]
       properties:
         id:
           type: string

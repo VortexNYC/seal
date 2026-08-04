@@ -19,7 +19,13 @@ import { cn, getErrorMessage } from "@/lib/utils";
 
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
 
 interface ShareDocumentDialogProps {
@@ -65,8 +71,11 @@ export function ShareDocumentDialog({
   documentId,
   documentName,
 }: ShareDocumentDialogProps) {
-  const [selectedMemberId, setSelectedMemberId] = useState<Id<"users"> | null>(null);
-  const [selectedPermission, setSelectedPermission] = useState<PermissionLevel>("view");
+  const [selectedMemberId, setSelectedMemberId] = useState<Id<"users"> | null>(
+    null
+  );
+  const [selectedPermission, setSelectedPermission] =
+    useState<PermissionLevel>("view");
   const [isUpdating, setIsUpdating] = useState(false);
 
   const documentAccess = useQuery(api.documents.sharing.getDocumentAccess, {
@@ -76,10 +85,14 @@ export function ShareDocumentDialog({
     documentId,
   });
 
-  const updateSharingMode = useMutation(api.documents.sharing.updateSharingMode);
+  const updateSharingMode = useMutation(
+    api.documents.sharing.updateSharingMode
+  );
   const grantAccess = useMutation(api.documents.sharing.grantAccess);
   const revokeAccess = useMutation(api.documents.sharing.revokeAccess);
-  const updateAccessLevel = useMutation(api.documents.sharing.updateAccessLevel);
+  const updateAccessLevel = useMutation(
+    api.documents.sharing.updateAccessLevel
+  );
 
   const handleSharingModeChange = async (mode: SharingMode) => {
     setIsUpdating(true);
@@ -130,7 +143,10 @@ export function ShareDocumentDialog({
     }
   };
 
-  const handleUpdatePermission = async (userId: Id<"users">, newPermission: PermissionLevel) => {
+  const handleUpdatePermission = async (
+    userId: Id<"users">,
+    newPermission: PermissionLevel
+  ) => {
     setIsUpdating(true);
     try {
       await updateAccessLevel({
@@ -149,7 +165,8 @@ export function ShareDocumentDialog({
   };
 
   // Get members who don't have access yet (for the add member dropdown)
-  const availableMembers = shareableMembers?.filter((m) => !m.hasAccess && !m.isOwner) ?? [];
+  const availableMembers =
+    shareableMembers?.filter((m) => !m.hasAccess && !m.isOwner) ?? [];
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -161,7 +178,7 @@ export function ShareDocumentDialog({
         {/* Dialog Content */}
         <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 duration-200">
           {/* Card with layered shadow for depth */}
-          <div className="bg-card relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-border/40">
+          <div className="bg-card ring-border/40 relative overflow-hidden rounded-2xl shadow-2xl ring-1">
             {/* Decorative top accent - blue for sharing */}
             <div className="from-info/80 via-info/90 to-primary/80 absolute top-0 right-0 left-0 h-1 bg-gradient-to-r" />
 
@@ -209,80 +226,102 @@ export function ShareDocumentDialog({
                       className="bg-warning-surface border-warning/30 flex items-start gap-3 rounded-xl border p-3"
                     >
                       <AlertTriangleIcon className="text-warning mt-0.5 h-5 w-5 flex-shrink-0" />
-                      <p className="text-warning text-sm">{documentAccess.subscriptionWarning}</p>
+                      <p className="text-warning text-sm">
+                        {documentAccess.subscriptionWarning}
+                      </p>
                     </div>
                   )}
 
                   {/* Sharing Mode Selection */}
                   <div className="space-y-3">
-                    <p className="text-foreground text-sm font-medium">General access</p>
+                    <p className="text-foreground text-sm font-medium">
+                      General access
+                    </p>
                     <div className="grid grid-cols-3 gap-2">
-                      {(Object.keys(SHARING_MODE_INFO) as SharingMode[]).map((mode) => {
-                        const info = SHARING_MODE_INFO[mode];
-                        const isSelected = documentAccess.sharingMode === mode;
-                        const requiresPro = mode === "workspace" || mode === "specific";
-                        const isDisabled = requiresPro && !documentAccess.canUseTeamSharing;
-                        return (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => handleSharingModeChange(mode)}
-                            disabled={isUpdating || isDisabled}
-                            className={cn(
-                              "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors",
-                              isSelected
-                                ? "border-info bg-info-surface"
-                                : "border-border hover:border-border hover:bg-muted",
-                              (isUpdating || isDisabled) && "cursor-not-allowed opacity-50",
-                            )}
-                          >
-                            {requiresPro && !documentAccess.canUseTeamSharing && (
-                              <Badge
-                                variant="outline"
-                                className="from-info to-primary absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px] text-primary-foreground"
-                              >
-                                Pro
-                              </Badge>
-                            )}
-                            <div
+                      {(Object.keys(SHARING_MODE_INFO) as SharingMode[]).map(
+                        (mode) => {
+                          const info = SHARING_MODE_INFO[mode];
+                          const isSelected =
+                            documentAccess.sharingMode === mode;
+                          const requiresPro =
+                            mode === "workspace" || mode === "specific";
+                          const isDisabled =
+                            requiresPro && !documentAccess.canUseTeamSharing;
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => handleSharingModeChange(mode)}
+                              disabled={isUpdating || isDisabled}
                               className={cn(
-                                "rounded-lg p-2",
+                                "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors",
                                 isSelected
-                                  ? "bg-info-surface text-info"
-                                  : "bg-muted text-muted-foreground",
+                                  ? "border-info bg-info-surface"
+                                  : "border-border hover:border-border hover:bg-muted",
+                                (isUpdating || isDisabled) &&
+                                  "cursor-not-allowed opacity-50"
                               )}
                             >
-                              {info.icon}
-                            </div>
-                            <span
-                              className={cn(
-                                "text-xs font-medium",
-                                isSelected ? "text-info" : "text-muted-foreground",
-                              )}
-                            >
-                              {info.label}
-                            </span>
-                          </button>
-                        );
-                      })}
+                              {requiresPro &&
+                                !documentAccess.canUseTeamSharing && (
+                                  <Badge
+                                    variant="outline"
+                                    className="from-info to-primary text-primary-foreground absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px]"
+                                  >
+                                    Pro
+                                  </Badge>
+                                )}
+                              <div
+                                className={cn(
+                                  "rounded-lg p-2",
+                                  isSelected
+                                    ? "bg-info-surface text-info"
+                                    : "bg-muted text-muted-foreground"
+                                )}
+                              >
+                                {info.icon}
+                              </div>
+                              <span
+                                className={cn(
+                                  "text-xs font-medium",
+                                  isSelected
+                                    ? "text-info"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                {info.label}
+                              </span>
+                            </button>
+                          );
+                        }
+                      )}
                     </div>
                     <p className="text-muted-foreground text-xs">
-                      {!documentAccess.canUseTeamSharing && documentAccess.sharingMode === "private"
+                      {!documentAccess.canUseTeamSharing &&
+                      documentAccess.sharingMode === "private"
                         ? "Upgrade to Professional to share with your team"
-                        : SHARING_MODE_INFO[documentAccess.sharingMode].description}
+                        : SHARING_MODE_INFO[documentAccess.sharingMode]
+                            .description}
                     </p>
                   </div>
 
                   {/* Add Team Member */}
                   {documentAccess.sharingMode === "specific" && (
                     <div className="space-y-3">
-                      <p className="text-foreground text-sm font-medium">Add people</p>
+                      <p className="text-foreground text-sm font-medium">
+                        Add people
+                      </p>
                       <div className="flex gap-2">
                         <Select
                           value={selectedMemberId ?? ""}
-                          onValueChange={(value) => setSelectedMemberId(value as Id<"users">)}
+                          onValueChange={(value) =>
+                            setSelectedMemberId(value as Id<"users">)
+                          }
                         >
-                          <SelectTrigger className="flex-1" data-testid="member-select">
+                          <SelectTrigger
+                            className="flex-1"
+                            data-testid="member-select"
+                          >
                             <SelectValue placeholder="Select a team member" />
                           </SelectTrigger>
                           <SelectContent>
@@ -292,7 +331,10 @@ export function ShareDocumentDialog({
                               </div>
                             ) : (
                               availableMembers.map((member) => (
-                                <SelectItem key={member.userId} value={member.userId}>
+                                <SelectItem
+                                  key={member.userId}
+                                  value={member.userId}
+                                >
                                   <div className="flex items-center gap-2">
                                     <span>{member.name ?? member.email}</span>
                                     {member.name && (
@@ -309,9 +351,14 @@ export function ShareDocumentDialog({
 
                         <Select
                           value={selectedPermission}
-                          onValueChange={(value) => setSelectedPermission(value as PermissionLevel)}
+                          onValueChange={(value) =>
+                            setSelectedPermission(value as PermissionLevel)
+                          }
                         >
-                          <SelectTrigger className="w-32" data-testid="permission-select">
+                          <SelectTrigger
+                            className="w-32"
+                            data-testid="permission-select"
+                          >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -327,7 +374,11 @@ export function ShareDocumentDialog({
                           disabled={!selectedMemberId || isUpdating}
                           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {isUpdating ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Add"}
+                          {isUpdating ? (
+                            <Loader2Icon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Add"
+                          )}
                         </button>
                       </div>
                     </div>
@@ -335,7 +386,9 @@ export function ShareDocumentDialog({
 
                   {/* People with Access */}
                   <div className="space-y-3">
-                    <p className="text-foreground text-sm font-medium">People with access</p>
+                    <p className="text-foreground text-sm font-medium">
+                      People with access
+                    </p>
                     <div className="space-y-2" data-testid="access-list">
                       {/* Document Owner */}
                       <div
@@ -344,8 +397,11 @@ export function ShareDocumentDialog({
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback className="from-warning to-warning/70 bg-gradient-to-br text-xs text-primary-foreground">
-                              {getInitials(documentAccess.owner.name ?? documentAccess.owner.email)}
+                            <AvatarFallback className="from-warning to-warning/70 text-primary-foreground bg-gradient-to-br text-xs">
+                              {getInitials(
+                                documentAccess.owner.name ??
+                                  documentAccess.owner.email
+                              )}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -354,7 +410,8 @@ export function ShareDocumentDialog({
                                 data-testid="owner-name"
                                 className="text-foreground text-sm font-medium"
                               >
-                                {documentAccess.owner.name ?? documentAccess.owner.email}
+                                {documentAccess.owner.name ??
+                                  documentAccess.owner.email}
                               </span>
                               <Badge
                                 variant="outline"
@@ -382,8 +439,10 @@ export function ShareDocumentDialog({
                         >
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarFallback className="from-primary to-primary/70 bg-gradient-to-br text-xs text-primary-foreground">
-                                {getInitials(access.userName ?? access.userEmail)}
+                              <AvatarFallback className="from-primary to-primary/70 text-primary-foreground bg-gradient-to-br text-xs">
+                                {getInitials(
+                                  access.userName ?? access.userEmail
+                                )}
                               </AvatarFallback>
                             </Avatar>
                             <div>
@@ -394,7 +453,9 @@ export function ShareDocumentDialog({
                                 {access.userName ?? access.userEmail}
                               </span>
                               {access.userName && (
-                                <p className="text-muted-foreground text-xs">{access.userEmail}</p>
+                                <p className="text-muted-foreground text-xs">
+                                  {access.userEmail}
+                                </p>
                               )}
                             </div>
                           </div>
@@ -402,7 +463,10 @@ export function ShareDocumentDialog({
                             <Select
                               value={access.permissionLevel}
                               onValueChange={(value) =>
-                                handleUpdatePermission(access.userId, value as PermissionLevel)
+                                handleUpdatePermission(
+                                  access.userId,
+                                  value as PermissionLevel
+                                )
                               }
                               disabled={isUpdating}
                             >
@@ -415,7 +479,9 @@ export function ShareDocumentDialog({
                               <SelectContent>
                                 <SelectItem value="view">Can view</SelectItem>
                                 <SelectItem value="edit">Can edit</SelectItem>
-                                <SelectItem value="manage">Can manage</SelectItem>
+                                <SelectItem value="manage">
+                                  Can manage
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <button

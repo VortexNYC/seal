@@ -56,7 +56,7 @@ describe("processAutomatedReminders", () => {
       workflowStatus: "sent" | "in_progress";
       sentAt: number;
       status: "active" | "deleted";
-    }> = {},
+    }> = {}
   ) {
     return t.run(async (ctx) => {
       return await ctx.db.insert("documents", {
@@ -76,7 +76,10 @@ describe("processAutomatedReminders", () => {
     });
   }
 
-  function createRecipient(documentId: Id<"documents">, status: "pending" | "viewed" | "signed") {
+  function createRecipient(
+    documentId: Id<"documents">,
+    status: "pending" | "viewed" | "signed"
+  ) {
     return t.run(async (ctx) => {
       return await ctx.db.insert("document_recipients", {
         documentId,
@@ -99,7 +102,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     expect(result.remindersScheduled).toBe(1);
@@ -124,7 +127,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     expect(result.remindersScheduled).toBe(2);
@@ -136,7 +139,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     expect(result.remindersScheduled).toBe(0);
@@ -148,7 +151,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     expect(result.remindersScheduled).toBe(0);
@@ -176,7 +179,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     // Should not re-schedule for the 3-day interval
@@ -202,7 +205,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     expect(result.remindersScheduled).toBe(1);
@@ -217,7 +220,7 @@ describe("processAutomatedReminders", () => {
 
     const result = await t.mutation(
       internal.documents.automated_reminders.processAutomatedReminders,
-      {},
+      {}
     );
 
     // "viewed" recipients should get reminders too
@@ -279,7 +282,7 @@ describe("getDocumentsApproachingDeadline", () => {
 
     const candidates = await t.query(
       internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
-      {},
+      {}
     );
 
     expect(candidates).toHaveLength(1);
@@ -309,7 +312,7 @@ describe("getDocumentsApproachingDeadline", () => {
 
     const candidates = await t.query(
       internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
-      {},
+      {}
     );
 
     expect(candidates).toHaveLength(0);
@@ -337,7 +340,7 @@ describe("getDocumentsApproachingDeadline", () => {
 
     const candidates = await t.query(
       internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
-      {},
+      {}
     );
 
     expect(candidates).toHaveLength(0);
@@ -365,7 +368,7 @@ describe("getDocumentsApproachingDeadline", () => {
 
     const candidates = await t.query(
       internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
-      {},
+      {}
     );
 
     expect(candidates).toHaveLength(0);
@@ -405,7 +408,7 @@ describe("getDocumentsApproachingDeadline", () => {
 
     const candidates = await t.query(
       internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
-      {},
+      {}
     );
 
     expect(candidates).toHaveLength(1);

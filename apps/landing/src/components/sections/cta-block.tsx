@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
@@ -14,7 +15,11 @@ export function StaticCta() {
             <span className="text-primary italic">getting more deals.</span>
           </h2>
           <div className="mt-10">
-            <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+            <Button
+              asChild
+              className="group h-12 px-8 text-base font-medium"
+              size="lg"
+            >
               <a href={`${APP_URL}/waitlist`}>
                 Join Waitlist
                 <ArrowRight
@@ -46,7 +51,11 @@ export function CtaBlockComponent({ block }: { block: CtaSectionBlock }) {
         {(block.primaryCta || block.secondaryCta) && (
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             {block.primaryCta && (
-              <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+              <Button
+                asChild
+                className="group h-12 px-8 text-base font-medium"
+                size="lg"
+              >
                 <a href={block.primaryCta.link}>
                   {block.primaryCta.text}
                   <ArrowRight

@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
-import { adminMutation } from "../auth";
 import { internalMutation, internalQuery } from "../_generated/server";
+import { adminMutation } from "../auth";
 import { feeHandlingValidator } from "./merchant_account_validators";
 
 export const getAccountByOrganizationId = internalQuery({
@@ -11,7 +11,9 @@ export const getAccountByOrganizationId = internalQuery({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .first();
   },
 });
@@ -30,22 +32,26 @@ export const upsertMerchantAccount = internalMutation({
         eventuallyDue: v.array(v.string()),
         pastDue: v.array(v.string()),
         disabledReason: v.optional(v.string()),
-      }),
+      })
     ),
     capabilities: v.optional(
       v.object({
         cardPayments: v.string(),
         transfers: v.string(),
         usBankAccountAchPayments: v.optional(v.string()),
-      }),
+      })
     ),
-    feeHandling: v.optional(v.union(v.literal("absorb"), v.literal("pass_to_recipient"))),
+    feeHandling: v.optional(
+      v.union(v.literal("absorb"), v.literal("pass_to_recipient"))
+    ),
     defaultCurrency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_provider_account", (q) => q.eq("providerAccountId", args.providerAccountId))
+      .withIndex("by_provider_account", (q) =>
+        q.eq("providerAccountId", args.providerAccountId)
+      )
       .first();
 
     const now = Date.now();
@@ -86,7 +92,9 @@ export const updateFeeHandling = adminMutation({
   handler: async (ctx, args) => {
     const account = await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organization._id))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organization._id)
+      )
       .first();
 
     if (!account) {

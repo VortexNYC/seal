@@ -10,7 +10,9 @@ export const getVortexMerchantAccountIdForOrg = internalQuery({
   handler: async (ctx, args): Promise<string | null> => {
     const account = await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
       .first();
 
     if (account === null || !account.chargesEnabled) {

@@ -1,6 +1,12 @@
 #!/usr/bin/env bun
 
-type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+type Json =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly Json[]
+  | { readonly [key: string]: Json };
 type JsonObject = { readonly [key: string]: Json };
 
 const sealConvexCwd = new URL("../apps/backend", import.meta.url).pathname;
@@ -29,13 +35,19 @@ function isJsonObject(value: Json): value is JsonObject {
 
 function stringField(value: JsonObject, field: string): string {
   const child = value[field];
-  assert(typeof child === "string" && child.length > 0, `Expected ${field} to be a string`);
+  assert(
+    typeof child === "string" && child.length > 0,
+    `Expected ${field} to be a string`
+  );
   return child;
 }
 
 function numberField(value: JsonObject, field: string): number {
   const child = value[field];
-  assert(typeof child === "number" && Number.isFinite(child), `Expected ${field} to be a number`);
+  assert(
+    typeof child === "number" && Number.isFinite(child),
+    `Expected ${field} to be a number`
+  );
   return child;
 }
 
@@ -53,7 +65,10 @@ function nullableStringField(value: JsonObject, field: string): string | null {
   fail(`Expected ${field} to be a string or null`);
 }
 
-function nullableObjectField(value: JsonObject, field: string): JsonObject | null {
+function nullableObjectField(
+  value: JsonObject,
+  field: string
+): JsonObject | null {
   const child = value[field];
   if (child === null || isJsonObject(child)) {
     return child as JsonObject | null;
@@ -122,7 +137,9 @@ async function runConvex<T extends Json>(input: {
       "--push",
       "--typecheck=disable",
       "--codegen=disable",
-      ...(input.identity === undefined ? [] : ["--identity", JSON.stringify(input.identity)]),
+      ...(input.identity === undefined
+        ? []
+        : ["--identity", JSON.stringify(input.identity)]),
       input.functionName,
       JSON.stringify(input.args),
     ],
@@ -132,7 +149,10 @@ async function runConvex<T extends Json>(input: {
   });
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
-  assert(jsonStart >= 0, `No JSON returned from ${input.functionName}: ${trimmed}`);
+  assert(
+    jsonStart >= 0,
+    `No JSON returned from ${input.functionName}: ${trimmed}`
+  );
   const parsed = parseJson(trimmed.slice(jsonStart), input.functionName);
   return parsed as T;
 }
@@ -147,7 +167,10 @@ async function getConvexEnv(input: {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
+  const [stdout, exitCode] = await Promise.all([
+    new Response(child.stdout).text(),
+    child.exited,
+  ]);
   if (exitCode !== 0) {
     return undefined;
   }
@@ -171,26 +194,39 @@ async function setConvexEnv(input: {
 function parsePriceMap(raw: string | undefined): string {
   assert(
     raw !== undefined,
-    "VORTEX_BILLING_SAAS_PRICE_MAP is missing; run prove:seal-coupons-vortex first",
+    "VORTEX_BILLING_SAAS_PRICE_MAP is missing; run prove:seal-coupons-vortex first"
   );
   const parsed = parseJson(raw, "VORTEX_BILLING_SAAS_PRICE_MAP");
-  assert(isJsonObject(parsed), "Expected VORTEX_BILLING_SAAS_PRICE_MAP to be a JSON object");
+  assert(
+    isJsonObject(parsed),
+    "Expected VORTEX_BILLING_SAAS_PRICE_MAP to be a JSON object"
+  );
   const sealProMonthlyPriceId = parsed["pro:monthly:v2"];
-  if (typeof sealProMonthlyPriceId === "string" && sealProMonthlyPriceId.length > 0) {
+  if (
+    typeof sealProMonthlyPriceId === "string" &&
+    sealProMonthlyPriceId.length > 0
+  ) {
     return sealProMonthlyPriceId;
   }
   const firstPriceId = Object.values(parsed).find(
-    (value): value is string => typeof value === "string" && value.length > 0,
+    (value): value is string => typeof value === "string" && value.length > 0
   );
   assert(
     firstPriceId !== undefined,
-    "Expected VORTEX_BILLING_SAAS_PRICE_MAP to contain at least one price id",
+    "Expected VORTEX_BILLING_SAAS_PRICE_MAP to contain at least one price id"
   );
   return firstPriceId;
 }
 
-function mergeAllowlist(current: string | undefined, organizationId: string): string {
-  if (current === undefined || current.trim() === "" || current.trim() === "[]") {
+function mergeAllowlist(
+  current: string | undefined,
+  organizationId: string
+): string {
+  if (
+    current === undefined ||
+    current.trim() === "" ||
+    current.trim() === "[]"
+  ) {
     return JSON.stringify([organizationId]);
   }
   const normalized = current.trim();
@@ -201,13 +237,18 @@ function mergeAllowlist(current: string | undefined, organizationId: string): st
     const parsed = JSON.parse(normalized) as unknown;
     assert(
       Array.isArray(parsed),
-      "Expected VORTEX_BILLING_SAAS_ORGANIZATION_IDS to be a JSON array",
+      "Expected VORTEX_BILLING_SAAS_ORGANIZATION_IDS to be a JSON array"
     );
-    const entries = parsed.filter((entry): entry is string => typeof entry === "string");
+    const entries = parsed.filter(
+      (entry): entry is string => typeof entry === "string"
+    );
     return JSON.stringify([...new Set([...entries, organizationId])]);
   }
   return JSON.stringify([
-    ...new Set([...normalized.split(",").map((entry) => entry.trim()), organizationId]),
+    ...new Set([
+      ...normalized.split(",").map((entry) => entry.trim()),
+      organizationId,
+    ]),
   ]);
 }
 
@@ -234,10 +275,12 @@ type ProjectedSubscription = {
 };
 
 async function createProofContext(): Promise<ProofContext> {
-  const sealDeployment = readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
+  const sealDeployment =
+    readEnv("SEAL_CONVEX_DEPLOYMENT") ?? readEnv("CONVEX_DEPLOYMENT") ?? "dev";
   const proofOrg = await runConvex<JsonObject>({
     deployment: sealDeployment,
-    functionName: "vortex_billing/proof_actions:ensureSealVortexOnboardingProofOrganization",
+    functionName:
+      "vortex_billing/proof_actions:ensureSealVortexOnboardingProofOrganization",
     args: { proofRunId },
   });
   const organizationId = stringField(proofOrg, "organizationId");
@@ -246,7 +289,7 @@ async function createProofContext(): Promise<ProofContext> {
     await getConvexEnv({
       deployment: sealDeployment,
       name: "VORTEX_BILLING_SAAS_PRICE_MAP",
-    }),
+    })
   );
 
   return { sealDeployment, organizationId, ownerAuthSubject, priceId };
@@ -264,7 +307,7 @@ async function allowlistSaasOrganization(input: {
         deployment: input.deployment,
         name: "VORTEX_BILLING_SAAS_ORGANIZATION_IDS",
       }),
-      input.organizationId,
+      input.organizationId
     ),
   });
 }
@@ -275,7 +318,9 @@ async function projectVortexSubscription(input: {
   readonly priceId: string;
 }): Promise<ProjectedSubscription> {
   const currentPeriodStart = new Date().toISOString();
-  const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const currentPeriodEnd = new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000
+  ).toISOString();
   const customerExternalId = `vtx_cust_seal_projection_${proofRunId}`;
   const subscriptionExternalId = `vtx_sub_seal_projection_${proofRunId}`;
 
@@ -299,11 +344,11 @@ async function projectVortexSubscription(input: {
   });
   assert(
     booleanField(projection, "processed") === true,
-    "Expected subscription projection to process",
+    "Expected subscription projection to process"
   );
   assert(
     booleanField(projection, "activeNonVortexProviderIdPresent") === false,
-    "Expected no active non-Vortex-provider-shaped subscription after Vortex projection",
+    "Expected no active non-Vortex-provider-shaped subscription after Vortex projection"
   );
   return { subscriptionExternalId, customerExternalId, priceId: input.priceId };
 }
@@ -320,29 +365,31 @@ async function assertProjectedState(input: {
   });
   assert(
     nullableStringField(state, "organizationBillingCustomerId") === null,
-    "Expected no organization billing customer after projection",
+    "Expected no organization billing customer after projection"
   );
   const subscription = nullableObjectField(state, "subscription");
   assert(subscription !== null, "Expected projected Vortex subscription");
   assert(
-    stringField(subscription, "externalCustomerId") === input.projected.customerExternalId,
-    "Expected Vortex customer external id",
+    stringField(subscription, "externalCustomerId") ===
+      input.projected.customerExternalId,
+    "Expected Vortex customer external id"
   );
   assert(
-    stringField(subscription, "externalSubscriptionId") === input.projected.subscriptionExternalId,
-    "Expected Vortex subscription external id",
+    stringField(subscription, "externalSubscriptionId") ===
+      input.projected.subscriptionExternalId,
+    "Expected Vortex subscription external id"
   );
   assert(
     stringField(subscription, "externalPriceId") === input.projected.priceId,
-    "Expected Vortex price external id",
+    "Expected Vortex price external id"
   );
   assert(
     stringField(subscription, "status") === "active",
-    "Expected active projected subscription",
+    "Expected active projected subscription"
   );
   assert(
     booleanField(state, "activeNonVortexProviderIdPresent") === false,
-    "Expected proof state to report no active non-Vortex-provider-shaped ids",
+    "Expected proof state to report no active non-Vortex-provider-shaped ids"
   );
 }
 
@@ -358,15 +405,15 @@ async function getBillingDetails(input: {
   });
   assert(
     stringField(billingDetails, "status") === "active",
-    "Expected billing settings query to show active subscription",
+    "Expected billing settings query to show active subscription"
   );
   assert(
     numberField(billingDetails, "unitAmount") > 0,
-    "Expected billing settings query to resolve Vortex price",
+    "Expected billing settings query to resolve Vortex price"
   );
   assert(
     stringField(billingDetails, "currency") === "usd",
-    "Expected billing settings query to resolve USD price",
+    "Expected billing settings query to resolve USD price"
   );
   return billingDetails;
 }
@@ -400,8 +447,8 @@ function printProofResult(input: {
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

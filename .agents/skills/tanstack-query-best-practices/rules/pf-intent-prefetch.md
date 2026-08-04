@@ -111,7 +111,11 @@ function PostLink({ post }: { post: Post }) {
   };
 
   return (
-    <Link to={`/posts/${post.id}`} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <Link
+      to={`/posts/${post.id}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {post.title}
     </Link>
   );

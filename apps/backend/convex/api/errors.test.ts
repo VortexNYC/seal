@@ -39,13 +39,22 @@ describe("ApiError", () => {
 
   it("stores field-level errors", () => {
     const errors = { email: ["Invalid format"] };
-    const error = new ApiError(422, "Validation failed", "VALIDATION_ERROR", errors);
+    const error = new ApiError(
+      422,
+      "Validation failed",
+      "VALIDATION_ERROR",
+      errors
+    );
     expect(error.errors).toEqual(errors);
   });
 
   describe("toResponse", () => {
     it("produces RFC 7807 compliant response", () => {
-      const error = new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
+      const error = new ApiError(
+        404,
+        "Document not found",
+        "DOCUMENT_NOT_FOUND"
+      );
       const response = error.toResponse();
 
       expect(response).toEqual({
@@ -71,7 +80,9 @@ describe("ApiError", () => {
 
     it("converts error code to kebab-case URI", () => {
       const error = new ApiError(401, "Bad key", "INVALID_API_KEY");
-      expect(error.toResponse().type).toBe("https://api.seal.app/errors/invalid-api-key");
+      expect(error.toResponse().type).toBe(
+        "https://api.seal.app/errors/invalid-api-key"
+      );
     });
   });
 });
@@ -80,7 +91,9 @@ describe("apiErrorResponse", () => {
   it("returns a Response with correct status and content type", async () => {
     const response = apiErrorResponse(401, "Unauthorized", "INVALID_API_KEY");
     expect(response.status).toBe(401);
-    expect(response.headers.get("Content-Type")).toBe("application/problem+json");
+    expect(response.headers.get("Content-Type")).toBe(
+      "application/problem+json"
+    );
   });
 
   it("body contains RFC 7807 fields", async () => {
@@ -116,7 +129,11 @@ describe("apiResponse", () => {
   });
 
   it("includes custom headers", async () => {
-    const response = apiResponse(201, { id: "new" }, { Location: "/api/v1/docs/new" });
+    const response = apiResponse(
+      201,
+      { id: "new" },
+      { Location: "/api/v1/docs/new" }
+    );
     expect(response.headers.get("Location")).toBe("/api/v1/docs/new");
   });
 });

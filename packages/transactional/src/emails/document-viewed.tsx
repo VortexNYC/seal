@@ -49,7 +49,14 @@ export function DocumentViewed({
         }}
       >
         <Text style={{ margin: "0 0 8px 0", fontSize: "32px" }}>&#x1F441;</Text>
-        <Text style={{ margin: "0", fontSize: "18px", fontWeight: "600", color: status.info }}>
+        <Text
+          style={{
+            margin: "0",
+            fontSize: "18px",
+            fontWeight: "600",
+            color: status.info,
+          }}
+        >
           Document Viewed
         </Text>
       </Section>
@@ -57,21 +64,42 @@ export function DocumentViewed({
       <Section>
         <Text style={emailStyles.bodyText}>Hello {ownerName},</Text>
 
-        <Text style={emailStyles.bodyTextSpaced}>A recipient has opened your document:</Text>
+        <Text style={emailStyles.bodyTextSpaced}>
+          A recipient has opened your document:
+        </Text>
 
         {/* Details card */}
         <Section style={emailStyles.documentCard}>
-          <Text style={{ ...emailStyles.documentTitle, marginBottom: "4px" }}>{documentName}</Text>
+          <Text style={{ ...emailStyles.documentTitle, marginBottom: "4px" }}>
+            {documentName}
+          </Text>
           <Hr style={{ borderColor: email.border, margin: "12px 0" }} />
           <Text
-            style={{ margin: "0", fontSize: "14px", fontWeight: "500", color: email.foreground }}
+            style={{
+              margin: "0",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: email.foreground,
+            }}
           >
             {recipientName}
           </Text>
-          <Text style={{ margin: "2px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
+          <Text
+            style={{
+              margin: "2px 0 0 0",
+              fontSize: "12px",
+              color: email.mutedForeground,
+            }}
+          >
             {recipientEmail}
           </Text>
-          <Text style={{ margin: "8px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
+          <Text
+            style={{
+              margin: "8px 0 0 0",
+              fontSize: "12px",
+              color: email.mutedForeground,
+            }}
+          >
             Viewed on: {formattedDate}
           </Text>
         </Section>

@@ -16,7 +16,10 @@ export class HomePage {
 
   async waitForReady(): Promise<void> {
     await expect(
-      this.page.getByRole("heading", { level: 1, name: /the old tools offer e-signature/i }),
+      this.page.getByRole("heading", {
+        level: 1,
+        name: /the old tools offer e-signature/i,
+      })
     ).toBeVisible();
 
     const viewport = this.page.viewportSize();
@@ -53,7 +56,9 @@ export class HomePage {
   }
 
   desktopNavLink(name: string): Locator {
-    return this.page.getByTestId("desktop-nav").getByRole("link", { exact: true, name });
+    return this.page
+      .getByTestId("desktop-nav")
+      .getByRole("link", { exact: true, name });
   }
 
   desktopNav(): Locator {
@@ -73,7 +78,9 @@ export class HomePage {
   }
 
   footerLink(name: string): Locator {
-    return this.page.getByTestId("site-footer").getByRole("link", { exact: true, name });
+    return this.page
+      .getByTestId("site-footer")
+      .getByRole("link", { exact: true, name });
   }
 
   footerInner(): Locator {

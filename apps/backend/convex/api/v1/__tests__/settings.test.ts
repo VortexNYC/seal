@@ -47,7 +47,11 @@ describe("api/v1/settings", () => {
         organizationId,
       });
 
-      expect(result.signing.allowed_signature_types).toEqual(["draw", "type", "upload"]);
+      expect(result.signing.allowed_signature_types).toEqual([
+        "draw",
+        "type",
+        "upload",
+      ]);
       expect(result.signing.default_deadline_days).toBe(30);
       expect(result.signing.esign_consent_text).toBeNull();
     });
@@ -97,7 +101,9 @@ describe("api/v1/settings", () => {
       expect(result.metadata_b900811966.generated_at).toBeDefined();
       expect(typeof result.metadata_b900811966.generated_at).toBe("string");
       // Should be a valid ISO 8601 timestamp
-      expect(() => new Date(result.metadata_b900811966.generated_at)).not.toThrow();
+      expect(
+        () => new Date(result.metadata_b900811966.generated_at)
+      ).not.toThrow();
     });
 
     test("returns saved signing settings", async () => {
@@ -119,7 +125,9 @@ describe("api/v1/settings", () => {
 
       expect(result.signing.allowed_signature_types).toEqual(["draw", "type"]);
       expect(result.signing.default_deadline_days).toBe(14);
-      expect(result.signing.esign_consent_text).toBe("I agree to sign electronically.");
+      expect(result.signing.esign_consent_text).toBe(
+        "I agree to sign electronically."
+      );
     });
 
     test("throws when org does not exist", async () => {
@@ -141,7 +149,7 @@ describe("api/v1/settings", () => {
         t.query(internal.api.v1.settings.getSettings, {
           userId,
           organizationId: tempId,
-        }),
+        })
       ).rejects.toThrow("Organization not found");
     });
   });

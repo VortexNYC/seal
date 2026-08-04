@@ -72,15 +72,20 @@ function str(value: unknown): string {
   return String(value);
 }
 
-function buildDetailLines(data: Record<string, unknown>, eventType: string): string[] {
+function buildDetailLines(
+  data: Record<string, unknown>,
+  eventType: string
+): string[] {
   const lines: string[] = [];
 
   // Document fields
-  if (data.document_title) lines.push(`*Document:* ${str(data.document_title)}`);
+  if (data.document_title)
+    lines.push(`*Document:* ${str(data.document_title)}`);
   if (data.document_id) lines.push(`*ID:* \`${str(data.document_id)}\``);
 
   // Recipient fields
-  if (data.recipient_name) lines.push(`*Recipient:* ${str(data.recipient_name)}`);
+  if (data.recipient_name)
+    lines.push(`*Recipient:* ${str(data.recipient_name)}`);
   if (data.recipient_email) lines.push(`*Email:* ${str(data.recipient_email)}`);
 
   // Template fields
@@ -88,7 +93,9 @@ function buildDetailLines(data: Record<string, unknown>, eventType: string): str
 
   // Completion fields
   if (eventType === "document.completed" && data.signed_count) {
-    lines.push(`*Signatures:* ${str(data.signed_count)} of ${str(data.total_count)}`);
+    lines.push(
+      `*Signatures:* ${str(data.signed_count)} of ${str(data.total_count)}`
+    );
   }
 
   // Expiry fields

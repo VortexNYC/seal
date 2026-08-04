@@ -1,5 +1,6 @@
 import { Brain, FileSearch, ScanText, SearchCode } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
+
 import { FadeIn } from "~/components/ui/fade-in";
 
 interface AiCapability {
@@ -49,8 +50,8 @@ export function StaticAi() {
               Documents that understand themselves
             </h2>
             <p className="text-muted-foreground mt-6 text-lg text-pretty">
-              Seal uses AI to read your documents, detect fields, extract terms, and make your
-              entire workspace searchable by meaning.
+              Seal uses AI to read your documents, detect fields, extract terms,
+              and make your entire workspace searchable by meaning.
             </p>
           </div>
         </FadeIn>
@@ -60,8 +61,13 @@ export function StaticAi() {
           <div className="border-border bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2">
             {capabilities.map((cap) => (
               <div className="bg-card p-8 sm:p-10" key={cap.title}>
-                <cap.icon aria-hidden="true" className="text-primary mb-5 size-6" />
-                <h3 className="text-foreground mb-3 text-lg font-semibold">{cap.title}</h3>
+                <cap.icon
+                  aria-hidden="true"
+                  className="text-primary mb-5 size-6"
+                />
+                <h3 className="text-foreground mb-3 text-lg font-semibold">
+                  {cap.title}
+                </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
                   {cap.description}
                 </p>

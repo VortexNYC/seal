@@ -13,18 +13,26 @@ import { ArrowRightIcon, FileTextIcon } from "lucide-react";
 
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 
 interface RecentDocumentsProps {
   slug: string;
 }
 
-export function RecentDocuments({ slug }: RecentDocumentsProps): React.ReactElement {
+export function RecentDocuments({
+  slug,
+}: RecentDocumentsProps): React.ReactElement {
   const router = useRouter();
 
   const { data: recentDocs } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getRecentDocuments, { limit: 5 }),
+    convexQuery(api.dashboard.queries.getRecentDocuments, { limit: 5 })
   );
 
   return (
@@ -89,8 +97,8 @@ export function RecentDocuments({ slug }: RecentDocumentsProps): React.ReactElem
                       {doc.name}
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      {formatRelativeTime(doc.updatedAt)} · {doc.signedCount}/{doc.recipientCount}{" "}
-                      signed
+                      {formatRelativeTime(doc.updatedAt)} · {doc.signedCount}/
+                      {doc.recipientCount} signed
                     </p>
                   </div>
                 </div>

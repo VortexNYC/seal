@@ -25,9 +25,11 @@ describe("Vortex Billing subscription projection", () => {
         isActive: true,
         timezone: "UTC",
         updatedAt: now,
-      }),
+      })
     );
-    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([organizationId]);
+    process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS = JSON.stringify([
+      organizationId,
+    ]);
   });
 
   afterEach(() => {
@@ -44,7 +46,7 @@ describe("Vortex Billing subscription projection", () => {
         metadata: { tier: "pro", features: "api_access,webhook_access" },
         createdAt: now,
         updatedAt: now,
-      }),
+      })
     );
 
     await t.run((ctx) =>
@@ -62,7 +64,7 @@ describe("Vortex Billing subscription projection", () => {
         lookupKey: "pro:business:month:v1",
         createdAt: now,
         updatedAt: now,
-      }),
+      })
     );
   }
 
@@ -79,7 +81,7 @@ describe("Vortex Billing subscription projection", () => {
         cancelAtPeriodEnd: false,
         createdAt: now,
         updatedAt: now,
-      }),
+      })
     );
   }
 
@@ -107,7 +109,7 @@ describe("Vortex Billing subscription projection", () => {
         lastSourceEventAt: input.lastSourceEventAt,
         createdAt: now,
         updatedAt: now,
-      }),
+      })
     );
   }
 
@@ -116,9 +118,9 @@ describe("Vortex Billing subscription projection", () => {
       ctx.db
         .query("subscriptions")
         .withIndex("by_external_subscription_id", (q) =>
-          q.eq("externalSubscriptionId", externalSubscriptionId),
+          q.eq("externalSubscriptionId", externalSubscriptionId)
         )
-        .first(),
+        .first()
     );
   }
 
@@ -127,7 +129,7 @@ describe("Vortex Billing subscription projection", () => {
       ctx.db
         .query("vortex_billing_webhook_events")
         .withIndex("by_event_id", (q) => q.eq("eventId", eventId))
-        .collect(),
+        .collect()
     );
   }
 
@@ -136,9 +138,9 @@ describe("Vortex Billing subscription projection", () => {
       ctx.db
         .query("subscriptions")
         .withIndex("by_organization_status", (q) =>
-          q.eq("organizationId", organizationId).eq("status", "active"),
+          q.eq("organizationId", organizationId).eq("status", "active")
         )
-        .collect(),
+        .collect()
     );
   }
 
@@ -149,18 +151,21 @@ describe("Vortex Billing subscription projection", () => {
     await seedProCatalog(priceId);
     await seedActiveLegacyProviderSubscription();
 
-    const result = await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
-      eventId: "evt_vortex_subscription_active",
-      eventType: "subscription.updated",
-      sealOrganizationId: organizationId,
-      subscriptionExternalId: subscriptionId,
-      customerExternalId: customerId,
-      planCode: priceId,
-      status: "active",
-      cancelAtPeriodEnd: false,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-    });
+    const result = await t.mutation(
+      internal.vortex_billing.projection.projectSubscriptionUpdated,
+      {
+        eventId: "evt_vortex_subscription_active",
+        eventType: "subscription.updated",
+        sealOrganizationId: organizationId,
+        subscriptionExternalId: subscriptionId,
+        customerExternalId: customerId,
+        planCode: priceId,
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+      }
+    );
 
     expect(result).toMatchObject({
       processed: true,
@@ -184,13 +189,15 @@ describe("Vortex Billing subscription projection", () => {
       ctx.db
         .query("subscriptions")
         .withIndex("by_external_subscription_id", (q) =>
-          q.eq("externalSubscriptionId", "sub_old_provider"),
+          q.eq("externalSubscriptionId", "sub_old_provider")
         )
-        .first(),
+        .first()
     );
     expect(oldProviderSubscription?.status).toBe("canceled");
 
-    const plan = await t.run((ctx) => getSubscriptionPlan(ctx.db, organizationId));
+    const plan = await t.run((ctx) =>
+      getSubscriptionPlan(ctx.db, organizationId)
+    );
     expect(plan).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
   });
 
@@ -205,7 +212,7 @@ describe("Vortex Billing subscription projection", () => {
         metadata: { tier: "pro" },
         createdAt: now,
         updatedAt: now,
-      }),
+      })
     );
     await t.run((ctx) =>
       ctx.db.insert("subscription_prices", {
@@ -222,23 +229,28 @@ describe("Vortex Billing subscription projection", () => {
         lookupKey: "pro:resolver:month:v1",
         createdAt: now,
         updatedAt: now,
-      }),
+      })
     );
 
-    await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
-      eventId: "evt_vortex_subscription_resolver_only",
-      eventType: "subscription.updated",
-      sealOrganizationId: organizationId,
-      subscriptionExternalId: "vtx_sub_resolver_only",
-      customerExternalId: "vtx_cust_resolver_only",
-      planCode: priceId,
-      status: "active",
-      cancelAtPeriodEnd: false,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-    });
+    await t.mutation(
+      internal.vortex_billing.projection.projectSubscriptionUpdated,
+      {
+        eventId: "evt_vortex_subscription_resolver_only",
+        eventType: "subscription.updated",
+        sealOrganizationId: organizationId,
+        subscriptionExternalId: "vtx_sub_resolver_only",
+        customerExternalId: "vtx_cust_resolver_only",
+        planCode: priceId,
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+      }
+    );
 
-    const plan = await t.run((ctx) => getSubscriptionPlan(ctx.db, organizationId));
+    const plan = await t.run((ctx) =>
+      getSubscriptionPlan(ctx.db, organizationId)
+    );
     expect(plan).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
   });
 
@@ -260,11 +272,11 @@ describe("Vortex Billing subscription projection", () => {
 
     const first = await t.mutation(
       internal.vortex_billing.projection.projectSubscriptionUpdated,
-      projection,
+      projection
     );
     const second = await t.mutation(
       internal.vortex_billing.projection.projectSubscriptionUpdated,
-      projection,
+      projection
     );
 
     expect(first.processed).toBe(true);
@@ -275,7 +287,7 @@ describe("Vortex Billing subscription projection", () => {
       ctx.db
         .query("vortex_billing_webhook_events")
         .withIndex("by_event_id", (q) => q.eq("eventId", projection.eventId))
-        .collect(),
+        .collect()
     );
     expect(eventRows).toHaveLength(1);
   });
@@ -289,16 +301,23 @@ describe("Vortex Billing subscription projection", () => {
       pastDueSince: now - 1_000,
     });
 
-    const result = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      eventId: "evt_vortex_invoice_paid",
-      eventType: "invoice.paid",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_paid_001",
-      invoiceStatus: "paid",
-      sourceCreatedAt: now + 1_000,
-    });
+    const result = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        eventId: "evt_vortex_invoice_paid",
+        eventType: "invoice.paid",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_paid_001",
+        invoiceStatus: "paid",
+        sourceCreatedAt: now + 1_000,
+      }
+    );
 
-    expect(result).toMatchObject({ processed: true, duplicate: false, ignored: false });
+    expect(result).toMatchObject({
+      processed: true,
+      duplicate: false,
+      ignored: false,
+    });
     const subscription = await subscriptionByExternalId(subscriptionId);
     expect(subscription).toMatchObject({
       status: "active",
@@ -308,13 +327,18 @@ describe("Vortex Billing subscription projection", () => {
     });
     expect(subscription?.pastDueSince).toBeUndefined();
 
-    const plan = await t.run((ctx) => getSubscriptionPlan(ctx.db, organizationId));
+    const plan = await t.run((ctx) =>
+      getSubscriptionPlan(ctx.db, organizationId)
+    );
     expect(plan).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
   });
 
   test("projects invoice.payment_failed onto past_due and latest invoice fields", async () => {
     const subscriptionId = "vtx_sub_invoice_failed";
-    await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
+    await seedVortexSubscription({
+      externalSubscriptionId: subscriptionId,
+      status: "active",
+    });
 
     const failureStartedAfter = Date.now();
     const result = await t.mutation(
@@ -326,11 +350,15 @@ describe("Vortex Billing subscription projection", () => {
         invoiceNumber: "inv_vortex_failed_001",
         invoiceStatus: "payment_failed",
         sourceCreatedAt: now + 2_000,
-      },
+      }
     );
     const failureStartedBefore = Date.now();
 
-    expect(result).toMatchObject({ processed: true, duplicate: false, ignored: false });
+    expect(result).toMatchObject({
+      processed: true,
+      duplicate: false,
+      ignored: false,
+    });
     const subscription = await subscriptionByExternalId(subscriptionId);
     expect(subscription).toMatchObject({
       status: "past_due",
@@ -338,35 +366,48 @@ describe("Vortex Billing subscription projection", () => {
       latestInvoiceStatus: "payment_failed",
       lastSourceEventAt: now + 2_000,
     });
-    expect(subscription?.pastDueSince).toBeGreaterThanOrEqual(failureStartedAfter);
-    expect(subscription?.pastDueSince).toBeLessThanOrEqual(failureStartedBefore);
+    expect(subscription?.pastDueSince).toBeGreaterThanOrEqual(
+      failureStartedAfter
+    );
+    expect(subscription?.pastDueSince).toBeLessThanOrEqual(
+      failureStartedBefore
+    );
   });
 
   test("anchors pastDueSince once across repeated invoice.payment_failed events", async () => {
     const subscriptionId = "vtx_sub_invoice_failed_anchor";
-    await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
-
-    await t.mutation(internal.vortex_billing.projection.projectInvoicePaymentFailed, {
-      eventId: "evt_vortex_invoice_failed_anchor_first",
-      eventType: "invoice.payment_failed",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_failed_anchor_001",
-      invoiceStatus: "payment_failed",
-      sourceCreatedAt: now + 2_100,
+    await seedVortexSubscription({
+      externalSubscriptionId: subscriptionId,
+      status: "active",
     });
+
+    await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaymentFailed,
+      {
+        eventId: "evt_vortex_invoice_failed_anchor_first",
+        eventType: "invoice.payment_failed",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_failed_anchor_001",
+        invoiceStatus: "payment_failed",
+        sourceCreatedAt: now + 2_100,
+      }
+    );
 
     const firstProjection = await subscriptionByExternalId(subscriptionId);
     const anchoredPastDueSince = firstProjection?.pastDueSince;
     expect(anchoredPastDueSince).toBeTypeOf("number");
 
-    await t.mutation(internal.vortex_billing.projection.projectInvoicePaymentFailed, {
-      eventId: "evt_vortex_invoice_failed_anchor_second",
-      eventType: "invoice.payment_failed",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_failed_anchor_002",
-      invoiceStatus: "payment_failed",
-      sourceCreatedAt: now + 2_200,
-    });
+    await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaymentFailed,
+      {
+        eventId: "evt_vortex_invoice_failed_anchor_second",
+        eventType: "invoice.payment_failed",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_failed_anchor_002",
+        invoiceStatus: "payment_failed",
+        sourceCreatedAt: now + 2_200,
+      }
+    );
 
     const secondProjection = await subscriptionByExternalId(subscriptionId);
     expect(secondProjection).toMatchObject({
@@ -379,35 +420,56 @@ describe("Vortex Billing subscription projection", () => {
   });
 
   test("ignores invoice events without subscriptionExternalId without writing state or dedup rows", async () => {
-    const result = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      eventId: "evt_vortex_invoice_missing_subscription",
-      eventType: "invoice.paid",
-      invoiceNumber: "inv_vortex_missing_subscription",
-      invoiceStatus: "paid",
-      sourceCreatedAt: now + 3_000,
-    });
+    const result = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        eventId: "evt_vortex_invoice_missing_subscription",
+        eventType: "invoice.paid",
+        invoiceNumber: "inv_vortex_missing_subscription",
+        invoiceStatus: "paid",
+        sourceCreatedAt: now + 3_000,
+      }
+    );
 
-    expect(result).toMatchObject({ processed: false, duplicate: false, ignored: true });
-    expect(await eventRows("evt_vortex_invoice_missing_subscription")).toHaveLength(0);
+    expect(result).toMatchObject({
+      processed: false,
+      duplicate: false,
+      ignored: true,
+    });
+    expect(
+      await eventRows("evt_vortex_invoice_missing_subscription")
+    ).toHaveLength(0);
   });
 
   test("ignores invoice events for missing subscriptions without throwing or writing dedup rows", async () => {
-    const result = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      eventId: "evt_vortex_invoice_missing_sub_row",
-      eventType: "invoice.paid",
-      subscriptionExternalId: "vtx_sub_not_created_yet",
-      invoiceNumber: "inv_vortex_missing_sub_row",
-      invoiceStatus: "paid",
-      sourceCreatedAt: now + 4_000,
-    });
+    const result = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        eventId: "evt_vortex_invoice_missing_sub_row",
+        eventType: "invoice.paid",
+        subscriptionExternalId: "vtx_sub_not_created_yet",
+        invoiceNumber: "inv_vortex_missing_sub_row",
+        invoiceStatus: "paid",
+        sourceCreatedAt: now + 4_000,
+      }
+    );
 
-    expect(result).toMatchObject({ processed: false, duplicate: false, ignored: true });
-    expect(await eventRows("evt_vortex_invoice_missing_sub_row")).toHaveLength(0);
+    expect(result).toMatchObject({
+      processed: false,
+      duplicate: false,
+      ignored: true,
+    });
+    expect(await eventRows("evt_vortex_invoice_missing_sub_row")).toHaveLength(
+      0
+    );
   });
 
   test("dedupes duplicate invoice event ids after the first correlated projection", async () => {
     const subscriptionId = "vtx_sub_invoice_duplicate";
-    await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
+    await seedVortexSubscription({
+      externalSubscriptionId: subscriptionId,
+      status: "active",
+    });
     const projection = {
       eventId: "evt_vortex_invoice_duplicate",
       eventType: "invoice.paid" as const,
@@ -419,14 +481,21 @@ describe("Vortex Billing subscription projection", () => {
 
     const first = await t.mutation(
       internal.vortex_billing.projection.projectInvoicePaid,
-      projection,
+      projection
     );
-    const second = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      ...projection,
-      invoiceNumber: "inv_vortex_duplicate_002",
-    });
+    const second = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        ...projection,
+        invoiceNumber: "inv_vortex_duplicate_002",
+      }
+    );
 
-    expect(first).toMatchObject({ processed: true, duplicate: false, ignored: false });
+    expect(first).toMatchObject({
+      processed: true,
+      duplicate: false,
+      ignored: false,
+    });
     expect(second).toMatchObject({ processed: false, duplicate: true });
     expect(await subscriptionByExternalId(subscriptionId)).toMatchObject({
       latestInvoiceId: "inv_vortex_duplicate_001",
@@ -440,30 +509,39 @@ describe("Vortex Billing subscription projection", () => {
     const newerEventAt = now + 10_000;
     const olderEventAt = now + 9_000;
     await seedProCatalog(priceId);
-    await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
-
-    await t.mutation(internal.vortex_billing.projection.projectInvoicePaymentFailed, {
-      eventId: "evt_vortex_newer_invoice_failure",
-      eventType: "invoice.payment_failed",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_newer_failure",
-      invoiceStatus: "payment_failed",
-      sourceCreatedAt: newerEventAt,
-    });
-
-    await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
-      eventId: "evt_vortex_older_subscription_active",
-      eventType: "subscription.updated",
-      sealOrganizationId: organizationId,
-      subscriptionExternalId: subscriptionId,
-      customerExternalId: "vtx_cust_projection",
-      planCode: priceId,
+    await seedVortexSubscription({
+      externalSubscriptionId: subscriptionId,
       status: "active",
-      cancelAtPeriodEnd: false,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      sourceCreatedAt: olderEventAt,
     });
+
+    await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaymentFailed,
+      {
+        eventId: "evt_vortex_newer_invoice_failure",
+        eventType: "invoice.payment_failed",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_newer_failure",
+        invoiceStatus: "payment_failed",
+        sourceCreatedAt: newerEventAt,
+      }
+    );
+
+    await t.mutation(
+      internal.vortex_billing.projection.projectSubscriptionUpdated,
+      {
+        eventId: "evt_vortex_older_subscription_active",
+        eventType: "subscription.updated",
+        sealOrganizationId: organizationId,
+        subscriptionExternalId: subscriptionId,
+        customerExternalId: "vtx_cust_projection",
+        planCode: priceId,
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        sourceCreatedAt: olderEventAt,
+      }
+    );
 
     expect(await subscriptionByExternalId(subscriptionId)).toMatchObject({
       status: "past_due",
@@ -478,28 +556,34 @@ describe("Vortex Billing subscription projection", () => {
     const olderEventAt = now + 11_000;
     await seedProCatalog(priceId);
 
-    await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
-      eventId: "evt_vortex_newer_subscription_active",
-      eventType: "subscription.updated",
-      sealOrganizationId: organizationId,
-      subscriptionExternalId: subscriptionId,
-      customerExternalId: "vtx_cust_projection",
-      planCode: priceId,
-      status: "active",
-      cancelAtPeriodEnd: false,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      sourceCreatedAt: newerEventAt,
-    });
+    await t.mutation(
+      internal.vortex_billing.projection.projectSubscriptionUpdated,
+      {
+        eventId: "evt_vortex_newer_subscription_active",
+        eventType: "subscription.updated",
+        sealOrganizationId: organizationId,
+        subscriptionExternalId: subscriptionId,
+        customerExternalId: "vtx_cust_projection",
+        planCode: priceId,
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        sourceCreatedAt: newerEventAt,
+      }
+    );
 
-    await t.mutation(internal.vortex_billing.projection.projectInvoicePaymentFailed, {
-      eventId: "evt_vortex_older_invoice_failure",
-      eventType: "invoice.payment_failed",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_older_failure",
-      invoiceStatus: "payment_failed",
-      sourceCreatedAt: olderEventAt,
-    });
+    await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaymentFailed,
+      {
+        eventId: "evt_vortex_older_invoice_failure",
+        eventType: "invoice.payment_failed",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_older_failure",
+        invoiceStatus: "payment_failed",
+        sourceCreatedAt: olderEventAt,
+      }
+    );
 
     expect(await subscriptionByExternalId(subscriptionId)).toMatchObject({
       status: "active",
@@ -518,19 +602,22 @@ describe("Vortex Billing subscription projection", () => {
       lastSourceEventAt: eventAt,
     });
 
-    await t.mutation(internal.vortex_billing.projection.projectSubscriptionUpdated, {
-      eventId: "evt_vortex_equal_ms_subscription_active",
-      eventType: "subscription.updated",
-      sealOrganizationId: organizationId,
-      subscriptionExternalId: subscriptionId,
-      customerExternalId: "vtx_cust_projection",
-      planCode: priceId,
-      status: "active",
-      cancelAtPeriodEnd: false,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      sourceCreatedAt: eventAt,
-    });
+    await t.mutation(
+      internal.vortex_billing.projection.projectSubscriptionUpdated,
+      {
+        eventId: "evt_vortex_equal_ms_subscription_active",
+        eventType: "subscription.updated",
+        sealOrganizationId: organizationId,
+        subscriptionExternalId: subscriptionId,
+        customerExternalId: "vtx_cust_projection",
+        planCode: priceId,
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        sourceCreatedAt: eventAt,
+      }
+    );
 
     expect(await subscriptionByExternalId(subscriptionId)).toMatchObject({
       status: "past_due",
@@ -541,26 +628,39 @@ describe("Vortex Billing subscription projection", () => {
   test("does not dedup uncorrelatable invoices so corrected redrives with the same event id still process", async () => {
     const subscriptionId = "vtx_sub_invoice_redrive";
     const eventId = "evt_vortex_invoice_redrive";
-    await seedVortexSubscription({ externalSubscriptionId: subscriptionId, status: "active" });
+    await seedVortexSubscription({
+      externalSubscriptionId: subscriptionId,
+      status: "active",
+    });
 
-    const uncorrelatable = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      eventId,
-      eventType: "invoice.paid",
-      invoiceNumber: "inv_vortex_redrive_uncorrelatable",
-      invoiceStatus: "paid",
-      sourceCreatedAt: now + 14_000,
-    });
-    const corrected = await t.mutation(internal.vortex_billing.projection.projectInvoicePaid, {
-      eventId,
-      eventType: "invoice.paid",
-      subscriptionExternalId: subscriptionId,
-      invoiceNumber: "inv_vortex_redrive_corrected",
-      invoiceStatus: "paid",
-      sourceCreatedAt: now + 15_000,
-    });
+    const uncorrelatable = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        eventId,
+        eventType: "invoice.paid",
+        invoiceNumber: "inv_vortex_redrive_uncorrelatable",
+        invoiceStatus: "paid",
+        sourceCreatedAt: now + 14_000,
+      }
+    );
+    const corrected = await t.mutation(
+      internal.vortex_billing.projection.projectInvoicePaid,
+      {
+        eventId,
+        eventType: "invoice.paid",
+        subscriptionExternalId: subscriptionId,
+        invoiceNumber: "inv_vortex_redrive_corrected",
+        invoiceStatus: "paid",
+        sourceCreatedAt: now + 15_000,
+      }
+    );
 
     expect(uncorrelatable).toMatchObject({ processed: false, ignored: true });
-    expect(corrected).toMatchObject({ processed: true, duplicate: false, ignored: false });
+    expect(corrected).toMatchObject({
+      processed: true,
+      duplicate: false,
+      ignored: false,
+    });
     expect(await subscriptionByExternalId(subscriptionId)).toMatchObject({
       latestInvoiceId: "inv_vortex_redrive_corrected",
     });
@@ -586,17 +686,22 @@ describe("Vortex Billing payable object projection", () => {
       {
         proofRunId: input.proofRunId,
         vortexPayableId: input.vortexPayableId,
-        vortexPaymentRequestId: input.vortexPaymentRequestId ?? `preq_${input.proofRunId}`,
+        vortexPaymentRequestId:
+          input.vortexPaymentRequestId ?? `preq_${input.proofRunId}`,
         hostedInvoiceUrl:
-          input.hostedInvoiceUrl ?? `https://vortex.test/pay/${input.vortexPayableId}`,
-      },
+          input.hostedInvoiceUrl ??
+          `https://vortex.test/pay/${input.vortexPayableId}`,
+      }
     );
   }
 
   async function getPaymentState(vortexPayableId: string) {
-    return await t.query(internal.vortex_billing.proof_actions.getVortexWebhookProofPaymentState, {
-      vortexPayableId,
-    });
+    return await t.query(
+      internal.vortex_billing.proof_actions.getVortexWebhookProofPaymentState,
+      {
+        vortexPayableId,
+      }
+    );
   }
 
   async function eventRows(eventId: string) {
@@ -604,7 +709,7 @@ describe("Vortex Billing payable object projection", () => {
       ctx.db
         .query("vortex_billing_webhook_events")
         .withIndex("by_event_id", (q) => q.eq("eventId", eventId))
-        .collect(),
+        .collect()
     );
   }
 
@@ -627,7 +732,7 @@ describe("Vortex Billing payable object projection", () => {
         status: "paid",
         paymentRequestId: "preq_paid_projection",
         hostedInvoiceUrl: "https://vortex.test/pay/final-paid",
-      },
+      }
     );
 
     expect(result).toMatchObject({
@@ -658,7 +763,7 @@ describe("Vortex Billing payable object projection", () => {
         eventId: "evt_vortex_payable_paid_projection",
         payableId: vortexPayableId,
         status: "paid",
-      },
+      }
     );
 
     expect(duplicate).toMatchObject({
@@ -667,7 +772,9 @@ describe("Vortex Billing payable object projection", () => {
       ignored: false,
       payableId: vortexPayableId,
     });
-    expect(await eventRows("evt_vortex_payable_paid_projection")).toHaveLength(1);
+    expect(await eventRows("evt_vortex_payable_paid_projection")).toHaveLength(
+      1
+    );
   });
 
   test("projects a failed Vortex payable into failed payment state and starts invoice dunning", async () => {
@@ -685,7 +792,7 @@ describe("Vortex Billing payable object projection", () => {
         eventId: "evt_vortex_payable_failed_projection",
         payableId: vortexPayableId,
         status: "failed",
-      },
+      }
     );
 
     expect(result).toMatchObject({
@@ -715,7 +822,7 @@ describe("Vortex Billing payable object projection", () => {
         eventId: "evt_vortex_payable_unknown_projection",
         payableId: "payable_not_in_seal",
         status: "paid",
-      },
+      }
     );
 
     expect(result).toMatchObject({
@@ -724,6 +831,8 @@ describe("Vortex Billing payable object projection", () => {
       ignored: true,
       payableId: "payable_not_in_seal",
     });
-    expect(await eventRows("evt_vortex_payable_unknown_projection")).toHaveLength(0);
+    expect(
+      await eventRows("evt_vortex_payable_unknown_projection")
+    ).toHaveLength(0);
   });
 });

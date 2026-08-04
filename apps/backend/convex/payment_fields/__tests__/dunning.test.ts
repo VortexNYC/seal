@@ -4,7 +4,7 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -99,7 +99,9 @@ describe("dunning (payment recovery)", () => {
   test("startDunning is idempotent — does not restart active dunning", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
 
     const firstStart = await t.run(async (ctx) => {
       const inv = await ctx.db.get(invoiceId);
@@ -107,7 +109,9 @@ describe("dunning (payment recovery)", () => {
     });
 
     // Try to start again
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
 
     const secondStart = await t.run(async (ctx) => {
       const inv = await ctx.db.get(invoiceId);
@@ -126,7 +130,10 @@ describe("dunning (payment recovery)", () => {
       await ctx.db.patch(invoiceId, { status: "paid" });
     });
 
-    const result = await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    const result = await t.mutation(
+      internal.payment_fields.dunning.startDunning,
+      { invoiceId }
+    );
     expect(result).toBeNull();
 
     const invoice = await t.run(async (ctx) => {
@@ -140,7 +147,9 @@ describe("dunning (payment recovery)", () => {
     const { internal } = await import("../../_generated/api");
 
     // Start and complete the full sequence
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
     await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
       invoiceId,
       completedStep: 0,
@@ -155,7 +164,10 @@ describe("dunning (payment recovery)", () => {
     });
 
     // Try to restart — should be blocked
-    const result = await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    const result = await t.mutation(
+      internal.payment_fields.dunning.startDunning,
+      { invoiceId }
+    );
     expect(result).toBeNull();
 
     const invoice = await t.run(async (ctx) => {
@@ -167,11 +179,18 @@ describe("dunning (payment recovery)", () => {
   test("startDunning does not restart cancelled dunning", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
-    await t.mutation(internal.payment_fields.dunning.cancelDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
+    await t.mutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId,
+    });
 
     // Try to restart — should be blocked
-    const result = await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    const result = await t.mutation(
+      internal.payment_fields.dunning.startDunning,
+      { invoiceId }
+    );
     expect(result).toBeNull();
 
     const invoice = await t.run(async (ctx) => {
@@ -183,8 +202,12 @@ describe("dunning (payment recovery)", () => {
   test("cancelDunning stops active dunning", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
-    await t.mutation(internal.payment_fields.dunning.cancelDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
+    await t.mutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId,
+    });
 
     const invoice = await t.run(async (ctx) => {
       return await ctx.db.get(invoiceId);
@@ -199,7 +222,9 @@ describe("dunning (payment recovery)", () => {
     const { internal } = await import("../../_generated/api");
 
     // No dunning started — should be a no-op
-    await t.mutation(internal.payment_fields.dunning.cancelDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId,
+    });
 
     const invoice = await t.run(async (ctx) => {
       return await ctx.db.get(invoiceId);
@@ -211,7 +236,9 @@ describe("dunning (payment recovery)", () => {
   test("advanceDunningStep moves to next step", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
     await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
       invoiceId,
       completedStep: 0,
@@ -227,14 +254,16 @@ describe("dunning (payment recovery)", () => {
     // Next step should be ~3 days from now
     expect(
       sealAssertPresent(sealAssertPresent(invoice).nextDunningAt) -
-        sealAssertPresent(sealAssertPresent(invoice).lastDunningEmailAt),
+        sealAssertPresent(sealAssertPresent(invoice).lastDunningEmailAt)
     ).toBeGreaterThanOrEqual(3 * 24 * 60 * 60 * 1000 - 1000);
   });
 
   test("advanceDunningStep completes after final step", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
     await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
       invoiceId,
       completedStep: 0,
@@ -261,14 +290,19 @@ describe("dunning (payment recovery)", () => {
     const { internal } = await import("../../_generated/api");
 
     // Start dunning and advance past step 0 (sets nextDunningAt 3 days out)
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
     await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
       invoiceId,
       completedStep: 0,
     });
 
     // Run cron — step 1 isn't due yet (3 days out)
-    const result = await t.mutation(internal.payment_fields.dunning.processDunningEmails, {});
+    const result = await t.mutation(
+      internal.payment_fields.dunning.processDunningEmails,
+      {}
+    );
 
     expect(result.emailsScheduled).toBe(0);
   });
@@ -276,7 +310,9 @@ describe("dunning (payment recovery)", () => {
   test("processDunningEmails cancels dunning for paid invoices", async () => {
     const { internal } = await import("../../_generated/api");
 
-    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId,
+    });
 
     // Mark invoice as paid
     await t.run(async (ctx) => {
@@ -293,7 +329,10 @@ describe("dunning (payment recovery)", () => {
       await ctx.db.patch(invoiceId, { nextDunningAt: Date.now() - 1000 });
     });
 
-    const result = await t.mutation(internal.payment_fields.dunning.processDunningEmails, {});
+    const result = await t.mutation(
+      internal.payment_fields.dunning.processDunningEmails,
+      {}
+    );
 
     // Should cancel, not schedule
     expect(result.emailsScheduled).toBe(0);

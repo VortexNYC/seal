@@ -42,9 +42,13 @@ export function getDocsPageTree(): Root {
 
 // Developer
 const developerManifest = developerManifestData as unknown as DocsManifest;
-const developerPageTree = deserializePageTree(developerManifest.pageTree) as Root;
+const developerPageTree = deserializePageTree(
+  developerManifest.pageTree
+) as Root;
 
-export function getDeveloperPage(slugs: string[]): DocsManifestPage | undefined {
+export function getDeveloperPage(
+  slugs: string[]
+): DocsManifestPage | undefined {
   return developerManifest.pages[slugs.join("/")];
 }
 

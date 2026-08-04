@@ -16,9 +16,11 @@ function login(credentials: Credentials) {
 }
 
 // Non-HTTP-only cookie - JavaScript accessible
-export const setSession = createServerFn({ method: "POST" }).handler(async ({ data }) => {
-  setResponseHeader("Set-Cookie", `session=${data.token}`); // Not secure
-});
+export const setSession = createServerFn({ method: "POST" }).handler(
+  async ({ data }) => {
+    setResponseHeader("Set-Cookie", `session=${data.token}`); // Not secure
+  }
+);
 ```
 
 ## Good Example: Secure Session Cookie
@@ -79,7 +81,7 @@ export const login = createServerFn({ method: "POST" })
     z.object({
       email: z.string().email(),
       password: z.string().min(1),
-    }),
+    })
   )
   .handler(async ({ data }) => {
     const user = await db.users.findUnique({

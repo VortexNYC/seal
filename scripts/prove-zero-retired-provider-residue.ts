@@ -7,7 +7,10 @@ import { join } from "node:path";
 const repoRoot = new URL("..", import.meta.url).pathname;
 const retiredProviderToken = String.fromCharCode(115, 116, 114, 105, 112, 101);
 const retiredProviderContentPattern = `\\b${retiredProviderToken}\\b|@${retiredProviderToken}/|${retiredProviderToken}[_-]`;
-const retiredProviderContentRegex = new RegExp(retiredProviderContentPattern, "i");
+const retiredProviderContentRegex = new RegExp(
+  retiredProviderContentPattern,
+  "i"
+);
 const activeConfigExamplePaths = [
   ".env.example",
   ".test-env.example",
@@ -97,7 +100,10 @@ const dependencyGraph = spawnSync("bun", ["pm", "why", retiredProviderToken], {
 });
 
 const dependencyGraphOutput = `${dependencyGraph.stdout}${dependencyGraph.stderr}`;
-if (dependencyGraph.status === 0 || !dependencyGraphOutput.includes("No packages matching")) {
+if (
+  dependencyGraph.status === 0 ||
+  !dependencyGraphOutput.includes("No packages matching")
+) {
   failures.push("bun.lock: dependency graph contains retired provider package");
 }
 
@@ -116,16 +122,16 @@ const workingTreeContent = spawnSync(
     cwd: repoRoot,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
-  },
+  }
 );
 
 if (workingTreeContent.status === 0) {
   failures.push(
-    `working tree content contains retired provider token:\n${workingTreeContent.stdout}`,
+    `working tree content contains retired provider token:\n${workingTreeContent.stdout}`
   );
 } else if (workingTreeContent.status !== 1) {
   failures.push(
-    `working tree content scan failed: ${workingTreeContent.stderr || workingTreeContent.stdout}`,
+    `working tree content scan failed: ${workingTreeContent.stderr || workingTreeContent.stdout}`
   );
 }
 
@@ -143,11 +149,15 @@ for (const relativePath of trackedFiles) {
   const fileBytes = readFileSync(absolutePath);
   const fileContents = fileBytes.toString("utf8");
   if (fileContents.toLowerCase().includes(retiredProviderToken)) {
-    failures.push(`${relativePath}: tracked content contains retired provider token`);
+    failures.push(
+      `${relativePath}: tracked content contains retired provider token`
+    );
     continue;
   }
   if (retiredProviderContentRegex.test(fileContents)) {
-    failures.push(`${relativePath}: tracked content contains retired provider residue`);
+    failures.push(
+      `${relativePath}: tracked content contains retired provider residue`
+    );
   }
 }
 
@@ -163,7 +173,7 @@ for (const relativePath of activeGuidanceAndConfigPaths) {
   }
   if (retiredProviderAliasRegex.test(fileContents)) {
     failures.push(
-      `${relativePath}: active guidance/config/current plan contains retired provider alias`,
+      `${relativePath}: active guidance/config/current plan contains retired provider alias`
     );
   }
 }
@@ -171,39 +181,56 @@ for (const relativePath of activeGuidanceAndConfigPaths) {
 for (const relativePath of activeVortexMirrorSchemaPaths) {
   const absolutePath = join(repoRoot, relativePath);
   if (!existsSync(absolutePath)) {
-    failures.push(`${relativePath}: expected active Vortex mirror schema is missing`);
+    failures.push(
+      `${relativePath}: expected active Vortex mirror schema is missing`
+    );
     continue;
   }
 
   const fileContents = readFileSync(absolutePath, "utf8");
   if (stalePaymentProviderMirrorRegex.test(fileContents)) {
     failures.push(
-      `${relativePath}: active Vortex mirror schema uses stale payment provider wording`,
+      `${relativePath}: active Vortex mirror schema uses stale payment provider wording`
     );
   }
   if (!fileContents.includes("Vortex Billing")) {
-    failures.push(`${relativePath}: active Vortex mirror schema does not name Vortex Billing`);
+    failures.push(
+      `${relativePath}: active Vortex mirror schema does not name Vortex Billing`
+    );
   }
 }
 
-function scanWorkingTreePathNames(absoluteDirectory: string, relativeDirectory: string): void {
+function scanWorkingTreePathNames(
+  absoluteDirectory: string,
+  relativeDirectory: string
+): void {
   if (!existsSync(absoluteDirectory)) {
     return;
   }
 
   for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true })) {
-    if (entry.isDirectory() && generatedOrInstalledDirectoryNames.has(entry.name)) {
+    if (
+      entry.isDirectory() &&
+      generatedOrInstalledDirectoryNames.has(entry.name)
+    ) {
       continue;
     }
 
     const relativePath =
-      relativeDirectory === "." ? entry.name : `${relativeDirectory}/${entry.name}`;
+      relativeDirectory === "."
+        ? entry.name
+        : `${relativeDirectory}/${entry.name}`;
     if (relativePath.toLowerCase().includes(retiredProviderToken)) {
-      failures.push(`${relativePath}: working tree path contains retired provider token`);
+      failures.push(
+        `${relativePath}: working tree path contains retired provider token`
+      );
     }
 
     if (entry.isDirectory()) {
-      scanWorkingTreePathNames(join(absoluteDirectory, entry.name), relativePath);
+      scanWorkingTreePathNames(
+        join(absoluteDirectory, entry.name),
+        relativePath
+      );
     }
   }
 }
@@ -222,12 +249,14 @@ console.log("Retired provider residue proof passed:");
 console.log("- No tracked file paths contain the retired provider token.");
 console.log("- No tracked file contents contain the retired provider token.");
 console.log(
-  "- No dependency graph package or owned working-tree path contains the retired provider token.",
+  "- No dependency graph package or owned working-tree path contains the retired provider token."
 );
 console.log(
-  "- No owned source/config/doc content, including hidden env files and excluding generated/install/cache outputs, contains provider-shaped retired provider residue.",
+  "- No owned source/config/doc content, including hidden env files and excluding generated/install/cache outputs, contains provider-shaped retired provider residue."
 );
 console.log(
-  "- No active guidance/config/current plan file contains retired provider aliases outside approved proof command names.",
+  "- No active guidance/config/current plan file contains retired provider aliases outside approved proof command names."
 );
-console.log("- Active Vortex mirror schemas name Vortex Billing as source of truth.");
+console.log(
+  "- Active Vortex mirror schemas name Vortex Billing as source of truth."
+);

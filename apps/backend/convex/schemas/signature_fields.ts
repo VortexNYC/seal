@@ -21,7 +21,7 @@ export const fieldTypeTuple = v.union(
   v.literal("dropdown"), // Dropdown select field
   v.literal("radio"), // Radio button group
   v.literal("attachment"), // File attachment field
-  v.literal("payment"), // Payment/invoice field (config stored in payment_field_configs)
+  v.literal("payment") // Payment/invoice field (config stored in payment_field_configs)
 );
 export type FieldType = Infer<typeof fieldTypeTuple>;
 
@@ -54,7 +54,7 @@ export const signatureFieldsTable = defineTable({
       minLength: v.optional(v.number()), // Min text length
       pattern: v.optional(v.string()), // Regex pattern for validation
       helpText: v.optional(v.string()), // Help text for field
-    }),
+    })
   ),
 
   // Validation Rules (backend-level validation with custom messages)
@@ -65,7 +65,7 @@ export const signatureFieldsTable = defineTable({
       max: v.optional(v.number()),
       pattern: v.optional(v.string()),
       customMessage: v.optional(v.string()),
-    }),
+    })
   ),
 
   // Timestamps

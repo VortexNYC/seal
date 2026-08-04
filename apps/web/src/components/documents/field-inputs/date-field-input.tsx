@@ -5,7 +5,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface DateFieldInputProps {
@@ -25,7 +29,9 @@ export function DateFieldInput({
   onChange,
   onValidationChange,
 }: DateFieldInputProps) {
-  const [date, setDate] = useState<Date | undefined>(value ? new Date(value) : undefined);
+  const [date, setDate] = useState<Date | undefined>(
+    value ? new Date(value) : undefined
+  );
   const [error, setError] = useState<string | undefined>();
 
   const validateValue = (val?: Date): { isValid: boolean; error?: string } => {
@@ -59,7 +65,7 @@ export function DateFieldInput({
             className={cn(
               "w-full justify-start text-left font-normal",
               !date && "text-muted-foreground",
-              error && "border-destructive",
+              error && "border-destructive"
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -67,10 +73,17 @@ export function DateFieldInput({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={date} onSelect={handleDateChange} initialFocus />
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleDateChange}
+            initialFocus
+          />
         </PopoverContent>
       </Popover>
-      {helpText && !error && <p className="text-muted-foreground text-xs">{helpText}</p>}
+      {helpText && !error && (
+        <p className="text-muted-foreground text-xs">{helpText}</p>
+      )}
       {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );

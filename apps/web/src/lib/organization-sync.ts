@@ -6,7 +6,9 @@ export interface OrganizationSyncState {
   hasAttemptedRecovery?: boolean;
 }
 
-export function shouldWaitForOrganizationSync(state: OrganizationSyncState): boolean {
+export function shouldWaitForOrganizationSync(
+  state: OrganizationSyncState
+): boolean {
   if (state.hasAttemptedRecovery) {
     return false;
   }

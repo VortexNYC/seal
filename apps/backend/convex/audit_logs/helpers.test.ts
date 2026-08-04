@@ -14,7 +14,7 @@ import {
 } from "./helpers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -164,7 +164,9 @@ describe("Audit log helpers", () => {
       expect(sealAssertPresent(log).actorId).toBe("test_owner");
       expect(sealAssertPresent(log).resourceType).toBe("document");
       expect(sealAssertPresent(log).resourceId).toBe(documentId);
-      expect(sealAssertPresent(log).metadata?.description).toBe("Document created");
+      expect(sealAssertPresent(log).metadata?.description).toBe(
+        "Document created"
+      );
       expect(sealAssertPresent(log).metadata?.source).toBe("web");
     });
 
@@ -216,7 +218,9 @@ describe("Audit log helpers", () => {
       expect(sealAssertPresent(log).documentId).toBe(documentId);
       expect(sealAssertPresent(log).recipientId).toBe(recipientId);
       expect(sealAssertPresent(log).ipAddress).toBe("203.0.113.1");
-      expect(sealAssertPresent(log).metadata?.description).toBe("Recipient signed");
+      expect(sealAssertPresent(log).metadata?.description).toBe(
+        "Recipient signed"
+      );
     });
 
     test("logs recipient.signed for authenticated user", async () => {
@@ -259,7 +263,9 @@ describe("Audit log helpers", () => {
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
       expect(sealAssertPresent(log).action).toBe("recipient.declined");
-      expect(sealAssertPresent(log).metadata?.description).toBe("Recipient declined");
+      expect(sealAssertPresent(log).metadata?.description).toBe(
+        "Recipient declined"
+      );
     });
 
     test("logs recipient.viewed", async () => {
@@ -279,7 +285,9 @@ describe("Audit log helpers", () => {
       const log = await t.run(async (ctx) => ctx.db.get(logId));
 
       expect(sealAssertPresent(log).action).toBe("recipient.viewed");
-      expect(sealAssertPresent(log).metadata?.description).toBe("Recipient viewed");
+      expect(sealAssertPresent(log).metadata?.description).toBe(
+        "Recipient viewed"
+      );
     });
   });
 

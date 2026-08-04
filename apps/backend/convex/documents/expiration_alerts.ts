@@ -8,11 +8,15 @@
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 import { sendExpirationAlert } from "./email";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -38,11 +42,13 @@ export const getDocumentsApproachingDeadline = internalQuery({
       .collect();
     const inProgressDocs = await ctx.db
       .query("documents")
-      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "in_progress"))
+      .withIndex("by_workflow_status", (q) =>
+        q.eq("workflowStatus", "in_progress")
+      )
       .collect();
 
     const activeDocs = [...sentDocs, ...inProgressDocs].filter(
-      (doc) => doc.deadline && doc.organizationId && doc.status !== "deleted",
+      (doc) => doc.deadline && doc.organizationId && doc.status !== "deleted"
     );
 
     // Group by org for settings lookup
@@ -66,14 +72,23 @@ export const getDocumentsApproachingDeadline = internalQuery({
 
     for (const [orgId, docs] of docsByOrg) {
       const org = await ctx.db.get(orgId as (typeof docs)[0]["organizationId"]);
-      const expirationAlertDays = org?.notificationSettings?.expirationAlertDays ?? 3;
+      const expirationAlertDays =
+        org?.notificationSettings?.expirationAlertDays ?? 3;
 
       for (const doc of docs) {
-        const daysUntilDeadline = Math.ceil((sealAssertPresent(doc.deadline) - now) / DAY_MS);
+        const daysUntilDeadline = Math.ceil(
+          (sealAssertPresent(doc.deadline) - now) / DAY_MS
+        );
 
         // Alert if within the configured window, not already past, and not already alerted
-        const alreadyAlerted = (doc.expirationAlertsSent ?? []).includes(daysUntilDeadline);
-        if (daysUntilDeadline > 0 && daysUntilDeadline <= expirationAlertDays && !alreadyAlerted) {
+        const alreadyAlerted = (doc.expirationAlertsSent ?? []).includes(
+          daysUntilDeadline
+        );
+        if (
+          daysUntilDeadline > 0 &&
+          daysUntilDeadline <= expirationAlertDays &&
+          !alreadyAlerted
+        ) {
           alertCandidates.push({
             documentId: doc._id,
             documentName: doc.name,
@@ -104,7 +119,8 @@ export const recordExpirationAlert = internalMutation({
     if (!doc) return;
 
     // Store alert timestamp on the document to prevent re-alerting
-    const existingAlerts = (doc.expirationAlertsSent as number[] | undefined) ?? [];
+    const existingAlerts =
+      (doc.expirationAlertsSent as number[] | undefined) ?? [];
     await ctx.db.patch(args.documentId, {
       expirationAlertsSent: [...existingAlerts, args.daysRemaining],
     });
@@ -119,30 +135,40 @@ export const processExpirationAlerts = internalAction({
   args: {},
   handler: async (ctx) => {
     const candidates = await ctx.runQuery(
-      internal.documents.expiration_alerts.getDocumentsApproachingDeadline,
+      internal.documents.expiration_alerts.getDocumentsApproachingDeadline
     );
 
     let alertsSent = 0;
 
     for (const candidate of candidates) {
       // Get owner info
-      const owner = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-        userId: candidate.ownerId,
-      });
+      const owner = await ctx.runQuery(
+        internal.organizations.helpers.getUserById,
+        {
+          userId: candidate.ownerId,
+        }
+      );
       if (!owner?.email) continue;
 
       // Get pending recipients
       const recipients = await ctx.runQuery(
         internal.documents.recipients_queries.getDocumentRecipientsInternal,
-        { documentId: candidate.documentId },
+        { documentId: candidate.documentId }
       );
       const pendingRecipients = recipients
-        .filter((r: (typeof recipients)[number]) => r.status === "pending" || r.status === "viewed")
-        .map((r: (typeof recipients)[number]) => ({ name: r.name || r.email, email: r.email }));
+        .filter(
+          (r: (typeof recipients)[number]) =>
+            r.status === "pending" || r.status === "viewed"
+        )
+        .map((r: (typeof recipients)[number]) => ({
+          name: r.name || r.email,
+          email: r.email,
+        }));
 
       if (pendingRecipients.length === 0) continue;
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
       const documentUrl = `${baseUrl}/documents/${candidate.documentId}`;
 
       const result = await sendExpirationAlert(ctx, {
@@ -156,16 +182,19 @@ export const processExpirationAlerts = internalAction({
       });
 
       if (result.success) {
-        await ctx.runMutation(internal.documents.expiration_alerts.recordExpirationAlert, {
-          documentId: candidate.documentId,
-          alertedAt: Date.now(),
-          daysRemaining: candidate.daysRemaining,
-        });
+        await ctx.runMutation(
+          internal.documents.expiration_alerts.recordExpirationAlert,
+          {
+            documentId: candidate.documentId,
+            alertedAt: Date.now(),
+            daysRemaining: candidate.daysRemaining,
+          }
+        );
         alertsSent++;
       } else {
         console.error(
           `Failed to send expiration alert for document ${candidate.documentId}:`,
-          result.error,
+          result.error
         );
       }
     }

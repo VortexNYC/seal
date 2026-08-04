@@ -38,7 +38,9 @@ test("form accessibility", async ({ page }) => {
   await page.goto("/contact");
 
   // Analyze only the form
-  const results = await new AxeBuilder({ page }).include("#contact-form").analyze();
+  const results = await new AxeBuilder({ page })
+    .include("#contact-form")
+    .analyze();
 
   expect(results.violations).toEqual([]);
 });
@@ -69,7 +71,12 @@ type A11yFixtures = {
 export const test = base.extend<A11yFixtures>({
   makeAxeBuilder: async ({ page }, use) => {
     await use(() =>
-      new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]),
+      new AxeBuilder({ page }).withTags([
+        "wcag2a",
+        "wcag2aa",
+        "wcag21a",
+        "wcag21aa",
+      ])
     );
   },
 });
@@ -250,7 +257,7 @@ test("focus trapped in modal", async ({ page }) => {
 
   // Get all focusable elements in modal
   const focusableElements = modal.locator(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
   );
   const count = await focusableElements.count();
 
@@ -306,7 +313,9 @@ test("respects reduced motion preference", async ({ page }) => {
 
   // Animations should be disabled
   const hero = page.getByTestId("hero-animation");
-  const animation = await hero.evaluate((el) => getComputedStyle(el).animationDuration);
+  const animation = await hero.evaluate(
+    (el) => getComputedStyle(el).animationDuration
+  );
 
   expect(animation).toBe("0s");
 });

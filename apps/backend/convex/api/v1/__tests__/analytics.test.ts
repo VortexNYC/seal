@@ -49,11 +49,19 @@ describe("api/v1/analytics", () => {
         storageId: "storage-analytics-test",
         createdAt,
         updatedAt: createdAt,
-        ...(overrides.workflowStatus ? { workflowStatus: overrides.workflowStatus } : {}),
+        ...(overrides.workflowStatus
+          ? { workflowStatus: overrides.workflowStatus }
+          : {}),
         ...(overrides.sentAt !== undefined ? { sentAt: overrides.sentAt } : {}),
-        ...(overrides.completedAt !== undefined ? { completedAt: overrides.completedAt } : {}),
-        ...(overrides.cancelledAt !== undefined ? { cancelledAt: overrides.cancelledAt } : {}),
-        ...(overrides.declinedAt !== undefined ? { declinedAt: overrides.declinedAt } : {}),
+        ...(overrides.completedAt !== undefined
+          ? { completedAt: overrides.completedAt }
+          : {}),
+        ...(overrides.cancelledAt !== undefined
+          ? { cancelledAt: overrides.cancelledAt }
+          : {}),
+        ...(overrides.declinedAt !== undefined
+          ? { declinedAt: overrides.declinedAt }
+          : {}),
       });
     });
   }
@@ -237,7 +245,10 @@ describe("api/v1/analytics", () => {
 
     test("completion_rate is 0 when no resolved documents", async () => {
       // Only a draft document
-      await insertDocument({ createdAt: NOW - 5 * ONE_DAY, workflowStatus: "draft" });
+      await insertDocument({
+        createdAt: NOW - 5 * ONE_DAY,
+        workflowStatus: "draft",
+      });
 
       const result = await t.query(internal.api.v1.analytics.getAnalytics, {
         userId,
@@ -322,13 +333,19 @@ describe("api/v1/analytics", () => {
     });
 
     test("workspace_snapshot counts all status categories", async () => {
-      await insertDocument({ workflowStatus: "draft", createdAt: NOW - ONE_DAY });
+      await insertDocument({
+        workflowStatus: "draft",
+        createdAt: NOW - ONE_DAY,
+      });
       await insertDocument({
         workflowStatus: "sent",
         sentAt: NOW - ONE_DAY,
         createdAt: NOW - 2 * ONE_DAY,
       });
-      await insertDocument({ workflowStatus: "in_progress", createdAt: NOW - 3 * ONE_DAY });
+      await insertDocument({
+        workflowStatus: "in_progress",
+        createdAt: NOW - 3 * ONE_DAY,
+      });
       await insertDocument({
         workflowStatus: "completed",
         completedAt: NOW - ONE_DAY,

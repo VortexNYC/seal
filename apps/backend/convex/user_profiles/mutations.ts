@@ -21,7 +21,7 @@ export const updateProfile = mutation({
       v.object({
         emailNotifications: v.optional(v.boolean()),
         pushNotifications: v.optional(v.boolean()),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {

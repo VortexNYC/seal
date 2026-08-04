@@ -145,7 +145,11 @@ import { v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 
 // =============================================================================
 // RAG COMPONENT SETUP
@@ -191,7 +195,9 @@ const PAGE_MARKER_REGEX = /\f/g; // Form feed characters separate pages in unpdf
  * If pages are too large, splits further at paragraph boundaries.
  * Returns array of { text, pageNumber } chunks.
  */
-function chunkTextByPage(extractedText: string): Array<{ text: string; pageNumber: number }> {
+function chunkTextByPage(
+  extractedText: string
+): Array<{ text: string; pageNumber: number }> {
   const pages = extractedText.split(PAGE_MARKER_REGEX);
   const chunks: Array<{ text: string; pageNumber: number }> = [];
 
@@ -209,7 +215,10 @@ function chunkTextByPage(extractedText: string): Array<{ text: string; pageNumbe
       let currentChunk = "";
 
       for (const para of paragraphs) {
-        if (currentChunk.length + para.length > MAX_CHUNK_CHARS && currentChunk.length > 0) {
+        if (
+          currentChunk.length + para.length > MAX_CHUNK_CHARS &&
+          currentChunk.length > 0
+        ) {
           chunks.push({ text: currentChunk.trim(), pageNumber });
           currentChunk = para;
         } else {
@@ -240,12 +249,17 @@ export const indexDocumentForSearch = internalAction({
   },
   handler: async (ctx, args) => {
     // 1. Get the document to check for extractedText
-    const document = await ctx.runQuery(internal.ai.search.getDocumentForIndexing, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.ai.search.getDocumentForIndexing,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     if (!document || !document.extractedText) {
-      console.warn(`[Search] Skipping indexing for ${args.documentId}: no extracted text`);
+      console.warn(
+        `[Search] Skipping indexing for ${args.documentId}: no extracted text`
+      );
       return;
     }
 
@@ -293,7 +307,9 @@ export const indexDocumentForSearch = internalAction({
       documentId: args.documentId,
     });
 
-    console.info(`[Search] Indexed ${chunks.length} chunks for document ${args.documentId}`);
+    console.info(
+      `[Search] Indexed ${chunks.length} chunks for document ${args.documentId}`
+    );
   },
 });
 
@@ -379,7 +395,7 @@ export const hybridSearchDocuments = internalAction({
         organizationId: args.organizationId,
         query: args.query,
         limit: limit * 2,
-      },
+      }
     );
 
     // 3. Hybrid rank merge via Reciprocal Rank Fusion
@@ -535,7 +551,7 @@ export const searchDocumentTextInternal = internalQuery({
         q
           .search("extractedText", args.query)
           .eq("organizationId", args.organizationId)
-          .eq("status", "active"),
+          .eq("status", "active")
       )
       .take(args.limit);
   },
@@ -604,14 +620,19 @@ export const searchDocuments = createTool<SealAICtx>({
     "Use this when the user asks about document contents, specific clauses, terms, dates, " +
     "or any information that might be in their uploaded documents.",
   args: z.object({
-    query: z.string().describe("The search query — what to look for across documents"),
+    query: z
+      .string()
+      .describe("The search query — what to look for across documents"),
   }),
   handler: async (ctx, { query }) => {
-    const results = await ctx.runAction(internal.ai.search.hybridSearchDocuments, {
-      organizationId: ctx.organizationId,
-      query,
-      limit: 10,
-    });
+    const results = await ctx.runAction(
+      internal.ai.search.hybridSearchDocuments,
+      {
+        organizationId: ctx.organizationId,
+        query,
+        limit: 10,
+      }
+    );
 
     if (results.length === 0) {
       return "No relevant documents found for this query.";
@@ -706,7 +727,10 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
-import { fieldAnalysisCache, type FieldAnalysisResult } from "./analyzeFieldsAction";
+import {
+  fieldAnalysisCache,
+  type FieldAnalysisResult,
+} from "./analyzeFieldsAction";
 
 export const processDocument = internalAction({
   args: {
@@ -715,16 +739,22 @@ export const processDocument = internalAction({
   },
   handler: async (ctx, args) => {
     // 1. Mark processing
-    await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
-      documentId: args.documentId,
-      status: "processing",
-    });
+    await ctx.runMutation(
+      internal.ai.pipeline_mutations.setAiProcessingStatus,
+      {
+        documentId: args.documentId,
+        status: "processing",
+      }
+    );
 
     try {
       // 2. Get the document to find storageId
-      const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-        documentId: args.documentId,
-      });
+      const document = await ctx.runQuery(
+        internal.documents.queries.getDocumentInternal,
+        {
+          documentId: args.documentId,
+        }
+      );
       if (!document) throw new Error("Document not found");
 
       // 3. Run cached field analysis (same storageId = cached result)
@@ -750,21 +780,33 @@ export const processDocument = internalAction({
         });
       } catch (searchError) {
         // Search indexing failure shouldn't block the pipeline
-        console.error(`[Pipeline] Search indexing failed for ${args.documentId}:`, searchError);
+        console.error(
+          `[Pipeline] Search indexing failed for ${args.documentId}:`,
+          searchError
+        );
       }
 
       // 6. Mark completed
-      await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
-        documentId: args.documentId,
-        status: "completed",
-      });
+      await ctx.runMutation(
+        internal.ai.pipeline_mutations.setAiProcessingStatus,
+        {
+          documentId: args.documentId,
+          status: "completed",
+        }
+      );
     } catch (error) {
       // Mark failed but don't crash — this is background processing
-      await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
-        documentId: args.documentId,
-        status: "failed",
-      });
-      console.error(`AI pipeline failed for document ${args.documentId}:`, error);
+      await ctx.runMutation(
+        internal.ai.pipeline_mutations.setAiProcessingStatus,
+        {
+          documentId: args.documentId,
+          status: "failed",
+        }
+      );
+      console.error(
+        `AI pipeline failed for document ${args.documentId}:`,
+        error
+      );
     }
   },
 });
@@ -945,10 +987,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (documentId: string) => {
       onOpenChange(false);
       if (slug) {
-        navigate({ to: "/$slug/documents/$documentId", params: { slug, documentId } });
+        navigate({
+          to: "/$slug/documents/$documentId",
+          params: { slug, documentId },
+        });
       }
     },
-    [navigate, onOpenChange, slug],
+    [navigate, onOpenChange, slug]
   );
 
   const handleOpenFullSearch = useCallback(() => {
@@ -960,7 +1005,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search documents..." value={query} onValueChange={setQuery} />
+      <CommandInput
+        placeholder="Search documents..."
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
         {isSearching ? (
           <div className="flex items-center justify-center py-6">
@@ -982,7 +1031,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{result.documentName}</span>
+                        <span className="font-medium">
+                          {result.documentName}
+                        </span>
                         {result.pageNumber && (
                           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                             p.{result.pageNumber}
@@ -1048,7 +1099,10 @@ export function useCommandPalette() {
 **Step 2:** Wire up the command palette in the authenticated layout. In `apps/web/src/routes/_authenticated.tsx`, add:
 
 ```tsx
-import { CommandPalette, useCommandPalette } from "@/components/command-palette";
+import {
+  CommandPalette,
+  useCommandPalette,
+} from "@/components/command-palette";
 
 // Inside the layout component, add:
 const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
@@ -1103,7 +1157,12 @@ interface CitationChipProps {
   slug: string;
 }
 
-export function CitationChip({ documentId, pageNumber, documentName, slug }: CitationChipProps) {
+export function CitationChip({
+  documentId,
+  pageNumber,
+  documentName,
+  slug,
+}: CitationChipProps) {
   return (
     <Link
       to="/$slug/documents/$documentId"
@@ -1113,7 +1172,9 @@ export function CitationChip({ documentId, pageNumber, documentName, slug }: Cit
       <FileTextIcon className="h-3 w-3" />
       {documentName}
       {pageNumber > 0 && (
-        <span className="text-violet-500 dark:text-violet-400">p.{pageNumber}</span>
+        <span className="text-violet-500 dark:text-violet-400">
+          p.{pageNumber}
+        </span>
       )}
     </Link>
   );
@@ -1126,7 +1187,10 @@ const CITATION_REGEX = /<<cite:([^:]+):(\d+):([^>]+)>>/g;
  * Parse agent text and replace citation markers with CitationChip components.
  * Returns an array of React nodes (strings and CitationChip elements).
  */
-export function parseTextWithCitations(text: string, slug: string): React.ReactNode[] {
+export function parseTextWithCitations(
+  text: string,
+  slug: string
+): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -1150,7 +1214,7 @@ export function parseTextWithCitations(text: string, slug: string): React.ReactN
         pageNumber={pageNumber}
         documentName={documentName ?? "Document"}
         slug={slug}
-      />,
+      />
     );
 
     lastIndex = match.index + match[0].length;
@@ -1184,7 +1248,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -1210,13 +1278,16 @@ const STATUS_OPTIONS = [
 ];
 
 export function SearchFiltersBar({ filters, onChange }: SearchFiltersBarProps) {
-  const hasActiveFilters = filters.workflowStatus !== "all" || filters.dateFrom || filters.dateTo;
+  const hasActiveFilters =
+    filters.workflowStatus !== "all" || filters.dateFrom || filters.dateTo;
 
   return (
     <div className="flex items-center gap-2">
       <Select
         value={filters.workflowStatus}
-        onValueChange={(value) => onChange({ ...filters, workflowStatus: value })}
+        onValueChange={(value) =>
+          onChange({ ...filters, workflowStatus: value })
+        }
       >
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="All statuses" />
@@ -1249,7 +1320,9 @@ export function SearchFiltersBar({ filters, onChange }: SearchFiltersBarProps) {
               <Input
                 type="date"
                 value={filters.dateFrom}
-                onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
+                onChange={(e) =>
+                  onChange({ ...filters, dateFrom: e.target.value })
+                }
                 className="mt-1"
               />
             </div>
@@ -1258,7 +1331,9 @@ export function SearchFiltersBar({ filters, onChange }: SearchFiltersBarProps) {
               <Input
                 type="date"
                 value={filters.dateTo}
-                onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
+                onChange={(e) =>
+                  onChange({ ...filters, dateTo: e.target.value })
+                }
                 className="mt-1"
               />
             </div>
@@ -1270,7 +1345,9 @@ export function SearchFiltersBar({ filters, onChange }: SearchFiltersBarProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onChange({ workflowStatus: "all", dateFrom: "", dateTo: "" })}
+          onClick={() =>
+            onChange({ workflowStatus: "all", dateFrom: "", dateTo: "" })
+          }
           className="text-xs text-muted-foreground"
         >
           Clear filters
@@ -1289,12 +1366,21 @@ import { optimisticallySendMessage } from "@convex-dev/agent/react";
 import { useSmoothText } from "@convex-dev/agent/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { BotIcon, Loader2Icon, SearchIcon, SendIcon, UserIcon } from "lucide-react";
+import {
+  BotIcon,
+  Loader2Icon,
+  SearchIcon,
+  SendIcon,
+  UserIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { parseTextWithCitations } from "@/components/search/citation-chip";
-import { SearchFiltersBar, type SearchFilters } from "@/components/search/search-filters";
+import {
+  SearchFiltersBar,
+  type SearchFilters,
+} from "@/components/search/search-filters";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -1307,7 +1393,13 @@ export const Route = createFileRoute("/_authenticated/$slug/search")({
 // Message components (adapted from ai-chat-panel.tsx)
 // ---------------------------------------------------------------------------
 
-function StreamingText({ text, isStreaming }: { text: string; isStreaming: boolean }) {
+function StreamingText({
+  text,
+  isStreaming,
+}: {
+  text: string;
+  isStreaming: boolean;
+}) {
   const [visibleText] = useSmoothText(text, { startStreaming: isStreaming });
   return <>{visibleText}</>;
 }
@@ -1333,23 +1425,29 @@ function MessageBubble({
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
           isUser
             ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-            : "bg-gradient-to-br from-violet-500 to-blue-500 text-white",
+            : "bg-gradient-to-br from-violet-500 to-blue-500 text-white"
         )}
       >
-        {isUser ? <UserIcon className="h-4 w-4" /> : <BotIcon className="h-4 w-4" />}
+        {isUser ? (
+          <UserIcon className="h-4 w-4" />
+        ) : (
+          <BotIcon className="h-4 w-4" />
+        )}
       </div>
       <div
         className={cn(
           "max-w-[75%] rounded-xl px-4 py-3 text-sm leading-relaxed",
           isUser
             ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
-            : "bg-white text-slate-700 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700/60",
+            : "bg-white text-slate-700 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700/60"
         )}
       >
         {isStreaming ? (
           <StreamingText text={text} isStreaming />
         ) : (
-          <span className="whitespace-pre-wrap">{parseTextWithCitations(text, slug)}</span>
+          <span className="whitespace-pre-wrap">
+            {parseTextWithCitations(text, slug)}
+          </span>
         )}
         {isStreaming && (
           <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-violet-500/50" />
@@ -1383,7 +1481,7 @@ function SearchPage() {
   const { results: messages, status: paginationStatus } = useUIMessages(
     threadId ? api.ai.threads.listMessages : ("skip" as never),
     threadId ? { threadId } : {},
-    { initialNumItems: 50, stream: true },
+    { initialNumItems: 50, stream: true }
   );
 
   // Auto-scroll on new messages
@@ -1416,7 +1514,7 @@ function SearchPage() {
         toast.error("Failed to send message");
       }
     },
-    [input, threadId, createThread, sendMessage],
+    [input, threadId, createThread, sendMessage]
   );
 
   const handleKeyDown = useCallback(
@@ -1426,7 +1524,7 @@ function SearchPage() {
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   const hasMessages = messages && messages.length > 0;
@@ -1439,7 +1537,8 @@ function SearchPage() {
           <div>
             <h1 className="text-lg font-semibold">Search Documents</h1>
             <p className="text-sm text-muted-foreground">
-              Ask questions about your documents — Seal AI will search and cite sources
+              Ask questions about your documents — Seal AI will search and cite
+              sources
             </p>
           </div>
         </div>
@@ -1457,10 +1556,13 @@ function SearchPage() {
               <SearchIcon className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="text-lg font-medium">Search across your documents</h2>
+              <h2 className="text-lg font-medium">
+                Search across your documents
+              </h2>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                Ask about specific clauses, payment terms, dates, signers, or anything else. Seal AI
-                will search all your documents and cite its sources.
+                Ask about specific clauses, payment terms, dates, signers, or
+                anything else. Seal AI will search all your documents and cite
+                its sources.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -1485,7 +1587,10 @@ function SearchPage() {
             {messages.map((message) => {
               const text =
                 message.parts
-                  ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+                  ?.filter(
+                    (p): p is { type: "text"; text: string } =>
+                      p.type === "text"
+                  )
                   .map((p) => p.text)
                   .join("") ?? "";
 

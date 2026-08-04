@@ -2,10 +2,13 @@ import { renderOwnershipTransferred } from "@seal/transactional";
 import { v } from "convex/values";
 
 import { internalAction } from "../_generated/server";
-import { sendEmailManuallyFromAction, sendResendEmail } from "../emails/resend_component";
+import {
+  sendEmailManuallyFromAction,
+  sendResendEmail,
+} from "../emails/resend_component";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -51,7 +54,7 @@ export const sendOwnershipTransferredEmail = internalAction({
         });
         if (error) throw new Error(error.message ?? "Resend request failed");
         return sealAssertPresent(data).id;
-      },
+      }
     );
   },
 });

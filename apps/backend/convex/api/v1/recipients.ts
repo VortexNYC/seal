@@ -42,21 +42,26 @@ type ApiDocumentRecipient = Doc<"document_recipients">;
 
 function isDocumentAccessible(
   document: ApiDocument | null,
-  organizationId: Id<"organizations">,
+  organizationId: Id<"organizations">
 ): document is ApiDocument {
   return Boolean(
-    document && document.status !== "deleted" && document.organizationId === organizationId,
+    document &&
+    document.status !== "deleted" &&
+    document.organizationId === organizationId
   );
 }
 
 function getCompletedAtIso(
-  recipient: Pick<ApiDocumentRecipient, "signedAt" | "approvedAt">,
+  recipient: Pick<ApiDocumentRecipient, "signedAt" | "approvedAt">
 ): string | undefined {
   const completedAt = recipient.signedAt || recipient.approvedAt;
   return completedAt ? new Date(completedAt).toISOString() : undefined;
 }
 
-function buildApiRecipient(recipient: ApiDocumentRecipient, signingUrl?: string): ApiRecipient {
+function buildApiRecipient(
+  recipient: ApiDocumentRecipient,
+  signingUrl?: string
+): ApiRecipient {
   return {
     id: recipient._id,
     email: recipient.email,
@@ -64,7 +69,9 @@ function buildApiRecipient(recipient: ApiDocumentRecipient, signingUrl?: string)
     role: recipient.role,
     status: recipient.status,
     order: recipient.order,
-    viewed_at: recipient.viewedAt ? new Date(recipient.viewedAt).toISOString() : undefined,
+    viewed_at: recipient.viewedAt
+      ? new Date(recipient.viewedAt).toISOString()
+      : undefined,
     completed_at: getCompletedAtIso(recipient),
     signing_url: signingUrl,
   };
@@ -72,10 +79,12 @@ function buildApiRecipient(recipient: ApiDocumentRecipient, signingUrl?: string)
 
 function getSigningUrl(
   workflowStatus: ApiDocument["workflowStatus"],
-  recipient: Pick<ApiDocumentRecipient, "status" | "signingToken">,
+  recipient: Pick<ApiDocumentRecipient, "status" | "signingToken">
 ): string | undefined {
   const activeWorkflow =
-    workflowStatus === "draft" || workflowStatus === "sent" || workflowStatus === "in_progress";
+    workflowStatus === "draft" ||
+    workflowStatus === "sent" ||
+    workflowStatus === "in_progress";
   if (activeWorkflow && recipient.status === "pending") {
     return `/sign/${recipient.signingToken}`;
   }
@@ -139,7 +148,10 @@ export const getRecipient = internalQuery({
       return null;
     }
 
-    const signingUrl = getSigningUrl(document.workflowStatus ?? "draft", recipient);
+    const signingUrl = getSigningUrl(
+      document.workflowStatus ?? "draft",
+      recipient
+    );
     return buildApiRecipient(recipient, signingUrl);
   },
 });
@@ -148,7 +160,8 @@ export const getRecipient = internalQuery({
  * Generates a unique signing token for recipients.
  */
 function generateSigningToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < 32; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -168,13 +181,17 @@ export const addRecipient = internalMutation({
     documentId: v.id("documents"),
     email: v.string(),
     name: v.string(),
-    role: v.union(v.literal("signer"), v.literal("approver"), v.literal("viewer")),
+    role: v.union(
+      v.literal("signer"),
+      v.literal("approver"),
+      v.literal("viewer")
+    ),
     order: v.optional(v.number()),
     customMessage: v.optional(v.string()),
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{ success: boolean; recipientId?: string; error?: string }> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
@@ -245,7 +262,9 @@ export const updateRecipient = internalMutation({
     documentId: v.id("documents"),
     recipientId: v.id("document_recipients"),
     name: v.optional(v.string()),
-    role: v.optional(v.union(v.literal("signer"), v.literal("approver"), v.literal("viewer"))),
+    role: v.optional(
+      v.union(v.literal("signer"), v.literal("approver"), v.literal("viewer"))
+    ),
     order: v.optional(v.number()),
     customMessage: v.optional(v.string()),
   },
@@ -404,7 +423,7 @@ export const sendReminder = internalMutation({
         documentId: args.documentId,
         recipientId: args.recipientId,
         customMessage: args.message,
-      },
+      }
     );
 
     return { success: true };

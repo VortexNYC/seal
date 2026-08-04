@@ -37,15 +37,16 @@ import {
   WifiOffIcon,
   XCircleIcon,
 } from "lucide-react";
+import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { toast } from "sonner";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { PaymentFieldSummary } from "@/components/documents/field-inputs";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
+
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { SignatureCapture } from "@/components/documents/signature-capture";
@@ -54,8 +55,18 @@ import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signe
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -72,7 +83,7 @@ import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -84,7 +95,12 @@ function sealAssertPresent<T>(
 pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 // ─── Embedded Signing (iFrame SDK) ──────────────────────────────────
-type SealEventType = "seal:ready" | "seal:viewed" | "seal:signed" | "seal:declined" | "seal:error";
+type SealEventType =
+  | "seal:ready"
+  | "seal:viewed"
+  | "seal:signed"
+  | "seal:declined"
+  | "seal:error";
 
 function postSealEvent(type: SealEventType, payload: Record<string, unknown>) {
   if (typeof window === "undefined" || window.parent === window) return;
@@ -132,7 +148,8 @@ function useEmbeddedSigning(token: string) {
 function SigningErrorComponent({ error }: ErrorComponentProps) {
   const isInvalidToken =
     error instanceof ConvexError ||
-    (error instanceof Error && /invalid.*token|token.*invalid|not found/i.test(error.message));
+    (error instanceof Error &&
+      /invalid.*token|token.*invalid|not found/i.test(error.message));
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
@@ -198,7 +215,7 @@ function SigningPage() {
   const { data } = useSuspenseQuery(
     convexQuery(api.documents.recipients_queries.getRecipientByToken, {
       signingToken: token,
-    }),
+    })
   );
 
   const {
@@ -218,14 +235,14 @@ function SigningPage() {
   const { data: fields = [], refetch: refetchFields } = useSuspenseQuery(
     convexQuery(api.signature_fields.queries.getFieldsBySigningToken, {
       signingToken: token,
-    }),
+    })
   );
 
   // Load payment configs for payment field overlays
   const { data: paymentConfigs = [] } = useSuspenseQuery(
     convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
       documentId: doc._id,
-    }),
+    })
   );
 
   const paymentInfoByFieldId = useMemo(() => {
@@ -256,7 +273,8 @@ function SigningPage() {
   >(new Map());
 
   // Field input state
-  const [activeFieldId, setActiveFieldId] = useState<Id<"signature_fields"> | null>(null);
+  const [activeFieldId, setActiveFieldId] =
+    useState<Id<"signature_fields"> | null>(null);
   const [showFieldInput, setShowFieldInput] = useState(false);
 
   // Signature capture state
@@ -274,7 +292,7 @@ function SigningPage() {
 
   // Network status for session recovery
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
+    typeof navigator !== "undefined" ? navigator.onLine : true
   );
 
   // Download state
@@ -302,11 +320,14 @@ function SigningPage() {
   const handleConsentAccept = useCallback(async () => {
     setIsConsentSubmitting(true);
     try {
-      await convexClient.mutation(api.documents.recipients_mutations.recordEsignConsent, {
-        signingToken: token,
-        ipAddress: clientIp,
-        consentVersion: "1.0",
-      });
+      await convexClient.mutation(
+        api.documents.recipients_mutations.recordEsignConsent,
+        {
+          signingToken: token,
+          ipAddress: clientIp,
+          consentVersion: "1.0",
+        }
+      );
       setHasConsented(true);
       if (isEmbedded) {
         postSealEvent("seal:viewed", { token });
@@ -326,16 +347,19 @@ function SigningPage() {
   const handleOptOut = useCallback(
     async (method: string) => {
       try {
-        await convexClient.mutation(api.documents.recipients_mutations.recordEsignOptOut, {
-          signingToken: token,
-          ipAddress: clientIp,
-          method,
-        });
+        await convexClient.mutation(
+          api.documents.recipients_mutations.recordEsignOptOut,
+          {
+            signingToken: token,
+            ipAddress: clientIp,
+            method,
+          }
+        );
       } catch {
         // Opt-out logging is best-effort — don't block the user's action
       }
     },
-    [convexClient, token, clientIp],
+    [convexClient, token, clientIp]
   );
 
   // Track online/offline status
@@ -391,9 +415,12 @@ function SigningPage() {
   useEffect(() => {
     const fetchPdfUrl = async () => {
       try {
-        const url = await convexClient.query(api.documents.queries.getDocumentUrlByToken, {
-          signingToken: token,
-        });
+        const url = await convexClient.query(
+          api.documents.queries.getDocumentUrlByToken,
+          {
+            signingToken: token,
+          }
+        );
         setPdfUrl(url);
       } catch (_error) {
         toast.error("Failed to load PDF");
@@ -408,11 +435,14 @@ function SigningPage() {
       // Only mark as viewed if status is still pending
       if (recipient.status === "pending") {
         try {
-          await convexClient.mutation(api.documents.recipients_mutations.submitRecipientSignature, {
-            signingToken: token,
-            status: "viewed",
-            ipAddress: clientIp,
-          });
+          await convexClient.mutation(
+            api.documents.recipients_mutations.submitRecipientSignature,
+            {
+              signingToken: token,
+              status: "viewed",
+              ipAddress: clientIp,
+            }
+          );
         } catch {
           // Silent failure - viewing tracking is not critical
         }
@@ -450,7 +480,7 @@ function SigningPage() {
           signatureData: status === "signed" ? signatureData : undefined,
           signatureType: status === "signed" ? signatureType : undefined,
           ipAddress: clientIp,
-        },
+        }
       );
     },
     onSuccess: () => {
@@ -467,7 +497,8 @@ function SigningPage() {
       }
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Failed to save signature";
+      const message =
+        error instanceof Error ? error.message : "Failed to save signature";
       if (isEmbedded) {
         postSealEvent("seal:error", { token, code: "SIGN_FAILED", message });
       }
@@ -478,7 +509,7 @@ function SigningPage() {
   // Handle signature capture
   const handleSignatureCapture = async (
     signatureData: string,
-    signatureType: "drawn" | "typed" | "uploaded",
+    signatureType: "drawn" | "typed" | "uploaded"
   ) => {
     submitSignatureMutation.mutate({ signatureData, signatureType });
   };
@@ -487,12 +518,17 @@ function SigningPage() {
     // Check if all required fields are filled
     if (!allRequiredFieldsFilled) {
       const unfilledFields = requiredFields.filter((f) => !f.isFilled);
-      toast.error(`Please fill all required fields first (${unfilledFields.length} remaining)`);
+      toast.error(
+        `Please fill all required fields first (${unfilledFields.length} remaining)`
+      );
       return;
     }
 
     // If the main signature field is already filled, submit directly
-    if (mainSignatureField?.fieldType === "signature" && isMainSignatureFilled) {
+    if (
+      mainSignatureField?.fieldType === "signature" &&
+      isMainSignatureFilled
+    ) {
       const signatureData = mainSignatureField.currentSignatureImageUrl;
       if (!signatureData) {
         toast.error("Main signature is missing data. Please sign again.");
@@ -523,7 +559,7 @@ function SigningPage() {
           status: "declined",
           declineReason: reason,
           ipAddress: clientIp,
-        },
+        }
       );
     },
     onSuccess: () => {
@@ -540,7 +576,8 @@ function SigningPage() {
       }
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Failed to decline document";
+      const message =
+        error instanceof Error ? error.message : "Failed to decline document";
       if (isEmbedded) {
         postSealEvent("seal:error", { token, code: "DECLINE_FAILED", message });
       }
@@ -571,7 +608,7 @@ function SigningPage() {
     try {
       const { url, documentName } = await convexClient.action(
         api.documents.sign_pdf_action.generateAndGetSignedPdfByToken,
-        { signingToken: token },
+        { signingToken: token }
       );
       const link = document.createElement("a");
       link.href = url;
@@ -593,7 +630,10 @@ function SigningPage() {
     setShowFieldInput(true);
   };
 
-  const handleFieldSave = async (value?: string, signatureImageUrl?: string) => {
+  const handleFieldSave = async (
+    value?: string,
+    signatureImageUrl?: string
+  ) => {
     if (!activeFieldId) return;
 
     await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
@@ -622,7 +662,8 @@ function SigningPage() {
   // Check for main signature field
   const mainSignatureField = fields.find((f) => f.isMainSignature === true);
   const isMainSignatureFilled = mainSignatureField?.isFilled || false;
-  const unfilledRequiredCount = requiredFields.length - filledRequiredFields.length;
+  const unfilledRequiredCount =
+    requiredFields.length - filledRequiredFields.length;
 
   // Check if recipient has already completed their action
   const isCompleted =
@@ -664,7 +705,7 @@ function SigningPage() {
   ]);
   const activeField = useMemo(
     () => (activeFieldId ? fields.find((f) => f._id === activeFieldId) : null),
-    [activeFieldId, fields],
+    [activeFieldId, fields]
   );
 
   // Check if document is waiting for payment (all signed, payment pending)
@@ -682,7 +723,12 @@ function SigningPage() {
     } else if (doc.redirectUrl) {
       setShowRedirect(true);
     }
-  }, [isCompleted, recipient.status, recipient.awaitingDictation, doc.redirectUrl]);
+  }, [
+    isCompleted,
+    recipient.status,
+    recipient.awaitingDictation,
+    doc.redirectUrl,
+  ]);
 
   // Sort fields by page and position for navigation
   const sortedFields = [...fields].sort((a, b) => {
@@ -735,7 +781,10 @@ function SigningPage() {
   const navigateToPreviousField = useCallback(() => {
     if (unfilledFields.length === 0) return;
 
-    const prevIndex = currentFieldIndex === 0 ? unfilledFields.length - 1 : currentFieldIndex - 1;
+    const prevIndex =
+      currentFieldIndex === 0
+        ? unfilledFields.length - 1
+        : currentFieldIndex - 1;
     setCurrentFieldIndex(prevIndex);
     const prevField = unfilledFields[prevIndex];
     if (prevField) {
@@ -856,8 +905,8 @@ function SigningPage() {
             </div>
           </div>
           <p className="text-muted-foreground text-xs">
-            This page updates automatically. You can also close it and return via the link in your
-            email.
+            This page updates automatically. You can also close it and return
+            via the link in your email.
           </p>
         </div>
       </div>
@@ -913,7 +962,7 @@ function SigningPage() {
       <header
         className={cn(
           "border-border/50 bg-card hidden shrink-0 border-b lg:block",
-          isEmbedded && "!hidden",
+          isEmbedded && "!hidden"
         )}
       >
         <div className="flex h-14 items-center justify-between px-6">
@@ -942,7 +991,9 @@ function SigningPage() {
               <PenLineIcon className="text-muted-foreground h-4 w-4" />
               <span className="text-muted-foreground text-sm">Sign</span>
               <span className="text-muted-foreground/40">·</span>
-              <span className="max-w-[300px] truncate text-sm font-medium">{doc.name}</span>
+              <span className="max-w-[300px] truncate text-sm font-medium">
+                {doc.name}
+              </span>
               {/* Completion status inline with document title */}
               {isCompleted && (
                 <>
@@ -952,7 +1003,9 @@ function SigningPage() {
                     aria-live="polite"
                     className={cn(
                       "inline-flex items-center gap-1.5 text-sm font-medium",
-                      recipient.status === "declined" ? "text-destructive" : "text-success",
+                      recipient.status === "declined"
+                        ? "text-destructive"
+                        : "text-success"
                     )}
                   >
                     {recipient.status === "declined" ? (
@@ -985,9 +1038,14 @@ function SigningPage() {
                 <div className="bg-border/60 h-5 w-px" />
               </div>
             )}
-            <span className={statusBadge.className} role="status" aria-live="polite">
+            <span
+              className={statusBadge.className}
+              role="status"
+              aria-live="polite"
+            >
               {statusBadge.icon}
-              {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
+              {recipient.status.charAt(0).toUpperCase() +
+                recipient.status.slice(1)}
             </span>
           </div>
         </div>
@@ -997,7 +1055,7 @@ function SigningPage() {
       <header
         className={cn(
           "border-border/50 bg-background/80 sticky top-0 z-40 border-b backdrop-blur-xl lg:hidden",
-          isEmbedded && "!hidden",
+          isEmbedded && "!hidden"
         )}
       >
         <div className="px-4 py-3">
@@ -1016,7 +1074,9 @@ function SigningPage() {
               ) : (
                 <>
                   <SealLogo size={32} variant="color" />
-                  <span className="text-sm font-semibold tracking-tight">Seal</span>
+                  <span className="text-sm font-semibold tracking-tight">
+                    Seal
+                  </span>
                 </>
               )}
             </a>
@@ -1028,7 +1088,9 @@ function SigningPage() {
                     style={{ width: `${fieldCompletionPercent}%` }}
                   />
                 </div>
-                <span className="text-xs font-medium tabular-nums">{fieldCompletionPercent}%</span>
+                <span className="text-xs font-medium tabular-nums">
+                  {fieldCompletionPercent}%
+                </span>
               </div>
             )}
             {/* Completion status on mobile header */}
@@ -1038,7 +1100,9 @@ function SigningPage() {
                 aria-live="polite"
                 className={cn(
                   "inline-flex items-center gap-1.5 text-xs font-medium",
-                  recipient.status === "declined" ? "text-destructive" : "text-success",
+                  recipient.status === "declined"
+                    ? "text-destructive"
+                    : "text-success"
                 )}
               >
                 {recipient.status === "declined" ? (
@@ -1063,9 +1127,14 @@ function SigningPage() {
             >
               <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
                 <span className="truncate text-sm font-medium">{doc.name}</span>
-                <span className={statusBadge.className} role="status" aria-live="polite">
+                <span
+                  className={statusBadge.className}
+                  role="status"
+                  aria-live="polite"
+                >
                   {statusBadge.icon}
-                  {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
+                  {recipient.status.charAt(0).toUpperCase() +
+                    recipient.status.slice(1)}
                 </span>
               </div>
               {isInfoExpanded ? (
@@ -1081,14 +1150,18 @@ function SigningPage() {
           >
             <div className="space-y-4 px-4 py-4">
               {doc.description && (
-                <p className="text-muted-foreground text-sm">{doc.description}</p>
+                <p className="text-muted-foreground text-sm">
+                  {doc.description}
+                </p>
               )}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="space-y-1">
                   <span className="text-muted-foreground text-xs tracking-wider uppercase">
                     Recipient
                   </span>
-                  <p className="truncate font-medium">{recipient.name || recipient.email}</p>
+                  <p className="truncate font-medium">
+                    {recipient.name || recipient.email}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-muted-foreground text-xs tracking-wider uppercase">
@@ -1096,7 +1169,8 @@ function SigningPage() {
                   </span>
                   <p className="flex items-center gap-1.5 font-medium">
                     {getRoleIcon(recipient.role)}
-                    {recipient.role.charAt(0).toUpperCase() + recipient.role.slice(1)}
+                    {recipient.role.charAt(0).toUpperCase() +
+                      recipient.role.slice(1)}
                   </p>
                 </div>
               </div>
@@ -1115,7 +1189,9 @@ function SigningPage() {
               <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
                 About this document
               </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{doc.description}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {doc.description}
+              </p>
             </div>
           )}
 
@@ -1170,7 +1246,9 @@ function SigningPage() {
                     <p className="truncate text-sm font-medium">
                       {recipient.name || "Not provided"}
                     </p>
-                    <p className="text-muted-foreground truncate text-xs">{recipient.email}</p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {recipient.email}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
@@ -1179,9 +1257,12 @@ function SigningPage() {
                   </div>
                   <div>
                     <p className="font-medium">
-                      {recipient.role.charAt(0).toUpperCase() + recipient.role.slice(1)}
+                      {recipient.role.charAt(0).toUpperCase() +
+                        recipient.role.slice(1)}
                     </p>
-                    <p className="text-muted-foreground text-xs">Assigned role</p>
+                    <p className="text-muted-foreground text-xs">
+                      Assigned role
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1257,7 +1338,9 @@ function SigningPage() {
                       </div>
                       <div>
                         <p className="font-medium">Pending</p>
-                        <p className="text-muted-foreground text-xs">Awaiting your action</p>
+                        <p className="text-muted-foreground text-xs">
+                          Awaiting your action
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1278,7 +1361,8 @@ function SigningPage() {
                           Resume where you left off
                         </p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
-                          {filledRequiredFields.length} of {requiredFields.length} fields completed
+                          {filledRequiredFields.length} of{" "}
+                          {requiredFields.length} fields completed
                         </p>
                         <Button
                           size="sm"
@@ -1286,7 +1370,9 @@ function SigningPage() {
                           className="text-info hover:bg-info-surface mt-2 h-8 px-0"
                           onClick={() => {
                             if (unfilledFields.length > 0) {
-                              scrollToField(sealAssertPresent(unfilledFields[0])._id);
+                              scrollToField(
+                                sealAssertPresent(unfilledFields[0])._id
+                              );
                             }
                           }}
                           aria-label="Jump to the next incomplete field"
@@ -1309,7 +1395,9 @@ function SigningPage() {
                     <div className="flex items-start gap-3">
                       <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground text-sm font-medium">Payment Required</p>
+                        <p className="text-foreground text-sm font-medium">
+                          Payment Required
+                        </p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
                           Please complete payment below before signing.
                         </p>
@@ -1317,7 +1405,11 @@ function SigningPage() {
                     </div>
                   </div>
                   {paymentConfigs
-                    .filter((c) => c.paymentStatus !== "paid" && c.paymentStatus !== "cancelled")
+                    .filter(
+                      (c) =>
+                        c.paymentStatus !== "paid" &&
+                        c.paymentStatus !== "cancelled"
+                    )
                     .map((config) => (
                       <PaymentFieldSummary
                         key={config._id}
@@ -1331,34 +1423,43 @@ function SigningPage() {
             )}
 
             {/* Payment Section — shown after signing when document is waiting for payment */}
-            {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
-              <>
-                <Separator />
-                <div className="space-y-4">
-                  <div className="border-warning-surface bg-warning-surface/50 rounded-xl border p-4">
-                    <div className="flex items-start gap-3">
-                      <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-foreground text-sm font-medium">Payment Required</p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                          All signatures collected. Please complete payment below.
-                        </p>
+            {isCompleted &&
+              isWaitingForPayment &&
+              paymentConfigs.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <div className="border-warning-surface bg-warning-surface/50 rounded-xl border p-4">
+                      <div className="flex items-start gap-3">
+                        <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-foreground text-sm font-medium">
+                            Payment Required
+                          </p>
+                          <p className="text-muted-foreground mt-0.5 text-xs">
+                            All signatures collected. Please complete payment
+                            below.
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    {paymentConfigs
+                      .filter(
+                        (c) =>
+                          c.paymentStatus !== "paid" &&
+                          c.paymentStatus !== "cancelled"
+                      )
+                      .map((config) => (
+                        <PaymentFieldSummary
+                          key={config._id}
+                          fieldId={config.fieldId}
+                          token={token}
+                          showInlinePayment
+                        />
+                      ))}
                   </div>
-                  {paymentConfigs
-                    .filter((c) => c.paymentStatus !== "paid" && c.paymentStatus !== "cancelled")
-                    .map((config) => (
-                      <PaymentFieldSummary
-                        key={config._id}
-                        fieldId={config.fieldId}
-                        token={token}
-                        showInlinePayment
-                      />
-                    ))}
-                </div>
-              </>
-            )}
+                </>
+              )}
           </div>
 
           {/* Sidebar Footer - Actions */}
@@ -1370,7 +1471,10 @@ function SigningPage() {
                   className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
                   style={
                     branding?.brandColor
-                      ? { backgroundColor: branding.brandColor, borderColor: branding.brandColor }
+                      ? {
+                          backgroundColor: branding.brandColor,
+                          borderColor: branding.brandColor,
+                        }
                       : undefined
                   }
                   onClick={handleSignButtonClick}
@@ -1408,7 +1512,9 @@ function SigningPage() {
               <div className="text-success flex items-center justify-center gap-2">
                 <CheckCircleIcon className="h-5 w-5" />
                 <span className="text-sm font-semibold">
-                  {recipient.status === "approved" ? "Document Approved" : "Document Signed"}
+                  {recipient.status === "approved"
+                    ? "Document Approved"
+                    : "Document Signed"}
                 </span>
               </div>
               <Button
@@ -1457,7 +1563,8 @@ function SigningPage() {
                     </span>
                   </div>
                   <span className="text-muted-foreground text-sm">
-                    {filledRequiredFields.length} of {requiredFields.length} fields
+                    {filledRequiredFields.length} of {requiredFields.length}{" "}
+                    fields
                   </span>
                 </div>
 
@@ -1504,7 +1611,10 @@ function SigningPage() {
           )}
 
           {/* PDF Viewer Area */}
-          <div ref={pdfContainerRef} className="bg-secondary dark:bg-muted/30 flex-1 overflow-auto">
+          <div
+            ref={pdfContainerRef}
+            className="bg-secondary dark:bg-muted/30 flex-1 overflow-auto"
+          >
             <div className="p-4 sm:p-6 lg:p-8">
               <div className="mx-auto max-w-4xl">
                 {/* Page count header */}
@@ -1548,7 +1658,9 @@ function SigningPage() {
                           className="border-destructive/30 bg-card rounded-lg border p-16 text-center shadow-sm"
                           role="alert"
                         >
-                          <p className="text-destructive font-medium">Failed to load PDF</p>
+                          <p className="text-destructive font-medium">
+                            Failed to load PDF
+                          </p>
                           <p className="text-muted-foreground mt-1 text-sm">
                             Please try refreshing the page
                           </p>
@@ -1557,7 +1669,9 @@ function SigningPage() {
                     >
                       {Array.from({ length: numPages ?? 0 }, (_el, index) => {
                         const pageNumber = index + 1;
-                        const fieldsOnPage = fields.filter((f) => f.page === pageNumber);
+                        const fieldsOnPage = fields.filter(
+                          (f) => f.page === pageNumber
+                        );
 
                         return (
                           <div
@@ -1583,7 +1697,8 @@ function SigningPage() {
                             />
                             {/* Render field overlays on top of PDF */}
                             {fieldsOnPage.map((field) => {
-                              const pageDims = pdfPageDimensions.get(pageNumber);
+                              const pageDims =
+                                pdfPageDimensions.get(pageNumber);
                               if (!pageDims) return null;
 
                               return (
@@ -1610,65 +1725,84 @@ function SigningPage() {
                                   pdfPageWidth={pageDims.width}
                                   pdfPageHeight={pageDims.height}
                                   isFilled={field.isFilled}
-                                  isActive={!isCompleted && activeFieldId === field._id}
+                                  isActive={
+                                    !isCompleted && activeFieldId === field._id
+                                  }
                                   signatureDetails={field.signatureDetails}
-                                  paymentInfo={paymentInfoByFieldId.get(field._id)}
-                                  onClick={isCompleted ? () => {} : handleFieldClick}
+                                  paymentInfo={paymentInfoByFieldId.get(
+                                    field._id
+                                  )}
+                                  onClick={
+                                    isCompleted ? () => {} : handleFieldClick
+                                  }
                                 />
                               );
                             })}
                             {/* Page number indicator */}
-                            {numPages && numPages > 1 && (
-                              // vortex-allow-color: signing-view scrim dims content uniformly in both themes
-                              <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
-                                {pageNumber} / {numPages}
-                              </div>
-                            )}
+                            {numPages &&
+                              numPages > 1 && (
+                                // vortex-allow-color: signing-view scrim dims content uniformly in both themes
+                                <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
+                                  {pageNumber} / {numPages}
+                                </div>
+                              )}
                           </div>
                         );
                       })}
                     </Document>
 
                     {/* Signature Stamp - shown when document is completed with no positioned fields */}
-                    {isCompleted && fields.length === 0 && recipient.status === "signed" && (
-                      <div className="border-border/50 bg-card mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
-                        <div className="border-border overflow-hidden rounded-md border">
-                          {/* Signature details stamp - Name, date and time only */}
-                          <div className="bg-card px-4 py-4">
-                            <div className="text-success mb-3 flex items-center gap-2">
-                              <CheckCircleIcon className="h-6 w-6" />
-                              <span className="text-lg font-medium">Document Signed</span>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-muted-foreground text-sm">Signed by:</span>
-                                <span className="text-foreground text-sm font-semibold">
-                                  {recipient.name || recipient.email}
+                    {isCompleted &&
+                      fields.length === 0 &&
+                      recipient.status === "signed" && (
+                        <div className="border-border/50 bg-card mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
+                          <div className="border-border overflow-hidden rounded-md border">
+                            {/* Signature details stamp - Name, date and time only */}
+                            <div className="bg-card px-4 py-4">
+                              <div className="text-success mb-3 flex items-center gap-2">
+                                <CheckCircleIcon className="h-6 w-6" />
+                                <span className="text-lg font-medium">
+                                  Document Signed
                                 </span>
                               </div>
-                              {recipient.signedAt && (
+                              <div className="flex flex-col gap-2">
                                 <div className="flex items-baseline gap-2">
-                                  <span className="text-muted-foreground text-sm">Date:</span>
-                                  <span className="text-foreground text-sm">
-                                    {new Date(recipient.signedAt).toLocaleDateString(undefined, {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    })}{" "}
-                                    at{" "}
-                                    {new Date(recipient.signedAt).toLocaleTimeString(undefined, {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}
+                                  <span className="text-muted-foreground text-sm">
+                                    Signed by:
+                                  </span>
+                                  <span className="text-foreground text-sm font-semibold">
+                                    {recipient.name || recipient.email}
                                   </span>
                                 </div>
-                              )}
+                                {recipient.signedAt && (
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-muted-foreground text-sm">
+                                      Date:
+                                    </span>
+                                    <span className="text-foreground text-sm">
+                                      {new Date(
+                                        recipient.signedAt
+                                      ).toLocaleDateString(undefined, {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "numeric",
+                                      })}{" "}
+                                      at{" "}
+                                      {new Date(
+                                        recipient.signedAt
+                                      ).toLocaleTimeString(undefined, {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 ) : (
                   <div className="border-border/50 bg-card rounded-lg border p-16 text-center shadow-sm">
@@ -1688,7 +1822,7 @@ function SigningPage() {
             <div
               className={cn(
                 "border-border/50 bg-background/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
-                isEmbedded && "!block",
+                isEmbedded && "!block"
               )}
             >
               <div className="flex gap-3">
@@ -1715,7 +1849,9 @@ function SigningPage() {
                     "Submitting..."
                   ) : (
                     <>
-                      {recipient.role === "signer" && <PenLineIcon className="mr-2 h-4 w-4" />}
+                      {recipient.role === "signer" && (
+                        <PenLineIcon className="mr-2 h-4 w-4" />
+                      )}
                       {signingButtonLabel}
                     </>
                   )}
@@ -1732,7 +1868,8 @@ function SigningPage() {
                   <div className="text-success flex items-center justify-center gap-2">
                     <CheckCircleIcon className="h-4 w-4" />
                     <span className="text-xs font-semibold">
-                      {recipient.status === "approved" ? "Approved" : "Signed"} successfully
+                      {recipient.status === "approved" ? "Approved" : "Signed"}{" "}
+                      successfully
                     </span>
                   </div>
                   <Button
@@ -1783,7 +1920,8 @@ function SigningPage() {
           <DialogHeader>
             <DialogTitle>Decline Document</DialogTitle>
             <DialogDescription>
-              Please provide a reason for declining. This will be shared with the document sender.
+              Please provide a reason for declining. This will be shared with
+              the document sender.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -1864,11 +2002,13 @@ function SigningPage() {
           )}
         </div>
       )}
-      {!isEmbedded && branding?.hideSealBranding && branding?.customFooterText && (
-        <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
-          {branding.customFooterText}
-        </div>
-      )}
+      {!isEmbedded &&
+        branding?.hideSealBranding &&
+        branding?.customFooterText && (
+          <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
+            {branding.customFooterText}
+          </div>
+        )}
     </div>
   );
 }

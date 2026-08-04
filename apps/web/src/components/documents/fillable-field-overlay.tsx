@@ -135,7 +135,13 @@ function getSealIconSize(height: number, width: number): number {
   return Math.max(10, Math.min(20, baseDimension * 0.5));
 }
 
-function SealFieldIcon({ size, containerHeight }: { size: number; containerHeight: number }) {
+function SealFieldIcon({
+  size,
+  containerHeight,
+}: {
+  size: number;
+  containerHeight: number;
+}) {
   const containerWidth = size + 6;
   return (
     <div
@@ -158,206 +164,223 @@ function SealFieldIcon({ size, containerHeight }: { size: number; containerHeigh
   );
 }
 
-export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldOverlayProps>(
-  function FillableFieldOverlay(
-    {
-      fieldId,
-      fieldType,
-      label,
-      isRequired,
-      isMainSignature = false,
-      x,
-      y,
-      width,
-      height,
-      page,
-      currentPage,
-      pdfPageWidth,
-      pdfPageHeight,
-      isFilled,
-      isActive = false,
-      validationError,
-      signatureDetails,
-      paymentInfo,
-      onClick,
-    },
-    ref,
-  ) {
-    // Only render on the correct page
-    if (page !== currentPage) {
-      return null;
-    }
+export const FillableFieldOverlay = forwardRef<
+  HTMLButtonElement,
+  FillableFieldOverlayProps
+>(function FillableFieldOverlay(
+  {
+    fieldId,
+    fieldType,
+    label,
+    isRequired,
+    isMainSignature = false,
+    x,
+    y,
+    width,
+    height,
+    page,
+    currentPage,
+    pdfPageWidth,
+    pdfPageHeight,
+    isFilled,
+    isActive = false,
+    validationError,
+    signatureDetails,
+    paymentInfo,
+    onClick,
+  },
+  ref
+) {
+  // Only render on the correct page
+  if (page !== currentPage) {
+    return null;
+  }
 
-    // Calculate absolute position from percentages
-    const absoluteX = (x / 100) * pdfPageWidth;
-    const absoluteY = (y / 100) * pdfPageHeight;
-    const absoluteWidth = (width / 100) * pdfPageWidth;
-    const absoluteHeight = (height / 100) * pdfPageHeight;
+  // Calculate absolute position from percentages
+  const absoluteX = (x / 100) * pdfPageWidth;
+  const absoluteY = (y / 100) * pdfPageHeight;
+  const absoluteWidth = (width / 100) * pdfPageWidth;
+  const absoluteHeight = (height / 100) * pdfPageHeight;
 
-    // Check if this is a filled field that should show the stamp
-    const isFilledField = isFilled && signatureDetails;
+  // Check if this is a filled field that should show the stamp
+  const isFilledField = isFilled && signatureDetails;
 
-    // Format signature date if available
-    const formattedDate = signatureDetails ? formatSignatureDate(signatureDetails.signedAt) : null;
+  // Format signature date if available
+  const formattedDate = signatureDetails
+    ? formatSignatureDate(signatureDetails.signedAt)
+    : null;
 
-    const sealIconSize = getSealIconSize(absoluteHeight, absoluteWidth);
+  const sealIconSize = getSealIconSize(absoluteHeight, absoluteWidth);
 
-    if (isFilledField && signatureDetails) {
-      return (
-        <div
-          className="bg-muted/80 absolute overflow-hidden rounded-sm border"
-          style={{
-            left: `${absoluteX}px`,
-            top: `${absoluteY}px`,
-            width: `${absoluteWidth}px`,
-            height: `${absoluteHeight}px`,
-          }}
-        >
-          <div className="absolute top-0 left-0 z-20">
-            <SealFieldIcon size={sealIconSize} containerHeight={absoluteHeight} />
-          </div>
-          {absoluteHeight >= 50 && (
-            <div
-              // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
-              className="flex h-full flex-col justify-center bg-white/90 py-2 pr-2"
-              style={{ paddingLeft: sealIconSize + 12 }}
-            >
-              <div className="flex flex-col gap-0.5">
-                {/* Field type */}
-                <div className="flex items-baseline gap-1">
-                  <span className="text-muted-foreground text-[9px]">
-                    {getFieldTypeLabel(fieldType)}
-                  </span>
-                </div>
-                {/* Signer name */}
-                <div className="flex items-baseline gap-1">
-                  <span className="text-muted-foreground text-[9px]">Signed by:</span>
-                  <span className="text-foreground truncate text-[10px] font-semibold">
-                    {signatureDetails.signerName || signatureDetails.signerEmail}
-                  </span>
-                </div>
-                {/* Date and time */}
-                {formattedDate && (
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-muted-foreground text-[9px]">Date:</span>
-                    <span className="text-foreground/70 text-[9px]">
-                      {formattedDate.date} at {formattedDate.time}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {absoluteHeight < 50 && absoluteHeight >= 30 && (
-            <div
-              // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
-              className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
-              style={{ paddingLeft: sealIconSize + 10 }}
-            >
-              <div className="text-muted-foreground text-[8px]">
-                <div className="truncate font-medium">{getFieldTypeLabel(fieldType)}</div>
-                <div className="mt-0.5 truncate text-[7px]">
-                  {signatureDetails.signerName || signatureDetails.signerEmail}
-                </div>
-                {formattedDate && (
-                  <div className="mt-0.5 truncate text-[7px]">
-                    {formattedDate.date} at {formattedDate.time}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
+  if (isFilledField && signatureDetails) {
     return (
-      <button
-        ref={ref}
-        type="button"
-        onClick={() => onClick(fieldId)}
-        aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${
-          isMainSignature ? ", main signature" : ""
-        }`}
-        className={cn(
-          "group absolute cursor-pointer rounded-sm border-2 transition-colors",
-          "hover:border-primary hover:bg-primary/5",
-          "flex items-center justify-center text-xs",
-          isFilled
-            ? "border-success bg-success-surface/50"
-            : isRequired
-              ? "border-destructive bg-destructive/5"
-              : "border-info bg-info-surface/30",
-          isActive && "ring-primary border-primary ring-2 ring-offset-2 motion-safe:animate-pulse",
-          isMainSignature && !isActive && "ring-warning ring-2",
-        )}
+      <div
+        className="bg-muted/80 absolute overflow-hidden rounded-sm border"
         style={{
           left: `${absoluteX}px`,
           top: `${absoluteY}px`,
           width: `${absoluteWidth}px`,
           height: `${absoluteHeight}px`,
         }}
-        title={`${label}${isRequired ? " (Required)" : ""}${isMainSignature ? " - Main Signature" : ""} - Click to fill`}
       >
         <div className="absolute top-0 left-0 z-20">
           <SealFieldIcon size={sealIconSize} containerHeight={absoluteHeight} />
         </div>
-        <div
-          className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-1"
-          style={{ paddingLeft: sealIconSize + 10 }}
-        >
-          <div className="flex items-center gap-1">
-            {isMainSignature && <StarIcon className="text-warning h-3 w-3" />}
-            {getFieldIcon(fieldType)}
-            {absoluteWidth > 80 && (
-              <span className="max-w-[60px] truncate text-[10px] font-medium">
+        {absoluteHeight >= 50 && (
+          <div
+            // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
+            className="flex h-full flex-col justify-center bg-white/90 py-2 pr-2"
+            style={{ paddingLeft: sealIconSize + 12 }}
+          >
+            <div className="flex flex-col gap-0.5">
+              {/* Field type */}
+              <div className="flex items-baseline gap-1">
+                <span className="text-muted-foreground text-[9px]">
+                  {getFieldTypeLabel(fieldType)}
+                </span>
+              </div>
+              {/* Signer name */}
+              <div className="flex items-baseline gap-1">
+                <span className="text-muted-foreground text-[9px]">
+                  Signed by:
+                </span>
+                <span className="text-foreground truncate text-[10px] font-semibold">
+                  {signatureDetails.signerName || signatureDetails.signerEmail}
+                </span>
+              </div>
+              {/* Date and time */}
+              {formattedDate && (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-muted-foreground text-[9px]">
+                    Date:
+                  </span>
+                  <span className="text-foreground/70 text-[9px]">
+                    {formattedDate.date} at {formattedDate.time}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {absoluteHeight < 50 && absoluteHeight >= 30 && (
+          <div
+            // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
+            className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
+            style={{ paddingLeft: sealIconSize + 10 }}
+          >
+            <div className="text-muted-foreground text-[8px]">
+              <div className="truncate font-medium">
                 {getFieldTypeLabel(fieldType)}
-              </span>
-            )}
+              </div>
+              <div className="mt-0.5 truncate text-[7px]">
+                {signatureDetails.signerName || signatureDetails.signerEmail}
+              </div>
+              {formattedDate && (
+                <div className="mt-0.5 truncate text-[7px]">
+                  {formattedDate.date} at {formattedDate.time}
+                </div>
+              )}
+            </div>
           </div>
-          {isFilled && absoluteHeight > 25 && (
-            <div className="text-success text-[9px] font-medium">
-              {fieldType === "payment" && paymentInfo
-                ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
-                : "✓ Filled"}
-            </div>
-          )}
-          {!isFilled && isRequired && absoluteHeight > 25 && (
-            <div className="text-destructive text-[9px] font-medium">Required</div>
-          )}
-          {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
-            <div className="text-field-payment text-[9px] font-semibold">
-              {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
-              {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
-            </div>
-          )}
-          {isMainSignature && absoluteHeight > 30 && (
-            <div className="text-warning text-[8px] font-medium">Document Signature</div>
-          )}
-        </div>
-
-        {/* Tooltip for smaller fields — visible on hover and focus */}
-        <div className="bg-popover text-popover-foreground absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block group-focus:block">
-          <div className="font-medium">{label}</div>
-          <div className="text-muted-foreground text-[10px]">
-            {getFieldTypeLabel(fieldType)}
-            {isRequired && " • Required"}
-            {fieldType === "payment" && paymentInfo && (
-              <span className="text-field-payment ml-1 font-semibold">
-                • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
-                {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
-              </span>
-            )}
-          </div>
-
-          {validationError && (
-            <div className="text-destructive mt-1 max-w-[200px] text-[10px]">
-              ⚠ {validationError}
-            </div>
-          )}
-        </div>
-      </button>
+        )}
+      </div>
     );
-  },
-);
+  }
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={() => onClick(fieldId)}
+      aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${
+        isMainSignature ? ", main signature" : ""
+      }`}
+      className={cn(
+        "group absolute cursor-pointer rounded-sm border-2 transition-colors",
+        "hover:border-primary hover:bg-primary/5",
+        "flex items-center justify-center text-xs",
+        isFilled
+          ? "border-success bg-success-surface/50"
+          : isRequired
+            ? "border-destructive bg-destructive/5"
+            : "border-info bg-info-surface/30",
+        isActive &&
+          "ring-primary border-primary ring-2 ring-offset-2 motion-safe:animate-pulse",
+        isMainSignature && !isActive && "ring-warning ring-2"
+      )}
+      style={{
+        left: `${absoluteX}px`,
+        top: `${absoluteY}px`,
+        width: `${absoluteWidth}px`,
+        height: `${absoluteHeight}px`,
+      }}
+      title={`${label}${isRequired ? " (Required)" : ""}${isMainSignature ? " - Main Signature" : ""} - Click to fill`}
+    >
+      <div className="absolute top-0 left-0 z-20">
+        <SealFieldIcon size={sealIconSize} containerHeight={absoluteHeight} />
+      </div>
+      <div
+        className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-1"
+        style={{ paddingLeft: sealIconSize + 10 }}
+      >
+        <div className="flex items-center gap-1">
+          {isMainSignature && <StarIcon className="text-warning h-3 w-3" />}
+          {getFieldIcon(fieldType)}
+          {absoluteWidth > 80 && (
+            <span className="max-w-[60px] truncate text-[10px] font-medium">
+              {getFieldTypeLabel(fieldType)}
+            </span>
+          )}
+        </div>
+        {isFilled && absoluteHeight > 25 && (
+          <div className="text-success text-[9px] font-medium">
+            {fieldType === "payment" && paymentInfo
+              ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
+              : "✓ Filled"}
+          </div>
+        )}
+        {!isFilled && isRequired && absoluteHeight > 25 && (
+          <div className="text-destructive text-[9px] font-medium">
+            Required
+          </div>
+        )}
+        {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
+          <div className="text-field-payment text-[9px] font-semibold">
+            {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
+            {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
+          </div>
+        )}
+        {isMainSignature && absoluteHeight > 30 && (
+          <div className="text-warning text-[8px] font-medium">
+            Document Signature
+          </div>
+        )}
+      </div>
+
+      {/* Tooltip for smaller fields — visible on hover and focus */}
+      <div className="bg-popover text-popover-foreground absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block group-focus:block">
+        <div className="font-medium">{label}</div>
+        <div className="text-muted-foreground text-[10px]">
+          {getFieldTypeLabel(fieldType)}
+          {isRequired && " • Required"}
+          {fieldType === "payment" && paymentInfo && (
+            <span className="text-field-payment ml-1 font-semibold">
+              • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
+              {formatCurrency(
+                paymentInfo.totalAmountCents,
+                paymentInfo.currency
+              )}
+            </span>
+          )}
+        </div>
+
+        {validationError && (
+          <div className="text-destructive mt-1 max-w-[200px] text-[10px]">
+            ⚠ {validationError}
+          </div>
+        )}
+      </div>
+    </button>
+  );
+});

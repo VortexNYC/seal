@@ -32,10 +32,14 @@ export function AttachmentFieldInput({
   const [isUploading, setIsUploading] = useState(false);
 
   const generateUploadUrl = useMutation({
-    mutationFn: useConvexMutation(api.signature_fields.mutations.generateAttachmentUploadUrl),
+    mutationFn: useConvexMutation(
+      api.signature_fields.mutations.generateAttachmentUploadUrl
+    ),
   });
 
-  const validateValue = (val?: string): { isValid: boolean; error?: string } => {
+  const validateValue = (
+    val?: string
+  ): { isValid: boolean; error?: string } => {
     if (isRequired && !val) {
       return { isValid: false, error: "This field is required" };
     }
@@ -128,9 +132,12 @@ export function AttachmentFieldInput({
           >
             <UploadIcon className="text-muted-foreground h-8 w-8" />
             <div className="text-muted-foreground text-sm">
-              <span className="text-primary font-medium">Click to upload</span> or drag and drop
+              <span className="text-primary font-medium">Click to upload</span>{" "}
+              or drag and drop
             </div>
-            <div className="text-muted-foreground text-xs">Maximum file size: 10MB</div>
+            <div className="text-muted-foreground text-xs">
+              Maximum file size: 10MB
+            </div>
           </label>
         </div>
       ) : (
@@ -138,19 +145,30 @@ export function AttachmentFieldInput({
           <div className="flex items-center gap-2">
             <FileIcon className="text-muted-foreground h-5 w-5" />
             <div>
-              <div className="text-sm font-medium">{fileName || "Uploaded file"}</div>
+              <div className="text-sm font-medium">
+                {fileName || "Uploaded file"}
+              </div>
               <div className="text-muted-foreground text-xs">File attached</div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleRemove} disabled={isUploading}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRemove}
+            disabled={isUploading}
+          >
             <XIcon className="h-4 w-4" />
           </Button>
         </div>
       )}
 
-      {helpText && !error && <p className="text-muted-foreground text-xs">{helpText}</p>}
+      {helpText && !error && (
+        <p className="text-muted-foreground text-xs">{helpText}</p>
+      )}
       {error && <p className="text-destructive text-xs">{error}</p>}
-      {isUploading && <p className="text-muted-foreground text-xs">Uploading...</p>}
+      {isUploading && (
+        <p className="text-muted-foreground text-xs">Uploading...</p>
+      )}
     </div>
   );
 }

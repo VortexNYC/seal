@@ -43,15 +43,21 @@ test.describe("Vortex payments surfaces", () => {
     }, testInfo) => {
       await authenticatedPage.goto(`/${organizationSlug}${route.path}`);
 
-      await expect(authenticatedPage.getByRole("heading", { name: route.heading })).toBeVisible({
+      await expect(
+        authenticatedPage.getByRole("heading", { name: route.heading })
+      ).toBeVisible({
         timeout: 10000,
       });
-      await expect(authenticatedPage.getByText(/something went wrong/i)).not.toBeVisible({
+      await expect(
+        authenticatedPage.getByText(/something went wrong/i)
+      ).not.toBeVisible({
         timeout: 1000,
       });
       await authenticatedPage.screenshot({
         fullPage: true,
-        path: testInfo.outputPath(`${route.path.replaceAll("/", "-").slice(1)}.png`),
+        path: testInfo.outputPath(
+          `${route.path.replaceAll("/", "-").slice(1)}.png`
+        ),
       });
     });
   }

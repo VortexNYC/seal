@@ -3,7 +3,10 @@ import type { Page } from "@playwright/test";
 /**
  * Wait for Convex real-time updates to settle
  */
-export async function waitForConvexUpdate(page: Page, timeout = 3000): Promise<void> {
+export async function waitForConvexUpdate(
+  page: Page,
+  timeout = 3000
+): Promise<void> {
   // Wait briefly for UI updates after Convex mutations.
   await page.waitForLoadState("domcontentloaded", { timeout });
 }
@@ -14,7 +17,7 @@ export async function waitForConvexUpdate(page: Page, timeout = 3000): Promise<v
 export async function waitForText(
   page: Page,
   text: string,
-  options?: { timeout?: number },
+  options?: { timeout?: number }
 ): Promise<void> {
   await page.getByText(text).waitFor({ timeout: options?.timeout || 10000 });
 }
@@ -22,7 +25,11 @@ export async function waitForText(
 /**
  * Fill form field by label
  */
-export async function fillByLabel(page: Page, label: string, value: string): Promise<void> {
+export async function fillByLabel(
+  page: Page,
+  label: string,
+  value: string
+): Promise<void> {
   await page.getByLabel(label).fill(value);
 }
 
@@ -32,7 +39,7 @@ export async function fillByLabel(page: Page, label: string, value: string): Pro
 export async function clickButton(
   page: Page,
   name: string,
-  options?: { exact?: boolean },
+  options?: { exact?: boolean }
 ): Promise<void> {
   await page.getByRole("button", { name, exact: options?.exact }).click();
 }
@@ -48,7 +55,10 @@ export async function navigateAndWait(page: Page, url: string): Promise<void> {
 /**
  * Take screenshot with timestamp
  */
-export async function takeTimestampedScreenshot(page: Page, name: string): Promise<void> {
+export async function takeTimestampedScreenshot(
+  page: Page,
+  name: string
+): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   await page.screenshot({ path: `screenshots/${name}-${timestamp}.png` });
 }
@@ -56,7 +66,10 @@ export async function takeTimestampedScreenshot(page: Page, name: string): Promi
 /**
  * Wait for toast notification
  */
-export async function waitForToast(page: Page, message: string | RegExp): Promise<void> {
+export async function waitForToast(
+  page: Page,
+  message: string | RegExp
+): Promise<void> {
   // Sonner toasts are typically in a [data-sonner-toast] element
   await page.locator("[data-sonner-toast]", { hasText: message }).waitFor();
 }
@@ -64,6 +77,9 @@ export async function waitForToast(page: Page, message: string | RegExp): Promis
 /**
  * Check if element is visible
  */
-export async function isVisible(page: Page, selector: string): Promise<boolean> {
+export async function isVisible(
+  page: Page,
+  selector: string
+): Promise<boolean> {
   return await page.locator(selector).isVisible();
 }

@@ -20,7 +20,7 @@ import {
 } from "../access_control";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -128,14 +128,18 @@ describe("access_control", () => {
       const document = await t.run(async (ctx) => {
         return await ctx.db.get(documentId);
       });
-      expect(() => requireOwnership(ownerId, sealAssertPresent(document))).not.toThrow();
+      expect(() =>
+        requireOwnership(ownerId, sealAssertPresent(document))
+      ).not.toThrow();
     });
 
     test("throws ConvexError when userId does not match ownerId", async () => {
       const document = await t.run(async (ctx) => {
         return await ctx.db.get(documentId);
       });
-      expect(() => requireOwnership(otherUserId, sealAssertPresent(document))).toThrow(ConvexError);
+      expect(() =>
+        requireOwnership(otherUserId, sealAssertPresent(document))
+      ).toThrow(ConvexError);
     });
 
     test("throws with default OWNER_REQUIRED message", async () => {
@@ -147,7 +151,9 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect((error as ConvexError<string>).data).toBe(ACCESS_ERRORS.OWNER_REQUIRED);
+        expect((error as ConvexError<string>).data).toBe(
+          ACCESS_ERRORS.OWNER_REQUIRED
+        );
       }
     });
 
@@ -156,7 +162,11 @@ describe("access_control", () => {
         return await ctx.db.get(documentId);
       });
       try {
-        requireOwnership(otherUserId, sealAssertPresent(document), "Custom owner error");
+        requireOwnership(
+          otherUserId,
+          sealAssertPresent(document),
+          "Custom owner error"
+        );
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
@@ -406,7 +416,7 @@ describe("access_control", () => {
         t.run(async (ctx) => {
           const document = sealAssertPresent(await ctx.db.get(documentId));
           return await requireDocumentAccess(ctx, otherUserId, document);
-        }),
+        })
       ).rejects.toThrow(ConvexError);
     });
 
@@ -419,7 +429,9 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(ACCESS_ERRORS.NO_ACCESS);
+        expect(String((error as ConvexError<string>).data)).toContain(
+          ACCESS_ERRORS.NO_ACCESS
+        );
       }
     });
 
@@ -427,12 +439,19 @@ describe("access_control", () => {
       try {
         await t.run(async (ctx) => {
           const document = sealAssertPresent(await ctx.db.get(documentId));
-          return await requireDocumentAccess(ctx, otherUserId, document, "Forbidden");
+          return await requireDocumentAccess(
+            ctx,
+            otherUserId,
+            document,
+            "Forbidden"
+          );
         });
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain("Forbidden");
+        expect(String((error as ConvexError<string>).data)).toContain(
+          "Forbidden"
+        );
       }
     });
   });
@@ -552,7 +571,7 @@ describe("access_control", () => {
         t.run(async (ctx) => {
           const document = sealAssertPresent(await ctx.db.get(documentId));
           await requireManageAccess(ctx, otherUserId, document);
-        }),
+        })
       ).rejects.toThrow(ConvexError);
     });
 
@@ -566,7 +585,7 @@ describe("access_control", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
         expect(String((error as ConvexError<string>).data)).toContain(
-          ACCESS_ERRORS.MANAGE_REQUIRED,
+          ACCESS_ERRORS.MANAGE_REQUIRED
         );
       }
     });
@@ -650,32 +669,49 @@ describe("access_control", () => {
     test("throws ConvexError for non-member", async () => {
       await expect(
         t.run(async (ctx) => {
-          return await requireActiveMembership(ctx, nonMemberUserId, organizationId);
-        }),
+          return await requireActiveMembership(
+            ctx,
+            nonMemberUserId,
+            organizationId
+          );
+        })
       ).rejects.toThrow(ConvexError);
     });
 
     test("throws with default NOT_ORG_MEMBER message", async () => {
       try {
         await t.run(async (ctx) => {
-          return await requireActiveMembership(ctx, nonMemberUserId, organizationId);
+          return await requireActiveMembership(
+            ctx,
+            nonMemberUserId,
+            organizationId
+          );
         });
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(ACCESS_ERRORS.NOT_ORG_MEMBER);
+        expect(String((error as ConvexError<string>).data)).toContain(
+          ACCESS_ERRORS.NOT_ORG_MEMBER
+        );
       }
     });
 
     test("throws with custom error message when provided", async () => {
       try {
         await t.run(async (ctx) => {
-          return await requireActiveMembership(ctx, nonMemberUserId, organizationId, "Not allowed");
+          return await requireActiveMembership(
+            ctx,
+            nonMemberUserId,
+            organizationId,
+            "Not allowed"
+          );
         });
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain("Not allowed");
+        expect(String((error as ConvexError<string>).data)).toContain(
+          "Not allowed"
+        );
       }
     });
   });
@@ -697,7 +733,7 @@ describe("access_control", () => {
       await expect(
         t.run(async (ctx) => {
           return await getDocumentOrThrow(ctx, fakeId);
-        }),
+        })
       ).rejects.toThrow();
     });
 
@@ -725,7 +761,7 @@ describe("access_control", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
         expect(String((error as ConvexError<string>).data)).toContain(
-          ACCESS_ERRORS.DOCUMENT_NOT_FOUND,
+          ACCESS_ERRORS.DOCUMENT_NOT_FOUND
         );
       }
     });
@@ -775,7 +811,7 @@ describe("access_control", () => {
       await expect(
         t.run(async (ctx) => {
           return await getDocumentWithAccessCheck(ctx, otherUserId, documentId);
-        }),
+        })
       ).rejects.toThrow(ConvexError);
     });
 
@@ -784,7 +820,7 @@ describe("access_control", () => {
       await expect(
         t.run(async (ctx) => {
           return await getDocumentWithAccessCheck(ctx, ownerId, fakeId);
-        }),
+        })
       ).rejects.toThrow();
     });
   });
@@ -804,7 +840,7 @@ describe("access_control", () => {
       await expect(
         t.run(async (ctx) => {
           return await getDocumentWithManageCheck(ctx, otherUserId, documentId);
-        }),
+        })
       ).rejects.toThrow(ConvexError);
     });
 
@@ -849,8 +885,13 @@ describe("access_control", () => {
 
       const result = await t.run(async (ctx) => {
         const privateDoc = sealAssertPresent(await ctx.db.get(documentId));
-        const workspaceDoc = sealAssertPresent(await ctx.db.get(workspaceDocId));
-        return await filterAccessibleDocuments(ctx, otherUserId, [privateDoc, workspaceDoc]);
+        const workspaceDoc = sealAssertPresent(
+          await ctx.db.get(workspaceDocId)
+        );
+        return await filterAccessibleDocuments(ctx, otherUserId, [
+          privateDoc,
+          workspaceDoc,
+        ]);
       });
 
       expect(result).toHaveLength(1);

@@ -39,7 +39,7 @@ brandingSettings: v.optional(
 
     // Feature flag
     enabled: v.boolean(), // Master switch
-  }),
+  })
 );
 ```
 

@@ -47,7 +47,7 @@ Seal supports three recipient roles: `signer` (must sign), `viewer` (view only),
 export const recipientRoleTuple = v.union(
   v.literal("signer"),
   v.literal("viewer"),
-  v.literal("approver"),
+  v.literal("approver")
 );
 
 // New
@@ -55,7 +55,7 @@ export const recipientRoleTuple = v.union(
   v.literal("signer"),
   v.literal("viewer"),
   v.literal("approver"),
-  v.literal("assistant"), // New role
+  v.literal("assistant") // New role
 );
 ```
 

@@ -18,7 +18,10 @@ import {
   listComponentApiKeysByOrganization,
   type ComponentResolvedApiKey,
 } from "../lib/componentOrgReads";
-import { createVortexAuthApiKey, revokeVortexAuthApiKey } from "../lib/vortexAuthOrganizations";
+import {
+  createVortexAuthApiKey,
+  revokeVortexAuthApiKey,
+} from "../lib/vortexAuthOrganizations";
 
 const SEAL_API_TOKEN_PREFIX = "seal";
 
@@ -36,7 +39,7 @@ const apiScopeValidator = v.union(
   v.literal("seal:settings:write"),
   v.literal("seal:audit:read"),
   v.literal("seal:contacts:read"),
-  v.literal("seal:contacts:write"),
+  v.literal("seal:contacts:write")
 );
 
 export const createApiKey = mutation({
@@ -61,7 +64,9 @@ export const createApiKey = mutation({
       tokenPrefix: SEAL_API_TOKEN_PREFIX,
       randomUUID: () => crypto.randomUUID(),
     });
-    const secret = createApiKeySecret({ randomUUID: () => crypto.randomUUID() });
+    const secret = createApiKeySecret({
+      randomUUID: () => crypto.randomUUID(),
+    });
     const token = formatApiKeyToken({ keyPrefix, secret });
     const keyHash = await hashApiKeySecret(secret);
 
@@ -83,7 +88,10 @@ export const listApiKeys = query({
   args: {},
   handler: async (ctx) => {
     const auth = await getAuthContext(ctx);
-    const keys = await listComponentApiKeysByOrganization(ctx, auth.organization);
+    const keys = await listComponentApiKeysByOrganization(
+      ctx,
+      auth.organization
+    );
     return keys.map((k: ComponentResolvedApiKey) => ({
       id: k._id,
       name: k.name,
@@ -134,7 +142,10 @@ export const revokeApiKey = mutation({
       throw new ConvexError("You do not have permission to revoke API keys");
     }
     // Ensure the key belongs to the caller's organization before revoking.
-    const keys = await listComponentApiKeysByOrganization(ctx, auth.organization);
+    const keys = await listComponentApiKeysByOrganization(
+      ctx,
+      auth.organization
+    );
     if (!keys.some((k) => k._id === args.apiKeyId)) {
       throw new ConvexError("API key not found in this organization");
     }

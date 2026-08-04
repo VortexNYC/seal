@@ -32,10 +32,16 @@
 import { defineTable } from "convex/server";
 import { type Infer, v } from "convex/values";
 
-export const folderTypeTuple = v.union(v.literal("document"), v.literal("template"));
+export const folderTypeTuple = v.union(
+  v.literal("document"),
+  v.literal("template")
+);
 export type FolderType = Infer<typeof folderTypeTuple>;
 
-export const folderVisibilityTuple = v.union(v.literal("everyone"), v.literal("admin"));
+export const folderVisibilityTuple = v.union(
+  v.literal("everyone"),
+  v.literal("admin")
+);
 export type FolderVisibility = Infer<typeof folderVisibilityTuple>;
 
 export const foldersTable = defineTable({
@@ -60,7 +66,11 @@ export const foldersTable = defineTable({
 Add import:
 
 ```typescript
-import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
+import {
+  foldersTable,
+  type FolderType,
+  type FolderVisibility,
+} from "./schemas/folders";
 ```
 
 Add type re-exports:
@@ -139,7 +149,7 @@ import { adminMutation, authMutation } from "../auth";
 async function getAncestorDepth(
   db: { get: (id: unknown) => Promise<{ parentId?: string } | null> },
   parentId: string | undefined,
-  maxDepth: number,
+  maxDepth: number
 ): Promise<number> {
   let current = parentId;
   let depth = 0;
@@ -148,9 +158,9 @@ async function getAncestorDepth(
     if (depth > maxDepth) {
       throw new ConvexError(`Folder nesting cannot exceed ${maxDepth} levels`);
     }
-    const parent = await (db as { get(id: string): Promise<{ parentId?: string } | null> }).get(
-      current,
-    );
+    const parent = await (
+      db as { get(id: string): Promise<{ parentId?: string } | null> }
+    ).get(current);
     if (!parent) break;
     current = parent.parentId;
   }
@@ -161,7 +171,7 @@ async function getAncestorDepth(
 async function detectCircularReference(
   db: { get: (id: unknown) => Promise<{ parentId?: string } | null> },
   folderId: string,
-  newParentId: string | undefined,
+  newParentId: string | undefined
 ): Promise<void> {
   if (!newParentId) return; // Moving to root is always safe
   let current: string | undefined = newParentId;
@@ -170,9 +180,9 @@ async function detectCircularReference(
     if (current === folderId) {
       throw new ConvexError("Cannot move a folder into its own descendant");
     }
-    const folder = await (db as { get(id: string): Promise<{ parentId?: string } | null> }).get(
-      current,
-    );
+    const folder = await (
+      db as { get(id: string): Promise<{ parentId?: string } | null> }
+    ).get(current);
     if (!folder) break;
     current = folder.parentId;
     depth++;
@@ -317,7 +327,10 @@ export const moveToFolder = adminMutation({
     // Validate new parent
     if (args.newParentId) {
       const newParent = await ctx.db.get(args.newParentId);
-      if (!newParent || newParent.organizationId !== ctx.auth.organization._id) {
+      if (
+        !newParent ||
+        newParent.organizationId !== ctx.auth.organization._id
+      ) {
         throw new ConvexError("Target folder not found");
       }
       if (newParent.type !== folder.type) {
@@ -372,11 +385,16 @@ export const moveItemsToFolder = adminMutation({
     // Validate target folder if provided
     if (args.targetFolderId) {
       const targetFolder = await ctx.db.get(args.targetFolderId);
-      if (!targetFolder || targetFolder.organizationId !== ctx.auth.organization._id) {
+      if (
+        !targetFolder ||
+        targetFolder.organizationId !== ctx.auth.organization._id
+      ) {
         throw new ConvexError("Target folder not found");
       }
       if (targetFolder.type !== args.itemType) {
-        throw new ConvexError(`Cannot move ${args.itemType}s into a ${targetFolder.type} folder`);
+        throw new ConvexError(
+          `Cannot move ${args.itemType}s into a ${targetFolder.type} folder`
+        );
       }
     }
 
@@ -451,7 +469,7 @@ export const listFolders = authQuery({
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
+        q.eq("userId", userId).eq("organizationId", args.organizationId)
       )
       .first();
 
@@ -463,19 +481,25 @@ export const listFolders = authQuery({
     const allFolders = await ctx.db
       .query("folders")
       .withIndex("by_org_type", (q) =>
-        q.eq("organizationId", args.organizationId).eq("type", args.type),
+        q.eq("organizationId", args.organizationId).eq("type", args.type)
       )
       .collect();
 
     // Filter by parentId (in-memory since Convex can't do optional index prefix + filter)
     const filtered = allFolders.filter((f) => {
       // Match parentId (undefined for root)
-      if (args.parentId ? f.parentId !== args.parentId : f.parentId !== undefined) {
+      if (
+        args.parentId ? f.parentId !== args.parentId : f.parentId !== undefined
+      ) {
         return false;
       }
       // Visibility: everyone sees "everyone" folders, only admin/owner sees "admin" folders
       // Exception: creator always sees their own folders
-      if (f.visibility === "admin" && !isAdminOrOwner && f.createdBy !== userId) {
+      if (
+        f.visibility === "admin" &&
+        !isAdminOrOwner &&
+        f.createdBy !== userId
+      ) {
         return false;
       }
       return true;
@@ -535,7 +559,7 @@ export const getAllFoldersFlat = authQuery({
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", userId).eq("organizationId", args.organizationId),
+        q.eq("userId", userId).eq("organizationId", args.organizationId)
       )
       .first();
 
@@ -545,13 +569,17 @@ export const getAllFoldersFlat = authQuery({
     const allFolders = await ctx.db
       .query("folders")
       .withIndex("by_org_type", (q) =>
-        q.eq("organizationId", args.organizationId).eq("type", args.type),
+        q.eq("organizationId", args.organizationId).eq("type", args.type)
       )
       .collect();
 
     return allFolders
       .filter((f) => {
-        if (f.visibility === "admin" && !isAdminOrOwner && f.createdBy !== userId) {
+        if (
+          f.visibility === "admin" &&
+          !isAdminOrOwner &&
+          f.createdBy !== userId
+        ) {
           return false;
         }
         return true;
@@ -805,7 +833,11 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   <ResizablePanel defaultSize={80}>
     {/* Existing document list content */}
     {folderId && (
-      <FolderBreadcrumbs folderId={folderId} type="document" onNavigate={handleFolderSelect} />
+      <FolderBreadcrumbs
+        folderId={folderId}
+        type="document"
+        onNavigate={handleFolderSelect}
+      />
     )}
     {/* ... rest of page */}
   </ResizablePanel>

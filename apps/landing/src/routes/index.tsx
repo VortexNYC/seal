@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { StaticCta } from "~/components/sections/cta-block";
 import { StaticFeatures } from "~/components/sections/features-block";
 import { StaticHero } from "~/components/sections/hero-block";
@@ -34,7 +35,10 @@ export const Route = createFileRoute("/")({
         content:
           "E-signatures, built-in payments, AI clause review, and a full REST API. Free to start.",
       },
-      { name: "twitter:image", content: "https://seal.co/favicon/og-image.png" },
+      {
+        name: "twitter:image",
+        content: "https://seal.co/favicon/og-image.png",
+      },
     ],
   }),
   component: Home,

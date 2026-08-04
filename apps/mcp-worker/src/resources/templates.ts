@@ -12,7 +12,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers template resources with the MCP server.
  */
-export function registerTemplateResources(server: McpServer, client: SealApiClient): void {
+export function registerTemplateResources(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // List all templates resource
   server.resource(
     "templates",
@@ -26,13 +29,13 @@ export function registerTemplateResources(server: McpServer, client: SealApiClie
       const response = await client.get<PaginatedResponse<ApiTemplate>>(
         "/templates",
         { limit: 50, status: "active" },
-        authToken,
+        authToken
       );
 
       const text = response.data
         .map(
           (template) =>
-            `- ${template.name} (${template.id})\n  Used: ${template.use_count} times | Fields: ${template.field_count ?? "unknown"}`,
+            `- ${template.name} (${template.id})\n  Used: ${template.use_count} times | Fields: ${template.field_count ?? "unknown"}`
         )
         .join("\n\n");
 
@@ -45,7 +48,7 @@ export function registerTemplateResources(server: McpServer, client: SealApiClie
           },
         ],
       };
-    },
+    }
   );
 
   // Resource template for individual templates
@@ -61,11 +64,9 @@ export function registerTemplateResources(server: McpServer, client: SealApiClie
       const templateId = id as string;
 
       // Get template with fields
-      const template = await client.get<ApiTemplate & { fields?: ApiTemplateField[] }>(
-        "/templates/get",
-        { id: templateId, include_fields: true },
-        authToken,
-      );
+      const template = await client.get<
+        ApiTemplate & { fields?: ApiTemplateField[] }
+      >("/templates/get", { id: templateId, include_fields: true }, authToken);
 
       let text = `# ${template.name}\n\n`;
       text += `**ID:** ${template.id}\n`;
@@ -110,6 +111,6 @@ export function registerTemplateResources(server: McpServer, client: SealApiClie
           },
         ],
       };
-    },
+    }
   );
 }

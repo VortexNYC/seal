@@ -24,7 +24,10 @@ export class TeamSettingsPage {
     await this.heading.waitFor({ state: "visible", timeout: 10000 });
   }
 
-  async inviteMember(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
+  async inviteMember(
+    email: string,
+    role: "Owner" | "Admin" | "Member"
+  ): Promise<void> {
     await this.inviteMemberButton.click();
 
     // Fill invitation form
@@ -53,7 +56,10 @@ export class TeamSettingsPage {
     await this.page.waitForTimeout(500);
   }
 
-  async updateMemberRole(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
+  async updateMemberRole(
+    email: string,
+    role: "Owner" | "Admin" | "Member"
+  ): Promise<void> {
     const memberRow = this.page.locator(`[data-member-email="${email}"]`);
     await memberRow.getByRole("button", { name: /change role/i }).click();
     await this.page.getByRole("option", { name: role }).click();
@@ -63,7 +69,10 @@ export class TeamSettingsPage {
 
   async getMemberCount(): Promise<number> {
     // Wait for the members table to render with at least one row
-    await this.membersList.locator("tbody tr").first().waitFor({ state: "visible", timeout: 5000 });
+    await this.membersList
+      .locator("tbody tr")
+      .first()
+      .waitFor({ state: "visible", timeout: 5000 });
     const members = await this.membersList.locator("tbody tr").count();
     return members;
   }

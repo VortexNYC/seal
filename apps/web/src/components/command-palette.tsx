@@ -24,7 +24,11 @@ import {
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -71,7 +75,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const hasActiveFilters = workflowStatus !== "all" || dateFrom !== "" || dateTo !== "";
+  const hasActiveFilters =
+    workflowStatus !== "all" || dateFrom !== "" || dateTo !== "";
 
   // Run search when debounced query or filters change
   useEffect(() => {
@@ -117,10 +122,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (documentId: string) => {
       onOpenChange(false);
       if (slug) {
-        navigate({ to: "/$slug/documents/$documentId", params: { slug, documentId } });
+        navigate({
+          to: "/$slug/documents/$documentId",
+          params: { slug, documentId },
+        });
       }
     },
-    [navigate, onOpenChange, slug],
+    [navigate, onOpenChange, slug]
   );
 
   const clearFilters = useCallback(() => {
@@ -136,7 +144,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       title="Search Documents"
       description="Search across all workspace documents"
     >
-      <CommandInput placeholder="Search documents..." value={query} onValueChange={setQuery} />
+      <CommandInput
+        placeholder="Search documents..."
+        value={query}
+        onValueChange={setQuery}
+      />
 
       {/* Inline filter bar */}
       <div className="flex items-center gap-2 border-b px-3 py-2">
@@ -159,7 +171,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CalendarIcon className="h-3 w-3" />
               Date
               {(dateFrom || dateTo) && (
-                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[9px]">
+                <Badge
+                  variant="secondary"
+                  className="ml-1 px-1 py-0 text-[9px]"
+                >
                   set
                 </Badge>
               )}
@@ -211,7 +226,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <CommandEmpty>No documents found.</CommandEmpty>
         ) : (
           results.length > 0 && (
-            <CommandGroup heading={`${results.length} result${results.length !== 1 ? "s" : ""}`}>
+            <CommandGroup
+              heading={`${results.length} result${results.length !== 1 ? "s" : ""}`}
+            >
               {results.map((result) => (
                 <CommandItem
                   key={`${result.documentId}-${result.pageNumber}`}
@@ -240,7 +257,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         )}
       </CommandList>
       <div className="text-muted-foreground border-t px-3 py-2 text-[10px]">
-        <kbd className="bg-muted rounded border px-1">&uarr;&darr;</kbd> navigate
+        <kbd className="bg-muted rounded border px-1">&uarr;&darr;</kbd>{" "}
+        navigate
         <span className="mx-2">&middot;</span>
         <kbd className="bg-muted rounded border px-1">&crarr;</kbd> select
         <span className="mx-2">&middot;</span>

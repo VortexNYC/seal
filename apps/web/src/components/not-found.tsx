@@ -29,7 +29,11 @@ export function NotFound({ children }: { children?: ReactNode }) {
       role="alert"
       aria-live="polite"
     >
-      <Card ref={cardRef} tabIndex={-1} className="w-full max-w-2xl focus:outline-none">
+      <Card
+        ref={cardRef}
+        tabIndex={-1}
+        className="w-full max-w-2xl focus:outline-none"
+      >
         <CardHeader className="text-center">
           <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
             <FileQuestion className="text-muted-foreground h-6 w-6" />
@@ -42,7 +46,8 @@ export function NotFound({ children }: { children?: ReactNode }) {
 
         <CardContent>
           <p className="text-muted-foreground text-center text-sm">
-            The page may have been moved, deleted, or the URL might be incorrect.
+            The page may have been moved, deleted, or the URL might be
+            incorrect.
           </p>
         </CardContent>
 

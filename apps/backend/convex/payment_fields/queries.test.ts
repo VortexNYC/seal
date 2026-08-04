@@ -98,9 +98,12 @@ describe("Payment field queries", () => {
 
   describe("getPaymentConfigByField", () => {
     test("returns null when no config exists", async () => {
-      const result = await t.query(api.payment_fields.queries.getPaymentConfigByField, {
-        fieldId: paymentFieldId,
-      });
+      const result = await t.query(
+        api.payment_fields.queries.getPaymentConfigByField,
+        {
+          fieldId: paymentFieldId,
+        }
+      );
 
       expect(result).toBeNull();
     });
@@ -112,7 +115,14 @@ describe("Payment field queries", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Service", quantity: 1, unitPrice: 5000 }],
+          items: [
+            {
+              id: "item-1",
+              description: "Service",
+              quantity: 1,
+              unitPrice: 5000,
+            },
+          ],
           currency: "usd",
           dueDateTerms: "on_receipt",
           allowedPaymentMethods: ["card"],
@@ -125,9 +135,12 @@ describe("Payment field queries", () => {
         });
       });
 
-      const result = await t.query(api.payment_fields.queries.getPaymentConfigByField, {
-        fieldId: paymentFieldId,
-      });
+      const result = await t.query(
+        api.payment_fields.queries.getPaymentConfigByField,
+        {
+          fieldId: paymentFieldId,
+        }
+      );
 
       expect(result).toBeDefined();
       expect(result?.paymentType).toBe("one_time");
@@ -138,9 +151,12 @@ describe("Payment field queries", () => {
 
   describe("getPaymentConfigsByDocument", () => {
     test("returns empty array when no configs exist", async () => {
-      const results = await t.query(api.payment_fields.queries.getPaymentConfigsByDocument, {
-        documentId,
-      });
+      const results = await t.query(
+        api.payment_fields.queries.getPaymentConfigsByDocument,
+        {
+          documentId,
+        }
+      );
 
       expect(results).toEqual([]);
     });
@@ -187,7 +203,14 @@ describe("Payment field queries", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Fee A", quantity: 1, unitPrice: 5000 }],
+          items: [
+            {
+              id: "item-1",
+              description: "Fee A",
+              quantity: 1,
+              unitPrice: 5000,
+            },
+          ],
           currency: "usd",
           dueDateTerms: "on_receipt",
           allowedPaymentMethods: ["card"],
@@ -203,7 +226,14 @@ describe("Payment field queries", () => {
           documentId,
           organizationId,
           paymentType: "recurring",
-          items: [{ id: "item-2", description: "Fee B", quantity: 1, unitPrice: 10000 }],
+          items: [
+            {
+              id: "item-2",
+              description: "Fee B",
+              quantity: 1,
+              unitPrice: 10000,
+            },
+          ],
           currency: "usd",
           dueDateTerms: "net_30",
           recurringConfig: {
@@ -221,15 +251,17 @@ describe("Payment field queries", () => {
         });
       });
 
-      const results = await t.query(api.payment_fields.queries.getPaymentConfigsByDocument, {
-        documentId,
-      });
+      const results = await t.query(
+        api.payment_fields.queries.getPaymentConfigsByDocument,
+        {
+          documentId,
+        }
+      );
 
       expect(results).toHaveLength(2);
-      expect(results.map((r: (typeof results)[number]) => r.paymentType).sort()).toEqual([
-        "one_time",
-        "recurring",
-      ]);
+      expect(
+        results.map((r: (typeof results)[number]) => r.paymentType).sort()
+      ).toEqual(["one_time", "recurring"]);
     });
 
     test("does not return configs from other documents", async () => {
@@ -255,7 +287,9 @@ describe("Payment field queries", () => {
           documentId,
           organizationId,
           paymentType: "one_time",
-          items: [{ id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 }],
+          items: [
+            { id: "item-1", description: "Fee", quantity: 1, unitPrice: 5000 },
+          ],
           currency: "usd",
           dueDateTerms: "on_receipt",
           allowedPaymentMethods: ["card"],
@@ -269,9 +303,12 @@ describe("Payment field queries", () => {
       });
 
       // Query other document should return empty
-      const results = await t.query(api.payment_fields.queries.getPaymentConfigsByDocument, {
-        documentId: otherDocId,
-      });
+      const results = await t.query(
+        api.payment_fields.queries.getPaymentConfigsByDocument,
+        {
+          documentId: otherDocId,
+        }
+      );
 
       expect(results).toEqual([]);
     });
@@ -288,7 +325,14 @@ describe("Payment field queries", () => {
           documentId,
           organizationId,
           paymentType: "recurring",
-          items: [{ id: "item-1", description: "Monthly Service", quantity: 1, unitPrice: 10000 }],
+          items: [
+            {
+              id: "item-1",
+              description: "Monthly Service",
+              quantity: 1,
+              unitPrice: 10000,
+            },
+          ],
           currency: "usd",
           dueDateTerms: "net_30",
           recurringConfig: {
@@ -312,7 +356,7 @@ describe("Payment field queries", () => {
         return await ctx.db
           .query("payment_field_configs")
           .withIndex("by_provider_subscription", (q) =>
-            q.eq("providerSubscriptionId", subscriptionId),
+            q.eq("providerSubscriptionId", subscriptionId)
           )
           .first();
       });
@@ -328,7 +372,7 @@ describe("Payment field queries", () => {
         return await ctx.db
           .query("payment_field_configs")
           .withIndex("by_provider_subscription", (q) =>
-            q.eq("providerSubscriptionId", "sub_nonexistent"),
+            q.eq("providerSubscriptionId", "sub_nonexistent")
           )
           .first();
       });

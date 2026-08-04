@@ -28,7 +28,10 @@ import {
 type DocumentMutationDbCtx = Pick<MutationCtx, "db" | "runQuery">;
 
 /** Check if the org has AI auto-analyze enabled (defaults to true). */
-async function shouldAutoAnalyze(db: DatabaseReader, organizationId: Id<"organizations">) {
+async function shouldAutoAnalyze(
+  db: DatabaseReader,
+  organizationId: Id<"organizations">
+) {
   const org = await db.get(organizationId);
   return org?.aiSettings?.aiAutoAnalyze !== false;
 }
@@ -36,7 +39,7 @@ async function shouldAutoAnalyze(db: DatabaseReader, organizationId: Id<"organiz
 async function hasEditDocumentAccess(
   ctx: DocumentMutationDbCtx,
   document: Doc<"documents">,
-  userId: Id<"users">,
+  userId: Id<"users">
 ): Promise<boolean> {
   if (document.ownerId === userId) {
     return true;
@@ -44,11 +47,14 @@ async function hasEditDocumentAccess(
 
   const access = await ctx.db
     .query("document_access")
-    .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+    .withIndex("by_document_user", (q) =>
+      q.eq("documentId", document._id).eq("userId", userId)
+    )
     .first();
 
   return (
-    access !== null && (access.permissionLevel === "edit" || access.permissionLevel === "manage")
+    access !== null &&
+    (access.permissionLevel === "edit" || access.permissionLevel === "manage")
   );
 }
 
@@ -94,7 +100,8 @@ function buildDocumentMetadataPatch(args: {
     updateData.description = args.description;
   }
   if (args.redirectUrl !== undefined) {
-    updateData.redirectUrl = args.redirectUrl === null ? undefined : args.redirectUrl;
+    updateData.redirectUrl =
+      args.redirectUrl === null ? undefined : args.redirectUrl;
   }
   if (args.allowDictateNextSigner !== undefined) {
     updateData.allowDictateNextSigner = args.allowDictateNextSigner;
@@ -109,15 +116,19 @@ async function assertTransferOwnershipAllowed(
   callerId: Id<"users">,
   newOwnerId: Id<"users">,
   isAdmin: boolean,
-  isOwner: boolean,
+  isOwner: boolean
 ): Promise<Doc<"users">> {
   if (document.ownerId !== callerId && !isAdmin && !isOwner) {
-    throw new ConvexError("Only the document owner or an admin can transfer ownership");
+    throw new ConvexError(
+      "Only the document owner or an admin can transfer ownership"
+    );
   }
 
   const org = await ctx.db.get(document.organizationId);
   if (!org?.delegateOwnership) {
-    throw new ConvexError("Document ownership transfer is not enabled for this organization");
+    throw new ConvexError(
+      "Document ownership transfer is not enabled for this organization"
+    );
   }
 
   const newOwner = await ctx.db.get(newOwnerId);
@@ -125,7 +136,11 @@ async function assertTransferOwnershipAllowed(
     throw new ConvexError("Target user not found");
   }
 
-  const membership = await resolveComponentMembershipForOrganization(ctx, newOwner, org);
+  const membership = await resolveComponentMembershipForOrganization(
+    ctx,
+    newOwner,
+    org
+  );
   if (!membership) {
     throw new ConvexError("Target user is not a member of this organization");
   }
@@ -136,7 +151,9 @@ async function assertTransferOwnershipAllowed(
 
   const status = document.workflowStatus ?? "draft";
   if (status === "sent" || status === "in_progress") {
-    throw new ConvexError("Cannot transfer ownership of a document that is currently being signed");
+    throw new ConvexError(
+      "Cannot transfer ownership of a document that is currently being signed"
+    );
   }
 
   return newOwner;
@@ -176,7 +193,9 @@ export const createDocument = permissionMutation("documents:create")({
     // 1. Validate file before processing
     const validation = validateFile(args.name, args.fileType, args.fileSize);
     if (!validation.valid) {
-      throw new ConvexError(`File validation failed: ${validation.errors.join(", ")}`);
+      throw new ConvexError(
+        `File validation failed: ${validation.errors.join(", ")}`
+      );
     }
 
     // 2. Verify user is a member of the organization
@@ -187,7 +206,7 @@ export const createDocument = permissionMutation("documents:create")({
     const member = await resolveComponentMembershipForOrganization(
       ctx,
       ctx.auth.user,
-      organization,
+      organization
     );
     if (!member) {
       throw new ConvexError("You are not a member of this organization");
@@ -237,18 +256,32 @@ export const createDocument = permissionMutation("documents:create")({
 
     // 6. Schedule SHA-256 hash computation for document integrity baseline
     // Runs as an action since it needs to download the PDF from storage
-    await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
-      documentId,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.hash_document_action.hashDocument,
+      {
+        documentId,
+      }
+    );
 
     // 7. Schedule PDF text extraction for search indexing
-    await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
-      documentId,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.extract_text_action.extractDocumentText,
+      {
+        documentId,
+      }
+    );
 
     // 8. Schedule AI field analysis pipeline (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, args.organizationId)) {
-      await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId, ctx.auth.user._id);
+      await enqueueAiPipeline(
+        ctx,
+        ctx.db,
+        documentId,
+        args.organizationId,
+        ctx.auth.user._id
+      );
       await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
     }
 
@@ -280,7 +313,9 @@ export const deleteDocument = permissionMutation("documents:delete")({
 
     // 2b. Enforce retention policy — completed documents cannot be deleted within retention period
     if (document.retainUntil && document.retainUntil > Date.now()) {
-      const retainDate = new Date(document.retainUntil).toLocaleDateString("en-US");
+      const retainDate = new Date(document.retainUntil).toLocaleDateString(
+        "en-US"
+      );
       throw new ConvexError({
         code: "RETENTION_POLICY",
         message: `This document is under a legal retention policy and cannot be deleted until ${retainDate}. Completed documents must be retained for 7 years per ESIGN Act compliance.`,
@@ -296,7 +331,9 @@ export const deleteDocument = permissionMutation("documents:delete")({
     // 4. Verify storage exists before scheduling cleanup
     const storageUrl = await ctx.storage.getUrl(document.storageId);
     if (!storageUrl) {
-      console.warn(`Storage ${document.storageId} not found for document ${args.documentId}`);
+      console.warn(
+        `Storage ${document.storageId} not found for document ${args.documentId}`
+      );
       return { success: true, warning: "storage_already_deleted" };
     }
 
@@ -309,7 +346,7 @@ export const deleteDocument = permissionMutation("documents:delete")({
       {
         storageId: document.storageId,
         documentId: args.documentId,
-      },
+      }
     );
 
     return { success: true };
@@ -341,7 +378,8 @@ export const updateDocument = permissionMutation("documents:edit")({
     if (document.workflowStatus === "completed") {
       throw new ConvexError({
         code: "DOCUMENT_IMMUTABLE",
-        message: "Completed documents cannot be modified. They are immutable for legal compliance.",
+        message:
+          "Completed documents cannot be modified. They are immutable for legal compliance.",
       });
     }
 
@@ -379,7 +417,8 @@ export const updateThumbnail = authMutation({
     if (document.workflowStatus === "completed") {
       throw new ConvexError({
         code: "DOCUMENT_IMMUTABLE",
-        message: "Completed documents cannot be modified. They are immutable for legal compliance.",
+        message:
+          "Completed documents cannot be modified. They are immutable for legal compliance.",
       });
     }
 
@@ -389,7 +428,11 @@ export const updateThumbnail = authMutation({
     if (!hasAccess) {
       const organization = await ctx.db.get(document.organizationId);
       const member = organization
-        ? await resolveComponentMembershipForOrganization(ctx, ctx.auth.user, organization)
+        ? await resolveComponentMembershipForOrganization(
+            ctx,
+            ctx.auth.user,
+            organization
+          )
         : null;
       hasAccess = member !== null && isAccountValid(member);
     }
@@ -432,7 +475,9 @@ export const sendDocument = permissionMutation("documents:edit")({
     // 3. Verify document can be sent (draft or expired)
     const currentStatus = document.workflowStatus ?? "draft";
     if (!canSendDocument(currentStatus)) {
-      throw new ConvexError(`Cannot send document with status: ${currentStatus}`);
+      throw new ConvexError(
+        `Cannot send document with status: ${currentStatus}`
+      );
     }
 
     // 4. If re-sending an expired document, reset expired recipients
@@ -446,7 +491,10 @@ export const sendDocument = permissionMutation("documents:edit")({
       const now = Date.now();
       const newExpiresAt = document.expirationPeriod
         ? now +
-          expirationPeriodToMs(document.expirationPeriod.amount, document.expirationPeriod.unit)
+          expirationPeriodToMs(
+            document.expirationPeriod.amount,
+            document.expirationPeriod.unit
+          )
         : undefined;
 
       for (const recipient of recipients) {
@@ -493,7 +541,9 @@ export const cancelDocument = permissionMutation("documents:edit")({
     // 3. Verify document can be cancelled (default to draft for migration)
     const currentStatus = document.workflowStatus ?? "draft";
     if (!canCancelDocument(currentStatus)) {
-      throw new ConvexError(`Cannot cancel document with status: ${currentStatus}`);
+      throw new ConvexError(
+        `Cannot cancel document with status: ${currentStatus}`
+      );
     }
 
     // 4. Transition to cancelled status
@@ -527,7 +577,9 @@ export const completeDocument = permissionMutation("documents:edit")({
     // 3. Verify document can be completed (default to draft for migration)
     const currentStatus = document.workflowStatus ?? "draft";
     if (!canCompleteDocument(currentStatus)) {
-      throw new ConvexError(`Cannot complete document with status: ${currentStatus}`);
+      throw new ConvexError(
+        `Cannot complete document with status: ${currentStatus}`
+      );
     }
 
     // 4. Transition to completed status
@@ -609,7 +661,9 @@ export const updateSignedStorageId = internalMutation({
       try {
         await ctx.storage.delete(document.signedStorageId as Id<"_storage">);
       } catch {
-        console.warn(`Could not delete old signed PDF: ${document.signedStorageId}`);
+        console.warn(
+          `Could not delete old signed PDF: ${document.signedStorageId}`
+        );
       }
     }
 
@@ -645,7 +699,9 @@ export const updateFillableStorageId = internalMutation({
         await ctx.storage.delete(document.fillableStorageId as Id<"_storage">);
       } catch {
         // Ignore errors if the old file doesn't exist
-        console.warn(`Could not delete old fillable PDF: ${document.fillableStorageId}`);
+        console.warn(
+          `Could not delete old fillable PDF: ${document.fillableStorageId}`
+        );
       }
     }
 
@@ -696,9 +752,15 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
     }
 
     // 3. Validate the new file
-    const validation = validateFile(document.name, args.fileType, args.fileSize);
+    const validation = validateFile(
+      document.name,
+      args.fileType,
+      args.fileSize
+    );
     if (!validation.valid) {
-      throw new ConvexError(`File validation failed: ${validation.errors.join(", ")}`);
+      throw new ConvexError(
+        `File validation failed: ${validation.errors.join(", ")}`
+      );
     }
 
     // 4. Snapshot current state before replacing
@@ -730,19 +792,30 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
       userId: ctx.auth.user.authSubject,
       action: "document.updated",
       documentId: args.documentId,
-      newValues: { currentVersion: newVersionNumber, storageId: args.storageId },
+      newValues: {
+        currentVersion: newVersionNumber,
+        storageId: args.storageId,
+      },
       description: `PDF replaced (v${newVersionNumber})`,
       ipAddress: "web-authenticated",
     });
 
     // 7. Schedule hash computation + text extraction for new PDF
-    await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
-      documentId: args.documentId,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.hash_document_action.hashDocument,
+      {
+        documentId: args.documentId,
+      }
+    );
 
-    await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
-      documentId: args.documentId,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.extract_text_action.extractDocumentText,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     // 8. Schedule AI field analysis for new PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
@@ -751,7 +824,7 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
         ctx.db,
         args.documentId,
         document.organizationId,
-        ctx.auth.user._id,
+        ctx.auth.user._id
       );
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
@@ -797,12 +870,16 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     const targetVersion = await ctx.db
       .query("document_versions")
       .withIndex("by_document", (q) =>
-        q.eq("documentId", args.documentId).eq("versionNumber", args.targetVersionNumber),
+        q
+          .eq("documentId", args.documentId)
+          .eq("versionNumber", args.targetVersionNumber)
       )
       .first();
 
     if (!targetVersion) {
-      throw new ConvexError(`Version ${args.targetVersionNumber} not found for this document`);
+      throw new ConvexError(
+        `Version ${args.targetVersionNumber} not found for this document`
+      );
     }
 
     // 4. Snapshot current state before restoring (creates the "before restore" version)
@@ -846,13 +923,21 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     });
 
     // 7. Schedule hash computation + text extraction for restored PDF
-    await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
-      documentId: args.documentId,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.hash_document_action.hashDocument,
+      {
+        documentId: args.documentId,
+      }
+    );
 
-    await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
-      documentId: args.documentId,
-    });
+    await retrier.run(
+      ctx,
+      internal.documents.extract_text_action.extractDocumentText,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     // 8. Schedule AI field analysis for restored PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
@@ -861,7 +946,7 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
         ctx.db,
         args.documentId,
         document.organizationId,
-        ctx.auth.user._id,
+        ctx.auth.user._id
       );
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
@@ -895,7 +980,7 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
       callerId,
       args.newOwnerId,
       isAdmin,
-      isOwner,
+      isOwner
     );
 
     await ctx.db.patch(args.documentId, {
@@ -915,13 +1000,14 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
     // Notify the new owner via email
     await ctx.scheduler.runAfter(
       0,
-      internal.documents.ownership_transfer_action.sendOwnershipTransferredEmail,
+      internal.documents.ownership_transfer_action
+        .sendOwnershipTransferredEmail,
       {
         documentId: args.documentId,
         newOwnerEmail: newOwner.email,
         newOwnerName: newOwner.name ?? newOwner.email,
         documentName: document.name,
-      },
+      }
     );
 
     return { success: true };

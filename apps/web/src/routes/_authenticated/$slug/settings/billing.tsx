@@ -82,7 +82,8 @@ const vortexBillingClassNames = {
   button:
     "inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50",
   description: "text-muted-foreground text-sm text-pretty",
-  empty: "mt-4 rounded-md border border-dashed p-4 text-sm text-muted-foreground",
+  empty:
+    "mt-4 rounded-md border border-dashed p-4 text-sm text-muted-foreground",
   error:
     "mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive",
   header: "space-y-1.5",
@@ -92,7 +93,8 @@ const vortexBillingClassNames = {
   list: "mt-4 grid gap-3 sm:grid-cols-2",
   loading: "mt-4 rounded-md border p-3 text-sm text-muted-foreground",
   metricLabel: "text-muted-foreground",
-  metrics: "mt-4 grid gap-3 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-2",
+  metrics:
+    "mt-4 grid gap-3 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-2",
   metricValue: "font-medium tabular-nums",
   root: "rounded-lg border bg-card p-6 text-card-foreground shadow-sm",
   status:
@@ -101,42 +103,50 @@ const vortexBillingClassNames = {
 } satisfies VortexEmbeddedComponentClassNames;
 
 function BillingSettingsPage() {
-  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails) as
-    | BillingSubscription
-    | null
-    | undefined;
+  const subscription = useQuery(
+    api.payments.billing_queries.getSubscriptionDetails
+  ) as BillingSubscription | null | undefined;
   const plans = useQuery(api.payments.billing_queries.getAvailablePlans) as
     | AvailablePlan[]
     | undefined;
-  const createCheckout = useAction(api.payments.subscription_actions.createCheckoutSession);
-  const createPortal = useAction(api.payments.subscription_actions.createCustomerPortalSession);
+  const createCheckout = useAction(
+    api.payments.subscription_actions.createCheckoutSession
+  );
+  const createPortal = useAction(
+    api.payments.subscription_actions.createCustomerPortalSession
+  );
 
-  const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState<string | null>(null);
+  const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState<
+    string | null
+  >(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const currentUrl = window.location.href;
   const isActiveSubscription = subscription?.status === "active";
-  const isFreePlan = !subscription || subscription.tier === "free" || !isActiveSubscription;
+  const isFreePlan =
+    !subscription || subscription.tier === "free" || !isActiveSubscription;
   const proPlan = plans?.find((plan) => plan.tier === "pro");
   const proMonthlyLookupKey = proPlan?.pricing.monthly?.lookupKey;
 
   const subscriptionSummary = useMemo(
     () => buildSubscriptionActionSummary(subscription, isFreePlan),
-    [isFreePlan, subscription],
+    [isFreePlan, subscription]
   );
   const planComparison = useMemo(
     () => buildPlanComparison(plans, subscription, isFreePlan),
-    [isFreePlan, plans, subscription],
+    [isFreePlan, plans, subscription]
   );
-  const checkoutLookupKeysByPlanId = useMemo<Record<string, string | null | undefined>>(
+  const checkoutLookupKeysByPlanId = useMemo<
+    Record<string, string | null | undefined>
+  >(
     () => ({
       [proPlanId]: proMonthlyLookupKey,
     }),
-    [proMonthlyLookupKey],
+    [proMonthlyLookupKey]
   );
   const environment = useMemo<VortexPaymentsEnvironment>(
     () => (import.meta.env.PROD ? "production" : "development"),
-    [],
+    []
   );
 
   async function handleManageBilling() {
@@ -171,13 +181,15 @@ function BillingSettingsPage() {
       toast.error(
         error instanceof Error && error.message
           ? error.message
-          : "Failed to start checkout. Please try again.",
+          : "Failed to start checkout. Please try again."
       );
       setCheckoutLoadingPlanId(null);
     }
   }
 
-  function handleSubscriptionAction(actionSummary: VortexSubscriptionActionSummaryState) {
+  function handleSubscriptionAction(
+    actionSummary: VortexSubscriptionActionSummaryState
+  ) {
     if (actionSummary.action === "custom") {
       void handleManageBilling();
     }
@@ -187,7 +199,10 @@ function BillingSettingsPage() {
     <PageWrapper
       title="Billing"
       headerActions={
-        <ManageBillingButton portalLoading={portalLoading} onManageBilling={handleManageBilling} />
+        <ManageBillingButton
+          portalLoading={portalLoading}
+          onManageBilling={handleManageBilling}
+        />
       }
     >
       <BillingSettingsContent
@@ -210,7 +225,12 @@ function ManageBillingButton({
   readonly onManageBilling: () => void;
 }) {
   return (
-    <Button variant="outline" size="sm" onClick={onManageBilling} disabled={portalLoading}>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onManageBilling}
+      disabled={portalLoading}
+    >
       {portalLoading ? (
         <Loader2 className="mr-2 size-4 animate-spin" />
       ) : (
@@ -234,7 +254,9 @@ function BillingSettingsContent({
   readonly planComparison: VortexPlanComparisonState;
   readonly subscriptionSummary: VortexSubscriptionActionSummaryState;
   readonly onPlanSelect: (plan: VortexPlanComparisonPlan) => void;
-  readonly onSubscriptionAction: (actionSummary: VortexSubscriptionActionSummaryState) => void;
+  readonly onSubscriptionAction: (
+    actionSummary: VortexSubscriptionActionSummaryState
+  ) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -285,19 +307,24 @@ const proPlanId = "vortex-plan-professional";
 
 function buildSubscriptionActionSummary(
   subscription: BillingSubscription | null | undefined,
-  isFreePlan: boolean,
+  isFreePlan: boolean
 ): VortexSubscriptionActionSummaryState {
   const status = subscriptionActionStatus(subscription, isFreePlan);
   const action = subscriptionAction(status);
-  const planLabel = isFreePlan ? "Free" : (subscription?.planName ?? "Professional");
+  const planLabel = isFreePlan
+    ? "Free"
+    : (subscription?.planName ?? "Professional");
   const renewalAt = subscriptionRenewalAt(subscription);
   const scheduledCancelAt = subscriptionScheduledCancelAt(subscription);
 
   return {
     action,
-    actionDisabledReason: action === "change_plan" ? "Choose a paid plan below." : undefined,
+    actionDisabledReason:
+      action === "change_plan" ? "Choose a paid plan below." : undefined,
     amountDue: isFreePlan ? undefined : subscription?.unitAmount,
-    cadenceLabel: isFreePlan ? "Monthly" : subscriptionCadenceLabel(subscription),
+    cadenceLabel: isFreePlan
+      ? "Monthly"
+      : subscriptionCadenceLabel(subscription),
     currency: subscription?.currency ?? "usd",
     customerId: "current-organization",
     description: subscriptionActionMessage(subscription, isFreePlan),
@@ -313,7 +340,7 @@ function buildSubscriptionActionSummary(
 function buildPlanComparison(
   plans: readonly AvailablePlan[] | undefined,
   subscription: BillingSubscription | null | undefined,
-  isFreePlan: boolean,
+  isFreePlan: boolean
 ): VortexPlanComparisonState {
   const proPlan = plans?.find((plan) => plan.tier === "pro");
   const proMonthly = proPlan?.pricing.monthly;
@@ -325,8 +352,12 @@ function buildPlanComparison(
       cadence: "monthly",
       cadenceLabel: "Monthly",
       currency: proMonthly.currency,
-      description: proPlan.description ?? "Advanced workspace, API, and automation features.",
-      disabledReason: hasProCheckout ? undefined : "Checkout is not configured for this plan.",
+      description:
+        proPlan.description ??
+        "Advanced workspace, API, and automation features.",
+      disabledReason: hasProCheckout
+        ? undefined
+        : "Checkout is not configured for this plan.",
       featureHighlights: parseFeatureHighlights(proPlan.features),
       id: proPlanId,
       priceAmount: Math.round(proMonthly.amount * 100),
@@ -364,27 +395,30 @@ function freePlanRow(isFreePlan: boolean): VortexPlanComparisonPlan {
 
 function subscriptionActionStatus(
   subscription: BillingSubscription | null | undefined,
-  isFreePlan: boolean,
+  isFreePlan: boolean
 ): VortexSubscriptionActionSummaryStatus {
   if (isFreePlan) return "none";
   if (subscription?.cancelAtPeriodEnd) return "scheduled_cancellation";
-  if (subscription?.status === "past_due" || subscription?.status === "unpaid") return "past_due";
+  if (subscription?.status === "past_due" || subscription?.status === "unpaid")
+    return "past_due";
   if (subscription?.status === "canceled") return "canceled";
-  if (subscription?.trialEnd && subscription.trialEnd > Date.now()) return "trialing";
+  if (subscription?.trialEnd && subscription.trialEnd > Date.now())
+    return "trialing";
   return "active";
 }
 
 function subscriptionAction(
-  status: VortexSubscriptionActionSummaryStatus,
+  status: VortexSubscriptionActionSummaryStatus
 ): VortexSubscriptionActionSummaryAction {
   return status === "none" ? "change_plan" : "custom";
 }
 
 function subscriptionActionMessage(
   subscription: BillingSubscription | null | undefined,
-  isFreePlan: boolean,
+  isFreePlan: boolean
 ): string {
-  if (isFreePlan) return "Upgrade when you need API access, webhooks, and team scale.";
+  if (isFreePlan)
+    return "Upgrade when you need API access, webhooks, and team scale.";
   if (subscription?.cancelAtPeriodEnd) {
     return `Access continues until ${formatDate(subscription.currentPeriodEnd)}.`;
   }
@@ -395,20 +429,22 @@ function subscriptionActionMessage(
 }
 
 function subscriptionRenewalAt(
-  subscription: BillingSubscription | null | undefined,
+  subscription: BillingSubscription | null | undefined
 ): string | undefined {
   if (subscription?.cancelAtPeriodEnd) return undefined;
   return formatDate(subscription?.currentPeriodEnd);
 }
 
 function subscriptionScheduledCancelAt(
-  subscription: BillingSubscription | null | undefined,
+  subscription: BillingSubscription | null | undefined
 ): string | undefined {
   if (!subscription?.cancelAtPeriodEnd) return undefined;
   return formatDate(subscription.currentPeriodEnd);
 }
 
-function subscriptionCadenceLabel(subscription: BillingSubscription | null | undefined): string {
+function subscriptionCadenceLabel(
+  subscription: BillingSubscription | null | undefined
+): string {
   if (!subscription) return "Monthly";
   const interval =
     subscription.intervalCount === 1
@@ -431,7 +467,8 @@ function parseFeatureHighlights(features: string | null): readonly string[] {
 
 function formatFeatureLabel(raw: string): string {
   return (
-    featureLabels[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+    featureLabels[raw] ??
+    raw.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
   );
 }
 

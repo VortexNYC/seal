@@ -16,7 +16,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers all team member tools with the MCP server.
  */
-export function registerMemberTools(server: McpServer, client: SealApiClient): void {
+export function registerMemberTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // List members
   server.tool(
     "seal_list_members",
@@ -25,7 +28,11 @@ export function registerMemberTools(server: McpServer, client: SealApiClient): v
     async (args, extra) => {
       const { role } = args as ListMembersInput;
       const authToken = getAuthToken(extra);
-      const response = await client.get<{ data: ApiMember[] }>("/members", { role }, authToken);
+      const response = await client.get<{ data: ApiMember[] }>(
+        "/members",
+        { role },
+        authToken
+      );
 
       return {
         content: [
@@ -35,7 +42,7 @@ export function registerMemberTools(server: McpServer, client: SealApiClient): v
           },
         ],
       };
-    },
+    }
   );
 
   // Get member
@@ -46,7 +53,11 @@ export function registerMemberTools(server: McpServer, client: SealApiClient): v
     async (args, extra) => {
       const { id } = args as GetMemberInput;
       const authToken = getAuthToken(extra);
-      const response = await client.get<ApiMember>("/members/get", { id }, authToken);
+      const response = await client.get<ApiMember>(
+        "/members/get",
+        { id },
+        authToken
+      );
 
       return {
         content: [
@@ -56,6 +67,6 @@ export function registerMemberTools(server: McpServer, client: SealApiClient): v
           },
         ],
       };
-    },
+    }
   );
 }

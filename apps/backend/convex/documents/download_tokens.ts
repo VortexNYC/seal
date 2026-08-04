@@ -38,7 +38,7 @@ export async function createDownloadToken(
     documentId: Id<"documents">;
     issuedTo: string;
     expiresInMs?: number;
-  },
+  }
 ): Promise<string> {
   const rawToken = generateToken();
   const tokenHash = await hashToken(rawToken);
@@ -72,7 +72,7 @@ export const validateAndUseToken = internalMutation({
     v.object({
       valid: v.literal(false),
       error: v.string(),
-    }),
+    })
   ),
   handler: async (ctx, args) => {
     const tokenHash = await hashToken(args.token);
@@ -117,7 +117,9 @@ export const revokeTokensForDocument = internalMutation({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    await Promise.all(tokens.map((t) => ctx.db.patch(t._id, { revoked: true })));
+    await Promise.all(
+      tokens.map((t) => ctx.db.patch(t._id, { revoked: true }))
+    );
 
     return { revoked: tokens.length };
   },
@@ -181,7 +183,9 @@ export const generateDownloadLink = mutation({
     }
 
     if (document.workflowStatus !== "completed") {
-      throw new ConvexError("Download links are only available for completed documents");
+      throw new ConvexError(
+        "Download links are only available for completed documents"
+      );
     }
 
     const email = identity.email;

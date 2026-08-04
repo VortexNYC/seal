@@ -10,13 +10,13 @@ While server functions are ideal for internal RPC, server routes provide traditi
 
 ```tsx
 // Using server functions for webhook endpoints
-export const paymentProviderWebhook = createServerFn({ method: "POST" }).handler(
-  async ({ request }) => {
-    // Server functions aren't designed for raw request handling
-    // No easy access to raw body for signature verification
-    // Response format is JSON by default
-  },
-);
+export const paymentProviderWebhook = createServerFn({
+  method: "POST",
+}).handler(async ({ request }) => {
+  // Server functions aren't designed for raw request handling
+  // No easy access to raw body for signature verification
+  // Response format is JSON by default
+});
 
 // Or exposing internal functions to external consumers
 export const getUsers = createServerFn().handler(async () => {
@@ -88,7 +88,7 @@ export const Route = createFileRoute("/api/webhooks/payment-provider")({
           event = paymentProvider.webhooks.constructEvent(
             rawBody,
             signature,
-            process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET!,
+            process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET!
           );
         } catch (err) {
           console.error("Webhook signature verification failed:", err);

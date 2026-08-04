@@ -4,7 +4,10 @@ import { getAuthContext, memberQuery } from "../auth";
 
 type PaymentStatusFilter = "paid" | "open" | "void" | "all";
 
-function assertActiveOrganization(auth: Awaited<ReturnType<typeof getAuthContext>>, slug: string) {
+function assertActiveOrganization(
+  auth: Awaited<ReturnType<typeof getAuthContext>>,
+  slug: string
+) {
   if (auth.organization.slug !== slug) {
     throw new ConvexError("Organization mismatch");
   }
@@ -22,7 +25,9 @@ export const getRevenueStats = memberQuery({
     // convex-cost-guard-allow: convex-broad-organization-collect — revenue stats require scanning all invoices for the org to compute accurate totals bound=per-tenant
     const invoices = await ctx.db
       .query("document_invoices")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
       .collect();
 
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -58,7 +63,12 @@ export const getTransactionList = memberQuery({
   args: {
     slug: v.string(),
     statusFilter: v.optional(
-      v.union(v.literal("paid"), v.literal("open"), v.literal("void"), v.literal("all")),
+      v.union(
+        v.literal("paid"),
+        v.literal("open"),
+        v.literal("void"),
+        v.literal("all")
+      )
     ),
   },
   handler: async (ctx, args) => {
@@ -66,11 +76,15 @@ export const getTransactionList = memberQuery({
 
     const invoices = await ctx.db
       .query("document_invoices")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
       .order("desc")
       .collect();
 
-    const statusFilter = args.statusFilter satisfies PaymentStatusFilter | undefined;
+    const statusFilter = args.statusFilter satisfies
+      | PaymentStatusFilter
+      | undefined;
     const filtered =
       statusFilter !== undefined && statusFilter !== "all"
         ? invoices.filter((invoice) => invoice.status === statusFilter)
@@ -94,7 +108,7 @@ export const getTransactionList = memberQuery({
           paidAt: invoice.paidAt,
           createdAt: invoice.createdAt,
         };
-      }),
+      })
     );
   },
 });
@@ -108,18 +122,24 @@ export const getActiveSubscriptions = memberQuery({
 
     const configs = await ctx.db
       .query("payment_field_configs")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
       .collect();
 
     const recurring = configs.filter(
-      (config) => config.paymentType === "recurring" && config.providerSubscriptionId !== undefined,
+      (config) =>
+        config.paymentType === "recurring" &&
+        config.providerSubscriptionId !== undefined
     );
 
     return await Promise.all(
       recurring.map(async (config) => {
         const processorSubscriptionId = config.providerSubscriptionId;
         if (processorSubscriptionId === undefined) {
-          throw new ConvexError("Recurring payment is missing processor subscription id");
+          throw new ConvexError(
+            "Recurring payment is missing processor subscription id"
+          );
         }
 
         const document = await ctx.db.get(config.documentId);
@@ -130,7 +150,7 @@ export const getActiveSubscriptions = memberQuery({
             : await ctx.db
                 .query("document_invoices")
                 .withIndex("by_provider_invoice", (q) =>
-                  q.eq("providerInvoiceId", config.providerInvoiceId),
+                  q.eq("providerInvoiceId", config.providerInvoiceId)
                 )
                 .first();
 
@@ -149,7 +169,7 @@ export const getActiveSubscriptions = memberQuery({
           processorSubscriptionId,
           createdAt: config.createdAt,
         };
-      }),
+      })
     );
   },
 });

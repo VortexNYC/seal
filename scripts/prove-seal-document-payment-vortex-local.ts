@@ -10,7 +10,8 @@ type ProofCommand = {
 
 const proofCommands: readonly ProofCommand[] = [
   {
-    label: "Vortex document payment creation stores Vortex ids without non-Vortex provider ids",
+    label:
+      "Vortex document payment creation stores Vortex ids without non-Vortex provider ids",
     command: "bun",
     args: [
       "run",
@@ -21,7 +22,8 @@ const proofCommands: readonly ProofCommand[] = [
     ],
   },
   {
-    label: "Vortex payable webhook projection updates Seal document payment state",
+    label:
+      "Vortex payable webhook projection updates Seal document payment state",
     command: "bun",
     args: [
       "run",
@@ -54,7 +56,9 @@ for (const proofCommand of proofCommands) {
   });
 
   if (result.error !== undefined) {
-    console.error(`[proof] ${proofCommand.label} failed to start: ${result.error.message}`);
+    console.error(
+      `[proof] ${proofCommand.label} failed to start: ${result.error.message}`
+    );
     process.exit(1);
   }
 
@@ -81,6 +85,6 @@ console.log(
       ],
     },
     null,
-    2,
-  ),
+    2
+  )
 );

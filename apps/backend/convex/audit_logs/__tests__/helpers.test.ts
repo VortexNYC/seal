@@ -13,7 +13,7 @@ import {
 } from "../helpers";
 function sealAssertPresent<T>(
   value: T | null | undefined,
-  message = "Expected value to be present.",
+  message = "Expected value to be present."
 ): NonNullable<T> {
   if (value === null || value === undefined) {
     throw new Error(message);
@@ -204,8 +204,12 @@ describe("audit_logs/helpers", () => {
         return await ctx.db.get(logId);
       });
 
-      expect(sealAssertPresent(record).oldValues).toEqual({ title: "Old Title" });
-      expect(sealAssertPresent(record).newValues).toEqual({ title: "New Title" });
+      expect(sealAssertPresent(record).oldValues).toEqual({
+        title: "Old Title",
+      });
+      expect(sealAssertPresent(record).newValues).toEqual({
+        title: "New Title",
+      });
     });
   });
 
@@ -257,7 +261,10 @@ describe("audit_logs/helpers", () => {
       expect(sealAssertPresent(record).recipientId).toBe(recipientId);
       expect(sealAssertPresent(record).actorType).toBe("user");
       expect(sealAssertPresent(record).actorId).toBe("test_user");
-      expect(sealAssertPresent(record).newValues).toEqual({ fieldType: "signature", page: 1 });
+      expect(sealAssertPresent(record).newValues).toEqual({
+        fieldType: "signature",
+        page: 1,
+      });
       expect(sealAssertPresent(record).metadata).toEqual({
         description: "Field created for document",
         source: "web",

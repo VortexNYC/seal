@@ -26,7 +26,10 @@ interface FormSkeletonProps {
   showSubmitButton?: boolean;
 }
 
-export function FormSkeleton({ fields = 3, showSubmitButton = true }: FormSkeletonProps) {
+export function FormSkeleton({
+  fields = 3,
+  showSubmitButton = true,
+}: FormSkeletonProps) {
   return (
     <div className="space-y-6" role="status" aria-label="Loading form">
       {Array.from({ length: fields }).map((_, i) => (

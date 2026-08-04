@@ -13,7 +13,7 @@ import { type Infer, v } from "convex/values";
 export const templateStatusTuple = v.union(
   v.literal("active"),
   v.literal("archived"),
-  v.literal("deleted"),
+  v.literal("deleted")
 );
 export type TemplateStatus = Infer<typeof templateStatusTuple>;
 
@@ -83,7 +83,7 @@ export const templateFieldsTable = defineTable({
       options: v.optional(v.array(v.string())),
       placeholder: v.optional(v.string()),
       defaultValue: v.optional(v.string()),
-    }),
+    })
   ),
 
   // Order for sequential assignment to recipients

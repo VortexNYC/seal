@@ -31,13 +31,17 @@ function AppRedirect() {
 
 function AuthenticatedRedirect() {
   const organizationStatus = useQuery(api.check_membership.hasOrganization);
-  const ensureActiveOrganization = useMutation(api.check_membership.ensureActiveOrganization);
+  const ensureActiveOrganization = useMutation(
+    api.check_membership.ensureActiveOrganization
+  );
   const [isFixingOrg, setIsFixingOrg] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
 
   // null = backend saw no identity yet (auth still attaching). Treat as loading.
-  const isLoading = organizationStatus === undefined || organizationStatus === null;
-  const activeOrganizationSlug = fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
+  const isLoading =
+    organizationStatus === undefined || organizationStatus === null;
+  const activeOrganizationSlug =
+    fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
   const needsActiveOrgFix = organizationStatus?.needsActiveOrgFix ?? false;
 
   // Auto-fix activeOrganizationId if user has membership but no active org set.
@@ -57,7 +61,13 @@ function AuthenticatedRedirect() {
           setIsFixingOrg(false);
         });
     }
-  }, [isLoading, needsActiveOrgFix, isFixingOrg, fixedSlug, ensureActiveOrganization]);
+  }, [
+    isLoading,
+    needsActiveOrgFix,
+    isFixingOrg,
+    fixedSlug,
+    ensureActiveOrganization,
+  ]);
 
   if (isLoading || isFixingOrg) {
     return (
@@ -73,7 +83,12 @@ function AuthenticatedRedirect() {
   }
 
   if (activeOrganizationSlug) {
-    return <Navigate to={buildOrganizationPath(activeOrganizationSlug, "/home")} replace />;
+    return (
+      <Navigate
+        to={buildOrganizationPath(activeOrganizationSlug, "/home")}
+        replace
+      />
+    );
   }
 
   return <Navigate to="/onboarding/choose-organization" replace />;

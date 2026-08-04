@@ -1,8 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeftIcon, FileSearchIcon, HomeIcon, MailIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  FileSearchIcon,
+  HomeIcon,
+  MailIcon,
+} from "lucide-react";
 
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 /**
  * 404 Not Found page component
@@ -20,8 +32,8 @@ export function NotFoundPage() {
           </div>
           <CardTitle className="text-2xl">Page not found</CardTitle>
           <CardDescription className="text-base">
-            Sorry, we couldn't find the page you're looking for. It may have been moved, deleted, or
-            never existed.
+            Sorry, we couldn't find the page you're looking for. It may have
+            been moved, deleted, or never existed.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -38,13 +50,19 @@ export function NotFoundPage() {
               </li>
               <li className="flex items-center gap-2">
                 <span className="bg-muted-foreground size-1.5 rounded-full" />
-                <Link to="/app" className="hover:text-foreground hover:underline">
+                <Link
+                  to="/app"
+                  className="hover:text-foreground hover:underline"
+                >
                   View your dashboard
                 </Link>
               </li>
               <li className="flex items-center gap-2">
                 <span className="bg-muted-foreground size-1.5 rounded-full" />
-                <a href="mailto:support@seal.nyc" className="hover:text-foreground hover:underline">
+                <a
+                  href="mailto:support@seal.nyc"
+                  className="hover:text-foreground hover:underline"
+                >
                   Contact support
                 </a>
               </li>

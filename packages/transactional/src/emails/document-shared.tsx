@@ -56,7 +56,9 @@ export function DocumentShared({
             justifyContent: "center",
           }}
         >
-          <Text style={{ margin: "0", fontSize: "32px", lineHeight: "64px" }}>&#x1F4C4;</Text>
+          <Text style={{ margin: "0", fontSize: "32px", lineHeight: "64px" }}>
+            &#x1F4C4;
+          </Text>
         </div>
       </Section>
 
@@ -90,10 +92,14 @@ export function DocumentShared({
 
         {/* Document card */}
         <Section style={emailStyles.documentCard}>
-          <Text style={{ ...emailStyles.documentTitle, marginBottom: "8px" }}>{documentName}</Text>
+          <Text style={{ ...emailStyles.documentTitle, marginBottom: "8px" }}>
+            {documentName}
+          </Text>
           <Text style={{ ...emailStyles.documentMeta, marginBottom: "4px" }}>
             Your access level:{" "}
-            <strong style={emailStyles.strong}>{permissionLabels[permissionLevel]}</strong>
+            <strong style={emailStyles.strong}>
+              {permissionLabels[permissionLevel]}
+            </strong>
           </Text>
           <Text style={{ ...emailStyles.documentMeta, color: "#6b6560" }}>
             {permissionDescriptions[permissionLevel]}
@@ -107,10 +113,16 @@ export function DocumentShared({
           </Button>
         </Section>
 
-        <Text style={emailStyles.smallText}>Or copy and paste this link into your browser:</Text>
+        <Text style={emailStyles.smallText}>
+          Or copy and paste this link into your browser:
+        </Text>
         <Link
           href={documentUrl}
-          style={{ fontSize: "14px", color: emailStyles.linkColor, wordBreak: "break-all" }}
+          style={{
+            fontSize: "14px",
+            color: emailStyles.linkColor,
+            wordBreak: "break-all",
+          }}
         >
           {documentUrl}
         </Link>

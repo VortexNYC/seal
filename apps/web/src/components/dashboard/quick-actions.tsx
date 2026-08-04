@@ -6,10 +6,21 @@
  */
 
 import { useRouter } from "@tanstack/react-router";
-import { BarChart3Icon, FileTextIcon, LayoutTemplateIcon, UploadIcon } from "lucide-react";
+import {
+  BarChart3Icon,
+  FileTextIcon,
+  LayoutTemplateIcon,
+  UploadIcon,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface QuickActionItem {
@@ -90,7 +101,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
                   "group flex flex-col items-center gap-2 rounded-xl p-4",
                   "bg-secondary/50 hover:bg-secondary",
                   "transition-colors duration-[var(--duration-default)] ease-[var(--ease-enter)]",
-                  "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+                  "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 )}
                 onClick={() =>
                   router.navigate({
@@ -103,7 +114,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
                 <div
                   className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-lg",
-                    action.iconBg,
+                    action.iconBg
                   )}
                 >
                   <Icon className={cn("h-5 w-5", action.iconColor)} />

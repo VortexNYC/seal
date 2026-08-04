@@ -30,7 +30,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export const Route = createFileRoute("/_authenticated/$slug/payments/subscriptions")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/payments/subscriptions"
+)({
   component: SubscriptionsPage,
 });
 
@@ -48,18 +50,27 @@ function formatInterval(interval: string, count: number) {
 
 function SubscriptionsPage() {
   const { slug } = Route.useParams();
-  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
-    slug,
-  });
+  const merchantAccount = useQuery(
+    api.payments.merchant_account_queries.getMerchantAccount,
+    {
+      slug,
+    }
+  );
 
   const subscriptions = useQuery(
     api.payments.queries.getActiveSubscriptions,
-    merchantAccount?.status === "connected" ? { slug } : "skip",
+    merchantAccount?.status === "connected" ? { slug } : "skip"
   );
 
-  const pauseSubscription = useAction(api.payments.subscription_actions.pauseSubscription);
-  const resumeSubscription = useAction(api.payments.subscription_actions.resumeSubscription);
-  const cancelSubscription = useAction(api.payments.subscription_actions.cancelSubscription);
+  const pauseSubscription = useAction(
+    api.payments.subscription_actions.pauseSubscription
+  );
+  const resumeSubscription = useAction(
+    api.payments.subscription_actions.resumeSubscription
+  );
+  const cancelSubscription = useAction(
+    api.payments.subscription_actions.cancelSubscription
+  );
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -108,12 +119,18 @@ function SubscriptionsPage() {
   };
 
   return (
-    <PageWrapper title="Subscriptions" description="Manage recurring payments from your documents.">
+    <PageWrapper
+      title="Subscriptions"
+      description="Manage recurring payments from your documents."
+    >
       <div className="mt-6">
         {subscriptions === undefined ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton className="h-12 w-full" key={`skeleton-${i.toString()}`} />
+              <Skeleton
+                className="h-12 w-full"
+                key={`skeleton-${i.toString()}`}
+              />
             ))}
           </div>
         ) : subscriptions.length === 0 ? (
@@ -121,7 +138,8 @@ function SubscriptionsPage() {
             <RefreshCw className="mx-auto mb-3 size-8 opacity-50" />
             <p className="text-sm">No active subscriptions</p>
             <p className="mt-1 text-xs">
-              Recurring payments will appear here when you send documents with recurring billing.
+              Recurring payments will appear here when you send documents with
+              recurring billing.
             </p>
           </div>
         ) : (
@@ -147,7 +165,9 @@ function SubscriptionsPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          {sub.customerName && <span className="text-sm">{sub.customerName}</span>}
+                          {sub.customerName && (
+                            <span className="text-sm">{sub.customerName}</span>
+                          )}
                           <span className="text-muted-foreground block text-xs">
                             {sub.customerEmail}
                           </span>
@@ -160,7 +180,13 @@ function SubscriptionsPage() {
                         {formatInterval(sub.interval, sub.intervalCount)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={sub.paymentStatus === "paid" ? "default" : "secondary"}>
+                        <Badge
+                          variant={
+                            sub.paymentStatus === "paid"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
                           {sub.paymentStatus}
                         </Badge>
                       </TableCell>
@@ -175,7 +201,9 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() => handlePause(sub.processorSubscriptionId)}
+                                  onClick={() =>
+                                    handlePause(sub.processorSubscriptionId)
+                                  }
                                   aria-label="Pause subscription"
                                 >
                                   <Pause className="size-3.5" />
@@ -185,7 +213,9 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() => handleResume(sub.processorSubscriptionId)}
+                                  onClick={() =>
+                                    handleResume(sub.processorSubscriptionId)
+                                  }
                                   aria-label="Resume subscription"
                                 >
                                   <Play className="size-3.5" />
@@ -204,17 +234,27 @@ function SubscriptionsPage() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
+                                    <AlertDialogTitle>
+                                      Cancel subscription?
+                                    </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will cancel the recurring payment for &ldquo;
-                                      {sub.documentTitle}&rdquo; at the end of the current billing
-                                      period. This action cannot be undone.
+                                      This will cancel the recurring payment for
+                                      &ldquo;
+                                      {sub.documentTitle}&rdquo; at the end of
+                                      the current billing period. This action
+                                      cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Keep active</AlertDialogCancel>
+                                    <AlertDialogCancel>
+                                      Keep active
+                                    </AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleCancel(sub.processorSubscriptionId)}
+                                      onClick={() =>
+                                        handleCancel(
+                                          sub.processorSubscriptionId
+                                        )
+                                      }
                                     >
                                       Cancel subscription
                                     </AlertDialogAction>

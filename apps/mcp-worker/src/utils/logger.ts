@@ -34,7 +34,12 @@ const LOG_LEVELS: Record<LogLevel, number> = {
  * Creates a logger instance with the given options.
  */
 export function createLogger(options: LoggerOptions = {}) {
-  const { minLevel = "info", format = "pretty", prefix = "[Seal MCP]", silent = false } = options;
+  const {
+    minLevel = "info",
+    format = "pretty",
+    prefix = "[Seal MCP]",
+    silent = false,
+  } = options;
 
   function shouldLog(level: LogLevel): boolean {
     if (silent) return false;
@@ -54,7 +59,11 @@ export function createLogger(options: LoggerOptions = {}) {
     return `${prefix} ${entry.message}${contextStr}`;
   }
 
-  function log(level: LogLevel, message: string, context?: Record<string, unknown>): void {
+  function log(
+    level: LogLevel,
+    message: string,
+    context?: Record<string, unknown>
+  ): void {
     if (!shouldLog(level)) return;
 
     const entry: LogEntry = {
@@ -77,10 +86,14 @@ export function createLogger(options: LoggerOptions = {}) {
   }
 
   return {
-    debug: (message: string, context?: Record<string, unknown>) => log("debug", message, context),
-    info: (message: string, context?: Record<string, unknown>) => log("info", message, context),
-    warn: (message: string, context?: Record<string, unknown>) => log("warn", message, context),
-    error: (message: string, context?: Record<string, unknown>) => log("error", message, context),
+    debug: (message: string, context?: Record<string, unknown>) =>
+      log("debug", message, context),
+    info: (message: string, context?: Record<string, unknown>) =>
+      log("info", message, context),
+    warn: (message: string, context?: Record<string, unknown>) =>
+      log("warn", message, context),
+    error: (message: string, context?: Record<string, unknown>) =>
+      log("error", message, context),
   };
 }
 

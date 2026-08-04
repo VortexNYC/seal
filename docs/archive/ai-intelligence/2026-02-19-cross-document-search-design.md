@@ -43,11 +43,14 @@ User query
 ### RAG Component Setup
 
 ```ts
-const documentRag = new RAG<{ status: string; documentId: string }>(components.rag, {
-  textEmbeddingModel: getEmbeddingModel("google/text-embedding-005"),
-  embeddingDimension: 768,
-  filterNames: ["status", "documentId"],
-});
+const documentRag = new RAG<{ status: string; documentId: string }>(
+  components.rag,
+  {
+    textEmbeddingModel: getEmbeddingModel("google/text-embedding-005"),
+    embeddingDimension: 768,
+    filterNames: ["status", "documentId"],
+  }
+);
 ```
 
 - **Namespace:** `workspace:{organizationId}` — tenant isolation
@@ -80,7 +83,9 @@ searchDocuments: createTool({
   description:
     "Search across all workspace documents for relevant content. Returns document excerpts with citations.",
   args: z.object({
-    query: z.string().describe("The search query — what to look for across documents"),
+    query: z
+      .string()
+      .describe("The search query — what to look for across documents"),
   }),
   handler: async (ctx, { query }) => {
     const namespace = `workspace:${ctx.organizationId}`;
@@ -94,16 +99,22 @@ searchDocuments: createTool({
     });
 
     // 2. Convex text search (BM25) on documents.extractedText
-    const textResults = await ctx.runQuery(internal.documents.queries.searchDocumentText, {
-      organizationId: ctx.organizationId,
-      query,
-      limit: 10,
-    });
+    const textResults = await ctx.runQuery(
+      internal.documents.queries.searchDocumentText,
+      {
+        organizationId: ctx.organizationId,
+        query,
+        limit: 10,
+      }
+    );
 
     // 3. Hybrid rank merge via reciprocal rank fusion
     const ragKeys = ragResults.results.map((r) => r.key);
     const textIds = textResults.map((d) => d._id.toString());
-    const ranked = hybridRank([ragKeys, textIds], { k: 60, weights: [1.2, 1.0] });
+    const ranked = hybridRank([ragKeys, textIds], {
+      k: 60,
+      weights: [1.2, 1.0],
+    });
 
     // 4. Format as citations
     return formatSearchResults(ranked, ragResults, textResults);

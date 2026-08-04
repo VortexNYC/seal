@@ -30,7 +30,9 @@ type MerchantAccountSessionResult = {
 };
 
 export function rejectRetiredMerchantSurface(surface: string): never {
-  throw new ConvexError(`${surface} is retired; use Vortex hosted merchant onboarding`);
+  throw new ConvexError(
+    `${surface} is retired; use Vortex hosted merchant onboarding`
+  );
 }
 
 export const createMerchantAccount = action({
@@ -47,7 +49,7 @@ export const createMerchantAccount = action({
       {
         organizationId: args.organizationId,
         feeHandling: args.feeHandling,
-      },
+      }
     );
 
     return {
@@ -72,7 +74,7 @@ export const createMerchantOnboardingLink = action({
       internal.payments.vortex_merchant_actions.createVortexOnboardingLink,
       {
         organizationId: args.organizationId,
-      },
+      }
     );
 
     return {
@@ -134,7 +136,7 @@ export const refreshMerchantAccount = action({
   handler: async (ctx, args): Promise<RefreshMerchantAccountResult> => {
     return await ctx.runAction(
       internal.payments.vortex_merchant_actions.refreshVortexMerchantAccount,
-      args,
+      args
     );
   },
 });

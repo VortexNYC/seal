@@ -10,7 +10,13 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface StatusSegment {
@@ -21,7 +27,9 @@ interface StatusSegment {
 }
 
 export function StatusBreakdown(): React.ReactElement {
-  const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
+  const { data: stats } = useSuspenseQuery(
+    convexQuery(api.dashboard.queries.getDocumentStats, {})
+  );
 
   const breakdown: StatusSegment[] = [
     {
@@ -31,8 +39,18 @@ export function StatusBreakdown(): React.ReactElement {
       dotColor: "bg-muted-foreground",
     },
     { label: "Sent", count: stats.sent, color: "bg-info", dotColor: "bg-info" },
-    { label: "In Progress", count: stats.inProgress, color: "bg-warning", dotColor: "bg-warning" },
-    { label: "Completed", count: stats.completed, color: "bg-success", dotColor: "bg-success" },
+    {
+      label: "In Progress",
+      count: stats.inProgress,
+      color: "bg-warning",
+      dotColor: "bg-warning",
+    },
+    {
+      label: "Completed",
+      count: stats.completed,
+      color: "bg-success",
+      dotColor: "bg-success",
+    },
     {
       label: "Cancelled",
       count: stats.cancelled,
@@ -45,7 +63,12 @@ export function StatusBreakdown(): React.ReactElement {
       color: "bg-destructive",
       dotColor: "bg-destructive",
     },
-    { label: "Expired", count: stats.expired, color: "bg-expired", dotColor: "bg-expired" },
+    {
+      label: "Expired",
+      count: stats.expired,
+      color: "bg-expired",
+      dotColor: "bg-expired",
+    },
   ].filter((item) => item.count > 0);
 
   const total = stats.total || 1;
@@ -79,7 +102,7 @@ export function StatusBreakdown(): React.ReactElement {
                   key={item.label}
                   className={cn(
                     "transition-all duration-[var(--duration-slow)] ease-[var(--ease-enter)]",
-                    item.color,
+                    item.color
                   )}
                   style={{ width: `${(item.count / total) * 100}%` }}
                   title={`${item.label}: ${item.count} (${Math.round((item.count / total) * 100)}%)`}
@@ -94,7 +117,9 @@ export function StatusBreakdown(): React.ReactElement {
                   <div className={cn("h-2 w-2 rounded-full", item.dotColor)} />
                   <span className="text-xs">
                     <span className="text-muted-foreground">{item.label}</span>{" "}
-                    <span className="font-medium tabular-nums">{item.count}</span>
+                    <span className="font-medium tabular-nums">
+                      {item.count}
+                    </span>
                   </span>
                 </div>
               ))}

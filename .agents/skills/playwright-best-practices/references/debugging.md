@@ -176,7 +176,7 @@ When debugging network-dependent issues, wait for specific API responses instead
 ```typescript
 // Start waiting BEFORE triggering the request
 const responsePromise = page.waitForResponse(
-  (resp) => resp.url().includes("/api/data") && resp.status() === 200,
+  (resp) => resp.url().includes("/api/data") && resp.status() === 200
 );
 await page.getByRole("button", { name: "Load" }).click();
 const response = await responsePromise;
@@ -259,7 +259,7 @@ test("debug auth", async ({ page, context }) => {
   const storage = await context.storageState();
   console.log(
     "Cookies:",
-    storage.cookies.map((c) => c.name),
+    storage.cookies.map((c) => c.name)
   );
 
   // Check if auth cookies are present
@@ -359,7 +359,9 @@ test("debug timeout", async ({ page }) => {
 
   // Log network activity
   page.on("request", (request) => console.log(">>", request.url()));
-  page.on("response", (response) => console.log("<<", response.url(), response.status()));
+  page.on("response", (response) =>
+    console.log("<<", response.url(), response.status())
+  );
 });
 ```
 

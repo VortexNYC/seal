@@ -277,7 +277,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSigningSettings, {
             defaultDeadlineDays: 0,
-          }),
+          })
       ).rejects.toThrow("Deadline days must be between 1 and 365");
     });
 
@@ -287,7 +287,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSigningSettings, {
             defaultDeadlineDays: 366,
-          }),
+          })
       ).rejects.toThrow("Deadline days must be between 1 and 365");
     });
 
@@ -297,7 +297,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSigningSettings, {
             allowedSignatureTypes: [],
-          }),
+          })
       ).rejects.toThrow("At least one signature type must be allowed");
     });
   });
@@ -388,7 +388,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             reminderSchedule: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-          }),
+          })
       ).rejects.toThrow("cannot have more than 10 entries");
     });
 
@@ -398,7 +398,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             reminderSchedule: [7, 3, 14],
-          }),
+          })
       ).rejects.toThrow("ascending order");
     });
 
@@ -408,7 +408,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             reminderSchedule: [0, 3],
-          }),
+          })
       ).rejects.toThrow("positive integers");
     });
 
@@ -418,7 +418,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             expirationAlertDays: 0,
-          }),
+          })
       ).rejects.toThrow("between 1 and 30");
 
       await expect(
@@ -426,7 +426,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             expirationAlertDays: 31,
-          }),
+          })
       ).rejects.toThrow("between 1 and 30");
     });
   });
@@ -509,7 +509,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             allowApiAccess: false,
-          }),
+          })
       ).rejects.toThrow("Only organization owners");
     });
 
@@ -519,7 +519,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_owner" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             ipAllowlist: ["not-a-cidr"],
-          }),
+          })
       ).rejects.toThrow("Invalid CIDR format");
     });
 
@@ -561,7 +561,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_owner" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             sessionTimeoutMinutes: 14,
-          }),
+          })
       ).rejects.toThrow("Session timeout must be between 15 and 10080 minutes");
     });
 
@@ -571,7 +571,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_owner" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             sessionTimeoutMinutes: 10081,
-          }),
+          })
       ).rejects.toThrow("Session timeout must be between 15 and 10080 minutes");
     });
 
@@ -613,7 +613,11 @@ describe("Organization settings", () => {
 
       // Signing defaults
       expect(result.signing.defaultDeadlineDays).toBe(30);
-      expect(result.signing.allowedSignatureTypes).toEqual(["draw", "type", "upload"]);
+      expect(result.signing.allowedSignatureTypes).toEqual([
+        "draw",
+        "type",
+        "upload",
+      ]);
 
       // Notification defaults
       expect(result.notifications.reminderSchedule).toEqual([3, 7, 14]);
@@ -741,7 +745,7 @@ describe("Organization settings", () => {
           .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.resetOrgSettings, {
             category: "security",
-          }),
+          })
       ).rejects.toThrow("Only organization owners can reset security settings");
     });
   });

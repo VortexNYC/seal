@@ -50,7 +50,14 @@ export function DocumentExpirationAlert({
         }}
       >
         <Text style={{ margin: "0 0 8px 0", fontSize: "32px" }}>&#x23F0;</Text>
-        <Text style={{ margin: "0", fontSize: "18px", fontWeight: "600", color: email.warning }}>
+        <Text
+          style={{
+            margin: "0",
+            fontSize: "18px",
+            fontWeight: "600",
+            color: email.warning,
+          }}
+        >
           Expires in {daysRemaining} Day{daysRemaining === 1 ? "" : "s"}
         </Text>
       </Section>
@@ -59,8 +66,9 @@ export function DocumentExpirationAlert({
         <Text style={emailStyles.bodyText}>Hello {ownerName},</Text>
 
         <Text style={emailStyles.bodyTextSpaced}>
-          Your document <strong>&ldquo;{documentName}&rdquo;</strong> has a deadline approaching on{" "}
-          <strong>{formattedExpiry}</strong> and still has pending signatures.
+          Your document <strong>&ldquo;{documentName}&rdquo;</strong> has a
+          deadline approaching on <strong>{formattedExpiry}</strong> and still
+          has pending signatures.
         </Text>
 
         {/* Pending recipients */}
@@ -89,7 +97,11 @@ export function DocumentExpirationAlert({
                   {recipient.name}
                 </Text>
                 <Text
-                  style={{ margin: "2px 0 0 0", fontSize: "12px", color: email.mutedForeground }}
+                  style={{
+                    margin: "2px 0 0 0",
+                    fontSize: "12px",
+                    color: email.mutedForeground,
+                  }}
                 >
                   {recipient.email}
                 </Text>
@@ -106,8 +118,8 @@ export function DocumentExpirationAlert({
         </Section>
 
         <Text style={emailStyles.infoText}>
-          You can send a manual reminder to pending recipients from the document page, or extend the
-          deadline if more time is needed.
+          You can send a manual reminder to pending recipients from the document
+          page, or extend the deadline if more time is needed.
         </Text>
       </Section>
     </EmailLayout>

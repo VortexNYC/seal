@@ -36,7 +36,7 @@ describe("generateSignatureHash", () => {
       "recipient-123",
       "field-456",
       "doc-hash-abc",
-      1700000000000,
+      1700000000000
     );
     expect(hash).toHaveLength(64);
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
@@ -56,7 +56,7 @@ describe("verifySignatureHash", () => {
       recipientId,
       fieldId,
       documentHash,
-      timestamp,
+      timestamp
     );
     const result = await verifySignatureHash(
       signatureData,
@@ -64,7 +64,7 @@ describe("verifySignatureHash", () => {
       fieldId,
       documentHash,
       timestamp,
-      hash,
+      hash
     );
     expect(result).toBe(true);
   });
@@ -75,7 +75,7 @@ describe("verifySignatureHash", () => {
       recipientId,
       fieldId,
       documentHash,
-      timestamp,
+      timestamp
     );
     const result = await verifySignatureHash(
       "Tampered Name",
@@ -83,7 +83,7 @@ describe("verifySignatureHash", () => {
       fieldId,
       documentHash,
       timestamp,
-      hash,
+      hash
     );
     expect(result).toBe(false);
   });
@@ -148,7 +148,11 @@ describe("generateSignatureCertificate", () => {
   };
 
   test("builds correct certificate object with all fields", () => {
-    const cert = generateSignatureCertificate(baseSignature, baseRecipient, baseDocument);
+    const cert = generateSignatureCertificate(
+      baseSignature,
+      baseRecipient,
+      baseDocument
+    );
 
     expect(cert).toEqual({
       certificateVersion: "1.0",
@@ -167,7 +171,11 @@ describe("generateSignatureCertificate", () => {
   });
 
   test("integrityVerified is true when document hash matches signature hash at signing", () => {
-    const cert = generateSignatureCertificate(baseSignature, baseRecipient, baseDocument);
+    const cert = generateSignatureCertificate(
+      baseSignature,
+      baseRecipient,
+      baseDocument
+    );
     expect(cert.integrityVerified).toBe(true);
   });
 
@@ -196,7 +204,7 @@ describe("generateSignatureCertificate", () => {
       {
         name: "Unsigned.pdf",
         documentHash: undefined,
-      },
+      }
     );
 
     expect(cert.signatureHash).toBeNull();
@@ -226,7 +234,7 @@ describe("generateSignatureCertificate", () => {
       {
         name: "Unsigned.pdf",
         documentHash: undefined,
-      },
+      }
     );
 
     // documentHash is undefined (coerced to null via ??), documentHashAtSigning is null

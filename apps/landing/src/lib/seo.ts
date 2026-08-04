@@ -45,7 +45,7 @@ export function getCanonicalUrl(path: string): string {
  */
 export function createPageMeta(
   seo: PageSEO,
-  path?: string,
+  path?: string
 ): {
   meta: Array<{
     title?: string;
@@ -66,7 +66,10 @@ export function createPageMeta(
     { property: "og:title", content: seo.title },
     { property: "og:description", content: seo.description },
     { property: "og:type", content: seo.ogType || "website" },
-    { property: "og:url", content: path ? getCanonicalUrl(path) : siteConfig.url },
+    {
+      property: "og:url",
+      content: path ? getCanonicalUrl(path) : siteConfig.url,
+    },
     {
       property: "og:image",
       content: seo.ogImage || siteConfig.ogImage,
@@ -150,7 +153,9 @@ export function generateWebSiteSchema() {
 /**
  * Generate FAQ JSON-LD schema from an array of Q&A pairs
  */
-export function generateFAQSchema(faqs: Array<{ question: string; answer: string }>) {
+export function generateFAQSchema(
+  faqs: Array<{ question: string; answer: string }>
+) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",

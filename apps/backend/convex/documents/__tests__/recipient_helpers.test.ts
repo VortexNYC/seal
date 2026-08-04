@@ -64,7 +64,7 @@ describe("recipient_helpers", () => {
       await expect(
         t.run(async (ctx) => {
           await verifyDocumentOwnership(ctx, documentId, ownerId);
-        }),
+        })
       ).resolves.toBeNull();
     });
 
@@ -84,7 +84,7 @@ describe("recipient_helpers", () => {
       await expect(
         t.run(async (ctx) => {
           await verifyDocumentOwnership(ctx, documentId, otherUserId);
-        }),
+        })
       ).rejects.toThrow("Only the document owner can perform this action");
     });
 
@@ -95,7 +95,7 @@ describe("recipient_helpers", () => {
       await expect(
         t.run(async (ctx) => {
           await verifyDocumentOwnership(ctx, fakeDocumentId, ownerId);
-        }),
+        })
       ).rejects.toThrow("Document not found");
     });
   });

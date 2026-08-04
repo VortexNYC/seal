@@ -146,15 +146,51 @@ export const ai = {
  */
 export const canvas = {
   fieldColors: {
-    signature: { ink: "#1e3a5f", accent: "#3b82f6", glow: "rgba(59, 130, 246, 0.25)" },
-    text: { ink: "#14532d", accent: "#22c55e", glow: "rgba(34, 197, 94, 0.25)" },
-    number: { ink: "#78350f", accent: "#f59e0b", glow: "rgba(245, 158, 11, 0.25)" },
-    date: { ink: "#4c1d95", accent: "#8b5cf6", glow: "rgba(139, 92, 246, 0.25)" },
-    checkbox: { ink: "#7c2d12", accent: "#f97316", glow: "rgba(249, 115, 22, 0.25)" },
-    dropdown: { ink: "#164e63", accent: "#06b6d4", glow: "rgba(6, 182, 212, 0.25)" },
-    radio: { ink: "#831843", accent: "#ec4899", glow: "rgba(236, 72, 153, 0.25)" },
-    attachment: { ink: "#3f6212", accent: "#84cc16", glow: "rgba(132, 204, 22, 0.25)" },
-    payment: { ink: "#065f46", accent: "#10b981", glow: "rgba(16, 185, 129, 0.25)" },
+    signature: {
+      ink: "#1e3a5f",
+      accent: "#3b82f6",
+      glow: "rgba(59, 130, 246, 0.25)",
+    },
+    text: {
+      ink: "#14532d",
+      accent: "#22c55e",
+      glow: "rgba(34, 197, 94, 0.25)",
+    },
+    number: {
+      ink: "#78350f",
+      accent: "#f59e0b",
+      glow: "rgba(245, 158, 11, 0.25)",
+    },
+    date: {
+      ink: "#4c1d95",
+      accent: "#8b5cf6",
+      glow: "rgba(139, 92, 246, 0.25)",
+    },
+    checkbox: {
+      ink: "#7c2d12",
+      accent: "#f97316",
+      glow: "rgba(249, 115, 22, 0.25)",
+    },
+    dropdown: {
+      ink: "#164e63",
+      accent: "#06b6d4",
+      glow: "rgba(6, 182, 212, 0.25)",
+    },
+    radio: {
+      ink: "#831843",
+      accent: "#ec4899",
+      glow: "rgba(236, 72, 153, 0.25)",
+    },
+    attachment: {
+      ink: "#3f6212",
+      accent: "#84cc16",
+      glow: "rgba(132, 204, 22, 0.25)",
+    },
+    payment: {
+      ink: "#065f46",
+      accent: "#10b981",
+      glow: "rgba(16, 185, 129, 0.25)",
+    },
   },
   /** Colors for fields that have been signed/completed */
   filled: {

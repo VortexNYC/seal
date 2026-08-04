@@ -42,7 +42,7 @@ describe("publishWebhookEvent", () => {
       status?: "active" | "paused" | "disabled";
       name?: string;
       url?: string;
-    } = {},
+    } = {}
   ) {
     return await t.run(async (ctx) => {
       return await ctx.db.insert("webhook_endpoints", {
@@ -179,7 +179,11 @@ describe("publishWebhookEvent", () => {
   // Multiple matching endpoints
   // ---------------------------------------------------------------------------
   test("creates multiple deliveries for multiple matching endpoints", async () => {
-    await createEndpoint({ name: "Endpoint A", events: [], url: "https://a.example.com/webhook" });
+    await createEndpoint({
+      name: "Endpoint A",
+      events: [],
+      url: "https://a.example.com/webhook",
+    });
     await createEndpoint({
       name: "Endpoint B",
       events: ["document.sent"],
@@ -246,15 +250,26 @@ describe("publishWebhookEvent", () => {
     // Verify created_at is a valid ISO string
     expect(Number.isNaN(new Date(payload.created_at).getTime())).toBe(false);
     expect(payload.organization_id).toBe(organizationId);
-    expect(payload.data).toEqual({ document_id: "doc_123", title: "Test Document" });
+    expect(payload.data).toEqual({
+      document_id: "doc_123",
+      title: "Test Document",
+    });
   });
 
   // ---------------------------------------------------------------------------
   // Shared eventId across deliveries
   // ---------------------------------------------------------------------------
   test("all deliveries for the same publish call share the same eventId", async () => {
-    await createEndpoint({ name: "Endpoint A", events: [], url: "https://a.example.com/webhook" });
-    await createEndpoint({ name: "Endpoint B", events: [], url: "https://b.example.com/webhook" });
+    await createEndpoint({
+      name: "Endpoint A",
+      events: [],
+      url: "https://a.example.com/webhook",
+    });
+    await createEndpoint({
+      name: "Endpoint B",
+      events: [],
+      url: "https://b.example.com/webhook",
+    });
 
     await t.run(async (ctx) => {
       return await publishWebhookEvent(ctx, {

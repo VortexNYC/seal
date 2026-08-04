@@ -24,7 +24,9 @@ export const getUserSignatures = query({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -60,7 +62,9 @@ export const getDefaultSignature = query({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -69,7 +73,9 @@ export const getDefaultSignature = query({
 
     const defaultSignature = await ctx.db
       .query("saved_signatures")
-      .withIndex("by_user_default", (q) => q.eq("userId", user._id).eq("isDefault", true))
+      .withIndex("by_user_default", (q) =>
+        q.eq("userId", user._id).eq("isDefault", true)
+      )
       .first();
 
     return defaultSignature;
@@ -92,7 +98,9 @@ export const getSignatureById = query({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {
@@ -124,7 +132,9 @@ export const getSignatureCount = query({
     // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
       .first();
 
     if (!user) {

@@ -10,7 +10,12 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useQuery } from "convex/react";
-import { CheckCircle2Icon, ClockIcon, FileTextIcon, TrendingUpIcon } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  ClockIcon,
+  FileTextIcon,
+  TrendingUpIcon,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +54,9 @@ function StatCard({
     >
       {/* Decorative background icon */}
       <Icon
-        className={cn("pointer-events-none absolute -right-3 -bottom-3 h-24 w-24 opacity-[0.04]")}
+        className={cn(
+          "pointer-events-none absolute -right-3 -bottom-3 h-24 w-24 opacity-[0.04]"
+        )}
         strokeWidth={1}
       />
 
@@ -57,12 +64,19 @@ function StatCard({
         <CardTitle className="text-muted-foreground text-sm font-medium tracking-wide">
           {title}
         </CardTitle>
-        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconClassName)}>
+        <div
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg",
+            iconClassName
+          )}
+        >
           <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="font-serif text-3xl font-normal tracking-tight tabular-nums">{value}</div>
+        <div className="font-serif text-3xl font-normal tracking-tight tabular-nums">
+          {value}
+        </div>
         <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>
         {children}
       </CardContent>
@@ -71,7 +85,9 @@ function StatCard({
 }
 
 export function StatsCards(): React.ReactElement {
-  const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
+  const { data: stats } = useSuspenseQuery(
+    convexQuery(api.dashboard.queries.getDocumentStats, {})
+  );
 
   const monthStats = useQuery(api.dashboard.queries.getPeriodStats, {
     period: "month",

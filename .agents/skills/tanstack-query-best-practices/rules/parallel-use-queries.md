@@ -37,7 +37,7 @@ function UserProfiles({ userIds }: { userIds: string[] }) {
     useQuery({
       queryKey: ["user", id],
       queryFn: () => fetchUser(id),
-    }),
+    })
   );
 }
 ```

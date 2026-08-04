@@ -8,7 +8,7 @@ const operationalMerchantAccountValidator = v.object({
     v.literal("not_connected"),
     v.literal("pending"),
     v.literal("restricted"),
-    v.literal("connected"),
+    v.literal("connected")
   ),
   account: v.union(
     v.object({
@@ -28,7 +28,7 @@ const operationalMerchantAccountValidator = v.object({
           cardPayments: v.string(),
           transfers: v.string(),
           usBankAccountAchPayments: v.optional(v.string()),
-        }),
+        })
       ),
       requirements: v.optional(
         v.object({
@@ -36,10 +36,10 @@ const operationalMerchantAccountValidator = v.object({
           eventuallyDue: v.array(v.string()),
           pastDue: v.array(v.string()),
           disabledReason: v.optional(v.string()),
-        }),
+        })
       ),
     }),
-    v.null(),
+    v.null()
   ),
   canManage: v.boolean(),
 });
@@ -56,7 +56,9 @@ export const getMerchantAccount = memberQuery({
 
     const account = await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organization._id))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organization._id)
+      )
       .first();
 
     if (!account) {
@@ -107,7 +109,9 @@ export const getOperationalMerchantAccount = memberQuery({
 
     const account = await ctx.db
       .query("merchant_accounts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organization._id))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", ctx.auth.organization._id)
+      )
       .first();
 
     if (!account) {
@@ -159,7 +163,10 @@ function getConnectionStatus(account: {
     return "restricted";
   }
 
-  if (!account.detailsSubmitted || (account.requirements?.currentlyDue?.length ?? 0) > 0) {
+  if (
+    !account.detailsSubmitted ||
+    (account.requirements?.currentlyDue?.length ?? 0) > 0
+  ) {
     return "pending";
   }
 

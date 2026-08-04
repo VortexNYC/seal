@@ -10,10 +10,21 @@ import { nanoid } from "nanoid";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { type ActionCtx, internalAction, internalMutation } from "../_generated/server";
+import {
+  type ActionCtx,
+  internalAction,
+  internalMutation,
+} from "../_generated/server";
 import { logActionRequired } from "../audit_logs/helpers";
-import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
-import { sendDocumentCompleted, sendDocumentInvitation, sendSigningComplete } from "./email";
+import {
+  isRecipientComplete,
+  isRecipientTerminal,
+} from "../schemas/document_recipients";
+import {
+  sendDocumentCompleted,
+  sendDocumentInvitation,
+  sendSigningComplete,
+} from "./email";
 import { groupRecipientsByOrder } from "./recipient_helpers";
 
 /**
@@ -72,14 +83,17 @@ import { internalQuery } from "../_generated/server";
 async function getSenderEmailContext(
   ctx: ActionCtx,
   ownerId: Doc<"documents">["ownerId"],
-  organizationId: Doc<"documents">["organizationId"],
+  organizationId: Doc<"documents">["organizationId"]
 ) {
-  const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-    userId: ownerId,
-  });
+  const senderUser = await ctx.runQuery(
+    internal.organizations.helpers.getUserById,
+    {
+      userId: ownerId,
+    }
+  );
   const brandingSettings = await ctx.runQuery(
     internal.organizations.queries.getBrandingSettingsInternal,
-    { organizationId },
+    { organizationId }
   );
 
   return {
@@ -97,9 +111,10 @@ async function sendRecipientConfirmationEmail(
   ctx: ActionCtx,
   recipient: Doc<"document_recipients">,
   documentName: string,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ) {
-  const completedAt = recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
+  const completedAt =
+    recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
 
   if (!completedAt || !isRecipientComplete(recipient.role, recipient.status)) {
     return false;
@@ -117,7 +132,10 @@ async function sendRecipientConfirmationEmail(
   });
 
   if (!confirmationResult.success) {
-    console.error("Failed to send confirmation email:", confirmationResult.error);
+    console.error(
+      "Failed to send confirmation email:",
+      confirmationResult.error
+    );
   }
 
   return confirmationResult.success;
@@ -127,7 +145,7 @@ async function notifyNextSequentialGroup(
   ctx: ActionCtx,
   document: Doc<"documents">,
   recipient: Doc<"document_recipients">,
-  allRecipients: Doc<"document_recipients">[],
+  allRecipients: Doc<"document_recipients">[]
 ) {
   if (document.signingMode !== "sequential") {
     return;
@@ -137,7 +155,12 @@ async function notifyNextSequentialGroup(
   const groups = groupRecipientsByOrder(allRecipients);
   const myGroup = groups.get(myOrder);
 
-  if (!myGroup || !myGroup.every((groupRecipient) => isRecipientTerminal(groupRecipient.status))) {
+  if (
+    !myGroup ||
+    !myGroup.every((groupRecipient) =>
+      isRecipientTerminal(groupRecipient.status)
+    )
+  ) {
     return;
   }
 
@@ -145,7 +168,8 @@ async function notifyNextSequentialGroup(
     .sort(([firstOrder], [secondOrder]) => firstOrder - secondOrder)
     .find(
       ([order, group]) =>
-        order > myOrder && group.some((groupRecipient) => groupRecipient.status === "pending"),
+        order > myOrder &&
+        group.some((groupRecipient) => groupRecipient.status === "pending")
     )?.[1];
 
   if (!nextGroup) {
@@ -155,25 +179,28 @@ async function notifyNextSequentialGroup(
   const { senderName, emailBranding } = await getSenderEmailContext(
     ctx,
     document.ownerId,
-    document.organizationId,
+    document.organizationId
   );
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 
   for (const nextRecipient of nextGroup.filter(
-    (groupRecipient) => groupRecipient.status === "pending",
+    (groupRecipient) => groupRecipient.status === "pending"
   )) {
     if (nextRecipient.isPlaceholder && document.allowDictateNextSigner) {
       const dictatingRecipient = allRecipients.find(
         (groupRecipient) =>
           groupRecipient.order === myOrder &&
-          isRecipientComplete(groupRecipient.role, groupRecipient.status),
+          isRecipientComplete(groupRecipient.role, groupRecipient.status)
       );
 
       if (dictatingRecipient) {
-        await ctx.runMutation(internal.documents.recipients_mutations.setAwaitingDictation, {
-          recipientId: dictatingRecipient._id,
-          placeholderRecipientId: nextRecipient._id,
-        });
+        await ctx.runMutation(
+          internal.documents.recipients_mutations.setAwaitingDictation,
+          {
+            recipientId: dictatingRecipient._id,
+            placeholderRecipientId: nextRecipient._id,
+          }
+        );
       }
       return;
     }
@@ -196,18 +223,21 @@ async function notifyNextSequentialGroup(
 async function sendCompletionEmailToOwner(
   ctx: ActionCtx,
   document: Doc<"documents">,
-  allRecipients: Doc<"document_recipients">[],
+  allRecipients: Doc<"document_recipients">[]
 ) {
   const notificationSettings = document.organizationId
-    ? await ctx.runQuery(internal.organizations.queries.getNotificationSettingsInternal, {
-        organizationId: document.organizationId,
-      })
+    ? await ctx.runQuery(
+        internal.organizations.queries.getNotificationSettingsInternal,
+        {
+          organizationId: document.organizationId,
+        }
+      )
     : null;
   const owner: Doc<"users"> | null = await ctx.runQuery(
     internal.organizations.helpers.getUserById,
     {
       userId: document.ownerId,
-    },
+    }
   );
 
   if (!owner?.email || notificationSettings?.sendCompletionEmail === false) {
@@ -216,7 +246,7 @@ async function sendCompletionEmailToOwner(
 
   const recipientsSummary = allRecipients
     .filter((currentRecipient) =>
-      isRecipientComplete(currentRecipient.role, currentRecipient.status),
+      isRecipientComplete(currentRecipient.role, currentRecipient.status)
     )
     .map((currentRecipient) => ({
       name: currentRecipient.name || currentRecipient.email,
@@ -231,7 +261,7 @@ async function sendCompletionEmailToOwner(
 
   const downloadToken = await ctx.runMutation(
     internal.documents.download_tokens.generateTokenInternal,
-    { documentId: document._id, issuedTo: owner.email },
+    { documentId: document._id, issuedTo: owner.email }
   );
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
   const convexSiteUrl = process.env.CONVEX_SITE_URL || baseUrl;
@@ -248,7 +278,10 @@ async function sendCompletionEmailToOwner(
   });
 
   if (!completionResult.success) {
-    console.error("Failed to send completion email to owner:", completionResult.error);
+    console.error(
+      "Failed to send completion email to owner:",
+      completionResult.error
+    );
   }
 
   return completionResult.success;
@@ -276,7 +309,7 @@ export const sendPostSignatureEmails = internalAction({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     confirmationSent: boolean;
     completionEmailSent: boolean;
@@ -285,7 +318,7 @@ export const sendPostSignatureEmails = internalAction({
   }> => {
     const recipient: Doc<"document_recipients"> | null = await ctx.runQuery(
       internal.documents.recipient_email_action.getRecipientById,
-      { recipientId: args.recipientId },
+      { recipientId: args.recipientId }
     );
 
     if (!recipient) {
@@ -299,7 +332,7 @@ export const sendPostSignatureEmails = internalAction({
 
     const document: Doc<"documents"> | null = await ctx.runQuery(
       internal.documents.queries.getDocumentInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
 
     if (!document) {
@@ -315,13 +348,15 @@ export const sendPostSignatureEmails = internalAction({
       ctx,
       recipient,
       document.name,
-      document,
+      document
     );
     const allRecipients: Doc<"document_recipients">[] = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      { documentId: args.documentId },
+      { documentId: args.documentId }
     );
-    const allComplete = allRecipients.every((r) => isRecipientComplete(r.role, r.status));
+    const allComplete = allRecipients.every((r) =>
+      isRecipientComplete(r.role, r.status)
+    );
 
     if (!allComplete) {
       await notifyNextSequentialGroup(ctx, document, recipient, allRecipients);
@@ -330,16 +365,23 @@ export const sendPostSignatureEmails = internalAction({
     let completionEmailSent = false;
 
     if (allComplete) {
-      await ctx.runMutation(internal.documents.recipient_email_action.markDocumentAsCompleted, {
-        documentId: args.documentId,
-      });
+      await ctx.runMutation(
+        internal.documents.recipient_email_action.markDocumentAsCompleted,
+        {
+          documentId: args.documentId,
+        }
+      );
 
       await ctx.scheduler.runAfter(
         0,
         internal.documents.certificate_of_completion.generateCertificate,
-        { documentId: args.documentId },
+        { documentId: args.documentId }
       );
-      completionEmailSent = await sendCompletionEmailToOwner(ctx, document, allRecipients);
+      completionEmailSent = await sendCompletionEmailToOwner(
+        ctx,
+        document,
+        allRecipients
+      );
     }
 
     return {
@@ -360,21 +402,24 @@ export const sendNextRecipientInvitation = internalAction({
     recipientId: v.id("document_recipients"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
     if (!document) return;
 
     const recipient = await ctx.runQuery(
       internal.documents.recipients_queries.getRecipientInternal,
-      { recipientId: args.recipientId },
+      { recipientId: args.recipientId }
     );
     if (!recipient || recipient.isPlaceholder) return;
 
     const { senderName, emailBranding } = await getSenderEmailContext(
       ctx,
       document.ownerId,
-      document.organizationId,
+      document.organizationId
     );
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 

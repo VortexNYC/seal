@@ -15,10 +15,19 @@ const MAX_AMOUNT_CENTS = 99_999_999;
 
 type PaymentConfig = {
   paymentType: PaymentType;
-  items: Array<{ id: string; description: string; quantity: number; unitPrice: number }>;
+  items: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
   totalAmountCents: number;
   allowedPaymentMethods: string[];
-  recurringConfig?: { intervalCount: number; endCondition: string; endAfterCount?: number };
+  recurringConfig?: {
+    intervalCount: number;
+    endCondition: string;
+    endAfterCount?: number;
+  };
   installmentsConfig?: { count: number };
   depositBalanceConfig?: { depositPercent: number; balanceDueDays: number };
 };
@@ -29,7 +38,7 @@ type PaymentConfig = {
  * Sums `quantity * unitPrice` for each item.
  */
 export function computeTotalAmountCents(
-  items: Array<{ quantity: number; unitPrice: number }>,
+  items: Array<{ quantity: number; unitPrice: number }>
 ): number {
   return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
 }
@@ -77,7 +86,9 @@ function validateTotalAmount(totalAmountCents: number): string | null {
   return null;
 }
 
-function validatePaymentMethods(allowedPaymentMethods: string[]): string | null {
+function validatePaymentMethods(
+  allowedPaymentMethods: string[]
+): string | null {
   if (allowedPaymentMethods.length === 0) {
     return "At least one payment method must be selected";
   }
@@ -97,7 +108,9 @@ function validateTypeSpecificConfig(config: PaymentConfig): string | null {
   }
 }
 
-function validateRecurringConfig(config: PaymentConfig["recurringConfig"]): string | null {
+function validateRecurringConfig(
+  config: PaymentConfig["recurringConfig"]
+): string | null {
   if (!config) {
     return "Recurring configuration is required for recurring payments";
   }
@@ -113,7 +126,9 @@ function validateRecurringConfig(config: PaymentConfig["recurringConfig"]): stri
   return null;
 }
 
-function validateInstallmentsConfig(config: PaymentConfig["installmentsConfig"]): string | null {
+function validateInstallmentsConfig(
+  config: PaymentConfig["installmentsConfig"]
+): string | null {
   if (!config) {
     return "Installments configuration is required for installment payments";
   }
@@ -124,7 +139,7 @@ function validateInstallmentsConfig(config: PaymentConfig["installmentsConfig"])
 }
 
 function validateDepositBalanceConfig(
-  config: PaymentConfig["depositBalanceConfig"],
+  config: PaymentConfig["depositBalanceConfig"]
 ): string | null {
   if (!config) {
     return "Deposit/balance configuration is required";
@@ -146,17 +161,19 @@ export async function findExistingPaymentFieldForRecipient(
   ctx: QueryCtx,
   documentId: Id<"documents">,
   recipientId: Id<"document_recipients">,
-  excludeFieldId?: Id<"signature_fields">,
+  excludeFieldId?: Id<"signature_fields">
 ): Promise<Id<"signature_fields"> | null> {
   const fields = await ctx.db
     .query("signature_fields")
     .withIndex("by_document_recipient", (q) =>
-      q.eq("documentId", documentId).eq("recipientId", recipientId),
+      q.eq("documentId", documentId).eq("recipientId", recipientId)
     )
     .filter((q) => q.eq(q.field("fieldType"), "payment"))
     .collect();
 
-  const existing = excludeFieldId ? fields.find((f) => f._id !== excludeFieldId) : fields[0];
+  const existing = excludeFieldId
+    ? fields.find((f) => f._id !== excludeFieldId)
+    : fields[0];
 
   return existing?._id ?? null;
 }

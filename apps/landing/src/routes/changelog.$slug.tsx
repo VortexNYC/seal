@@ -1,6 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Bug, Calendar, Rocket, Sparkles, Tag, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  Bug,
+  Calendar,
+  Rocket,
+  Sparkles,
+  Tag,
+  TriangleAlert,
+} from "lucide-react";
 import { Suspense } from "react";
+
 import { Badge } from "~/components/ui/badge";
 import { renderChangelogContent } from "~/lib/changelog/client-loader";
 import {
@@ -28,7 +37,8 @@ export const Route = createFileRoute("/changelog/$slug")({
         },
         {
           name: "description",
-          content: data?.entry?.summary || "See what's new in this Seal release.",
+          content:
+            data?.entry?.summary || "See what's new in this Seal release.",
         },
       ],
     };
@@ -55,7 +65,10 @@ function ChangelogDetailPage() {
 
           <header className="mb-12">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Badge className="border-primary/30 text-primary" variant="outline">
+              <Badge
+                className="border-primary/30 text-primary"
+                variant="outline"
+              >
                 <Tag className="mr-1 size-3" />
                 {entry.version}
               </Badge>
@@ -74,12 +87,16 @@ function ChangelogDetailPage() {
             </h1>
 
             {entry.summary && (
-              <p className="text-muted-foreground text-xl text-pretty">{entry.summary}</p>
+              <p className="text-muted-foreground text-xl text-pretty">
+                {entry.summary}
+              </p>
             )}
           </header>
 
           {entry.description && !entry.summary && (
-            <p className="text-muted-foreground mb-12 text-lg text-pretty">{entry.description}</p>
+            <p className="text-muted-foreground mb-12 text-lg text-pretty">
+              {entry.description}
+            </p>
           )}
 
           {entry.coverImage && (
@@ -106,9 +123,13 @@ function ChangelogDetailPage() {
                     className="border-border bg-muted/50 rounded-xl border p-6"
                     key={`feature-${feature.title}`}
                   >
-                    <h3 className="text-foreground mb-2 text-lg font-semibold">{feature.title}</h3>
+                    <h3 className="text-foreground mb-2 text-lg font-semibold">
+                      {feature.title}
+                    </h3>
                     {feature.description && (
-                      <p className="text-muted-foreground text-pretty">{feature.description}</p>
+                      <p className="text-muted-foreground text-pretty">
+                        {feature.description}
+                      </p>
                     )}
                     {feature.image && (
                       <div className="border-border mt-4 overflow-hidden rounded-lg border">
@@ -131,7 +152,7 @@ function ChangelogDetailPage() {
           {entry.improvements.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Rocket className="size-6 text-success" />
+                <Rocket className="text-success size-6" />
                 Improvements
               </h2>
               <ul className="space-y-3">
@@ -140,7 +161,7 @@ function ChangelogDetailPage() {
                     className="text-muted-foreground flex items-start gap-3"
                     key={`improvement-${item.slice(0, 30)}`}
                   >
-                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-success" />
+                    <span className="bg-success mt-2 size-1.5 shrink-0 rounded-full" />
                     {item}
                   </li>
                 ))}
@@ -151,7 +172,7 @@ function ChangelogDetailPage() {
           {entry.fixes.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Bug className="size-6 text-warning" />
+                <Bug className="text-warning size-6" />
                 Bug Fixes
               </h2>
               <ul className="space-y-3">
@@ -160,7 +181,7 @@ function ChangelogDetailPage() {
                     className="text-muted-foreground flex items-start gap-3"
                     key={`fix-${item.slice(0, 30)}`}
                   >
-                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-warning" />
+                    <span className="bg-warning mt-2 size-1.5 shrink-0 rounded-full" />
                     {item}
                   </li>
                 ))}
@@ -171,7 +192,7 @@ function ChangelogDetailPage() {
           {entry.breakingChanges.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
-                <TriangleAlert className="size-6 text-destructive" />
+                <TriangleAlert className="text-destructive size-6" />
                 Breaking Changes
               </h2>
               <div className="border-destructive/30 bg-destructive/10 rounded-xl border p-6">
@@ -181,7 +202,7 @@ function ChangelogDetailPage() {
                       className="text-muted-foreground flex items-start gap-3"
                       key={`breaking-${item.slice(0, 30)}`}
                     >
-                      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-destructive" />
+                      <span className="bg-destructive mt-2 size-1.5 shrink-0 rounded-full" />
                       {item}
                     </li>
                   ))}
@@ -191,7 +212,9 @@ function ChangelogDetailPage() {
           )}
 
           <section className="prose prose-neutral dark:prose-invert max-w-none">
-            <Suspense fallback={null}>{renderChangelogContent(entry.path)}</Suspense>
+            <Suspense fallback={null}>
+              {renderChangelogContent(entry.path)}
+            </Suspense>
           </section>
         </div>
       </div>

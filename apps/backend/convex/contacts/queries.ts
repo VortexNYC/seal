@@ -26,7 +26,7 @@ export const list = permissionQuery("contacts:view")({
       return await ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
-          q.eq("organizationId", organizationId).eq("status", status),
+          q.eq("organizationId", organizationId).eq("status", status)
         )
         .order("desc")
         .collect();
@@ -34,7 +34,9 @@ export const list = permissionQuery("contacts:view")({
 
     return await ctx.db
       .query("contacts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )
       .order("desc")
       .collect();
   },
@@ -79,15 +81,19 @@ export const search = permissionQuery("contacts:view")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    let searchQuery = ctx.db.query("contacts").withSearchIndex("search_contacts", (q) => {
-      let sq = q.search("fullName", args.query).eq("organizationId", organizationId);
+    let searchQuery = ctx.db
+      .query("contacts")
+      .withSearchIndex("search_contacts", (q) => {
+        let sq = q
+          .search("fullName", args.query)
+          .eq("organizationId", organizationId);
 
-      if (args.status) {
-        sq = sq.eq("status", args.status);
-      }
+        if (args.status) {
+          sq = sq.eq("status", args.status);
+        }
 
-      return sq;
-    });
+        return sq;
+      });
 
     return await searchQuery.take(50);
   },
@@ -109,7 +115,7 @@ export const getByEmail = permissionQuery("contacts:view")({
     const contact = await ctx.db
       .query("contacts")
       .withIndex("by_org_email", (q) =>
-        q.eq("organizationId", organizationId).eq("email", args.email),
+        q.eq("organizationId", organizationId).eq("email", args.email)
       )
       .first();
 
@@ -138,7 +144,7 @@ export const suggestForRecipient = permissionQuery("contacts:view")({
     const results = await ctx.db
       .query("contacts")
       .withSearchIndex("search_contacts", (q) =>
-        q.search("fullName", term).eq("organizationId", orgId),
+        q.search("fullName", term).eq("organizationId", orgId)
       )
       .take(5);
 
@@ -182,7 +188,7 @@ export const getRelatedDocuments = permissionQuery("contacts:view")({
           role: recipient?.role ?? ("signer" as const),
           createdAt: doc.createdAt,
         };
-      }),
+      })
     );
 
     return documents.filter((d): d is NonNullable<typeof d> => d !== null);

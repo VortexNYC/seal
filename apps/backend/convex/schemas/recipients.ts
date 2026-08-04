@@ -15,7 +15,7 @@ import { type Infer, v } from "convex/values";
 export const authenticationMethodTuple = v.union(
   v.literal("email"), // Email link authentication
   v.literal("sms"), // SMS code authentication
-  v.literal("none"), // No authentication required
+  v.literal("none") // No authentication required
 );
 export type AuthenticationMethod = Infer<typeof authenticationMethodTuple>;
 
@@ -25,7 +25,7 @@ export const recipientStatusTuple = v.union(
   v.literal("viewed"), // Document accessed but not signed
   v.literal("signed"), // All required fields completed
   v.literal("declined"), // Recipient declined to sign
-  v.literal("expired"), // Signing period expired
+  v.literal("expired") // Signing period expired
 );
 export type RecipientStatus = Infer<typeof recipientStatusTuple>;
 

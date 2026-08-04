@@ -23,20 +23,27 @@ export const sendDocumentSharedEmail = internalAction({
     documentId: v.id("documents"),
     recipientUserId: v.id("users"),
     sharedByUserId: v.id("users"),
-    permissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
+    permissionLevel: v.union(
+      v.literal("view"),
+      v.literal("edit"),
+      v.literal("manage")
+    ),
     notificationId: v.optional(v.id("notifications")),
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     success: boolean;
     error?: string;
   }> => {
     // 1. Get the document
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId,
-    });
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      {
+        documentId: args.documentId,
+      }
+    );
 
     if (!document) {
       return {
@@ -46,9 +53,12 @@ export const sendDocumentSharedEmail = internalAction({
     }
 
     // 2. Get the recipient user
-    const recipientUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: args.recipientUserId,
-    });
+    const recipientUser = await ctx.runQuery(
+      internal.organizations.helpers.getUserById,
+      {
+        userId: args.recipientUserId,
+      }
+    );
 
     if (!recipientUser?.email) {
       return {
@@ -58,9 +68,12 @@ export const sendDocumentSharedEmail = internalAction({
     }
 
     // 3. Get the sharer user
-    const sharerUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: args.sharedByUserId,
-    });
+    const sharerUser = await ctx.runQuery(
+      internal.organizations.helpers.getUserById,
+      {
+        userId: args.sharedByUserId,
+      }
+    );
 
     if (!sharerUser?.email) {
       return {

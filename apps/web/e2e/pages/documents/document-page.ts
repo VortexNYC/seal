@@ -76,12 +76,16 @@ export class DocumentPage {
     await expect(fieldButton).toBeEnabled();
     const dropTargetBox = await this.documentDropTarget.boundingBox();
     if (!dropTargetBox) {
-      throw new Error("Could not determine the PDF page bounds for field placement.");
+      throw new Error(
+        "Could not determine the PDF page bounds for field placement."
+      );
     }
 
     const dropClientX = dropTargetBox.x + x;
     const dropClientY = dropTargetBox.y + y;
-    const dataTransfer = await this.page.evaluateHandle(() => new DataTransfer());
+    const dataTransfer = await this.page.evaluateHandle(
+      () => new DataTransfer()
+    );
 
     await fieldButton.dispatchEvent("dragstart", { dataTransfer });
     await this.documentDropTarget.dispatchEvent("dragover", {
@@ -103,10 +107,14 @@ export class DocumentPage {
 
     // Wait for field to be created
     await waitForConvexMutation(this.page, "createField");
-    await this.recipientSelectorDialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
+    await this.recipientSelectorDialog
+      .waitFor({ state: "hidden", timeout: 5000 })
+      .catch(() => {});
   }
 
-  async selectFieldType(fieldType: "signature" | "text" | "date" | "checkbox"): Promise<void> {
+  async selectFieldType(
+    fieldType: "signature" | "text" | "date" | "checkbox"
+  ): Promise<void> {
     this.selectedFieldType = fieldType;
     await this.ensureSignerAvailable();
 
@@ -162,9 +170,11 @@ export class DocumentPage {
         .waitFor({ state: "visible", timeout: 10000 }),
     ]);
     // Canvas may take an extra beat to paint after the wrapper appears.
-    await this.documentCanvas.waitFor({ state: "visible", timeout: 5000 }).catch(() => {
-      /* canvas may not exist for non-PDF docs; continue */
-    });
+    await this.documentCanvas
+      .waitFor({ state: "visible", timeout: 5000 })
+      .catch(() => {
+        /* canvas may not exist for non-PDF docs; continue */
+      });
     await this.page.waitForLoadState("domcontentloaded");
   }
 
@@ -182,7 +192,9 @@ export class DocumentPage {
   }
 
   private async ensureSignerAvailable(): Promise<void> {
-    const needsSigner = await this.addMyselfAsSignerButton.isVisible().catch(() => false);
+    const needsSigner = await this.addMyselfAsSignerButton
+      .isVisible()
+      .catch(() => false);
 
     if (!needsSigner) {
       return;
@@ -190,7 +202,9 @@ export class DocumentPage {
 
     await this.addMyselfAsSignerButton.click();
     await this.page.getByRole("button", { name: /add as signer/i }).click();
-    await this.addMyselfAsSignerButton.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
+    await this.addMyselfAsSignerButton
+      .waitFor({ state: "hidden", timeout: 5000 })
+      .catch(() => {});
     await this.page.waitForTimeout(500);
   }
 }

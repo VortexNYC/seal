@@ -22,7 +22,10 @@ import { getAuthToken } from "../utils/auth";
 /**
  * Registers additional document tools with the MCP server.
  */
-export function registerDocumentExtraTools(server: McpServer, client: SealApiClient): void {
+export function registerDocumentExtraTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
   // Get document access
   server.tool(
     "seal_get_document_access",
@@ -31,7 +34,11 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
     async (args, extra) => {
       const { id } = args as GetDocumentAccessInput;
       const authToken = getAuthToken(extra);
-      const response = await client.get<ApiDocumentAccess>("/documents/access", { id }, authToken);
+      const response = await client.get<ApiDocumentAccess>(
+        "/documents/access",
+        { id },
+        authToken
+      );
 
       return {
         content: [
@@ -41,7 +48,7 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
           },
         ],
       };
-    },
+    }
   );
 
   // Update document access
@@ -56,7 +63,7 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
         "/documents/access",
         { sharing_mode },
         { id },
-        authToken,
+        authToken
       );
 
       return {
@@ -67,7 +74,7 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
           },
         ],
       };
-    },
+    }
   );
 
   // Bulk void
@@ -82,7 +89,7 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
         "/documents/bulk-void",
         { document_ids, reason },
         undefined,
-        authToken,
+        authToken
       );
 
       return {
@@ -93,7 +100,7 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
           },
         ],
       };
-    },
+    }
   );
 
   // Bulk send
@@ -108,7 +115,7 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
         "/documents/bulk-send",
         { document_ids, message },
         undefined,
-        authToken,
+        authToken
       );
 
       return {
@@ -119,6 +126,6 @@ export function registerDocumentExtraTools(server: McpServer, client: SealApiCli
           },
         ],
       };
-    },
+    }
   );
 }

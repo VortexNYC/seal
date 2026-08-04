@@ -14,7 +14,7 @@ const require = createRequire(import.meta.url);
 // match the react copy a test component imports.
 const reactDomDir = path.dirname(require.resolve("react-dom/package.json"));
 const reactDir = path.dirname(
-  createRequire(path.join(reactDomDir, "package.json")).resolve("react"),
+  createRequire(path.join(reactDomDir, "package.json")).resolve("react")
 );
 
 export default defineConfig({

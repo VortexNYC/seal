@@ -94,8 +94,16 @@ function serializeTocTitle(title: ReactNode): string {
 
 const root = path.resolve(import.meta.dirname, "..");
 const docsOutputPath = path.join(root, ".source", "docs-manifest.json");
-const developerOutputPath = path.join(root, ".source", "developer-manifest.json");
-const changelogOutputPath = path.join(root, ".source", "changelog-manifest.json");
+const developerOutputPath = path.join(
+  root,
+  ".source",
+  "developer-manifest.json"
+);
+const changelogOutputPath = path.join(
+  root,
+  ".source",
+  "changelog-manifest.json"
+);
 
 async function generateDocsManifest(): Promise<void> {
   const pages: Record<string, DocsManifestPage> = {};
@@ -122,7 +130,11 @@ async function generateDocsManifest(): Promise<void> {
   const docsPageTree = await docsSource.serializePageTree(docsSource.pageTree);
   const docsManifest: DocsManifest = { pageTree: docsPageTree, pages };
   await fs.mkdir(path.dirname(docsOutputPath), { recursive: true });
-  await fs.writeFile(docsOutputPath, `${JSON.stringify(docsManifest, null, 2)}\n`, "utf8");
+  await fs.writeFile(
+    docsOutputPath,
+    `${JSON.stringify(docsManifest, null, 2)}\n`,
+    "utf8"
+  );
 
   // Developer manifest
   const devPages: Record<string, DocsManifestPage> = {};
@@ -145,13 +157,18 @@ async function generateDocsManifest(): Promise<void> {
       url: page.url,
     };
   }
-  const devPageTree = await developerSource.serializePageTree(developerSource.pageTree);
-  const developerManifest: DocsManifest = { pageTree: devPageTree, pages: devPages };
+  const devPageTree = await developerSource.serializePageTree(
+    developerSource.pageTree
+  );
+  const developerManifest: DocsManifest = {
+    pageTree: devPageTree,
+    pages: devPages,
+  };
   await fs.mkdir(path.dirname(developerOutputPath), { recursive: true });
   await fs.writeFile(
     developerOutputPath,
     `${JSON.stringify(developerManifest, null, 2)}\n`,
-    "utf8",
+    "utf8"
   );
 }
 
@@ -185,11 +202,17 @@ async function generateChangelogManifest(): Promise<void> {
 
   const manifest: ChangelogManifest = {
     entries,
-    entriesBySlug: Object.fromEntries(entries.map((entry) => [entry.slug, entry])),
+    entriesBySlug: Object.fromEntries(
+      entries.map((entry) => [entry.slug, entry])
+    ),
   };
 
   await fs.mkdir(path.dirname(changelogOutputPath), { recursive: true });
-  await fs.writeFile(changelogOutputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await fs.writeFile(
+    changelogOutputPath,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+    "utf8"
+  );
 }
 
 await generateDocsManifest();

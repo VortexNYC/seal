@@ -10,7 +10,10 @@ import { Navigate, useLocation } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { type ReactNode, useEffect, useState } from "react";
 
-import { buildOrganizationPath, isPathWithinOrganization } from "@/lib/organization-path";
+import {
+  buildOrganizationPath,
+  isPathWithinOrganization,
+} from "@/lib/organization-path";
 
 interface EnforceOrganizationProps {
   children: ReactNode;
@@ -19,7 +22,9 @@ interface EnforceOrganizationProps {
 export function EnforceOrganization({ children }: EnforceOrganizationProps) {
   const location = useLocation();
   const organizationStatus = useQuery(api.check_membership.hasOrganization);
-  const ensureActiveOrganization = useMutation(api.check_membership.ensureActiveOrganization);
+  const ensureActiveOrganization = useMutation(
+    api.check_membership.ensureActiveOrganization
+  );
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
   const isPublicRoute = location.pathname.startsWith("/docs");
 
@@ -27,10 +32,12 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
 
   // null = backend saw no identity yet (auth still attaching). Treat as loading.
-  const isLoading = organizationStatus === undefined || organizationStatus === null;
+  const isLoading =
+    organizationStatus === undefined || organizationStatus === null;
   const hasOrganization = organizationStatus?.hasOrganization ?? false;
   const needsActiveOrgFix = organizationStatus?.needsActiveOrgFix ?? false;
-  const activeOrganizationSlug = fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
+  const activeOrganizationSlug =
+    fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
 
   // Auto-fix activeOrganizationId if user has membership but no active org set
   useEffect(() => {
@@ -49,19 +56,32 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
           setIsFixingOrg(false);
         });
     }
-  }, [isLoading, needsActiveOrgFix, isFixingOrg, fixedSlug, ensureActiveOrganization]);
+  }, [
+    isLoading,
+    needsActiveOrgFix,
+    isFixingOrg,
+    fixedSlug,
+    ensureActiveOrganization,
+  ]);
 
   if (isLoading || isFixingOrg) {
     return null;
   }
 
   if (!hasOrganization || !activeOrganizationSlug) {
-    return isOnboardingRoute ? children : <Navigate to="/onboarding/choose-organization" replace />;
+    return isOnboardingRoute ? (
+      children
+    ) : (
+      <Navigate to="/onboarding/choose-organization" replace />
+    );
   }
 
   // Allow /onboarding/choose-organization even if user has an organization
   // (they might want to switch or create new workspace)
-  if (isOnboardingRoute && location.pathname === "/onboarding/choose-organization") {
+  if (
+    isOnboardingRoute &&
+    location.pathname === "/onboarding/choose-organization"
+  ) {
     return <>{children}</>;
   }
 
@@ -81,14 +101,18 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
     return <>{children}</>;
   }
 
-  const isWithinOrg = isPathWithinOrganization(activeOrganizationSlug, location.pathname);
+  const isWithinOrg = isPathWithinOrganization(
+    activeOrganizationSlug,
+    location.pathname
+  );
 
   if (!isWithinOrg) {
     // Check if the path looks like it's under a different org slug
     // (e.g. /some-other-slug/home). In that case, let the $slug route
     // handle the error — don't silently redirect to the user's org.
     const segments = location.pathname.split("/").filter(Boolean);
-    const looksLikeOrgPath = segments.length >= 1 && segments[0] !== activeOrganizationSlug;
+    const looksLikeOrgPath =
+      segments.length >= 1 && segments[0] !== activeOrganizationSlug;
     if (looksLikeOrgPath) {
       return <>{children}</>;
     }

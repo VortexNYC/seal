@@ -13,14 +13,19 @@ export const PaymentExtractionSchema = z.object({
       z.object({
         description: z
           .string()
-          .describe("Description of the line item, e.g. 'Monthly consulting fee'"),
-        quantity: z.number().positive().describe("Quantity (default 1 if not specified)"),
+          .describe(
+            "Description of the line item, e.g. 'Monthly consulting fee'"
+          ),
+        quantity: z
+          .number()
+          .positive()
+          .describe("Quantity (default 1 if not specified)"),
         unitPriceCents: z
           .number()
           .int()
           .positive()
           .describe("Unit price in cents, e.g. 500000 for $5,000.00"),
-      }),
+      })
     )
     .nonempty()
     .describe("Extracted line items from the document"),
@@ -28,27 +33,31 @@ export const PaymentExtractionSchema = z.object({
     .string()
     .length(3)
     .describe(
-      "ISO 4217 currency code, e.g. 'usd', 'eur', 'gbp'. Infer from $ → usd, € → eur, £ → gbp",
+      "ISO 4217 currency code, e.g. 'usd', 'eur', 'gbp'. Infer from $ → usd, € → eur, £ → gbp"
     ),
   paymentType: z
     .enum(["one_time", "recurring", "installments", "deposit_balance"])
     .describe(
-      "Payment structure: one_time for single payments, recurring for subscriptions, installments for split payments, deposit_balance for upfront deposit + later balance",
+      "Payment structure: one_time for single payments, recurring for subscriptions, installments for split payments, deposit_balance for upfront deposit + later balance"
     ),
   dueDateTerms: z
     .enum(["on_receipt", "net_15", "net_30", "net_60", "custom"])
-    .describe("Payment due terms. Infer from 'due upon receipt', 'net 30', etc."),
+    .describe(
+      "Payment due terms. Infer from 'due upon receipt', 'net 30', etc."
+    ),
   customDueDays: z
     .number()
     .int()
     .positive()
     .optional()
-    .describe("Custom due days if dueDateTerms is 'custom' and a relative day count is stated"),
+    .describe(
+      "Custom due days if dueDateTerms is 'custom' and a relative day count is stated"
+    ),
   customDueDate: z
     .string()
     .optional()
     .describe(
-      "ISO 8601 date (e.g. '2026-04-01') when dueDateTerms is 'custom' and a specific calendar date is stated. For installments with multiple dates, use the first payment date. Omit for event-relative terms.",
+      "ISO 8601 date (e.g. '2026-04-01') when dueDateTerms is 'custom' and a specific calendar date is stated. For installments with multiple dates, use the first payment date. Omit for event-relative terms."
     ),
   lateFee: z
     .object({
@@ -56,7 +65,9 @@ export const PaymentExtractionSchema = z.object({
       amount: z
         .number()
         .positive()
-        .describe("Late fee amount — percentage (e.g. 2 for 2%) or fixed cents"),
+        .describe(
+          "Late fee amount — percentage (e.g. 2 for 2%) or fixed cents"
+        ),
       gracePeriodDays: z
         .number()
         .int()
@@ -68,7 +79,11 @@ export const PaymentExtractionSchema = z.object({
   recurringConfig: z
     .object({
       interval: z.enum(["week", "month", "year"]),
-      intervalCount: z.number().int().positive().describe("e.g. 1 for monthly, 2 for bi-monthly"),
+      intervalCount: z
+        .number()
+        .int()
+        .positive()
+        .describe("e.g. 1 for monthly, 2 for bi-monthly"),
     })
     .optional()
     .describe("Recurring/subscription config if paymentType is 'recurring'"),
@@ -81,7 +96,11 @@ export const PaymentExtractionSchema = z.object({
     .describe("Installment config if paymentType is 'installments'"),
   depositBalanceConfig: z
     .object({
-      depositPercent: z.number().min(1).max(99).describe("Deposit percentage, e.g. 50 for 50%"),
+      depositPercent: z
+        .number()
+        .min(1)
+        .max(99)
+        .describe("Deposit percentage, e.g. 50 for 50%"),
       balanceDueDays: z
         .number()
         .int()
@@ -93,7 +112,9 @@ export const PaymentExtractionSchema = z.object({
   notes: z
     .string()
     .optional()
-    .describe("Any additional payment context from the document that doesn't fit above fields"),
+    .describe(
+      "Any additional payment context from the document that doesn't fit above fields"
+    ),
 });
 
 export type PaymentExtractionResult = z.infer<typeof PaymentExtractionSchema>;

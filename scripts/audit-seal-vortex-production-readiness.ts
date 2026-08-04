@@ -54,7 +54,8 @@ type RemediationPlan = {
 const repoRoot = resolve(import.meta.dir, "..");
 const sealBackendRoot = resolve(repoRoot, "apps/backend");
 const localVortexRepoRoot =
-  readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ?? resolve(repoRoot, "../vortex-payments");
+  readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ??
+  resolve(repoRoot, "../vortex-payments");
 const vortexBackendRoot = resolve(localVortexRepoRoot, "apps/backend");
 
 const sealProductionDeployment =
@@ -119,7 +120,8 @@ const vortexGroups: readonly AuditGroup[] = [
 
 const valuePlaceholders: Readonly<Record<string, string>> = {
   VORTEX_BILLING_PAYMENTS_ENVIRONMENT: "production",
-  VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: "'[\"<seal-production-org-id>\"]'",
+  VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS:
+    "'[\"<seal-production-org-id>\"]'",
   VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP:
     '\'{"<seal-production-org-id>":"<vortex-production-billing-account-id>"}\'',
   VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP:
@@ -155,7 +157,10 @@ const envValidators: Readonly<Record<string, EnvValidator>> = {
   VORTEX_PAYMENTS_RUNTIME_MODE: mustEqual("finix"),
 };
 
-async function runCommand(cmd: readonly string[], cwd: string): Promise<CommandResult> {
+async function runCommand(
+  cmd: readonly string[],
+  cwd: string
+): Promise<CommandResult> {
   const child = Bun.spawn({
     cmd: [...cmd],
     cwd,
@@ -188,8 +193,17 @@ async function getEnvValue(input: {
   readonly name: string;
 }): Promise<EnvAuditResult> {
   const result = await runCommand(
-    ["bunx", "convex", "env", "get", input.name, "--prod", "--deployment", input.deployment],
-    input.repoRoot,
+    [
+      "bunx",
+      "convex",
+      "env",
+      "get",
+      input.name,
+      "--prod",
+      "--deployment",
+      input.deployment,
+    ],
+    input.repoRoot
   );
   if (envValueWasMissing(result, input.name)) {
     return { present: false };
@@ -200,14 +214,19 @@ async function getEnvValue(input: {
       error: `convex env get failed for ${input.name}: ${result.stderr || result.stdout}`,
     };
   }
-  return result.stdout.length > 0 ? { present: true, value: result.stdout } : { present: false };
+  return result.stdout.length > 0
+    ? { present: true, value: result.stdout }
+    : { present: false };
 }
 
 async function auditGroups(input: {
   readonly repoRoot: string;
   readonly deployment: string;
   readonly groups: readonly AuditGroup[];
-}): Promise<{ readonly groups: readonly GroupAudit[]; readonly errors: readonly string[] }> {
+}): Promise<{
+  readonly groups: readonly GroupAudit[];
+  readonly errors: readonly string[];
+}> {
   const auditedGroups: GroupAudit[] = [];
   const errors: string[] = [];
 
@@ -275,7 +294,9 @@ async function auditDeployment(input: {
   });
   const ok =
     audit.errors.length === 0 &&
-    audit.groups.every((group) => group.missing.length === 0 && group.invalid.length === 0);
+    audit.groups.every(
+      (group) => group.missing.length === 0 && group.invalid.length === 0
+    );
   return ok
     ? {
         ok: true,
@@ -328,14 +349,14 @@ function buildRemediationPlan(input: {
         repoRoot: input.seal.repoRoot,
         deployment: input.seal.deployment,
         name,
-      }),
+      })
     ),
     ...collectMissingEnvNames(input.vortex).map((name) =>
       buildEnvSetCommand({
         repoRoot: input.vortex.repoRoot,
         deployment: input.vortex.deployment,
         name,
-      }),
+      })
     ),
   ];
 
@@ -400,8 +421,8 @@ console.log(
         : "Configure the missing or invalid production environment names, then rerun this readiness audit.",
     },
     null,
-    2,
-  ),
+    2
+  )
 );
 
 if (!ok) {
@@ -448,7 +469,8 @@ function validateStringMap(value: string): string | null {
     return "expected at least one entry";
   }
   return entries.every(
-    ([key, entry]) => key.length > 0 && typeof entry === "string" && entry.length > 0,
+    ([key, entry]) =>
+      key.length > 0 && typeof entry === "string" && entry.length > 0
   )
     ? null
     : "expected non-empty string keys and values";

@@ -90,7 +90,7 @@ const response = await fetch(
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
     },
-  },
+  }
 );
 
 const { contacts, has_more, next_cursor } = await response.json();
@@ -149,11 +149,14 @@ GET /api/v1/contacts/get?id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/contacts/get?id=con_abc123", {
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/contacts/get?id=con_abc123",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 
 const contact = await response.json();
 ```
@@ -261,12 +264,15 @@ DELETE /api/v1/contacts/delete?id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/contacts/delete?id=con_abc123", {
-  method: "DELETE",
-  headers: {
-    Authorization: "Bearer ak_your_api_key_here",
-  },
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123",
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
 
 const result = await response.json();
 // { "success": true }
@@ -288,8 +294,9 @@ curl -X DELETE "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123" \
 ```
 
 <Callout type="warn">
-  **Warning**: Deleting a contact is permanent. Historical documents that referenced this contact's
-  email are not affected — only the contact directory entry is removed.
+  **Warning**: Deleting a contact is permanent. Historical documents that
+  referenced this contact's email are not affected — only the contact directory
+  entry is removed.
 </Callout>
 
 ## Next Steps

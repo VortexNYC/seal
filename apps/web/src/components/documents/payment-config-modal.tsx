@@ -2,7 +2,13 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { format, parse } from "date-fns";
-import { CalendarIcon, CreditCardIcon, Loader2Icon, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  CreditCardIcon,
+  Loader2Icon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -24,15 +30,30 @@ import { Input } from "../ui/input";
 import { InputCurrency, parseCurrency } from "../ui/input-currency";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 // --- Types ---
 
-type PaymentType = "one_time" | "recurring" | "installments" | "deposit_balance";
+type PaymentType =
+  | "one_time"
+  | "recurring"
+  | "installments"
+  | "deposit_balance";
 type DueDateTerms = "on_receipt" | "net_15" | "net_30" | "net_60" | "custom";
-type PaymentMethodKey = "card" | "ach_debit" | "apple_pay" | "google_pay" | "link";
+type PaymentMethodKey =
+  | "card"
+  | "ach_debit"
+  | "apple_pay"
+  | "google_pay"
+  | "link";
 type FeeHandling = "absorb" | "pass_to_recipient";
 type RecurringInterval = "week" | "month" | "year";
 type RecurringEndCondition = "never" | "after_count" | "on_date";
@@ -82,7 +103,7 @@ type PaymentConfigDraft = {
 
 type DraftFieldSetter = <K extends keyof PaymentConfigDraft>(
   field: K,
-  value: PaymentConfigDraft[K],
+  value: PaymentConfigDraft[K]
 ) => void;
 
 type PaymentConfigForm = {
@@ -90,11 +111,20 @@ type PaymentConfigForm = {
   readonly addItem: () => void;
   readonly removeItem: (id: string) => void;
   readonly setDraftField: DraftFieldSetter;
-  readonly setPaymentMethod: (method: PaymentMethodKey, enabled: boolean) => void;
-  readonly updateItem: (id: string, field: keyof LineItem, value: string | number) => void;
+  readonly setPaymentMethod: (
+    method: PaymentMethodKey,
+    enabled: boolean
+  ) => void;
+  readonly updateItem: (
+    id: string,
+    field: keyof LineItem,
+    value: string | number
+  ) => void;
 };
 
-type UpsertPaymentConfig = (args: PaymentConfigMutationInput) => Promise<unknown>;
+type UpsertPaymentConfig = (
+  args: PaymentConfigMutationInput
+) => Promise<unknown>;
 
 type PaymentConfigMutationInput = {
   fieldId: Id<"signature_fields">;
@@ -145,12 +175,18 @@ function computeTotal(items: LineItem[]): number {
 
 // --- Component ---
 
-export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfigModalProps) {
+export function PaymentConfigModal({
+  open,
+  onOpenChange,
+  fieldId,
+}: PaymentConfigModalProps) {
   const existingConfig = useQuery(
     api.payment_fields.queries.getPaymentConfigByField,
-    fieldId ? { fieldId } : "skip",
+    fieldId ? { fieldId } : "skip"
   );
-  const upsertConfig = useMutation(api.payment_fields.mutations.upsertPaymentConfig);
+  const upsertConfig = useMutation(
+    api.payment_fields.mutations.upsertPaymentConfig
+  );
   const form = usePaymentConfigForm(existingConfig);
   const [isSaving, setIsSaving] = useState(false);
   const total = computeTotal(form.draft.items);
@@ -166,7 +202,9 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
   };
 
   if (fieldId && existingConfig === undefined) {
-    return <PaymentConfigLoadingDialog open={open} onOpenChange={onOpenChange} />;
+    return (
+      <PaymentConfigLoadingDialog open={open} onOpenChange={onOpenChange} />
+    );
   }
 
   return (
@@ -182,13 +220,17 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
 }
 
 function usePaymentConfigForm(
-  existingConfig: PaymentFieldConfig | null | undefined,
+  existingConfig: PaymentFieldConfig | null | undefined
 ): PaymentConfigForm {
   const [draft, setDraft] = useState(defaultPaymentConfigDraft);
-  const resetToDefaults = useCallback(() => setDraft(defaultPaymentConfigDraft()), []);
+  const resetToDefaults = useCallback(
+    () => setDraft(defaultPaymentConfigDraft()),
+    []
+  );
 
   useEffect(() => {
-    if (existingConfig) setDraft(paymentConfigDraftFromExisting(existingConfig));
+    if (existingConfig)
+      setDraft(paymentConfigDraftFromExisting(existingConfig));
     else if (existingConfig === null) resetToDefaults();
   }, [existingConfig, resetToDefaults]);
 
@@ -196,32 +238,53 @@ function usePaymentConfigForm(
     setDraft((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  const setPaymentMethod = useCallback((method: PaymentMethodKey, enabled: boolean) => {
-    setDraft((prev) => ({
-      ...prev,
-      paymentMethods: { ...prev.paymentMethods, [method]: enabled },
-    }));
-  }, []);
+  const setPaymentMethod = useCallback(
+    (method: PaymentMethodKey, enabled: boolean) => {
+      setDraft((prev) => ({
+        ...prev,
+        paymentMethods: { ...prev.paymentMethods, [method]: enabled },
+      }));
+    },
+    []
+  );
 
   const addItem = useCallback(() => {
-    setDraft((prev) => ({ ...prev, items: [...prev.items, defaultLineItem()] }));
+    setDraft((prev) => ({
+      ...prev,
+      items: [...prev.items, defaultLineItem()],
+    }));
   }, []);
 
   const removeItem = useCallback((id: string) => {
     setDraft((prev) => ({
       ...prev,
-      items: prev.items.length <= 1 ? prev.items : prev.items.filter((item) => item.id !== id),
+      items:
+        prev.items.length <= 1
+          ? prev.items
+          : prev.items.filter((item) => item.id !== id),
     }));
   }, []);
 
-  const updateItem = useCallback((id: string, field: keyof LineItem, value: string | number) => {
-    setDraft((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
-    }));
-  }, []);
+  const updateItem = useCallback(
+    (id: string, field: keyof LineItem, value: string | number) => {
+      setDraft((prev) => ({
+        ...prev,
+        items: prev.items.map((item) =>
+          item.id === id ? { ...item, [field]: value } : item
+        ),
+      }));
+    },
+    []
+  );
 
-  return { draft, addItem, removeItem, setDraftField, setPaymentMethod, updateItem };
+  return {
+    draft,
+    addItem,
+    removeItem,
+    setDraftField,
+    setPaymentMethod,
+    updateItem,
+  };
 }
 
 function PaymentConfigLoadingDialog({
@@ -281,7 +344,8 @@ function PaymentConfigHeader() {
         Configure Payment
       </DialogTitle>
       <DialogDescription>
-        Set up line items, payment terms, and accepted methods for this payment field.
+        Set up line items, payment terms, and accepted methods for this payment
+        field.
       </DialogDescription>
     </DialogHeader>
   );
@@ -302,7 +366,11 @@ function PaymentConfigTabs({
         <TabsTrigger value="methods">Methods & Tax</TabsTrigger>
       </TabsList>
       <InvoiceItemsTab form={form} total={total} />
-      <PaymentTermsTab draft={form.draft} setDraftField={form.setDraftField} total={total} />
+      <PaymentTermsTab
+        draft={form.draft}
+        setDraftField={form.setDraftField}
+        total={total}
+      />
       <MethodsAndTaxTab form={form} />
     </Tabs>
   );
@@ -347,7 +415,9 @@ function InvoiceItemRow({
         <Input
           placeholder="Description"
           value={item.description}
-          onChange={(event) => form.updateItem(item.id, "description", event.target.value)}
+          onChange={(event) =>
+            form.updateItem(item.id, "description", event.target.value)
+          }
         />
       </div>
       <div className="w-20">
@@ -357,7 +427,11 @@ function InvoiceItemRow({
           placeholder="Qty"
           value={item.quantity}
           onChange={(event) =>
-            form.updateItem(item.id, "quantity", Math.max(1, Number(event.target.value)))
+            form.updateItem(
+              item.id,
+              "quantity",
+              Math.max(1, Number(event.target.value))
+            )
           }
         />
       </div>
@@ -368,7 +442,7 @@ function InvoiceItemRow({
             form.updateItem(
               item.id,
               "unitPrice",
-              Math.round(parseCurrency(event.target.value) * 100),
+              Math.round(parseCurrency(event.target.value) * 100)
             );
           }}
           placeholder="$0.00"
@@ -407,13 +481,24 @@ function PaymentTermsTab({
         <RecurringScheduleSection draft={draft} setDraftField={setDraftField} />
       )}
       {draft.paymentType === "installments" && (
-        <InstallmentPlanSection draft={draft} setDraftField={setDraftField} total={total} />
+        <InstallmentPlanSection
+          draft={draft}
+          setDraftField={setDraftField}
+          total={total}
+        />
       )}
       {draft.paymentType === "deposit_balance" && (
-        <DepositBalanceSection draft={draft} setDraftField={setDraftField} total={total} />
+        <DepositBalanceSection
+          draft={draft}
+          setDraftField={setDraftField}
+          total={total}
+        />
       )}
       <LateFeesSection draft={draft} setDraftField={setDraftField} />
-      <FeeHandlingSection feeHandling={draft.feeHandling} setDraftField={setDraftField} />
+      <FeeHandlingSection
+        feeHandling={draft.feeHandling}
+        setDraftField={setDraftField}
+      />
     </TabsContent>
   );
 }
@@ -430,7 +515,9 @@ function PaymentTypeSection({
       <Label>Payment Type</Label>
       <Select
         value={draft.paymentType}
-        onValueChange={(value) => setDraftField("paymentType", value as PaymentType)}
+        onValueChange={(value) =>
+          setDraftField("paymentType", value as PaymentType)
+        }
       >
         <SelectTrigger>
           <SelectValue />
@@ -458,7 +545,9 @@ function DueDateSection({
       <Label>Due Date</Label>
       <Select
         value={draft.dueDateTerms}
-        onValueChange={(value) => setDraftField("dueDateTerms", value as DueDateTerms)}
+        onValueChange={(value) =>
+          setDraftField("dueDateTerms", value as DueDateTerms)
+        }
       >
         <SelectTrigger>
           <SelectValue />
@@ -528,7 +617,9 @@ function CustomDueDaysInput({
         min={1}
         className="w-24"
         value={draft.customDueDays}
-        onChange={(event) => setDraftField("customDueDays", Number(event.target.value))}
+        onChange={(event) =>
+          setDraftField("customDueDays", Number(event.target.value))
+        }
       />
       <span className="text-muted-foreground text-sm">days</span>
     </div>
@@ -551,7 +642,9 @@ function CustomDueDatePicker({
           className="w-full justify-start text-left font-normal"
         >
           <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-          {draft.customDueDate ? format(draft.customDueDate, "PPP") : "Pick a date"}
+          {draft.customDueDate
+            ? format(draft.customDueDate, "PPP")
+            : "Pick a date"}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -583,12 +676,17 @@ function RecurringScheduleSection({
           className="w-20"
           value={draft.recurringIntervalCount}
           onChange={(event) =>
-            setDraftField("recurringIntervalCount", Math.max(1, Number(event.target.value)))
+            setDraftField(
+              "recurringIntervalCount",
+              Math.max(1, Number(event.target.value))
+            )
           }
         />
         <Select
           value={draft.recurringInterval}
-          onValueChange={(value) => setDraftField("recurringInterval", value as RecurringInterval)}
+          onValueChange={(value) =>
+            setDraftField("recurringInterval", value as RecurringInterval)
+          }
         >
           <SelectTrigger className="w-32">
             <SelectValue />
@@ -600,7 +698,10 @@ function RecurringScheduleSection({
           </SelectContent>
         </Select>
       </div>
-      <RecurringEndConditionSection draft={draft} setDraftField={setDraftField} />
+      <RecurringEndConditionSection
+        draft={draft}
+        setDraftField={setDraftField}
+      />
     </div>
   );
 }
@@ -638,7 +739,10 @@ function RecurringEndConditionSection({
             className="w-24"
             value={draft.recurringEndAfterCount}
             onChange={(event) =>
-              setDraftField("recurringEndAfterCount", Math.max(1, Number(event.target.value)))
+              setDraftField(
+                "recurringEndAfterCount",
+                Math.max(1, Number(event.target.value))
+              )
             }
           />
           <span className="text-muted-foreground text-sm">payments</span>
@@ -668,11 +772,17 @@ function InstallmentPlanSection({
             min={2}
             value={draft.installmentsCount}
             onChange={(event) =>
-              setDraftField("installmentsCount", Math.max(2, Number(event.target.value)))
+              setDraftField(
+                "installmentsCount",
+                Math.max(2, Number(event.target.value))
+              )
             }
           />
         </div>
-        <InstallmentIntervalSelect draft={draft} setDraftField={setDraftField} />
+        <InstallmentIntervalSelect
+          draft={draft}
+          setDraftField={setDraftField}
+        />
       </div>
       {total > 0 && (
         <p className="text-muted-foreground text-sm">
@@ -734,12 +844,16 @@ function DepositBalanceSection({
       {total > 0 && (
         <div className="text-muted-foreground space-y-1 text-sm">
           <p>
-            Deposit: <span className="font-medium">{formatCents(depositAmount)}</span> (
+            Deposit:{" "}
+            <span className="font-medium">{formatCents(depositAmount)}</span> (
             {draft.depositPercent}%)
           </p>
           <p>
-            Balance: <span className="font-medium">{formatCents(total - depositAmount)}</span> due
-            in {draft.balanceDueDays} days
+            Balance:{" "}
+            <span className="font-medium">
+              {formatCents(total - depositAmount)}
+            </span>{" "}
+            due in {draft.balanceDueDays} days
           </p>
         </div>
       )}
@@ -763,7 +877,10 @@ function DepositPercentInput({
         max={99}
         value={draft.depositPercent}
         onChange={(event) =>
-          setDraftField("depositPercent", Math.max(1, Math.min(99, Number(event.target.value))))
+          setDraftField(
+            "depositPercent",
+            Math.max(1, Math.min(99, Number(event.target.value)))
+          )
         }
       />
     </div>
@@ -785,7 +902,10 @@ function BalanceDueDaysInput({
         min={1}
         value={draft.balanceDueDays}
         onChange={(event) =>
-          setDraftField("balanceDueDays", Math.max(1, Number(event.target.value)))
+          setDraftField(
+            "balanceDueDays",
+            Math.max(1, Number(event.target.value))
+          )
         }
       />
     </div>
@@ -804,14 +924,20 @@ function LateFeesSection({
       <div className="flex items-center justify-between">
         <div>
           <Label>Late Fees</Label>
-          <p className="text-muted-foreground text-xs">Charge fees for overdue payments</p>
+          <p className="text-muted-foreground text-xs">
+            Charge fees for overdue payments
+          </p>
         </div>
         <Switch
           checked={draft.lateFeeEnabled}
-          onCheckedChange={(checked) => setDraftField("lateFeeEnabled", checked)}
+          onCheckedChange={(checked) =>
+            setDraftField("lateFeeEnabled", checked)
+          }
         />
       </div>
-      {draft.lateFeeEnabled && <LateFeeInputs draft={draft} setDraftField={setDraftField} />}
+      {draft.lateFeeEnabled && (
+        <LateFeeInputs draft={draft} setDraftField={setDraftField} />
+      )}
     </div>
   );
 }
@@ -829,7 +955,9 @@ function LateFeeInputs({
         <Label className="text-xs">Type</Label>
         <Select
           value={draft.lateFeeType}
-          onValueChange={(value) => setDraftField("lateFeeType", value as LateFeeType)}
+          onValueChange={(value) =>
+            setDraftField("lateFeeType", value as LateFeeType)
+          }
         >
           <SelectTrigger>
             <SelectValue />
@@ -847,7 +975,9 @@ function LateFeeInputs({
           type="number"
           min={0}
           value={draft.lateFeeGraceDays}
-          onChange={(event) => setDraftField("lateFeeGraceDays", Number(event.target.value))}
+          onChange={(event) =>
+            setDraftField("lateFeeGraceDays", Number(event.target.value))
+          }
         />
       </div>
     </div>
@@ -871,7 +1001,9 @@ function LateFeeAmountInput({
         min={0}
         step={draft.lateFeeType === "percentage" ? 0.5 : 1}
         value={draft.lateFeeAmount}
-        onChange={(event) => setDraftField("lateFeeAmount", Number(event.target.value))}
+        onChange={(event) =>
+          setDraftField("lateFeeAmount", Number(event.target.value))
+        }
       />
     </div>
   );
@@ -889,14 +1021,18 @@ function FeeHandlingSection({
       <Label>Platform Fee Handling</Label>
       <Select
         value={feeHandling}
-        onValueChange={(value) => setDraftField("feeHandling", value as FeeHandling)}
+        onValueChange={(value) =>
+          setDraftField("feeHandling", value as FeeHandling)
+        }
       >
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="absorb">Absorb (you pay Seal's fee)</SelectItem>
-          <SelectItem value="pass_to_recipient">Pass to recipient (added to invoice)</SelectItem>
+          <SelectItem value="pass_to_recipient">
+            Pass to recipient (added to invoice)
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -918,7 +1054,10 @@ const paymentMethodOptions = [
   { key: "apple_pay", label: "Apple Pay (auto-enabled with Card)" },
   { key: "google_pay", label: "Google Pay (auto-enabled with Card)" },
   { key: "link", label: "Saved checkout profile" },
-] as const satisfies readonly { readonly key: PaymentMethodKey; readonly label: string }[];
+] as const satisfies readonly {
+  readonly key: PaymentMethodKey;
+  readonly label: string;
+}[];
 
 function PaymentMethodsSection({ form }: { readonly form: PaymentConfigForm }) {
   return (
@@ -932,7 +1071,9 @@ function PaymentMethodsSection({ form }: { readonly form: PaymentConfigForm }) {
           >
             <Checkbox
               checked={form.draft.paymentMethods[key]}
-              onCheckedChange={(checked) => form.setPaymentMethod(key, !!checked)}
+              onCheckedChange={(checked) =>
+                form.setPaymentMethod(key, !!checked)
+              }
             />
             <span className="text-sm">{label}</span>
           </label>
@@ -963,7 +1104,9 @@ function TaxSection({
           onCheckedChange={(checked) => setDraftField("taxEnabled", checked)}
         />
       </div>
-      {draft.taxEnabled && <TaxBehaviorSelect draft={draft} setDraftField={setDraftField} />}
+      {draft.taxEnabled && (
+        <TaxBehaviorSelect draft={draft} setDraftField={setDraftField} />
+      )}
     </div>
   );
 }
@@ -980,14 +1123,18 @@ function TaxBehaviorSelect({
       <Label className="text-xs">Tax Behavior</Label>
       <Select
         value={draft.taxBehavior}
-        onValueChange={(value) => setDraftField("taxBehavior", value as TaxBehavior)}
+        onValueChange={(value) =>
+          setDraftField("taxBehavior", value as TaxBehavior)
+        }
       >
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="exclusive">Exclusive (added on top)</SelectItem>
-          <SelectItem value="inclusive">Inclusive (included in price)</SelectItem>
+          <SelectItem value="inclusive">
+            Inclusive (included in price)
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -1008,7 +1155,10 @@ function PaymentConfigFooter({
   return (
     <DialogFooter className="gap-2 border-t pt-4">
       <div className="flex flex-1 items-center gap-2">
-        <Badge variant="outline" className="border-field-payment-border text-field-payment">
+        <Badge
+          variant="outline"
+          className="border-field-payment-border text-field-payment"
+        >
           Total: {formatCents(total)}
         </Badge>
       </div>
@@ -1030,7 +1180,12 @@ function PaymentConfigFooter({
 }
 
 function defaultLineItem(): LineItem {
-  return { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 };
+  return {
+    id: crypto.randomUUID(),
+    description: "",
+    quantity: 1,
+    unitPrice: 0,
+  };
 }
 
 function defaultPaymentMethods(): Record<PaymentMethodKey, boolean> {
@@ -1070,7 +1225,9 @@ function defaultPaymentConfigDraft(): PaymentConfigDraft {
   };
 }
 
-function paymentConfigDraftFromExisting(config: PaymentFieldConfig): PaymentConfigDraft {
+function paymentConfigDraftFromExisting(
+  config: PaymentFieldConfig
+): PaymentConfigDraft {
   const draft = defaultPaymentConfigDraft();
   return {
     ...draft,
@@ -1094,7 +1251,9 @@ function paymentConfigDraftFromExisting(config: PaymentFieldConfig): PaymentConf
   };
 }
 
-function customDueDateDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft> {
+function customDueDateDraft(
+  config: PaymentFieldConfig
+): Partial<PaymentConfigDraft> {
   if (config.customDueDate) {
     return {
       customDueDateMode: "date",
@@ -1116,7 +1275,9 @@ function lateFeeDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft> {
   };
 }
 
-function recurringDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft> {
+function recurringDraft(
+  config: PaymentFieldConfig
+): Partial<PaymentConfigDraft> {
   if (!config.recurringConfig) return {};
   return {
     recurringInterval: config.recurringConfig.interval,
@@ -1126,7 +1287,9 @@ function recurringDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft>
   };
 }
 
-function installmentsDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft> {
+function installmentsDraft(
+  config: PaymentFieldConfig
+): Partial<PaymentConfigDraft> {
   if (!config.installmentsConfig) return {};
   return {
     installmentsCount: config.installmentsConfig.count,
@@ -1134,7 +1297,9 @@ function installmentsDraft(config: PaymentFieldConfig): Partial<PaymentConfigDra
   };
 }
 
-function depositBalanceDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft> {
+function depositBalanceDraft(
+  config: PaymentFieldConfig
+): Partial<PaymentConfigDraft> {
   if (!config.depositBalanceConfig) return {};
   return {
     depositPercent: config.depositBalanceConfig.depositPercent,
@@ -1143,7 +1308,7 @@ function depositBalanceDraft(config: PaymentFieldConfig): Partial<PaymentConfigD
 }
 
 function paymentMethodsFromExisting(
-  allowedPaymentMethods: readonly string[],
+  allowedPaymentMethods: readonly string[]
 ): Record<PaymentMethodKey, boolean> {
   const methods = defaultPaymentMethods();
   for (const method of allowedPaymentMethods) {
@@ -1163,7 +1328,10 @@ async function savePaymentConfig(input: {
   readonly setIsSaving: (isSaving: boolean) => void;
   readonly upsertConfig: UpsertPaymentConfig;
 }) {
-  const validationError = validatePaymentConfigDraft(input.draft, input.fieldId);
+  const validationError = validatePaymentConfigDraft(
+    input.draft,
+    input.fieldId
+  );
   if (validationError) {
     toast.error(validationError);
     return;
@@ -1171,11 +1339,15 @@ async function savePaymentConfig(input: {
 
   input.setIsSaving(true);
   try {
-    await input.upsertConfig(buildPaymentConfigMutationInput(input.draft, input.fieldId));
+    await input.upsertConfig(
+      buildPaymentConfigMutationInput(input.draft, input.fieldId)
+    );
     toast.success("Payment configuration saved");
     input.onOpenChange(false);
   } catch (error) {
-    toast.error("Failed to save payment configuration", { description: getErrorMessage(error) });
+    toast.error("Failed to save payment configuration", {
+      description: getErrorMessage(error),
+    });
   } finally {
     input.setIsSaving(false);
   }
@@ -1183,13 +1355,14 @@ async function savePaymentConfig(input: {
 
 function validatePaymentConfigDraft(
   draft: PaymentConfigDraft,
-  fieldId: Id<"signature_fields"> | null,
+  fieldId: Id<"signature_fields"> | null
 ): string | null {
   if (!fieldId) return "Payment field is missing";
   if (draft.items.some((item) => !item.description.trim())) {
     return "Each line item must have a description";
   }
-  if (computeTotal(draft.items) < 50) return "Total amount must be at least $0.50";
+  if (computeTotal(draft.items) < 50)
+    return "Total amount must be at least $0.50";
   if (selectedPaymentMethods(draft).length === 0)
     return "At least one payment method must be selected";
   return null;
@@ -1197,7 +1370,7 @@ function validatePaymentConfigDraft(
 
 function buildPaymentConfigMutationInput(
   draft: PaymentConfigDraft,
-  fieldId: Id<"signature_fields"> | null,
+  fieldId: Id<"signature_fields"> | null
 ): PaymentConfigMutationInput {
   if (!fieldId) throw new Error("Payment field is missing");
   return {
@@ -1225,16 +1398,22 @@ function buildPaymentConfigMutationInput(
 }
 
 function selectedPaymentMethods(draft: PaymentConfigDraft): PaymentMethodKey[] {
-  return paymentMethodOptions.filter(({ key }) => draft.paymentMethods[key]).map(({ key }) => key);
+  return paymentMethodOptions
+    .filter(({ key }) => draft.paymentMethods[key])
+    .map(({ key }) => key);
 }
 
-function customDueDaysForMutation(draft: PaymentConfigDraft): number | undefined {
+function customDueDaysForMutation(
+  draft: PaymentConfigDraft
+): number | undefined {
   return draft.dueDateTerms === "custom" && draft.customDueDateMode === "days"
     ? draft.customDueDays
     : undefined;
 }
 
-function customDueDateForMutation(draft: PaymentConfigDraft): string | undefined {
+function customDueDateForMutation(
+  draft: PaymentConfigDraft
+): string | undefined {
   return draft.dueDateTerms === "custom" &&
     draft.customDueDateMode === "date" &&
     draft.customDueDate
@@ -1242,7 +1421,9 @@ function customDueDateForMutation(draft: PaymentConfigDraft): string | undefined
     : undefined;
 }
 
-function lateFeesForMutation(draft: PaymentConfigDraft): PaymentConfigMutationInput["lateFees"] {
+function lateFeesForMutation(
+  draft: PaymentConfigDraft
+): PaymentConfigMutationInput["lateFees"] {
   return draft.lateFeeEnabled
     ? {
         enabled: true,
@@ -1254,7 +1435,7 @@ function lateFeesForMutation(draft: PaymentConfigDraft): PaymentConfigMutationIn
 }
 
 function recurringConfigForMutation(
-  draft: PaymentConfigDraft,
+  draft: PaymentConfigDraft
 ): PaymentConfigMutationInput["recurringConfig"] {
   return draft.paymentType === "recurring"
     ? {
@@ -1262,13 +1443,15 @@ function recurringConfigForMutation(
         intervalCount: draft.recurringIntervalCount,
         endCondition: draft.recurringEndCondition,
         endAfterCount:
-          draft.recurringEndCondition === "after_count" ? draft.recurringEndAfterCount : undefined,
+          draft.recurringEndCondition === "after_count"
+            ? draft.recurringEndAfterCount
+            : undefined,
       }
     : undefined;
 }
 
 function installmentsConfigForMutation(
-  draft: PaymentConfigDraft,
+  draft: PaymentConfigDraft
 ): PaymentConfigMutationInput["installmentsConfig"] {
   return draft.paymentType === "installments"
     ? { count: draft.installmentsCount, interval: draft.installmentsInterval }
@@ -1276,9 +1459,12 @@ function installmentsConfigForMutation(
 }
 
 function depositBalanceConfigForMutation(
-  draft: PaymentConfigDraft,
+  draft: PaymentConfigDraft
 ): PaymentConfigMutationInput["depositBalanceConfig"] {
   return draft.paymentType === "deposit_balance"
-    ? { depositPercent: draft.depositPercent, balanceDueDays: draft.balanceDueDays }
+    ? {
+        depositPercent: draft.depositPercent,
+        balanceDueDays: draft.balanceDueDays,
+      }
     : undefined;
 }

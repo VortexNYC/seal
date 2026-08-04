@@ -17,7 +17,10 @@ interface WorkflowStatusBadgeProps {
   className?: string;
 }
 
-export function WorkflowStatusBadge({ status, className }: WorkflowStatusBadgeProps) {
+export function WorkflowStatusBadge({
+  status,
+  className,
+}: WorkflowStatusBadgeProps) {
   // Default to draft if undefined (for backward compatibility)
   const workflowStatus = status ?? "draft";
 

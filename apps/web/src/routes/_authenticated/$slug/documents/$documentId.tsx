@@ -2,7 +2,11 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { type ErrorComponentProps, createFileRoute, useRouter } from "@tanstack/react-router";
+import {
+  type ErrorComponentProps,
+  createFileRoute,
+  useRouter,
+} from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import {
@@ -14,10 +18,11 @@ import {
   SaveIcon,
   SendIcon,
 } from "lucide-react";
+import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document } from "react-pdf";
 import { pdfjs } from "react-pdf";
-import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
@@ -26,7 +31,11 @@ import { toast } from "sonner";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { buildActivityEvents } from "@/lib/document-activity";
@@ -67,11 +76,16 @@ import { Button } from "../../../../components/ui/button";
 
 pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
-export const Route = createFileRoute("/_authenticated/$slug/documents/$documentId")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/documents/$documentId"
+)({
   component: DocumentDetailPage,
   errorComponent: DocumentErrorComponent,
   head: () => ({
-    meta: [{ title: "Document - Seal" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "Document - Seal" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
   }),
 });
 
@@ -103,67 +117,86 @@ function DocumentDetailPage() {
   const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
     convexQuery(api.documents.queries.getDocument, {
       documentId: documentId as Id<"documents">,
-    }),
+    })
   );
 
-  const { data: recipients = [], refetch: refetchRecipients } = useSuspenseQuery(
-    convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
-      documentId: documentId as Id<"documents">,
-    }),
-  );
+  const { data: recipients = [], refetch: refetchRecipients } =
+    useSuspenseQuery(
+      convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
+        documentId: documentId as Id<"documents">,
+      })
+    );
 
   const { data: progress } = useSuspenseQuery(
     convexQuery(api.documents.recipients_queries.getRecipientProgress, {
       documentId: documentId as Id<"documents">,
-    }),
+    })
   );
 
-  const { data: signatureFields = [], refetch: refetchFields } = useSuspenseQuery(
-    convexQuery(api.signature_fields.queries.getFieldsByDocument, {
-      documentId: documentId as Id<"documents">,
-    }),
-  );
+  const { data: signatureFields = [], refetch: refetchFields } =
+    useSuspenseQuery(
+      convexQuery(api.signature_fields.queries.getFieldsByDocument, {
+        documentId: documentId as Id<"documents">,
+      })
+    );
 
   const signatureFieldCount = countSignatureFields(signatureFields);
 
   const { data: documentSignatures = [] } = useSuspenseQuery(
     convexQuery(api.signatures.queries.getSignaturesByDocument, {
       documentId: documentId as Id<"documents">,
-    }),
+    })
   );
 
   const { data: paymentConfigs = [] } = useSuspenseQuery(
     convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
       documentId: documentId as Id<"documents">,
-    }),
+    })
   );
 
-  const { data: currentUserRecipient, refetch: refetchCurrentUserRecipient } = useSuspenseQuery(
-    convexQuery(api.documents.recipients_queries.getRecipientByAuthenticatedUser, {
-      documentId: documentId as Id<"documents">,
-    }),
-  );
+  const { data: currentUserRecipient, refetch: refetchCurrentUserRecipient } =
+    useSuspenseQuery(
+      convexQuery(
+        api.documents.recipients_queries.getRecipientByAuthenticatedUser,
+        {
+          documentId: documentId as Id<"documents">,
+        }
+      )
+    );
 
-  const { data: currentUserFields = [], refetch: refetchCurrentUserFields } = useSuspenseQuery(
-    convexQuery(api.signature_fields.queries.getFieldsForAuthenticatedRecipient, {
-      documentId: documentId as Id<"documents">,
-    }),
-  );
+  const { data: currentUserFields = [], refetch: refetchCurrentUserFields } =
+    useSuspenseQuery(
+      convexQuery(
+        api.signature_fields.queries.getFieldsForAuthenticatedRecipient,
+        {
+          documentId: documentId as Id<"documents">,
+        }
+      )
+    );
 
-  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
-    slug,
-  }) as { status: string; account: { chargesEnabled: boolean } | null } | undefined;
+  const merchantAccount = useQuery(
+    api.payments.merchant_account_queries.getMerchantAccount,
+    {
+      slug,
+    }
+  ) as
+    | { status: string; account: { chargesEnabled: boolean } | null }
+    | undefined;
   const merchantPaymentsReady =
-    merchantAccount?.status === "connected" && (merchantAccount?.account?.chargesEnabled ?? false);
+    merchantAccount?.status === "connected" &&
+    (merchantAccount?.account?.chargesEnabled ?? false);
 
   const aiSettings = useQuery(api.organizations.queries.getAiSettings, {
     organizationId: documentData.organizationId,
   });
   const aiEnabled = aiSettings?.aiEnabled !== false;
 
-  const signingSettings = useQuery(api.organizations.queries.getSigningSettings, {
-    organizationId: documentData.organizationId,
-  });
+  const signingSettings = useQuery(
+    api.organizations.queries.getSigningSettings,
+    {
+      organizationId: documentData.organizationId,
+    }
+  );
 
   const { canCreateTemplates } = useSubscriptionLimits();
 
@@ -171,7 +204,12 @@ function DocumentDetailPage() {
   const paymentConfigByFieldId = useMemo(() => {
     const map = new Map<
       string,
-      { totalAmountCents: number; currency: string; paymentType: string; paymentStatus?: string }
+      {
+        totalAmountCents: number;
+        currency: string;
+        paymentType: string;
+        paymentStatus?: string;
+      }
     >();
     for (const config of paymentConfigs) {
       map.set(config.fieldId, {
@@ -186,7 +224,7 @@ function DocumentDetailPage() {
 
   const recipientsById = useMemo(
     () => new Map(recipients.map((recipient) => [recipient._id, recipient])),
-    [recipients],
+    [recipients]
   );
 
   const signaturesByFieldId = useMemo(
@@ -205,16 +243,22 @@ function DocumentDetailPage() {
               signerEmail: signer?.email,
             },
           ];
-        }),
+        })
       ),
-    [documentSignatures, recipientsById],
+    [documentSignatures, recipientsById]
   );
 
   // ── Mutations ───────────────────────────────────────────────────────────
-  const removeRecipient = useMutation(api.documents.recipients_mutations.removeRecipient);
-  const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
+  const removeRecipient = useMutation(
+    api.documents.recipients_mutations.removeRecipient
+  );
+  const addRecipients = useMutation(
+    api.documents.recipients_mutations.addRecipients
+  );
   const updateDocument = useMutation(api.documents.mutations.updateDocument);
-  const resendRecipientEmail = useAction(api.documents.send_document_action.resendRecipientEmail);
+  const resendRecipientEmail = useAction(
+    api.documents.send_document_action.resendRecipientEmail
+  );
 
   // ── Auth ────────────────────────────────────────────────────────────────
   const { user } = useUser();
@@ -241,8 +285,12 @@ function DocumentDetailPage() {
 
   const docState = useDocumentState(documentData.redirectUrl ?? "");
 
-  const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
-  const { openSections, toggleSection } = useSectionState(documentAnnotations.annotations !== null);
+  const documentAnnotations = useDocumentAnnotations(
+    documentId as Id<"documents">
+  );
+  const { openSections, toggleSection } = useSectionState(
+    documentAnnotations.annotations !== null
+  );
 
   const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
   const {
@@ -273,7 +321,8 @@ function DocumentDetailPage() {
     if (!canSendStatus || recipients.length === 0 || (!canEdit && !isExpired)) {
       return {
         canSend: false,
-        tooltip: "Document must be in draft or expired status with recipients to send",
+        tooltip:
+          "Document must be in draft or expired status with recipients to send",
       };
     }
 
@@ -287,10 +336,13 @@ function DocumentDetailPage() {
 
     const signers = recipients.filter((r) => r.role === "signer");
     const signersWithoutFields = signers.filter(
-      (signer) => !signatureFields.some((field) => field.recipientId === signer._id),
+      (signer) =>
+        !signatureFields.some((field) => field.recipientId === signer._id)
     );
     if (signersWithoutFields.length > 0) {
-      const signerNames = signersWithoutFields.map((s) => s.name || s.email).join(", ");
+      const signerNames = signersWithoutFields
+        .map((s) => s.name || s.email)
+        .join(", ");
       return {
         canSend: false,
         tooltip: `The following signers need at least one signature field: ${signerNames}`,
@@ -304,7 +356,7 @@ function DocumentDetailPage() {
 
   const activityEvents = useMemo(
     () => buildActivityEvents(documentData, recipients),
-    [documentData, recipients],
+    [documentData, recipients]
   );
 
   // Map fields and recipients to the exact types DocumentSidebar/FieldList expect
@@ -316,12 +368,12 @@ function DocumentDetailPage() {
         recipientId: f.recipientId ?? undefined,
         paymentConfig: paymentConfigByFieldId.get(f._id),
       })),
-    [signatureFields, paymentConfigByFieldId],
+    [signatureFields, paymentConfigByFieldId]
   );
 
   const sidebarRecipients = useMemo(
     () => recipients.map((r) => ({ ...r, name: r.name ?? undefined })),
-    [recipients],
+    [recipients]
   );
 
   // ── Effects ─────────────────────────────────────────────────────────────
@@ -365,14 +417,15 @@ function DocumentDetailPage() {
       toast.success(
         hasFields
           ? `Recipient and ${docState.recipientToRemove.fieldCount} ${docState.recipientToRemove.fieldCount === 1 ? "field" : "fields"} removed`
-          : "Recipient removed",
+          : "Recipient removed"
       );
       docState.setRemoveRecipientOpen(false);
       docState.setRecipientToRemove(null);
       refetchRecipients();
       refetchFields();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to remove recipient";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to remove recipient";
       toast.error(errorMessage);
       docState.setRemoveRecipientOpen(false);
       docState.setRecipientToRemove(null);
@@ -391,7 +444,9 @@ function DocumentDetailPage() {
         toast.error(result.error || "Failed to resend email");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to resend email");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to resend email"
+      );
     }
   };
 
@@ -417,7 +472,8 @@ function DocumentDetailPage() {
       docState.setAddMyselfOpen(false);
       refetchRecipients();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to add yourself";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to add yourself";
       toast.error(errorMessage);
       docState.setAddMyselfOpen(false);
     }
@@ -446,7 +502,9 @@ function DocumentDetailPage() {
       });
       toast.success(url ? "Redirect URL saved" : "Redirect URL removed");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save redirect URL");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save redirect URL"
+      );
     } finally {
       docState.setIsSavingRedirect(false);
     }
@@ -458,7 +516,9 @@ function DocumentDetailPage() {
     name?: string;
     role: string;
   }) => {
-    const fieldCount = signatureFields.filter((f) => f.recipientId === recipient._id).length;
+    const fieldCount = signatureFields.filter(
+      (f) => f.recipientId === recipient._id
+    ).length;
     docState.setRecipientToRemove({
       id: recipient._id,
       email: recipient.email,
@@ -504,7 +564,10 @@ function DocumentDetailPage() {
           size="sm"
           variant="ghost"
           disabled={isCreatingThread}
-          className={cn("text-ai-accent", showAIChat && "bg-ai-accent/20 dark:bg-ai-accent/20")}
+          className={cn(
+            "text-ai-accent",
+            showAIChat && "bg-ai-accent/20 dark:bg-ai-accent/20"
+          )}
           aria-pressed={showAIChat}
         >
           {isCreatingThread ? (
@@ -521,7 +584,10 @@ function DocumentDetailPage() {
     canEdit && signatureFields.length > 0 ? (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="flex-1 sm:flex-none" tabIndex={!canCreateTemplates ? 0 : undefined}>
+          <span
+            className="flex-1 sm:flex-none"
+            tabIndex={!canCreateTemplates ? 0 : undefined}
+          >
             <Button
               key="save-template"
               onClick={() => docState.setSaveAsTemplateOpen(true)}
@@ -610,7 +676,9 @@ function DocumentDetailPage() {
                   limitToBounds={true}
                   doubleClick={{ disabled: false }}
                   wheel={{ step: 0.1 }}
-                  panning={{ disabled: fieldPlacement.selectedFieldId !== null }}
+                  panning={{
+                    disabled: fieldPlacement.selectedFieldId !== null,
+                  }}
                   onTransformed={(_ref, state) => {
                     pdfViewer.setCurrentZoom(state.scale);
                   }}
@@ -640,7 +708,7 @@ function DocumentDetailPage() {
                       className={cn(
                         "border-border bg-card dark:border-border/80 dark:bg-card relative overflow-hidden rounded-lg border shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300",
                         fieldPlacement.draggingFieldType &&
-                          "border-primary ring-primary/20 scale-[1.002] shadow-lg ring-4",
+                          "border-primary ring-primary/20 scale-[1.002] shadow-lg ring-4"
                       )}
                     >
                       <Document
@@ -648,7 +716,9 @@ function DocumentDetailPage() {
                         onLoadSuccess={pdfViewer.onDocumentLoadSuccess}
                         loading={
                           <div className="text-muted-foreground p-16 text-center">
-                            <div className="animate-pulse">Loading document...</div>
+                            <div className="animate-pulse">
+                              Loading document...
+                            </div>
                           </div>
                         }
                         error={
@@ -664,13 +734,26 @@ function DocumentDetailPage() {
                           renderTextLayer={true}
                           renderAnnotationLayer={true}
                           fields={fieldPlacement.placedFields}
-                          selectedFieldId={canEdit ? fieldPlacement.selectedFieldId : null}
-                          onFieldSelect={canEdit ? fieldPlacement.handleFieldSelect : undefined}
-                          onFieldUpdate={canEdit ? fieldPlacement.handleFieldUpdate : undefined}
+                          selectedFieldId={
+                            canEdit ? fieldPlacement.selectedFieldId : null
+                          }
+                          onFieldSelect={
+                            canEdit
+                              ? fieldPlacement.handleFieldSelect
+                              : undefined
+                          }
+                          onFieldUpdate={
+                            canEdit
+                              ? fieldPlacement.handleFieldUpdate
+                              : undefined
+                          }
                           onPageDimensions={pdfViewer.handlePageDimensions}
                           onPageRef={(pageNumber, element) => {
                             if (element) {
-                              pdfViewer.pageRefs.current.set(pageNumber, element);
+                              pdfViewer.pageRefs.current.set(
+                                pageNumber,
+                                element
+                              );
                             } else {
                               pdfViewer.pageRefs.current.delete(pageNumber);
                             }
@@ -678,42 +761,54 @@ function DocumentDetailPage() {
                         />
                       </Document>
 
-                      {canEdit && aiEnabled && showAiSuggestions && aiSuggestions.suggestions && (
-                        <AIFieldOverlays
-                          suggestions={aiSuggestions.suggestions}
-                          selectedIndices={aiSuggestions.selectedIndices}
-                          toggleField={aiSuggestions.toggleField}
-                          currentPage={pdfViewer.currentPage}
-                          pdfPageWidth={pdfViewer.pdfWidth}
-                          pdfPageHeight={pdfViewer.pdfHeight}
-                        />
-                      )}
+                      {canEdit &&
+                        aiEnabled &&
+                        showAiSuggestions &&
+                        aiSuggestions.suggestions && (
+                          <AIFieldOverlays
+                            suggestions={aiSuggestions.suggestions}
+                            selectedIndices={aiSuggestions.selectedIndices}
+                            toggleField={aiSuggestions.toggleField}
+                            currentPage={pdfViewer.currentPage}
+                            pdfPageWidth={pdfViewer.pdfWidth}
+                            pdfPageHeight={pdfViewer.pdfHeight}
+                          />
+                        )}
 
-                      {canEdit && aiEnabled && documentAnnotations.annotations && (
-                        <AIAnnotationOverlays
-                          annotations={documentAnnotations.annotations}
-                          enabledCategories={documentAnnotations.enabledCategories}
-                          currentPage={pdfViewer.currentPage}
-                          pdfPageWidth={pdfViewer.pdfWidth}
-                          pdfPageHeight={pdfViewer.pdfHeight}
-                        />
-                      )}
+                      {canEdit &&
+                        aiEnabled &&
+                        documentAnnotations.annotations && (
+                          <AIAnnotationOverlays
+                            annotations={documentAnnotations.annotations}
+                            enabledCategories={
+                              documentAnnotations.enabledCategories
+                            }
+                            currentPage={pdfViewer.currentPage}
+                            pdfPageWidth={pdfViewer.pdfWidth}
+                            pdfPageHeight={pdfViewer.pdfHeight}
+                          />
+                        )}
                     </div>
                   </TransformComponent>
 
-                  {canEdit && aiEnabled && showAiSuggestions && aiSuggestions.suggestions && (
-                    <div className="mt-3">
-                      <AIFieldReviewBar
-                        suggestions={aiSuggestions.suggestions}
-                        selectedIndices={aiSuggestions.selectedIndices}
-                        isApplying={aiSuggestions.isApplying}
-                        selectAll={aiSuggestions.selectAll}
-                        selectHighConfidence={aiSuggestions.selectHighConfidence}
-                        handleApply={aiSuggestions.handleApply}
-                        handleDismiss={aiSuggestions.handleDismiss}
-                      />
-                    </div>
-                  )}
+                  {canEdit &&
+                    aiEnabled &&
+                    showAiSuggestions &&
+                    aiSuggestions.suggestions && (
+                      <div className="mt-3">
+                        <AIFieldReviewBar
+                          suggestions={aiSuggestions.suggestions}
+                          selectedIndices={aiSuggestions.selectedIndices}
+                          isApplying={aiSuggestions.isApplying}
+                          selectAll={aiSuggestions.selectAll}
+                          selectHighConfidence={
+                            aiSuggestions.selectHighConfidence
+                          }
+                          handleApply={aiSuggestions.handleApply}
+                          handleDismiss={aiSuggestions.handleDismiss}
+                        />
+                      </div>
+                    )}
 
                   {canEdit &&
                     aiEnabled &&
@@ -735,7 +830,8 @@ function DocumentDetailPage() {
                       <span>Document Preview</span>
                       {pdfViewer.numPages && (
                         <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 font-sans text-xs font-medium">
-                          {pdfViewer.numPages} {pdfViewer.numPages === 1 ? "page" : "pages"}
+                          {pdfViewer.numPages}{" "}
+                          {pdfViewer.numPages === 1 ? "page" : "pages"}
                         </span>
                       )}
                     </div>
@@ -791,7 +887,9 @@ function DocumentDetailPage() {
               }}
               onFieldDragStart={(fieldType) =>
                 fieldPlacement.setDraggingFieldType(
-                  fieldType as Parameters<typeof fieldPlacement.setDraggingFieldType>[0],
+                  fieldType as Parameters<
+                    typeof fieldPlacement.setDraggingFieldType
+                  >[0]
                 )
               }
               onFieldDragEnd={() => fieldPlacement.setDraggingFieldType(null)}
@@ -820,7 +918,10 @@ function DocumentDetailPage() {
                     | "approved"
                     | "declined"
                     | "expired",
-                  signingToken: "signingToken" in full ? (full.signingToken as string) : undefined,
+                  signingToken:
+                    "signingToken" in full
+                      ? (full.signingToken as string)
+                      : undefined,
                 });
                 docState.setRecipientOptionsOpen(true);
               }}
@@ -896,7 +997,9 @@ function DocumentDetailPage() {
           }}
           field={
             fieldPlacement.fieldPropertiesId
-              ? (signatureFields.find((f) => f._id === fieldPlacement.fieldPropertiesId) ?? null)
+              ? (signatureFields.find(
+                  (f) => f._id === fieldPlacement.fieldPropertiesId
+                ) ?? null)
               : null
           }
           recipients={recipients}
@@ -947,8 +1050,9 @@ function DocumentDetailPage() {
           onConfirm={fieldPlacement.handleFieldDeleteConfirm}
           fieldType={
             fieldPlacement.selectedFieldId
-              ? fieldPlacement.placedFields.find((f) => f.id === fieldPlacement.selectedFieldId)
-                  ?.fieldType
+              ? fieldPlacement.placedFields.find(
+                  (f) => f.id === fieldPlacement.selectedFieldId
+                )?.fieldType
               : undefined
           }
         />

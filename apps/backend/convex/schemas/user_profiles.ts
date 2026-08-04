@@ -7,7 +7,7 @@ import { v } from "convex/values";
 export const notificationFrequencyValidator = v.union(
   v.literal("instant"),
   v.literal("daily"),
-  v.literal("weekly"),
+  v.literal("weekly")
 );
 
 /**
@@ -48,7 +48,7 @@ export const userProfilesTable = defineTable({
 
       // Notification frequency for non-critical updates
       frequency: v.optional(notificationFrequencyValidator),
-    }),
+    })
   ),
 
   // Legacy preferences field (kept for backward compatibility)
@@ -56,7 +56,7 @@ export const userProfilesTable = defineTable({
     v.object({
       emailNotifications: v.optional(v.boolean()),
       pushNotifications: v.optional(v.boolean()),
-    }),
+    })
   ),
 
   // Timestamps

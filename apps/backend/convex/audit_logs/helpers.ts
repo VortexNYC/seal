@@ -50,7 +50,7 @@ interface AuditLogParams {
  */
 export async function logAction(
   ctx: AuditMutationCtx,
-  params: AuditLogParams,
+  params: AuditLogParams
 ): Promise<Id<"audit_logs">> {
   const auditLogId = await ctx.db.insert("audit_logs", {
     organizationId: params.organizationId,
@@ -90,7 +90,7 @@ const MAX_AUDIT_RETRIES = 3;
  */
 export async function logActionRequired(
   ctx: AuditMutationCtx,
-  params: AuditLogParams,
+  params: AuditLogParams
 ): Promise<Id<"audit_logs">> {
   let lastError: unknown;
 
@@ -101,7 +101,7 @@ export async function logActionRequired(
       lastError = error;
       console.error(
         `[Audit] Failed attempt ${attempt}/${MAX_AUDIT_RETRIES} for ${params.action}:`,
-        error,
+        error
       );
     }
   }
@@ -131,7 +131,7 @@ export async function logFieldAction(
     newValues?: Partial<Doc<"signature_fields">>;
     ipAddress: string;
     userAgent?: string;
-  },
+  }
 ): Promise<Id<"audit_logs">> {
   return logActionRequired(ctx, {
     organizationId: params.organizationId,
@@ -170,7 +170,7 @@ export async function logSignatureAction(
     newValues?: Partial<Doc<"signatures">>;
     ipAddress: string;
     userAgent?: string;
-  },
+  }
 ): Promise<Id<"audit_logs">> {
   return logActionRequired(ctx, {
     organizationId: params.organizationId,
@@ -207,7 +207,7 @@ export async function logDocumentAction(
     description?: string;
     ipAddress: string;
     userAgent?: string;
-  },
+  }
 ): Promise<Id<"audit_logs">> {
   return logActionRequired(ctx, {
     organizationId: params.organizationId,
@@ -255,7 +255,7 @@ export async function logRecipientAction(
     newValues?: Record<string, unknown>;
     ipAddress: string;
     userAgent?: string;
-  },
+  }
 ): Promise<Id<"audit_logs">> {
   return logActionRequired(ctx, {
     organizationId: params.organizationId,
@@ -283,7 +283,7 @@ export async function logRecipientAction(
  */
 export async function getDocumentAuditTrail(
   ctx: QueryCtx,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">
 ): Promise<Doc<"audit_logs">[]> {
   // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId; complete audit trail is required for compliance exports, so no caller receives fewer rows bound=global
   const auditLogs = await ctx.db
@@ -302,11 +302,13 @@ export async function getDocumentAuditTrail(
 export async function getOrganizationAuditTrail(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  limit = 100,
+  limit = 100
 ): Promise<Doc<"audit_logs">[]> {
   const auditLogs = await ctx.db
     .query("audit_logs")
-    .withIndex("by_organization_created", (q) => q.eq("organizationId", organizationId))
+    .withIndex("by_organization_created", (q) =>
+      q.eq("organizationId", organizationId)
+    )
     .order("desc")
     .take(limit);
 
@@ -319,7 +321,7 @@ export async function getOrganizationAuditTrail(
  */
 export async function getRecipientAuditTrail(
   ctx: QueryCtx,
-  recipientId: Id<"document_recipients">,
+  recipientId: Id<"document_recipients">
 ): Promise<Doc<"audit_logs">[]> {
   // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId; complete recipient audit history is required, so no caller receives fewer rows bound=global
   const auditLogs = await ctx.db

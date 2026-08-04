@@ -49,13 +49,13 @@ describe("account creation", () => {
         {
           userId: user.vortexAuthUserId,
           status: "active",
-        },
+        }
       );
       const roles = await ctx.runQuery(
         components.vortexAuth.organizations.listRolesByOrganization,
         {
           organizationId: organization.vortexAuthOrganizationId,
-        },
+        }
       );
 
       return {
@@ -63,10 +63,17 @@ describe("account creation", () => {
         organization,
         memberships,
         roles,
-        subscriptionCount: (await ctx.db.query("subscriptions").collect()).length,
-        subscriptionProductCount: (await ctx.db.query("subscription_products").collect()).length,
-        subscriptionPriceCount: (await ctx.db.query("subscription_prices").collect()).length,
-        merchantAccountCount: (await ctx.db.query("merchant_accounts").collect()).length,
+        subscriptionCount: (await ctx.db.query("subscriptions").collect())
+          .length,
+        subscriptionProductCount: (
+          await ctx.db.query("subscription_products").collect()
+        ).length,
+        subscriptionPriceCount: (
+          await ctx.db.query("subscription_prices").collect()
+        ).length,
+        merchantAccountCount: (
+          await ctx.db.query("merchant_accounts").collect()
+        ).length,
         vortexBillingWebhookEventCount: (
           await ctx.db.query("vortex_billing_webhook_events").collect()
         ).length,
@@ -79,7 +86,9 @@ describe("account creation", () => {
     expect(proof.user.activeOrganizationId).toBe(result.organizationId);
 
     const ownerMembership = proof.memberships.find(
-      (membership) => membership.organizationId === proof.organization.vortexAuthOrganizationId,
+      (membership) =>
+        membership.organizationId ===
+        proof.organization.vortexAuthOrganizationId
     );
     expect(ownerMembership?.userId).toBe(proof.user.vortexAuthUserId);
     expect(ownerMembership?.status).toBe("active");

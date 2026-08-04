@@ -172,9 +172,11 @@ test("shows other user cursors", async ({ browser }) => {
 
   // Mock to identify users
   await page1.route("**/api/me", (route) =>
-    route.fulfill({ json: { id: "user-1", name: "Alice" } }),
+    route.fulfill({ json: { id: "user-1", name: "Alice" } })
   );
-  await page2.route("**/api/me", (route) => route.fulfill({ json: { id: "user-2", name: "Bob" } }));
+  await page2.route("**/api/me", (route) =>
+    route.fulfill({ json: { id: "user-2", name: "Bob" } })
+  );
 
   await page1.goto("/whiteboard/123");
   await page2.goto("/whiteboard/123");
@@ -349,7 +351,9 @@ test("chat messages sync between users", async ({ browser }) => {
   const bobPage = await bobCtx.newPage();
 
   // Setup user identities
-  await alicePage.route("**/api/me", (r) => r.fulfill({ json: { name: "Alice" } }));
+  await alicePage.route("**/api/me", (r) =>
+    r.fulfill({ json: { name: "Alice" } })
+  );
   await bobPage.route("**/api/me", (r) => r.fulfill({ json: { name: "Bob" } }));
 
   await alicePage.goto("/chat/room-1");

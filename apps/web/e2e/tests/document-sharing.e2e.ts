@@ -13,27 +13,32 @@ test.describe("Document Sharing", () => {
   let shareDialog: ShareDialogPage;
   let sharedDocName: string;
 
-  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
-    documentsPage = new DocumentsListPage(authenticatedPage);
-    shareDialog = new ShareDialogPage(authenticatedPage);
+  test.beforeEach(
+    async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
+      documentsPage = new DocumentsListPage(authenticatedPage);
+      shareDialog = new ShareDialogPage(authenticatedPage);
 
-    try {
-      const doc = await createApiDocument();
-      sharedDocName = doc.name;
-      await documentsPage.goto(organizationSlug);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("monthly document limit")) {
-        test.skip(true, "E2E workspace reached its monthly document limit.");
-        return;
+      try {
+        const doc = await createApiDocument();
+        sharedDocName = doc.name;
+        await documentsPage.goto(organizationSlug);
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.includes("monthly document limit")
+        ) {
+          test.skip(true, "E2E workspace reached its monthly document limit.");
+          return;
+        }
+        throw err;
       }
-      throw err;
     }
-  });
+  );
 
   const openShareForDocument = async (
     page: Page,
     documentsListPage: DocumentsListPage,
-    docName: string,
+    docName: string
   ) => {
     const row = await documentsListPage.waitForDocumentRowByName(docName);
     await row.getByRole("button", { name: /document actions for/i }).click();
@@ -49,7 +54,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
       expect(await shareDialog.isOpen()).toBe(true);
@@ -61,7 +70,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
       await shareDialog.close();
@@ -75,7 +88,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
       await shareDialog.closeWithX();
@@ -91,7 +108,11 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(120000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
       await shareDialog.waitForOpen();
 
       if (await shareDialog.isTeamSharingDisabled()) {
@@ -111,7 +132,11 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(120000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
       await shareDialog.waitForOpen();
 
       if (await shareDialog.isTeamSharingDisabled()) {
@@ -131,7 +156,11 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(120000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
       await shareDialog.waitForOpen();
 
       await shareDialog.selectSharingMode("workspace");
@@ -148,7 +177,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -170,7 +203,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -194,7 +231,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -219,7 +260,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -238,7 +283,9 @@ test.describe("Document Sharing", () => {
           await options.first().click();
 
           await shareDialog.permissionSelect.click();
-          await authenticatedPage.getByRole("option", { name: /view/i }).click();
+          await authenticatedPage
+            .getByRole("option", { name: /view/i })
+            .click();
           await shareDialog.addButton.click();
 
           await waitForToast(authenticatedPage, /access granted/i);
@@ -256,7 +303,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -277,7 +328,9 @@ test.describe("Document Sharing", () => {
           await waitForToast(authenticatedPage, /access granted/i);
 
           if (memberName) {
-            expect(await shareDialog.getUserPermission(memberName)).toBe("edit");
+            expect(await shareDialog.getUserPermission(memberName)).toBe(
+              "edit"
+            );
           }
         }
       }
@@ -291,7 +344,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -306,7 +363,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -325,7 +386,11 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
       await shareDialog.waitForOpen();
 
       if (!(await shareDialog.isTeamSharingDisabled())) {
@@ -346,7 +411,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -361,13 +430,18 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
       const canViewAccess = !(await shareDialog.showsNoPermissionMessage());
       if (canViewAccess) {
-        const isAddSectionVisible = await shareDialog.isAddMemberSectionVisible();
+        const isAddSectionVisible =
+          await shareDialog.isAddMemberSectionVisible();
         const sharedUserCount = await shareDialog.getSharedUserCount();
 
         if (sharedUserCount > 0) {
@@ -390,11 +464,17 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
-      const revokeButtons = authenticatedPage.locator('[data-testid="revoke-access-button"]');
+      const revokeButtons = authenticatedPage.locator(
+        '[data-testid="revoke-access-button"]'
+      );
       const revokeCount = await revokeButtons.count();
 
       if (
@@ -411,11 +491,17 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
-      const permissionDropdowns = authenticatedPage.locator('[data-testid="permission-dropdown"]');
+      const permissionDropdowns = authenticatedPage.locator(
+        '[data-testid="permission-dropdown"]'
+      );
       const dropdownCount = await permissionDropdowns.count();
 
       if (
@@ -432,10 +518,17 @@ test.describe("Document Sharing", () => {
       test.setTimeout(60000);
     });
 
-    test("should prevent sharing with oneself", async ({ authenticatedPage, organizationSlug }) => {
+    test("should prevent sharing with oneself", async ({
+      authenticatedPage,
+      organizationSlug,
+    }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -446,9 +539,11 @@ test.describe("Document Sharing", () => {
           await shareDialog.memberSelect.click();
 
           const currentUserOption = authenticatedPage.locator(
-            '[role="option"][data-is-current-user="true"]',
+            '[role="option"][data-is-current-user="true"]'
           );
-          const selfOptionExists = await currentUserOption.isVisible().catch(() => false);
+          const selfOptionExists = await currentUserOption
+            .isVisible()
+            .catch(() => false);
 
           expect(selfOptionExists).toBe(false);
         }
@@ -461,7 +556,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -471,7 +570,9 @@ test.describe("Document Sharing", () => {
         if (await shareDialog.isAddMemberSectionVisible()) {
           await shareDialog.memberSelect.click();
 
-          const ownerOption = authenticatedPage.locator('[role="option"][data-is-owner="true"]');
+          const ownerOption = authenticatedPage.locator(
+            '[role="option"][data-is-owner="true"]'
+          );
           const ownerInList = await ownerOption.isVisible().catch(() => false);
 
           expect(ownerInList).toBe(false);
@@ -485,7 +586,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
+      await openShareForDocument(
+        authenticatedPage,
+        documentsPage,
+        sharedDocName
+      );
 
       await shareDialog.waitForOpen();
 
@@ -493,8 +598,12 @@ test.describe("Document Sharing", () => {
       const ownerRowExists = await ownerRow.isVisible();
 
       if (ownerRowExists) {
-        const ownerRevokeButton = ownerRow.locator('[data-testid="revoke-access-button"]');
-        const hasRevokeButton = await ownerRevokeButton.isVisible().catch(() => false);
+        const ownerRevokeButton = ownerRow.locator(
+          '[data-testid="revoke-access-button"]'
+        );
+        const hasRevokeButton = await ownerRevokeButton
+          .isVisible()
+          .catch(() => false);
 
         expect(hasRevokeButton).toBe(false);
       }

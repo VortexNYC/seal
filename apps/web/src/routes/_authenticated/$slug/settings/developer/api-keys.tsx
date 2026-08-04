@@ -44,7 +44,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -59,7 +65,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn, getErrorMessage } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
+export const Route = createFileRoute(
+  "/_authenticated/$slug/settings/developer/api-keys"
+)({
   component: ApiKeysPage,
   pendingComponent: FormSkeleton,
 });
@@ -281,13 +289,16 @@ function ApiKeysPage() {
 
   const toggleScope = (scope: ApiScope) => {
     setSelectedScopes((prev) =>
-      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]
     );
   };
 
   if (isLoading) {
     return (
-      <PageWrapper title="API Keys" description="Manage API keys for programmatic access to Seal">
+      <PageWrapper
+        title="API Keys"
+        description="Manage API keys for programmatic access to Seal"
+      >
         <FormSkeleton />
       </PageWrapper>
     );
@@ -296,7 +307,10 @@ function ApiKeysPage() {
   const activeKeys = apiKeys.filter((key) => !key.revoked);
 
   return (
-    <PageWrapper title="API Keys" description="Manage API keys for programmatic access to Seal">
+    <PageWrapper
+      title="API Keys"
+      description="Manage API keys for programmatic access to Seal"
+    >
       <FeatureGate
         tier="pro"
         feature="API access"
@@ -318,7 +332,10 @@ function ApiKeysPage() {
                   }}
                 >
                   <DialogTrigger asChild>
-                    <Button size="sm" className="bg-info hover:bg-info/90 text-primary-foreground">
+                    <Button
+                      size="sm"
+                      className="bg-info hover:bg-info/90 text-primary-foreground"
+                    >
                       <Plus className="mr-1 h-4 w-4" />
                       Create API Key
                     </Button>
@@ -363,10 +380,12 @@ function ApiKeysPage() {
                         <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
                           <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                           <div>
-                            <p className="text-warning font-medium">Save this key securely</p>
+                            <p className="text-warning font-medium">
+                              Save this key securely
+                            </p>
                             <p className="text-warning text-sm">
-                              This is the only time you'll see this key. Store it in a secure
-                              location.
+                              This is the only time you'll see this key. Store
+                              it in a secure location.
                             </p>
                           </div>
                         </div>
@@ -396,7 +415,9 @@ function ApiKeysPage() {
                           <div className="bg-muted/30 grid max-h-64 grid-cols-2 gap-3 overflow-y-auto rounded-lg border p-4">
                             {AVAILABLE_SCOPES.map((scope) => {
                               const IconComponent = scope.icon;
-                              const isSelected = selectedScopes.includes(scope.value);
+                              const isSelected = selectedScopes.includes(
+                                scope.value
+                              );
                               return (
                                 <button
                                   key={scope.value}
@@ -406,7 +427,7 @@ function ApiKeysPage() {
                                     "group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
                                     isSelected
                                       ? "border-info/50 bg-info-surface"
-                                      : "border-border bg-background hover:border-info/30",
+                                      : "border-border bg-background hover:border-info/30"
                                   )}
                                 >
                                   <div className="flex items-center gap-2">
@@ -415,7 +436,7 @@ function ApiKeysPage() {
                                         "flex h-8 w-8 items-center justify-center rounded-md",
                                         isSelected
                                           ? "bg-info/20 text-info"
-                                          : "bg-muted text-muted-foreground group-hover:text-foreground",
+                                          : "bg-muted text-muted-foreground group-hover:text-foreground"
                                       )}
                                     >
                                       <IconComponent className="h-4 w-4" />
@@ -429,7 +450,7 @@ function ApiKeysPage() {
                                     <p
                                       className={cn(
                                         "text-sm font-medium",
-                                        isSelected && "text-info",
+                                        isSelected && "text-info"
                                       )}
                                     >
                                       {scope.label}
@@ -483,7 +504,7 @@ function ApiKeysPage() {
                   </p>
                   <Button
                     onClick={() => setIsCreating(true)}
-                    className="bg-info hover:bg-info/90 mt-6 text-primary-foreground"
+                    className="bg-info hover:bg-info/90 text-primary-foreground mt-6"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Create your first API key
@@ -497,7 +518,10 @@ function ApiKeysPage() {
                       style={{ animationDelay: `${index * 50}ms` }}
                       className="animate-in fade-in slide-in-from-bottom-2"
                     >
-                      <ApiKeyRow apiKey={key} onRevoke={() => handleRevokeKey(key.id)} />
+                      <ApiKeyRow
+                        apiKey={key}
+                        onRevoke={() => handleRevokeKey(key.id)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -522,18 +546,24 @@ function ApiKeysPage() {
                     <div className="bg-destructive/80 h-3 w-3 rounded-full" />
                     <div className="bg-warning/80 h-3 w-3 rounded-full" />
                     <div className="bg-success/80 h-3 w-3 rounded-full" />
-                    <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
+                    <span className="text-muted-foreground ml-2 font-mono text-xs">
+                      terminal
+                    </span>
                   </div>
                   <div className="p-4">
                     <pre className="overflow-x-auto font-mono text-sm">
                       <code>
                         <span className="text-info">curl</span>
                         <span className="text-foreground"> -X GET </span>
-                        <span className="text-success">"https://api.seal.app/v1/documents"</span>
+                        <span className="text-success">
+                          "https://api.seal.app/v1/documents"
+                        </span>
                         <span className="text-foreground"> \</span>
                         {"\n"}
                         <span className="text-foreground">{"  "}-H </span>
-                        <span className="text-warning">"Authorization: Bearer YOUR_API_KEY"</span>
+                        <span className="text-warning">
+                          "Authorization: Bearer YOUR_API_KEY"
+                        </span>
                       </code>
                     </pre>
                   </div>
@@ -541,7 +571,11 @@ function ApiKeysPage() {
 
                 <div className="flex items-center gap-4">
                   <Button variant="outline" asChild>
-                    <a href="/docs/api" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href="/docs/api"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View API Docs
                     </a>
@@ -600,10 +634,14 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
               )}
             </button>
             <span className="text-muted-foreground/50 hidden sm:inline">•</span>
-            <span className="text-muted-foreground">Created {formatDate(apiKey.createdAt)}</span>
+            <span className="text-muted-foreground">
+              Created {formatDate(apiKey.createdAt)}
+            </span>
             {apiKey.lastUsedAt && (
               <>
-                <span className="text-muted-foreground/50 hidden sm:inline">•</span>
+                <span className="text-muted-foreground/50 hidden sm:inline">
+                  •
+                </span>
                 <span className="text-muted-foreground flex items-center gap-1.5">
                   <Clock className="h-3 w-3" />
                   Last used {formatRelativeTime(apiKey.lastUsedAt)}
@@ -615,7 +653,11 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
           {apiKey.scopes.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {apiKey.scopes.map((scope) => (
-                <Badge key={scope} variant="outline" className="font-mono text-xs">
+                <Badge
+                  key={scope}
+                  variant="outline"
+                  className="font-mono text-xs"
+                >
                   {scope.replace("seal:", "")}
                 </Badge>
               ))}
@@ -635,8 +677,8 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will immediately revoke access for this API key. Any applications using this
-                  key will stop working.
+                  This will immediately revoke access for this API key. Any
+                  applications using this key will stop working.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

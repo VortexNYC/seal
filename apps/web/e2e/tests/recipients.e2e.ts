@@ -4,19 +4,26 @@ import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
 test.describe("Recipients Management", () => {
-  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
-    try {
-      const doc = await createApiDocument();
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
-      await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("monthly document limit")) {
-        test.skip(true, "Monthly document quota exhausted.");
-        return;
+  test.beforeEach(
+    async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
+      try {
+        const doc = await createApiDocument();
+        await authenticatedPage.goto(
+          `/${organizationSlug}/documents/${doc.id}`
+        );
+        await new DocumentPage(authenticatedPage).waitForDocumentLoad();
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.includes("monthly document limit")
+        ) {
+          test.skip(true, "Monthly document quota exhausted.");
+          return;
+        }
+        throw err;
       }
-      throw err;
     }
-  });
+  );
 
   test("should display recipients section", async ({ authenticatedPage }) => {
     const documentPage = new DocumentPage(authenticatedPage);
@@ -38,15 +45,19 @@ test.describe("Recipients Management", () => {
     });
   });
 
-  test("should show empty state or recipients list", async ({ authenticatedPage }) => {
+  test("should show empty state or recipients list", async ({
+    authenticatedPage,
+  }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await documentPage.waitForDocumentLoad();
 
     // Fresh documents always start with no recipients.
-    await expect(documentPage.recipientsSectionButton).toBeVisible({ timeout: 5000 });
+    await expect(documentPage.recipientsSectionButton).toBeVisible({
+      timeout: 5000,
+    });
     await expect(
-      authenticatedPage.getByText(/Add recipients who need to sign or view/i),
+      authenticatedPage.getByText(/Add recipients who need to sign or view/i)
     ).toBeVisible({ timeout: 5000 });
   });
 
@@ -56,11 +67,15 @@ test.describe("Recipients Management", () => {
     await documentPage.waitForDocumentLoad();
 
     // Click Add Recipient button
-    const addButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
+    const addButton = authenticatedPage.getByRole("button", {
+      name: /add recipient/i,
+    });
     await addButton.click();
 
     // Verify dialog/form appears
-    await expect(authenticatedPage.getByRole("dialog", { name: /add recipient/i })).toBeVisible();
+    await expect(
+      authenticatedPage.getByRole("dialog", { name: /add recipient/i })
+    ).toBeVisible();
   });
 
   test("should add recipient with email", async ({
@@ -76,8 +91,14 @@ test.describe("Recipients Management", () => {
       const doc = await createApiDocument();
       docId = doc.id;
     } catch (err) {
-      if (err instanceof Error && err.message.includes("monthly document limit")) {
-        test.skip(true, "Monthly document quota exhausted — cannot create isolated test document.");
+      if (
+        err instanceof Error &&
+        err.message.includes("monthly document limit")
+      ) {
+        test.skip(
+          true,
+          "Monthly document quota exhausted — cannot create isolated test document."
+        );
         return;
       }
       throw err;
@@ -89,7 +110,9 @@ test.describe("Recipients Management", () => {
     const recipient = testData.recipient();
 
     // Click Add Recipient button to open the dialog
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /add recipient/i })
+      .click();
 
     // Dialog defaults to "Team" tab — switch to "External" to add by email
     await authenticatedPage.getByRole("tab", { name: /external/i }).click();
@@ -99,7 +122,9 @@ test.describe("Recipients Management", () => {
     await authenticatedPage.locator("#name").fill(recipient.name);
 
     // Submit — button text is "Add Recipient"
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /add recipient/i })
+      .click();
 
     await waitForToast(authenticatedPage, /recipient added/i);
 
@@ -131,19 +156,27 @@ test.describe("Recipients Management", () => {
     const recipient2 = testData.recipient();
 
     // Add first recipient via External tab
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /add recipient/i })
+      .click();
     await authenticatedPage.getByRole("tab", { name: /external/i }).click();
     await authenticatedPage.locator("#email").fill(recipient1.email);
     await authenticatedPage.locator("#name").fill(recipient1.name);
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /add recipient/i })
+      .click();
     await waitForToast(authenticatedPage, /recipient added/i);
 
     // Add second recipient
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /add recipient/i })
+      .click();
     await authenticatedPage.getByRole("tab", { name: /external/i }).click();
     await authenticatedPage.locator("#email").fill(recipient2.email);
     await authenticatedPage.locator("#name").fill(recipient2.name);
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /add recipient/i })
+      .click();
     await waitForToast(authenticatedPage, /recipient added/i);
 
     // Verify both recipients appear
@@ -170,12 +203,16 @@ test.describe("Recipients Management", () => {
     await removeButton.click();
 
     // Confirm removal
-    await authenticatedPage.getByRole("button", { name: /confirm|yes/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /confirm|yes/i })
+      .click();
 
     await waitForToast(authenticatedPage, /removed/i);
 
     // Verify recipient is gone
-    await expect(authenticatedPage.getByText(recipient.email)).not.toBeVisible();
+    await expect(
+      authenticatedPage.getByText(recipient.email)
+    ).not.toBeVisible();
   });
 
   test.skip("should set recipient order", async ({ authenticatedPage }) => {
@@ -198,7 +235,9 @@ test.describe("Recipients Management", () => {
     // Verify order changed
   });
 
-  test.skip("should assign fields to specific recipient", async ({ authenticatedPage }) => {
+  test.skip("should assign fields to specific recipient", async ({
+    authenticatedPage,
+  }) => {
     // BLOCKED: incomplete stub — requires adding both a field and a recipient first.
     const documentPage = new DocumentPage(authenticatedPage);
 
@@ -215,8 +254,12 @@ test.describe("Recipients Management", () => {
     await field.click();
 
     // Select recipient from dropdown
-    await authenticatedPage.getByRole("combobox", { name: /assign to/i }).click();
-    await authenticatedPage.getByRole("option", { name: /recipient 1/i }).click();
+    await authenticatedPage
+      .getByRole("combobox", { name: /assign to/i })
+      .click();
+    await authenticatedPage
+      .getByRole("option", { name: /recipient 1/i })
+      .click();
 
     await authenticatedPage.waitForTimeout(500);
 
@@ -225,7 +268,9 @@ test.describe("Recipients Management", () => {
 });
 
 test.describe("Recipients - Authentication Methods", () => {
-  test.skip("should configure recipient authentication method", async ({ authenticatedPage }) => {
+  test.skip("should configure recipient authentication method", async ({
+    authenticatedPage,
+  }) => {
     // BLOCKED: incomplete stub — `[data-testid="recipient"]` not in app, add recipient step missing.
     const documentPage = new DocumentPage(authenticatedPage);
 
@@ -239,7 +284,9 @@ test.describe("Recipients - Authentication Methods", () => {
     await recipient.click();
 
     // Select authentication method
-    await authenticatedPage.getByRole("combobox", { name: /authentication/i }).click();
+    await authenticatedPage
+      .getByRole("combobox", { name: /authentication/i })
+      .click();
 
     // Options might include: Email, SMS, None
     await authenticatedPage.getByRole("option", { name: /email/i }).click();
@@ -249,21 +296,30 @@ test.describe("Recipients - Authentication Methods", () => {
 });
 
 test.describe("Document Sending", () => {
-  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
-    try {
-      const doc = await createApiDocument();
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
-      await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("monthly document limit")) {
-        test.skip(true, "Monthly document quota exhausted.");
-        return;
+  test.beforeEach(
+    async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
+      try {
+        const doc = await createApiDocument();
+        await authenticatedPage.goto(
+          `/${organizationSlug}/documents/${doc.id}`
+        );
+        await new DocumentPage(authenticatedPage).waitForDocumentLoad();
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.includes("monthly document limit")
+        ) {
+          test.skip(true, "Monthly document quota exhausted.");
+          return;
+        }
+        throw err;
       }
-      throw err;
     }
-  });
+  );
 
-  test.skip("should send document to recipients", async ({ authenticatedPage }) => {
+  test.skip("should send document to recipients", async ({
+    authenticatedPage,
+  }) => {
     // BLOCKED: requires full prerequisite chain (add fields → add recipients → assign) before send.
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
@@ -274,10 +330,14 @@ test.describe("Document Sending", () => {
     // - Assign fields to recipients
 
     // Click Send button
-    await authenticatedPage.getByRole("button", { name: /send|send document/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /send|send document/i })
+      .click();
 
     // Confirm send
-    await authenticatedPage.getByRole("button", { name: /confirm|send/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /confirm|send/i })
+      .click();
 
     await waitForToast(authenticatedPage, /sent/i);
 
@@ -285,7 +345,9 @@ test.describe("Document Sending", () => {
     await expect(authenticatedPage.getByText("Sent")).toBeVisible();
   });
 
-  test("should validate document before sending", async ({ authenticatedPage }) => {
+  test("should validate document before sending", async ({
+    authenticatedPage,
+  }) => {
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
@@ -296,9 +358,14 @@ test.describe("Document Sending", () => {
     // Only test send-disabled validation on editable drafts. If the first
     // document in the list is already sent/completed, "Send Document" may not
     // be visible and we'd be testing the wrong thing.
-    const isEditable = await sendButton.isVisible({ timeout: 3000 }).catch(() => false);
+    const isEditable = await sendButton
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
     if (!isEditable) {
-      test.skip(true, "First document is not an editable draft — skipping send validation.");
+      test.skip(
+        true,
+        "First document is not an editable draft — skipping send validation."
+      );
       return;
     }
 
@@ -317,9 +384,13 @@ test.describe("Document Sending", () => {
     // Add recipient
     // Try to send
 
-    await authenticatedPage.getByRole("button", { name: /send|send document/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /send|send document/i })
+      .click();
 
     // Should show validation error
-    await expect(authenticatedPage.getByText(/assign all fields/i)).toBeVisible();
+    await expect(
+      authenticatedPage.getByText(/assign all fields/i)
+    ).toBeVisible();
   });
 });

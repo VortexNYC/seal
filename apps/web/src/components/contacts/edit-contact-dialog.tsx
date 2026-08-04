@@ -48,7 +48,11 @@ function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function EditContactDialog({ open, onOpenChange, contact }: EditContactDialogProps) {
+export function EditContactDialog({
+  open,
+  onOpenChange,
+  contact,
+}: EditContactDialogProps) {
   const updateContact = useMutation(api.contacts.mutations.update);
 
   const [firstName, setFirstName] = useState(contact.firstName);
@@ -119,7 +123,8 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
       toast.success("Contact updated");
       onOpenChange(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update contact";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update contact";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -131,7 +136,9 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
-          <DialogDescription>Update this contact&apos;s information.</DialogDescription>
+          <DialogDescription>
+            Update this contact&apos;s information.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -145,11 +152,14 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
                 value={firstName}
                 onChange={(e) => {
                   setFirstName(e.target.value);
-                  if (errors.firstName) setErrors((prev) => ({ ...prev, firstName: undefined }));
+                  if (errors.firstName)
+                    setErrors((prev) => ({ ...prev, firstName: undefined }));
                 }}
                 placeholder="John"
               />
-              {errors.firstName && <p className="text-destructive text-sm">{errors.firstName}</p>}
+              {errors.firstName && (
+                <p className="text-destructive text-sm">{errors.firstName}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -161,11 +171,14 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
                 value={lastName}
                 onChange={(e) => {
                   setLastName(e.target.value);
-                  if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: undefined }));
+                  if (errors.lastName)
+                    setErrors((prev) => ({ ...prev, lastName: undefined }));
                 }}
                 placeholder="Doe"
               />
-              {errors.lastName && <p className="text-destructive text-sm">{errors.lastName}</p>}
+              {errors.lastName && (
+                <p className="text-destructive text-sm">{errors.lastName}</p>
+              )}
             </div>
           </div>
 
@@ -179,11 +192,14 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                if (errors.email)
+                  setErrors((prev) => ({ ...prev, email: undefined }));
               }}
               placeholder="john@example.com"
             />
-            {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-destructive text-sm">{errors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -221,7 +237,10 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
 
           <div className="space-y-2">
             <Label htmlFor="edit-status">Status</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as ContactStatus)}>
+            <Select
+              value={status}
+              onValueChange={(value) => setStatus(value as ContactStatus)}
+            >
               <SelectTrigger id="edit-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>

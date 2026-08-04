@@ -67,7 +67,9 @@ import { QueryClient } from "@tanstack/react-query";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 
-export function getRouter(auth: RouterContext["auth"] = { user: null, isAuthenticated: false }) {
+export function getRouter(
+  auth: RouterContext["auth"] = { user: null, isAuthenticated: false }
+) {
   const queryClient = new QueryClient();
 
   const router = createRouter({
