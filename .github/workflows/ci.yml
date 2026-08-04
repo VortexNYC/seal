@@ -33,23 +33,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
-
-
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && pnpm install --frozen-lockfile && cd packages/vortex-auth && pnpm run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -73,23 +65,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
-
-
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && pnpm install --frozen-lockfile && cd packages/vortex-auth && pnpm run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -107,23 +91,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
-
-
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && pnpm install --frozen-lockfile && cd packages/vortex-auth && pnpm run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -145,23 +121,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
-
-
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && pnpm install --frozen-lockfile && cd packages/vortex-auth && pnpm run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -208,23 +176,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
-
-
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && pnpm install --frozen-lockfile && cd packages/vortex-auth && pnpm run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -267,23 +227,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
-
-
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && pnpm install --frozen-lockfile && cd packages/vortex-auth && pnpm run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

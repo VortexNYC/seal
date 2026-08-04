@@ -40,8 +40,9 @@ jobs:
 
   prepush-check:
     name: prepush:check
-    runs-on: [self-hosted, vortex, linux, x64, vortex-light]
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 20
+    needs: precommit-check
     steps:
       - name: Checkout
         uses: actions/checkout@v5

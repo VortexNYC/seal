@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "bun run prove:convex-cost-guard && convex dev",
-    "deploy": "bun run prove:convex-cost-guard && convex deploy",
+    "dev": "pnpm --dir ../.. run lint:convex && convex dev",
+    "deploy": "pnpm --dir ../.. run lint:convex && convex deploy",
     "test": "vitest run --maxWorkers=1",
     "test:watch": "vitest",
     "lint": "oxlint",
