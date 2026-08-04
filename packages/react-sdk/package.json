@@ -16,10 +16,10 @@
     }
   },
   "scripts": {
-    "lint": "oxlint -A eslint/complexity",
-    "format": "oxfmt --write",
-    "format:check": "oxfmt --check",
-    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+    "lint": "vp lint .",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files"
   },
