@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
@@ -16,7 +17,9 @@ const shikiPackageDir = path.dirname(path.dirname(require.resolve("shiki")));
 const contentToolCacheDir = process.env.VITE_SEAL_CONTENT_TOOL === "1";
 
 function matchesPackage(id: string, pkg: string): boolean {
-  return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
+  return (
+    id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`)
+  );
 }
 
 function getManualChunkName(id: string): string | undefined {
@@ -54,7 +57,9 @@ function getManualChunkName(id: string): string | undefined {
 }
 
 export default defineConfig(async ({ command }) => ({
-  cacheDir: contentToolCacheDir ? "node_modules/.vite-content-tools" : "node_modules/.vite",
+  cacheDir: contentToolCacheDir
+    ? "node_modules/.vite-content-tools"
+    : "node_modules/.vite",
 
   server: {
     host: "127.0.0.1",
@@ -63,7 +68,8 @@ export default defineConfig(async ({ command }) => ({
       "/ingest/static": {
         target: "https://us-assets.i.posthog.com",
         changeOrigin: true,
-        rewrite: (pathStr: string) => pathStr.replace(/^\/ingest\/static/, "/static"),
+        rewrite: (pathStr: string) =>
+          pathStr.replace(/^\/ingest\/static/, "/static"),
       },
       "/ingest": {
         target: "https://us.i.posthog.com",
@@ -73,16 +79,22 @@ export default defineConfig(async ({ command }) => ({
     },
   },
   plugins: [
+    cloudflare(),
     // Polyfill node:path → path-browserify in client builds only.
     // fumadocs-core/source and fumadocs-mdx/runtime/server call path.join at
     // module init, crashing the browser where node:path is externalized to undefined.
     {
       name: "polyfill-node-path-client",
       enforce: "pre" as const,
-      resolveId(source: string, _importer: string | undefined, options: { ssr?: boolean }) {
+      resolveId(
+        source: string,
+        _importer: string | undefined,
+        options: { ssr?: boolean }
+      ) {
         if (source === "node:path" && !options.ssr) {
           return require.resolve("path-browserify");
         }
+        return undefined;
       },
     },
     await mdx(SourceConfig, { updateViteConfig: true }),
@@ -101,9 +113,18 @@ export default defineConfig(async ({ command }) => ({
     tsconfigPaths: true,
     alias: {
       "~": path.resolve(import.meta.dirname, "./src"),
-      "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
-      "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
-      "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
+      "fumadocs-mdx:collections/server": path.resolve(
+        import.meta.dirname,
+        "./.source/server.ts"
+      ),
+      "fumadocs-mdx:collections/browser": path.resolve(
+        import.meta.dirname,
+        "./.source/browser.ts"
+      ),
+      "fumadocs-mdx:collections/dynamic": path.resolve(
+        import.meta.dirname,
+        "./.source/dynamic.ts"
+      ),
       // Force shiki subpaths to resolve from the actual installed package
       // location instead of assuming a root node_modules layout.
       "shiki/core": path.join(shikiPackageDir, "dist/core.mjs"),

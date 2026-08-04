@@ -18,35 +18,33 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# @plasmapos/vortex-auth is published to GitHub Packages; bun install reads this
+# @plasmapos/vortex-auth is published to GitHub Packages; pnpm install reads this
 # via .npmrc (//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}). Mirrors crm CI.
 env:
-  NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   quality:
     name: Quality Checks
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Verify (clean-machine)
         # PR/CI runs the clean-machine-safe gate only: lint, format, typecheck, knip,
@@ -54,12 +52,12 @@ jobs:
         # runs `verify:seal-vortex-migration`, whose launch/production-readiness and
         # `-live` proofs require Vortex Billing prod secrets that are intentionally NOT
         # in CI. Per Seal's doctrine, that launch/live proof is a local/operator and
-        # release-time gate, not a per-PR gate. Run `bun run verify` locally / at release.
-        run: bun --bun run verify:clean
+        # release-time gate, not a per-PR gate. Run `pnpm run verify` locally / at release.
+        run: pnpm run verify:clean
 
   test-backend:
     name: Backend Tests
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 10
     needs: quality
 
@@ -67,27 +65,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run backend tests
-        run: cd apps/backend && bun --bun run test
+        run: cd apps/backend && pnpm run test
 
   test-frontend:
     name: Frontend Tests
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 10
     needs: quality
 
@@ -95,31 +91,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run frontend tests
-        # Avoid `bun --bun run` here as well: the React/Vitest suite can hit
+        # Avoid forcing a special runtime here as well: the React/Vitest suite can hit
         # invalid-hook-call failures under Bun's Node shim on GitHub runners,
         # while the normal workspace script execution is stable.
-        run: cd apps/web && bun run test
+        run: cd apps/web && pnpm run test
 
   test-web-e2e-smoke:
     name: Web E2E Smoke
     if: github.event_name == 'release' || inputs.confirm_production == 'production'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 10
     needs: quality
 
@@ -127,31 +121,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd apps/web && bunx playwright install --with-deps chromium
+        run: cd apps/web && pnpm exec playwright install --with-deps chromium
 
       - name: Run web E2E smoke gate
         id: web_e2e_smoke
         # Fail fast on environment/auth/helper regressions before the full suite.
-        # Avoid `bun --bun run` here: Playwright's config loader fails under
+        # Avoid forcing a special runtime here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/web && bun run test:e2e --project=smoke-contract
+        run: cd apps/web && pnpm run test:e2e --project=smoke-contract
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           E2E_TEST_USER_EMAIL: ${{ vars.E2E_TEST_USER_EMAIL }}
@@ -174,7 +166,7 @@ jobs:
   test-web-e2e-chromium:
     name: Web E2E Chromium
     if: github.event_name == 'release' || inputs.confirm_production == 'production'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 20
     needs:
       - quality
@@ -184,29 +176,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd apps/web && bunx playwright install --with-deps chromium
+        run: cd apps/web && pnpm exec playwright install --with-deps chromium
 
       - name: Run web E2E chromium suite
         id: web_e2e_chromium
         # Smoke passed in the upstream job, but this job runs on a fresh machine.
         # Re-run setup dependencies here so Chromium has its own local setup artifacts.
-        run: cd apps/web && bun run test:e2e --project=chromium
+        run: cd apps/web && pnpm run test:e2e --project=chromium
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           E2E_TEST_USER_EMAIL: ${{ vars.E2E_TEST_USER_EMAIL }}
@@ -229,7 +219,7 @@ jobs:
   test-landing-e2e:
     name: Landing E2E
     if: github.event_name == 'release' || inputs.confirm_production == 'production'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
     timeout-minutes: 20
     needs: quality
 
@@ -237,42 +227,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clone Vortex sibling repos (file dependencies)
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/shlomokabareti/vortex-payments.git" "$GITHUB_WORKSPACE/../vortex-payments"
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 11.13.1
 
-      - name: Build Vortex Core file package
-        run: cd "$GITHUB_WORKSPACE/../vortex-core" && bun install --frozen-lockfile && cd packages/vortex-auth && bun run build
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers for PR gate
         if: github.event_name == 'pull_request'
-        run: cd apps/landing && bunx playwright install --with-deps chromium
+        run: cd apps/landing && pnpm exec playwright install --with-deps chromium
 
       - name: Install Playwright browsers for full gate
         if: github.event_name != 'pull_request'
-        run: cd apps/landing && bunx playwright install --with-deps chromium firefox webkit
+        run: cd apps/landing && pnpm exec playwright install --with-deps chromium firefox webkit
 
       - name: Run landing E2E PR gate
         if: github.event_name == 'pull_request'
         # PRs need a fast representative landing gate. Full cross-browser landing
         # coverage still runs on push/manual workflow runs.
-        run: cd apps/landing && bun run test:e2e --project=chromium --project="Mobile Chrome"
+        run: cd apps/landing && pnpm run test:e2e --project=chromium --project="Mobile Chrome"
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Run landing E2E full gate
         if: github.event_name != 'pull_request'
-        # Avoid `bun --bun run` here: Playwright's config loader fails under
+        # Avoid forcing a special runtime here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/landing && bun run test:e2e
+        run: cd apps/landing && pnpm run test:e2e
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"

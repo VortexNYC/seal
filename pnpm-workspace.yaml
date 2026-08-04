@@ -1,0 +1,46 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "tooling/*"
+
+catalog:
+  "@types/node": "^25.5.2"
+  "@types/react": "^19.2.14"
+  "@types/react-dom": "^19.2.3"
+  "convex": "^1.41.0"
+  "react": "^19.2.4"
+  "react-dom": "^19.2.4"
+  "typescript": "~5.9.3"
+  "vite": "^8.0.3"
+  "vite-node": "^6.0.0"
+  "vitest": "^4.1.2"
+  "zod": "^4.3.6"
+
+allowBuilds:
+  "@playwright/browser-chromium": true
+  "@swc/core": true
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  lefthook: true
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true
+  workerd: true
+
+onlyBuiltDependencies:
+  - "@playwright/browser-chromium"
+  - "@swc/core"
+  - core-js
+  - core-js-pure
+  - esbuild
+  - lefthook
+  - onnxruntime-node
+  - protobufjs
+  - sharp
+  - workerd
+
+minimumReleaseAgeExclude:
+  - "@vortexnyc/auth@0.14.3"
+  - "@vortexnyc/tooling@0.11.14"
+  - "@vortexnyc/convex@0.7.2"

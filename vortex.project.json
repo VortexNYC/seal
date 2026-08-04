@@ -8,28 +8,27 @@
   },
   "auth": {
     "enabled": true,
+    "packageName": "@vortexnyc/auth",
     "convexDir": "apps/backend/convex"
   },
   "instructions": {
     "name": "seal",
     "displayName": "Seal",
     "baseBranch": "staging",
-    "packageManager": "bun@1.3.11",
-    "setupCommands": [
-      "bun install"
-    ],
+    "packageManager": "pnpm@11.13.1",
+    "setupCommands": ["pnpm install"],
     "verificationCommands": [
-      "bun run project-kit:check",
-      "bun run project-kit:doctor",
-      "bun run typecheck",
-      "bun run lint",
-      "bun run format:changed:check",
-      "bun run check:preferred-stack",
-      "bun run build",
-      "bun run test",
-      "bun run verify:seal-vortex-migration",
-      "bun run auth:check",
-      "bun run auth:preflight"
+      "pnpm run project-kit:check",
+      "pnpm run project-kit:doctor",
+      "pnpm run typecheck",
+      "pnpm run lint",
+      "pnpm run format:check",
+      "pnpm run check:preferred-stack",
+      "pnpm run build",
+      "pnpm run test",
+      "pnpm run verify:seal-vortex-migration",
+      "pnpm run auth:check",
+      "pnpm run auth:preflight"
     ],
     "devUrls": [
       "http://seal.localhost:1355",
@@ -42,7 +41,7 @@
       "https://clever-goose-484.convex.site"
     ],
     "convexDeployment": "dev:aware-buzzard-568",
-    "convexInsightsCommand": "bunx convex insights --details",
+    "convexInsightsCommand": "pnpm dlx convex insights --details",
     "apps": [
       "apps/web - React 19 Vite product app with TanStack Router, Better Auth, Convex, and Cloudflare deploys",
       "apps/landing - TanStack Start/Fumadocs marketing and developer docs site",
@@ -81,11 +80,12 @@
       "Support light and dark themes with practical, restrained motion."
     ],
     "referenceRepos": [
-      "vortex-core for shared auth/tooling contracts",
-      "crm for the current clean Vortex Core consumer proof"
+      "../vortex-core for shared auth/tooling contracts",
+      "../vortex-pos for the current pnpm + Core tooling control-plane stack",
+      "../crm for the current clean Vortex Core consumer proof"
     ],
     "firstActions": [
-      "Run `bun run repo:status` from the repo root.",
+      "Run `pnpm run repo:status` from the repo root.",
       "Read AGENTS.md and any subdirectory AGENTS.md before touching code.",
       "Read .test-env before live proof or dev-server work.",
       "Attack the single active limiter; do not broaden payments, auth, or docs scope without evidence."
