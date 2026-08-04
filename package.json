@@ -7,7 +7,7 @@
     "dev:web": "pnpm --dir apps/web run dev -- --host 0.0.0.0",
     "dev:landing": "pnpm --dir apps/landing run dev -- --host 0.0.0.0",
     "dev:all": "pnpm run dev",
-    "build": "vp run -r build",
+    "build": "vp run -r build --filter=!@seal/landing",
     "lint": "vp lint && pnpm run lint:convex",
     "lint:fix": "vp lint --fix && vp fmt",
     "format": "vp fmt",
@@ -65,12 +65,12 @@
     "lint:convex": "eslint -c node_modules/@vortexnyc/tooling/convex-lint/eslint.config.mjs .",
     "prepare": "lefthook install",
     "precommit:check": "pnpm run lint:convex",
-    "prepush:check": "pnpm run build && pnpm run typecheck && pnpm run format:check && pnpm run lint && pnpm run test",
+    "prepush:check": "pnpm run project-kit:check && pnpm run project-kit:doctor && pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build",
     "fix": "vp lint --fix && vp fmt",
     "check": "vp check"
   },
   "dependencies": {
-    "@tanstack/router-core": "1.168.9",
+    "@tanstack/router-core": "1.171.16",
     "@vortexnyc/convex": "0.7.2"
   },
   "devDependencies": {
