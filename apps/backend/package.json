@@ -7,14 +7,13 @@
     "deploy": "pnpm --dir ../.. run lint:convex && convex deploy",
     "test": "vitest run --maxWorkers=1",
     "test:watch": "vitest",
-    "lint": "oxlint",
-    "format": "oxfmt --write",
-    "format:check": "oxfmt --check",
-    "typecheck": "bunx tsc -p convex/tsconfig.json --noEmit",
+    "lint": "vp lint .",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "typecheck": "tsc --noEmit -p ./convex/tsconfig.json",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files",
-    "clean": "git clean -xdf .cache .turbo node_modules convex/_generated",
-    "prove:convex-cost-guard": "bun $(bun pm bin)/../@vortexnyc/tooling/bin/vortex-convex-cost-guard.ts --root . --fail-on-warnings"
+    "clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
   },
   "dependencies": {
     "@convex-dev/action-cache": "^0.3.0",

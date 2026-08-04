@@ -13,9 +13,9 @@
   "scripts": {
     "dev": "email dev -p 3001",
     "export": "email export",
-    "lint": "oxlint",
-    "format": "oxfmt --write",
-    "format:check": "oxfmt --check",
+    "lint": "vp lint .",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
     "typecheck": "tsc --noEmit",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files"
