@@ -17,7 +17,6 @@
     "isolatedModules": true,
     "incremental": true,
     "tsBuildInfoFile": ".cache/tsbuildinfo.json",
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"],
       "fumadocs-mdx:collections/*": ["./.source/*"]

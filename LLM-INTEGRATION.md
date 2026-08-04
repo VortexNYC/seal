@@ -7,12 +7,12 @@
 - Project: `seal`
 - Package: `seal`
 - Base branch: `staging`
-- Package manager: `bun@1.3.11`
+- Package manager: `pnpm@11.13.1`
 - Convex deployment: `dev:aware-buzzard-568`
 
 ## First Actions
 
-- Run `bun run repo:status` from the repo root.
+- Run `pnpm run repo:status` from the repo root.
 - Read AGENTS.md and any subdirectory AGENTS.md before touching code.
 - Read .test-env before live proof or dev-server work.
 - Attack the single active limiter; do not broaden payments, auth, or docs scope without evidence.
@@ -22,30 +22,30 @@
 Setup:
 
 ```bash
-bun install
+pnpm install
 ```
 
 Proof wall:
 
 ```bash
-bun run prove:convex-cost-guard
-bun run project-kit:check
-bun run project-kit:doctor
-bun run typecheck
-bun run lint
-bun run format:changed:check
-bun run check:preferred-stack
-bun run build
-bun run test
-bun run verify:seal-vortex-migration
-bun run auth:check
-bun run auth:preflight
+pnpm run lint:convex
+pnpm run project-kit:check
+pnpm run project-kit:doctor
+pnpm run typecheck
+pnpm run lint
+pnpm run format:check
+pnpm run check:preferred-stack
+pnpm run build
+pnpm run test
+pnpm run verify:seal-vortex-migration
+pnpm run auth:check
+pnpm run auth:preflight
 ```
 
 ## Quality Contract
 
-- Pre-commit is the front-door local contract. Install it with `bun run precommit:install`; it sets `core.hooksPath=.githooks` and delegates to `bun run precommit:check`, which may only run fast static/local checks such as `bun run prove:convex-cost-guard`.
-- Pre-push/local proof is the developer proof wall. It delegates to `bun run prepush:check` and can include broader local checks such as typecheck, lint, build, unit tests, auth checks, and other repo-local validation.
+- Pre-commit is the front-door local contract. lefthook installs it via `prepare` on every pnpm install; it runs `vp staged` with the shared type-aware lint and format policy plus the Convex tier, and must stay fast enough to never think about.
+- Pre-push/local proof is the developer proof wall. It delegates to `pnpm run prepush:check` and can include broader local checks such as typecheck, lint, build, unit tests, auth checks, and other repo-local validation.
 - PR CI is the clean-machine receipt for generated drift, hook installation, fast local checks, and changed-surface build proof. Docs/process-only changes must not run the full proof wall. Do not add browser, mobile, dashboard, deploy, Cloudflare, or live Convex proof to normal PR CI.
 - Release/live proof belongs in release-only workflows or explicit operator runs. Use it for browser E2E, production smoke, live Convex insights, deploys, dashboards, and other provider-backed checks.
 
@@ -57,7 +57,7 @@ No generated commands. Add `instructions.verificationCommands` to `vortex.projec
 
 - Auth package: `@vortexnyc/auth`
 - Convex auth directory: `apps/backend/convex`
-- Required auth checks: `bun run auth:check`, then `bun run auth:preflight`
+- Required auth checks: `pnpm run auth:check`, then `pnpm run auth:preflight`
 - App code owns adapter glue, local anchor tables, routes, and product copy.
 - Core owns auth semantics, hosted auth UI, component truth, API auth, webhooks, MCP helpers, and preflight checks.
 
