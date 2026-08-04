@@ -7,12 +7,12 @@
 #   scripts/e2e-mini.sh chromium auth.e2e.ts  # specific test, chromium project
 #   SYNC=1 scripts/e2e-mini.sh                # rsync working tree first (uncommitted changes)
 #
-# Defaults: project=chromium, app=apps/web, host=mini (~/projects/Seal)
+# Defaults: project=chromium, app=apps/web, host=mini (~/projects/vortex-sign)
 
 set -euo pipefail
 
 HOST="${MINI_HOST:-mini}"
-REMOTE_PATH="${MINI_PATH:-projects/Seal}"
+REMOTE_PATH="${MINI_PATH:-projects/vortex-sign}"
 APP="${APP:-apps/web}"
 PROJECT="${1:-chromium}"
 shift || true
