@@ -65,7 +65,7 @@
     "lint:convex": "eslint -c node_modules/@vortexnyc/tooling/convex-lint/eslint.config.mjs .",
     "prepare": "lefthook install",
     "precommit:check": "pnpm run lint:convex",
-    "prepush:check": "pnpm run project-kit:check && pnpm run project-kit:doctor && pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build",
+    "prepush:check": "pnpm run build && pnpm run typecheck && pnpm run format:check && pnpm run lint && pnpm run test",
     "fix": "vp lint --fix && vp fmt",
     "check": "vp check"
   },

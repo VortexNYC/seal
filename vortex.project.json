@@ -1,6 +1,6 @@
 {
   "packageScriptMode": "bin",
-  "rootScriptPolicy": "replace",
+  "rootScriptPolicy": "fill-missing",
   "instructionFiles": {
     "agents": false,
     "claude": false,
