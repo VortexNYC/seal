@@ -72,14 +72,14 @@
   },
   "dependencies": {
     "@tanstack/router-core": "1.171.16",
-    "@vortexnyc/convex": "0.7.2"
+    "@vortexnyc/convex": "0.8.0"
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "2.0.0",
     "@seal/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@vortexnyc/auth": "0.17.0",
-    "@vortexnyc/tooling": "0.11.15",
+    "@vortexnyc/tooling": "0.11.16",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "eslint": "10.7.0",
