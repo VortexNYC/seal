@@ -1,7 +1,8 @@
 /**
  * General Settings Page
  *
- * Core VortexOrganizationProfile for tenant identity (name / slug / logo).
+ * Core VortexOrganizationProfile for tenant identity (name / slug / logo /
+ * brand colors / email from / org MFA + session timeout).
  * Seal-specific workspace defaults (timezone, currency) remain below.
  * Route: /{slug}/settings
  *
@@ -70,12 +71,31 @@ function GeneralSettings() {
       organization.status === "suspended" || organization.status === "deleted"
         ? organization.status
         : "active";
+    const brand = organization.suiteBrand ?? {
+      ...(organization.brandingSettings?.brandColor
+        ? { primaryColor: organization.brandingSettings.brandColor }
+        : {}),
+      ...(organization.brandingSettings?.accentColor
+        ? { accentColor: organization.brandingSettings.accentColor }
+        : {}),
+      ...(organization.brandingSettings?.emailFromName
+        ? { emailFromName: organization.brandingSettings.emailFromName }
+        : {}),
+      ...(organization.brandingSettings?.emailReplyTo
+        ? { emailReplyTo: organization.brandingSettings.emailReplyTo }
+        : {}),
+      ...(organization.brandingSettings?.companyWebsite
+        ? { website: organization.brandingSettings.companyWebsite }
+        : {}),
+    };
     return {
       _id: organization._id,
       name: organization.name,
       slug: organization.slug,
       imageUrl: organization.logo ?? organization.brandingSettings?.logoUrl,
       status,
+      brand,
+      security: organization.suiteSecurity,
     };
   }, [organization]);
 
@@ -134,6 +154,10 @@ function GeneralSettings() {
                   ...(input.imageUrl !== undefined
                     ? { logo: input.imageUrl ?? undefined }
                     : {}),
+                  ...(input.brand !== undefined ? { brand: input.brand } : {}),
+                  ...(input.security !== undefined
+                    ? { security: input.security }
+                    : {}),
                 });
                 toast.success("Workspace profile updated");
               } catch (error) {
@@ -148,7 +172,7 @@ function GeneralSettings() {
             copy={{
               title: "Workspace profile",
               description:
-                "Suite tenant identity (name, slug, logo). Signing chrome stays under Branding.",
+                "Suite tenant identity, brand, and org security (Core). Signing chrome stays under Branding.",
               slugLabel: "Workspace slug",
             }}
           />

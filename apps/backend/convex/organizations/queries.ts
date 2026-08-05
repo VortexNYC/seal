@@ -16,6 +16,7 @@ import {
   listComponentMembersByOrganization,
   resolveComponentMembershipForOrganization,
 } from "../lib/componentOrgReads";
+import { loadSuiteOrgBrandAndSecurity } from "../lib/suiteOrgPolicy";
 import type { OrganizationMemberRole } from "../schema";
 
 const roleOrder: Record<OrganizationMemberRole, number> = {
@@ -79,10 +80,14 @@ export const getOrganization = authQuery({
       throw new ConvexError("No access to this organization");
     }
 
+    const suitePolicy = await loadSuiteOrgBrandAndSecurity(ctx, org);
+
     return {
       ...org,
       userRole: membership.role,
       userStatus: membership.status,
+      suiteBrand: suitePolicy.brand,
+      suiteSecurity: suitePolicy.security,
     };
   },
 });

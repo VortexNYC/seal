@@ -15,6 +15,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { AuthUtils, type AuthMember } from "../auth.utils";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { findCurrentUserRow } from "../lib/identity";
+import { enforceActiveOrgSecurityPolicy } from "../lib/suiteOrgPolicy";
 import type { OrganizationRole, UserType } from "../schema";
 import {
   getExpandedPermissions,
@@ -202,6 +203,71 @@ function buildSuperAdminContext(
   };
 }
 
+async function loadBetterAuthSessionCreatedAt(
+  ctx: QueryCtx | MutationCtx,
+  identity: { subject: string; [claim: string]: unknown }
+): Promise<number | null> {
+  const sessionIdClaim = identity.sessionId;
+  const sessionId =
+    typeof sessionIdClaim === "string" && sessionIdClaim.length > 0
+      ? sessionIdClaim
+      : null;
+  if (sessionId === null) {
+    return null;
+  }
+
+  const session = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "session",
+    where: [
+      { field: "_id", value: sessionId },
+      { field: "userId", value: identity.subject },
+    ],
+  });
+  if (!session || typeof session !== "object" || !("createdAt" in session)) {
+    return null;
+  }
+  const createdAt = (session as { createdAt?: unknown }).createdAt;
+  if (typeof createdAt === "number" && Number.isFinite(createdAt)) {
+    return createdAt;
+  }
+  return null;
+}
+
+async function enforceSuiteOrgSecurityForActiveOrg(
+  ctx: QueryCtx | MutationCtx,
+  organization: Doc<"organizations">
+): Promise<void> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throwPermissionAuthError("UNAUTHORIZED", "Authentication required");
+  }
+  try {
+    // Pass sessionCreatedAt only after policy check inside enforce — when
+    // no suite security policy is set, Better Auth is never queried.
+    await enforceActiveOrgSecurityPolicy(ctx, {
+      organization,
+      betterAuthUserId: identity.subject,
+      sessionCreatedAt: async () =>
+        await loadBetterAuthSessionCreatedAt(ctx, identity),
+    });
+  } catch (error) {
+    if (error instanceof ConvexError) {
+      const data = error.data;
+      if (isRecord(data) && typeof data.message === "string") {
+        throwPermissionAuthError(
+          typeof data.code === "string" ? data.code : "FORBIDDEN",
+          data.message
+        );
+      }
+    }
+    throw error;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 async function buildActiveMembershipContext(
   ctx: QueryCtx | MutationCtx,
   user: Doc<"users">
@@ -347,6 +413,8 @@ export async function getAuthContextWithPermissions(
     );
     const subscription = await getActiveSubscription(ctx, organizationId);
 
+    await enforceSuiteOrgSecurityForActiveOrg(ctx, organization);
+
     return buildSuperAdminContext(
       user,
       member,
@@ -360,6 +428,8 @@ export async function getAuthContextWithPermissions(
     await buildActiveMembershipContext(ctx, user);
   const permissions = await resolvePermissions(ctx, membership, organization);
   const subscription = await getActiveSubscription(ctx, organizationId);
+
+  await enforceSuiteOrgSecurityForActiveOrg(ctx, organization);
 
   return buildPermissionContext(
     user,

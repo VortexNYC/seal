@@ -24,6 +24,12 @@ import {
   ensureComponentRoleForTemplate,
   upsertVortexAuthMember,
 } from "../lib/vortexAuthOrganizations";
+import {
+  mirrorBrandIntoBrandingSettings,
+  syncSuiteOrgDetailsToVortexAuth,
+  type SuiteOrgBrandUpdate,
+  type SuiteOrgSecurityUpdate,
+} from "../lib/suiteOrgPolicy";
 import { organizationBaseSchema } from "../validations/organizations";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -46,6 +52,7 @@ type OrganizationUpdateData = Partial<
     | "isActive"
     | "currency"
     | "currencyKind"
+    | "brandingSettings"
   >
 > & {
   updatedAt: number;
@@ -452,6 +459,21 @@ export const updateWorkspace = adminMutation({
     currencyKind: v.optional(v.string()),
     timezone: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    brand: v.optional(
+      v.object({
+        primaryColor: v.optional(v.union(v.string(), v.null())),
+        accentColor: v.optional(v.union(v.string(), v.null())),
+        website: v.optional(v.union(v.string(), v.null())),
+        emailFromName: v.optional(v.union(v.string(), v.null())),
+        emailReplyTo: v.optional(v.union(v.string(), v.null())),
+      })
+    ),
+    security: v.optional(
+      v.object({
+        requireMfa: v.optional(v.union(v.boolean(), v.null())),
+        sessionTimeoutMinutes: v.optional(v.union(v.number(), v.null())),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
@@ -469,7 +491,37 @@ export const updateWorkspace = adminMutation({
       updateData.currencyKind = args.currencyKind;
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
+    if (args.brand !== undefined) {
+      const org = await ctx.db.get(organization._id);
+      if (!org) throw new ConvexError("Organization not found");
+      updateData.brandingSettings = mirrorBrandIntoBrandingSettings(
+        org.brandingSettings,
+        args.brand as SuiteOrgBrandUpdate
+      );
+    }
+
     await ctx.db.patch(organization._id, updateData);
+
+    const fresh = await ctx.db.get(organization._id);
+    if (!fresh) throw new ConvexError("Organization not found");
+
+    if (
+      args.name !== undefined ||
+      args.logo !== undefined ||
+      args.brand !== undefined ||
+      args.security !== undefined
+    ) {
+      await syncSuiteOrgDetailsToVortexAuth(ctx, fresh, {
+        ...(args.name !== undefined ? { name: args.name } : {}),
+        ...(args.logo !== undefined ? { imageUrl: args.logo } : {}),
+        ...(args.brand !== undefined
+          ? { brand: args.brand as SuiteOrgBrandUpdate }
+          : {}),
+        ...(args.security !== undefined
+          ? { security: args.security as SuiteOrgSecurityUpdate }
+          : {}),
+      });
+    }
 
     return { success: true };
   },

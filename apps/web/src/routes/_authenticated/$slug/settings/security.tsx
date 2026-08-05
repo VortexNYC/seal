@@ -168,9 +168,16 @@ function SecuritySettings() {
           <CardHeader>
             <CardTitle className="text-base">Suite vs Sign</CardTitle>
             <CardDescription>
-              Org-wide MFA and session timeout move to Core Auth (
-              <span className="font-medium">VOR-183</span>) — they were never
-              enforced here. Personal 2FA stays under{" "}
+              Org-wide MFA and session timeout are set on{" "}
+              <Link
+                className="text-primary underline-offset-4 hover:underline"
+                params={{ slug }}
+                to="/$slug/settings"
+              >
+                General → Workspace profile
+              </Link>{" "}
+              (Core Auth) and enforced on org switch / authenticated requests.
+              Personal 2FA stays under{" "}
               <Link
                 className="text-primary underline-offset-4 hover:underline"
                 params={{ slug }}

@@ -55,22 +55,25 @@ Rules:
 | Concern | Owner | Where |
 | ------- | ----- | ----- |
 | Workspace name / slug / logo | Core `VortexOrganizationProfile` | `settings/` (General) |
-| Tenant brand colors / email from | Core (VOR-182) — Seal store until then | Temporary: `settings/branding` |
+| Tenant brand colors / email from | Core `metadataJson.brand` (VOR-182) | `settings/` (General) |
 | Hide “Powered by Seal”, custom signing footer | **Seal** (Sign chrome) | `settings/branding` |
 | White-label gate | Pro Sign SKU (`PLAN_LIMITS.*.branding`) | `FeatureGate` on branding |
 
-Do not grow a parallel company-identity form on Branding; prefer General + Core.
+General writes Core brand and mirrors colors/email into `brandingSettings` so
+`sign.$token` / document emails keep working. Do not grow a parallel company-
+identity form on Branding.
 
 ### Org security policy (SEA-604)
 
 | Concern | Owner | Where |
 | ------- | ----- | ----- |
-| Org MFA / session timeout enforcement | Core Auth (VOR-183) | Not written from Seal UI/API |
+| Org MFA / session timeout | Core `metadataJson.security` (VOR-183) | General profile + auth wrappers / org switch |
 | API access + IP allowlist | **Seal** | `settings/security` + `api/context.ts` |
 | Document ownership transfer | **Seal** | `settings/security` (`delegateOwnership`) |
 | Personal 2FA | Core / profile | `settings/profile/security` |
 
-Do not re-add Session Security toggles on org settings until Core owns them.
+Do not re-add Session Security toggles on the Seal security page — configure
+them on General (Core).
 
 ### Invite seats (SEA-605)
 

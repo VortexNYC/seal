@@ -21,8 +21,9 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { ROLE_PERMISSIONS } from "../auth.utils";
 import type { OrganizationMemberRole } from "../schema";
+import { buildUpsertMetadataJsonPreservingSuitePolicy } from "./suiteOrgPolicy";
 
-type VortexAuthMutationCtx = Pick<MutationCtx, "db" | "runMutation">;
+type VortexAuthMutationCtx = Pick<MutationCtx, "db" | "runMutation" | "runQuery">;
 
 export async function ensureVortexAuthOrganization(
   ctx: VortexAuthMutationCtx,
@@ -37,6 +38,11 @@ export async function ensureVortexAuthOrganization(
     });
   }
 
+  const metadataJson = await buildUpsertMetadataJsonPreservingSuitePolicy(
+    ctx,
+    organization
+  );
+
   const result = await ctx.runMutation(
     components.vortexAuth.organizations.upsertOrganization,
     {
@@ -46,7 +52,7 @@ export async function ensureVortexAuthOrganization(
       imageUrl: organization.logo ?? null,
       status: organization.status ?? "active",
       createdBy: createdByVortexAuthUserId,
-      metadataJson: JSON.stringify({ type: organization.type }),
+      metadataJson,
     }
   );
 

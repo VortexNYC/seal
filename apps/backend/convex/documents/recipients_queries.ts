@@ -12,6 +12,7 @@ import {
   checkDocumentAccess,
   getDocumentOrThrow,
 } from "../auth/access_control";
+import { loadSuiteOrgBrandAndSecurity } from "../lib/suiteOrgPolicy";
 import {
   isRecipientComplete,
   isRecipientTerminal,
@@ -81,12 +82,27 @@ function buildRecipientTokenResponse(
   recipient: Doc<"document_recipients">,
   document: Doc<"documents">,
   organization: Doc<"organizations"> | null,
-  sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>
+  sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>,
+  suiteBrand?: {
+    primaryColor?: string;
+    accentColor?: string;
+  }
 ) {
-  // TODO: Check org tier — if Free, use Seal defaults instead of brandingSettings
-  const branding = organization?.brandingSettings?.enabled
+  // Prefer Core suite brand (VOR-182) over local brandingSettings colors.
+  const local = organization?.brandingSettings?.enabled
     ? organization.brandingSettings
     : undefined;
+  const branding =
+    local || suiteBrand
+      ? {
+          logoUrl: local?.logoUrl,
+          brandColor: suiteBrand?.primaryColor ?? local?.brandColor,
+          accentColor: suiteBrand?.accentColor ?? local?.accentColor,
+          hideSealBranding: local?.hideSealBranding,
+          customFooterText: local?.customFooterText,
+          enabled: local?.enabled ?? Boolean(suiteBrand),
+        }
+      : undefined;
 
   return {
     ownerName,
@@ -255,6 +271,9 @@ export const getRecipientByToken = query({
     const organization = document.organizationId
       ? await ctx.db.get(document.organizationId)
       : null;
+    const suitePolicy = organization
+      ? await loadSuiteOrgBrandAndSecurity(ctx, organization)
+      : undefined;
     const sequentialState = await getSequentialSigningState(
       ctx,
       document,
@@ -265,7 +284,8 @@ export const getRecipientByToken = query({
       recipient,
       document,
       organization,
-      sequentialState
+      sequentialState,
+      suitePolicy?.brand
     );
   },
 });
