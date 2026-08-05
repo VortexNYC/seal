@@ -52,8 +52,8 @@ importers:
         specifier: 1.171.16
         version: 1.171.16
       '@vortexnyc/convex':
-        specifier: 0.7.2
-        version: 0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
+        specifier: 0.8.0
+        version: 0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
     devDependencies:
       '@convex-dev/eslint-plugin':
         specifier: 2.0.0
@@ -65,11 +65,11 @@ importers:
         specifier: 'catalog:'
         version: 25.9.5
       '@vortexnyc/auth':
-        specifier: 0.15.0
-        version: 0.15.0(b6c3cd2efeb4b54a7956da6a3ce4d403)
+        specifier: 0.16.0
+        version: 0.16.0(b6c3cd2efeb4b54a7956da6a3ce4d403)
       '@vortexnyc/tooling':
-        specifier: 0.11.15
-        version: 0.11.15(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)
+        specifier: 0.11.16
+        version: 0.11.16(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)
       baseline-browser-mapping:
         specifier: ^2.10.14
         version: 2.11.1
@@ -149,11 +149,11 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       '@vortexnyc/auth':
-        specifier: 0.15.0
-        version: 0.15.0(c053edb25e046accfd63b2c990ca0ec6)
+        specifier: 0.16.0
+        version: 0.16.0(c053edb25e046accfd63b2c990ca0ec6)
       '@vortexnyc/convex':
-        specifier: 0.7.2
-        version: 0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
+        specifier: 0.8.0
+        version: 0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
       '@vortexnyc/observability':
         specifier: 0.2.0
         version: 0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))(rxjs@7.8.2)
@@ -455,8 +455,8 @@ importers:
         specifier: 1.168.24
         version: 1.168.24(@tanstack/react-router@1.170.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(esbuild@0.28.1)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       '@vortexnyc/auth':
-        specifier: 0.15.0
-        version: 0.15.0(776cda6088d6a411a5a97c85894247ae)
+        specifier: 0.16.0
+        version: 0.16.0(776cda6088d6a411a5a97c85894247ae)
       '@vortexnyc/observability':
         specifier: 0.2.0
         version: 0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))(rxjs@7.8.2)
@@ -582,8 +582,8 @@ importers:
         specifier: ^5.1.2
         version: 5.2.0(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       '@vortexnyc/tooling':
-        specifier: 0.11.15
-        version: 0.11.15(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)
+        specifier: 0.11.16
+        version: 0.11.16(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)
       dotenv:
         specifier: ^17.4.0
         version: 17.4.2
@@ -6580,8 +6580,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@vortexnyc/auth@0.15.0':
-    resolution: {integrity: sha512-1w7vWjIOPdiZN8UhdR9EsSSDUrqXw9SetZpQEV13AafmgQ+bvQRDTZb3cFArISmpB1zZQtO8MVfWjURZf96RTg==, tarball: https://npm.pkg.github.com/download/@VortexNYC/auth/0.15.0/f126da71c0e157bae4819227a6d6ddbc6677edeb}
+  '@vortexnyc/auth@0.16.0':
+    resolution: {integrity: sha512-8DmvniBs6OLD3bBG6RFZS21Plemi49Yctwpr0FoDzluVSxT271MnFfISRCIDwmHLHQpGWyIyFlMCARPdbO3yHQ==, tarball: https://npm.pkg.github.com/download/@VortexNYC/auth/0.16.0/b4a70fc5f5a98e250e3a3a965a76b53aa58e2e7a}
     hasBin: true
     peerDependencies:
       '@better-auth/expo': '>=1.6.23'
@@ -6604,8 +6604,8 @@ packages:
     peerDependencies:
       react: '>=19.0.0'
 
-  '@vortexnyc/convex@0.7.2':
-    resolution: {integrity: sha512-Q14ujrDnvcxGi1aGDToTT4sm23YfDrqQIuxa620MP05IhdslObJT0i5JoYqooyWebbGy6mWBfaFAs0aWb4kXHQ==, tarball: https://npm.pkg.github.com/download/@vortexnyc/convex/0.7.2/2f89c62e0370c5d009a52bfde638447c1dfdf7bc}
+  '@vortexnyc/convex@0.8.0':
+    resolution: {integrity: sha512-/22cXErVbiHPclPSarGPoNv123Vsjs7d8tOnJ95/6Uq4bYAcIImRzgOzBb4vOsUoYAsbkR5reZyvJBAvQTMVmA==, tarball: https://npm.pkg.github.com/download/@vortexnyc/convex/0.8.0/9d16f28808f9653ad73f12113404757f4ee0bc89}
     peerDependencies:
       convex: '>=1.39.0'
       react: ^18.0.0 || ^19.0.0
@@ -6634,8 +6634,8 @@ packages:
   '@vortexnyc/permissions@0.2.1':
     resolution: {integrity: sha512-9sOlQk+lQ2NvX+A85tJ5P0ik6UewY8SSQ68rWaKnwMwMn1LG0tz/VtHjuBqnHAvnRnVoLrMrS78gYoGQXM3BOA==, tarball: https://npm.pkg.github.com/download/@VortexNYC/permissions/0.2.1/2719eef650c2df240c04994b28f8fe2e4a7c69a0}
 
-  '@vortexnyc/tooling@0.11.15':
-    resolution: {integrity: sha512-m69uVEmet6zWsaqg8CmkqFjh+sol6H8oc0BBOypI7ifskRba9MZJs1oUixspROicwtVZJxje/Sig+xk0LODSNQ==, tarball: https://npm.pkg.github.com/download/@VortexNYC/tooling/0.11.15/6434f2fbf2a472653d9dc4d5159ef69195066866}
+  '@vortexnyc/tooling@0.11.16':
+    resolution: {integrity: sha512-UxADYixOPqCQ+Y7w4EZ1x9gva58wZT7AuUrjVNZDKwIDD+jSkn+oOKtbbBntcra2pXGw9u1Tc4X4IgCn4CcEiA==, tarball: https://npm.pkg.github.com/download/@VortexNYC/tooling/0.11.16/d649bf23d688711032f455ab25c18a615ca0b8d4}
     engines: {node: '>=22.18'}
     hasBin: true
     peerDependencies:
@@ -18741,11 +18741,11 @@ snapshots:
   '@voidzero-dev/vite-plus-win32-x64-msvc@0.2.4':
     optional: true
 
-  '@vortexnyc/auth@0.15.0(776cda6088d6a411a5a97c85894247ae)':
+  '@vortexnyc/auth@0.16.0(776cda6088d6a411a5a97c85894247ae)':
     dependencies:
       '@better-auth/expo': 1.6.25(25d68949c5a2dab6e4e22777ad9c9960)
       '@convex-dev/better-auth': 0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.23(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.12.31)(react@19.2.8)(typescript@5.9.3)
-      '@vortexnyc/convex': 0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
+      '@vortexnyc/convex': 0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
       '@vortexnyc/permissions': 0.2.1
       '@vortexnyc/ui': 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       better-auth: 1.6.23(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
@@ -18788,11 +18788,11 @@ snapshots:
       - vue
       - zod
 
-  '@vortexnyc/auth@0.15.0(b6c3cd2efeb4b54a7956da6a3ce4d403)':
+  '@vortexnyc/auth@0.16.0(b6c3cd2efeb4b54a7956da6a3ce4d403)':
     dependencies:
       '@better-auth/expo': 1.6.25(3749c0ad975323999403ad3e0aad3a26)
       '@convex-dev/better-auth': 0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.23(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.12.31)(react@19.2.8)(typescript@5.9.3)
-      '@vortexnyc/convex': 0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
+      '@vortexnyc/convex': 0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
       '@vortexnyc/permissions': 0.2.1
       '@vortexnyc/ui': 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       better-auth: 1.6.23(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
@@ -18835,11 +18835,11 @@ snapshots:
       - vue
       - zod
 
-  '@vortexnyc/auth@0.15.0(c053edb25e046accfd63b2c990ca0ec6)':
+  '@vortexnyc/auth@0.16.0(c053edb25e046accfd63b2c990ca0ec6)':
     dependencies:
       '@better-auth/expo': 1.6.25(994ce114ffd8ebf14166f94dec065c7c)
       '@convex-dev/better-auth': 0.12.2(@standard-schema/spec@1.1.0)(better-auth@1.6.9(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.12.31)(react@19.2.8)(typescript@5.9.3)
-      '@vortexnyc/convex': 0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
+      '@vortexnyc/convex': 0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)
       '@vortexnyc/permissions': 0.2.1
       '@vortexnyc/ui': 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       better-auth: 1.6.9(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
@@ -18891,7 +18891,7 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@vortexnyc/convex@0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)':
+  '@vortexnyc/convex@0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.4)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)':
     dependencies:
       '@vortexnyc/email': 0.2.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@vortexnyc/permissions': 0.2.1
@@ -18928,7 +18928,7 @@ snapshots:
       - vue
       - zod
 
-  '@vortexnyc/convex@0.7.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)':
+  '@vortexnyc/convex@0.8.0(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@standard-schema/spec@1.1.0)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.28.17)(pg@8.22.0))(hono@4.12.31)(mongodb@7.5.0(gcp-metadata@8.1.3)(socks@2.8.9))(pg@8.22.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(vitest@4.1.10)(zod@4.4.3)':
     dependencies:
       '@vortexnyc/email': 0.2.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@vortexnyc/permissions': 0.2.1
@@ -18993,7 +18993,7 @@ snapshots:
 
   '@vortexnyc/permissions@0.2.1': {}
 
-  '@vortexnyc/tooling@0.11.15(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)':
+  '@vortexnyc/tooling@0.11.16(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)':
     dependencies:
       '@convex-dev/eslint-plugin': 2.0.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(eslint@10.7.0(jiti@2.7.0))(typescript@5.9.3)
       '@react-native/eslint-plugin': 0.86.0
