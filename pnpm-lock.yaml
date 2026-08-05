@@ -632,12 +632,12 @@ importers:
       '@react-email/components':
         specifier: ^1.0.2
         version: 1.0.12(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@react-email/render':
-        specifier: ^2.0.0
-        version: 2.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@seal/tokens':
         specifier: workspace:*
         version: link:../tokens
+      '@vortexnyc/email':
+        specifier: 0.2.3
+        version: 0.2.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react:
         specifier: 'catalog:'
         version: 19.2.8

@@ -1,4 +1,4 @@
-import { render } from "@react-email/render";
+import { renderEmail } from "@vortexnyc/email";
 
 import {
   DocumentCompleted,
@@ -78,7 +78,7 @@ export type {
 export async function renderDocumentInvitation(
   props: DocumentInvitationProps
 ): Promise<string> {
-  return render(<DocumentInvitation {...props} />);
+  return renderEmail(<DocumentInvitation {...props} />);
 }
 
 /**
@@ -87,7 +87,7 @@ export async function renderDocumentInvitation(
 export async function renderSigningComplete(
   props: SigningCompleteProps
 ): Promise<string> {
-  return render(<SigningComplete {...props} />);
+  return renderEmail(<SigningComplete {...props} />);
 }
 
 /**
@@ -96,7 +96,7 @@ export async function renderSigningComplete(
 export async function renderDocumentCompleted(
   props: DocumentCompletedProps
 ): Promise<string> {
-  return render(<DocumentCompleted {...props} />);
+  return renderEmail(<DocumentCompleted {...props} />);
 }
 
 /**
@@ -105,14 +105,14 @@ export async function renderDocumentCompleted(
 export async function renderDocumentReminder(
   props: DocumentReminderProps
 ): Promise<string> {
-  return render(<DocumentReminder {...props} />);
+  return renderEmail(<DocumentReminder {...props} />);
 }
 
 /**
  * Render Welcome email to HTML string
  */
 export async function renderWelcome(props: WelcomeProps): Promise<string> {
-  return render(<Welcome {...props} />);
+  return renderEmail(<Welcome {...props} />);
 }
 
 /**
@@ -121,7 +121,7 @@ export async function renderWelcome(props: WelcomeProps): Promise<string> {
 export async function renderTeamInvitation(
   props: TeamInvitationProps
 ): Promise<string> {
-  return render(<TeamInvitation {...props} />);
+  return renderEmail(<TeamInvitation {...props} />);
 }
 
 /**
@@ -130,7 +130,7 @@ export async function renderTeamInvitation(
 export async function renderDocumentShared(
   props: DocumentSharedProps
 ): Promise<string> {
-  return render(<DocumentShared {...props} />);
+  return renderEmail(<DocumentShared {...props} />);
 }
 
 /**
@@ -139,7 +139,7 @@ export async function renderDocumentShared(
 export async function renderDocumentExpired(
   props: DocumentExpiredProps
 ): Promise<string> {
-  return render(<DocumentExpired {...props} />);
+  return renderEmail(<DocumentExpired {...props} />);
 }
 
 /**
@@ -148,7 +148,7 @@ export async function renderDocumentExpired(
 export async function renderDocumentExpirationAlert(
   props: DocumentExpirationAlertProps
 ): Promise<string> {
-  return render(<DocumentExpirationAlert {...props} />);
+  return renderEmail(<DocumentExpirationAlert {...props} />);
 }
 
 /**
@@ -157,7 +157,7 @@ export async function renderDocumentExpirationAlert(
 export async function renderDocumentViewed(
   props: DocumentViewedProps
 ): Promise<string> {
-  return render(<DocumentViewed {...props} />);
+  return renderEmail(<DocumentViewed {...props} />);
 }
 
 /**
@@ -166,5 +166,5 @@ export async function renderDocumentViewed(
 export async function renderOwnershipTransferred(
   props: OwnershipTransferredProps
 ): Promise<string> {
-  return render(<OwnershipTransferred {...props} />);
+  return renderEmail(<OwnershipTransferred {...props} />);
 }
