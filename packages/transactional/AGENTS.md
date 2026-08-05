@@ -25,7 +25,7 @@ packages/transactional/
 | Layout shell  | `emails/email-layout.tsx`              | Thin adapter over `@vortexnyc/email`       |
 | Exports       | `packages/transactional/src/index.tsx` | Components + `renderX()` helpers           |
 | Auth emails   | `@vortexnyc/auth/convex`               | Not in this package                        |
-| Transport     | `apps/backend/convex/emails/resend_*`  | Seal Resend send seam (`sendAuthEmailDraft`). Core send = **VOR-186**. |
+| Transport     | `apps/backend/convex/emails/resend_*`  | Seal Resend send seam (`sendAuthEmailDraft`). Transport is consumer-owned by design (Core email-transport-recipe). |
 
 ## CONVENTIONS
 
