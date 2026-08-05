@@ -283,7 +283,10 @@ export const redeemInvitation = mutation({
       throw new ConvexError("Invitation has expired");
     }
 
-    const organization = await ctx.db.get(invitation.organizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      invitation.organizationId
+    );
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
@@ -317,7 +320,7 @@ export const redeemInvitation = mutation({
     });
 
     // Make the joined org the user's active org so they land in it.
-    await ctx.db.patch(user._id, {
+    await ctx.db.patch("users", user._id, {
       activeOrganizationId: invitation.organizationId,
       activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId,
       updatedAt: now,

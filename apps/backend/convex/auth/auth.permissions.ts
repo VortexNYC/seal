@@ -118,7 +118,7 @@ async function getMembershipOrThrow(
   organizationId: Id<"organizations">,
   notFoundMessage: string
 ): Promise<AuthMember> {
-  const user = await ctx.db.get(userId);
+  const user = await ctx.db.get("users", userId);
   if (!user) {
     throwPermissionAuthError("UNAUTHORIZED", "User not found");
   }
@@ -147,7 +147,7 @@ async function getOrganizationOrThrow(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">
 ): Promise<Doc<"organizations">> {
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throwPermissionAuthError("NOT_FOUND", "Organization not found");
   }

@@ -122,7 +122,7 @@ async function getOrganizationOrThrow(
   ctx: QueryCtx | MutationCtx,
   organizationId: OrganizationDoc["_id"]
 ): Promise<OrganizationDoc> {
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throw new Error("Organization not found");
   }
@@ -145,9 +145,7 @@ function buildApiSettings(org: OrganizationDoc): ApiSettings {
 function buildSigningResponse(org: OrganizationDoc): ApiSettings["signing"] {
   return {
     allowed_signature_types:
-      (org.signingSettings?.allowedSignatureTypes as
-        | SignatureType[]
-        | undefined) ?? DEFAULT_SIGNATURE_TYPES,
+      org.signingSettings?.allowedSignatureTypes ?? DEFAULT_SIGNATURE_TYPES,
     default_deadline_days: org.signingSettings?.defaultDeadlineDays ?? 30,
     esign_consent_text: org.signingSettings?.esignConsentText ?? null,
   };
@@ -333,7 +331,7 @@ export const updateSettings = internalMutation({
 
     for (const patch of patches) {
       if (patch) {
-        await ctx.db.patch(args.organizationId, patch);
+        await ctx.db.patch("organizations", args.organizationId, patch);
       }
     }
 

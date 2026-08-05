@@ -234,7 +234,7 @@ export async function ensureSeatLimit(
   const { plan } = await getSubscriptionPlan(ctx.db, organizationId);
   const limits = PLAN_LIMITS[plan];
 
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throw new ConvexError("Organization not found");
   }
@@ -303,6 +303,26 @@ export function calculateApplicationFee(
   ).amount;
 }
 
+function readEnterpriseCustomRates(
+  org: Doc<"organizations"> | null
+): { cardRate: number; cardFixed: number } | undefined {
+  if (org === null) {
+    return undefined;
+  }
+  const raw = Object.getOwnPropertyDescriptor(org, "customPaymentRates")?.value;
+  if (typeof raw !== "object" || raw === null) {
+    return undefined;
+  }
+  if (!("cardRate" in raw) || !("cardFixed" in raw)) {
+    return undefined;
+  }
+  const { cardRate, cardFixed } = raw;
+  if (typeof cardRate !== "number" || typeof cardFixed !== "number") {
+    return undefined;
+  }
+  return { cardRate, cardFixed };
+}
+
 /**
  * Get the application fee for a payment, resolving the org's tier.
  */
@@ -315,15 +335,9 @@ export async function getApplicationFee(
   const { plan } = await getSubscriptionPlan(db, organizationId);
 
   // Check for enterprise custom rates
-  const org = await db.get(organizationId);
+  const org = await db.get("organizations", organizationId);
   const customRates =
-    plan === "enterprise"
-      ? (
-          org as {
-            customPaymentRates?: { cardRate: number; cardFixed: number };
-          }
-        )?.customPaymentRates
-      : undefined;
+    plan === "enterprise" ? readEnterpriseCustomRates(org) : undefined;
 
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }

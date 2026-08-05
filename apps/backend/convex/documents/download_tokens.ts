@@ -95,7 +95,7 @@ export const validateAndUseToken = internalMutation({
     }
 
     // Track usage
-    await ctx.db.patch(record._id, {
+    await ctx.db.patch("download_tokens", record._id, {
       downloadCount: record.downloadCount + 1,
       lastDownloadedAt: Date.now(),
     });
@@ -112,16 +112,15 @@ export const revokeTokensForDocument = internalMutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const tokens = await ctx.db
+    let revoked = 0;
+    for await (const t of ctx.db
       .query("download_tokens")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      await ctx.db.patch("download_tokens", t._id, { revoked: true });
+      revoked += 1;
+    }
 
-    await Promise.all(
-      tokens.map((t) => ctx.db.patch(t._id, { revoked: true }))
-    );
-
-    return { revoked: tokens.length };
+    return { revoked };
   },
 });
 
@@ -135,13 +134,15 @@ export const cleanupExpiredTokens = internalMutation({
     // Delete tokens expired more than 30 days ago
     const cutoff = now - 30 * 24 * 60 * 60 * 1000;
 
+    // Index range on by_expires_at — take(100) is a deliberate cron batch cap.
     const expired = await ctx.db
       .query("download_tokens")
-      .withIndex("by_expires_at")
-      .filter((q) => q.lt(q.field("expiresAt"), cutoff))
+      .withIndex("by_expires_at", (q) => q.lt("expiresAt", cutoff))
       .take(100);
 
-    await Promise.all(expired.map((t) => ctx.db.delete(t._id)));
+    await Promise.all(
+      expired.map((t) => ctx.db.delete("download_tokens", t._id))
+    );
 
     return { deleted: expired.length };
   },
@@ -177,7 +178,7 @@ export const generateDownloadLink = mutation({
       throw new ConvexError("Authentication required");
     }
 
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }

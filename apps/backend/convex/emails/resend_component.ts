@@ -6,11 +6,11 @@
  * component so the dependency graph does not pull in provider residue.
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { type Infer, v } from "convex/values";
 import { Webhook } from "standardwebhooks";
 
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
@@ -122,8 +122,7 @@ export async function sendResendEmail(
   if (!response.ok) {
     const raw = await response.text();
     try {
-      const parsed = JSON.parse(raw) as ResendEmailResult["error"];
-      return { data: null, error: parsed };
+      return { data: null, error: parse(vResendErrorBody, JSON.parse(raw)) };
     } catch {
       return {
         data: null,
@@ -137,9 +136,27 @@ export async function sendResendEmail(
   }
 
   return {
-    data: (await response.json()) as { id: string },
+    data: parseResendSendResponse(await response.json()),
     error: null,
   };
+}
+
+const vResendErrorBody = v.object({
+  message: v.optional(v.string()),
+  name: v.optional(v.string()),
+  statusCode: v.optional(v.union(v.number(), v.null())),
+});
+
+function parseResendSendResponse(value: unknown): { id: string } {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string"
+  ) {
+    return { id: value.id };
+  }
+  throw new Error("Unexpected Resend send response shape");
 }
 
 export async function sendEmailFromAction(
@@ -181,7 +198,8 @@ export async function sendEmailFromAction(
 
 /**
  * Auth draft payload from `@vortexnyc/auth/convex` draft builders.
- * Transport stays Seal-local until Core ships send (VOR-186).
+ * Per vortex-core's email-transport-recipe, Core owns policy/templates and
+ * transport is intentionally consumer-owned — this seam is Seal's transport.
  */
 export type AuthEmailDraft = {
   readonly from: string;
@@ -193,7 +211,8 @@ export type AuthEmailDraft = {
 
 /**
  * Send a Core auth email draft through Seal's Resend transport seam.
- * Swap `sendResendEmail` internals when VOR-186 lands — call sites stay.
+ * Swapping providers (or adopting `@convex-dev/resend`) only changes
+ * `sendResendEmail` internals — call sites stay.
  */
 export async function sendAuthEmailDraft(
   ctx: Pick<ActionCtx, "runMutation">,
@@ -243,18 +262,23 @@ export async function handleResendEventWebhookFromAction(
 
   const raw = await request.text();
   const webhook = new Webhook(webhookSecret);
-  const payload = webhook.verify(raw, {
-    "webhook-id":
-      request.headers.get("svix-id") ?? request.headers.get("webhook-id") ?? "",
-    "webhook-timestamp":
-      request.headers.get("svix-timestamp") ??
-      request.headers.get("webhook-timestamp") ??
-      "",
-    "webhook-signature":
-      request.headers.get("svix-signature") ??
-      request.headers.get("webhook-signature") ??
-      "",
-  }) as ValidatedResendEmailEvent;
+  const payload = parse(
+    vEmailEvent,
+    webhook.verify(raw, {
+      "webhook-id":
+        request.headers.get("svix-id") ??
+        request.headers.get("webhook-id") ??
+        "",
+      "webhook-timestamp":
+        request.headers.get("svix-timestamp") ??
+        request.headers.get("webhook-timestamp") ??
+        "",
+      "webhook-signature":
+        request.headers.get("svix-signature") ??
+        request.headers.get("webhook-signature") ??
+        "",
+    })
+  );
 
   await ctx.runMutation(internal.emails.resend_component.handleEmailEvent, {
     id: payload.data.email_id,
@@ -386,34 +410,36 @@ export type ValidatedResendEmailEvent = Infer<typeof vEmailEvent>;
  * looks up the notification by Resend message ID to find the associated
  * document/org context, then writes an audit log entry.
  */
+const auditableEvents = [
+  "email.delivered",
+  "email.opened",
+  "email.bounced",
+] as const;
+
+type AuditableEvent = (typeof auditableEvents)[number];
+
+function isAuditableEvent(
+  eventType: ValidatedResendEmailEvent["type"]
+): eventType is AuditableEvent {
+  return auditableEvents.some((event) => event === eventType);
+}
+
 export const handleEmailEvent = internalMutation({
   args: vOnEmailEventArgs,
   handler: async (ctx, args) => {
     const eventType = args.event.type;
 
     // Only audit delivery-related events
-    const auditableEvents = [
-      "email.delivered",
-      "email.opened",
-      "email.bounced",
-    ] as const;
-
-    type AuditableEvent = (typeof auditableEvents)[number];
-
-    if (!auditableEvents.includes(eventType as AuditableEvent)) {
+    if (!isAuditableEvent(eventType)) {
       return;
     }
 
-    const resendMessageId =
-      "data" in args.event ? args.event.data.email_id : undefined;
+    const resendMessageId = args.event.data.email_id;
     if (!resendMessageId) return;
 
-    const recipientEmail =
-      "data" in args.event
-        ? Array.isArray(args.event.data.to)
-          ? args.event.data.to[0]
-          : args.event.data.to
-        : undefined;
+    const recipientEmail = Array.isArray(args.event.data.to)
+      ? args.event.data.to[0]
+      : args.event.data.to;
 
     // Look up the notification by Resend message ID (same as old webhook handler)
     const notification = await ctx.db
@@ -430,26 +456,26 @@ export const handleEmailEvent = internalMutation({
       return;
     }
 
-    // Extract IDs from the notification data
+    // Extract IDs from the notification data (schema union narrows via `in`)
     const documentId =
       "documentId" in notification.data
-        ? (notification.data.documentId as Id<"documents">)
+        ? notification.data.documentId
         : undefined;
     const recipientId =
       "recipientId" in notification.data
-        ? (notification.data.recipientId as Id<"document_recipients">)
+        ? notification.data.recipientId
         : undefined;
 
     // Extract bounce info if applicable
     const bounceType =
-      eventType === "email.bounced" && "data" in args.event
-        ? (args.event.data as { bounce?: { type?: string } }).bounce?.type
+      args.event.type === "email.bounced"
+        ? args.event.data.bounce.type
         : undefined;
 
     await logAction(ctx, {
       organizationId: notification.organizationId,
       actorType: "system",
-      action: eventType as AuditableEvent,
+      action: eventType,
       resourceType: "email",
       resourceId: resendMessageId,
       documentId,

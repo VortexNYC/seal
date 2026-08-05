@@ -44,7 +44,7 @@ export const startDunning = internalMutation({
     invoiceId: v.id("document_invoices"),
   },
   handler: async (ctx, args) => {
-    const invoice = await ctx.db.get(args.invoiceId);
+    const invoice = await ctx.db.get("document_invoices", args.invoiceId);
     if (!invoice) return null;
 
     // Don't start if already active, completed, or cancelled
@@ -62,7 +62,7 @@ export const startDunning = internalMutation({
 
     const now = Date.now();
 
-    await ctx.db.patch(args.invoiceId, {
+    await ctx.db.patch("document_invoices", args.invoiceId, {
       dunningStatus: "active",
       dunningStep: 0,
       dunningStartedAt: now,
@@ -83,12 +83,12 @@ export const cancelDunning = internalMutation({
     invoiceId: v.id("document_invoices"),
   },
   handler: async (ctx, args) => {
-    const invoice = await ctx.db.get(args.invoiceId);
+    const invoice = await ctx.db.get("document_invoices", args.invoiceId);
     if (!invoice) return;
 
     if (invoice.dunningStatus !== "active") return;
 
-    await ctx.db.patch(args.invoiceId, {
+    await ctx.db.patch("document_invoices", args.invoiceId, {
       dunningStatus: "cancelled",
       dunningCompletedAt: Date.now(),
       nextDunningAt: undefined,
@@ -107,7 +107,7 @@ export const advanceDunningStep = internalMutation({
     completedStep: v.number(),
   },
   handler: async (ctx, args) => {
-    const invoice = await ctx.db.get(args.invoiceId);
+    const invoice = await ctx.db.get("document_invoices", args.invoiceId);
     if (!invoice) return;
 
     if (invoice.dunningStatus !== "active") return;
@@ -117,7 +117,7 @@ export const advanceDunningStep = internalMutation({
 
     if (args.completedStep >= MAX_DUNNING_STEP) {
       // Final step completed — dunning sequence is done
-      await ctx.db.patch(args.invoiceId, {
+      await ctx.db.patch("document_invoices", args.invoiceId, {
         dunningStatus: "completed",
         dunningStep: args.completedStep,
         lastDunningEmailAt: now,
@@ -132,7 +132,7 @@ export const advanceDunningStep = internalMutation({
     const nextStep = args.completedStep + 1;
     const nextAt = now + sealAssertPresent(DUNNING_DELAYS[nextStep]);
 
-    await ctx.db.patch(args.invoiceId, {
+    await ctx.db.patch("document_invoices", args.invoiceId, {
       dunningStep: nextStep,
       lastDunningEmailAt: now,
       nextDunningAt: nextAt,
@@ -152,18 +152,15 @@ export const processDunningEmails = internalMutation({
     let emailsScheduled = 0;
 
     // Find all invoices with active dunning
-    const activeInvoices = await ctx.db
+    for await (const invoice of ctx.db
       .query("document_invoices")
-      .withIndex("by_dunning_status", (q) => q.eq("dunningStatus", "active"))
-      .collect();
-
-    for (const invoice of activeInvoices) {
+      .withIndex("by_dunning_status", (q) => q.eq("dunningStatus", "active"))) {
       // Skip if not yet due
       if (!invoice.nextDunningAt || invoice.nextDunningAt > now) continue;
 
       // Skip if invoice was paid/voided in the meantime
       if (invoice.status === "paid" || invoice.status === "void") {
-        await ctx.db.patch(invoice._id, {
+        await ctx.db.patch("document_invoices", invoice._id, {
           dunningStatus: "cancelled",
           dunningCompletedAt: now,
           nextDunningAt: undefined,

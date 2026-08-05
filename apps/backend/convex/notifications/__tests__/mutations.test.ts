@@ -264,7 +264,11 @@ describe("Notifications mutations", () => {
           notificationId: otherNotificationId,
         });
 
-      expect(result).toEqual({ success: false, error: "Not authorized" });
+      // RLS hides other users' notifications, so the read resolves as not-found
+      expect(result).toEqual({
+        success: false,
+        error: "Notification not found",
+      });
     });
   });
 
@@ -358,7 +362,11 @@ describe("Notifications mutations", () => {
           notificationId: otherNotificationId,
         });
 
-      expect(result).toEqual({ success: false, error: "Not authorized" });
+      // RLS hides other users' notifications, so the read resolves as not-found
+      expect(result).toEqual({
+        success: false,
+        error: "Notification not found",
+      });
 
       // Verify the notification still exists
       const stillExists = await t.run(async (ctx) => {

@@ -4,6 +4,7 @@
 
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
 import {
@@ -84,12 +85,14 @@ export const listDocuments = authQuery({
     await requireActiveMembership(ctx, userId, args.organizationId);
 
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — listDocuments must inspect the complete active organization document set so access checks and owned/shared/folder filters do not hide eligible rows; no caller receives fewer rows. bound=per-tenant
-    const allOrgDocuments = await ctx.db
+    const allOrgDocuments = [];
+    for await (const _row of ctx.db
       .query("documents")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", args.organizationId).eq("status", "active")
-      )
-      .collect();
+      )) {
+      allOrgDocuments.push(_row);
+    }
 
     const accessibleDocuments = [];
 
@@ -133,7 +136,7 @@ export const getDocumentAccessList = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -157,18 +160,21 @@ export const getDocumentAccessList = authQuery({
     // 3. Get all access records for this document
     // convex-cost-guard-allow: convex-query-filter-before-collect — getDocumentAccessList must return every non-revoked access row for this document; the by_document equality range bounds the scan and no caller receives fewer rows. bound=global
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — same read: scoped to a single documentId, bounded by that document's access-grant count. bound=global
-    const accessRecords = await ctx.db
+    const accessRecords = [];
+    for await (const _row of ctx.db
       .query("document_access")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("revokedAt"), undefined))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (!(_row.revokedAt === undefined)) {
+        continue;
+      }
+      accessRecords.push(_row);
+    }
 
     // 4. Enrich with user information
     const enrichedAccess = await Promise.all(
       accessRecords.map(async (access) => {
-        const user = await ctx.db.get(access.userId);
-        return {
-          ...access,
+        const user = await ctx.db.get("users", access.userId);
+        return Object.assign({}, access, {
           user: user
             ? {
                 _id: user._id,
@@ -176,7 +182,7 @@ export const getDocumentAccessList = authQuery({
                 email: user.email,
               }
             : null,
-        };
+        });
       })
     );
 
@@ -203,15 +209,19 @@ export const getDocumentsByWorkflowStatus = authQuery({
 
     // convex-cost-guard-allow: convex-query-filter-before-collect — getDocumentsByWorkflowStatus must preserve all active documents for the requested organization/workflow; the organizationId plus workflowStatus index range bounds the read and no caller receives fewer rows. bound=per-tenant
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — same read: the (organizationId, workflowStatus) partition is the required complete set for workflow views. bound=per-tenant
-    const documents = await ctx.db
+    const documents = [];
+    for await (const _row of ctx.db
       .query("documents")
       .withIndex("by_organization_workflow", (q) =>
         q
           .eq("organizationId", args.organizationId)
           .eq("workflowStatus", args.workflowStatus)
-      )
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+      )) {
+      if (!(_row.status === "active")) {
+        continue;
+      }
+      documents.push(_row);
+    }
 
     const accessibleDocuments = [];
 
@@ -246,21 +256,28 @@ export const getDocumentWithSignatures = authQuery({
     );
 
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature for this single documentId for exact signature counts; no caller receives fewer rows. bound=global
-    const signatures = await ctx.db
+    const signatures = [];
+    for await (const _row of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(_row);
+    }
 
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentWithSignatures must return every signature field for this single documentId for exact field counts; no caller receives fewer rows. bound=global
-    const fields = await ctx.db
+    const fields = [];
+    for await (const _row of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(_row);
+    }
 
     const enrichedSignatures = await Promise.all(
       signatures.map(async (signature) => {
-        const field = await ctx.db.get(signature.fieldId);
-        const recipient = await ctx.db.get(signature.recipientId);
+        const field = await ctx.db.get("signature_fields", signature.fieldId);
+        const recipient = await ctx.db.get(
+          "document_recipients",
+          signature.recipientId
+        );
 
         return {
           ...signature,
@@ -294,14 +311,16 @@ export const getDocumentWithAuditTrail = authQuery({
       args.documentId
     );
 
-    const auditLogs = await ctx.db
+    const auditLogs = [];
+    for await (const _row of ctx.db
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
       .query("audit_logs")
       .withIndex("by_document_created", (q) =>
         q.eq("documentId", args.documentId)
       )
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      auditLogs.push(_row);
+    }
 
     return {
       document,
@@ -326,37 +345,41 @@ export const getDocumentComplete = authQuery({
       args.documentId
     );
 
-    // Get all related data in parallel for performance
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentComplete must return all signatures, fields, and recipients for this single documentId for exact document-detail statistics; no caller receives fewer rows. bound=global
-    const [signatures, fields, recipients, auditLogs] = await Promise.all([
-      ctx.db
-        .query("signatures")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect(),
-      ctx.db
-        .query("signature_fields")
-        // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentComplete needs every signature field for this single documentId; bounded by document field count.
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect(),
-      ctx.db
-        .query("recipients")
-        // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentComplete needs every recipient for this single documentId; bounded by document recipient count.
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect(),
-      ctx.db
-        .query("audit_logs")
-        .withIndex("by_document_created", (q) =>
-          q.eq("documentId", args.documentId)
-        )
-        .order("desc")
-        .take(50), // Limit audit logs to most recent 50
-    ]);
+    // Stream related rows for this document (audit trail capped to recent 50).
+    const signatures: Doc<"signatures">[] = [];
+    for await (const row of ctx.db
+      .query("signatures")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(row);
+    }
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const row of ctx.db
+      .query("signature_fields")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(row);
+    }
+    const recipients: Doc<"recipients">[] = [];
+    for await (const row of ctx.db
+      .query("recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(row);
+    }
+    const auditLogs = await ctx.db
+      .query("audit_logs")
+      .withIndex("by_document_created", (q) =>
+        q.eq("documentId", args.documentId)
+      )
+      .order("desc")
+      .take(50);
 
     // 4. Enrich signatures with field and recipient information
     const enrichedSignatures = await Promise.all(
       signatures.map(async (signature) => {
-        const field = await ctx.db.get(signature.fieldId);
-        const recipient = await ctx.db.get(signature.recipientId);
+        const field = await ctx.db.get("signature_fields", signature.fieldId);
+        const recipient = await ctx.db.get(
+          "document_recipients",
+          signature.recipientId
+        );
 
         return {
           ...signature,
@@ -407,18 +430,19 @@ export const getDocumentVersions = authQuery({
     await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — getDocumentVersions must return the complete version history for this single documentId; no caller receives fewer rows. bound=global
-    const versions = await ctx.db
+    const versions = [];
+    for await (const _row of ctx.db
       .query("document_versions")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      versions.push(_row);
+    }
 
     // Enrich with creator user info
     const enrichedVersions = await Promise.all(
       versions.map(async (version) => {
-        const creator = await ctx.db.get(version.createdBy);
-        return {
-          ...version,
+        const creator = await ctx.db.get("users", version.createdBy);
+        return Object.assign({}, version, {
           creator: creator
             ? {
                 _id: creator._id,
@@ -427,7 +451,7 @@ export const getDocumentVersions = authQuery({
                 avatar: creator.avatar,
               }
             : null,
-        };
+        });
       })
     );
 
@@ -466,7 +490,7 @@ export const getDocumentVersion = authQuery({
     // Get storage URL and creator info in parallel
     const [storageUrl, creator] = await Promise.all([
       ctx.storage.getUrl(version.snapshot.storageId),
-      ctx.db.get(version.createdBy),
+      ctx.db.get("users", version.createdBy),
     ]);
 
     return {
@@ -504,7 +528,7 @@ export const getDocumentUrlByToken = query({
     }
 
     // 3. Get the document
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -561,7 +585,7 @@ export const searchDocuments = authQuery({
 export const getDocumentInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }

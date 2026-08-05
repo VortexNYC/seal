@@ -123,7 +123,7 @@ function drawDocumentDetails(
       font: state.helveticaBold,
       color: rgb(0.3, 0.3, 0.3),
     });
-    state.page.drawText(String(value), {
+    state.page.drawText(value, {
       x: MARGIN + 160,
       y: state.y,
       size: 9,
@@ -154,7 +154,7 @@ function drawRecipientsSection(
   for (const recipient of recipients) {
     addNewPageIfNeeded(state, 70);
 
-    state.page.drawText(`${recipient.name || recipient.email}`, {
+    state.page.drawText(recipient.name || recipient.email, {
       x: MARGIN,
       y: state.y,
       size: 10,
@@ -216,7 +216,7 @@ function drawAuditTrail(
   });
   state.y -= 20;
 
-  const sortedLogs = [...auditLogs].sort(
+  const sortedLogs = [...auditLogs].toSorted(
     (left, right) => left.createdAt - right.createdAt
   );
 
@@ -378,7 +378,7 @@ export const storeCertificate = internalMutation({
     storageId: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       certificateStorageId: args.storageId,
     });
   },
@@ -429,7 +429,7 @@ export const generateCertificate = internalAction({
     });
 
     // 5. Upload to Convex Storage
-    const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
+    const blob = new Blob([pdfBytes.slice()], { type: "application/pdf" });
     const storageId = await ctx.storage.store(blob);
 
     // 6. Store reference on the document

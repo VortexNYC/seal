@@ -13,7 +13,6 @@
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { internalAction, internalMutation } from "../_generated/server";
 import {
@@ -114,8 +113,9 @@ export const runEval = internalAction({
   handler: async (ctx, { messages, documentId }): Promise<EvalResult> => {
     const start = Date.now();
 
-    const testOrg: { organizationId: string; userId: string } | null =
-      await ctx.runQuery(internal.ai.eval_helpers.getTestOrganization);
+    const testOrg = await ctx.runQuery(
+      internal.ai.eval_helpers.getTestOrganization
+    );
     if (!testOrg) {
       return {
         response:
@@ -127,22 +127,29 @@ export const runEval = internalAction({
       };
     }
 
+    const resolvedDocumentId =
+      documentId === undefined
+        ? undefined
+        : ((await ctx.runQuery(internal.ai.eval_helpers.resolveDocumentId, {
+            documentId,
+          })) ?? undefined);
+
     const thread: { threadId: string } = await sealAgent.createThread(ctx, {
       userId: testOrg.userId,
       title: `[eval] ${(messages[0] ?? "").slice(0, 50)}`,
     });
 
     let systemPrompt = SYSTEM_INSTRUCTIONS;
-    if (documentId) {
-      systemPrompt += `\n\n## Current Document Context\nYou are currently viewing a document (ID: ${documentId}). When using tools that require a documentId parameter, use "${documentId}" unless the user explicitly asks about a different document.`;
+    if (resolvedDocumentId) {
+      systemPrompt += `\n\n## Current Document Context\nYou are currently viewing a document (ID: ${resolvedDocumentId}). When using tools that require a documentId parameter, use "${resolvedDocumentId}" unless the user explicitly asks about a different document.`;
     }
 
     const sealCtx: SealAICtx = {
       ...ctx,
-      organizationId: testOrg.organizationId as Id<"organizations">,
+      organizationId: testOrg.organizationId,
       userId: testOrg.userId,
-      documentId: documentId as Id<"documents"> | undefined,
-    } as SealAICtx;
+      documentId: resolvedDocumentId,
+    };
 
     let result: ExecResult = {};
     let tierUsed = 1;
@@ -188,14 +195,14 @@ export const resetEvalState = internalMutation({
     const threads = await ctx.db.query("ai_threads").take(500);
     for (const t of threads) {
       if (t.threadId && t.threadId.startsWith?.("[eval]")) {
-        await ctx.db.delete(t._id);
+        await ctx.db.delete("ai_threads", t._id);
         deleted++;
       }
     }
 
     const logs = await ctx.db.query("ai_routing_logs").order("desc").take(500);
     for (const log of logs) {
-      await ctx.db.delete(log._id);
+      await ctx.db.delete("ai_routing_logs", log._id);
       deleted++;
     }
 

@@ -19,7 +19,7 @@ async function performCleanup(
   documentId: Id<"documents">
 ): Promise<{ deleted: boolean; reason?: string }> {
   // 1. Verify document is still marked as deleted
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
 
   // Only delete storage if document is still deleted (or doesn't exist)
   if (!document || document.status === "deleted") {

@@ -6,7 +6,9 @@
  */
 
 import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
+
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present."
@@ -34,37 +36,38 @@ export const processAutomatedReminders = internalMutation({
     const now = Date.now();
     let remindersScheduled = 0;
 
-    // Get all documents awaiting signatures
-    const sentDocs = await ctx.db
+    const activeDocs: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
-      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "sent"))
-      .collect();
-    const inProgressDocs = await ctx.db
+      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "sent"))) {
+      if (doc.sentAt && doc.organizationId && doc.status !== "deleted") {
+        activeDocs.push(doc);
+      }
+    }
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_workflow_status", (q) =>
         q.eq("workflowStatus", "in_progress")
-      )
-      .collect();
-
-    const activeDocs = [...sentDocs, ...inProgressDocs].filter(
-      (doc) => doc.sentAt && doc.organizationId && doc.status !== "deleted"
-    );
+      )) {
+      if (doc.sentAt && doc.organizationId && doc.status !== "deleted") {
+        activeDocs.push(doc);
+      }
+    }
 
     // Group documents by org to batch notification settings lookups
-    const docsByOrg = new Map<string, typeof activeDocs>();
+    const docsByOrg = new Map<Id<"organizations">, Doc<"documents">[]>();
     for (const doc of activeDocs) {
-      const orgId = doc.organizationId as string;
-      if (!docsByOrg.has(orgId)) {
-        docsByOrg.set(orgId, []);
+      const orgId = doc.organizationId;
+      const group = docsByOrg.get(orgId);
+      if (group) {
+        group.push(doc);
+      } else {
+        docsByOrg.set(orgId, [doc]);
       }
-      sealAssertPresent(docsByOrg.get(orgId)).push(doc);
     }
 
     for (const [orgId, docs] of docsByOrg) {
-      // Fetch org notification settings
-      const notificationSettings = await ctx.db.get(
-        orgId as (typeof docs)[0]["organizationId"]
-      );
+      const notificationSettings = await ctx.db.get("organizations", orgId);
       const reminderSchedule = notificationSettings?.notificationSettings
         ?.reminderSchedule ?? [3, 7, 14];
 
@@ -73,46 +76,39 @@ export const processAutomatedReminders = internalMutation({
           (now - sealAssertPresent(doc.sentAt)) / DAY_MS
         );
 
-        // Which reminder intervals are due?
         const dueIntervals = reminderSchedule.filter(
           (days: number) => daysSinceSent >= days
         );
         if (dueIntervals.length === 0) continue;
 
-        // Get pending recipients for this document
-        const recipients = await ctx.db
+        const pendingRecipients: Doc<"document_recipients">[] = [];
+        for await (const r of ctx.db
           .query("document_recipients")
-          .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-          .collect();
-
-        const pendingRecipients = recipients.filter(
-          (r) => r.status === "pending" || r.status === "viewed"
-        );
+          .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+          if (r.status === "pending" || r.status === "viewed") {
+            pendingRecipients.push(r);
+          }
+        }
         if (pendingRecipients.length === 0) continue;
 
-        // Get existing automated reminders for this document
-        const existingReminders = await ctx.db
+        const automatedReminders: Doc<"document_reminders">[] = [];
+        for await (const r of ctx.db
           .query("document_reminders")
-          .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-          .collect();
-
-        const automatedReminders = existingReminders.filter(
-          (r) => r.type === "automated"
-        );
+          .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+          if (r.type === "automated") {
+            automatedReminders.push(r);
+          }
+        }
 
         for (const recipient of pendingRecipients) {
-          // Find which intervals already have reminders for this recipient
           const recipientReminders = automatedReminders.filter(
             (r) => r.recipientId === recipient._id
           );
 
-          // For each due interval, check if we already sent/scheduled a reminder
           for (const intervalDays of dueIntervals) {
             const intervalTarget =
               sealAssertPresent(doc.sentAt) + intervalDays * DAY_MS;
 
-            // Check if a reminder already exists near this interval
-            // (within 12 hours to account for cron timing)
             const alreadyExists = recipientReminders.some(
               (r) =>
                 Math.abs(r.scheduledFor - intervalTarget) <
@@ -121,7 +117,6 @@ export const processAutomatedReminders = internalMutation({
 
             if (alreadyExists) continue;
 
-            // Create and schedule the reminder
             const reminderId = await ctx.db.insert("document_reminders", {
               documentId: doc._id,
               recipientId: recipient._id,
@@ -133,7 +128,6 @@ export const processAutomatedReminders = internalMutation({
               updatedAt: now,
             });
 
-            // Stagger sends by 250ms each to stay under Resend's 5 req/s limit
             await ctx.scheduler.runAfter(
               remindersScheduled * 250,
               internal.documents.reminder_email_action.sendReminderEmail,

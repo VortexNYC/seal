@@ -27,11 +27,11 @@ import {
   getBetterAuthIdentityIssuer,
   getBetterAuthIdentityProvider,
 } from "./lib/authIdentities";
-import { resolveActiveOrganizationId } from "./lib/resolveActiveOrganization";
 import {
   resolveComponentMemberships,
   type ComponentResolvedMembership,
 } from "./lib/componentOrgReads";
+import { resolveActiveOrganizationId } from "./lib/resolveActiveOrganization";
 import type { OrganizationMemberRole } from "./schema";
 
 /**
@@ -190,7 +190,11 @@ export const getAccessibleOrganizationsForApiAuth = internalQuery({
     userId: v.string(),
   },
   handler: async (ctx, args): Promise<{ organizationIds: string[] }> => {
-    const user = await ctx.db.get(args.userId as Id<"users">);
+    const userId = ctx.db.normalizeId("users", args.userId);
+    if (userId === null) {
+      return { organizationIds: [] };
+    }
+    const user = await ctx.db.get("users", userId);
     if (user === null) {
       return { organizationIds: [] };
     }
@@ -226,7 +230,7 @@ export const getOrganizationMembershipAccessForApiAuth = internalQuery({
     role: OrganizationMemberRole;
     permissions: string[];
   } | null> => {
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
     if (user === null) {
       return null;
     }
@@ -258,7 +262,16 @@ export const getOrganizationAccessForApiAuth = internalQuery({
     organizationHintId: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args): Promise<OrganizationAccessResult> => {
-    const user = await ctx.db.get(args.userId as Id<"users">);
+    const userId = ctx.db.normalizeId("users", args.userId);
+    if (userId === null) {
+      return {
+        organizationId: null,
+        membershipIds: [],
+        roleKeys: [],
+        permissions: [],
+      };
+    }
+    const user = await ctx.db.get("users", userId);
     if (user === null) {
       return {
         organizationId: null,
@@ -270,19 +283,26 @@ export const getOrganizationAccessForApiAuth = internalQuery({
 
     const memberships = await resolveApiAuthMemberships(ctx, { user });
 
+    const requestedOrganizationId =
+      args.requestedOrganizationId === null
+        ? null
+        : ctx.db.normalizeId("organizations", args.requestedOrganizationId);
+    const organizationHintId =
+      args.organizationHintId === null
+        ? null
+        : ctx.db.normalizeId("organizations", args.organizationHintId);
+
     const organizationId = selectOrganizationId({
       memberships,
       userActiveOrganizationId: await resolveLocalActiveOrgId(ctx, user),
-      requestedOrganizationId:
-        args.requestedOrganizationId as Id<"organizations"> | null,
-      organizationHintId: args.organizationHintId as Id<"organizations"> | null,
+      requestedOrganizationId,
+      organizationHintId,
     });
 
     return buildApiAuthOrganizationAccessResult({
       organizationId,
       memberships,
-      expandPermissions: (role) =>
-        expandRolePermissions(role as OrganizationMemberRole),
+      expandPermissions: (role) => expandRolePermissions(role),
     });
   },
 });

@@ -132,7 +132,7 @@ export const deleteFromBetterAuth = internalMutation({
       return { deleted: false };
     }
 
-    await ctx.db.delete(localUser._id);
+    await ctx.db.delete("users", localUser._id);
     return { deleted: true, userId: localUser._id };
   },
 });
@@ -175,7 +175,7 @@ async function upsertBetterAuthUser(
   const existingUser = existingByVortexAuth ?? existingByEmail;
 
   if (existingUser) {
-    await ctx.db.patch(existingUser._id, patch);
+    await ctx.db.patch("users", existingUser._id, patch);
     return { created: false, userId: existingUser._id };
   }
 

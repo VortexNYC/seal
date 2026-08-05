@@ -9,6 +9,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import { permissionQuery } from "../auth";
+
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present."
@@ -52,7 +53,7 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
     const organizationId = ctx.auth.organization._id;
 
     // Verify document belongs to org
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (
       !document ||
       document.organizationId !== organizationId ||
@@ -62,10 +63,12 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
     }
 
     // Get recipients
-    const recipients = await ctx.db
+    const recipients: Doc<"document_recipients">[] = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(recipient);
+    }
 
     // Recipient funnel
     const funnel = {
@@ -158,18 +161,16 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
     const since = Date.now() - days * 24 * 60 * 60 * 1000;
 
     // Get documents sent in the date range
-    const documents = await ctx.db
+    const documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("status"), "deleted"),
-          q.gte(q.field("createdAt"), since)
-        )
-      )
-      .collect();
+      )) {
+      if (doc.status === "deleted") continue;
+      if (doc.createdAt < since) continue;
+      documents.push(doc);
+    }
 
     const sentDocs = documents.filter((d) => d.sentAt);
     if (sentDocs.length === 0) {
@@ -189,11 +190,11 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
 
     const allRecipients: Doc<"document_recipients">[] = [];
     for (const doc of sentDocs) {
-      const recipients = await ctx.db
+      for await (const recipient of ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-        .collect();
-      allRecipients.push(...recipients);
+        .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+        allRecipients.push(recipient);
+      }
     }
 
     let viewTimeSum = 0;
@@ -269,24 +270,22 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
     const days = args.days ?? 90;
     const since = Date.now() - days * 24 * 60 * 60 * 1000;
 
-    const documents = await ctx.db
+    const documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("status"), "deleted"),
-          q.gte(q.field("createdAt"), since),
-          q.neq(q.field("sourceTemplateId"), undefined)
-        )
-      )
-      .collect();
+      )) {
+      if (doc.status === "deleted") continue;
+      if (doc.createdAt < since) continue;
+      if (!doc.sourceTemplateId) continue;
+      documents.push(doc);
+    }
 
     // Group by template
     const byTemplate = new Map<
-      string,
-      { docs: Doc<"documents">[]; templateId: string }
+      Id<"templates">,
+      { docs: Doc<"documents">[]; templateId: Id<"templates"> }
     >();
     for (const doc of documents) {
       if (!doc.sourceTemplateId) continue;
@@ -299,7 +298,7 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
     const results = [];
     for (const [templateId, { docs }] of byTemplate) {
       // Get template name
-      const template = await ctx.db.get(templateId as Id<"templates">);
+      const template = await ctx.db.get("templates", templateId);
 
       const sentDocs = docs.filter((d) => d.sentAt);
       const completedDocs = docs.filter(
@@ -319,8 +318,7 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
 
       results.push({
         templateId,
-        templateName:
-          (template as { name?: string } | null)?.name ?? "Unknown Template",
+        templateName: template?.name ?? "Unknown Template",
         docsSent: sentDocs.length,
         completionRate:
           sentDocs.length > 0
@@ -337,7 +335,7 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
       });
     }
 
-    return results.sort((a, b) => b.docsSent - a.docsSent);
+    return results.toSorted((a, b) => b.docsSent - a.docsSent);
   },
 });
 
@@ -351,21 +349,19 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
     const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
 
     // Get active documents (sent or in_progress)
-    const documents = await ctx.db
-      .query("documents")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId)
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("status"), "deleted"),
-          q.or(
-            q.eq(q.field("workflowStatus"), "sent"),
-            q.eq(q.field("workflowStatus"), "in_progress")
-          )
-        )
-      )
-      .collect();
+    const documents: Doc<"documents">[] = [];
+    for (const workflowStatus of ["sent", "in_progress"] as const) {
+      for await (const doc of ctx.db
+        .query("documents")
+        .withIndex("by_organization_workflow", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("workflowStatus", workflowStatus)
+        )) {
+        if (doc.status === "deleted") continue;
+        documents.push(doc);
+      }
+    }
 
     const staleRecipients: {
       documentId: string;
@@ -390,10 +386,12 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
     }[] = [];
 
     for (const doc of documents) {
-      const recipients = await ctx.db
+      const recipients: Doc<"document_recipients">[] = [];
+      for await (const recipient of ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-        .collect();
+        .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+        recipients.push(recipient);
+      }
 
       const sentAt = doc.sentAt ?? doc.createdAt;
 
@@ -440,7 +438,7 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
     return {
       staleRecipients: staleRecipients.slice(0, 10),
       approachingDeadline: approachingDeadline
-        .sort((a, b) => a.daysRemaining - b.daysRemaining)
+        .toSorted((a, b) => a.daysRemaining - b.daysRemaining)
         .slice(0, 10),
       bouncedEmails: bouncedEmails.slice(0, 10),
       totalIssues:

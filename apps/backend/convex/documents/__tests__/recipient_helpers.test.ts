@@ -89,12 +89,14 @@ describe("recipient_helpers", () => {
     });
 
     test("throws when document does not exist", async () => {
-      // Use a fabricated document ID that doesn't exist
-      const fakeDocumentId = "k17abc123def456gh" as Id<"documents">;
+      // Hard-delete the document so its id is valid-format but dangling
+      await t.run(async (ctx) => {
+        await ctx.db.delete("documents", documentId);
+      });
 
       await expect(
         t.run(async (ctx) => {
-          await verifyDocumentOwnership(ctx, fakeDocumentId, ownerId);
+          await verifyDocumentOwnership(ctx, documentId, ownerId);
         })
       ).rejects.toThrow("Document not found");
     });

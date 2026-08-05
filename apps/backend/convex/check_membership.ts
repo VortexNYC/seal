@@ -63,7 +63,10 @@ export const hasOrganization = query({
     }
 
     if (activeOrganizationId) {
-      const activeOrganization = await ctx.db.get(activeOrganizationId);
+      const activeOrganization = await ctx.db.get(
+        "organizations",
+        activeOrganizationId
+      );
 
       if (activeOrganization) {
         activeOrganizationSlug = activeOrganization.slug;
@@ -119,7 +122,7 @@ export const ensureActiveOrganization = mutation({
     // If user already has a resolvable active organization, verify + repair dual-write
     const resolvedActiveId = await resolveActiveOrganizationId(ctx, user);
     if (resolvedActiveId !== null) {
-      const activeOrg = await ctx.db.get(resolvedActiveId);
+      const activeOrg = await ctx.db.get("organizations", resolvedActiveId);
       if (activeOrg) {
         const needsVortexPointer =
           user.activeVortexAuthOrganizationId === undefined &&
@@ -127,6 +130,7 @@ export const ensureActiveOrganization = mutation({
         const needsLegacyPointer = user.activeOrganizationId !== activeOrg._id;
         if (needsVortexPointer || needsLegacyPointer) {
           await ctx.db.patch(
+            "users",
             user._id,
             buildActiveOrganizationUserPatch(activeOrg)
           );
@@ -156,13 +160,20 @@ export const ensureActiveOrganization = mutation({
     }
 
     // Get the organization
-    const organization = await ctx.db.get(membership.organizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      membership.organizationId
+    );
     if (!organization) {
       return { success: false, reason: "Organization not found" };
     }
 
     // Update user's active organization (dual-write when anchored)
-    await ctx.db.patch(user._id, buildActiveOrganizationUserPatch(organization));
+    await ctx.db.patch(
+      "users",
+      user._id,
+      buildActiveOrganizationUserPatch(organization)
+    );
 
     return {
       success: true,
@@ -234,7 +245,11 @@ export const setActiveOrganizationBySlug = mutation({
       twoFactorEnabled,
     });
 
-    await ctx.db.patch(user._id, buildActiveOrganizationUserPatch(organization));
+    await ctx.db.patch(
+      "users",
+      user._id,
+      buildActiveOrganizationUserPatch(organization)
+    );
 
     return {
       success: true,
@@ -268,7 +283,10 @@ export const listUserOrganizations = query({
 
     const organizations = await Promise.all(
       memberships.map(async (membership) => {
-        const organization = await ctx.db.get(membership.organizationId);
+        const organization = await ctx.db.get(
+          "organizations",
+          membership.organizationId
+        );
         if (!organization) {
           return null;
         }
@@ -308,7 +326,10 @@ export const getDefaultOrganization = query({
       return null;
     }
 
-    const organization = await ctx.db.get(user.activeOrganizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      user.activeOrganizationId
+    );
     if (!organization) {
       return null;
     }
@@ -348,7 +369,10 @@ export const getAvailableOrganizations = query({
         if (membership.status !== "active") {
           return null;
         }
-        const organization = await ctx.db.get(membership.organizationId);
+        const organization = await ctx.db.get(
+          "organizations",
+          membership.organizationId
+        );
         if (!organization) {
           return null;
         }

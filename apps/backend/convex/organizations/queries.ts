@@ -4,7 +4,7 @@
  * Provides read access to organization data, members, and invitations
  */
 
-import { ConvexError, type GenericId, v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -42,7 +42,7 @@ async function requireComponentMembership(
   ctx: OrganizationQueryCtx,
   organizationId: Id<"organizations">
 ) {
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throw new ConvexError("Organization not found");
   }
@@ -115,7 +115,7 @@ export const getOrganizationMembers = authQuery({
         if (!member.userId) {
           return null;
         }
-        const user = await ctx.db.get(member.userId);
+        const user = await ctx.db.get("users", member.userId);
         if (!user) {
           return null;
         }
@@ -138,7 +138,7 @@ export const getOrganizationMembers = authQuery({
     // Filter out null values and sort by role hierarchy (owner first, then admin, etc.)
     return membersWithDetails
       .filter((m): m is NonNullable<typeof m> => m !== null)
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const roleCompare = roleOrder[a.role] - roleOrder[b.role];
         if (roleCompare !== 0) return roleCompare;
         // If same role, sort by join date
@@ -326,7 +326,7 @@ export const getOrganizationMember = authQuery({
     }
 
     // Get user details
-    const user = await ctx.db.get(member.userId);
+    const user = await ctx.db.get("users", member.userId);
     if (!user) {
       throw new ConvexError("User not found");
     }
@@ -338,14 +338,13 @@ export const getOrganizationMember = authQuery({
       const role = await ctx.runQuery(
         components.vortexAuth.organizations.getRole,
         {
-          roleId: member.roleId as GenericId<"organization_roles">,
-          organizationId:
-            organization.vortexAuthOrganizationId as GenericId<"organizations">,
+          roleId: member.roleId,
+          organizationId: organization.vortexAuthOrganizationId,
         }
       );
       customRole = role
         ? {
-            id: String(role._id),
+            id: role._id,
             name: role.name,
             permissions: role.permissions,
           }
@@ -388,7 +387,7 @@ const AI_SETTINGS_DEFAULTS = {
 export const getAiSettings = authQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
     return org.aiSettings ?? AI_SETTINGS_DEFAULTS;
   },
@@ -398,7 +397,7 @@ export const getAiSettings = authQuery({
 export const getAiSettingsInternal = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) return AI_SETTINGS_DEFAULTS;
     return org.aiSettings ?? AI_SETTINGS_DEFAULTS;
   },
@@ -425,7 +424,7 @@ const BRANDING_DEFAULTS = {
 export const getBrandingSettings = authQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
     return org.brandingSettings ?? BRANDING_DEFAULTS;
   },
@@ -435,7 +434,7 @@ export const getBrandingSettings = authQuery({
 export const getBrandingSettingsInternal = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) return BRANDING_DEFAULTS;
     return await loadEffectiveBrandingSettings(ctx, org);
   },
@@ -455,7 +454,7 @@ const SIGNING_SETTINGS_DEFAULTS = {
 export const getSigningSettings = authQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
     return org.signingSettings ?? SIGNING_SETTINGS_DEFAULTS;
   },
@@ -464,7 +463,7 @@ export const getSigningSettings = authQuery({
 export const getSigningSettingsInternal = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) return SIGNING_SETTINGS_DEFAULTS;
     return org.signingSettings ?? SIGNING_SETTINGS_DEFAULTS;
   },
@@ -484,7 +483,7 @@ const NOTIFICATION_SETTINGS_DEFAULTS = {
 export const getNotificationSettings = authQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
     return org.notificationSettings ?? NOTIFICATION_SETTINGS_DEFAULTS;
   },
@@ -493,7 +492,7 @@ export const getNotificationSettings = authQuery({
 export const getNotificationSettingsInternal = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) return NOTIFICATION_SETTINGS_DEFAULTS;
     return org.notificationSettings ?? NOTIFICATION_SETTINGS_DEFAULTS;
   },
@@ -513,7 +512,7 @@ const SECURITY_SETTINGS_DEFAULTS = {
 export const getSecuritySettings = authQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
     return org.securitySettings ?? SECURITY_SETTINGS_DEFAULTS;
   },
@@ -522,7 +521,7 @@ export const getSecuritySettings = authQuery({
 export const getSecuritySettingsInternal = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) return SECURITY_SETTINGS_DEFAULTS;
     return org.securitySettings ?? SECURITY_SETTINGS_DEFAULTS;
   },
@@ -535,7 +534,7 @@ export const getSecuritySettingsInternal = internalQuery({
 export const getOrgSettings = authQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
     return {
       ai: org.aiSettings ?? AI_SETTINGS_DEFAULTS,

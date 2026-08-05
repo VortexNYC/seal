@@ -263,8 +263,8 @@ export async function getActiveMembership(
   organizationId: Id<"organizations">
 ): Promise<AuthMember | null> {
   const [user, organization] = await Promise.all([
-    ctx.db.get(userId),
-    ctx.db.get(organizationId),
+    ctx.db.get("users", userId),
+    ctx.db.get("organizations", organizationId),
   ]);
   if (!user || !organization) {
     return null;
@@ -330,7 +330,7 @@ export async function getDocumentOrThrow(
   documentId: Id<"documents">,
   errorMessage?: string
 ): Promise<Doc<"documents">> {
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
 
   if (!document || document.status === "deleted") {
     throw new ConvexError(errorMessage ?? ACCESS_ERRORS.DOCUMENT_NOT_FOUND);

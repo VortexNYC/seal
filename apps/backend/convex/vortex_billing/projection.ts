@@ -238,18 +238,22 @@ async function cancelOtherPaidSubscriptions(
   externalSubscriptionId: string,
   now: number
 ): Promise<void> {
-  const activeSubscriptions = await ctx.db
+  const activeSubscriptions: Doc<"subscriptions">[] = [];
+  for await (const subscription of ctx.db
     .query("subscriptions")
     .withIndex("by_organization_status", (q) =>
       q.eq("organizationId", organizationId).eq("status", "active")
-    )
-    .collect();
-  const trialingSubscriptions = await ctx.db
+    )) {
+    activeSubscriptions.push(subscription);
+  }
+  const trialingSubscriptions: Doc<"subscriptions">[] = [];
+  for await (const subscription of ctx.db
     .query("subscriptions")
     .withIndex("by_organization_status", (q) =>
       q.eq("organizationId", organizationId).eq("status", "trialing")
-    )
-    .collect();
+    )) {
+    trialingSubscriptions.push(subscription);
+  }
 
   for (const subscription of [
     ...activeSubscriptions,
@@ -258,7 +262,7 @@ async function cancelOtherPaidSubscriptions(
     if (subscription.externalSubscriptionId === externalSubscriptionId) {
       continue;
     }
-    await ctx.db.patch(subscription._id, {
+    await ctx.db.patch("subscriptions", subscription._id, {
       status: "canceled",
       canceledAt: now,
       cancelReason: "replaced_by_vortex_billing_subscription",
@@ -271,19 +275,21 @@ async function hasActiveNonVortexProviderShapedSubscription(
   ctx: MutationCtx,
   organizationId: Id<"organizations">
 ): Promise<boolean> {
-  const activeSubscriptions = await ctx.db
+  for await (const subscription of ctx.db
     .query("subscriptions")
     .withIndex("by_organization_status", (q) =>
       q.eq("organizationId", organizationId).eq("status", "active")
-    )
-    .collect();
-
-  return activeSubscriptions.some(
-    (subscription) =>
+    )) {
+    if (
       nonVortexProviderIdPattern.test(subscription.externalCustomerId) ||
       nonVortexProviderIdPattern.test(subscription.externalSubscriptionId) ||
       nonVortexProviderIdPattern.test(subscription.externalPriceId)
-  );
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export const projectSubscriptionUpdated = internalMutation({
@@ -322,7 +328,10 @@ export const projectSubscriptionUpdated = internalMutation({
       };
     }
 
-    const organization = await ctx.db.get(args.sealOrganizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      args.sealOrganizationId
+    );
     if (!organization) {
       throw new Error(
         `Seal organization not found for Vortex webhook: ${args.sealOrganizationId}`
@@ -396,7 +405,7 @@ export const projectSubscriptionUpdated = internalMutation({
     };
 
     if (existingSubscription) {
-      await ctx.db.patch(existingSubscription._id, projection);
+      await ctx.db.patch("subscriptions", existingSubscription._id, projection);
       if (isPaidStatus(status)) {
         await cancelOtherPaidSubscriptions(
           ctx,
@@ -546,7 +555,7 @@ async function projectInvoiceEvent(
           }
         : {};
 
-  await ctx.db.patch(subscription._id, {
+  await ctx.db.patch("subscriptions", subscription._id, {
     ...statusPatch,
     ...entitlementPatch,
     latestInvoiceId: args.invoiceNumber,
@@ -620,6 +629,10 @@ function paymentStatusForPayableStatus(
       return "failed";
     case "awaiting_payment":
       return "awaiting";
+    default: {
+      const _exhaustive: never = status;
+      throw new Error(`Unhandled payable status: ${String(_exhaustive)}`);
+    }
   }
 }
 
@@ -633,6 +646,10 @@ function invoiceStatusForPayableStatus(
       return "uncollectible";
     case "awaiting_payment":
       return "open";
+    default: {
+      const _exhaustive: never = status;
+      throw new Error(`Unhandled payable status: ${String(_exhaustive)}`);
+    }
   }
 }
 
@@ -697,10 +714,10 @@ async function patchPayableLineage(
   }
 
   if (input.configId !== undefined) {
-    await ctx.db.patch(input.configId, patch);
+    await ctx.db.patch("payment_field_configs", input.configId, patch);
   }
   if (input.invoiceRecordId !== undefined) {
-    await ctx.db.patch(input.invoiceRecordId, patch);
+    await ctx.db.patch("document_invoices", input.invoiceRecordId, patch);
   }
 }
 
@@ -709,12 +726,12 @@ async function cancelInvoiceDunning(
   invoiceRecordId: Id<"document_invoices">,
   now: number
 ): Promise<void> {
-  const invoice = await ctx.db.get(invoiceRecordId);
+  const invoice = await ctx.db.get("document_invoices", invoiceRecordId);
   if (!invoice || invoice.dunningStatus !== "active") {
     return;
   }
 
-  await ctx.db.patch(invoiceRecordId, {
+  await ctx.db.patch("document_invoices", invoiceRecordId, {
     dunningStatus: "cancelled",
     dunningCompletedAt: now,
     nextDunningAt: undefined,
@@ -727,7 +744,7 @@ async function startInvoiceDunning(
   invoiceRecordId: Id<"document_invoices">,
   now: number
 ): Promise<boolean> {
-  const invoice = await ctx.db.get(invoiceRecordId);
+  const invoice = await ctx.db.get("document_invoices", invoiceRecordId);
   if (!invoice) {
     return false;
   }
@@ -742,7 +759,7 @@ async function startInvoiceDunning(
     return false;
   }
 
-  await ctx.db.patch(invoiceRecordId, {
+  await ctx.db.patch("document_invoices", invoiceRecordId, {
     dunningStatus: "active",
     dunningStep: 0,
     dunningStartedAt: now,
@@ -757,25 +774,29 @@ async function finalizeDocumentIfPaymentComplete(
   documentId: Id<"documents">,
   now: number
 ): Promise<void> {
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
   if (!document || document.workflowStatus !== "waiting_for_payment") {
     return;
   }
 
-  const paymentConfigs = await ctx.db
+  let allPaid = true;
+  for await (const config of ctx.db
     .query("payment_field_configs")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
-  const allPaid = paymentConfigs.every(
-    (config) =>
-      config.paymentStatus === "paid" || config.paymentStatus === "cancelled"
-  );
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    if (
+      config.paymentStatus !== "paid" &&
+      config.paymentStatus !== "cancelled"
+    ) {
+      allPaid = false;
+      break;
+    }
+  }
 
   if (!allPaid) {
     return;
   }
 
-  await ctx.db.patch(documentId, {
+  await ctx.db.patch("documents", documentId, {
     workflowStatus: "completed",
     completedAt: now,
     updatedAt: now,

@@ -15,6 +15,7 @@
  * @module webhooks/delivery
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
@@ -27,6 +28,16 @@ import {
 } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
 import { formatSlackMessage } from "./slack_formatter";
+
+const slackWebhookPayloadValidator = v.object({
+  id: v.string(),
+  type: v.string(),
+  api_version: v.string(),
+  created_at: v.string(),
+  organization_id: v.string(),
+  data: v.record(v.string(), v.any()),
+});
+
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present."
@@ -299,14 +310,8 @@ async function deliverSlackWebhook(
   endpoint: Doc<"webhook_endpoints">,
   attemptCount: number
 ): Promise<DeliveryProcessingResult> {
-  const parsed = JSON.parse(delivery.payload) as {
-    id: string;
-    type: string;
-    api_version: string;
-    created_at: string;
-    organization_id: string;
-    data: Record<string, unknown>;
-  };
+  const raw: unknown = JSON.parse(delivery.payload);
+  const parsed = parse(slackWebhookPayloadValidator, raw);
   const slackBody = JSON.stringify(formatSlackMessage(parsed));
 
   const startTime = Date.now();
@@ -458,7 +463,7 @@ export const updateDeliveryResult = internalMutation({
   },
   handler: async (ctx, args) => {
     const { deliveryId, ...updates } = args;
-    await ctx.db.patch(deliveryId, updates);
+    await ctx.db.patch("webhook_deliveries", deliveryId, updates);
   },
 });
 
@@ -473,13 +478,13 @@ export const updateEndpointStatus = internalMutation({
     success: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
     if (!endpoint) return;
 
     const now = Date.now();
 
     if (args.success) {
-      await ctx.db.patch(args.endpointId, {
+      await ctx.db.patch("webhook_endpoints", args.endpointId, {
         failureCount: 0,
         lastSuccessAt: now,
         lastAttemptAt: now,
@@ -489,7 +494,7 @@ export const updateEndpointStatus = internalMutation({
       const newFailureCount = endpoint.failureCount + 1;
       const shouldDisable = newFailureCount >= MAX_ENDPOINT_FAILURES;
 
-      await ctx.db.patch(args.endpointId, {
+      await ctx.db.patch("webhook_endpoints", args.endpointId, {
         failureCount: newFailureCount,
         lastAttemptAt: now,
         updatedAt: now,
@@ -540,7 +545,7 @@ export const getEndpointById = internalQuery({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args): Promise<Doc<"webhook_endpoints"> | null> => {
-    return await ctx.db.get(args.endpointId);
+    return await ctx.db.get("webhook_endpoints", args.endpointId);
   },
 });
 
@@ -557,23 +562,24 @@ export const abandonPendingDeliveriesForOrg = internalMutation({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args): Promise<number> => {
-    const pending = await ctx.db
+    let abandoned = 0;
+    for await (const delivery of ctx.db
       .query("webhook_deliveries")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId)
-      )
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect();
-
-    for (const delivery of pending) {
-      await ctx.db.patch(delivery._id, {
+      )) {
+      if (delivery.status !== "pending") {
+        continue;
+      }
+      await ctx.db.patch("webhook_deliveries", delivery._id, {
         status: "abandoned",
         errorMessage:
           "Webhooks suspended — organization downgraded to Free tier",
       });
+      abandoned++;
     }
 
-    return pending.length;
+    return abandoned;
   },
 });
 

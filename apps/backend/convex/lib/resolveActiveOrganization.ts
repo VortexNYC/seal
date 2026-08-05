@@ -33,7 +33,7 @@ export async function resolveActiveOrganizationId(
 
   const legacyId = user.activeOrganizationId;
   if (legacyId !== undefined) {
-    const org = await ctx.db.get(legacyId);
+    const org = await ctx.db.get("organizations", legacyId);
     if (org !== null) {
       return org._id;
     }

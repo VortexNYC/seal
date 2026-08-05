@@ -29,7 +29,7 @@ export async function verifyDocumentOwnership(
   documentId: Id<"documents">,
   userId: Id<"users">
 ): Promise<void> {
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
   if (!document) {
     throw new ConvexError("Document not found");
   }
@@ -76,10 +76,12 @@ export async function areAllRecipientsComplete(
   ctx: GenericCtx,
   documentId: Id<"documents">
 ): Promise<boolean> {
-  const recipients = await ctx.db
+  const recipients = [];
+  for await (const _row of ctx.db
     .query("document_recipients")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    recipients.push(_row);
+  }
 
   if (recipients.length === 0) {
     return false;
@@ -130,7 +132,7 @@ export function groupRecipientsByOrder(
     if (!groups.has(order)) groups.set(order, []);
     sealAssertPresent(groups.get(order)).push(r);
   }
-  return new Map([...groups].sort(([a], [b]) => a - b));
+  return new Map([...groups].toSorted(([a], [b]) => a - b));
 }
 
 /**
@@ -199,10 +201,12 @@ export async function getRecipientCounts(
   viewers: number;
   approvers: number;
 }> {
-  const recipients = await ctx.db
+  const recipients = [];
+  for await (const _row of ctx.db
     .query("document_recipients")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    recipients.push(_row);
+  }
 
   return {
     total: recipients.length,

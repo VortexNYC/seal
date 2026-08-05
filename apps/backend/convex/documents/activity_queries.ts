@@ -204,11 +204,15 @@ async function addReminderEvents(
   recipients: Doc<"document_recipients">[],
   owner: OwnerActivityContext
 ): Promise<void> {
-  const reminders = await ctx.db
+  const reminders = [];
+  for await (const _row of ctx.db
     .query("document_reminders")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .filter((q) => q.eq(q.field("status"), "sent"))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    if (!(_row.status === "sent")) {
+      continue;
+    }
+    reminders.push(_row);
+  }
 
   for (const reminder of reminders) {
     if (!reminder.sentAt || !reminder.recipientId) {
@@ -235,14 +239,16 @@ async function addAccessEvents(
   documentId: Doc<"documents">["_id"],
   owner: OwnerActivityContext
 ): Promise<void> {
-  const accessRecords = await ctx.db
+  const accessRecords = [];
+  for await (const _row of ctx.db
     .query("document_access")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    accessRecords.push(_row);
+  }
 
   for (const access of accessRecords) {
-    const accessUser = await ctx.db.get(access.userId);
-    const grantedByUser = await ctx.db.get(access.grantedBy);
+    const accessUser = await ctx.db.get("users", access.userId);
+    const grantedByUser = await ctx.db.get("users", access.grantedBy);
     const accessUserName = accessUser?.name || accessUser?.email || "User";
     const grantedByName =
       grantedByUser?.name || grantedByUser?.email || "Someone";
@@ -315,17 +321,19 @@ export const getDocumentActivity = authQuery({
       throw new ConvexError(ACCESS_ERRORS.NO_ACCESS);
     }
 
-    const owner = await ctx.db.get(document.ownerId);
+    const owner = await ctx.db.get("users", document.ownerId);
     const ownerActivity = {
       ownerName: owner?.name || owner?.email || "Document owner",
       ownerId: document.ownerId.toString(),
     };
     const events: ActivityEvent[] = [];
 
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     addDocumentEvents(events, document, ownerActivity, recipients.length);
     addRecipientEvents(events, recipients, ownerActivity);
@@ -385,7 +393,7 @@ export const getDocumentActors = authQuery({
     >();
 
     // Add owner
-    const owner = await ctx.db.get(document.ownerId);
+    const owner = await ctx.db.get("users", document.ownerId);
     if (owner) {
       actorsMap.set(document.ownerId.toString(), {
         id: document.ownerId.toString(),
@@ -395,14 +403,16 @@ export const getDocumentActors = authQuery({
     }
 
     // Add users who have been granted access
-    const accessRecords = await ctx.db
+    const accessRecords = [];
+    for await (const _row of ctx.db
       .query("document_access")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      accessRecords.push(_row);
+    }
 
     for (const access of accessRecords) {
       if (!actorsMap.has(access.userId.toString())) {
-        const user = await ctx.db.get(access.userId);
+        const user = await ctx.db.get("users", access.userId);
         if (user) {
           actorsMap.set(access.userId.toString(), {
             id: access.userId.toString(),
@@ -413,7 +423,7 @@ export const getDocumentActors = authQuery({
       }
       // Also add the granter
       if (!actorsMap.has(access.grantedBy.toString())) {
-        const granter = await ctx.db.get(access.grantedBy);
+        const granter = await ctx.db.get("users", access.grantedBy);
         if (granter) {
           actorsMap.set(access.grantedBy.toString(), {
             id: access.grantedBy.toString(),
@@ -424,7 +434,7 @@ export const getDocumentActors = authQuery({
       }
     }
 
-    return Array.from(actorsMap.values()).sort((a, b) => {
+    return Array.from(actorsMap.values()).toSorted((a, b) => {
       // Owner first
       if (a.type === "owner") return -1;
       if (b.type === "owner") return 1;

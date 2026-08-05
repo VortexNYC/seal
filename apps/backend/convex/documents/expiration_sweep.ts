@@ -40,7 +40,7 @@ async function expireRecipient(
   recipient: Doc<"document_recipients">,
   now: number
 ): Promise<void> {
-  await ctx.db.patch(recipient._id, {
+  await ctx.db.patch("document_recipients", recipient._id, {
     status: "expired",
     expirationNotifiedAt: now,
   });
@@ -67,10 +67,12 @@ async function maybeExpireDocument(
   document: Doc<"documents">,
   now: number
 ): Promise<boolean> {
-  const updatedRecipients = await ctx.db
+  const updatedRecipients: Doc<"document_recipients">[] = [];
+  for await (const recipient of ctx.db
     .query("document_recipients")
-    .withIndex("by_document", (q) => q.eq("documentId", document._id))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", document._id))) {
+    updatedRecipients.push(recipient);
+  }
 
   const allTerminal =
     updatedRecipients.length > 0 &&
@@ -85,7 +87,7 @@ async function maybeExpireDocument(
     return false;
   }
 
-  await ctx.db.patch(document._id, {
+  await ctx.db.patch("documents", document._id, {
     workflowStatus: "expired",
     expiredAt: now,
   });
@@ -127,20 +129,23 @@ export const sweepExpiredRecipients = internalMutation({
     const now = Date.now();
 
     // Query active documents (sent / in_progress) that could have expired recipients
-    const sentDocs = await ctx.db
+    const activeDocs: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
-      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "sent"))
-      .collect();
-    const inProgressDocs = await ctx.db
+      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "sent"))) {
+      if (doc.status !== "deleted" && doc.organizationId) {
+        activeDocs.push(doc);
+      }
+    }
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_workflow_status", (q) =>
         q.eq("workflowStatus", "in_progress")
-      )
-      .collect();
-
-    const activeDocs = [...sentDocs, ...inProgressDocs].filter(
-      (doc) => doc.status !== "deleted" && doc.organizationId
-    );
+      )) {
+      if (doc.status !== "deleted" && doc.organizationId) {
+        activeDocs.push(doc);
+      }
+    }
 
     let recipientsExpired = 0;
     let documentsExpired = 0;
@@ -148,20 +153,17 @@ export const sweepExpiredRecipients = internalMutation({
     for (const doc of activeDocs) {
       if (recipientsExpired >= BATCH_LIMIT) break;
 
-      // Get all recipients for this document
-      const recipients = await ctx.db
+      const toExpire: Doc<"document_recipients">[] = [];
+      for await (const recipient of ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-        .collect();
-
-      // Find recipients that need to be expired
-      const toExpire = recipients.filter((recipient) =>
-        isRecipientReadyToExpire(recipient, now)
-      );
+        .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+        if (isRecipientReadyToExpire(recipient, now)) {
+          toExpire.push(recipient);
+        }
+      }
 
       if (toExpire.length === 0) continue;
 
-      // Expire each qualifying recipient
       for (const recipient of toExpire) {
         if (recipientsExpired >= BATCH_LIMIT) break;
 

@@ -5,10 +5,12 @@ export const listConnectedApps = authQuery({
   handler: async (ctx) => {
     const userId = ctx.auth.user._id;
 
-    const apps = await ctx.db
+    const apps = [];
+    for await (const app of ctx.db
       .query("connected_apps")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .collect();
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))) {
+      apps.push(app);
+    }
 
     return apps;
   },

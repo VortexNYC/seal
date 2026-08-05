@@ -208,14 +208,15 @@ export const checkAllRecipientsComplete = internalQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<{ allComplete: boolean }> => {
-    const allRecipients = await ctx.db
+    let allComplete = true;
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
-    const allComplete = allRecipients.every((r) =>
-      isRecipientComplete(r.role, r.status)
-    );
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (!isRecipientComplete(recipient.role, recipient.status)) {
+        allComplete = false;
+        break;
+      }
+    }
     return { allComplete };
   },
 });
@@ -230,7 +231,7 @@ export const triggerDocumentCompletion = internalMutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<{ shouldComplete: boolean }> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return { shouldComplete: false };
     }
