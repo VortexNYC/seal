@@ -1,15 +1,18 @@
 /**
  * Security Settings Page
  *
- * Organization security policies (owner-only mutations)
+ * Organization security policies (owner-only mutations) plus Core access/
+ * security audit list (admin/owner). Product document audit stays on
+ * settings/audit-log.
  * Route: /{slug}/settings/security
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { VortexSecurityAuditList } from "@vortexnyc/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowRightLeft, KeyRound, Save, Shield } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -63,7 +66,26 @@ function SecuritySettings() {
     requireMfa: false,
     sessionTimeoutMinutes: "",
   });
+  const [auditRange, setAuditRange] = useState<"7" | "30" | "90">("30");
 
+  const auditFrom = useMemo(
+    () => Date.now() - Number(auditRange) * 24 * 60 * 60 * 1000,
+    [auditRange]
+  );
+
+  const isOwner = organization?.userRole === "owner";
+  const isAdmin =
+    organization?.userRole === "admin" || organization?.userRole === "owner";
+
+  const securityAuditLogs = useQuery(
+    api.organizations.vortex_security_audit.listRecent,
+    isAdmin
+      ? {
+          limit: 100,
+          from: auditFrom,
+        }
+      : "skip"
+  );
   useEffect(() => {
     if (securitySettings) {
       setFormData({
@@ -81,10 +103,6 @@ function SecuritySettings() {
       setDelegateOwnership(organization.delegateOwnership ?? false);
     }
   }, [organization]);
-
-  const isOwner = organization?.userRole === "owner";
-  const isAdmin =
-    organization?.userRole === "admin" || organization?.userRole === "owner";
 
   const handleDelegateOwnershipChange = async (checked: boolean) => {
     setIsDelegateOwnershipUpdating(true);
@@ -322,6 +340,59 @@ function SecuritySettings() {
           </Button>
         </div>
       </form>
+
+      {isAdmin ? (
+        <Card className="mt-6">
+          <CardHeader className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Access &amp; security events</CardTitle>
+              <CardDescription>
+                Member, organization, and login events for this workspace. For
+                document and signing activity, use the{" "}
+                <Link
+                  className="underline underline-offset-4"
+                  params={{ slug }}
+                  to="/$slug/settings/audit-log"
+                >
+                  Audit log
+                </Link>
+                .
+              </CardDescription>
+            </div>
+            <div className="space-y-1">
+              <Label
+                className="text-muted-foreground text-xs"
+                htmlFor="audit-window"
+              >
+                Window
+              </Label>
+              <select
+                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                id="audit-window"
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value === "7" || value === "30" || value === "90") {
+                    setAuditRange(value);
+                  }
+                }}
+                value={auditRange}
+              >
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <VortexSecurityAuditList
+              copy={{
+                emptyMessage: "No matching access or security events.",
+              }}
+              logs={securityAuditLogs}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
     </PageWrapper>
   );
 }

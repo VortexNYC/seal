@@ -151,6 +151,7 @@ import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
 import type * as organizations_vortex_auth from "../organizations/vortex_auth.js";
 import type * as organizations_vortex_roles from "../organizations/vortex_roles.js";
+import type * as organizations_vortex_security_audit from "../organizations/vortex_security_audit.js";
 import type * as payment_fields_dunning from "../payment_fields/dunning.js";
 import type * as payment_fields_dunning_email_action from "../payment_fields/dunning_email_action.js";
 import type * as payment_fields_helpers from "../payment_fields/helpers.js";
@@ -408,6 +409,7 @@ declare const fullApi: ApiFromModules<{
   "organizations/queries": typeof organizations_queries;
   "organizations/vortex_auth": typeof organizations_vortex_auth;
   "organizations/vortex_roles": typeof organizations_vortex_roles;
+  "organizations/vortex_security_audit": typeof organizations_vortex_security_audit;
   "payment_fields/dunning": typeof payment_fields_dunning;
   "payment_fields/dunning_email_action": typeof payment_fields_dunning_email_action;
   "payment_fields/helpers": typeof payment_fields_helpers;
