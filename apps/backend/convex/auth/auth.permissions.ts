@@ -1,27 +1,53 @@
 /**
- * Enhanced authentication context with permission resolution
- * This extends the existing auth.ts with fine-grained permission management
+ * Unified authentication context for Seal.
+ *
+ * Single resolution path used by RLS wrappers (`auth/wrappers.ts`) and the
+ * legacy `auth.ts` barrel. Permissions come from `auth/permissions.ts`
+ * ROLE_TEMPLATES (+ component custom roles). User identity prefers the
+ * canonical glue 2-hop lookup (component identity → local users row).
  */
 
-import { ConvexError, type GenericId } from "convex/values";
+import { ConvexError } from "convex/values";
 
 import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import type { AuthMember } from "../auth.utils";
+import { AuthUtils, type AuthMember } from "../auth.utils";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
+import { findCurrentUserRow } from "../lib/identity";
+import type { OrganizationRole, UserType } from "../schema";
 import {
   getExpandedPermissions,
   hasAllPermissions,
   hasAnyPermission,
   hasPermission,
-  isValidPermission,
+  isPermissionKey,
+  isRoleTemplate,
   type PermissionKey,
-  type RoleTemplate,
 } from "./permissions";
 
+function sortedPermissionKeys(
+  permissions: Iterable<PermissionKey>
+): PermissionKey[] {
+  const result: PermissionKey[] = [];
+  for (const key of permissions) {
+    let insertAt = result.length;
+    for (let index = 0; index < result.length; index += 1) {
+      const existing = result[index];
+      if (existing !== undefined && key < existing) {
+        insertAt = index;
+        break;
+      }
+    }
+    result.splice(insertAt, 0, key);
+  }
+  return result;
+}
+
 /**
- * Enhanced auth context with permissions
+ * Unified auth context — Stack A fields (docs/orgs) + Stack B fields (RLS/AI).
+ * `isAdmin` / `isOwner` are callables (Stack A call sites use `isAdmin()`).
+ * RLS reads them via `isAdmin()` / `isOwner()`.
  */
 export interface AuthContextWithPermissions {
   userId: Id<"users">;
@@ -30,17 +56,28 @@ export interface AuthContextWithPermissions {
   name?: string;
   role: string;
   permissions: string[];
-  isOwner: boolean;
-  isAdmin: boolean;
+  isOwner: () => boolean;
+  isAdmin: () => boolean;
   hasPermission: (permission: string) => boolean;
   hasAnyPermission: (permissions: string[]) => boolean;
   hasAllPermissions: (permissions: string[]) => boolean;
+  hasRole: (role: OrganizationRole) => boolean;
+  canAccessOrganization: (orgId: Id<"organizations">) => boolean;
+  isPersonalUser: () => boolean;
+  isBusinessUser: () => boolean;
+  canManageFinances: () => boolean;
+  canManageSubscription: () => boolean;
+  canManageMembers: () => boolean;
 
-  // Include the full docs for backward compatibility
   user: Doc<"users">;
   member: AuthMember;
   organization: Doc<"organizations">;
+  subscription?: Doc<"subscriptions">;
+  userType: UserType;
 }
+
+/** @deprecated Prefer AuthContextWithPermissions — alias for migration. */
+export type AuthContext = AuthContextWithPermissions;
 
 function throwPermissionAuthError(code: string, message: string): never {
   throw new ConvexError({ code, message });
@@ -49,6 +86,13 @@ function throwPermissionAuthError(code: string, message: string): never {
 async function requireAuthenticatedUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<Doc<"users">> {
+  // Prefer glue 2-hop (component identity → local user). Fall back to
+  // authSubject index for rows not yet backfilled onto vortexAuthUserId.
+  const glueUser = await findCurrentUserRow(ctx);
+  if (glueUser !== null) {
+    return glueUser;
+  }
+
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throwPermissionAuthError("UNAUTHORIZED", "Authentication required");
@@ -108,11 +152,27 @@ async function getOrganizationOrThrow(
   return organization;
 }
 
+async function getActiveSubscription(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">
+): Promise<Doc<"subscriptions"> | undefined> {
+  const subscription = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_organization_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "active")
+    )
+    .order("desc")
+    .first();
+
+  return subscription ?? undefined;
+}
+
 function buildSuperAdminContext(
   user: Doc<"users">,
   member: AuthMember,
   organization: Doc<"organizations">,
-  organizationId: Id<"organizations">
+  organizationId: Id<"organizations">,
+  subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
   return {
     userId: user._id,
@@ -121,14 +181,24 @@ function buildSuperAdminContext(
     name: user.name,
     role: "super_admin",
     permissions: ["*"],
-    isOwner: true,
-    isAdmin: true,
+    isOwner: () => true,
+    isAdmin: () => true,
     hasPermission: () => true,
     hasAnyPermission: () => true,
     hasAllPermissions: () => true,
+    hasRole: () => true,
+    canAccessOrganization: (orgId) =>
+      AuthUtils.canAccessOrganization(member, orgId),
+    isPersonalUser: () => true,
+    isBusinessUser: () => false,
+    canManageFinances: () => true,
+    canManageSubscription: () => true,
+    canManageMembers: () => true,
     user,
     member,
     organization,
+    subscription,
+    userType: "personal",
   };
 }
 
@@ -168,8 +238,11 @@ async function buildActiveMembershipContext(
   return { membership, organization, organizationId };
 }
 
-function isPermissionKey(permission: string): permission is PermissionKey {
-  return isValidPermission(permission);
+function resolveRoleTemplate(role: string): PermissionKey[] {
+  if (isRoleTemplate(role)) {
+    return getExpandedPermissions(role);
+  }
+  return getExpandedPermissions("member");
 }
 
 async function resolvePermissions(
@@ -177,22 +250,19 @@ async function resolvePermissions(
   membership: AuthMember,
   organization: Doc<"organizations">
 ): Promise<PermissionKey[]> {
-  let permissions: PermissionKey[] = getExpandedPermissions(
-    membership.role as RoleTemplate
-  );
+  let permissions: PermissionKey[] = resolveRoleTemplate(membership.role);
 
   if (membership.roleId && organization.vortexAuthOrganizationId) {
     const role = await ctx.runQuery(
       components.vortexAuth.organizations.getRole,
       {
-        roleId: membership.roleId as GenericId<"organization_roles">,
-        organizationId:
-          organization.vortexAuthOrganizationId as GenericId<"organizations">,
+        roleId: membership.roleId,
+        organizationId: organization.vortexAuthOrganizationId,
       }
     );
     permissions = role
       ? role.permissions.filter(isPermissionKey)
-      : getExpandedPermissions(membership.role as RoleTemplate);
+      : resolveRoleTemplate(membership.role);
   }
 
   if (membership.permissionOverrides?.add) {
@@ -210,7 +280,7 @@ async function resolvePermissions(
     );
   }
 
-  return Array.from(new Set(permissions)).sort();
+  return sortedPermissionKeys(new Set(permissions));
 }
 
 function buildPermissionContext(
@@ -218,11 +288,9 @@ function buildPermissionContext(
   membership: AuthMember,
   organization: Doc<"organizations">,
   organizationId: Id<"organizations">,
-  permissions: string[]
+  permissions: string[],
+  subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
-  const isOwner = membership.role === "owner";
-  const isAdmin = ["owner", "admin"].includes(membership.role);
-
   return {
     userId: user._id,
     organizationId,
@@ -230,32 +298,31 @@ function buildPermissionContext(
     name: user.name,
     role: membership.role,
     permissions,
-    isOwner,
-    isAdmin,
+    isOwner: () => membership.role === "owner",
+    isAdmin: () => ["owner", "admin"].includes(membership.role),
     hasPermission: (permission: string) =>
       hasPermission(permissions, permission),
     hasAnyPermission: (perms: string[]) => hasAnyPermission(permissions, perms),
     hasAllPermissions: (perms: string[]) =>
       hasAllPermissions(permissions, perms),
+    hasRole: (role) => AuthUtils.hasRole(membership, role),
+    canAccessOrganization: (orgId) =>
+      AuthUtils.canAccessOrganization(membership, orgId),
+    isPersonalUser: () => true,
+    isBusinessUser: () => false,
+    canManageFinances: () => AuthUtils.canManageSubscription(membership),
+    canManageSubscription: () => AuthUtils.canManageSubscription(membership),
+    canManageMembers: () => AuthUtils.canManageMembers(membership),
     user,
     member: membership,
     organization,
+    subscription,
+    userType: "personal",
   };
 }
 
 /**
- * Get enhanced auth context with resolved permissions
- * This function handles the full permission resolution flow:
- * 1. Authenticate the user
- * 2. Load user from database
- * 3. Check super admin status
- * 4. Load organization membership
- * 5. Validate membership and organization status
- * 6. Resolve permissions from multiple sources:
- *    - Role template
- *    - Custom role (if assigned)
- *    - Permission overrides
- * 7. Return context with permission helpers
+ * Get unified auth context with resolved permissions + subscription.
  */
 export async function getAuthContextWithPermissions(
   ctx: QueryCtx | MutationCtx
@@ -278,19 +345,31 @@ export async function getAuthContextWithPermissions(
       organizationId,
       "No membership found for super admin"
     );
+    const subscription = await getActiveSubscription(ctx, organizationId);
 
-    return buildSuperAdminContext(user, member, organization, organizationId);
+    return buildSuperAdminContext(
+      user,
+      member,
+      organization,
+      organizationId,
+      subscription
+    );
   }
 
   const { membership, organization, organizationId } =
     await buildActiveMembershipContext(ctx, user);
   const permissions = await resolvePermissions(ctx, membership, organization);
+  const subscription = await getActiveSubscription(ctx, organizationId);
 
   return buildPermissionContext(
     user,
     membership,
     organization,
     organizationId,
-    permissions
+    permissions,
+    subscription
   );
 }
+
+/** Alias — one auth context function for the whole backend. */
+export const getAuthContext = getAuthContextWithPermissions;

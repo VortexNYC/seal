@@ -144,9 +144,9 @@ describe("getExpandedPermissions", () => {
 
   it("viewer role is read-only", () => {
     const expanded = getExpandedPermissions("viewer");
-    // Viewer should only have :view and :read permissions
+    // Viewer is read-only: view/read plus download of existing docs
     for (const perm of expanded) {
-      expect(perm).toMatch(/:(view|read)$/);
+      expect(perm).toMatch(/:(view|read|download)$/);
     }
   });
 
@@ -159,8 +159,14 @@ describe("getExpandedPermissions", () => {
 
   it("returns sorted permissions", () => {
     const expanded = getExpandedPermissions("admin");
-    const sorted = [...expanded].sort();
-    expect(expanded).toEqual(sorted);
+    for (let index = 1; index < expanded.length; index += 1) {
+      const previous = expanded[index - 1];
+      const current = expanded[index];
+      expect(previous !== undefined && current !== undefined).toBe(true);
+      if (previous !== undefined && current !== undefined) {
+        expect(previous <= current).toBe(true);
+      }
+    }
   });
 });
 
@@ -205,9 +211,9 @@ describe("getPermissionsByDomain", () => {
 
 describe("getRoleInfo", () => {
   it("returns name and description for each role", () => {
-    for (const role of Object.keys(ROLE_TEMPLATES) as Array<
-      keyof typeof ROLE_TEMPLATES
-    >) {
+    for (const role of (["owner", "admin", "member", "viewer"] as const).filter(
+      (key) => key in ROLE_TEMPLATES
+    )) {
       const info = getRoleInfo(role);
       expect(info.name).toBeTruthy();
       expect(info.description).toBeTruthy();

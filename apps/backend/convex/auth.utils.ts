@@ -1,4 +1,8 @@
 import type { Doc } from "./_generated/dataModel";
+import {
+  getExpandedPermissions,
+  hasPermission as catalogHasPermission,
+} from "./auth/permissions";
 import type { OrganizationMemberRole } from "./schema";
 
 export type AuthMember = {
@@ -29,196 +33,15 @@ export const ROLE_HIERARCHY: Record<OrganizationMemberRole, number> = {
 };
 
 /**
- * Document signing platform permissions for each role
+ * Role → permission grants. Single source: auth/permissions ROLE_TEMPLATES.
+ * Keep system as global wildcard for platform operators.
  */
 export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
-  system: [
-    // System-level permissions (all permissions)
-    "*",
-  ],
-  owner: [
-    // Organization management
-    "org:manage",
-    "org:settings:read",
-    "org:settings:update",
-    "org:users:read",
-    "org:users:invite",
-    "org:users:remove",
-    "org:users:update_role",
-    // Subscription management
-    "subscription:manage",
-    "subscription:billing:read",
-    "subscription:billing:update",
-    // Documents (full access) - includes both old and new permission naming
-    "documents:read",
-    "documents:view", // New naming convention
-    "documents:create",
-    "documents:update",
-    "documents:edit", // New naming convention
-    "documents:delete",
-    "documents:send",
-    "documents:cancel",
-    "documents:download",
-    "documents:share",
-    "documents:export",
-    // Templates (full access) - includes both old and new permission naming
-    "templates:read",
-    "templates:view", // New naming convention
-    "templates:create",
-    "templates:update",
-    "templates:edit", // New naming convention
-    "templates:delete",
-    "templates:use",
-    // Signatures (view all org signatures)
-    "signatures:read",
-    "signatures:download",
-    // Audit & Compliance
-    "audit:read",
-    "audit:view", // New naming convention
-    "audit:export",
-    // API & Webhooks
-    "api:read",
-    "api:create",
-    "api:delete",
-    "webhooks:read",
-    "webhooks:create",
-    "webhooks:update",
-    "webhooks:delete",
-    // Analytics & Reports
-    "analytics:read",
-    "reports:read",
-    "reports:generate",
-    // Data management
-    "data:export",
-    "data:backup",
-    // Users & Roles
-    "users:view",
-    "users:create",
-    "users:edit",
-    "users:delete",
-    "users:roles",
-    // Contacts (full access)
-    "contacts:view",
-    "contacts:create",
-    "contacts:edit",
-    "contacts:delete",
-    "contacts:export",
-    // Branding
-    "branding:manage",
-  ],
-
-  admin: [
-    // Organization view
-    "org:settings:read",
-    "org:users:read",
-    "org:users:invite",
-    // Subscription view
-    "subscription:billing:read",
-    // Documents (full access) - includes both old and new permission naming
-    "documents:read",
-    "documents:view", // New naming convention
-    "documents:create",
-    "documents:update",
-    "documents:edit", // New naming convention
-    "documents:delete",
-    "documents:send",
-    "documents:cancel",
-    "documents:download",
-    "documents:share",
-    "documents:export",
-    // Templates (full access) - includes both old and new permission naming
-    "templates:read",
-    "templates:view", // New naming convention
-    "templates:create",
-    "templates:update",
-    "templates:edit", // New naming convention
-    "templates:delete",
-    "templates:use",
-    // Signatures (view all)
-    "signatures:read",
-    "signatures:download",
-    // Audit (read only)
-    "audit:read",
-    "audit:view", // New naming convention
-    "audit:export",
-    // API & Webhooks (manage)
-    "api:read",
-    "api:create",
-    "api:delete",
-    "webhooks:read",
-    "webhooks:create",
-    "webhooks:update",
-    "webhooks:delete",
-    // Analytics
-    "analytics:read",
-    "reports:read",
-    "reports:generate",
-    // Data export
-    "data:export",
-    // Users & Roles
-    "users:view",
-    "users:create",
-    "users:edit",
-    "users:delete",
-    "users:roles",
-    // Contacts (full access)
-    "contacts:view",
-    "contacts:create",
-    "contacts:edit",
-    "contacts:delete",
-    "contacts:export",
-    // Branding
-    "branding:manage",
-  ],
-
-  member: [
-    // Documents (create and manage own) - includes both old and new permission naming
-    "documents:read",
-    "documents:view", // New naming convention
-    "documents:create",
-    "documents:update",
-    "documents:edit", // New naming convention
-    "documents:send",
-    "documents:cancel",
-    "documents:download",
-    "documents:share",
-    "documents:export",
-    // Templates (use existing, create own) - includes both old and new permission naming
-    "templates:read",
-    "templates:view", // New naming convention
-    "templates:create",
-    "templates:use",
-    // Signatures (own documents only)
-    "signatures:read",
-    "signatures:download",
-    // Basic analytics
-    "analytics:read",
-    "reports:read",
-    // Personal data
-    "data:export",
-    // Users (view only)
-    "users:view",
-    // Contacts (create and manage, no delete)
-    "contacts:view",
-    "contacts:create",
-    "contacts:edit",
-    "contacts:export",
-  ],
-
-  viewer: [
-    // Read-only access - includes both old and new permission naming
-    "documents:read",
-    "documents:view", // New naming convention
-    "documents:download",
-    "templates:read",
-    "templates:view", // New naming convention
-    "signatures:read",
-    "analytics:read",
-    "reports:read",
-    "users:view",
-    // Contacts (view only)
-    "contacts:view",
-  ],
+  system: ["*"],
+  owner: getExpandedPermissions("owner"),
+  admin: getExpandedPermissions("admin"),
+  member: getExpandedPermissions("member"),
+  viewer: getExpandedPermissions("viewer"),
 };
 
 /** Returns true if the member has the named permission via role or individual grant. */
@@ -235,11 +58,9 @@ export function hasPermission(member: AuthMember, permission: string): boolean {
   // Get individual permissions (if any)
   const individualPermissions = member.permissions || [];
 
-  // Check role permission, individual permission, or wildcard
-  return (
-    rolePermissions.includes(permission) ||
-    individualPermissions.includes(permission) ||
-    rolePermissions.includes("*")
+  return catalogHasPermission(
+    [...rolePermissions, ...individualPermissions],
+    permission
   );
 }
 
