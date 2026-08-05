@@ -12,7 +12,10 @@ import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
-import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
+import {
+  listComponentInvitationsByOrganization,
+  listComponentMembersByOrganization,
+} from "../lib/componentOrgReads";
 import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
@@ -214,10 +217,14 @@ export async function ensureProFeature(
 
 /**
  * Throw if adding another member would exceed the org's seat limit.
+ *
+ * Pass `includePendingInvites: true` when creating invitations so pending
+ * invites reserve seats (SEA-605). Redeem / addMember only count active members.
  */
 export async function ensureSeatLimit(
   ctx: { db: DatabaseReader; runQuery: QueryCtx["runQuery"] },
-  organizationId: Id<"organizations">
+  organizationId: Id<"organizations">,
+  options?: { includePendingInvites?: boolean }
 ): Promise<void> {
   const { plan } = await getSubscriptionPlan(ctx.db, organizationId);
   const limits = PLAN_LIMITS[plan];
@@ -230,9 +237,21 @@ export async function ensureSeatLimit(
     status: "active",
   });
 
-  if (members.length >= limits.maxSeats) {
+  let occupied = members.length;
+  if (options?.includePendingInvites) {
+    const pending = await listComponentInvitationsByOrganization(
+      ctx,
+      organization,
+      "pending"
+    );
+    occupied += pending.length;
+  }
+
+  if (occupied >= limits.maxSeats) {
+    const seatLabel =
+      limits.maxSeats === Infinity ? "unlimited" : String(limits.maxSeats);
     throw new ConvexError(
-      `You've reached the seat limit for your plan (${members.length}/${limits.maxSeats}). ` +
+      `You've reached the seat limit for your plan (${occupied}/${seatLabel}). ` +
         (plan === "free"
           ? "Upgrade to Professional to add team members."
           : plan === "pro"

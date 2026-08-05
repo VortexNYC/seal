@@ -11,6 +11,7 @@ import { api, components } from "../_generated/api";
 import { action } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authQuery } from "../auth";
+import { ensureSeatLimit } from "../auth/subscription_guards";
 import {
   getComponentMemberById,
   listComponentMembersByOrganization,
@@ -215,6 +216,11 @@ export const reactivateMember = adminMutation({
       !membership.userId
     ) {
       throw new ConvexError("Member not found");
+    }
+
+    if (membership.status !== "active") {
+      // SEA-605: reactivating into a full seat pool must fail.
+      await ensureSeatLimit(ctx, organization._id);
     }
 
     await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {

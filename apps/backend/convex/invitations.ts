@@ -17,10 +17,12 @@ import {
   query,
 } from "./_generated/server";
 import { getAuthContext } from "./auth";
+import { ensureSeatLimit } from "./auth/subscription_guards";
 import { sendEmailFromAction } from "./emails/resend_component";
 import {
   getComponentInvitationById,
   getComponentInvitationByTokenHash,
+  getComponentMemberRefForUserOrganization,
   listComponentInvitationsByOrganization,
 } from "./lib/componentOrgReads";
 import {
@@ -93,6 +95,12 @@ export const createInvitation = mutation({
         "An invitation has already been sent to this email"
       );
     }
+
+    // SEA-605: server-enforce seats (UI Pro gate is not enough). Pending
+    // invites reserve a seat so Free cannot invite and Pro cannot overbook.
+    await ensureSeatLimit(ctx, auth.organization._id, {
+      includePendingInvites: true,
+    });
 
     const token = crypto.randomUUID();
     const tokenHash = await sha256(token);
@@ -275,6 +283,22 @@ export const redeemInvitation = mutation({
       throw new ConvexError("Invitation has expired");
     }
 
+    const organization = await ctx.db.get(invitation.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+
+    // Already a member: allow redeem without consuming another seat.
+    const existingMembership = await getComponentMemberRefForUserOrganization(
+      ctx,
+      user,
+      organization
+    );
+    if (existingMembership === null) {
+      // SEA-605: enforce seats on redeem (stale invites after seat fill).
+      await ensureSeatLimit(ctx, invitation.organizationId);
+    }
+
     const now = Date.now();
     await upsertVortexAuthMember(ctx, {
       organizationId: invitation.organizationId,
@@ -293,14 +317,11 @@ export const redeemInvitation = mutation({
     });
 
     // Make the joined org the user's active org so they land in it.
-    const anchor = await ctx.db.get(invitation.organizationId);
-    if (anchor) {
-      await ctx.db.patch(user._id, {
-        activeOrganizationId: invitation.organizationId,
-        activeVortexAuthOrganizationId: anchor.vortexAuthOrganizationId,
-        updatedAt: now,
-      });
-    }
+    await ctx.db.patch(user._id, {
+      activeOrganizationId: invitation.organizationId,
+      activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      updatedAt: now,
+    });
 
     return { organizationId: invitation.organizationId };
   },
