@@ -8,3 +8,4 @@
 export * as delivery from "./delivery";
 export * as mutations from "./mutations";
 export * as queries from "./queries";
+export * as vortex_surface from "./vortex_surface";

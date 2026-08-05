@@ -243,3 +243,82 @@ export const listUserOrganizations = query({
     return organizations.filter((org) => org !== null);
   },
 });
+
+/**
+ * Core AuthPostSignUp / chooser RoutePage shape: active org or null.
+ */
+export const getDefaultOrganization = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
+      .first();
+
+    if (!user?.activeOrganizationId) {
+      return null;
+    }
+
+    const organization = await ctx.db.get(user.activeOrganizationId);
+    if (!organization) {
+      return null;
+    }
+
+    return {
+      _id: organization._id,
+      name: organization.name,
+    };
+  },
+});
+
+/**
+ * Core AuthPostSignUp / chooser RoutePage shape: selectable memberships.
+ */
+export const getAvailableOrganizations = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) =>
+        q.eq("authSubject", identity.subject)
+      )
+      .first();
+
+    if (!user) {
+      return [];
+    }
+
+    const memberships = await resolveComponentMemberships(ctx, user);
+    const organizations = await Promise.all(
+      memberships.map(async (membership) => {
+        if (membership.status !== "active") {
+          return null;
+        }
+        const organization = await ctx.db.get(membership.organizationId);
+        if (!organization) {
+          return null;
+        }
+        return {
+          _id: organization._id,
+          name: organization.name,
+          canSelect: true,
+          roleTemplate: membership.role,
+        };
+      })
+    );
+
+    return organizations.filter((org) => org !== null);
+  },
+});

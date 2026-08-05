@@ -26,6 +26,7 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
     api.check_membership.ensureActiveOrganization
   );
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+  const isPostSignUpRoute = location.pathname === "/post-sign-up";
   const isPublicRoute = location.pathname.startsWith("/docs");
 
   const [isFixingOrg, setIsFixingOrg] = useState(false);
@@ -69,11 +70,16 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
   }
 
   if (!hasOrganization || !activeOrganizationSlug) {
-    return isOnboardingRoute ? (
+    return isOnboardingRoute || isPostSignUpRoute ? (
       children
     ) : (
       <Navigate to="/onboarding/choose-organization" replace />
     );
+  }
+
+  // Post-sign-up finishes org ensure / invite redeem, then navigates itself.
+  if (isPostSignUpRoute) {
+    return <>{children}</>;
   }
 
   // Allow /onboarding/choose-organization even if user has an organization

@@ -1,7 +1,7 @@
 /**
  * Component-backed API keys (P5). The vortexAuth component is the source of
- * truth for these API keys. Tokens are shown once at creation; only a prefix +
- * hash are stored.
+ * truth for these API keys. Tokens are shown once at creation/rotation; only a
+ * prefix + hash are stored.
  */
 import {
   createApiKeyPrefix,
@@ -18,6 +18,7 @@ import {
   listComponentApiKeysByOrganization,
   type ComponentResolvedApiKey,
 } from "../lib/componentOrgReads";
+import { rotateVortexAuthApiKey } from "../lib/vortexAuthApiKeyRotate";
 import {
   createVortexAuthApiKey,
   revokeVortexAuthApiKey,
@@ -46,8 +47,13 @@ export const createApiKey = mutation({
   args: {
     name: v.string(),
     scopes: v.array(apiScopeValidator),
+    allowedIpRanges: v.optional(v.array(v.string())),
+    expiresAt: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{ id: string; secret: string }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ id: string; secret: string; scopes: string[] }> => {
     const auth = await getAuthContext(ctx);
     if (!auth.hasPermission("api:create")) {
       throw new ConvexError("You do not have permission to create API keys");
@@ -77,10 +83,12 @@ export const createApiKey = mutation({
       keyPrefix,
       keyHash,
       scopes: args.scopes,
+      allowedIpRanges: args.allowedIpRanges,
+      expiresAt: args.expiresAt,
     });
 
     // Full token is returned ONCE; only prefix + hash are stored.
-    return { id, secret: token };
+    return { id, secret: token, scopes: args.scopes };
   },
 });
 
@@ -92,14 +100,31 @@ export const listApiKeys = query({
       ctx,
       auth.organization
     );
-    return keys.map((k: ComponentResolvedApiKey) => ({
-      id: k._id,
-      name: k.name,
-      createdAt: k.createdAt,
-      lastUsedAt: k.lastUsedAt,
-      scopes: k.scopes,
-      revoked: k.status === "revoked",
-    }));
+    return Promise.all(
+      keys.map(async (k: ComponentResolvedApiKey) => {
+        const creator = await ctx.db.get(k.userId);
+        return {
+          _id: k._id,
+          name: k.name,
+          keyPrefix: k.keyPrefix,
+          scopes: k.scopes,
+          allowedIpRanges: k.allowedIpRanges ?? [],
+          expiresAt: k.expiresAt,
+          status: k.status,
+          lastUsedAt: k.lastUsedAt,
+          lastUsedIp: k.lastUsedIp,
+          createdAt: k.createdAt,
+          updatedAt: k.updatedAt,
+          createdBy: creator
+            ? {
+                _id: creator._id,
+                name: creator.name ?? undefined,
+                email: creator.email,
+              }
+            : null,
+        };
+      })
+    );
   },
 });
 
@@ -154,5 +179,50 @@ export const revokeApiKey = mutation({
       organizationId: auth.organization._id,
     });
     return { success: true };
+  },
+});
+
+export const rotateApiKey = mutation({
+  args: {
+    apiKeyId: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ id: string; secret: string; scopes: string[] }> => {
+    const auth = await getAuthContext(ctx);
+    if (!auth.hasPermission("api:create")) {
+      throw new ConvexError("You do not have permission to rotate API keys");
+    }
+    const keys = await listComponentApiKeysByOrganization(
+      ctx,
+      auth.organization
+    );
+    const existing = keys.find((k) => k._id === args.apiKeyId);
+    if (!existing) {
+      throw new ConvexError("API key not found in this organization");
+    }
+    if (existing.status === "revoked") {
+      throw new ConvexError("Cannot rotate a revoked API key");
+    }
+
+    const keyPrefix = createApiKeyPrefix({
+      tokenPrefix: SEAL_API_TOKEN_PREFIX,
+      randomUUID: () => crypto.randomUUID(),
+    });
+    const secret = createApiKeySecret({
+      randomUUID: () => crypto.randomUUID(),
+    });
+    const token = formatApiKeyToken({ keyPrefix, secret });
+    const keyHash = await hashApiKeySecret(secret);
+
+    await rotateVortexAuthApiKey(ctx, {
+      apiKeyId: args.apiKeyId,
+      organizationId: auth.organization._id,
+      keyPrefix,
+      keyHash,
+    });
+
+    return { id: args.apiKeyId, secret: token, scopes: existing.scopes };
   },
 });

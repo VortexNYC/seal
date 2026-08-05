@@ -17,11 +17,11 @@ export const Route = createFileRoute("/_auth/sign-up")({
 function RouteComponent() {
   return (
     <runtime.AuthSignUpRoutePage
-      signInPath={authRoutePaths.signInPath}
-      postSignUpPath="/app"
+      captureAuthEvent={captureAuthEvent}
       markPendingAuthFlow={markPendingAuthFlow}
       markPendingPostSignUpSync={markPendingPostSignUpSync}
-      captureAuthEvent={captureAuthEvent}
+      postSignUpPath={authRoutePaths.postSignUpPath}
+      signInPath={authRoutePaths.signInPath}
     />
   );
 }

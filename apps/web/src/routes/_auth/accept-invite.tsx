@@ -1,24 +1,22 @@
 /**
  * Accept Invite Route
  *
- * Component-based invitation acceptance (P7). The email link points here with
- * ?token=<raw token>. If the invitee isn't signed in, render sign-up (so they
- * create a Better-Auth account, returning here afterwards); once signed in,
- * redeem the token → join the org → land in the app.
+ * Email link lands here with ?token=<raw>. Unsigned users go through Core
+ * accept-invite → sign-up, then return here. Signed-in users redeem via Convex
+ * and land in /app (Seal-specific; Core page only routes into auth).
  */
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { VortexAuthAcceptInvitePage } from "@vortexnyc/auth/react";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 
 import Loader from "@/components/loader";
 import {
   authRoutePaths,
-  captureAuthEvent,
-  markPendingAuthFlow,
-  markPendingPostSignUpSync,
-  runtime,
+  toSafeRedirectPath,
   useAppAuth,
+  useAppAuthActions,
 } from "@/lib/auth-runtime.better-auth";
 
 export const Route = createFileRoute("/_auth/accept-invite")({
@@ -31,10 +29,15 @@ export const Route = createFileRoute("/_auth/accept-invite")({
 function AcceptInviteRoute() {
   const { token } = Route.useSearch();
   const { isLoaded, isSignedIn } = useAppAuth();
+  const actions = useAppAuthActions();
   const navigate = useNavigate();
   const redeemInvitation = useMutation(api.invitations.redeemInvitation);
   const [error, setError] = useState<string | null>(null);
   const redeemedRef = useRef(false);
+
+  const postSignUpPath = token
+    ? `/accept-invite?token=${encodeURIComponent(token)}`
+    : authRoutePaths.postSignUpPath;
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !token || redeemedRef.current) {
@@ -43,7 +46,7 @@ function AcceptInviteRoute() {
     redeemedRef.current = true;
     redeemInvitation({ token })
       .then(() => navigate({ to: "/app", replace: true }))
-      .catch((err) => {
+      .catch((err: unknown) => {
         setError(
           err instanceof Error ? err.message : "Failed to accept invitation"
         );
@@ -63,7 +66,6 @@ function AcceptInviteRoute() {
     return <Navigate to="/sign-in" replace />;
   }
 
-  // Signed in → redeeming (or showing an error).
   if (isSignedIn) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-2 text-center">
@@ -81,14 +83,17 @@ function AcceptInviteRoute() {
     );
   }
 
-  // Not signed in → create an account, then return here to redeem.
   return (
-    <runtime.AuthSignUpRoutePage
+    <VortexAuthAcceptInvitePage
+      buildSignUpUrl={actions.buildSignUpUrl}
+      description="Create an account or sign in to join the workspace that invited you."
+      eyebrow="Seal invite"
+      postSignUpPath={postSignUpPath}
+      redirectToSignIn={actions.redirectToSignIn}
       signInPath={authRoutePaths.signInPath}
-      postSignUpPath={`/accept-invite?token=${encodeURIComponent(token)}`}
-      markPendingAuthFlow={markPendingAuthFlow}
-      markPendingPostSignUpSync={markPendingPostSignUpSync}
-      captureAuthEvent={captureAuthEvent}
+      signUpPath={authRoutePaths.signUpPath}
+      title="You're invited"
+      toSafeRedirectPath={toSafeRedirectPath}
     />
   );
 }
