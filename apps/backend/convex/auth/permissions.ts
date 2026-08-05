@@ -1,9 +1,18 @@
 /**
  * Permission definitions and role templates for the Seal application
  *
- * This file defines all available permissions and role templates.
- * Permissions are organized by domain (organization, documents, templates, etc.)
+ * Product catalog (PERMISSIONS + ROLE_TEMPLATES) stays Seal-owned so document
+ * signing grants remain product-scoped. Match / expand / intersect logic comes
+ * from `@vortexnyc/permissions` — no second hierarchy engine (SEA-602).
  */
+
+import {
+  getExpandedPermissions as expandRoleTemplatePermissions,
+  hasAllPermissions as coreHasAllPermissions,
+  hasAnyPermission as coreHasAnyPermission,
+  hasPermission as coreHasPermission,
+  type RoleTemplateMap,
+} from "@vortexnyc/permissions";
 
 // Master list of all permissions in the system.
 // Includes legacy Seal strings so component-seeded roles and RLS gates share
@@ -200,67 +209,43 @@ export const ROLE_TEMPLATES = {
 
 export type RoleTemplate = keyof typeof ROLE_TEMPLATES;
 
+/** Grant map for Core expanders — metadata stays on ROLE_TEMPLATES. */
+const ROLE_PERMISSION_GRANTS: RoleTemplateMap<RoleTemplate> = {
+  owner: ROLE_TEMPLATES.owner.permissions,
+  admin: ROLE_TEMPLATES.admin.permissions,
+  member: ROLE_TEMPLATES.member.permissions,
+  viewer: ROLE_TEMPLATES.viewer.permissions,
+};
+
 /**
- * Check if a user has a specific permission
- * Supports wildcards: '*' for all, 'domain:*' for all in domain
- *
- * @param userPermissions - Array of permissions the user has
- * @param requiredPermission - The permission to check for
- * @returns true if user has the permission
+ * Check if a user has a specific permission.
+ * Delegates to `@vortexnyc/permissions` (exact / `*` / `domain:*`).
  */
 export function hasPermission(
   userPermissions: readonly string[],
   requiredPermission: string
 ): boolean {
-  // Global wildcard = all permissions
-  if (userPermissions.includes("*")) {
-    return true;
-  }
-
-  // Exact match
-  if (userPermissions.includes(requiredPermission)) {
-    return true;
-  }
-
-  // Domain wildcard (e.g., "documents:*" covers "documents:view")
-  const [domain] = requiredPermission.split(":");
-  if (domain && userPermissions.includes(`${domain}:*`)) {
-    return true;
-  }
-
-  return false;
+  return coreHasPermission(userPermissions, requiredPermission);
 }
 
 /**
  * Check if a user has any of the specified permissions
- *
- * @param userPermissions - Array of permissions the user has
- * @param requiredPermissions - Array of permissions to check (OR logic)
- * @returns true if user has at least one of the permissions
  */
 export function hasAnyPermission(
   userPermissions: readonly string[],
   requiredPermissions: string[]
 ): boolean {
-  return requiredPermissions.some((permission) =>
-    hasPermission(userPermissions, permission)
-  );
+  return coreHasAnyPermission(userPermissions, requiredPermissions);
 }
 
 /**
  * Check if a user has all of the specified permissions
- *
- * @param userPermissions - Array of permissions the user has
- * @param requiredPermissions - Array of permissions to check (AND logic)
- * @returns true if user has all of the permissions
  */
 export function hasAllPermissions(
   userPermissions: readonly string[],
   requiredPermissions: string[]
 ): boolean {
-  return requiredPermissions.every((permission) =>
-    hasPermission(userPermissions, permission)
-  );
+  return coreHasAllPermissions(userPermissions, requiredPermissions);
 }
 
 /**
@@ -300,41 +285,20 @@ function sortedPermissionKeys(
 
 /**
  * Get all expanded permissions for a role template
- * Resolves wildcards to actual permissions
- *
- * @param role - The role template to expand
- * @returns Array of all permissions for that role
+ * Resolves wildcards via Core against Seal's PERMISSIONS catalog.
  */
 export function getExpandedPermissions(role: RoleTemplate): PermissionKey[] {
-  const template = ROLE_TEMPLATES[role];
-  const permissions = new Set<PermissionKey>();
-  const allKeys = Object.keys(PERMISSIONS).filter(isPermissionKey);
-
-  for (const perm of template.permissions) {
-    if (perm === "*") {
-      for (const key of allKeys) {
-        permissions.add(key);
-      }
-    } else if (perm.endsWith(":*")) {
-      const domain = perm.slice(0, -2);
-      for (const key of allKeys) {
-        if (key.startsWith(`${domain}:`)) {
-          permissions.add(key);
-        }
-      }
-    } else if (isPermissionKey(perm)) {
-      permissions.add(perm);
-    }
-  }
-
-  return sortedPermissionKeys(permissions);
+  const expanded = expandRoleTemplatePermissions(
+    PERMISSIONS,
+    ROLE_PERMISSION_GRANTS,
+    role
+  );
+  return sortedPermissionKeys(expanded.filter(isPermissionKey));
 }
 
 /**
  * Get all permissions organized by domain
  * Useful for UI display
- *
- * @returns Object with domain names as keys and permission arrays as values
  */
 export function getPermissionsByDomain(): Record<
   string,
@@ -363,9 +327,6 @@ export function getPermissionsByDomain(): Record<
 
 /**
  * Get the display name and description for a role template
- *
- * @param role - The role template
- * @returns Object with name and description
  */
 export function getRoleInfo(role: RoleTemplate): {
   name: string;
