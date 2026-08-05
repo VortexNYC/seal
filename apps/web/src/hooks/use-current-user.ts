@@ -2,8 +2,8 @@
  * Compatibility current-user adapter over vortex-auth's useAppUser (SEA-606).
  *
  * Prefer `useAppUser` from `@/lib/auth-runtime.better-auth` for new code.
- * This adapter maps Clerk-shaped fields (firstName/lastName/emailAddresses)
- * so existing call sites stay a one-line import alias:
+ * This adapter maps legacy profile-shaped fields (firstName/lastName/
+ * emailAddresses) so existing call sites stay a one-line import alias:
  *
  *   import { useCurrentUser as useUser } from "@/hooks/use-current-user";
  *
