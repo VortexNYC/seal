@@ -9,7 +9,12 @@ Convex backend with domain-driven folders, strict auth wrappers, and schema-driv
 ```
 apps/backend/convex/
 ├── schema.ts            # Central schema export
-├── auth.ts              # Wrapper definitions
+├── auth.ts              # Auth barrel (errors + re-exports)
+├── auth/wrappers.ts     # RLS auth/permission wrappers (canonical)
+├── auth/permissions.ts  # Permission catalog + ROLE_TEMPLATES
+├── auth/auth.permissions.ts # Unified getAuthContext
+├── lib/canonicalGlue.ts # createVortexAuthGlue (identity)
+├── lib/identity.ts      # findCurrentUserRow / requireViewer
 ├── auth.utils.ts        # Roles + permissions
 ├── http.ts              # HTTP routes + webhooks
 ├── api/                 # REST API (v1)
@@ -24,7 +29,7 @@ apps/backend/convex/
 
 | Task          | Location                            | Notes                               |
 | ------------- | ----------------------------------- | ----------------------------------- |
-| Auth wrappers | `apps/backend/convex/auth.ts`       | Use for all queries/mutations       |
+| Auth wrappers | `apps/backend/convex/auth/wrappers.ts` (via `auth.ts`) | RLS + unified permissions; use for all queries/mutations |
 | Permissions   | `apps/backend/convex/auth.utils.ts` | Role hierarchy + permission strings |
 | Schemas       | `apps/backend/convex/schemas/`      | One table per file                  |
 | REST API      | `apps/backend/convex/api/v1/`       | Public endpoints                    |
