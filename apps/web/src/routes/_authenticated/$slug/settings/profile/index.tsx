@@ -136,6 +136,11 @@ function ProfileSettings() {
             );
           });
         }}
+        onDeleteAccount={() => {
+          toast.info(
+            "Account deletion is not available from this screen. Contact support."
+          );
+        }}
         onManageTwoFactor={() => {
           toast.info("Manage two-factor authentication under Security.");
         }}
