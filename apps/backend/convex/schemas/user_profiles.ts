@@ -23,15 +23,16 @@ export const emailNotificationPreferencesValidator = v.object({
 /**
  * User Profiles Schema
  *
- * Stores extended user profile information (bio, notification preferences)
- * keyed by the user's auth subject.
+ * Stores notification preferences keyed by the user's auth subject.
+ * Identity (name/email/avatar) lives in Vortex Auth — not here.
  */
 
 export const userProfilesTable = defineTable({
   // Auth-subject key (identity.subject) this profile belongs to.
   authSubject: v.string(),
 
-  // Extended profile fields
+  // Deprecated (SEA-593): kept optional so existing rows validate until
+  // `migrations.clearUserProfileBio` is run, then remove this field.
   bio: v.optional(v.string()),
 
   // Notification preferences

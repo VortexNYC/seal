@@ -1,12 +1,10 @@
 /**
  * Profile Settings Page - General
  *
- * Core VortexUserProfile for account identity; Seal-specific bio remains
- * Convex-backed below.
+ * Core VortexUserProfile for account identity; change-email via Core form.
  * Route: /{slug}/settings/profile/ (index)
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexChangeEmailForm,
@@ -15,24 +13,11 @@ import {
   useVortexAuthForgotPassword,
   useVortexAuthUpdateProfile,
 } from "@vortexnyc/auth/react";
-import { useMutation, useQuery } from "convex/react";
-import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { authClient } from "@/lib/auth-runtime.better-auth";
-import { cn } from "@/lib/utils";
 
 function resolveAppOrigin(): string {
   const configured = import.meta.env.VITE_APP_URL;
@@ -51,20 +36,12 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
   }
 );
 
-const MAX_BIO_LENGTH = 500;
-
 function ProfileSettings() {
   const { user, isLoaded } = useCurrentUser();
   const { updateProfile: updateAuthProfile } =
     useVortexAuthUpdateProfile(authClient);
   const { requestReset, isRequesting } =
     useVortexAuthForgotPassword(authClient);
-  const userProfile = useQuery(api.user_profiles.queries.getCurrentUserProfile);
-  const updateProfile = useMutation(api.user_profiles.mutations.updateProfile);
-
-  const [bio, setBio] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
 
   const profileUser = useMemo<VortexUserProfileUser | null>(() => {
     if (!user) {
@@ -77,43 +54,6 @@ function ProfileSettings() {
       imageUrl: user.imageUrl ?? null,
     };
   }, [user]);
-
-  useEffect(() => {
-    if (userProfile?.bio !== undefined) {
-      setBio(userProfile.bio || "");
-    }
-  }, [userProfile?.bio]);
-
-  useEffect(() => {
-    const originalBio = userProfile?.bio || "";
-    setHasChanges(bio !== originalBio);
-  }, [bio, userProfile?.bio]);
-
-  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    if (value.length <= MAX_BIO_LENGTH) {
-      setBio(value);
-    }
-  };
-
-  const handleSaveBio = async () => {
-    setIsSubmitting(true);
-
-    try {
-      await updateProfile({
-        bio: bio.trim(),
-      });
-
-      toast.success("Profile updated successfully");
-      setHasChanges(false);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update profile"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -170,40 +110,6 @@ function ProfileSettings() {
         }}
         verifyCallbackUrl={`${resolveAppOrigin()}/verify-email`}
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>About you</CardTitle>
-          <CardDescription>
-            Optional bio shown on your Seal workspace profile.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              className={cn("min-h-28")}
-              id="bio"
-              maxLength={MAX_BIO_LENGTH}
-              onChange={handleBioChange}
-              placeholder="A short bio"
-              value={bio}
-            />
-            <p className="text-muted-foreground text-xs">
-              {bio.length}/{MAX_BIO_LENGTH}
-            </p>
-          </div>
-          <Button
-            disabled={!hasChanges || isSubmitting}
-            onClick={() => {
-              void handleSaveBio();
-            }}
-          >
-            <Save className="mr-2 size-4" />
-            {isSubmitting ? "Saving…" : "Save bio"}
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }
