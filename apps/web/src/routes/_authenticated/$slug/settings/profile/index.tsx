@@ -11,6 +11,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexUserProfile,
   type VortexUserProfileUser,
+  useVortexAuthForgotPassword,
   useVortexAuthUpdateProfile,
 } from "@vortexnyc/auth/react";
 import { useMutation, useQuery } from "convex/react";
@@ -44,6 +45,8 @@ function ProfileSettings() {
   const { user, isLoaded } = useCurrentUser();
   const { updateProfile: updateAuthProfile } =
     useVortexAuthUpdateProfile(authClient);
+  const { requestReset, isRequesting } =
+    useVortexAuthForgotPassword(authClient);
   const userProfile = useQuery(api.user_profiles.queries.getCurrentUserProfile);
   const updateProfile = useMutation(api.user_profiles.mutations.updateProfile);
 
@@ -105,14 +108,33 @@ function ProfileSettings() {
       <VortexUserProfile
         isLoading={!isLoaded}
         onChangePassword={() => {
-          toast.info(
-            "To change your password, sign out and use Forgot password on the sign-in page."
-          );
-        }}
-        onDeleteAccount={() => {
-          toast.info(
-            "Account deletion is not available from this screen. Contact support."
-          );
+          const email = profileUser?.email?.trim();
+          if (!email) {
+            toast.error("No email on this account to send a reset link.");
+            return;
+          }
+          if (isRequesting) {
+            return;
+          }
+          const configured = import.meta.env.VITE_APP_URL;
+          const origin =
+            typeof configured === "string" && configured.length > 0
+              ? configured.replace(/\/$/, "")
+              : window.location.origin;
+          void requestReset({
+            email,
+            redirectTo: `${origin}/reset-password`,
+          }).then((result) => {
+            if (!result.ok) {
+              toast.error(
+                result.error ?? "Failed to send password reset email"
+              );
+              return;
+            }
+            toast.success(
+              "Password reset email sent. Check your inbox to set a new password."
+            );
+          });
         }}
         onManageTwoFactor={() => {
           toast.info("Manage two-factor authentication under Security.");

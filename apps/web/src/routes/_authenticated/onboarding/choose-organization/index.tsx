@@ -1,17 +1,15 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  type VortexAuthOrganizationChooserItem,
+  VortexAuthOrganizationChooserPage,
+  VortexCreateOrganization,
+} from "@vortexnyc/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Loader from "@/components/loader";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute(
@@ -30,30 +28,54 @@ function RouteComponent() {
     api.organizations.mutations.ensurePersonalOrganization
   );
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
-  const handleSelectOrganization = async (organizationSlug: string) => {
+  const chooserItems = useMemo(():
+    | readonly VortexAuthOrganizationChooserItem[]
+    | undefined => {
+    if (organizations === undefined || organizations === null) {
+      return undefined;
+    }
+    return organizations.map((org) => ({
+      _id: org.organizationSlug,
+      name: org.organizationName,
+      canSelect: true,
+      roleTemplate: org.role,
+    }));
+  }, [organizations]);
+
+  const handleSelectOrganization = async (
+    organization: VortexAuthOrganizationChooserItem
+  ): Promise<void> => {
+    await setActiveOrganization({ organizationSlug: organization._id });
+    void navigate({
+      to: buildOrganizationPath(organization._id, "/home"),
+      replace: true,
+    });
+  };
+
+  const handleCreate = async (input: {
+    name: string;
+    slug: string;
+  }): Promise<void> => {
+    setIsCreating(true);
+    setCreateError(null);
     try {
-      await setActiveOrganization({ organizationSlug });
-      navigate({
-        to: buildOrganizationPath(organizationSlug, "/home"),
-        replace: true,
+      await ensurePersonalOrganization({
+        organizationName: input.name,
+        organizationSlug: input.slug,
       });
+      void navigate({ to: "/app", replace: true });
     } catch (error) {
-      console.error("Failed to switch workspace:", error);
+      setCreateError(
+        error instanceof Error ? error.message : "Failed to create workspace"
+      );
+      setIsCreating(false);
     }
   };
 
-  const handleCreate = () => {
-    setIsCreating(true);
-    ensurePersonalOrganization({})
-      .then(() => navigate({ to: "/app", replace: true }))
-      .catch((error) => {
-        console.error("Failed to create workspace:", error);
-        setIsCreating(false);
-      });
-  };
-
-  if (!organizations) {
+  if (chooserItems === undefined) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader />
@@ -61,39 +83,45 @@ function RouteComponent() {
     );
   }
 
+  if (showCreate || chooserItems.length === 0) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-6 p-4">
+        <VortexCreateOrganization
+          errorMessage={createError}
+          isLoading={isCreating}
+          onCancel={
+            chooserItems.length > 0
+              ? () => {
+                  setShowCreate(false);
+                  setCreateError(null);
+                }
+              : undefined
+          }
+          onCreate={handleCreate}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-6 p-4">
-      <Card className="w-full">
-        <CardHeader className="text-center">
-          <CardTitle>Choose a workspace</CardTitle>
-          <CardDescription>
-            {organizations.length > 0
-              ? "Select a workspace to continue, or create a new one."
-              : "Create your workspace to get started."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {organizations.map((org) => (
-            <Button
-              key={org.organizationId}
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() =>
-                void handleSelectOrganization(org.organizationSlug)
-              }
-            >
-              {org.organizationName}
-            </Button>
-          ))}
-          <Button
-            className="mt-2 w-full"
-            onClick={handleCreate}
-            disabled={isCreating}
-          >
-            {isCreating ? "Creating..." : "Create a new workspace"}
-          </Button>
-        </CardContent>
-      </Card>
+      <VortexAuthOrganizationChooserPage
+        description="Select a workspace to continue, or create a new one."
+        emptyDescription="Create your workspace to get started."
+        emptyTitle="No workspaces yet"
+        onSelectOrganization={handleSelectOrganization}
+        organizations={chooserItems}
+        title="Choose a workspace"
+      />
+      <Button
+        onClick={() => {
+          setShowCreate(true);
+        }}
+        type="button"
+        variant="link"
+      >
+        Create a new workspace
+      </Button>
     </div>
   );
 }

@@ -14,9 +14,12 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
+import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
+import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
+import { Route as AuthenticatedPostSignUpRouteImport } from './routes/_authenticated/post-sign-up'
 import { Route as SignTokenRouteImport } from './routes/sign.$token'
 import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
 import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authenticated/$slug/index'
@@ -59,7 +62,6 @@ import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } fro
 import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from './routes/_authenticated/$slug/settings/profile/security'
 import { Route as AuthenticatedSlugSettingsProfileUsageRouteImport } from './routes/_authenticated/$slug/settings/profile/usage'
 import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
-import { Route as AuthenticatedSlugSettingsTeamMemberIdRouteImport } from './routes/_authenticated/$slug/settings/team/$memberId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +86,16 @@ const AuthAcceptInviteRoute = AuthAcceptInviteRouteImport.update({
   path: '/accept-invite',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthSignInRoute = AuthSignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -97,6 +109,11 @@ const AuthSignUpRoute = AuthSignUpRouteImport.update({
 const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPostSignUpRoute = AuthenticatedPostSignUpRouteImport.update({
+  id: '/post-sign-up',
+  path: '/post-sign-up',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const SignTokenRoute = SignTokenRouteImport.update({
@@ -346,20 +363,17 @@ const AuthenticatedSlugSettingsTeamIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
   } as any)
-const AuthenticatedSlugSettingsTeamMemberIdRoute =
-  AuthenticatedSlugSettingsTeamMemberIdRouteImport.update({
-    id: '/$memberId',
-    path: '/$memberId',
-    getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/reset-password': typeof AuthResetPasswordRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
+  '/post-sign-up': typeof AuthenticatedPostSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/$slug/$': typeof AuthenticatedSlugSplatRoute
@@ -399,7 +413,6 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
   '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
   '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
-  '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   '/$slug/settings/developer/': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
   '/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
@@ -408,8 +421,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/reset-password': typeof AuthResetPasswordRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/post-sign-up': typeof AuthenticatedPostSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/$slug/$': typeof AuthenticatedSlugSplatRoute
@@ -444,7 +460,6 @@ export interface FileRoutesByTo {
   '/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
   '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
   '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
-  '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   '/$slug/settings/developer': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamIndexRoute
@@ -456,9 +471,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/app': typeof AppRoute
   '/_auth/accept-invite': typeof AuthAcceptInviteRoute
+  '/_auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
+  '/_authenticated/post-sign-up': typeof AuthenticatedPostSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/_authenticated/$slug/$': typeof AuthenticatedSlugSplatRoute
@@ -498,7 +516,6 @@ export interface FileRoutesById {
   '/_authenticated/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
   '/_authenticated/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
   '/_authenticated/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
-  '/_authenticated/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   '/_authenticated/$slug/settings/developer/': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
   '/_authenticated/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/_authenticated/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
@@ -509,9 +526,12 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/accept-invite'
+    | '/forgot-password'
+    | '/reset-password'
     | '/sign-in'
     | '/sign-up'
     | '/$slug'
+    | '/post-sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
     | '/$slug/$'
@@ -551,7 +571,6 @@ export interface FileRouteTypes {
     | '/$slug/settings/profile/notifications'
     | '/$slug/settings/profile/security'
     | '/$slug/settings/profile/usage'
-    | '/$slug/settings/team/$memberId'
     | '/$slug/settings/developer/'
     | '/$slug/settings/profile/'
     | '/$slug/settings/team/'
@@ -560,8 +579,11 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/accept-invite'
+    | '/forgot-password'
+    | '/reset-password'
     | '/sign-in'
     | '/sign-up'
+    | '/post-sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
     | '/$slug/$'
@@ -596,7 +618,6 @@ export interface FileRouteTypes {
     | '/$slug/settings/profile/notifications'
     | '/$slug/settings/profile/security'
     | '/$slug/settings/profile/usage'
-    | '/$slug/settings/team/$memberId'
     | '/$slug/settings/developer'
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
@@ -607,9 +628,12 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/app'
     | '/_auth/accept-invite'
+    | '/_auth/forgot-password'
+    | '/_auth/reset-password'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_authenticated/$slug'
+    | '/_authenticated/post-sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
     | '/_authenticated/$slug/$'
@@ -649,7 +673,6 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/settings/profile/notifications'
     | '/_authenticated/$slug/settings/profile/security'
     | '/_authenticated/$slug/settings/profile/usage'
-    | '/_authenticated/$slug/settings/team/$memberId'
     | '/_authenticated/$slug/settings/developer/'
     | '/_authenticated/$slug/settings/profile/'
     | '/_authenticated/$slug/settings/team/'
@@ -701,6 +724,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAcceptInviteRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/forgot-password': {
+      id: '/_auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/reset-password': {
+      id: '/_auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/sign-in': {
       id: '/_auth/sign-in'
       path: '/sign-in'
@@ -720,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/$slug'
       fullPath: '/$slug'
       preLoaderRoute: typeof AuthenticatedSlugRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/post-sign-up': {
+      id: '/_authenticated/post-sign-up'
+      path: '/post-sign-up'
+      fullPath: '/post-sign-up'
+      preLoaderRoute: typeof AuthenticatedPostSignUpRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/sign/$token': {
@@ -1016,24 +1060,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsTeamIndexRouteImport
       parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
     }
-    '/_authenticated/$slug/settings/team/$memberId': {
-      id: '/_authenticated/$slug/settings/team/$memberId'
-      path: '/$memberId'
-      fullPath: '/$slug/settings/team/$memberId'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
-    }
   }
 }
 
 interface AuthRouteChildren {
   AuthAcceptInviteRoute: typeof AuthAcceptInviteRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthAcceptInviteRoute: AuthAcceptInviteRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
 }
@@ -1133,14 +1174,11 @@ const AuthenticatedSlugSettingsProfileRouteWithChildren =
   )
 
 interface AuthenticatedSlugSettingsTeamRouteChildren {
-  AuthenticatedSlugSettingsTeamMemberIdRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   AuthenticatedSlugSettingsTeamIndexRoute: typeof AuthenticatedSlugSettingsTeamIndexRoute
 }
 
 const AuthenticatedSlugSettingsTeamRouteChildren: AuthenticatedSlugSettingsTeamRouteChildren =
   {
-    AuthenticatedSlugSettingsTeamMemberIdRoute:
-      AuthenticatedSlugSettingsTeamMemberIdRoute,
     AuthenticatedSlugSettingsTeamIndexRoute:
       AuthenticatedSlugSettingsTeamIndexRoute,
   }
@@ -1215,11 +1253,13 @@ const AuthenticatedSlugRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedSlugRoute: typeof AuthenticatedSlugRouteWithChildren
+  AuthenticatedPostSignUpRoute: typeof AuthenticatedPostSignUpRoute
   AuthenticatedOnboardingChooseOrganizationIndexRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSlugRoute: AuthenticatedSlugRouteWithChildren,
+  AuthenticatedPostSignUpRoute: AuthenticatedPostSignUpRoute,
   AuthenticatedOnboardingChooseOrganizationIndexRoute:
     AuthenticatedOnboardingChooseOrganizationIndexRoute,
 }

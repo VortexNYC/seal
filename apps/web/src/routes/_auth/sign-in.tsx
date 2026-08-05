@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import {
   authRoutePaths,
@@ -15,11 +15,18 @@ export const Route = createFileRoute("/_auth/sign-in")({
 
 function RouteComponent() {
   return (
-    <runtime.AuthSignInRoutePage
-      signUpPath={authRoutePaths.signUpPath}
-      postSignInPath="/app"
-      markPendingAuthFlow={markPendingAuthFlow}
-      captureAuthEvent={captureAuthEvent}
-    />
+    <div className="space-y-4">
+      <runtime.AuthSignInRoutePage
+        captureAuthEvent={captureAuthEvent}
+        markPendingAuthFlow={markPendingAuthFlow}
+        postSignInPath="/app"
+        signUpPath={authRoutePaths.signUpPath}
+      />
+      <p className="text-muted-foreground text-center text-sm">
+        <Link className="underline underline-offset-4" to="/forgot-password">
+          Forgot password?
+        </Link>
+      </p>
+    </div>
   );
 }
