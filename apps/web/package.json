@@ -61,7 +61,7 @@
     "@tanstack/react-router-devtools": "1.167.1",
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "1.168.24",
-    "@vortexnyc/auth": "0.15.0",
+    "@vortexnyc/auth": "0.16.1",
     "@vortexnyc/money": "0.2.2",
     "@vortexnyc/observability": "0.2.0",
     "@vortexnyc/payments-react": "0.1.0",

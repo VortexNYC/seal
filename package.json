@@ -78,7 +78,7 @@
     "@convex-dev/eslint-plugin": "2.0.0",
     "@seal/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "@vortexnyc/auth": "0.15.0",
+    "@vortexnyc/auth": "0.16.1",
     "@vortexnyc/tooling": "0.11.15",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
