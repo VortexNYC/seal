@@ -50,7 +50,16 @@ Rules:
 1. When editing a settings/auth route, switch imports for Core-available primitives to `@vortexnyc/ui`.
 2. Do **not** import `@vortexnyc/ui/styles.css` — Seal already owns design tokens; Core primitives use token **names** only.
 3. Do not grow new local shadcn clones of Core-shipped primitives for platform surfaces.
-4. Signing canvas, PDF overlay, and document field UI stay Seal-local by design (SEA-594).
+### Branding / tenant identity (SEA-603)
+
+| Concern | Owner | Where |
+| ------- | ----- | ----- |
+| Workspace name / slug / logo | Core `VortexOrganizationProfile` | `settings/` (General) |
+| Tenant brand colors / email from | Core (VOR-182) — Seal store until then | Temporary: `settings/branding` |
+| Hide “Powered by Seal”, custom signing footer | **Seal** (Sign chrome) | `settings/branding` |
+| White-label gate | Pro Sign SKU (`PLAN_LIMITS.*.branding`) | `FeatureGate` on branding |
+
+Do not grow a parallel company-identity form on Branding; prefer General + Core.
 
 ## ANTI-PATTERNS
 
