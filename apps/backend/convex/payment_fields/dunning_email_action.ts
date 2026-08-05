@@ -5,8 +5,8 @@
  * Uses the hosted invoice URL so recipients can pay directly through the hosted payment URL.
  */
 
-import { v } from "convex/values";
 import { formatMoney, money } from "@vortexnyc/money";
+import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";

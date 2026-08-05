@@ -7,7 +7,10 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { ensureVortexAuthOrganization } from "./vortexAuthOrganizations";
 
-type VortexAuthMutationCtx = Pick<MutationCtx, "db" | "runMutation">;
+type VortexAuthMutationCtx = Pick<
+  MutationCtx,
+  "db" | "runMutation" | "runQuery"
+>;
 
 export async function rotateVortexAuthApiKey(
   ctx: VortexAuthMutationCtx,

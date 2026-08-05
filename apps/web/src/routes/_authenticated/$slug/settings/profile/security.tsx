@@ -10,15 +10,15 @@ import {
   VortexEnableTwoFactorForm,
   VortexSessionList,
 } from "@vortexnyc/auth/react";
-import { toast } from "sonner";
-
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@vortexnyc/ui";
+import { toast } from "sonner";
+
 import { authClient } from "@/lib/auth-runtime.better-auth";
 
 export const Route = createFileRoute(

@@ -1,18 +1,14 @@
 /**
- * Compatibility current-user adapter over vortex-auth's useAppUser.
+ * Compatibility current-user adapter over vortex-auth's useAppUser (SEA-606).
  *
- * vortex-auth's `useAppUser()` returns a minimal user
- * ({ id, username, fullName, primaryEmailAddress }). Seal's existing call
- * sites read firstName/lastName/imageUrl-shaped fields (firstName, lastName,
- * imageUrl, emailAddresses[]). This adapter derives/maps those so the
- * migration is a one-line import-alias change per consumer instead of a
- * rewrite:
+ * Prefer `useAppUser` from `@/lib/auth-runtime.better-auth` for new code.
+ * This adapter maps legacy profile-shaped fields (firstName/lastName/
+ * emailAddresses) so existing call sites stay a one-line import alias:
  *
- *   + import { useCurrentUser as useUser } from "@/hooks/use-current-user";
+ *   import { useCurrentUser as useUser } from "@/hooks/use-current-user";
  *
- * Fields not provided by Better-Auth identity (imageUrl, createdAt) are
- * undefined; avatar UIs fall back to initials. Account avatar, if needed,
- * comes from Convex separately.
+ * Fields not on Better-Auth identity (imageUrl, createdAt) stay undefined;
+ * avatar UIs fall back to initials.
  */
 import { useMemo } from "react";
 

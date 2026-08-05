@@ -4,7 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import { upsertVortexAuthMember } from "./lib/vortexAuthOrganizations";
 import type { OrganizationMemberRole } from "./schema";
 
-type TestVortexAuthCtx = Pick<MutationCtx, "db" | "runMutation">;
+type TestVortexAuthCtx = Pick<MutationCtx, "db" | "runMutation" | "runQuery">;
 type ComponentMemberStatus = "active" | "invited" | "suspended";
 const testVortexAuthIdentityIssuer = "seal-test-vortex-auth";
 

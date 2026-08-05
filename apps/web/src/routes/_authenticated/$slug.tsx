@@ -1,7 +1,8 @@
 /**
  * Workspace Layout Route
  *
- * Main layout for organization workspaces with sidebar navigation
+ * Authenticated Seal product shell under `/{slug}/*` (SEA-606). Public
+ * recipient signing is `/sign/$token`, not under this layout.
  * Route: /{slug}/*
  */
 

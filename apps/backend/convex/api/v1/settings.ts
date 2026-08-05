@@ -236,15 +236,13 @@ function buildAiSettings(org: OrganizationDoc, update: AiUpdate) {
 }
 
 function buildSecuritySettings(org: OrganizationDoc, update: SecurityUpdate) {
+  // SEA-604: ignore require_mfa / session_timeout_minutes writes — Core VOR-183.
   return {
     allowApiAccess:
       update.allow_api_access ?? org.securitySettings?.allowApiAccess ?? true,
     ipAllowlist: update.ip_allowlist ?? org.securitySettings?.ipAllowlist ?? [],
-    requireMfa: update.require_mfa ?? org.securitySettings?.requireMfa ?? false,
-    sessionTimeoutMinutes:
-      update.session_timeout_minutes !== undefined
-        ? (update.session_timeout_minutes ?? undefined)
-        : org.securitySettings?.sessionTimeoutMinutes,
+    requireMfa: org.securitySettings?.requireMfa ?? false,
+    sessionTimeoutMinutes: org.securitySettings?.sessionTimeoutMinutes,
   };
 }
 

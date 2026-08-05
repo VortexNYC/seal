@@ -7,6 +7,10 @@ import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { resolveComponentMemberships } from "./lib/componentOrgReads";
+import {
+  lookupBetterAuthTwoFactorEnabled,
+  setVortexAuthActiveOrganizationWithMfaGate,
+} from "./lib/suiteOrgPolicy";
 
 /**
  * Check if current user has any organization memberships
@@ -187,6 +191,22 @@ export const setActiveOrganizationBySlug = mutation({
     if (!membership) {
       throw new ConvexError("Organization mismatch");
     }
+
+    if (!user.vortexAuthUserId) {
+      throw new ConvexError("User is not anchored to Vortex Auth");
+    }
+
+    const identitySubject = identity.subject;
+    const twoFactorEnabled = await lookupBetterAuthTwoFactorEnabled(
+      ctx,
+      identitySubject
+    );
+
+    await setVortexAuthActiveOrganizationWithMfaGate(ctx, {
+      vortexAuthUserId: user.vortexAuthUserId,
+      vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      twoFactorEnabled,
+    });
 
     await ctx.db.patch(user._id, {
       activeOrganizationId: organization._id,

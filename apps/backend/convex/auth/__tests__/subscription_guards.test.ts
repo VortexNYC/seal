@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
+import { createVortexAuthInvitation } from "../../lib/vortexAuthOrganizations";
 import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
 import {
@@ -504,6 +505,66 @@ describe("subscription_guards", () => {
         const message = (error as ConvexError<string>).data;
         expect(message).toContain("Upgrade");
       }
+    });
+
+    test("counts pending invites toward limit when includePendingInvites", async () => {
+      await seedSubscription();
+
+      const ownerUserId = await t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          email: "owner@seats.test",
+          name: "Owner",
+          authSubject: "seat_owner",
+          isEmailVerified: true,
+          timezone: "UTC",
+          locale: "en-US",
+          activeOrganizationId: organizationId,
+        });
+      });
+      await t.run(async (ctx) => {
+        await seedTestOrganizationMember(ctx, {
+          organizationId,
+          userId: ownerUserId,
+          role: "owner",
+          status: "active",
+        });
+      });
+
+      // Owner + 18 members = 19 active → 1 seat free on Pro.
+      for (let i = 0; i < 18; i++) {
+        await seedMember();
+      }
+
+      await t.run(async (ctx) => {
+        await expect(
+          ensureSeatLimit(ctx, organizationId)
+        ).resolves.toBeUndefined();
+        await expect(
+          ensureSeatLimit(ctx, organizationId, {
+            includePendingInvites: true,
+          })
+        ).resolves.toBeUndefined();
+
+        await createVortexAuthInvitation(ctx, {
+          organizationId,
+          email: "pending@seats.test",
+          tokenHash: "pending_token_hash_seat_test",
+          role: "member",
+          status: "pending",
+          invitedBy: ownerUserId,
+          expiresAt: Date.now() + 86_400_000,
+        });
+
+        // Active-only still has room; pending reserves the last seat.
+        await expect(
+          ensureSeatLimit(ctx, organizationId)
+        ).resolves.toBeUndefined();
+        await expect(
+          ensureSeatLimit(ctx, organizationId, {
+            includePendingInvites: true,
+          })
+        ).rejects.toThrow(ConvexError);
+      });
     });
   });
 });

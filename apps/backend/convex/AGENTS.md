@@ -11,7 +11,7 @@ apps/backend/convex/
 ├── schema.ts            # Central schema export
 ├── auth.ts              # Auth barrel (errors + re-exports)
 ├── auth/wrappers.ts     # RLS auth/permission wrappers (canonical)
-├── auth/permissions.ts  # Permission catalog + ROLE_TEMPLATES
+├── auth/permissions.ts  # Seal PERMISSIONS + ROLE_TEMPLATES; match/expand via @vortexnyc/permissions
 ├── auth/auth.permissions.ts # Unified getAuthContext
 ├── lib/canonicalGlue.ts # createVortexAuthGlue (identity)
 ├── lib/identity.ts      # findCurrentUserRow / requireViewer

@@ -20,6 +20,10 @@ import {
   listComponentMembersByOrganization,
 } from "../lib/componentOrgReads";
 import {
+  mirrorBrandIntoBrandingSettings,
+  syncSuiteOrgDetailsToVortexAuth,
+} from "../lib/suiteOrgPolicy";
+import {
   anchorNewOrganizationOwner,
   ensureComponentRoleForTemplate,
   upsertVortexAuthMember,
@@ -46,6 +50,7 @@ type OrganizationUpdateData = Partial<
     | "isActive"
     | "currency"
     | "currencyKind"
+    | "brandingSettings"
   >
 > & {
   updatedAt: number;
@@ -452,6 +457,21 @@ export const updateWorkspace = adminMutation({
     currencyKind: v.optional(v.string()),
     timezone: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    brand: v.optional(
+      v.object({
+        primaryColor: v.optional(v.union(v.string(), v.null())),
+        accentColor: v.optional(v.union(v.string(), v.null())),
+        website: v.optional(v.union(v.string(), v.null())),
+        emailFromName: v.optional(v.union(v.string(), v.null())),
+        emailReplyTo: v.optional(v.union(v.string(), v.null())),
+      })
+    ),
+    security: v.optional(
+      v.object({
+        requireMfa: v.optional(v.union(v.boolean(), v.null())),
+        sessionTimeoutMinutes: v.optional(v.union(v.number(), v.null())),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
@@ -469,7 +489,33 @@ export const updateWorkspace = adminMutation({
       updateData.currencyKind = args.currencyKind;
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
+    if (args.brand !== undefined) {
+      const org = await ctx.db.get(organization._id);
+      if (!org) throw new ConvexError("Organization not found");
+      updateData.brandingSettings = mirrorBrandIntoBrandingSettings(
+        org.brandingSettings,
+        args.brand
+      );
+    }
+
     await ctx.db.patch(organization._id, updateData);
+
+    const fresh = await ctx.db.get(organization._id);
+    if (!fresh) throw new ConvexError("Organization not found");
+
+    if (
+      args.name !== undefined ||
+      args.logo !== undefined ||
+      args.brand !== undefined ||
+      args.security !== undefined
+    ) {
+      await syncSuiteOrgDetailsToVortexAuth(ctx, fresh, {
+        ...(args.name !== undefined ? { name: args.name } : {}),
+        ...(args.logo !== undefined ? { imageUrl: args.logo } : {}),
+        ...(args.brand !== undefined ? { brand: args.brand } : {}),
+        ...(args.security !== undefined ? { security: args.security } : {}),
+      });
+    }
 
     return { success: true };
   },
@@ -1104,8 +1150,6 @@ export const updateSecuritySettings = adminMutation({
   args: {
     ipAllowlist: v.optional(v.array(v.string())),
     allowApiAccess: v.optional(v.boolean()),
-    requireMfa: v.optional(v.boolean()),
-    sessionTimeoutMinutes: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Security settings require owner role — stricter than admin
@@ -1133,24 +1177,14 @@ export const updateSecuritySettings = adminMutation({
       }
     }
 
-    if (args.sessionTimeoutMinutes !== undefined) {
-      if (
-        args.sessionTimeoutMinutes < 15 ||
-        args.sessionTimeoutMinutes > 10080
-      ) {
-        throw new ConvexError(
-          "Session timeout must be between 15 and 10080 minutes"
-        );
-      }
-    }
-
+    // SEA-604: requireMfa / sessionTimeoutMinutes are Core (VOR-183). Preserve
+    // any legacy stored values; Seal only writes API access + IP allowlist.
     await ctx.db.patch(org._id, {
       securitySettings: {
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
-        requireMfa: args.requireMfa ?? current.requireMfa,
-        sessionTimeoutMinutes:
-          args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
+        requireMfa: current.requireMfa,
+        sessionTimeoutMinutes: current.sessionTimeoutMinutes,
       },
       updatedAt: Date.now(),
     });

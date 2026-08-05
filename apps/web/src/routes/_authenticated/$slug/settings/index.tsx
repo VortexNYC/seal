@@ -1,7 +1,9 @@
 /**
  * General Settings Page
  *
- * Organization general settings
+ * Core VortexOrganizationProfile for tenant identity (name / slug / logo /
+ * brand colors / email from / org MFA + session timeout).
+ * Seal-specific workspace defaults (timezone, currency) remain below.
  * Route: /{slug}/settings
  *
  * @validation VAL-REAL-1776629332274
@@ -9,23 +11,27 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
-import { Building2, Save } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-
-import { PageWrapper } from "@/components/page-wrapper";
-import { FormSkeleton } from "@/components/skeletons";
-import { Button } from "@/components/ui/button";
 import {
+  VortexOrganizationProfile,
+  type VortexOrgProfileOrganization,
+} from "@vortexnyc/auth/react";
+import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  Input,
+  Label,
+} from "@vortexnyc/ui";
+import { useMutation, useQuery } from "convex/react";
+import { Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import { PageWrapper } from "@/components/page-wrapper";
+import { FormSkeleton } from "@/components/skeletons";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
@@ -52,17 +58,54 @@ function GeneralSettings() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
     timezone: "UTC",
     currency: "BRL",
     currencyKind: "normal",
   });
 
-  // Initialize form data when organization loads
+  const profileOrganization =
+    useMemo<VortexOrgProfileOrganization | null>(() => {
+      if (!organization) {
+        return null;
+      }
+      const status =
+        organization.status === "suspended" || organization.status === "deleted"
+          ? organization.status
+          : "active";
+      const brand = organization.suiteBrand ?? {
+        ...(organization.brandingSettings?.brandColor
+          ? { primaryColor: organization.brandingSettings.brandColor }
+          : {}),
+        ...(organization.brandingSettings?.accentColor
+          ? { accentColor: organization.brandingSettings.accentColor }
+          : {}),
+        ...(organization.brandingSettings?.emailFromName
+          ? { emailFromName: organization.brandingSettings.emailFromName }
+          : {}),
+        ...(organization.brandingSettings?.emailReplyTo
+          ? { emailReplyTo: organization.brandingSettings.emailReplyTo }
+          : {}),
+        ...(organization.brandingSettings?.companyWebsite
+          ? { website: organization.brandingSettings.companyWebsite }
+          : {}),
+      };
+      return {
+        _id: organization._id,
+        name: organization.name,
+        slug: organization.slug,
+        imageUrl: organization.logo ?? organization.brandingSettings?.logoUrl,
+        status,
+        brand,
+        security: organization.suiteSecurity,
+      };
+    }, [organization]);
+
+  const isAdmin =
+    organization?.userRole === "owner" || organization?.userRole === "admin";
+
   useEffect(() => {
     if (organization) {
       setFormData({
-        name: organization.name || "",
         timezone: organization.timezone || "UTC",
         currency: organization.currency || "BRL",
         currencyKind: organization.currencyKind || "normal",
@@ -73,16 +116,10 @@ function GeneralSettings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      toast.error("Workspace name is required");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       await updateWorkspace({
-        name: formData.name.trim(),
         timezone: formData.timezone,
         currency: formData.currency,
         currencyKind: formData.currencyKind,
@@ -106,60 +143,87 @@ function GeneralSettings() {
 
   return (
     <PageWrapper title="General Settings">
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-        {/* Workspace Information */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              <CardTitle>Workspace Information</CardTitle>
-            </div>
-            <CardDescription>
-              Update your workspace name and identification
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Workspace Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="My Workspace"
-                required
-              />
-              <p className="text-muted-foreground text-sm">
-                This is the display name for your workspace
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="slug">Workspace Slug</Label>
-              <Input
-                id="slug"
-                type="text"
-                value={organization.slug}
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-muted-foreground text-sm">
-                The slug is used in URLs and cannot be changed
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Save Button */}
-        <div className="flex justify-end md:col-span-2">
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Saving..." : "Save Changes"}
-          </Button>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <VortexOrganizationProfile
+            isAdmin={isAdmin}
+            isLoading={organization === undefined}
+            onUpdate={async (input) => {
+              try {
+                await updateWorkspace({
+                  ...(input.name !== undefined ? { name: input.name } : {}),
+                  ...(input.imageUrl !== undefined
+                    ? { logo: input.imageUrl ?? undefined }
+                    : {}),
+                  ...(input.brand !== undefined ? { brand: input.brand } : {}),
+                  ...(input.security !== undefined
+                    ? { security: input.security }
+                    : {}),
+                });
+                toast.success("Workspace profile updated");
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to update workspace profile"
+                );
+              }
+            }}
+            organization={profileOrganization}
+            copy={{
+              title: "Workspace profile",
+              description:
+                "Suite tenant identity, brand, and org security (Core). Signing chrome stays under Branding.",
+              slugLabel: "Workspace slug",
+            }}
+          />
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="contents">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Regional defaults</CardTitle>
+              <CardDescription>
+                Seal product defaults for documents and payments in this
+                workspace.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Timezone</Label>
+                <Input
+                  id="timezone"
+                  type="text"
+                  value={formData.timezone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, timezone: e.target.value })
+                  }
+                  placeholder="UTC"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Input
+                  id="currency"
+                  type="text"
+                  value={formData.currency}
+                  onChange={(e) =>
+                    setFormData({ ...formData, currency: e.target.value })
+                  }
+                  placeholder="USD"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end md:col-span-2">
+            <Button type="submit" disabled={isSubmitting || !isAdmin}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Saving..." : "Save regional defaults"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </PageWrapper>
   );
 }
