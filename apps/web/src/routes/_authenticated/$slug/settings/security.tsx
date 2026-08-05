@@ -1,20 +1,17 @@
 /**
  * Security Settings Page
  *
- * Organization security policies (owner-only mutations) plus Core access/
- * security audit list (admin/owner). Product document audit stays on
- * settings/audit-log.
+ * Seal-owned: API access, IP allowlist (enforced in api/context.ts), document
+ * ownership transfer. Org MFA + session timeout are Core (VOR-183 / SEA-604) —
+ * dead toggles removed from this UI.
+ *
+ * Also: Core VortexSecurityAuditList. Product document audit → audit-log.
  * Route: /{slug}/settings/security
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { VortexSecurityAuditList } from "@vortexnyc/auth/react";
-import { useMutation, useQuery } from "convex/react";
-import { ArrowRightLeft, KeyRound, Save, Shield } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-
 import {
   Button,
   Card,
@@ -22,10 +19,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Input,
   Label,
   Switch,
 } from "@vortexnyc/ui";
+import { useMutation, useQuery } from "convex/react";
+import { ArrowRightLeft, Save, Shield } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
@@ -64,8 +64,6 @@ function SecuritySettings() {
   const [formData, setFormData] = useState({
     ipAllowlistText: "",
     allowApiAccess: true,
-    requireMfa: false,
-    sessionTimeoutMinutes: "",
   });
   const [auditRange, setAuditRange] = useState<"7" | "30" | "90">("30");
 
@@ -92,9 +90,6 @@ function SecuritySettings() {
       setFormData({
         ipAllowlistText: securitySettings.ipAllowlist?.join("\n") ?? "",
         allowApiAccess: securitySettings.allowApiAccess,
-        requireMfa: securitySettings.requireMfa ?? false,
-        sessionTimeoutMinutes:
-          securitySettings.sessionTimeoutMinutes?.toString() ?? "",
       });
     }
   }, [securitySettings]);
@@ -135,24 +130,9 @@ function SecuritySettings() {
         .map((line) => line.trim())
         .filter(Boolean);
 
-      const timeoutValue = formData.sessionTimeoutMinutes
-        ? Number.parseInt(formData.sessionTimeoutMinutes, 10)
-        : undefined;
-
-      if (
-        timeoutValue !== undefined &&
-        (timeoutValue < 15 || timeoutValue > 10080)
-      ) {
-        toast.error("Session timeout must be between 15 and 10080 minutes");
-        setIsSubmitting(false);
-        return;
-      }
-
       await updateSecuritySettings({
         ipAllowlist: ipAllowlist.length > 0 ? ipAllowlist : undefined,
         allowApiAccess: formData.allowApiAccess,
-        requireMfa: formData.requireMfa,
-        sessionTimeoutMinutes: timeoutValue,
       });
       toast.success("Security settings updated");
     } catch (error) {
@@ -184,6 +164,26 @@ function SecuritySettings() {
           </Card>
         )}
 
+        <Card className="md:col-span-2 border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base">Suite vs Sign</CardTitle>
+            <CardDescription>
+              Org-wide MFA and session timeout move to Core Auth (
+              <span className="font-medium">VOR-183</span>) — they were never
+              enforced here. Personal 2FA stays under{" "}
+              <Link
+                className="text-primary underline-offset-4 hover:underline"
+                params={{ slug }}
+                to="/$slug/settings/profile/security"
+              >
+                Profile → Security
+              </Link>
+              . This page keeps Seal API access, IP allowlist, and document
+              ownership transfer.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
         <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -191,7 +191,8 @@ function SecuritySettings() {
               <CardTitle>API Access</CardTitle>
             </div>
             <CardDescription>
-              Control programmatic access to your workspace via the REST API.
+              Control programmatic access to your workspace via the REST API
+              (enforced in API auth).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -213,64 +214,6 @@ function SecuritySettings() {
                   setFormData({ ...formData, allowApiAccess: checked })
                 }
               />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <KeyRound className="size-5" />
-              <CardTitle>Session Security</CardTitle>
-            </div>
-            <CardDescription>
-              Enforce multi-factor authentication and session timeout policies
-              for all members.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="require-mfa" className="text-sm font-medium">
-                  Require MFA
-                </Label>
-                <p className="text-muted-foreground text-xs">
-                  Require all organization members to use multi-factor
-                  authentication.
-                </p>
-              </div>
-              <Switch
-                id="require-mfa"
-                checked={formData.requireMfa}
-                disabled={!isOwner}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, requireMfa: checked })
-                }
-              />
-            </div>
-            <div className="space-y-2 border-t pt-4">
-              <Label htmlFor="session-timeout" className="text-sm font-medium">
-                Session timeout (minutes)
-              </Label>
-              <Input
-                id="session-timeout"
-                type="number"
-                min={15}
-                max={10080}
-                placeholder="No timeout"
-                disabled={!isOwner}
-                value={formData.sessionTimeoutMinutes}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    sessionTimeoutMinutes: e.target.value,
-                  })
-                }
-              />
-              <p className="text-muted-foreground text-xs">
-                Automatically sign out inactive users. Leave empty for no
-                timeout. Range: 15–10,080 minutes (7 days).
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -306,8 +249,8 @@ function SecuritySettings() {
               <CardTitle>Document Ownership Transfer</CardTitle>
             </div>
             <CardDescription>
-              Allow document owners to transfer ownership of their documents to
-              other organization members.
+              Seal product setting: allow document owners to transfer ownership
+              to other organization members.
             </CardDescription>
           </CardHeader>
           <CardContent>

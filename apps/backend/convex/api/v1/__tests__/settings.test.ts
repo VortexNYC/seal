@@ -241,7 +241,7 @@ describe("api/v1/settings", () => {
       expect(result.ai.auto_analyze).toBe(true);
     });
 
-    test("updates security settings", async () => {
+    test("updates security settings (API access + IP only; MFA writes ignored)", async () => {
       await t.mutation(internal.api.v1.settings.updateSettings, {
         userId,
         organizationId,
@@ -258,24 +258,28 @@ describe("api/v1/settings", () => {
       });
 
       expect(result.security.ip_allowlist).toEqual(["10.0.0.0/8"]);
-      expect(result.security.require_mfa).toBe(true);
-      expect(result.security.session_timeout_minutes).toBe(60);
-      expect(result.security.allow_api_access).toBe(true); // default preserved
+      // SEA-604 / VOR-183: MFA + session timeout writes are no-ops
+      expect(result.security.require_mfa).toBe(false);
+      expect(result.security.session_timeout_minutes).toBeNull();
+      expect(result.security.allow_api_access).toBe(true);
     });
 
-    test("clears session timeout when set to null", async () => {
-      // First set it
-      await t.mutation(internal.api.v1.settings.updateSettings, {
-        userId,
-        organizationId,
-        security: { session_timeout_minutes: 120 },
+    test("preserves legacy MFA fields when updating IP allowlist", async () => {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          securitySettings: {
+            allowApiAccess: true,
+            ipAllowlist: [],
+            requireMfa: true,
+            sessionTimeoutMinutes: 120,
+          },
+        });
       });
 
-      // Then clear it
       await t.mutation(internal.api.v1.settings.updateSettings, {
         userId,
         organizationId,
-        security: { session_timeout_minutes: null },
+        security: { ip_allowlist: ["10.0.0.0/8"] },
       });
 
       const result = await t.query(internal.api.v1.settings.getSettings, {
@@ -283,7 +287,9 @@ describe("api/v1/settings", () => {
         organizationId,
       });
 
-      expect(result.security.session_timeout_minutes).toBeNull();
+      expect(result.security.ip_allowlist).toEqual(["10.0.0.0/8"]);
+      expect(result.security.require_mfa).toBe(true);
+      expect(result.security.session_timeout_minutes).toBe(120);
     });
 
     test("can update multiple categories in a single call", async () => {

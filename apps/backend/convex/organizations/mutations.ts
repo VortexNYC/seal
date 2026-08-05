@@ -1104,8 +1104,6 @@ export const updateSecuritySettings = adminMutation({
   args: {
     ipAllowlist: v.optional(v.array(v.string())),
     allowApiAccess: v.optional(v.boolean()),
-    requireMfa: v.optional(v.boolean()),
-    sessionTimeoutMinutes: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Security settings require owner role — stricter than admin
@@ -1133,24 +1131,14 @@ export const updateSecuritySettings = adminMutation({
       }
     }
 
-    if (args.sessionTimeoutMinutes !== undefined) {
-      if (
-        args.sessionTimeoutMinutes < 15 ||
-        args.sessionTimeoutMinutes > 10080
-      ) {
-        throw new ConvexError(
-          "Session timeout must be between 15 and 10080 minutes"
-        );
-      }
-    }
-
+    // SEA-604: requireMfa / sessionTimeoutMinutes are Core (VOR-183). Preserve
+    // any legacy stored values; Seal only writes API access + IP allowlist.
     await ctx.db.patch(org._id, {
       securitySettings: {
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
-        requireMfa: args.requireMfa ?? current.requireMfa,
-        sessionTimeoutMinutes:
-          args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
+        requireMfa: current.requireMfa,
+        sessionTimeoutMinutes: current.sessionTimeoutMinutes,
       },
       updatedAt: Date.now(),
     });

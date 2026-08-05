@@ -50,9 +50,12 @@ export type NotificationSettings = Infer<typeof notificationSettingsValidator>;
 
 export const securitySettingsValidator = v.object({
   ipAllowlist: v.optional(v.array(v.string())), // CIDR ranges, null = no restriction
-  allowApiAccess: v.boolean(), // Default true
-  requireMfa: v.optional(v.boolean()), // Default false
-  sessionTimeoutMinutes: v.optional(v.number()), // 15–10080 min, undefined = no timeout
+  allowApiAccess: v.boolean(), // Default true — enforced in api/context.ts
+  // Deprecated Seal storage (SEA-604): org MFA + session timeout move to Core
+  // Auth (VOR-183). Kept optional so existing rows validate; no longer written
+  // by Seal UI/API update paths.
+  requireMfa: v.optional(v.boolean()),
+  sessionTimeoutMinutes: v.optional(v.number()),
 });
 export type SecuritySettings = Infer<typeof securitySettingsValidator>;
 

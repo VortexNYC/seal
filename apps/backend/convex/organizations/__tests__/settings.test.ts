@@ -523,64 +523,16 @@ describe("Organization settings", () => {
       ).rejects.toThrow("Invalid CIDR format");
     });
 
-    test("owner can enable requireMfa", async () => {
-      await t
-        .withIdentity({ subject: "settings_owner" })
-        .mutation(api.organizations.mutations.updateSecuritySettings, {
-          requireMfa: true,
+    test("preserves legacy requireMfa when updating API access (SEA-604)", async () => {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          securitySettings: {
+            allowApiAccess: true,
+            requireMfa: true,
+            sessionTimeoutMinutes: 60,
+          },
         });
-
-      const result = await t
-        .withIdentity({ subject: "settings_owner" })
-        .query(api.organizations.queries.getSecuritySettings, {
-          organizationId,
-        });
-
-      expect(result.requireMfa).toBe(true);
-    });
-
-    test("owner can set sessionTimeoutMinutes", async () => {
-      await t
-        .withIdentity({ subject: "settings_owner" })
-        .mutation(api.organizations.mutations.updateSecuritySettings, {
-          sessionTimeoutMinutes: 60,
-        });
-
-      const result = await t
-        .withIdentity({ subject: "settings_owner" })
-        .query(api.organizations.queries.getSecuritySettings, {
-          organizationId,
-        });
-
-      expect(result.sessionTimeoutMinutes).toBe(60);
-    });
-
-    test("rejects session timeout < 15", async () => {
-      await expect(
-        t
-          .withIdentity({ subject: "settings_owner" })
-          .mutation(api.organizations.mutations.updateSecuritySettings, {
-            sessionTimeoutMinutes: 14,
-          })
-      ).rejects.toThrow("Session timeout must be between 15 and 10080 minutes");
-    });
-
-    test("rejects session timeout > 10080", async () => {
-      await expect(
-        t
-          .withIdentity({ subject: "settings_owner" })
-          .mutation(api.organizations.mutations.updateSecuritySettings, {
-            sessionTimeoutMinutes: 10081,
-          })
-      ).rejects.toThrow("Session timeout must be between 15 and 10080 minutes");
-    });
-
-    test("preserves requireMfa on partial update", async () => {
-      await t
-        .withIdentity({ subject: "settings_owner" })
-        .mutation(api.organizations.mutations.updateSecuritySettings, {
-          requireMfa: true,
-        });
+      });
 
       await t
         .withIdentity({ subject: "settings_owner" })
@@ -595,6 +547,7 @@ describe("Organization settings", () => {
         });
 
       expect(result.requireMfa).toBe(true);
+      expect(result.sessionTimeoutMinutes).toBe(60);
       expect(result.allowApiAccess).toBe(false);
     });
   });
@@ -719,8 +672,8 @@ describe("Organization settings", () => {
       await t
         .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
-          requireMfa: true,
           allowApiAccess: false,
+          ipAllowlist: ["10.0.0.0/8"],
         });
 
       await t
