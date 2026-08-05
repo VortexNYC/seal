@@ -230,8 +230,7 @@ export function resolveEffectiveBrandingSettings(
     customFooterText: local?.customFooterText,
     companyName: local?.companyName,
     companyWebsite,
-    enabled:
-      local?.enabled === true || hasSuiteIdentity || Boolean(org.logo),
+    enabled: local?.enabled === true || hasSuiteIdentity || Boolean(org.logo),
   };
 }
 

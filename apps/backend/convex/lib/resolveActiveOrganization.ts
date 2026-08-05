@@ -46,11 +46,16 @@ export async function resolveActiveOrganizationId(
  * Dual-write patch for set-active-org mutations.
  * Always writes Seal id; writes Vortex Auth id when the org is anchored.
  */
-export function buildActiveOrganizationUserPatch(
-  organization: Doc<"organizations">,
+export function buildActiveOrganizationUserPatch<
+  OrganizationId extends Id<"organizations"> | string,
+>(
+  organization: {
+    readonly _id: OrganizationId;
+    readonly vortexAuthOrganizationId?: string;
+  },
   now: number = Date.now()
 ): {
-  activeOrganizationId: Id<"organizations">;
+  activeOrganizationId: OrganizationId;
   activeVortexAuthOrganizationId?: string;
   updatedAt: number;
 } {

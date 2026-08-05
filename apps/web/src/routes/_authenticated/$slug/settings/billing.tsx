@@ -6,6 +6,7 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
+import { fromMajorUnits } from "@vortexnyc/money";
 import {
   VortexPaymentsProvider,
   VortexPlanComparison,
@@ -18,7 +19,6 @@ import {
   type VortexSubscriptionActionSummaryState,
   type VortexSubscriptionActionSummaryStatus,
 } from "@vortexnyc/payments-react";
-import { fromMajorUnits } from "@vortexnyc/money";
 import { useAction, useQuery } from "convex/react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";

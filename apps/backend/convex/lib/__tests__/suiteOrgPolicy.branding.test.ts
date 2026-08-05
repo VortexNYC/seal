@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { resolveEffectiveBrandingSettings } from "../suiteOrgPolicy";
 import type { Doc } from "../../_generated/dataModel";
+import { resolveEffectiveBrandingSettings } from "../suiteOrgPolicy";
 
 describe("resolveEffectiveBrandingSettings", () => {
   test("prefers Core suite brand over mirror colors", () => {
