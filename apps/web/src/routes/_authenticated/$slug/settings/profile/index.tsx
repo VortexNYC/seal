@@ -9,6 +9,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+  VortexChangeEmailForm,
   VortexUserProfile,
   type VortexUserProfileUser,
   useVortexAuthForgotPassword,
@@ -32,6 +33,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { authClient } from "@/lib/auth-runtime.better-auth";
 import { cn } from "@/lib/utils";
+
+function resolveAppOrigin(): string {
+  const configured = import.meta.env.VITE_APP_URL;
+  if (typeof configured === "string" && configured.length > 0) {
+    return configured.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "https://app.seal.nyc";
+}
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
   {
@@ -116,14 +128,9 @@ function ProfileSettings() {
           if (isRequesting) {
             return;
           }
-          const configured = import.meta.env.VITE_APP_URL;
-          const origin =
-            typeof configured === "string" && configured.length > 0
-              ? configured.replace(/\/$/, "")
-              : window.location.origin;
           void requestReset({
             email,
-            redirectTo: `${origin}/reset-password`,
+            redirectTo: `${resolveAppOrigin()}/reset-password`,
           }).then((result) => {
             if (!result.ok) {
               toast.error(
@@ -156,6 +163,17 @@ function ProfileSettings() {
           toast.success("Profile updated successfully");
         }}
         user={profileUser}
+      />
+
+      <VortexChangeEmailForm
+        authClient={authClient}
+        currentEmail={profileUser?.email ?? null}
+        onRequested={() => {
+          toast.success(
+            "Confirmation email sent. Click the link from the new address to finish the change."
+          );
+        }}
+        verifyCallbackUrl={`${resolveAppOrigin()}/verify-email`}
       />
 
       <Card>
