@@ -1,5 +1,6 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { formatMoney, money } from "@vortexnyc/money";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -102,12 +103,10 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 function formatCents(cents: number, currency = "usd"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
+  return formatMoney(money(cents, currency.toUpperCase()), {
+    locale: "en-US",
+    intl: { minimumFractionDigits: 0, maximumFractionDigits: 2 },
+  });
 }
 
 const VIRTUALIZE_THRESHOLD = 20;

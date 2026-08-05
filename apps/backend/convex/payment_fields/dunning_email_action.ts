@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import { formatMoney, money } from "@vortexnyc/money";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
@@ -35,10 +36,7 @@ function escapeHtml(str: string): string {
 }
 
 function formatCurrency(amountCents: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amountCents / 100);
+  return formatMoney(money(amountCents, currency.toUpperCase()));
 }
 
 interface DunningEmailContent {

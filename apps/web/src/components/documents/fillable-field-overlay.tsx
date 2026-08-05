@@ -1,5 +1,6 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
+import { formatMoney, money } from "@vortexnyc/money";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -122,12 +123,10 @@ function formatSignatureDate(timestamp: number): {
 }
 
 function formatCurrency(amountCents: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amountCents / 100);
+  return formatMoney(money(amountCents, currency.toUpperCase()), {
+    locale: "en-US",
+    intl: { minimumFractionDigits: 0, maximumFractionDigits: 2 },
+  });
 }
 
 function getSealIconSize(height: number, width: number): number {

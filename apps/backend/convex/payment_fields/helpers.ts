@@ -1,3 +1,5 @@
+import { formatMoney, money } from "@vortexnyc/money";
+
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import type { PaymentType } from "../schemas/payment_field_configs";
@@ -78,10 +80,10 @@ function validateLineItems(items: PaymentConfig["items"]): string | null {
 
 function validateTotalAmount(totalAmountCents: number): string | null {
   if (totalAmountCents < MIN_AMOUNT_CENTS) {
-    return `Total amount must be at least $${(MIN_AMOUNT_CENTS / 100).toFixed(2)}`;
+    return `Total amount must be at least ${formatMoney(money(MIN_AMOUNT_CENTS, "USD"))}`;
   }
   if (totalAmountCents > MAX_AMOUNT_CENTS) {
-    return `Total amount cannot exceed $${(MAX_AMOUNT_CENTS / 100).toLocaleString()}`;
+    return `Total amount cannot exceed ${formatMoney(money(MAX_AMOUNT_CENTS, "USD"))}`;
   }
   return null;
 }

@@ -1,5 +1,6 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import { formatMoney, money, toMajorNumber } from "@vortexnyc/money";
 import { useMutation, useQuery } from "convex/react";
 import { format, parse } from "date-fns";
 import {
@@ -163,10 +164,7 @@ type PaymentConfigMutationInput = {
 // --- Helpers ---
 
 function formatCents(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
+  return formatMoney(money(cents, "USD"));
 }
 
 function computeTotal(items: LineItem[]): number {
@@ -437,7 +435,11 @@ function InvoiceItemRow({
       </div>
       <div className="w-32">
         <InputCurrency
-          value={item.unitPrice > 0 ? (item.unitPrice / 100).toFixed(2) : ""}
+          value={
+            item.unitPrice > 0
+              ? toMajorNumber(money(item.unitPrice, "USD")).toFixed(2)
+              : ""
+          }
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             form.updateItem(
               item.id,
