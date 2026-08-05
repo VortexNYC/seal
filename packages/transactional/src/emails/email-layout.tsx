@@ -1,20 +1,36 @@
 /* vortex-allow-color-file: transactional email template — email clients require literal colors; CSS variables and Tailwind tokens are not supported in email HTML. */
+/**
+ * Seal transactional email shell.
+ *
+ * CORE-FIRST: layout + brand theming come from `@vortexnyc/email`.
+ * Seal only supplies product brand tokens and optional subtitle / footer
+ * copy that document templates still pass. Auth mail (verify / reset /
+ * org invite) is rendered by `@vortexnyc/auth/convex` drafts — not here.
+ */
 import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Img,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from "@react-email/components";
+  createEmailBrand,
+  EmailHeading,
+  EmailLayout as CoreEmailLayout,
+  EmailText,
+} from "@vortexnyc/email";
 import type { ReactNode } from "react";
 
 import { email } from "../styles.js";
+
+/** Seal product brand for transactional document emails. */
+export const sealEmailBrand = createEmailBrand({
+  name: "Seal",
+  logoUrl: "https://app.seal.so/seal-logo-email.png",
+  logoWidth: 36,
+  supportEmail: "support@seal.nyc",
+  accentColor: email.primary,
+  backgroundColor: email.background,
+  textColor: email.foreground,
+  mutedColor: email.mutedForeground,
+  borderColor: email.border,
+  fontFamily:
+    '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+});
 
 interface EmailLayoutProps {
   preview: string;
@@ -23,6 +39,11 @@ interface EmailLayoutProps {
   footerText?: string;
 }
 
+/**
+ * Product-facing adapter over Core `EmailLayout`.
+ * Keeps the existing subtitle / footerText props so document templates
+ * do not churn while the shell is owned by Core.
+ */
 export function EmailLayout({
   preview,
   subtitle,
@@ -30,88 +51,13 @@ export function EmailLayout({
   footerText,
 }: EmailLayoutProps) {
   return (
-    <Html>
-      <Head />
-      <Preview>{preview}</Preview>
-      <Tailwind>
-        <Body
-          style={{ backgroundColor: email.background, fontFamily: FONT_STACK }}
-        >
-          <Container style={containerStyle}>
-            {/* Header */}
-            <Section className="text-center">
-              <Img
-                src="https://app.seal.so/seal-logo-email.png"
-                alt="Seal"
-                width="36"
-                height="36"
-                className="mx-auto mb-[8px]"
-              />
-              <Heading style={headerHeadingStyle}>Seal</Heading>
-              <Text style={headerSubtitleStyle}>{subtitle}</Text>
-            </Section>
-
-            <Hr style={dividerStyle} />
-
-            {children}
-
-            <Hr style={dividerStyle} />
-
-            {/* Footer */}
-            <Section>
-              {footerText && <Text style={footerTextStyle}>{footerText}</Text>}
-              <Text
-                style={{
-                  ...footerTextStyle,
-                  marginTop: footerText ? "12px" : "0",
-                }}
-              >
-                &copy; {new Date().getFullYear()} Seal. All rights reserved.
-              </Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+    <CoreEmailLayout brand={sealEmailBrand} preview={preview}>
+      <EmailHeading>{subtitle}</EmailHeading>
+      {children}
+      {footerText ? <EmailText muted>{footerText}</EmailText> : null}
+    </CoreEmailLayout>
   );
 }
-
-const FONT_STACK =
-  '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-
-const containerStyle = {
-  backgroundColor: email.card,
-  border: `1px solid ${email.border}`,
-  borderRadius: "8px",
-  padding: "40px",
-  width: "520px",
-  margin: "40px auto",
-};
-
-const headerHeadingStyle = {
-  color: email.foreground,
-  fontSize: "28px",
-  fontWeight: "600" as const,
-  margin: "0 0 8px 0",
-};
-
-const headerSubtitleStyle = {
-  color: email.mutedForeground,
-  fontSize: "14px",
-  margin: "0",
-};
-
-const dividerStyle = {
-  borderColor: email.border,
-  margin: "24px 0",
-};
-
-const footerTextStyle = {
-  color: email.mutedForeground,
-  fontSize: "12px",
-  lineHeight: "20px",
-  margin: "0",
-};
 
 // Shared style exports for use across templates
 export const emailStyles = {
