@@ -251,6 +251,7 @@ import type * as webhooks_mutations from "../webhooks/mutations.js";
 import type * as webhooks_publish from "../webhooks/publish.js";
 import type * as webhooks_queries from "../webhooks/queries.js";
 import type * as webhooks_slack_formatter from "../webhooks/slack_formatter.js";
+import type * as webhooks_vortex_surface from "../webhooks/vortex_surface.js";
 import type * as workflows_document_cancellation from "../workflows/document_cancellation.js";
 import type * as workflows_document_completion from "../workflows/document_completion.js";
 import type * as workflows_document_completion_steps from "../workflows/document_completion_steps.js";
@@ -506,6 +507,7 @@ declare const fullApi: ApiFromModules<{
   "webhooks/publish": typeof webhooks_publish;
   "webhooks/queries": typeof webhooks_queries;
   "webhooks/slack_formatter": typeof webhooks_slack_formatter;
+  "webhooks/vortex_surface": typeof webhooks_vortex_surface;
   "workflows/document_cancellation": typeof workflows_document_cancellation;
   "workflows/document_completion": typeof workflows_document_completion;
   "workflows/document_completion_steps": typeof workflows_document_completion_steps;
