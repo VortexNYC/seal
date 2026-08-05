@@ -16,7 +16,10 @@ import {
   listComponentMembersByOrganization,
   resolveComponentMembershipForOrganization,
 } from "../lib/componentOrgReads";
-import { loadSuiteOrgBrandAndSecurity } from "../lib/suiteOrgPolicy";
+import {
+  loadEffectiveBrandingSettings,
+  loadSuiteOrgBrandAndSecurity,
+} from "../lib/suiteOrgPolicy";
 import type { OrganizationMemberRole } from "../schema";
 
 const roleOrder: Record<OrganizationMemberRole, number> = {
@@ -428,13 +431,13 @@ export const getBrandingSettings = authQuery({
   },
 });
 
-/** Internal variant for use in email-sending actions. */
+/** Internal variant for email-sending actions — Core brand + Seal chrome. */
 export const getBrandingSettingsInternal = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.organizationId);
     if (!org) return BRANDING_DEFAULTS;
-    return org.brandingSettings ?? BRANDING_DEFAULTS;
+    return await loadEffectiveBrandingSettings(ctx, org);
   },
 });
 
@@ -536,7 +539,7 @@ export const getOrgSettings = authQuery({
     if (!org) throw new ConvexError("Organization not found");
     return {
       ai: org.aiSettings ?? AI_SETTINGS_DEFAULTS,
-      branding: org.brandingSettings ?? BRANDING_DEFAULTS,
+      branding: await loadEffectiveBrandingSettings(ctx, org),
       signing: org.signingSettings ?? SIGNING_SETTINGS_DEFAULTS,
       notifications: org.notificationSettings ?? NOTIFICATION_SETTINGS_DEFAULTS,
       security: org.securitySettings ?? SECURITY_SETTINGS_DEFAULTS,

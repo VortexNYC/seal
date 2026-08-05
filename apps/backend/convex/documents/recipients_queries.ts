@@ -12,7 +12,11 @@ import {
   checkDocumentAccess,
   getDocumentOrThrow,
 } from "../auth/access_control";
-import { loadSuiteOrgBrandAndSecurity } from "../lib/suiteOrgPolicy";
+import {
+  loadSuiteOrgBrandAndSecurity,
+  resolveEffectiveBrandingSettings,
+  type SuiteOrgBrand,
+} from "../lib/suiteOrgPolicy";
 import {
   isRecipientComplete,
   isRecipientTerminal,
@@ -83,24 +87,23 @@ function buildRecipientTokenResponse(
   document: Doc<"documents">,
   organization: Doc<"organizations"> | null,
   sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>,
-  suiteBrand?: {
-    primaryColor?: string;
-    accentColor?: string;
-  }
+  suiteBrand?: SuiteOrgBrand
 ) {
-  // Prefer Core suite brand (VOR-182) over local brandingSettings colors.
-  const local = organization?.brandingSettings?.enabled
-    ? organization.brandingSettings
+  const local = organization?.brandingSettings;
+  const effective = organization
+    ? resolveEffectiveBrandingSettings(organization, suiteBrand)
     : undefined;
+  const hasSigningChrome =
+    local?.hideSealBranding === true || Boolean(local?.customFooterText);
   const branding =
-    local || suiteBrand
+    effective !== undefined && (effective.enabled || hasSigningChrome)
       ? {
-          logoUrl: local?.logoUrl,
-          brandColor: suiteBrand?.primaryColor ?? local?.brandColor,
-          accentColor: suiteBrand?.accentColor ?? local?.accentColor,
+          logoUrl: effective.logoUrl,
+          brandColor: effective.brandColor,
+          accentColor: effective.accentColor,
           hideSealBranding: local?.hideSealBranding,
           customFooterText: local?.customFooterText,
-          enabled: local?.enabled ?? Boolean(suiteBrand),
+          enabled: effective.enabled,
         }
       : undefined;
 
