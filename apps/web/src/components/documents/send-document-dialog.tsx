@@ -6,6 +6,7 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { formatMoney, money } from "@vortexnyc/money";
 import { useAction, useQuery } from "convex/react";
 import {
   ChevronDownIcon,
@@ -276,10 +277,12 @@ export function SendDocumentDialog({
                         key={config._id}
                         className="text-field-payment text-xs"
                       >
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: config.currency.toUpperCase(),
-                        }).format(config.totalAmountCents / 100)}{" "}
+                        {formatMoney(
+                          money(
+                            config.totalAmountCents,
+                            config.currency.toUpperCase()
+                          )
+                        )}{" "}
                         {config.currency.toUpperCase()}
                       </p>
                     ))}

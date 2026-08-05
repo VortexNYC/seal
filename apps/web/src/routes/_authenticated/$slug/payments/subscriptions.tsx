@@ -1,6 +1,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAction, useQuery } from "convex/react";
+import { formatMoney, money } from "@vortexnyc/money";
 import { Loader2, Pause, Play, RefreshCw, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,11 +37,8 @@ export const Route = createFileRoute(
   component: SubscriptionsPage,
 });
 
-function formatCurrency(amountCents: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amountCents / 100);
+function formatCurrency(amountCents: number, currency: string): string {
+  return formatMoney(money(amountCents, currency.toUpperCase()));
 }
 
 function formatInterval(interval: string, count: number) {

@@ -1,6 +1,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { formatMoney, money } from "@vortexnyc/money";
 import {
   BadgeDollarSign,
   CircleDollarSign,
@@ -34,11 +35,8 @@ export const Route = createFileRoute("/_authenticated/$slug/payments/")({
   component: PaymentsOverviewPage,
 });
 
-function formatCurrency(amountCents: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amountCents / 100);
+function formatCurrency(amountCents: number, currency: string): string {
+  return formatMoney(money(amountCents, currency.toUpperCase()));
 }
 
 function formatDate(timestamp: number) {

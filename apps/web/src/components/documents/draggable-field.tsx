@@ -1,4 +1,5 @@
 import { canvas } from "@seal/tokens/theme";
+import { formatMoney, money } from "@vortexnyc/money";
 import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -982,11 +983,7 @@ function sealSidebarMetrics(
 }
 
 function formatPaymentTotal(paymentTotalCents: number | undefined): string {
-  const amount = ((paymentTotalCents ?? 0) / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `$${amount}`;
+  return formatMoney(money(paymentTotalCents ?? 0, "USD"));
 }
 
 function formatSignatureDate(

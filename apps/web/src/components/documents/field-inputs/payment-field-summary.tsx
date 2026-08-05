@@ -1,5 +1,6 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { formatMoney, money } from "@vortexnyc/money";
 import { useQuery } from "convex/react";
 import { CreditCardIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
 
@@ -15,10 +16,7 @@ interface PaymentFieldSummaryProps {
 }
 
 function formatCents(cents: number, currency = "usd"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(cents / 100);
+  return formatMoney(money(cents, currency.toUpperCase()));
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {

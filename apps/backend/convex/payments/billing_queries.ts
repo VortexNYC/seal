@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { money, toMajorNumber } from "@vortexnyc/money";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import { query, type QueryCtx } from "../_generated/server";
@@ -53,7 +54,9 @@ function toPricing(
   }
 
   return {
-    amount: price.unitAmount ? price.unitAmount / 100 : 0,
+    amount: price.unitAmount
+      ? toMajorNumber(money(price.unitAmount, price.currency.toUpperCase()))
+      : 0,
     currency: price.currency,
     lookupKey: price.lookupKey ?? null,
   };
