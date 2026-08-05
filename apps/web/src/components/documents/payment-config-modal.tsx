@@ -1,6 +1,13 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
-import { formatMoney, money, toMajorNumber } from "@vortexnyc/money";
+import {
+  allocate,
+  applyRate,
+  formatMoney,
+  money,
+  subtractMoney,
+  toMajorNumber,
+} from "@vortexnyc/money";
 import { useMutation, useQuery } from "convex/react";
 import { format, parse } from "date-fns";
 import {
@@ -28,7 +35,10 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { InputCurrency, parseCurrency } from "../ui/input-currency";
+import {
+  InputCurrency,
+  parseCurrencyToMinorUnits,
+} from "../ui/input-currency";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
@@ -40,6 +50,9 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+
+const MONEY_ROUNDING = "half-up" as const;
+const DRAFT_CURRENCY = "USD";
 
 // --- Types ---
 
@@ -444,7 +457,7 @@ function InvoiceItemRow({
             form.updateItem(
               item.id,
               "unitPrice",
-              Math.round(parseCurrency(event.target.value) * 100)
+              parseCurrencyToMinorUnits(event.target.value)
             );
           }}
           placeholder="$0.00"
@@ -790,7 +803,12 @@ function InstallmentPlanSection({
         <p className="text-muted-foreground text-sm">
           {draft.installmentsCount} payments of{" "}
           <span className="font-medium">
-            {formatCents(Math.ceil(total / draft.installmentsCount))}
+            {formatCents(
+              allocate(
+                money(total, DRAFT_CURRENCY),
+                Array.from({ length: draft.installmentsCount }, () => 1)
+              )[0]?.amount ?? 0
+            )}
           </span>
         </p>
       )}
@@ -835,7 +853,16 @@ function DepositBalanceSection({
   readonly setDraftField: DraftFieldSetter;
   readonly total: number;
 }) {
-  const depositAmount = Math.round((total * draft.depositPercent) / 100);
+  const totalMoney = money(total, DRAFT_CURRENCY);
+  const depositAmount = applyRate(
+    totalMoney,
+    draft.depositPercent / 100,
+    MONEY_ROUNDING
+  ).amount;
+  const balanceAmount = subtractMoney(
+    totalMoney,
+    money(depositAmount, DRAFT_CURRENCY)
+  ).amount;
   return (
     <div className="space-y-4 rounded-lg border p-4">
       <span className="text-sm font-medium">Deposit & Balance</span>
@@ -853,7 +880,7 @@ function DepositBalanceSection({
           <p>
             Balance:{" "}
             <span className="font-medium">
-              {formatCents(total - depositAmount)}
+              {formatCents(balanceAmount)}
             </span>{" "}
             due in {draft.balanceDueDays} days
           </p>

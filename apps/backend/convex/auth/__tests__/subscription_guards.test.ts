@@ -8,12 +8,38 @@ import { seedTestOrganizationMember } from "../../testVortexAuth";
 import {
   GRACE_PERIOD_MS,
   PLAN_LIMITS,
+  calculateApplicationFee,
   ensureProFeature,
   ensureSeatLimit,
   getSubscriptionPlan,
 } from "../subscription_guards";
 
 describe("subscription_guards", () => {
+  describe("calculateApplicationFee", () => {
+    test("returns 0 for ACH", () => {
+      expect(calculateApplicationFee(10_000, "pro", true)).toBe(0);
+    });
+
+    test("applies free-tier card rate with half-up rounding via Core money", () => {
+      // 10000 * 0.045 + 30 = 480
+      expect(calculateApplicationFee(10_000, "free", false)).toBe(480);
+    });
+
+    test("applies pro-tier card rate", () => {
+      // 10000 * 0.04 + 30 = 430
+      expect(calculateApplicationFee(10_000, "pro", false)).toBe(430);
+    });
+
+    test("uses custom enterprise rates when provided", () => {
+      expect(
+        calculateApplicationFee(10_000, "enterprise", false, {
+          cardRate: 0.03,
+          cardFixed: 25,
+        })
+      ).toBe(325);
+    });
+  });
+
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
 

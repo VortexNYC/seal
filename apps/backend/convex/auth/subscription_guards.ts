@@ -8,6 +8,7 @@
  * All lookups are scoped to the ORGANIZATION, not the user.
  */
 
+import { addMoney, applyRate, money } from "@vortexnyc/money";
 import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
@@ -19,6 +20,10 @@ import {
 import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
+
+/** Stripe / US banking: round-half-up per line, then sum minor units. */
+const FEE_ROUNDING = "half-up" as const;
+const FEE_CURRENCY = "USD";
 
 export { PLAN_LIMITS, type TierPlan };
 
@@ -283,14 +288,19 @@ export function calculateApplicationFee(
 ): number {
   if (isAch) return 0;
 
+  const charge = money(amountCents, FEE_CURRENCY);
   if (customRates) {
-    return Math.round(
-      amountCents * customRates.cardRate + customRates.cardFixed
-    );
+    return addMoney(
+      applyRate(charge, customRates.cardRate, FEE_ROUNDING),
+      money(customRates.cardFixed, FEE_CURRENCY)
+    ).amount;
   }
 
   const rates = SEAL_FEE_RATES[plan];
-  return Math.round(amountCents * rates.cardPercent + rates.cardFixedCents);
+  return addMoney(
+    applyRate(charge, rates.cardPercent, FEE_ROUNDING),
+    money(rates.cardFixedCents, FEE_CURRENCY)
+  ).amount;
 }
 
 /**

@@ -1,6 +1,12 @@
 "use node";
 
 import {
+  allocate,
+  applyRate,
+  money,
+  subtractMoney,
+} from "@vortexnyc/money";
+import {
   createDepositBalancePayable,
   createInstallmentPayable,
   createPayable,
@@ -12,6 +18,10 @@ import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 import { createVortexBillingClient } from "../payments/vortex_billing_processor";
+
+/** Stripe / US banking: round-half-up per portion. */
+const MONEY_ROUNDING = "half-up" as const;
+const PAYABLE_CURRENCY = "USD";
 
 type Env = {
   readonly [key: string]: string | undefined;
@@ -887,10 +897,16 @@ function buildDepositBalanceAmounts(
     throw new ConvexError("Deposit/balance due days must be at least one");
   }
 
-  const depositAmountDue = Math.round(
-    totalAmountCents * (config.depositPercent / 100)
-  );
-  const balanceAmountDue = totalAmountCents - depositAmountDue;
+  const total = money(totalAmountCents, PAYABLE_CURRENCY);
+  const depositAmountDue = applyRate(
+    total,
+    config.depositPercent / 100,
+    MONEY_ROUNDING
+  ).amount;
+  const balanceAmountDue = subtractMoney(
+    total,
+    money(depositAmountDue, PAYABLE_CURRENCY)
+  ).amount;
   if (depositAmountDue <= 0 || balanceAmountDue <= 0) {
     throw new ConvexError(
       "Deposit and balance amounts must both be greater than zero"
@@ -989,15 +1005,15 @@ function splitInstallmentAmount(
   totalAmountCents: number,
   count: number
 ): readonly number[] {
-  const baseAmount = Math.floor(totalAmountCents / count);
-  const remainder = totalAmountCents % count;
-  if (baseAmount <= 0) {
+  const parts = allocate(
+    money(totalAmountCents, PAYABLE_CURRENCY),
+    Array.from({ length: count }, () => 1)
+  ).map((part) => part.amount);
+  if (parts.some((amount) => amount <= 0)) {
     throw new ConvexError("Installment amount must be greater than zero");
   }
 
-  return Array.from({ length: count }, (_, index) =>
-    index < remainder ? baseAmount + 1 : baseAmount
-  );
+  return parts;
 }
 
 function addInstallmentInterval(

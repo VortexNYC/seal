@@ -1,5 +1,6 @@
 import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
 import { createTool } from "@convex-dev/agent";
+import { formatMoney, money } from "@vortexnyc/money";
 import type { FunctionReference } from "convex/server";
 import { z } from "zod";
 
@@ -126,9 +127,11 @@ export const extractPaymentTerms = createTool({
         (sum, item) => sum + item.quantity * item.unitPriceCents,
         0
       );
-      const totalFormatted = `$${(totalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+      const totalFormatted = formatMoney(
+        money(totalCents, extracted.currency.toUpperCase())
+      );
 
-      return `Extracted payment config: ${extracted.lineItems.length} line item(s), ${totalFormatted} ${extracted.currency.toUpperCase()}, ${extracted.paymentType.replace("_", " ")} payment, due ${extracted.dueDateTerms.replace("_", " ")}.`;
+      return `Extracted payment config: ${extracted.lineItems.length} line item(s), ${totalFormatted}, ${extracted.paymentType.replace("_", " ")} payment, due ${extracted.dueDateTerms.replace("_", " ")}.`;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       console.error("[SealAI Tool Error] extractPaymentTerms:", msg);
