@@ -1,7 +1,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { formatMoney, money } from "@vortexnyc/money";
+import { useQuery } from "convex/react";
 import {
   BadgeDollarSign,
   CircleDollarSign,

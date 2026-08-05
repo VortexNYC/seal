@@ -7,11 +7,6 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
-import { Bell, Clock, Mail, Monitor } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-
 import {
   Card,
   CardContent,
@@ -27,6 +22,10 @@ import {
   Separator,
   Switch,
 } from "@vortexnyc/ui";
+import { useMutation, useQuery } from "convex/react";
+import { Bell, Clock, Mail, Monitor } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
 

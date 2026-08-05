@@ -23,7 +23,10 @@ import { ROLE_PERMISSIONS } from "../auth.utils";
 import type { OrganizationMemberRole } from "../schema";
 import { buildUpsertMetadataJsonPreservingSuitePolicy } from "./suiteOrgPolicy";
 
-type VortexAuthMutationCtx = Pick<MutationCtx, "db" | "runMutation" | "runQuery">;
+type VortexAuthMutationCtx = Pick<
+  MutationCtx,
+  "db" | "runMutation" | "runQuery"
+>;
 
 export async function ensureVortexAuthOrganization(
   ctx: VortexAuthMutationCtx,

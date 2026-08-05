@@ -63,41 +63,42 @@ function GeneralSettings() {
     currencyKind: "normal",
   });
 
-  const profileOrganization = useMemo<VortexOrgProfileOrganization | null>(() => {
-    if (!organization) {
-      return null;
-    }
-    const status =
-      organization.status === "suspended" || organization.status === "deleted"
-        ? organization.status
-        : "active";
-    const brand = organization.suiteBrand ?? {
-      ...(organization.brandingSettings?.brandColor
-        ? { primaryColor: organization.brandingSettings.brandColor }
-        : {}),
-      ...(organization.brandingSettings?.accentColor
-        ? { accentColor: organization.brandingSettings.accentColor }
-        : {}),
-      ...(organization.brandingSettings?.emailFromName
-        ? { emailFromName: organization.brandingSettings.emailFromName }
-        : {}),
-      ...(organization.brandingSettings?.emailReplyTo
-        ? { emailReplyTo: organization.brandingSettings.emailReplyTo }
-        : {}),
-      ...(organization.brandingSettings?.companyWebsite
-        ? { website: organization.brandingSettings.companyWebsite }
-        : {}),
-    };
-    return {
-      _id: organization._id,
-      name: organization.name,
-      slug: organization.slug,
-      imageUrl: organization.logo ?? organization.brandingSettings?.logoUrl,
-      status,
-      brand,
-      security: organization.suiteSecurity,
-    };
-  }, [organization]);
+  const profileOrganization =
+    useMemo<VortexOrgProfileOrganization | null>(() => {
+      if (!organization) {
+        return null;
+      }
+      const status =
+        organization.status === "suspended" || organization.status === "deleted"
+          ? organization.status
+          : "active";
+      const brand = organization.suiteBrand ?? {
+        ...(organization.brandingSettings?.brandColor
+          ? { primaryColor: organization.brandingSettings.brandColor }
+          : {}),
+        ...(organization.brandingSettings?.accentColor
+          ? { accentColor: organization.brandingSettings.accentColor }
+          : {}),
+        ...(organization.brandingSettings?.emailFromName
+          ? { emailFromName: organization.brandingSettings.emailFromName }
+          : {}),
+        ...(organization.brandingSettings?.emailReplyTo
+          ? { emailReplyTo: organization.brandingSettings.emailReplyTo }
+          : {}),
+        ...(organization.brandingSettings?.companyWebsite
+          ? { website: organization.brandingSettings.companyWebsite }
+          : {}),
+      };
+      return {
+        _id: organization._id,
+        name: organization.name,
+        slug: organization.slug,
+        imageUrl: organization.logo ?? organization.brandingSettings?.logoUrl,
+        status,
+        brand,
+        security: organization.suiteSecurity,
+      };
+    }, [organization]);
 
   const isAdmin =
     organization?.userRole === "owner" || organization?.userRole === "admin";

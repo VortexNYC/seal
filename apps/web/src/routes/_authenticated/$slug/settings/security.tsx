@@ -164,7 +164,7 @@ function SecuritySettings() {
           </Card>
         )}
 
-        <Card className="md:col-span-2 border-dashed">
+        <Card className="border-dashed md:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Suite vs Sign</CardTitle>
             <CardDescription>

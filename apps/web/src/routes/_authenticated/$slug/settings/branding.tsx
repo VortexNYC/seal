@@ -105,7 +105,7 @@ function BrandingSettings() {
         description="White-label the Seal signing page footer. Workspace brand colors and email from live under General (Core org profile)."
       >
         <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-          <Card className="md:col-span-2 border-dashed">
+          <Card className="border-dashed md:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">Suite vs Sign</CardTitle>
               <CardDescription>
@@ -144,8 +144,8 @@ function BrandingSettings() {
                     Apply custom signing chrome
                   </Label>
                   <p className="text-muted-foreground text-xs">
-                    Free workspaces keep Seal defaults (`PLAN_LIMITS.free.branding
-                    = false`).
+                    Free workspaces keep Seal defaults
+                    (`PLAN_LIMITS.free.branding = false`).
                   </p>
                 </div>
                 <Switch

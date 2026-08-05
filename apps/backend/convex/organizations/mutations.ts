@@ -20,16 +20,16 @@ import {
   listComponentMembersByOrganization,
 } from "../lib/componentOrgReads";
 import {
-  anchorNewOrganizationOwner,
-  ensureComponentRoleForTemplate,
-  upsertVortexAuthMember,
-} from "../lib/vortexAuthOrganizations";
-import {
   mirrorBrandIntoBrandingSettings,
   syncSuiteOrgDetailsToVortexAuth,
   type SuiteOrgBrandUpdate,
   type SuiteOrgSecurityUpdate,
 } from "../lib/suiteOrgPolicy";
+import {
+  anchorNewOrganizationOwner,
+  ensureComponentRoleForTemplate,
+  upsertVortexAuthMember,
+} from "../lib/vortexAuthOrganizations";
 import { organizationBaseSchema } from "../validations/organizations";
 function sealAssertPresent<T>(
   value: T | null | undefined,

@@ -10,8 +10,6 @@ import {
   VortexEnableTwoFactorForm,
   VortexSessionList,
 } from "@vortexnyc/auth/react";
-import { toast } from "sonner";
-
 import {
   Card,
   CardContent,
@@ -19,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@vortexnyc/ui";
+import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-runtime.better-auth";
 
