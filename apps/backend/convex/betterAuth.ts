@@ -9,7 +9,7 @@ import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { betterAuthConvexProvider } from "./auth.config";
 import { authComponent as consumerAuthComponent } from "./betterAuthClient";
-import { sendEmailFromAction } from "./emails/resend_component";
+import { sendAuthEmailDraft } from "./emails/resend_component";
 
 /** Auth-email from-address (same source as Seal's transactional senders). */
 function authEmailFromAddress(): string {
@@ -65,9 +65,9 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
       // the seam types it as the broad GenericCtx, so narrow to the sender's
       // expected ctx (which needs runMutation).
       const sendCtx = ctx as unknown as Parameters<
-        typeof sendEmailFromAction
+        typeof sendAuthEmailDraft
       >[0];
-      await sendEmailFromAction(sendCtx, draft);
+      await sendAuthEmailDraft(sendCtx, draft);
     },
     // Captcha is a PROVEN opt-in capability (Cloudflare Turnstile,
     // sign-up/reset scoped). Kept DISABLED on the shared dev deployment

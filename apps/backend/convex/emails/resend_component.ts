@@ -179,6 +179,41 @@ export async function sendEmailFromAction(
   );
 }
 
+/**
+ * Auth draft payload from `@vortexnyc/auth/convex` draft builders.
+ * Transport stays Seal-local until Core ships send (VOR-186).
+ */
+export type AuthEmailDraft = {
+  readonly from: string;
+  readonly to: string;
+  readonly subject: string;
+  readonly html: string;
+  readonly text: string;
+};
+
+/**
+ * Send a Core auth email draft through Seal's Resend transport seam.
+ * Swap `sendResendEmail` internals when VOR-186 lands — call sites stay.
+ */
+export async function sendAuthEmailDraft(
+  ctx: Pick<ActionCtx, "runMutation">,
+  draft: AuthEmailDraft,
+  extra?: {
+    readonly replyTo?: string | string[];
+    readonly headers?: EmailHeader[] | Record<string, string>;
+  }
+): Promise<string> {
+  return await sendEmailFromAction(ctx, {
+    from: draft.from,
+    to: draft.to,
+    subject: draft.subject,
+    html: draft.html,
+    text: draft.text,
+    ...(extra?.replyTo !== undefined ? { replyTo: extra.replyTo } : {}),
+    ...(extra?.headers !== undefined ? { headers: extra.headers } : {}),
+  });
+}
+
 export async function sendEmailManuallyFromAction(
   ctx: Pick<ActionCtx, "runMutation">,
   options: SendEmailManualOptions,

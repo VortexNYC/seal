@@ -18,7 +18,7 @@ import {
 } from "./_generated/server";
 import { getAuthContext } from "./auth";
 import { ensureSeatLimit } from "./auth/subscription_guards";
-import { sendEmailFromAction } from "./emails/resend_component";
+import { sendAuthEmailDraft } from "./emails/resend_component";
 import {
   getComponentInvitationById,
   getComponentInvitationByTokenHash,
@@ -160,7 +160,7 @@ export const sendInviteEmail = internalAction({
       console.error(`[invite-email] not sent to ${args.to}: ${draft.reason}`);
       return;
     }
-    await sendEmailFromAction(ctx, draft);
+    await sendAuthEmailDraft(ctx, draft);
   },
 });
 
