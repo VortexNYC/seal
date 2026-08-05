@@ -42,8 +42,8 @@ onlyBuiltDependencies:
   - workerd
 
 minimumReleaseAgeExclude:
-  - "@vortexnyc/auth@0.14.3"
-  - "@vortexnyc/tooling@0.11.14"
+  - '@vortexnyc/auth@0.14.3 || 0.15.0'
+  - '@vortexnyc/tooling@0.11.14 || 0.11.15'
   - "@vortexnyc/convex@0.7.2"
   - "@tanstack/react-router-devtools@1.167.1"
   - "@tanstack/router-devtools-core@1.168.1"
