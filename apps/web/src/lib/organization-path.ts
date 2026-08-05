@@ -1,3 +1,9 @@
+/**
+ * Organization path helpers (SEA-606).
+ *
+ * Authenticated Seal product URLs are `/{slug}/{segment}/…`. Public recipient
+ * signing (`/sign/$token`) is outside this helper — do not force a slug onto it.
+ */
 const ORGANIZATION_ROUTE_SEGMENTS = new Set([
   "home",
   "documents",

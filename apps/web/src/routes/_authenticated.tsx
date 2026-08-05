@@ -1,6 +1,7 @@
 /**
  * Authenticated layout: Core AuthAuthenticatedRouteGate for auth / org
- * membership, plus Seal slug-path redirect for `/{slug}/…` workspaces.
+ * membership, plus Seal WorkspaceSlugGuard for `/{slug}/…` product paths
+ * (SEA-600 / SEA-606). Public recipient signing stays at `/sign/$token`.
  */
 import { api } from "@seal/backend/convex/_generated/api";
 import {
@@ -87,8 +88,9 @@ function AuthenticatedLayout() {
 }
 
 /**
- * Seal-only: keep product routes under `/{slug}/…` once Core has confirmed
- * an active organization. Does not re-check auth or membership.
+ * Seal-only (SEA-606): keep product routes under `/{slug}/…` once Core has
+ * confirmed an active organization. Does not re-check auth or membership —
+ * that belongs to AuthAuthenticatedRouteGate.
  */
 function WorkspaceSlugGuard({ children }: { children: ReactNode }) {
   const location = useLocation();
