@@ -1,13 +1,16 @@
 /**
  * Profile Settings Page - Security
  *
- * Account security overview. Password reset runs through the email flow
- * (Better-Auth); two-factor enrollment UI is wired in a follow-up (2FA is
- * opt-in and not yet enabled for Seal).
+ * Core session list + 2FA enrollment via @vortexnyc/auth/react.
  * Route: /{slug}/settings/profile/security
  */
 
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  VortexEnableTwoFactorForm,
+  VortexSessionList,
+} from "@vortexnyc/auth/react";
+import { toast } from "sonner";
 
 import {
   Card,
@@ -16,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-runtime.better-auth";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"
@@ -28,15 +32,42 @@ function SecuritySettings() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Security</CardTitle>
-          <CardDescription>Manage your account security.</CardDescription>
+          <CardTitle>Sessions</CardTitle>
+          <CardDescription>
+            Devices and browsers signed into your account.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="text-muted-foreground space-y-2 text-sm">
-          <p>
-            To change your password, sign out and use the “Forgot password” link
-            on the sign-in page — we’ll email you a secure reset link.
-          </p>
-          <p>Two-factor authentication will be available here soon.</p>
+        <CardContent>
+          <VortexSessionList authClient={authClient} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Two-factor authentication</CardTitle>
+          <CardDescription>
+            Add an authenticator app for stronger account protection.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <VortexEnableTwoFactorForm
+            authClient={authClient}
+            issuer="Seal"
+            onEnrolled={() => {
+              toast.success("Two-factor authentication enabled");
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Password</CardTitle>
+          <CardDescription>Manage your account password.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground text-sm">
+          To change your password, sign out and use the “Forgot password” link
+          on the sign-in page — we’ll email you a secure reset link.
         </CardContent>
       </Card>
     </div>
