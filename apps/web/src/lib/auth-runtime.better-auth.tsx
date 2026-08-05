@@ -20,8 +20,9 @@ import type { ConvexReactClient } from "convex/react";
 import posthog from "posthog-js";
 import type { ReactNode } from "react";
 
+const betterAuthBaseUrlValue = import.meta.env.VITE_BETTER_AUTH_URL;
 const betterAuthBaseUrl =
-  (import.meta.env.VITE_BETTER_AUTH_URL as string | undefined) ?? "";
+  typeof betterAuthBaseUrlValue === "string" ? betterAuthBaseUrlValue : "";
 const authFlow = createVortexAuthFlowStorage({ storageKeyPrefix: "seal.auth" });
 
 export const authRoutePaths = createVortexAuthRoutePaths();
@@ -78,6 +79,8 @@ export function AuthRuntimeProvider(args: {
 export const useAppAuth = runtime.useAppAuth;
 export const useAppUser = runtime.useAppUser;
 export const useAppAuthActions = runtime.useAppAuthActions;
+/** Better-Auth client for Core profile/security surfaces (null when URL unset). */
+export const authClient = betterAuthClient;
 export const {
   clearPendingPostSignUpSync,
   consumePendingAuthFlow,

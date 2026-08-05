@@ -66,8 +66,8 @@ async function getRLSContext(ctx: QueryCtx): Promise<SealRLSContext | null> {
       orgId: auth.organizationId,
       role: auth.role,
       permissions: auth.permissions,
-      isOwner: auth.isOwner,
-      isAdmin: auth.isAdmin,
+      isOwner: auth.isOwner(),
+      isAdmin: auth.isAdmin(),
       isSuperAdmin,
       hasPermission: auth.hasPermission,
       hasAnyPermission: auth.hasAnyPermission,
@@ -789,5 +789,5 @@ export async function rlsRules(
     ...getExportAndAiRules(ctx, rlsCtx),
   };
 
-  return rules as Rules<QueryCtx, DataModel>;
+  return rules;
 }

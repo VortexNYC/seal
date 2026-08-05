@@ -57,14 +57,25 @@ export const createInvitation = mutation({
   args: {
     email: v.string(),
     role: inviteRoleValidator,
+    expectedVortexAuthOrganizationId: v.optional(v.string()),
   },
   handler: async (
     ctx,
     args
-  ): Promise<{ invitationId: string; acceptUrl: string }> => {
+  ): Promise<{ invitationId: string; acceptUrl: string; token: string }> => {
     const auth = await getAuthContext(ctx);
-    if (!auth.hasPermission("org:users:invite")) {
+    if (
+      !auth.hasPermission("org:users:invite") &&
+      !auth.hasPermission("organization:invitations")
+    ) {
       throw new ConvexError("You do not have permission to invite members");
+    }
+    if (
+      args.expectedVortexAuthOrganizationId !== undefined &&
+      auth.organization.vortexAuthOrganizationId !==
+        args.expectedVortexAuthOrganizationId
+    ) {
+      throw new ConvexError("Organization mismatch for invitation");
     }
     const email = args.email.trim().toLowerCase();
     if (!email || !email.includes("@")) {
@@ -109,7 +120,7 @@ export const createInvitation = mutation({
       expiresAt,
     });
 
-    return { invitationId, acceptUrl };
+    return { invitationId, acceptUrl, token };
   },
 });
 

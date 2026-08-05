@@ -170,10 +170,35 @@ export const adminQuery = customQuery(
   customCtx(async (ctx) => {
     const auth = await getAuthContextWithPermissions(ctx);
 
-    if (!auth.isAdmin) {
+    if (!auth.isAdmin()) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Admin privileges required",
+      });
+    }
+
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseReader(ctx, ctx.db, rules),
+    };
+  })
+);
+
+/**
+ * Member-level authenticated query
+ * Requires at least "member" role (member, admin, or owner)
+ * RLS is automatically applied to ctx.db
+ */
+export const memberQuery = customQuery(
+  query,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+
+    if (!auth.hasRole("member")) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Member privileges required",
       });
     }
 
@@ -195,7 +220,7 @@ export const ownerQuery = customQuery(
   customCtx(async (ctx) => {
     const auth = await getAuthContextWithPermissions(ctx);
 
-    if (!auth.isOwner) {
+    if (!auth.isOwner()) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Owner privileges required",
@@ -329,10 +354,35 @@ export const adminMutation = customMutation(
   customCtx(async (ctx) => {
     const auth = await getAuthContextWithPermissions(ctx);
 
-    if (!auth.isAdmin) {
+    if (!auth.isAdmin()) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Admin privileges required",
+      });
+    }
+
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseWriter(ctx, ctx.db, rules),
+    };
+  })
+);
+
+/**
+ * Member-level authenticated mutation
+ * Requires at least "member" role (member, admin, or owner)
+ * RLS is automatically applied to ctx.db
+ */
+export const memberMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+
+    if (!auth.hasRole("member")) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Member privileges required",
       });
     }
 
@@ -354,7 +404,7 @@ export const ownerMutation = customMutation(
   customCtx(async (ctx) => {
     const auth = await getAuthContextWithPermissions(ctx);
 
-    if (!auth.isOwner) {
+    if (!auth.isOwner()) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "Owner privileges required",
