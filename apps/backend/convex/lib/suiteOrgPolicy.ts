@@ -14,7 +14,6 @@ import {
   evaluateOrganizationSecurityAccess,
   parseOrganizationSecurityPolicy,
 } from "@vortexnyc/auth/convex";
-import type { GenericId } from "convex/values";
 import { ConvexError } from "convex/values";
 
 import { components } from "../_generated/api";
@@ -117,7 +116,7 @@ export async function loadVortexAuthOrganizationMetadataJson(
   const org = await ctx.runQuery(
     components.vortexAuth.organizations.getOrganization,
     {
-      organizationId: vortexAuthOrganizationId as GenericId<"organizations">,
+      organizationId: vortexAuthOrganizationId,
     }
   );
   return org?.metadataJson;
@@ -157,8 +156,7 @@ export async function syncSuiteOrgDetailsToVortexAuth(
     throw new ConvexError("Organization is not anchored to Vortex Auth");
   }
 
-  const organizationId =
-    organization.vortexAuthOrganizationId as GenericId<"organizations">;
+  const organizationId = organization.vortexAuthOrganizationId;
 
   if (
     input.name !== undefined ||
@@ -247,11 +245,18 @@ export function mirrorBrandIntoBrandingSettings(
     Boolean(next.logoUrl) ||
     Boolean(next.companyWebsite);
 
-  if (hasIdentity && next.enabled !== true) {
+  if (hasIdentity && !next.enabled) {
     next.enabled = true;
   }
 
   return next;
+}
+
+function readTwoFactorEnabled(user: unknown): boolean {
+  if (!user || typeof user !== "object" || !("twoFactorEnabled" in user)) {
+    return false;
+  }
+  return user.twoFactorEnabled === true;
 }
 
 export async function lookupBetterAuthTwoFactorEnabled(
@@ -262,13 +267,7 @@ export async function lookupBetterAuthTwoFactorEnabled(
     model: "user",
     where: [{ field: "_id", value: betterAuthUserId }],
   });
-  if (!user || typeof user !== "object") {
-    return false;
-  }
-  return (
-    "twoFactorEnabled" in user &&
-    (user as { twoFactorEnabled?: unknown }).twoFactorEnabled === true
-  );
+  return readTwoFactorEnabled(user);
 }
 
 export async function enforceActiveOrgSecurityPolicy(
@@ -286,16 +285,12 @@ export async function enforceActiveOrgSecurityPolicy(
   const policy = parseOrganizationSecurityPolicy(metadataJson);
   // Skip Better Auth adapter lookups when the org has no suite policy.
   // convex-test does not register the betterAuth component by default.
-  if (
-    policy.requireMfa !== true &&
-    policy.sessionTimeoutMinutes === undefined
-  ) {
+  if (!policy.requireMfa && policy.sessionTimeoutMinutes === undefined) {
     return;
   }
-  const twoFactorEnabled =
-    policy.requireMfa === true
-      ? await lookupBetterAuthTwoFactorEnabled(ctx, args.betterAuthUserId)
-      : false;
+  const twoFactorEnabled = policy.requireMfa
+    ? await lookupBetterAuthTwoFactorEnabled(ctx, args.betterAuthUserId)
+    : false;
   const sessionCreatedAt =
     typeof args.sessionCreatedAt === "function"
       ? await args.sessionCreatedAt()
@@ -325,9 +320,8 @@ export async function setVortexAuthActiveOrganizationWithMfaGate(
   await ctx.runMutation(
     components.vortexAuth.organizations.setUserActiveOrganization,
     {
-      userId: args.vortexAuthUserId as GenericId<"users">,
-      organizationId:
-        args.vortexAuthOrganizationId as GenericId<"organizations">,
+      userId: args.vortexAuthUserId,
+      organizationId: args.vortexAuthOrganizationId,
       twoFactorEnabled: args.twoFactorEnabled,
     }
   );

@@ -22,8 +22,6 @@ import {
 import {
   mirrorBrandIntoBrandingSettings,
   syncSuiteOrgDetailsToVortexAuth,
-  type SuiteOrgBrandUpdate,
-  type SuiteOrgSecurityUpdate,
 } from "../lib/suiteOrgPolicy";
 import {
   anchorNewOrganizationOwner,
@@ -496,7 +494,7 @@ export const updateWorkspace = adminMutation({
       if (!org) throw new ConvexError("Organization not found");
       updateData.brandingSettings = mirrorBrandIntoBrandingSettings(
         org.brandingSettings,
-        args.brand as SuiteOrgBrandUpdate
+        args.brand
       );
     }
 
@@ -514,12 +512,8 @@ export const updateWorkspace = adminMutation({
       await syncSuiteOrgDetailsToVortexAuth(ctx, fresh, {
         ...(args.name !== undefined ? { name: args.name } : {}),
         ...(args.logo !== undefined ? { imageUrl: args.logo } : {}),
-        ...(args.brand !== undefined
-          ? { brand: args.brand as SuiteOrgBrandUpdate }
-          : {}),
-        ...(args.security !== undefined
-          ? { security: args.security as SuiteOrgSecurityUpdate }
-          : {}),
+        ...(args.brand !== undefined ? { brand: args.brand } : {}),
+        ...(args.security !== undefined ? { security: args.security } : {}),
       });
     }
 

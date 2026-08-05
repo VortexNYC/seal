@@ -226,7 +226,7 @@ async function loadBetterAuthSessionCreatedAt(
   if (!session || typeof session !== "object" || !("createdAt" in session)) {
     return null;
   }
-  const createdAt = (session as { createdAt?: unknown }).createdAt;
+  const createdAt = session.createdAt;
   if (typeof createdAt === "number" && Number.isFinite(createdAt)) {
     return createdAt;
   }
