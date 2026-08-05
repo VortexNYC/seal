@@ -18,7 +18,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@vortexnyc/ui";
+
 import { authClient } from "@/lib/auth-runtime.better-auth";
 
 export const Route = createFileRoute(

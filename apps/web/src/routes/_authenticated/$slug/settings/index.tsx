@@ -14,18 +14,19 @@ import { Building2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { PageWrapper } from "@/components/page-wrapper";
-import { FormSkeleton } from "@/components/skeletons";
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  Input,
+  Label,
+} from "@vortexnyc/ui";
+
+import { PageWrapper } from "@/components/page-wrapper";
+import { FormSkeleton } from "@/components/skeletons";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({

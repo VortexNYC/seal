@@ -12,24 +12,23 @@ import { Bell, Clock, Mail, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { FormSkeleton } from "@/components/skeletons";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+  Separator,
+  Switch,
+} from "@vortexnyc/ui";
+
+import { FormSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/notifications"
