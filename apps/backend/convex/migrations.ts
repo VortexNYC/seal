@@ -75,3 +75,15 @@ export const backfillSubscriptionOrganizationId = migrations.define({
     );
   },
 });
+
+/**
+ * SEA-593 — clear deprecated `user_profiles.bio` so the schema field can be
+ * removed in a follow-up. Identity lives on Vortex Auth; nothing reads bio.
+ */
+export const clearUserProfileBio = migrations.define({
+  table: "user_profiles",
+  migrateOne: async (ctx, doc) => {
+    if (doc.bio === undefined) return;
+    await ctx.db.patch(doc._id, { bio: undefined });
+  },
+});
