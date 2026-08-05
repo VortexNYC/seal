@@ -27,6 +27,7 @@ import {
   getBetterAuthIdentityIssuer,
   getBetterAuthIdentityProvider,
 } from "./lib/authIdentities";
+import { resolveActiveOrganizationId } from "./lib/resolveActiveOrganization";
 import {
   resolveComponentMemberships,
   type ComponentResolvedMembership,
@@ -81,24 +82,14 @@ async function resolveApiAuthMemberships(
 }
 
 /**
- * Resolve the user's current active org as a local `Id<"organizations">` from
- * the canonical `users.activeVortexAuthOrganizationId` column.
+ * Resolve the user's current active org as a local `Id<"organizations">`.
+ * Prefers Vortex Auth pointer; falls back to legacy Seal activeOrganizationId.
  */
 async function resolveLocalActiveOrgId(
   ctx: Pick<QueryCtx, "db">,
   user: Doc<"users">
 ): Promise<Id<"organizations"> | null> {
-  if (user.activeVortexAuthOrganizationId === undefined) return null;
-  const anchor = await ctx.db
-    .query("organizations")
-    .withIndex("by_vortex_auth_organization", (q) =>
-      q.eq(
-        "vortexAuthOrganizationId",
-        user.activeVortexAuthOrganizationId as string
-      )
-    )
-    .unique();
-  return anchor?._id ?? null;
+  return await resolveActiveOrganizationId(ctx, user);
 }
 
 type OrganizationAccessResult = {
