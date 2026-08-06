@@ -20,6 +20,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";
@@ -71,18 +72,6 @@ type RecurringEndCondition = "never" | "after_count" | "on_date";
 type InstallmentInterval = "week" | "month";
 type LateFeeType = "percentage" | "fixed";
 type TaxBehavior = "inclusive" | "exclusive";
-
-function parseSelectValue<T extends string>(
-  value: string,
-  allowed: readonly T[]
-): T | null {
-  for (const option of allowed) {
-    if (option === value) {
-      return option;
-    }
-  }
-  return null;
-}
 
 const PAYMENT_TYPES = [
   "one_time",
