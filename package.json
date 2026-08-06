@@ -44,7 +44,7 @@
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip && pnpm run check:ui-conformance && pnpm run verify:seal-vortex-migration",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip && pnpm run check:ui-conformance && pnpm run prove:zero-retired-provider-residue",
     "test": "pnpm --filter @seal/web --filter @seal/backend run test",
-    "clean": "(cd apps/backend && pnpm run clean) && (cd apps/web && pnpm run clean) && git clean -xdf .cache .turbo dist node_modules",
+    "clean": "(cd apps/backend && pnpm run clean) && (cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules",
     "eval": "cd evals && pnpm dlx promptfoo eval",
     "eval:redteam": "cd evals && pnpm dlx promptfoo eval -c redteam.yaml",
     "eval:all": "cd evals && pnpm dlx promptfoo eval && pnpm dlx promptfoo eval -c redteam.yaml",

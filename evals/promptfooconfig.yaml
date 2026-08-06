@@ -3,8 +3,8 @@
 # Tests the full AI pipeline end-to-end through Convex:
 # User message → System prompt → Gemini Flash → Tool calls → Response
 #
-# Run: bunx promptfoo eval -c evals/promptfooconfig.yaml
-# View: bunx promptfoo view
+# Run: pnpm dlx promptfoo eval -c evals/promptfooconfig.yaml
+# View: pnpm dlx promptfoo view
 
 description: "Seal AI — End-to-end eval against real Convex backend"
 

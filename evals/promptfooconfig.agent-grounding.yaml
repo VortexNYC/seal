@@ -7,8 +7,8 @@
 #   4. Payment term accuracy — extracted data flows correctly through responses
 #   5. Field detection language — AI describes field types accurately
 #
-# Run: bunx promptfoo eval -c evals/promptfooconfig.agent-grounding.yaml
-# View: bunx promptfoo view
+# Run: pnpm dlx promptfoo eval -c evals/promptfooconfig.agent-grounding.yaml
+# View: pnpm dlx promptfoo view
 
 description: "Seal AI — Agent grounding, hallucination, and refusal evals"
 

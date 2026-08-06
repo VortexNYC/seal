@@ -3,8 +3,8 @@
 # Tests security boundaries, prompt injection resistance, data leakage,
 # and write operation safety for a document signing platform.
 #
-# Run: bunx promptfoo eval -c evals/redteam.yaml
-# Run all: bun run eval:all
+# Run: pnpm dlx promptfoo eval -c evals/redteam.yaml
+# Run all: pnpm run eval:all
 
 description: "Seal AI — Red team adversarial testing"
 
