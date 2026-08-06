@@ -38,7 +38,14 @@ import {
   XCircleIcon,
 } from "lucide-react";
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { toast } from "sonner";
 
@@ -131,7 +138,7 @@ function useEmbeddedSigning(token: string) {
 
   // Listen for incoming messages from host
   useEffect(() => {
-    if (!isEmbedded) return;
+    if (!isEmbedded) return undefined;
     const handler = (event: MessageEvent) => {
       if (!event.data?.type) return;
       if (event.data.type === "seal:close") {
@@ -205,6 +212,58 @@ const capitalizeFieldLabel = (label: string): string => {
     .join(" ");
 };
 
+function formatDate(dateString: string | number): string {
+  return new Date(dateString).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getRoleIcon(role: string): ReactElement {
+  switch (role) {
+    case "signer":
+      return <PenLineIcon className="h-4 w-4" />;
+    case "approver":
+      return <ShieldCheckIcon className="h-4 w-4" />;
+    default:
+      return <UserIcon className="h-4 w-4" />;
+  }
+}
+
+function getStatusBadge(status: string): {
+  className: string;
+  icon: ReactElement;
+} {
+  const baseStyles =
+    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium";
+  switch (status) {
+    case "signed":
+    case "approved":
+      return {
+        className: cn(baseStyles, "bg-success-surface text-success"),
+        icon: <CheckCircle2Icon className="h-3 w-3" />,
+      };
+    case "declined":
+      return {
+        className: cn(baseStyles, "bg-destructive/10 text-destructive"),
+        icon: <XCircleIcon className="h-3 w-3" />,
+      };
+    case "viewed":
+      return {
+        className: cn(baseStyles, "bg-info-surface text-info"),
+        icon: <ClockIcon className="h-3 w-3" />,
+      };
+    default:
+      return {
+        className: cn(baseStyles, "bg-warning-surface text-warning"),
+        icon: <ClockIcon className="h-3 w-3" />,
+      };
+  }
+}
+
 function SigningPage() {
   const { token } = Route.useParams();
   const { convexClient } = useRouteContext({ from: "__root__" });
@@ -232,14 +291,14 @@ function SigningPage() {
   const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
 
   // Fetch fields assigned to this recipient
-  const { data: fields = [], refetch: refetchFields } = useSuspenseQuery(
+  const { data: fields, refetch: refetchFields } = useSuspenseQuery(
     convexQuery(api.signature_fields.queries.getFieldsBySigningToken, {
       signingToken: token,
     })
   );
 
   // Load payment configs for payment field overlays
-  const { data: paymentConfigs = [] } = useSuspenseQuery(
+  const { data: paymentConfigs } = useSuspenseQuery(
     convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
       documentId: doc._id,
     })
@@ -305,12 +364,12 @@ function SigningPage() {
   // Client IP for audit trail (fetched from Convex HTTP endpoint)
   const [clientIp, setClientIp] = useState("unknown");
   useEffect(() => {
-    const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
-    if (!convexUrl) return;
+    const convexUrl: unknown = import.meta.env.VITE_CONVEX_URL;
+    if (typeof convexUrl !== "string" || convexUrl === "") return;
     const siteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
     fetch(`${siteUrl}/api/v1/ip`)
       .then((res) => res.json())
-      .then((data: { ip: string }) => setClientIp(data.ip))
+      .then((ipPayload: { ip: string }) => setClientIp(ipPayload.ip))
       .catch(() => {
         // Silently fall back to "unknown" — IP is best-effort
       });
@@ -422,11 +481,11 @@ function SigningPage() {
           }
         );
         setPdfUrl(url);
-      } catch (_error) {
+      } catch {
         toast.error("Failed to load PDF");
       }
     };
-    fetchPdfUrl();
+    void fetchPdfUrl();
   }, [convexClient, token]);
 
   // Track document view automatically when page loads (only if not already viewed)
@@ -448,11 +507,15 @@ function SigningPage() {
         }
       }
     };
-    markAsViewed();
+    void markAsViewed();
   }, [convexClient, token, recipient.status, clientIp]);
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
+  const onDocumentLoadSuccess = ({
+    numPages: loadedPageCount,
+  }: {
+    numPages: number;
+  }) => {
+    setNumPages(loadedPageCount);
   };
 
   // Signature submission mutation
@@ -617,7 +680,7 @@ function SigningPage() {
       link.click();
       document.body.removeChild(link);
       toast.success("Download started");
-    } catch (_error) {
+    } catch {
       toast.error("Failed to download document");
     } finally {
       setIsDownloading(false);
@@ -731,7 +794,7 @@ function SigningPage() {
   ]);
 
   // Sort fields by page and position for navigation
-  const sortedFields = [...fields].sort((a, b) => {
+  const sortedFields = [...fields].toSorted((a, b) => {
     if (a.page !== b.page) return a.page - b.page;
     if (a.y !== b.y) return a.y - b.y;
     return a.x - b.x;
@@ -810,58 +873,6 @@ function SigningPage() {
   // State for collapsible sections on mobile
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
-  // Format date helper — uses browser locale for i18n
-  const formatDate = (dateString: string | number) => {
-    return new Date(dateString).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
-
-  // Get role icon
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "signer":
-        return <PenLineIcon className="h-4 w-4" />;
-      case "approver":
-        return <ShieldCheckIcon className="h-4 w-4" />;
-      default:
-        return <UserIcon className="h-4 w-4" />;
-    }
-  };
-
-  // Get status badge styles
-  const getStatusBadge = (status: string) => {
-    const baseStyles =
-      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium";
-    switch (status) {
-      case "signed":
-      case "approved":
-        return {
-          className: cn(baseStyles, "bg-success-surface text-success"),
-          icon: <CheckCircle2Icon className="h-3 w-3" />,
-        };
-      case "declined":
-        return {
-          className: cn(baseStyles, "bg-destructive/10 text-destructive"),
-          icon: <XCircleIcon className="h-3 w-3" />,
-        };
-      case "viewed":
-        return {
-          className: cn(baseStyles, "bg-info-surface text-info"),
-          icon: <ClockIcon className="h-3 w-3" />,
-        };
-      default:
-        return {
-          className: cn(baseStyles, "bg-warning-surface text-warning"),
-          icon: <ClockIcon className="h-3 w-3" />,
-        };
-    }
-  };
-
   const statusBadge = getStatusBadge(recipient.status);
 
   // Expiration gate — block access if recipient's deadline has passed
@@ -931,7 +942,7 @@ function SigningPage() {
 
   // Build brand color CSS custom properties
   const brandStyle: React.CSSProperties = branding?.brandColor
-    ? ({ "--brand-primary": branding.brandColor } as React.CSSProperties)
+    ? { "--brand-primary": branding.brandColor }
     : {};
 
   return (

@@ -97,12 +97,23 @@ export function createLogger(options: LoggerOptions = {}) {
   };
 }
 
+function isLogLevel(value: string | undefined): value is LogLevel {
+  return (
+    value === "debug" ||
+    value === "info" ||
+    value === "warn" ||
+    value === "error"
+  );
+}
+
+const envLogLevel = process.env.SEAL_LOG_LEVEL;
+
 /**
  * Default logger instance.
  * Reads configuration from environment variables.
  */
 export const logger = createLogger({
-  minLevel: (process.env.SEAL_LOG_LEVEL as LogLevel) || "info",
+  minLevel: isLogLevel(envLogLevel) ? envLogLevel : "info",
   format: process.env.SEAL_LOG_FORMAT === "json" ? "json" : "pretty",
   silent: process.env.NODE_ENV === "test",
 });

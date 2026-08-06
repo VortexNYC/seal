@@ -33,11 +33,11 @@ export function usePdfViewer(documentId: Id<"documents">) {
           }
         );
         setPdfUrl(url);
-      } catch (_error) {
+      } catch {
         toast.error("Failed to load PDF");
       }
     };
-    fetchPdfUrl();
+    void fetchPdfUrl();
   }, [convexClient, documentId]);
 
   // SEA-84: Keep PDF width in sync with container size on window resize

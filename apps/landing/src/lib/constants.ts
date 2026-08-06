@@ -1,2 +1,6 @@
+const rawAppUrl: unknown = import.meta.env.VITE_APP_URL;
+
 export const APP_URL =
-  (import.meta.env.VITE_APP_URL as string) || "https://app.seal.nyc";
+  typeof rawAppUrl === "string" && rawAppUrl.length > 0
+    ? rawAppUrl
+    : "https://app.seal.nyc";

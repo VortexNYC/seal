@@ -20,6 +20,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { parseId } from "@/lib/convex-ids";
 
 interface FolderBreadcrumbsProps {
   folderId?: Id<"folders">;
@@ -55,7 +56,7 @@ export function FolderBreadcrumbs({
       hasMountedRef.current = true;
       previousDepthRef.current = breadcrumbItems.length;
       previousSignatureRef.current = breadcrumbSignature;
-      return;
+      return undefined;
     }
 
     const previousDepth = previousDepthRef.current;
@@ -65,7 +66,7 @@ export function FolderBreadcrumbs({
     previousSignatureRef.current = breadcrumbSignature;
 
     if (previousSignature === breadcrumbSignature) {
-      return;
+      return undefined;
     }
 
     const nextOffset =
@@ -76,7 +77,7 @@ export function FolderBreadcrumbs({
           : null;
 
     if (!nextOffset) {
-      return;
+      return undefined;
     }
 
     setMotionOffset(nextOffset);
@@ -132,7 +133,7 @@ export function FolderBreadcrumbs({
                 ) : (
                   <BreadcrumbLink
                     className="max-w-32 cursor-pointer truncate sm:max-w-48"
-                    onClick={() => onNavigate(crumb.id as Id<"folders">)}
+                    onClick={() => onNavigate(parseId("folders", crumb.id))}
                   >
                     {crumb.name}
                   </BreadcrumbLink>

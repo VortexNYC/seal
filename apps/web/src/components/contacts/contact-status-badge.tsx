@@ -10,5 +10,7 @@ export function ContactStatusBadge({ status }: { status: ContactStatus }) {
       return <Badge variant="secondary">Inactive</Badge>;
     case "lead":
       return <Badge variant="outline">Lead</Badge>;
+    default:
+      return null;
   }
 }

@@ -156,16 +156,18 @@ test.describe("Recipient Signing", () => {
     //    doc is signed — that's the bug we want this test to catch. Observed
     //    ~6s in isolation; 60s tolerates parallel-test load.
     const completionDeadline = Date.now() + 60_000;
-    let completed = initialState;
-    while (
-      Date.now() < completionDeadline &&
-      (completed?.workflowStatus !== "completed" ||
-        !completed?.auditActions.includes("document.completed") ||
-        !completed?.auditActions.includes("email.queued"))
-    ) {
+    const pollForCompletion = async (
+      state: typeof initialState
+    ): Promise<typeof initialState> => {
+      const isComplete =
+        state?.workflowStatus === "completed" &&
+        state.auditActions.includes("document.completed") &&
+        state.auditActions.includes("email.queued");
+      if (Date.now() >= completionDeadline || isComplete) return state;
       await new Promise((r) => setTimeout(r, 1000));
-      completed = await getDocumentState(signableDoc.documentId);
-    }
+      return pollForCompletion(await getDocumentState(signableDoc.documentId));
+    };
+    const completed = await pollForCompletion(initialState);
     expect(completed?.workflowStatus).toBe("completed");
     expect(completed?.auditActions).toContain("document.completed");
     // The post-signature workflow's sendSignerConfirmation step should have

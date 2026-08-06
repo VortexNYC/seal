@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { waitForConvexMutation } from "../../fixtures/convex-helpers";
+import { pollUntil } from "../../fixtures/poll";
 
 type SharingMode = "private" | "workspace" | "specific";
 type PermissionLevel = "view" | "edit" | "manage";
@@ -101,6 +102,8 @@ export class ShareDialogPage {
         return this.workspaceModeButton;
       case "specific":
         return this.specificModeButton;
+      default:
+        throw new Error(`Unknown sharing mode: ${String(mode)}`);
     }
   }
 
@@ -125,28 +128,27 @@ export class ShareDialogPage {
     mode: SharingMode,
     timeoutMs = 10000
   ): Promise<void> {
-    const deadline = Date.now() + timeoutMs;
-
-    while (Date.now() < deadline) {
-      if (await this.isSharingModeSelected(mode).catch(() => false)) {
-        return;
-      }
-
-      await this.page.waitForTimeout(250);
-    }
-
-    throw new Error(
-      `Timed out waiting for sharing mode to become selected: ${mode}`
+    const selected = await pollUntil(
+      async () =>
+        (await this.isSharingModeSelected(mode).catch(() => false)) ||
+        undefined,
+      { deadline: Date.now() + timeoutMs, intervalMs: 250 }
     );
+
+    if (!selected) {
+      throw new Error(
+        `Timed out waiting for sharing mode to become selected: ${mode}`
+      );
+    }
   }
 
   async getCurrentSharingMode(): Promise<SharingMode | null> {
-    for (const mode of ["private", "workspace", "specific"] as SharingMode[]) {
-      if (await this.isSharingModeSelected(mode)) {
-        return mode;
-      }
-    }
-    return null;
+    const modes: readonly SharingMode[] = ["private", "workspace", "specific"];
+    const selections = await Promise.all(
+      modes.map((mode) => this.isSharingModeSelected(mode))
+    );
+    const selectedIndex = selections.findIndex(Boolean);
+    return modes[selectedIndex] ?? null;
   }
 
   async isTeamSharingDisabled(): Promise<boolean> {
@@ -191,15 +193,12 @@ export class ShareDialogPage {
   async getAccessList(): Promise<string[]> {
     const items = this.accessList.locator('[data-testid="access-item"]');
     const count = await items.count();
-    const names: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const name = await items
-        .nth(i)
-        .locator('[data-testid="access-name"]')
-        .textContent();
-      if (name) names.push(name);
-    }
-    return names;
+    const names = await Promise.all(
+      Array.from({ length: count }, (_, index) =>
+        items.nth(index).locator('[data-testid="access-name"]').textContent()
+      )
+    );
+    return names.flatMap((name) => (name ? [name] : []));
   }
 
   async getSharedUserCount(): Promise<number> {

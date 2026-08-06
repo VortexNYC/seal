@@ -6,7 +6,7 @@
  * twice returns the cached result instantly.
  */
 
-import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
+import { ActionCache } from "@convex-dev/action-cache";
 import { generateObject } from "ai";
 import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
@@ -153,7 +153,7 @@ export const fieldAnalysisCache: ActionCache<AnalyzeAction> = new ActionCache(
     action: internal.ai.analyzeFieldsAction.analyzeFieldsInternal,
     name: "documentAnalysis-v2",
     ttl: 24 * 60 * 60 * 1000, // 24 hours
-  } as ActionCacheConfig<AnalyzeAction>
+  }
 );
 
 // ---------------------------------------------------------------------------
@@ -174,9 +174,9 @@ export async function fetchFieldAnalysisWithRetry(
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
-      return (await fieldAnalysisCache.fetch(ctx, {
+      return await fieldAnalysisCache.fetch(ctx, {
         storageId,
-      })) as FieldAnalysisResult;
+      });
     } catch (error) {
       lastError = error;
       if (attempt < RETRY_CONFIG.maxRetries) {

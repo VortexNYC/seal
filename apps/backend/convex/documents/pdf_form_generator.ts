@@ -121,7 +121,7 @@ async function addFormField(
       );
       return;
     case "attachment":
-      addAttachmentPlaceholder(
+      await addAttachmentPlaceholder(
         page,
         layout.x,
         layout.pdfY,

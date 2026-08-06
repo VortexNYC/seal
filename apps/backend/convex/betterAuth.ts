@@ -16,6 +16,21 @@ function authEmailFromAddress(): string {
   return process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 }
 
+/**
+ * Better Auth types its handler ctx as the broad GenericCtx union; the email
+ * sender only needs `runMutation`. Runtime-checked narrowing at the seam.
+ */
+function isMutationCapableCtx(
+  value: unknown
+): value is Parameters<typeof sendAuthEmailDraft>[0] {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "runMutation" in value &&
+    typeof value.runMutation === "function"
+  );
+}
+
 const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
   createBetterAuthConvexRuntime<DataModel>({
     components: {
@@ -63,11 +78,13 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
       }
       // Better Auth invokes sendEmail inside a mutation-capable handler ctx;
       // the seam types it as the broad GenericCtx, so narrow to the sender's
-      // expected ctx (which needs runMutation).
-      const sendCtx = ctx as unknown as Parameters<
-        typeof sendAuthEmailDraft
-      >[0];
-      await sendAuthEmailDraft(sendCtx, draft);
+      // expected ctx (which needs runMutation) with a runtime check.
+      if (!isMutationCapableCtx(ctx)) {
+        throw new Error(
+          "auth email send requires a mutation-capable ctx (runMutation)"
+        );
+      }
+      await sendAuthEmailDraft(ctx, draft);
     },
     // Captcha is a PROVEN opt-in capability (Cloudflare Turnstile,
     // sign-up/reset scoped). Kept DISABLED on the shared dev deployment

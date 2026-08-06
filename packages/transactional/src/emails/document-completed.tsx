@@ -29,15 +29,14 @@ function formatCompletedDate(timestamp: number): string {
   });
 }
 
+const ROLE_LABELS: Record<RecipientSummary["role"], string> = {
+  signer: "Signed",
+  approver: "Approved",
+  viewer: "Viewed",
+};
+
 function getRoleLabel(role: RecipientSummary["role"]): string {
-  switch (role) {
-    case "signer":
-      return "Signed";
-    case "approver":
-      return "Approved";
-    case "viewer":
-      return "Viewed";
-  }
+  return ROLE_LABELS[role];
 }
 
 function formatRecipientDate(timestamp: number): string {
@@ -142,11 +141,11 @@ function RecipientActivitySection({
 }
 
 export function DocumentCompleted({
-  senderName = "User",
-  documentName = "Document",
-  documentUrl = "https://seal.nyc/documents/example",
-  completedAt = Date.now(),
-  recipientsSummary = [],
+  senderName,
+  documentName,
+  documentUrl,
+  completedAt,
+  recipientsSummary,
 }: DocumentCompletedProps) {
   const previewText = `All signatures collected for "${documentName}"`;
   const formattedDate = formatCompletedDate(completedAt);

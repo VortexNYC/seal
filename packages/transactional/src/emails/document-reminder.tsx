@@ -142,10 +142,10 @@ function ReminderMessageSection({
 }
 
 export function DocumentReminder({
-  recipientName = "Recipient",
-  senderName = "Sender",
-  documentName = "Document",
-  signingUrl = "https://seal.nyc/sign/example",
+  recipientName,
+  senderName,
+  documentName,
+  signingUrl,
   customMessage,
   expiresAt,
   reminderCount = 1,

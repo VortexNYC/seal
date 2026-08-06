@@ -12,6 +12,11 @@ interface RemoveRecipientDialogProps {
   fieldCount?: number;
 }
 
+function formatRole(role?: string): string {
+  if (!role) return "";
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 /**
  * RemoveRecipientDialog - Confirmation dialog for removing a recipient
  */
@@ -36,11 +41,6 @@ export function RemoveRecipientDialog({
   const handleConfirm = () => {
     setIsRemoving(true);
     onConfirm();
-  };
-
-  const formatRole = (role?: string) => {
-    if (!role) return "";
-    return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
   const hasFields = fieldCount > 0;

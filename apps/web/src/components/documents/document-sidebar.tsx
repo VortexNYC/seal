@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   ActivityIcon,
   ChevronDownIcon,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { parseId } from "@/lib/convex-ids";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   formatDate,
@@ -72,8 +72,7 @@ interface DocumentSidebarProps {
 
   // Current user's signing state
   currentUserRecipient: InAppRecipient | null;
-  // Typed loosely since Convex adds computed fields not in the static interface
-  currentUserFields: unknown[];
+  currentUserFields: InAppFields;
   onCurrentUserFieldsRefetch: () => void;
 
   // Permissions
@@ -229,7 +228,9 @@ function RecipientRow({
   onRecipientOptions: DocumentSidebarProps["onRecipientOptions"];
 }) {
   const status =
-    "status" in recipient ? (recipient.status as string) : "pending";
+    "status" in recipient && typeof recipient.status === "string"
+      ? recipient.status
+      : "pending";
   const statusColorClass =
     status === "viewed"
       ? "bg-info-surface text-info"
@@ -271,12 +272,15 @@ function RecipientRow({
         variant="ghost"
         size="icon-sm"
         onClick={() =>
-          onRecipientOptions(
-            recipient as FieldListRecipient & {
-              status: string;
-              signingToken?: string;
-            }
-          )
+          onRecipientOptions({
+            ...recipient,
+            status,
+            signingToken:
+              "signingToken" in recipient &&
+              typeof recipient.signingToken === "string"
+                ? recipient.signingToken
+                : undefined,
+          })
         }
         title="Recipient options"
       >
@@ -648,7 +652,7 @@ function SignatureFieldsSection({
               onFieldDragEnd={onFieldDragEnd}
               disabled={!hasSigners}
               merchantPaymentsReady={merchantPaymentsReady}
-              documentId={documentId as Id<"documents">}
+              documentId={parseId("documents", documentId)}
             />
           </div>
         )}
@@ -872,9 +876,9 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
       {signingRecipient && (
         <InAppSigningSection
-          documentId={props.documentId as Id<"documents">}
+          documentId={parseId("documents", props.documentId)}
           recipient={signingRecipient}
-          fields={props.currentUserFields as InAppFields}
+          fields={props.currentUserFields}
           isOpen={props.openSections.has("your-signature")}
           onOpenChange={() => props.toggleSection("your-signature")}
           onFieldsRefetch={props.onCurrentUserFieldsRefetch}

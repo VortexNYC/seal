@@ -16,6 +16,7 @@ import {
   type VortexPayoutReadinessPanelProps,
 } from "@vortexnyc/payments-react";
 import { useAction, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, ArrowRight, FileText, WalletCards } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { parseSelectValue } from "@/lib/select-values";
 
 type ConnectionStatus =
   | "not_connected"
@@ -40,25 +42,87 @@ type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
 type VortexMerchantState = NonNullable<
   VortexMerchantAccountPanelProps["merchantState"]
 >;
-type PayoutProfile = NonNullable<
+type VortexMerchantPayoutData = FunctionReturnType<
+  typeof api.payments.vortex_merchant_actions.getVortexMerchantPayoutData
+>;
+type SettlementSnapshot = VortexMerchantPayoutData["settlements"][number];
+type PayoutSnapshot = VortexMerchantPayoutData["payouts"][number];
+type DerivedCurrencyBalance =
+  VortexMerchantPayoutData["derivedBalance"]["currencies"][number];
+type MoneyDirection = SettlementSnapshot["direction"];
+type PanelPayoutProfile = NonNullable<
   VortexPayoutReadinessPanelProps["payoutProfile"]
 >;
-type MoneyDirection = "credit" | "debit";
-type SettlementStatus =
-  | "accruing"
-  | "closed"
-  | "approved"
-  | "paid_out"
-  | "failed"
-  | "reversed";
-type PayoutStatus =
-  | "pending"
-  | "submitted"
-  | "in_transit"
-  | "succeeded"
-  | "failed"
-  | "returned"
-  | "held";
+
+const PANEL_ENVIRONMENTS = [
+  "sandbox",
+  "production",
+] as const satisfies readonly PanelPayoutProfile["environment"][];
+const PANEL_PAYOUT_MODES = [
+  "net",
+  "gross",
+  "unknown",
+] as const satisfies readonly PanelPayoutProfile["mode"][];
+const PANEL_PAYOUT_RAILS = [
+  "next_day_ach",
+  "same_day_ach",
+  "instant_card",
+  "unknown",
+] as const satisfies readonly PanelPayoutProfile["payoutRail"][];
+const PANEL_PAYOUT_SCHEDULES = [
+  "daily",
+  "monthly",
+  "manual",
+  "unknown",
+] as const satisfies readonly PanelPayoutProfile["payoutSchedule"][];
+const PANEL_CURRENCY_CODES = [
+  "USD",
+  "CAD",
+] as const satisfies readonly NonNullable<PanelPayoutProfile["currency"]>[];
+const PANEL_CAPABILITY_KEYS = [
+  "standard_next_day_ach",
+  "same_day_ach",
+  "instant_card_push",
+  "gross_payout",
+  "sub_merchant_payee_payment",
+] as const satisfies readonly PanelPayoutProfile["capabilities"][number]["key"][];
+
+/**
+ * Parse the validator-typed payout profile from the Convex action into the
+ * literal unions the Core payout readiness panel expects, dropping values the
+ * panel cannot represent instead of asserting them.
+ */
+function toPanelPayoutProfile(
+  profile: VortexMerchantPayoutData["payoutProfile"]
+): PanelPayoutProfile | undefined {
+  if (!profile) return undefined;
+  const environment = parseSelectValue(profile.environment, PANEL_ENVIRONMENTS);
+  if (!environment) return undefined;
+  return {
+    environment,
+    merchantAccountId: profile.merchantAccountId,
+    mode: parseSelectValue(profile.mode, PANEL_PAYOUT_MODES) ?? "unknown",
+    payoutRail:
+      parseSelectValue(profile.payoutRail, PANEL_PAYOUT_RAILS) ?? "unknown",
+    payoutSchedule:
+      parseSelectValue(profile.payoutSchedule, PANEL_PAYOUT_SCHEDULES) ??
+      "unknown",
+    currency: profile.currency
+      ? (parseSelectValue(profile.currency, PANEL_CURRENCY_CODES) ?? undefined)
+      : undefined,
+    settlementDelayDays: profile.settlementDelayDays,
+    submissionDelayDays: profile.submissionDelayDays,
+    fundingRequirement: profile.fundingRequirement,
+    sameDayAchEligible: profile.sameDayAchEligible,
+    instantPayoutEligible: profile.instantPayoutEligible,
+    grossPayoutEnabled: profile.grossPayoutEnabled,
+    capabilities: profile.capabilities.flatMap((capability) => {
+      const key = parseSelectValue(capability.key, PANEL_CAPABILITY_KEYS);
+      return key ? [{ ...capability, key }] : [];
+    }),
+    fetchedAt: profile.fetchedAt,
+  };
+}
 
 type MerchantAccountResult = {
   status: ConnectionStatus;
@@ -88,67 +152,6 @@ type MerchantAccountResult = {
     };
   } | null;
   canManage: boolean;
-};
-
-type SettlementSnapshot = {
-  id: string;
-  environment: string;
-  merchantAccountId: string;
-  currency: string;
-  status: SettlementStatus;
-  grossAmount: number;
-  feeAmount: number;
-  refundAmount: number;
-  adjustmentAmount: number;
-  netAmount: number;
-  direction: MoneyDirection;
-  accrualStartAt?: string;
-  accrualEndAt?: string;
-  autoCloseAt?: string;
-  openedAt?: string;
-  closedAt?: string;
-  approvedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type PayoutSnapshot = {
-  id: string;
-  environment: string;
-  merchantAccountId: string;
-  payoutAccountId?: string;
-  settlementId?: string;
-  status: PayoutStatus;
-  amount: number;
-  currency: string;
-  direction: MoneyDirection;
-  expectedArrivalAt?: string;
-  failureCode?: string;
-  failureMessage?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type DerivedCurrencyBalance = {
-  currency: string;
-  derived: true;
-  label: "derived_from_vortex_settlements_and_payouts";
-  settledNet: number;
-  pendingSettlement: number;
-  paidOut: number;
-  payoutInFlight: number;
-  availableForPayout: number;
-};
-
-type VortexMerchantPayoutData = {
-  settlements: SettlementSnapshot[];
-  payouts: PayoutSnapshot[];
-  payoutProfile: PayoutProfile | null;
-  derivedBalance: {
-    derived: true;
-    label: "derived_from_vortex_settlements_and_payouts";
-    currencies: DerivedCurrencyBalance[];
-  };
 };
 
 type VortexMerchantPayoutDataState = {
@@ -290,7 +293,7 @@ export function VortexMerchantOperationalSurface({
       slug,
     }
   ) as MerchantAccountResult | undefined;
-  const orgId = organization?._id as Id<"organizations"> | undefined;
+  const orgId = organization?._id;
   const account = merchantAccountResult?.account ?? null;
   const payoutDataState = useVortexMerchantPayoutData(
     orgId,
@@ -348,7 +351,7 @@ function ConnectedOperationalSurface({
         config={{
           baseUrl: window.location.origin,
           environment: "test",
-          organizationId: String(organizationId ?? slug),
+          organizationId: organizationId ?? slug,
           branding: { brandName: "Seal", showVortexBrand: true },
         }}
       >
@@ -407,7 +410,7 @@ function useVortexMerchantPayoutData(
       setData(null);
       setLoading(false);
       setError(undefined);
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -417,7 +420,7 @@ function useVortexMerchantPayoutData(
     getVortexMerchantPayoutData({ organizationId })
       .then((result) => {
         if (!cancelled) {
-          setData(result as VortexMerchantPayoutData);
+          setData(result);
         }
       })
       .catch((caught: unknown) => {
@@ -476,7 +479,9 @@ function OperationalSurfacePanels({
       <>
         <VortexPayoutReadinessPanel
           merchantState={merchantState}
-          payoutProfile={payoutDataState.data?.payoutProfile ?? undefined}
+          payoutProfile={toPanelPayoutProfile(
+            payoutDataState.data?.payoutProfile ?? null
+          )}
           classNames={vortexPaymentsClassNames}
           loading={payoutDataState.loading && payoutDataState.shouldFetch}
           error={payoutDataState.error}
@@ -778,7 +783,9 @@ function buildBalanceWalletEntries(input: {
     ...input.payouts
       .filter((payout) => payout.currency === input.currency)
       .map(toPayoutWalletEntry),
-  ].sort((left, right) => right.effectiveAt.localeCompare(left.effectiveAt));
+  ].toSorted((left, right) =>
+    right.effectiveAt.localeCompare(left.effectiveAt)
+  );
 }
 
 function toSettlementWalletEntry(

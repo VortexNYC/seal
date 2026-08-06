@@ -35,7 +35,10 @@ export const list = query({
           )
           .unique();
         return {
-          ...entry,
+          userId: entry.userId,
+          online: entry.online,
+          lastDisconnected: entry.lastDisconnected,
+          data: entry.data,
           name: user?.name,
           image: user?.avatar,
         };

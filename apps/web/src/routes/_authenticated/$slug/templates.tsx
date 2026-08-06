@@ -88,13 +88,17 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { parseId } from "@/lib/convex-ids";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
   component: TemplatesPage,
   pendingComponent: TemplatesSkeleton,
   validateSearch: (search: Record<string, unknown>) => ({
-    folderId: (search.folderId as string) || undefined,
+    folderId:
+      typeof search.folderId === "string" && search.folderId
+        ? search.folderId
+        : undefined,
   }),
   head: () => ({
     meta: [
@@ -122,6 +126,22 @@ interface TemplatesListProps {
   onDeleteTemplate: (template: Doc<"templates">) => void;
   onMoveToFolder: (templateId: Id<"templates">) => void;
   onFolderNavigate: (folderId?: Id<"folders">) => void;
+}
+
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
 }
 
 function TemplatesList({
@@ -200,22 +220,6 @@ function TemplatesList({
     setCurrentPage(1);
   }, [searchQuery, sortField, sortDirection]);
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
-  };
-
   // Sort header component
   const SortHeader = ({
     field,
@@ -258,7 +262,7 @@ function TemplatesList({
             action={{
               label: "Go to Documents",
               onClick: () => {
-                router.navigate({
+                void router.navigate({
                   to: "/$slug/documents",
                   params: { slug },
                   search: { folderId: undefined },
@@ -612,8 +616,10 @@ function TemplatesPage() {
     api.folders.mutations.moveItemsToFolder
   );
 
-  // Cast folderId string from URL to Id<"folders"> if present
-  const folderId = folderIdParam ? (folderIdParam as Id<"folders">) : undefined;
+  // Parse folderId string from URL into Id<"folders"> if present
+  const folderId = folderIdParam
+    ? parseId("folders", folderIdParam)
+    : undefined;
 
   // Dialog states
   const [useTemplateDialog, setUseTemplateDialog] = useState<{
@@ -655,7 +661,7 @@ function TemplatesPage() {
   };
 
   const handleFolderSelect = (selectedFolderId?: Id<"folders">) => {
-    navigate({
+    void navigate({
       to: "/$slug/templates",
       params: { slug },
       search: { folderId: selectedFolderId },
@@ -720,7 +726,7 @@ function TemplatesPage() {
       setUseTemplateDialog({ open: false, template: null });
 
       // Navigate to the new document
-      router.navigate({
+      void router.navigate({
         to: "/$slug/documents/$documentId",
         params: { slug, documentId: result.documentId },
       });

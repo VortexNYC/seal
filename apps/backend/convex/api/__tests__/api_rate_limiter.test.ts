@@ -8,6 +8,14 @@ import {
 import type { RateLimitResult } from "../api_rate_limiter";
 import { ApiError } from "../errors";
 
+/** Narrow a caught value to ApiError, failing loudly otherwise. */
+function asApiError(error: unknown): ApiError {
+  if (!(error instanceof ApiError)) {
+    throw new Error("Expected an ApiError");
+  }
+  return error;
+}
+
 describe("DEFAULT_RATE_LIMITS", () => {
   test("has 60 requests per minute", () => {
     expect(DEFAULT_RATE_LIMITS.requestsPerMinute).toBe(60);
@@ -97,7 +105,7 @@ describe("throwRateLimitExceeded", () => {
       expect.fail("Should have thrown");
     } catch (e) {
       expect(e).toBeInstanceOf(ApiError);
-      expect((e as ApiError).status).toBe(429);
+      expect(asApiError(e).status).toBe(429);
     }
   });
 
@@ -115,7 +123,7 @@ describe("throwRateLimitExceeded", () => {
       throwRateLimitExceeded(result);
       expect.fail("Should have thrown");
     } catch (e) {
-      expect((e as ApiError).message).toContain("per-minute");
+      expect(asApiError(e).message).toContain("per-minute");
     }
   });
 
@@ -133,7 +141,7 @@ describe("throwRateLimitExceeded", () => {
       throwRateLimitExceeded(result);
       expect.fail("Should have thrown");
     } catch (e) {
-      expect((e as ApiError).message).toContain("per-hour");
+      expect(asApiError(e).message).toContain("per-hour");
     }
   });
 });

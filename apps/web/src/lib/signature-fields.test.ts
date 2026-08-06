@@ -1,16 +1,17 @@
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { describe, expect, it } from "vitest";
 
+import { parseId } from "./convex-ids";
 import { countSignatureFields } from "./signature-fields";
 
 const buildField = (
   fieldType: Doc<"signature_fields">["fieldType"],
   idSuffix: string
 ): Doc<"signature_fields"> => ({
-  _id: `field-${idSuffix}` as Id<"signature_fields">,
+  _id: parseId("signature_fields", `field-${idSuffix}`),
   _creationTime: 0,
-  documentId: "doc-1" as Id<"documents">,
-  recipientId: "recipient-1" as Id<"document_recipients">,
+  documentId: parseId("documents", "doc-1"),
+  recipientId: parseId("document_recipients", "recipient-1"),
   fieldType,
   label: `${fieldType} field`,
   isRequired: false,

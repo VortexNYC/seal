@@ -231,9 +231,9 @@ export function apiErrorResponse(
  * return apiResponse(201, { id: "doc_123" }, { "Location": "/api/v1/documents/doc_123" });
  * ```
  */
-export function apiResponse<T>(
+export function apiResponse(
   status: number,
-  data: T,
+  data: unknown,
   headers?: Record<string, string>
 ): Response {
   return new Response(JSON.stringify(data), {

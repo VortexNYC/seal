@@ -44,7 +44,13 @@ export const analyzeDocument = action({
       threadId = existingThread.threadId;
     } else {
       // Create agent thread (action overload — returns { threadId, thread })
-      const result = await sealAgent.createThread(ctx as unknown as SealAICtx, {
+      const sealCtx: SealAICtx = {
+        ...ctx,
+        organizationId: document.organizationId,
+        userId,
+        documentId: args.documentId,
+      };
+      const result = await sealAgent.createThread(sealCtx, {
         userId,
         title: `Document: ${document.name ?? "Untitled"}`,
       });
@@ -62,15 +68,12 @@ export const analyzeDocument = action({
     // Save the prompt and schedule generation
     const prompt = `Analyze the document with ID "${args.documentId}" and detect all form fields that should be placed on it. The document is named "${document.name}".`;
 
-    const { messageId } = await sealAgent.saveMessage(
-      ctx as unknown as SealAICtx,
-      {
-        threadId,
-        userId,
-        prompt,
-        skipEmbeddings: true,
-      }
-    );
+    const { messageId } = await sealAgent.saveMessage(ctx, {
+      threadId,
+      userId,
+      prompt,
+      skipEmbeddings: true,
+    });
 
     // Schedule async generation
     await ctx.scheduler.runAfter(0, internal.ai.threads.generateResponseAsync, {

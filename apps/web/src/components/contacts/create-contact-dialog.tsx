@@ -7,7 +7,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@seal/backend/convex/_generated/api";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -104,7 +103,7 @@ export function CreateContactDialog({
         phone: values.phone?.trim() || undefined,
         company: values.company?.trim() || undefined,
         title: values.title?.trim() || undefined,
-        status: values.status as ContactStatus,
+        status: values.status,
         notes: values.notes?.trim() || undefined,
       });
 

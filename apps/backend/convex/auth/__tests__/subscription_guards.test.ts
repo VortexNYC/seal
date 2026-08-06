@@ -14,6 +14,18 @@ import {
   getSubscriptionPlan,
 } from "../subscription_guards";
 
+/** Narrow a caught value to string ConvexError data, failing loudly otherwise. */
+function convexErrorData(error: unknown): string {
+  if (!(error instanceof ConvexError)) {
+    throw new Error("Expected a ConvexError");
+  }
+  const { data } = error;
+  if (typeof data !== "string") {
+    throw new Error("Expected string ConvexError data");
+  }
+  return data;
+}
+
 describe("subscription_guards", () => {
   describe("calculateApplicationFee", () => {
     test("returns 0 for ACH", () => {
@@ -131,7 +143,7 @@ describe("subscription_guards", () => {
       return await ctx.db.insert("users", {
         email: `user-${Math.random().toString(36).slice(2)}@test.com`,
         name: "Test User",
-        authSubject: `${Math.random().toString(36).slice(2)}`,
+        authSubject: Math.random().toString(36).slice(2),
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -461,7 +473,7 @@ describe("subscription_guards", () => {
         expect.unreachable("Expected ensureProFeature to throw");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        const message = (error as ConvexError<string>).data;
+        const message = convexErrorData(error);
         expect(message).toContain("Custom branding");
         expect(message).toContain("upgrade");
       }
@@ -528,7 +540,7 @@ describe("subscription_guards", () => {
         expect.unreachable("Expected ensureSeatLimit to throw");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        const message = (error as ConvexError<string>).data;
+        const message = convexErrorData(error);
         expect(message).toContain("Upgrade");
       }
     });

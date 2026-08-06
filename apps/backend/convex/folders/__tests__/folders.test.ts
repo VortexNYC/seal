@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { api } from "../../_generated/api";
-import type { Doc, Id } from "../../_generated/dataModel";
+import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
 function sealAssertPresent<T>(
@@ -117,9 +117,9 @@ describe("Folders", () => {
 
       expect(result.id).toBeDefined();
 
-      const folder = (await t.run(async (ctx) => {
+      const folder = await t.run(async (ctx) => {
         return await ctx.db.get(result.id);
-      })) as Doc<"folders"> | null;
+      });
 
       expect(folder).not.toBeNull();
       expect(sealAssertPresent(folder).name).toBe("Contracts");
@@ -145,9 +145,9 @@ describe("Folders", () => {
           parentId: parent.id,
         });
 
-      const childFolder = (await t.run(async (ctx) => {
+      const childFolder = await t.run(async (ctx) => {
         return await ctx.db.get(child.id);
-      })) as Doc<"folders"> | null;
+      });
 
       expect(sealAssertPresent(childFolder).parentId).toEqual(parent.id);
     });
@@ -232,9 +232,9 @@ describe("Folders", () => {
           name: "New Name",
         });
 
-      const folder = (await t.run(async (ctx) => {
+      const folder = await t.run(async (ctx) => {
         return await ctx.db.get(folderId);
-      })) as Doc<"folders"> | null;
+      });
 
       expect(sealAssertPresent(folder).name).toBe("New Name");
     });
@@ -254,9 +254,9 @@ describe("Folders", () => {
           visibility: "admin",
         });
 
-      const folder = (await t.run(async (ctx) => {
+      const folder = await t.run(async (ctx) => {
         return await ctx.db.get(folderId);
-      })) as Doc<"folders"> | null;
+      });
 
       expect(sealAssertPresent(folder).visibility).toBe("admin");
     });
@@ -407,9 +407,7 @@ describe("Folders", () => {
           newParentId: folderB,
         });
 
-      const moved = (await t.run(async (ctx) =>
-        ctx.db.get(folderA)
-      )) as Doc<"folders"> | null;
+      const moved = await t.run(async (ctx) => ctx.db.get(folderA));
       expect(sealAssertPresent(moved).parentId).toEqual(folderB);
     });
 
@@ -436,9 +434,7 @@ describe("Folders", () => {
           // newParentId omitted = move to root
         });
 
-      const moved = (await t.run(async (ctx) =>
-        ctx.db.get(childId)
-      )) as Doc<"folders"> | null;
+      const moved = await t.run(async (ctx) => ctx.db.get(childId));
       expect(sealAssertPresent(moved).parentId).toBeUndefined();
     });
 

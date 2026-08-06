@@ -12,6 +12,37 @@ type Plan = {
   };
 };
 
+function isPlan(value: unknown): value is Plan {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "productId" in value &&
+    typeof value.productId === "string" &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "tier" in value &&
+    typeof value.tier === "string" &&
+    "pricing" in value &&
+    typeof value.pricing === "object" &&
+    value.pricing !== null
+  );
+}
+
+function parsePlans(value: unknown): Plan[] {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      `getAvailablePlans returned a non-array: ${JSON.stringify(value)}`
+    );
+  }
+  const plans = value.filter(isPlan);
+  if (plans.length !== value.length) {
+    throw new Error(
+      `getAvailablePlans returned unexpected plan shapes: ${JSON.stringify(value)}`
+    );
+  }
+  return plans;
+}
+
 /**
  * Billing surface E2E — validates the Vortex Payments facade is wired up
  * end-to-end on the test deployment, without driving hosted provider pages.
@@ -58,15 +89,16 @@ test.describe("Billing", () => {
     await authenticatedPage.goto(`/${organizationSlug}/settings/billing`);
     await waitForBillingPageReady(authenticatedPage);
 
-    const plans = await authenticatedPage.evaluate(async () => {
+    const rawPlans: unknown = await authenticatedPage.evaluate(async () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.query(
+      return await client.query(
         api.payments.billing_queries.getAvailablePlans,
         {}
-      )) as Plan[];
+      );
     });
+    const plans = parsePlans(rawPlans);
 
     expect(Array.isArray(plans)).toBe(true);
     expect(plans.length).toBeGreaterThan(0);
@@ -87,12 +119,12 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.action(
+      return await client.action(
         api.payments.subscription_actions.createCustomerPortalSession,
         {
           returnUrl,
         }
-      )) as { url: string };
+      );
     }, authenticatedPage.url());
 
     expect(result).toHaveProperty("url");
@@ -112,14 +144,14 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.action(
+      return await client.action(
         api.payments.subscription_actions.createCheckoutSession,
         {
           lookupKey: "pro:monthly:v2",
           successUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
           cancelUrl: currentUrl,
         }
-      )) as { checkoutUrl: string };
+      );
     }, authenticatedPage.url());
 
     expect(result).toHaveProperty("checkoutUrl");

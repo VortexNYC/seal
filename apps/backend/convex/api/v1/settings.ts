@@ -260,6 +260,37 @@ export const getSettings = internalQuery({
   },
 });
 
+/** Validator for the signing-settings update payload (shared with HTTP layer). */
+export const vSigningSettingsUpdate = v.object({
+  allowed_signature_types: v.optional(
+    v.array(v.union(v.literal("draw"), v.literal("type"), v.literal("upload")))
+  ),
+  default_deadline_days: v.optional(v.number()),
+  esign_consent_text: v.optional(v.union(v.string(), v.null())),
+});
+
+/** Validator for the notification-settings update payload (shared with HTTP layer). */
+export const vNotificationSettingsUpdate = v.object({
+  reminder_schedule: v.optional(v.array(v.number())),
+  expiration_alert_days: v.optional(v.number()),
+  send_completion_email: v.optional(v.boolean()),
+  send_viewed_notification: v.optional(v.boolean()),
+});
+
+/** Validator for the AI-settings update payload (shared with HTTP layer). */
+export const vAiSettingsUpdate = v.object({
+  enabled: v.optional(v.boolean()),
+  auto_analyze: v.optional(v.boolean()),
+});
+
+/** Validator for the security-settings update payload (shared with HTTP layer). */
+export const vSecuritySettingsUpdate = v.object({
+  ip_allowlist: v.optional(v.array(v.string())),
+  allow_api_access: v.optional(v.boolean()),
+  require_mfa: v.optional(v.boolean()),
+  session_timeout_minutes: v.optional(v.union(v.number(), v.null())),
+});
+
 /**
  * Internal mutation to update organization settings.
  *
@@ -269,39 +300,10 @@ export const updateSettings = internalMutation({
   args: {
     userId: v.id("users"),
     organizationId: v.id("organizations"),
-    signing: v.optional(
-      v.object({
-        allowed_signature_types: v.optional(
-          v.array(
-            v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))
-          )
-        ),
-        default_deadline_days: v.optional(v.number()),
-        esign_consent_text: v.optional(v.union(v.string(), v.null())),
-      })
-    ),
-    notifications: v.optional(
-      v.object({
-        reminder_schedule: v.optional(v.array(v.number())),
-        expiration_alert_days: v.optional(v.number()),
-        send_completion_email: v.optional(v.boolean()),
-        send_viewed_notification: v.optional(v.boolean()),
-      })
-    ),
-    ai: v.optional(
-      v.object({
-        enabled: v.optional(v.boolean()),
-        auto_analyze: v.optional(v.boolean()),
-      })
-    ),
-    security: v.optional(
-      v.object({
-        ip_allowlist: v.optional(v.array(v.string())),
-        allow_api_access: v.optional(v.boolean()),
-        require_mfa: v.optional(v.boolean()),
-        session_timeout_minutes: v.optional(v.union(v.number(), v.null())),
-      })
-    ),
+    signing: v.optional(vSigningSettingsUpdate),
+    notifications: v.optional(vNotificationSettingsUpdate),
+    ai: v.optional(vAiSettingsUpdate),
+    security: v.optional(vSecuritySettingsUpdate),
   },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
     const organization = await getOrganizationOrThrow(ctx, args.organizationId);

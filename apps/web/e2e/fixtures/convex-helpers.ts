@@ -27,16 +27,19 @@ export async function waitForConvexQuery(
 /**
  * Intercept Convex mutations to track completion
  */
+function isConvexRequest(url: string): boolean {
+  return (
+    url.includes("convex") ||
+    url.includes("api.convex") ||
+    url.includes("convex.cloud")
+  );
+}
+
 export async function waitForConvexMutation(
   page: Page,
   mutationName?: string,
   timeout = 10000
 ): Promise<void> {
-  const isConvexRequest = (url: string) =>
-    url.includes("convex") ||
-    url.includes("api.convex") ||
-    url.includes("convex.cloud");
-
   try {
     if (mutationName) {
       await page.waitForResponse(
@@ -47,7 +50,7 @@ export async function waitForConvexMutation(
       );
       return;
     }
-  } catch (_error) {
+  } catch {
     // Continue to fallback if the mutation name changed or response fails.
   }
 
@@ -55,7 +58,7 @@ export async function waitForConvexMutation(
     await page.waitForResponse((response) => isConvexRequest(response.url()), {
       timeout: timeout,
     });
-  } catch (_error) {
+  } catch {
     // If Convex doesn't emit a matching request (for example due local no-op
     // transitions), let the call continue and rely on subsequent UI assertions.
   }
@@ -75,13 +78,13 @@ export async function mockConvexQuery(
   await page.route("**/convex.cloud/**", (route) => {
     const url = route.request().url();
     if (url.includes(queryName)) {
-      route.fulfill({
+      void route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(mockData),
       });
     } else {
-      route.continue();
+      void route.continue();
     }
   });
 }

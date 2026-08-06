@@ -128,8 +128,11 @@ export function validateFileExtension(
     };
   }
 
-  const mimeInfo =
-    ALLOWED_MIME_TYPES[fileType as keyof typeof ALLOWED_MIME_TYPES];
+  const mimeInfoByType: Record<
+    string,
+    (typeof ALLOWED_MIME_TYPES)[keyof typeof ALLOWED_MIME_TYPES] | undefined
+  > = ALLOWED_MIME_TYPES;
+  const mimeInfo = mimeInfoByType[fileType];
   if (mimeInfo && mimeInfo.ext !== fileExt) {
     return {
       valid: false,

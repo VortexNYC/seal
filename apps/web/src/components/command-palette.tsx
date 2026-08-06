@@ -82,7 +82,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setResults([]);
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -122,7 +122,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     (documentId: string) => {
       onOpenChange(false);
       if (slug) {
-        navigate({
+        void navigate({
           to: "/$slug/documents/$documentId",
           params: { slug, documentId },
         });

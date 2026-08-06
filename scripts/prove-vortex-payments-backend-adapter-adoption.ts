@@ -70,12 +70,9 @@ const requiredFragments: readonly RequiredFragment[] = [
 ];
 
 const failures: string[] = [];
-const backendPackage = JSON.parse(readFileSync(backendPackagePath, "utf8")) as {
-  readonly dependencies?: Record<string, string>;
-  readonly devDependencies?: Record<string, string>;
-  readonly peerDependencies?: Record<string, string>;
-  readonly optionalDependencies?: Record<string, string>;
-};
+const backendPackage: unknown = JSON.parse(
+  readFileSync(backendPackagePath, "utf8")
+);
 
 for (const dependencyName of dependencyNames(backendPackage)) {
   const normalized = dependencyName.toLowerCase();
@@ -164,18 +161,23 @@ console.log(
   "- Merchant, payout, settlement, and document payable paths use Vortex public API helpers."
 );
 
-function dependencyNames(input: {
-  readonly dependencies?: Record<string, string>;
-  readonly devDependencies?: Record<string, string>;
-  readonly peerDependencies?: Record<string, string>;
-  readonly optionalDependencies?: Record<string, string>;
-}): readonly string[] {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function dependencyNames(manifest: unknown): readonly string[] {
+  if (!isRecord(manifest)) {
+    return [];
+  }
   return [
-    ...Object.keys(input.dependencies ?? {}),
-    ...Object.keys(input.devDependencies ?? {}),
-    ...Object.keys(input.peerDependencies ?? {}),
-    ...Object.keys(input.optionalDependencies ?? {}),
-  ];
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+  ].flatMap((section) => {
+    const record = manifest[section];
+    return isRecord(record) ? Object.keys(record) : [];
+  });
 }
 
 function collectFiles(root: string, pattern: RegExp): readonly string[] {
