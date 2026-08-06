@@ -4,6 +4,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* @vortexnyc/ui: scan the package so Tailwind generates its component classes
+   (data-[state] animations, layout utilities, etc. used by Core primitives) */
+@source "../../node_modules/@vortexnyc/ui/dist/**/*.js";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -172,4 +176,15 @@
   .animate-progress-bar {
     animation: progress-bar 1.5s ease-out both;
   }
+}
+
+/* ── @vortexnyc/ui dialog overlay (SEA-610) ─────────────────────────────── */
+/* Core's DialogContent renders its overlay internally with no className seam.
+   Landing's marketing dialogs keep the softer blurred scrim they shipped with
+   (bg-black/60 + backdrop-blur-sm) instead of Core's bg-black/80. */
+[data-slot="dialog-overlay"] {
+  /* vortex-allow-color: modal scrim needs fixed black opacity for backdrop contrast */
+  background-color: rgb(0 0 0 / 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }

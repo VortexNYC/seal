@@ -1,9 +1,9 @@
+import { cn } from "@vortexnyc/ui";
 import { GripVertical, Layout, PenTool } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ComponentType, type SVGProps, useState } from "react";
 
 import { FadeIn } from "~/components/ui/fade-in";
-import { cn } from "~/utils/cn";
 
 interface TabData {
   id: string;
