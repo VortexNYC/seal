@@ -33,14 +33,14 @@ env:
 jobs:
   quality:
     name: quality
-    runs-on: [self-hosted, vortex, linux, x64, vortex-light]
+    runs-on: ubicloud-standard-2
     timeout-minutes: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.13.1
 
@@ -60,23 +60,29 @@ jobs:
         run: |
           # The receipt verifies generated-file drift, doctor conformance, and hook wiring.
           # None of that needs the app dependency tree. The heavy wall (typecheck/build/test)
-          # runs locally on every pre-push and again post-merge on the base branch.
-          pnpm --package="@vortexnyc/tooling@0.11.14" dlx vortex-project-kit --check --root .
-          pnpm --package="@vortexnyc/tooling@0.11.14" dlx vortex-project-kit doctor --root .
+          # runs locally on every pre-push and in Vortex Proof on the exact PR SHA.
+          pnpm --package="@vortexnyc/tooling@0.11.23" dlx vortex-project-kit --check --root .
+          pnpm --package="@vortexnyc/tooling@0.11.23" dlx vortex-project-kit doctor --root .
 
   manual_verification:
     name: manual_verification
     if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.13.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
 
       - name: Authenticate to GitHub Packages
         shell: bash
@@ -93,7 +99,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Restore Vite Task cache
+        id: vite-task-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.vite/task-cache
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            vite-task-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Manual verification wall
         shell: bash
         run: |
           pnpm run prepush:check
+
+      - name: Save Vite Task cache
+        if: success()
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules/.vite/task-cache
+          key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
