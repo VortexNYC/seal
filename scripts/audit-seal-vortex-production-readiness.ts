@@ -51,7 +51,7 @@ type RemediationPlan = {
   readonly successCriteria: readonly string[];
 };
 
-const repoRoot = resolve(import.meta.dir, "..");
+const repoRoot = resolve(import.meta.dirname, "..");
 const sealBackendRoot = resolve(repoRoot, "apps/backend");
 const localVortexRepoRoot =
   readOptionalEnv("VORTEX_PAYMENTS_REPO_ROOT") ??

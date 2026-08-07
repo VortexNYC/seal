@@ -40,7 +40,7 @@ export function RedirectCountdown({
   }, [recipientEmail, recipientName, redirectUrl]);
 
   useEffect(() => {
-    if (cancelled || secondsLeft <= 0) return;
+    if (cancelled || secondsLeft <= 0) return undefined;
 
     const timer = setInterval(() => {
       setSecondsLeft((s) => {

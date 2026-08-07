@@ -30,7 +30,7 @@ async function getAncestorDepth(
     if (depth > maxDepth) {
       throw new ConvexError(`Folder nesting cannot exceed ${maxDepth} levels`);
     }
-    const parent = await db.get(current);
+    const parent = await db.get("folders", current);
     if (!parent) break;
     current = parent.parentId;
   }
@@ -50,7 +50,7 @@ async function detectCircularReference(
     if (current === folderId) {
       throw new ConvexError("Cannot move a folder into its own descendant");
     }
-    const parent: Doc<"folders"> | null = await db.get(current);
+    const parent: Doc<"folders"> | null = await db.get("folders", current);
     if (!parent) break;
     current = parent.parentId;
     depth++;
@@ -62,10 +62,12 @@ async function getSubtreeDepth(
   db: DatabaseWriter,
   folderId: Id<"folders">
 ): Promise<number> {
-  const children = await db
+  const children: Doc<"folders">[] = [];
+  for await (const child of db
     .query("folders")
-    .withIndex("by_parent", (q) => q.eq("parentId", folderId))
-    .collect();
+    .withIndex("by_parent", (q) => q.eq("parentId", folderId))) {
+    children.push(child);
+  }
   if (children.length === 0) return 0;
   let max = 0;
   for (const child of children) {
@@ -90,7 +92,7 @@ export const createFolder = adminMutation({
 
     // Validate parent folder if provided
     if (args.parentId) {
-      const parent = await ctx.db.get(args.parentId);
+      const parent = await ctx.db.get("folders", args.parentId);
       if (!parent || parent.organizationId !== ctx.auth.organization._id) {
         throw new ConvexError("Parent folder not found");
       }
@@ -124,7 +126,7 @@ export const updateFolder = adminMutation({
     visibility: v.optional(v.union(v.literal("everyone"), v.literal("admin"))),
   },
   handler: async (ctx, args) => {
-    const folder = await ctx.db.get(args.folderId);
+    const folder = await ctx.db.get("folders", args.folderId);
     if (!folder || folder.organizationId !== ctx.auth.organization._id) {
       throw new ConvexError("Folder not found");
     }
@@ -145,7 +147,7 @@ export const updateFolder = adminMutation({
       updates.visibility = args.visibility;
     }
 
-    await ctx.db.patch(args.folderId, updates);
+    await ctx.db.patch("folders", args.folderId, updates);
     return { success: true };
   },
 });
@@ -155,7 +157,7 @@ export const deleteFolder = adminMutation({
     folderId: v.id("folders"),
   },
   handler: async (ctx, args) => {
-    const folder = await ctx.db.get(args.folderId);
+    const folder = await ctx.db.get("folders", args.folderId);
     if (!folder || folder.organizationId !== ctx.auth.organization._id) {
       throw new ConvexError("Folder not found");
     }
@@ -166,11 +168,9 @@ export const deleteFolder = adminMutation({
 
     while (queue.length > 0) {
       const currentId = sealAssertPresent(queue.shift());
-      const children = await ctx.db
+      for await (const child of ctx.db
         .query("folders")
-        .withIndex("by_parent", (q) => q.eq("parentId", currentId))
-        .collect();
-      for (const child of children) {
+        .withIndex("by_parent", (q) => q.eq("parentId", currentId))) {
         toDelete.push(child._id);
         queue.push(child._id);
       }
@@ -179,25 +179,21 @@ export const deleteFolder = adminMutation({
     // Orphan documents and templates in all deleted folders (move to root),
     // then delete all folders. Convex mutations are transactional — all or nothing.
     for (const fId of toDelete) {
-      const docs = await ctx.db
+      for await (const doc of ctx.db
         .query("documents")
-        .withIndex("by_folder", (q) => q.eq("folderId", fId))
-        .collect();
-      for (const doc of docs) {
-        await ctx.db.patch(doc._id, { folderId: undefined });
+        .withIndex("by_folder", (q) => q.eq("folderId", fId))) {
+        await ctx.db.patch("documents", doc._id, { folderId: undefined });
       }
 
-      const templates = await ctx.db
+      for await (const tmpl of ctx.db
         .query("templates")
-        .withIndex("by_folder", (q) => q.eq("folderId", fId))
-        .collect();
-      for (const tmpl of templates) {
-        await ctx.db.patch(tmpl._id, { folderId: undefined });
+        .withIndex("by_folder", (q) => q.eq("folderId", fId))) {
+        await ctx.db.patch("templates", tmpl._id, { folderId: undefined });
       }
     }
 
     for (const fId of toDelete) {
-      await ctx.db.delete(fId);
+      await ctx.db.delete("folders", fId);
     }
 
     return { success: true };
@@ -210,14 +206,14 @@ export const moveToFolder = adminMutation({
     newParentId: v.optional(v.id("folders")), // undefined = move to root
   },
   handler: async (ctx, args) => {
-    const folder = await ctx.db.get(args.folderId);
+    const folder = await ctx.db.get("folders", args.folderId);
     if (!folder || folder.organizationId !== ctx.auth.organization._id) {
       throw new ConvexError("Folder not found");
     }
 
     // Validate new parent
     if (args.newParentId) {
-      const newParent = await ctx.db.get(args.newParentId);
+      const newParent = await ctx.db.get("folders", args.newParentId);
       if (
         !newParent ||
         newParent.organizationId !== ctx.auth.organization._id
@@ -244,7 +240,7 @@ export const moveToFolder = adminMutation({
       );
     }
 
-    await ctx.db.patch(args.folderId, {
+    await ctx.db.patch("folders", args.folderId, {
       parentId: args.newParentId,
       updatedAt: Date.now(),
     });
@@ -264,7 +260,7 @@ export const moveItemsToFolder = adminMutation({
 
     // Validate target folder if provided
     if (args.targetFolderId) {
-      const targetFolder = await ctx.db.get(args.targetFolderId);
+      const targetFolder = await ctx.db.get("folders", args.targetFolderId);
       if (!targetFolder || targetFolder.organizationId !== orgId) {
         throw new ConvexError("Target folder not found");
       }
@@ -277,10 +273,25 @@ export const moveItemsToFolder = adminMutation({
 
     let moved = 0;
     for (const itemId of args.itemIds) {
-      const item = await ctx.db.get(itemId);
-      if (!item || item.organizationId !== orgId) continue;
-      await ctx.db.patch(itemId, { folderId: args.targetFolderId });
-      moved++;
+      if (args.itemType === "document") {
+        const documentId = ctx.db.normalizeId("documents", itemId);
+        if (!documentId) continue;
+        const item = await ctx.db.get("documents", documentId);
+        if (!item || item.organizationId !== orgId) continue;
+        await ctx.db.patch("documents", documentId, {
+          folderId: args.targetFolderId,
+        });
+        moved++;
+      } else {
+        const templateId = ctx.db.normalizeId("templates", itemId);
+        if (!templateId) continue;
+        const item = await ctx.db.get("templates", templateId);
+        if (!item || item.organizationId !== orgId) continue;
+        await ctx.db.patch("templates", templateId, {
+          folderId: args.targetFolderId,
+        });
+        moved++;
+      }
     }
 
     return { success: true, moved };
@@ -292,13 +303,13 @@ export const togglePinFolder = adminMutation({
     folderId: v.id("folders"),
   },
   handler: async (ctx, args) => {
-    const folder = await ctx.db.get(args.folderId);
+    const folder = await ctx.db.get("folders", args.folderId);
     if (!folder || folder.organizationId !== ctx.auth.organization._id) {
       throw new ConvexError("Folder not found");
     }
 
     const pinned = !folder.pinned;
-    await ctx.db.patch(args.folderId, {
+    await ctx.db.patch("folders", args.folderId, {
       pinned,
       updatedAt: Date.now(),
     });

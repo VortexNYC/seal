@@ -29,10 +29,12 @@ async function revokeAllDocumentAccess(
   const revokedUsers: Array<{ userId: Id<"users">; permissionLevel: string }> =
     [];
 
-  const accessRecords = await ctx.db
+  const accessRecords = [];
+  for await (const _row of ctx.db
     .query("document_access")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    accessRecords.push(_row);
+  }
 
   for (const access of accessRecords) {
     if (access.revokedAt !== undefined) {
@@ -44,7 +46,7 @@ async function revokeAllDocumentAccess(
       permissionLevel: access.permissionLevel,
     });
 
-    await ctx.db.patch(access._id, {
+    await ctx.db.patch("document_access", access._id, {
       revokedAt: now,
     });
   }
@@ -71,7 +73,7 @@ async function getOrganizationAdmin(
   organizationId: Id<"organizations">,
   excludeUserId?: Id<"users">
 ): Promise<Id<"users"> | null> {
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     return null;
   }
@@ -108,16 +110,15 @@ export const downgradeUserSharing = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const sharedDocuments = await ctx.db
+    const sharedDocuments = [];
+    for await (const doc of ctx.db
       .query("documents")
-      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("sharingMode"), "private"),
-          q.neq(q.field("status"), "deleted")
-        )
-      )
-      .collect();
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))) {
+      if (doc.sharingMode === "private" || doc.status === "deleted") {
+        continue;
+      }
+      sharedDocuments.push(doc);
+    }
 
     if (sharedDocuments.length === 0) {
       console.warn(
@@ -129,7 +130,7 @@ export const downgradeUserSharing = internalMutation({
     let totalAccessRevoked = 0;
 
     for (const document of sharedDocuments) {
-      await ctx.db.patch(document._id, {
+      await ctx.db.patch("documents", document._id, {
         sharingMode: "private",
         updatedAt: now,
       });
@@ -157,7 +158,7 @@ export const downgradeUserSharing = internalMutation({
       }
     }
 
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (user) {
       const memberships = await resolveComponentMemberships(ctx, user);
       const membership =
@@ -210,18 +211,17 @@ export const downgradeOrgSharing = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const sharedDocuments = await ctx.db
+    const sharedDocuments = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId)
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("sharingMode"), "private"),
-          q.neq(q.field("status"), "deleted")
-        )
-      )
-      .collect();
+      )) {
+      if (doc.sharingMode === "private" || doc.status === "deleted") {
+        continue;
+      }
+      sharedDocuments.push(doc);
+    }
 
     if (sharedDocuments.length === 0) {
       console.warn(
@@ -233,7 +233,7 @@ export const downgradeOrgSharing = internalMutation({
     let totalAccessRevoked = 0;
 
     for (const document of sharedDocuments) {
-      await ctx.db.patch(document._id, {
+      await ctx.db.patch("documents", document._id, {
         sharingMode: "private",
         updatedAt: now,
       });
@@ -306,10 +306,12 @@ export const cleanupMemberDocumentAccess = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const userAccessRecords = await ctx.db
+    const userAccessRecords = [];
+    for await (const _row of ctx.db
       .query("document_access")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))) {
+      userAccessRecords.push(_row);
+    }
 
     const documentsToCheck = new Set<Id<"documents">>();
     for (const access of userAccessRecords) {
@@ -322,7 +324,7 @@ export const cleanupMemberDocumentAccess = internalMutation({
     const notifiedOwners = new Set<string>();
 
     for (const documentId of documentsToCheck) {
-      const document = await ctx.db.get(documentId);
+      const document = await ctx.db.get("documents", documentId);
 
       if (!document || document.organizationId !== args.organizationId) {
         continue;
@@ -336,7 +338,7 @@ export const cleanupMemberDocumentAccess = internalMutation({
         .first();
 
       if (access && access.revokedAt === undefined) {
-        await ctx.db.patch(access._id, {
+        await ctx.db.patch("document_access", access._id, {
           revokedAt: now,
         });
         revokedCount++;
@@ -345,7 +347,7 @@ export const cleanupMemberDocumentAccess = internalMutation({
         if (!notifiedOwners.has(ownerKey) && document.ownerId !== args.userId) {
           notifiedOwners.add(ownerKey);
 
-          const removedUser = await ctx.db.get(args.userId);
+          const removedUser = await ctx.db.get("users", args.userId);
           await createNotification(ctx, {
             userId: document.ownerId,
             organizationId: args.organizationId,
@@ -411,25 +413,27 @@ export const transferOrphanedDocuments = internalMutation({
       return { transferred: 0, error: "No organization admin found" };
     }
 
-    const userDocuments = await ctx.db
+    const userDocuments = [];
+    for await (const doc of ctx.db
       .query("documents")
-      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("organizationId"), args.organizationId),
-          q.neq(q.field("status"), "deleted")
-        )
-      )
-      .collect();
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))) {
+      if (
+        doc.organizationId !== args.organizationId ||
+        doc.status === "deleted"
+      ) {
+        continue;
+      }
+      userDocuments.push(doc);
+    }
 
     if (userDocuments.length === 0) {
       return { transferred: 0 };
     }
 
-    const previousOwner = await ctx.db.get(args.userId);
+    const previousOwner = await ctx.db.get("users", args.userId);
 
     for (const document of userDocuments) {
-      await ctx.db.patch(document._id, {
+      await ctx.db.patch("documents", document._id, {
         ownerId: newOwnerId,
         updatedAt: now,
       });
@@ -476,10 +480,12 @@ export const fullMemberRemovalCleanup = internalMutation({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const accessResult = await ctx.db
+    const accessResult = [];
+    for await (const _row of ctx.db
       .query("document_access")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))) {
+      accessResult.push(_row);
+    }
 
     let revokedCount = 0;
     const now = Date.now();
@@ -489,12 +495,12 @@ export const fullMemberRemovalCleanup = internalMutation({
         continue;
       }
 
-      const document = await ctx.db.get(access.documentId);
+      const document = await ctx.db.get("documents", access.documentId);
       if (!document || document.organizationId !== args.organizationId) {
         continue;
       }
 
-      await ctx.db.patch(access._id, { revokedAt: now });
+      await ctx.db.patch("document_access", access._id, { revokedAt: now });
       revokedCount++;
     }
 
@@ -506,21 +512,23 @@ export const fullMemberRemovalCleanup = internalMutation({
 
     let transferredCount = 0;
     if (newOwnerId) {
-      const userDocuments = await ctx.db
+      const userDocuments = [];
+      for await (const doc of ctx.db
         .query("documents")
-        .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("organizationId"), args.organizationId),
-            q.neq(q.field("status"), "deleted")
-          )
-        )
-        .collect();
+        .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))) {
+        if (
+          doc.organizationId !== args.organizationId ||
+          doc.status === "deleted"
+        ) {
+          continue;
+        }
+        userDocuments.push(doc);
+      }
 
-      const previousOwner = await ctx.db.get(args.userId);
+      const previousOwner = await ctx.db.get("users", args.userId);
 
       for (const document of userDocuments) {
-        await ctx.db.patch(document._id, {
+        await ctx.db.patch("documents", document._id, {
           ownerId: newOwnerId,
           updatedAt: now,
         });

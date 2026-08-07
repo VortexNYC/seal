@@ -20,6 +20,64 @@ function getConvexSetupContext(): {
   return { convexUrl, deployKey, organizationSlug };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+type BatchPurgeInput = {
+  convexUrl: string;
+  deployKey: string;
+  path: string;
+  args: Record<string, unknown>;
+  countKey: string;
+  label: string;
+  maxAttempts: number;
+};
+
+/**
+ * Run a batched purge mutation until it reports no more work. Batches are
+ * sequential by design — each one must land before the next request — so the
+ * repetition is expressed as recursion instead of an awaited loop.
+ */
+async function runBatchedPurge(
+  input: BatchPurgeInput,
+  attempt = 0,
+  total = 0
+): Promise<number> {
+  if (attempt >= input.maxAttempts) return total;
+
+  const res = await fetch(`${input.convexUrl}/api/mutation`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Convex ${input.deployKey}`,
+    },
+    body: JSON.stringify({
+      path: input.path,
+      args: input.args,
+      format: "json",
+    }),
+  });
+
+  if (!res.ok) {
+    console.warn(
+      `[setup] ${input.label} HTTP error:`,
+      res.status,
+      await res.text()
+    );
+    return total;
+  }
+
+  const data: unknown = await res.json();
+  const value = isRecord(data) && isRecord(data.value) ? data.value : undefined;
+  const countField = value?.[input.countKey];
+  const count = typeof countField === "number" ? countField : 0;
+  const hasMore = value?.hasMore === true;
+
+  if (!hasMore || count === 0) return total + count;
+  return runBatchedPurge(input, attempt + 1, total + count);
+}
+
 export async function cleanupPendingInvitations(): Promise<void> {
   const { convexUrl, deployKey, organizationSlug } = getConvexSetupContext();
   if (!deployKey) {
@@ -30,41 +88,15 @@ export async function cleanupPendingInvitations(): Promise<void> {
   }
 
   try {
-    let totalRevoked = 0;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const cleanupRes = await fetch(`${convexUrl}/api/mutation`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Convex ${deployKey}`,
-        },
-        body: JSON.stringify({
-          path: "test_e2e_helpers:purgeE2EPendingInvitations",
-          args: { organizationSlug, batchSize: 50 },
-          format: "json",
-        }),
-      });
-
-      if (!cleanupRes.ok) {
-        console.warn(
-          "[setup] purgeE2EPendingInvitations HTTP error:",
-          cleanupRes.status,
-          await cleanupRes.text()
-        );
-        break;
-      }
-
-      const cleanupData = (await cleanupRes.json()) as {
-        status: string;
-        value?: { revoked?: number; hasMore?: boolean };
-      };
-      const revoked = cleanupData.value?.revoked ?? 0;
-      totalRevoked += revoked;
-
-      if (!cleanupData.value?.hasMore || revoked === 0) {
-        break;
-      }
-    }
+    const totalRevoked = await runBatchedPurge({
+      convexUrl,
+      deployKey,
+      path: "test_e2e_helpers:purgeE2EPendingInvitations",
+      args: { organizationSlug, batchSize: 50 },
+      countKey: "revoked",
+      label: "purgeE2EPendingInvitations",
+      maxAttempts: 2,
+    });
 
     if (totalRevoked > 0) {
       console.info(`[setup] Revoked ${totalRevoked} stale E2E invitation(s)`);
@@ -84,41 +116,15 @@ export async function purgeE2eDocuments(): Promise<void> {
   }
 
   try {
-    let totalPurged = 0;
-    for (let attempt = 0; attempt < 25; attempt++) {
-      const purgeRes = await fetch(`${convexUrl}/api/mutation`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Convex ${deployKey}`,
-        },
-        body: JSON.stringify({
-          path: "test_e2e_helpers:purgeE2EDocuments",
-          args: { organizationSlug, batchSize: 200 },
-          format: "json",
-        }),
-      });
-
-      if (!purgeRes.ok) {
-        console.warn(
-          "[setup] purgeE2EDocuments HTTP error:",
-          purgeRes.status,
-          await purgeRes.text()
-        );
-        break;
-      }
-
-      const purgeData = (await purgeRes.json()) as {
-        status: string;
-        value?: { deleted?: number; hasMore?: boolean };
-      };
-      const deleted = purgeData.value?.deleted ?? 0;
-      totalPurged += deleted;
-
-      if (!purgeData.value?.hasMore || deleted === 0) {
-        break;
-      }
-    }
+    const totalPurged = await runBatchedPurge({
+      convexUrl,
+      deployKey,
+      path: "test_e2e_helpers:purgeE2EDocuments",
+      args: { organizationSlug, batchSize: 200 },
+      countKey: "deleted",
+      label: "purgeE2EDocuments",
+      maxAttempts: 25,
+    });
 
     if (totalPurged > 0) {
       console.info(`[setup] Purged ${totalPurged} stale E2E document(s)`);

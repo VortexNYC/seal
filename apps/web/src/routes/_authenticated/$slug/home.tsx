@@ -9,7 +9,6 @@
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { Suspense } from "react";
@@ -135,7 +134,7 @@ function WorkspaceHome(): React.ReactElement | null {
   const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
   });
-  const orgId = organization?._id as Id<"organizations"> | undefined;
+  const orgId = organization?._id;
 
   if (!organization || !orgId) return null;
 

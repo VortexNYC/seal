@@ -11,11 +11,11 @@
  * embedded text and never hit this path.
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { generateText } from "ai";
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 import { getModel } from "./model";
 
@@ -52,7 +52,7 @@ export const ocrExtractText = internalAction({
 
     // Download PDF
     const pdfUrl = await ctx.storage.getUrl(
-      document.storageId as Id<"_storage">
+      parse(v.id("_storage"), document.storageId)
     );
     if (!pdfUrl) throw new Error("PDF not found in storage");
 

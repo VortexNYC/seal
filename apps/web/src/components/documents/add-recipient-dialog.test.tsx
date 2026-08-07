@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -15,10 +14,11 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+import { parseId } from "../../lib/convex-ids";
 import { AddRecipientDialog } from "./add-recipient-dialog";
 
-const FAKE_DOC_ID = "fake_doc" as Id<"documents">;
-const FAKE_ORG_ID = "fake_org" as Id<"organizations">;
+const FAKE_DOC_ID = parseId("documents", "fake_doc");
+const FAKE_ORG_ID = parseId("organizations", "fake_org");
 
 type Member = {
   id: string;

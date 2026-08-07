@@ -260,7 +260,7 @@ describe("Payment field queries", () => {
 
       expect(results).toHaveLength(2);
       expect(
-        results.map((r: (typeof results)[number]) => r.paymentType).sort()
+        results.map((r: (typeof results)[number]) => r.paymentType).toSorted()
       ).toEqual(["one_time", "recurring"]);
     });
 

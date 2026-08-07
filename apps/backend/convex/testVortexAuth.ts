@@ -18,7 +18,7 @@ export async function seedTestOrganizationMember(
     identityIssuer?: string;
   }
 ): Promise<string> {
-  const user = await ctx.db.get(args.userId);
+  const user = await ctx.db.get("users", args.userId);
   if (!user) {
     throw new Error(`test_user_not_found: ${args.userId}`);
   }
@@ -33,7 +33,7 @@ export async function seedTestOrganizationMember(
       ...(user.avatar !== undefined ? { image: user.avatar } : {}),
     });
 
-    const bridgedUser = await ctx.db.get(args.userId);
+    const bridgedUser = await ctx.db.get("users", args.userId);
     if (!bridgedUser?.vortexAuthUserId) {
       throw new Error(
         `test_user_vortex_auth_bridge_not_provisioned: ${args.userId}`

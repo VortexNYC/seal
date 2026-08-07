@@ -17,6 +17,8 @@ import { toast } from "sonner";
 
 import { cn, getErrorMessage } from "@/lib/utils";
 
+import { parseId } from "../../lib/convex-ids";
+import { parseSelectValue } from "../../lib/select-values";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import {
@@ -37,6 +39,17 @@ interface ShareDocumentDialogProps {
 
 type PermissionLevel = "view" | "edit" | "manage";
 type SharingMode = "private" | "workspace" | "specific";
+
+const PERMISSION_LEVELS = [
+  "view",
+  "edit",
+  "manage",
+] as const satisfies readonly PermissionLevel[];
+const SHARING_MODES = [
+  "private",
+  "workspace",
+  "specific",
+] as const satisfies readonly SharingMode[];
 
 const SHARING_MODE_INFO: Record<
   SharingMode,
@@ -238,63 +251,60 @@ export function ShareDocumentDialog({
                       General access
                     </p>
                     <div className="grid grid-cols-3 gap-2">
-                      {(Object.keys(SHARING_MODE_INFO) as SharingMode[]).map(
-                        (mode) => {
-                          const info = SHARING_MODE_INFO[mode];
-                          const isSelected =
-                            documentAccess.sharingMode === mode;
-                          const requiresPro =
-                            mode === "workspace" || mode === "specific";
-                          const isDisabled =
-                            requiresPro && !documentAccess.canUseTeamSharing;
-                          return (
-                            <button
-                              key={mode}
-                              type="button"
-                              onClick={() => handleSharingModeChange(mode)}
-                              disabled={isUpdating || isDisabled}
+                      {SHARING_MODES.map((mode) => {
+                        const info = SHARING_MODE_INFO[mode];
+                        const isSelected = documentAccess.sharingMode === mode;
+                        const requiresPro =
+                          mode === "workspace" || mode === "specific";
+                        const isDisabled =
+                          requiresPro && !documentAccess.canUseTeamSharing;
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => handleSharingModeChange(mode)}
+                            disabled={isUpdating || isDisabled}
+                            className={cn(
+                              "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors",
+                              isSelected
+                                ? "border-info bg-info-surface"
+                                : "border-border hover:border-border hover:bg-muted",
+                              (isUpdating || isDisabled) &&
+                                "cursor-not-allowed opacity-50"
+                            )}
+                          >
+                            {requiresPro &&
+                              !documentAccess.canUseTeamSharing && (
+                                <Badge
+                                  variant="outline"
+                                  className="from-info to-primary text-primary-foreground absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px]"
+                                >
+                                  Pro
+                                </Badge>
+                              )}
+                            <div
                               className={cn(
-                                "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors",
+                                "rounded-lg p-2",
                                 isSelected
-                                  ? "border-info bg-info-surface"
-                                  : "border-border hover:border-border hover:bg-muted",
-                                (isUpdating || isDisabled) &&
-                                  "cursor-not-allowed opacity-50"
+                                  ? "bg-info-surface text-info"
+                                  : "bg-muted text-muted-foreground"
                               )}
                             >
-                              {requiresPro &&
-                                !documentAccess.canUseTeamSharing && (
-                                  <Badge
-                                    variant="outline"
-                                    className="from-info to-primary text-primary-foreground absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px]"
-                                  >
-                                    Pro
-                                  </Badge>
-                                )}
-                              <div
-                                className={cn(
-                                  "rounded-lg p-2",
-                                  isSelected
-                                    ? "bg-info-surface text-info"
-                                    : "bg-muted text-muted-foreground"
-                                )}
-                              >
-                                {info.icon}
-                              </div>
-                              <span
-                                className={cn(
-                                  "text-xs font-medium",
-                                  isSelected
-                                    ? "text-info"
-                                    : "text-muted-foreground"
-                                )}
-                              >
-                                {info.label}
-                              </span>
-                            </button>
-                          );
-                        }
-                      )}
+                              {info.icon}
+                            </div>
+                            <span
+                              className={cn(
+                                "text-xs font-medium",
+                                isSelected
+                                  ? "text-info"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {info.label}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                     <p className="text-muted-foreground text-xs">
                       {!documentAccess.canUseTeamSharing &&
@@ -315,7 +325,7 @@ export function ShareDocumentDialog({
                         <Select
                           value={selectedMemberId ?? ""}
                           onValueChange={(value) =>
-                            setSelectedMemberId(value as Id<"users">)
+                            setSelectedMemberId(parseId("users", value))
                           }
                         >
                           <SelectTrigger
@@ -352,7 +362,10 @@ export function ShareDocumentDialog({
                         <Select
                           value={selectedPermission}
                           onValueChange={(value) =>
-                            setSelectedPermission(value as PermissionLevel)
+                            setSelectedPermission(
+                              parseSelectValue(value, PERMISSION_LEVELS) ??
+                                selectedPermission
+                            )
                           }
                         >
                           <SelectTrigger
@@ -462,12 +475,18 @@ export function ShareDocumentDialog({
                           <div className="flex items-center gap-2">
                             <Select
                               value={access.permissionLevel}
-                              onValueChange={(value) =>
-                                handleUpdatePermission(
-                                  access.userId,
-                                  value as PermissionLevel
-                                )
-                              }
+                              onValueChange={(value) => {
+                                const level = parseSelectValue(
+                                  value,
+                                  PERMISSION_LEVELS
+                                );
+                                if (level) {
+                                  void handleUpdatePermission(
+                                    access.userId,
+                                    level
+                                  );
+                                }
+                              }}
                               disabled={isUpdating}
                             >
                               <SelectTrigger

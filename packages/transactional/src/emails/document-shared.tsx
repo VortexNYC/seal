@@ -27,13 +27,13 @@ const permissionLabels = {
 };
 
 export function DocumentShared({
-  recipientEmail = "recipient@example.com",
-  recipientName = "John",
-  sharerName = "Jane Doe",
-  sharerEmail = "jane@example.com",
-  documentName = "Employment Agreement",
-  permissionLevel = "view",
-  documentUrl = "https://seal.nyc/documents/abc123",
+  recipientEmail,
+  recipientName,
+  sharerName,
+  sharerEmail,
+  documentName,
+  permissionLevel,
+  documentUrl,
 }: DocumentSharedProps) {
   const previewText = `${sharerName} shared "${documentName}" with you on Seal`;
 

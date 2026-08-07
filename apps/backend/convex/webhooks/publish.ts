@@ -57,12 +57,14 @@ export async function publishWebhookEvent(
   }
 ): Promise<number> {
   // Get all active endpoints for this organization
-  const endpoints = await ctx.db
+  const endpoints = [];
+  for await (const endpoint of ctx.db
     .query("webhook_endpoints")
     .withIndex("by_organization_status", (q) =>
       q.eq("organizationId", params.organizationId).eq("status", "active")
-    )
-    .collect();
+    )) {
+    endpoints.push(endpoint);
+  }
 
   if (endpoints.length === 0) return 0;
 

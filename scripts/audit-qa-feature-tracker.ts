@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const trackerPath = resolve(
-  import.meta.dir,
+  import.meta.dirname,
   "../docs/qa/feature-user-stories.csv"
 );
 
@@ -59,7 +59,11 @@ const requiredEntryPointHints = [
   "packages/react-sdk",
 ];
 
-type Row = Record<(typeof expectedHeader)[number], string>;
+type ColumnName = (typeof expectedHeader)[number];
+
+function columnValue(row: readonly string[], column: ColumnName): string {
+  return row[expectedHeader.indexOf(column)] ?? "";
+}
 
 function parseCsv(input: string): string[][] {
   const rows: string[][] = [];
@@ -139,15 +143,13 @@ for (const [index, row] of dataRows.entries()) {
     continue;
   }
 
-  const record = Object.fromEntries(
-    expectedHeader.map((column, columnIndex) => [column, row[columnIndex]])
-  ) as Row;
-  if (record.feature_id.length === 0) {
+  const featureId = columnValue(row, "feature_id");
+  if (featureId.length === 0) {
     errors.push(`line ${line}: feature_id is required`);
-  } else if (ids.has(record.feature_id)) {
-    errors.push(`line ${line}: duplicate feature_id ${record.feature_id}`);
+  } else if (ids.has(featureId)) {
+    errors.push(`line ${line}: duplicate feature_id ${featureId}`);
   }
-  ids.add(record.feature_id);
+  ids.add(featureId);
 
   for (const requiredColumn of [
     "area",
@@ -162,19 +164,21 @@ for (const [index, row] of dataRows.entries()) {
     "tester",
     "issue_status",
   ] as const) {
-    if (record[requiredColumn].trim().length === 0) {
+    if (columnValue(row, requiredColumn).trim().length === 0) {
       errors.push(`line ${line}: ${requiredColumn} is required`);
     }
   }
 
-  if (!validTestStatuses.has(record.test_status)) {
-    errors.push(`line ${line}: invalid test_status ${record.test_status}`);
+  const testStatus = columnValue(row, "test_status");
+  if (!validTestStatuses.has(testStatus)) {
+    errors.push(`line ${line}: invalid test_status ${testStatus}`);
   }
-  if (!validIssueStatuses.has(record.issue_status)) {
-    errors.push(`line ${line}: invalid issue_status ${record.issue_status}`);
+  const issueStatus = columnValue(row, "issue_status");
+  if (!validIssueStatuses.has(issueStatus)) {
+    errors.push(`line ${line}: invalid issue_status ${issueStatus}`);
   }
 
-  entryPointCorpus.push(record.entry_points);
+  entryPointCorpus.push(columnValue(row, "entry_points"));
 }
 
 const joinedEntryPoints = entryPointCorpus.join("\n");

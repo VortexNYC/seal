@@ -131,7 +131,7 @@ export function PdfViewerControls({
 
   // SEA-79: Keyboard shortcuts for page navigation
   useEffect(() => {
-    if (!enableKeyboardShortcuts) return;
+    if (!enableKeyboardShortcuts) return undefined;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input field

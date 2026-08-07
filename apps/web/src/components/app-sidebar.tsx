@@ -125,6 +125,10 @@ function isPathActive(
   return currentPath.startsWith(`${targetPath}/`);
 }
 
+function canView(flag?: boolean): boolean {
+  return flag ?? true;
+}
+
 function buildNavSections({
   slug,
   currentPath,
@@ -139,8 +143,6 @@ function buildNavSections({
   isPro: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
-  const canView = (flag?: boolean) =>
-    flag === undefined ? true : Boolean(flag);
 
   const workspaceItems = [
     {
@@ -355,7 +357,7 @@ function buildTeamOptions({
     return [];
   }
 
-  const sorted = [...organizations].sort((a, b) => {
+  const sorted = organizations.toSorted((a, b) => {
     if (a.organizationSlug === slug) return -1;
     if (b.organizationSlug === slug) return 1;
     return a.organizationName.localeCompare(b.organizationName);
@@ -487,7 +489,7 @@ export function AppSidebar({
           relativePath.length > 0 ? relativePath : "/home"
         );
 
-        navigate({ to: target });
+        void navigate({ to: target });
       } catch (error) {
         console.error("Failed to switch workspace:", error);
       }

@@ -60,9 +60,9 @@ function booleanField(value: JsonObject, field: string): boolean {
 function nullableStringField(value: JsonObject, field: string): string | null {
   const child = value[field];
   if (child === null || typeof child === "string") {
-    return child as string | null;
+    return child;
   }
-  fail(`Expected ${field} to be a string or null`);
+  return fail(`Expected ${field} to be a string or null`);
 }
 
 function nullableObjectField(
@@ -71,15 +71,27 @@ function nullableObjectField(
 ): JsonObject | null {
   const child = value[field];
   if (child === null || isJsonObject(child)) {
-    return child as JsonObject | null;
+    return child;
   }
-  fail(`Expected ${field} to be an object or null`);
+  return fail(`Expected ${field} to be an object or null`);
 }
 
 function parseJson(raw: string, label: string): Json {
   const parsed = JSON.parse(raw) as unknown;
   assert(isJson(parsed), `Expected ${label} to be valid JSON`);
   return parsed;
+}
+
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
 }
 
 function isJson(value: unknown): value is Json {
@@ -154,7 +166,10 @@ async function runConvex<T extends Json>(input: {
     `No JSON returned from ${input.functionName}: ${trimmed}`
   );
   const parsed = parseJson(trimmed.slice(jsonStart), input.functionName);
-  return parsed as T;
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 async function getConvexEnv(input: {
@@ -343,11 +358,11 @@ async function projectVortexSubscription(input: {
     },
   });
   assert(
-    booleanField(projection, "processed") === true,
+    booleanField(projection, "processed"),
     "Expected subscription projection to process"
   );
   assert(
-    booleanField(projection, "activeNonVortexProviderIdPresent") === false,
+    !booleanField(projection, "activeNonVortexProviderIdPresent"),
     "Expected no active non-Vortex-provider-shaped subscription after Vortex projection"
   );
   return { subscriptionExternalId, customerExternalId, priceId: input.priceId };
@@ -388,7 +403,7 @@ async function assertProjectedState(input: {
     "Expected active projected subscription"
   );
   assert(
-    booleanField(state, "activeNonVortexProviderIdPresent") === false,
+    !booleanField(state, "activeNonVortexProviderIdPresent"),
     "Expected proof state to report no active non-Vortex-provider-shaped ids"
   );
 }

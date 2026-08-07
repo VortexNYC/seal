@@ -5,6 +5,7 @@
 
 import { v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { ensureVortexAuthSystemRoles } from "../lib/vortexAuthOrganizations";
 
@@ -18,17 +19,18 @@ import { ensureVortexAuthSystemRoles } from "../lib/vortexAuthOrganizations";
 export const seedAllOrganizations = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // convex-cost-guard-allow: convex-low-cardinality-index-collect — one-time migration script, bounded by total org count bound=global
-    const activeOrganizations = await ctx.db
+    const organizations: Doc<"organizations">[] = [];
+
+    for await (const org of ctx.db
       .query("organizations")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
-      .collect();
-    // convex-cost-guard-allow: convex-low-cardinality-index-collect — one-time migration script, bounded by total org count bound=global
-    const inactiveOrganizations = await ctx.db
+      .withIndex("by_active", (q) => q.eq("isActive", true))) {
+      organizations.push(org);
+    }
+    for await (const org of ctx.db
       .query("organizations")
-      .withIndex("by_active", (q) => q.eq("isActive", false))
-      .collect();
-    const organizations = [...activeOrganizations, ...inactiveOrganizations];
+      .withIndex("by_active", (q) => q.eq("isActive", false))) {
+      organizations.push(org);
+    }
 
     let seededCount = 0;
 
@@ -61,7 +63,7 @@ export const seedOrganization = internalMutation({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
 
     if (!org) {
       throw new Error(`Organization not found: ${args.organizationId}`);

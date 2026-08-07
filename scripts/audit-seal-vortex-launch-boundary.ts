@@ -256,7 +256,7 @@ function runJsonScript<T>(input: {
   readonly allowedStatuses: ReadonlySet<number>;
   readonly isExpectedShape: (value: unknown) => value is T;
 }): T {
-  const result = spawnSync("bun", ["run", input.scriptPath], {
+  const result = spawnSync("pnpm", ["run", input.scriptPath], {
     cwd: repoRoot,
     env: process.env,
     encoding: "utf8",
@@ -282,13 +282,13 @@ function parseJsonFromOutput(output: string, label: string): unknown {
   const start = output.indexOf("{");
   const end = output.lastIndexOf("}");
   if (start === -1 || end === -1 || end < start) {
-    fail(`${label} did not print JSON.`);
+    return fail(`${label} did not print JSON.`);
   }
   try {
     return JSON.parse(output.slice(start, end + 1)) as unknown;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    fail(`${label} printed invalid JSON: ${message}`);
+    return fail(`${label} printed invalid JSON: ${message}`);
   }
 }
 

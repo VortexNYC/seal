@@ -1,6 +1,9 @@
-import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
+import { ActionCache } from "@convex-dev/action-cache";
 import { createTool } from "@convex-dev/agent";
+import { parse } from "@vortexnyc/convex/helpers";
+import { formatMoney, money } from "@vortexnyc/money";
 import type { FunctionReference } from "convex/server";
+import { v } from "convex/values";
 import { z } from "zod";
 
 import { components, internal } from "../../_generated/api";
@@ -39,7 +42,7 @@ export const paymentExtractionCache: ActionCache<PaymentCacheAction> =
     action: internal.ai.paymentExtractionAction.extractPaymentInternal,
     name: "paymentExtraction-v1",
     ttl: 24 * 60 * 60 * 1000, // 24 hours
-  } as ActionCacheConfig<PaymentCacheAction>);
+  });
 
 // ---------------------------------------------------------------------------
 // Tool
@@ -57,13 +60,12 @@ export const extractPaymentTerms = createTool({
   }),
   execute: async (ctx: SealAICtx, args): Promise<string> => {
     try {
-      const docId = (args.documentId ?? ctx.documentId) as
-        | Id<"documents">
-        | undefined;
-      if (!docId)
+      const rawDocId = args.documentId ?? ctx.documentId;
+      if (!rawDocId)
         throw new Error(
           "No document ID provided and no current document context"
         );
+      const docId = parse(v.id("documents"), rawDocId);
 
       // Rate limit expensive Gemini extraction call (20 ops/min per org)
       await ctx.runMutation(
@@ -82,12 +84,12 @@ export const extractPaymentTerms = createTool({
       if (!document) throw new Error("Document not found");
 
       // Use cached payment extraction — same storageId = same result
-      const extracted = (await paymentExtractionCache.fetch(
+      const extracted = await paymentExtractionCache.fetch(
         toActionCacheCtx(ctx),
         {
-          storageId: document.storageId as Id<"_storage">,
+          storageId: parse(v.id("_storage"), document.storageId),
         }
-      )) as PaymentExtractionResult;
+      );
 
       // Validate extracted amounts are reasonable
       for (const item of extracted.lineItems) {
@@ -106,7 +108,7 @@ export const extractPaymentTerms = createTool({
 
       // Save the extracted payment config
       await ctx.runMutation(internal.ai.mutations.saveExtractedPaymentConfig, {
-        fieldId: args.fieldId as Id<"signature_fields">,
+        fieldId: parse(v.id("signature_fields"), args.fieldId),
         documentId: docId,
         organizationId: ctx.organizationId,
         extraction: {
@@ -126,9 +128,11 @@ export const extractPaymentTerms = createTool({
         (sum, item) => sum + item.quantity * item.unitPriceCents,
         0
       );
-      const totalFormatted = `$${(totalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+      const totalFormatted = formatMoney(
+        money(totalCents, extracted.currency.toUpperCase())
+      );
 
-      return `Extracted payment config: ${extracted.lineItems.length} line item(s), ${totalFormatted} ${extracted.currency.toUpperCase()}, ${extracted.paymentType.replace("_", " ")} payment, due ${extracted.dueDateTerms.replace("_", " ")}.`;
+      return `Extracted payment config: ${extracted.lineItems.length} line item(s), ${totalFormatted}, ${extracted.paymentType.replace("_", " ")} payment, due ${extracted.dueDateTerms.replace("_", " ")}.`;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       console.error("[SealAI Tool Error] extractPaymentTerms:", msg);

@@ -21,7 +21,7 @@ async function updateReminderFailure(
   reminderId: Doc<"document_reminders">["_id"],
   lastError: string
 ): Promise<void> {
-  await ctx.db.patch(reminderId, {
+  await ctx.db.patch("document_reminders", reminderId, {
     status: "failed",
     failedAt: Date.now(),
     lastError,
@@ -33,7 +33,7 @@ async function cancelReminderRecord(
   ctx: MutationCtx,
   reminderId: Doc<"document_reminders">["_id"]
 ): Promise<void> {
-  await ctx.db.patch(reminderId, {
+  await ctx.db.patch("document_reminders", reminderId, {
     status: "cancelled",
     cancelledAt: Date.now(),
     updatedAt: Date.now(),
@@ -57,13 +57,13 @@ export const sendManualReminder = authMutation({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
 
     // 3. Get the recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
       throw new ConvexError(
         "Recipient not found or doesn't belong to document"
@@ -125,16 +125,18 @@ export const sendBulkReminder = authMutation({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
 
     // 3. Get all pending recipients
-    const allRecipients = await ctx.db
+    const allRecipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      allRecipients.push(_row);
+    }
 
     const pendingRecipients = allRecipients.filter(
       (r) =>
@@ -199,7 +201,7 @@ export const scheduleAutomatedReminder = authMutation({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -245,7 +247,7 @@ export const cancelReminder = authMutation({
     const userId = ctx.auth.user._id;
 
     // 1. Get the reminder
-    const reminder = await ctx.db.get(args.reminderId);
+    const reminder = await ctx.db.get("document_reminders", args.reminderId);
     if (!reminder) {
       throw new ConvexError("Reminder not found");
     }
@@ -265,7 +267,7 @@ export const cancelReminder = authMutation({
     }
 
     // 4. Cancel the reminder
-    await ctx.db.patch(args.reminderId, {
+    await ctx.db.patch("document_reminders", args.reminderId, {
       status: "cancelled",
       cancelledAt: Date.now(),
       updatedAt: Date.now(),
@@ -287,7 +289,7 @@ export const processReminder = internalMutation({
   handler: async (ctx, args) => {
     try {
       // 1. Get the reminder
-      const reminder = await ctx.db.get(args.reminderId);
+      const reminder = await ctx.db.get("document_reminders", args.reminderId);
       if (!reminder) {
         console.error(`Reminder ${args.reminderId} not found`);
         return { success: false, error: "Reminder not found" };
@@ -306,7 +308,7 @@ export const processReminder = internalMutation({
       }
 
       // 4. Get document to validate it exists
-      const document = await ctx.db.get(reminder.documentId);
+      const document = await ctx.db.get("documents", reminder.documentId);
       if (!document || document.status === "deleted") {
         await updateReminderFailure(
           ctx,
@@ -318,7 +320,10 @@ export const processReminder = internalMutation({
 
       // 5. Validate recipient if specified
       if (reminder.recipientId) {
-        const recipient = await ctx.db.get(reminder.recipientId);
+        const recipient = await ctx.db.get(
+          "document_recipients",
+          reminder.recipientId
+        );
         if (!recipient) {
           await updateReminderFailure(
             ctx,
@@ -357,10 +362,13 @@ export const processReminder = internalMutation({
       console.error(`Error processing reminder ${args.reminderId}:`, error);
 
       // Fetch reminder to get current attemptCount
-      const reminderForUpdate = await ctx.db.get(args.reminderId);
+      const reminderForUpdate = await ctx.db.get(
+        "document_reminders",
+        args.reminderId
+      );
 
       // Update reminder with error
-      await ctx.db.patch(args.reminderId, {
+      await ctx.db.patch("document_reminders", args.reminderId, {
         status: "failed",
         failedAt: Date.now(),
         lastError: error instanceof Error ? error.message : "Unknown error",

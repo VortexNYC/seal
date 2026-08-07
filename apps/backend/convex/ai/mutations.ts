@@ -176,17 +176,14 @@ export const saveFieldSuggestions = internalMutation({
     processingTimeMs: v.number(),
   },
   handler: async (ctx, args) => {
-    // Dismiss any existing pending suggestions for this document. This must inspect every pending suggestion for the document; no rows are dropped.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId and status, complete pending-suggestion set is required before inserting the replacement bound=global
-    const existing = await ctx.db
+    for await (const suggestion of ctx.db
       .query("ai_field_suggestions")
       .withIndex("by_document_status", (q) =>
         q.eq("documentId", args.documentId).eq("status", "pending")
-      )
-      .collect();
-
-    for (const suggestion of existing) {
-      await ctx.db.patch(suggestion._id, { status: "dismissed" as const });
+      )) {
+      await ctx.db.patch("ai_field_suggestions", suggestion._id, {
+        status: "dismissed" as const,
+      });
     }
 
     return await ctx.db.insert("ai_field_suggestions", {
@@ -207,24 +204,27 @@ export const applyFieldSuggestions = authMutation({
     selectedFieldIndices: v.optional(v.array(v.number())),
   },
   handler: async (ctx, args) => {
-    const suggestion = await ctx.db.get(args.suggestionId);
+    const suggestion = await ctx.db.get(
+      "ai_field_suggestions",
+      args.suggestionId
+    );
     if (!suggestion) throw new ConvexError("Suggestions not found");
     if (suggestion.status !== "pending")
       throw new ConvexError("Suggestions already processed");
 
-    const document = await ctx.db.get(suggestion.documentId);
+    const document = await ctx.db.get("documents", suggestion.documentId);
     if (!document) throw new ConvexError("Document not found");
 
-    // Get signer recipients sorted by order for heuristic assignment. This must inspect every document recipient so assignment remains complete.
-    // convex-cost-guard-allow: convex-query-filter-before-collect — scoped to a single documentId, bounded by document recipient count; the role filter cannot drop unchecked recipients before assignment bound=global
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and preserves all signers bound=global
-    const signers = await ctx.db
+    const signers: Doc<"document_recipients">[] = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) =>
         q.eq("documentId", suggestion.documentId)
-      )
-      .filter((q) => q.eq(q.field("role"), "signer"))
-      .collect();
+      )) {
+      if (recipient.role === "signer") {
+        signers.push(recipient);
+      }
+    }
     signers.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     const fieldsToApply = args.selectedFieldIndices
@@ -260,7 +260,9 @@ export const applyFieldSuggestions = authMutation({
       }
     }
 
-    await ctx.db.patch(args.suggestionId, { status: "applied" as const });
+    await ctx.db.patch("ai_field_suggestions", args.suggestionId, {
+      status: "applied" as const,
+    });
 
     await createPaymentConfigsFromExtraction(
       ctx,
@@ -276,10 +278,15 @@ export const applyFieldSuggestions = authMutation({
 export const dismissFieldSuggestions = authMutation({
   args: { suggestionId: v.id("ai_field_suggestions") },
   handler: async (ctx, args) => {
-    const suggestion = await ctx.db.get(args.suggestionId);
+    const suggestion = await ctx.db.get(
+      "ai_field_suggestions",
+      args.suggestionId
+    );
     if (!suggestion) throw new ConvexError("Suggestions not found");
 
-    await ctx.db.patch(args.suggestionId, { status: "dismissed" as const });
+    await ctx.db.patch("ai_field_suggestions", args.suggestionId, {
+      status: "dismissed" as const,
+    });
   },
 });
 
@@ -342,7 +349,7 @@ export const saveExtractedPaymentConfig = internalMutation({
   },
   handler: async (ctx, args) => {
     // Verify the field exists and is a payment field
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) throw new ConvexError("Payment field not found");
     if (field.fieldType !== "payment")
       throw new ConvexError("Field is not a payment type");
@@ -363,7 +370,7 @@ export const saveExtractedPaymentConfig = internalMutation({
     const lateFees = extraction.lateFee
       ? {
           enabled: true,
-          type: extraction.lateFee.type as "percentage" | "fixed",
+          type: extraction.lateFee.type,
           amount: extraction.lateFee.amount,
           gracePeriodDays: extraction.lateFee.gracePeriodDays,
         }
@@ -372,10 +379,7 @@ export const saveExtractedPaymentConfig = internalMutation({
     // Build recurring config with sensible defaults
     const recurringConfig = extraction.recurringConfig
       ? {
-          interval: extraction.recurringConfig.interval as
-            | "week"
-            | "month"
-            | "year",
+          interval: extraction.recurringConfig.interval,
           intervalCount: extraction.recurringConfig.intervalCount,
           endCondition: "never" as const,
         }
@@ -385,7 +389,7 @@ export const saveExtractedPaymentConfig = internalMutation({
     const installmentsConfig = extraction.installmentsConfig
       ? {
           count: extraction.installmentsConfig.count,
-          interval: extraction.installmentsConfig.interval as "week" | "month",
+          interval: extraction.installmentsConfig.interval,
         }
       : undefined;
 
@@ -406,7 +410,7 @@ export const saveExtractedPaymentConfig = internalMutation({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("payment_field_configs", existing._id, {
         paymentType: extraction.paymentType,
         items,
         currency: extraction.currency.toLowerCase(),
@@ -477,25 +481,29 @@ export const saveDocumentAnnotations = internalMutation({
     forceOverrideDismissal: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    // Check all existing annotation records for this document. Dismissal semantics require the complete document annotation set.
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId; all annotation rows are required to honor prior user dismissals and dismiss active replacements bound=global
-    const existing = await ctx.db
-      .query("ai_document_annotations")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+    let userDismissed = false;
+    const toDismiss: Doc<"ai_document_annotations">[] = [];
 
-    // If user previously dismissed annotations, respect their choice —
-    // unless this is a fresh analysis for a new PDF (forceOverrideDismissal)
-    if (!args.forceOverrideDismissal) {
-      const userDismissed = existing.some((a) => a.status === "dismissed");
-      if (userDismissed) return null;
+    for await (const annotation of ctx.db
+      .query("ai_document_annotations")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (!args.forceOverrideDismissal && annotation.status === "dismissed") {
+        userDismissed = true;
+      }
+
+      if (annotation.status === "active" || annotation.status === "pending") {
+        toDismiss.push(annotation);
+      }
     }
 
-    // Dismiss any existing active/pending annotations
-    for (const annotation of existing) {
-      if (annotation.status === "active" || annotation.status === "pending") {
-        await ctx.db.patch(annotation._id, { status: "dismissed" as const });
-      }
+    if (userDismissed) {
+      return null;
+    }
+
+    for (const annotation of toDismiss) {
+      await ctx.db.patch("ai_document_annotations", annotation._id, {
+        status: "dismissed" as const,
+      });
     }
 
     // Skip if no annotations detected
@@ -517,6 +525,8 @@ export const saveDocumentAnnotations = internalMutation({
 export const dismissDocumentAnnotations = authMutation({
   args: { annotationId: v.id("ai_document_annotations") },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.annotationId, { status: "dismissed" as const });
+    await ctx.db.patch("ai_document_annotations", args.annotationId, {
+      status: "dismissed" as const,
+    });
   },
 });

@@ -128,7 +128,7 @@ export const update = permissionMutation("contacts:edit")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const contact = await ctx.db.get(args.id);
+    const contact = await ctx.db.get("contacts", args.id);
 
     if (!contact) {
       throw new ConvexError("Contact not found");
@@ -140,7 +140,7 @@ export const update = permissionMutation("contacts:edit")({
 
     const updates = buildContactUpdates(contact, args);
 
-    await ctx.db.patch(args.id, updates);
+    await ctx.db.patch("contacts", args.id, updates);
 
     return args.id;
   },
@@ -157,7 +157,7 @@ export const remove = permissionMutation("contacts:delete")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const contact = await ctx.db.get(args.id);
+    const contact = await ctx.db.get("contacts", args.id);
 
     if (!contact) {
       throw new ConvexError("Contact not found");
@@ -167,7 +167,7 @@ export const remove = permissionMutation("contacts:delete")({
       throw new ConvexError("Contact not found");
     }
 
-    await ctx.db.delete(args.id);
+    await ctx.db.delete("contacts", args.id);
 
     return args.id;
   },
@@ -188,7 +188,7 @@ export const bulkDelete = permissionMutation("contacts:delete")({
     const results: Array<{ id: string; success: boolean; error?: string }> = [];
 
     for (const id of args.ids) {
-      const contact = await ctx.db.get(id);
+      const contact = await ctx.db.get("contacts", id);
 
       if (!contact) {
         results.push({ id, success: false, error: "Contact not found" });
@@ -200,7 +200,7 @@ export const bulkDelete = permissionMutation("contacts:delete")({
         continue;
       }
 
-      await ctx.db.delete(id);
+      await ctx.db.delete("contacts", id);
       results.push({ id, success: true });
     }
 

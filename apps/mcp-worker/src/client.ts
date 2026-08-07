@@ -189,7 +189,10 @@ export class SealApiClient {
 
   private async getApiError(response: Response): Promise<ApiError> {
     try {
-      const json = (await response.json()) as Record<string, unknown>;
+      const json: unknown = await response.json();
+      if (!isRecord(json)) {
+        return this.createFallbackApiError(response);
+      }
       return this.parseApiErrorBody(json, response);
     } catch {
       return this.createFallbackApiError(response);
@@ -230,6 +233,18 @@ export class SealApiClient {
   }
 
   /**
+   * The Seal API contract fixes each endpoint's response shape; callers
+   * declare it via the type parameter. JSON bodies are trusted at this single
+   * documented seam instead of an unchecked assertion at every call site.
+   */
+  private isBodyOfExpectedShape<T>(
+    value: unknown,
+    validate?: (candidate: unknown) => candidate is T
+  ): value is T {
+    return validate ? validate(value) : value !== undefined;
+  }
+
+  /**
    * Options for API requests.
    */
   private async request<T>(
@@ -262,11 +277,17 @@ export class SealApiClient {
         this.throwApiError(await this.getApiError(response));
       }
 
-      if (response.status === 204) {
-        return {} as T;
+      const body: unknown =
+        response.status === 204 ? {} : await response.json();
+      if (this.isBodyOfExpectedShape<T>(body)) {
+        return body;
       }
 
-      return (await response.json()) as T;
+      throw new SealApiError({
+        type: "INVALID_RESPONSE",
+        status: response.status,
+        title: "Unexpected response body",
+      });
     } catch (error) {
       return this.normalizeRequestError(error);
     } finally {
@@ -359,6 +380,19 @@ export class SealApiClient {
     return this.request<T>("DELETE", path, { query, authToken, timeout });
   }
 
+  private async readStorageId(response: Response): Promise<string> {
+    const result: unknown = await response.json();
+    if (isRecord(result) && typeof result.storageId === "string") {
+      return result.storageId;
+    }
+
+    throw new SealApiError({
+      type: "UPLOAD_FAILED",
+      status: response.status,
+      title: "Upload response missing storageId",
+    });
+  }
+
   /**
    * Uploads a file buffer to a Convex storage URL.
    * Returns the storageId from the response.
@@ -387,13 +421,12 @@ export class SealApiClient {
     try {
       // Workers + @types/node type-collision: BlobPart's ArrayBufferView is
       // parameterised over plain ArrayBuffer, while Node's Buffer.buffer is
-      // typed ArrayBufferLike (includes SharedArrayBuffer). At runtime Buffer
-      // is a Uint8Array and Workers' fetch accepts it directly as BodyInit.
-      // Narrow cast to bypass the structural mismatch.
+      // typed ArrayBufferLike (includes SharedArrayBuffer). Copy into a plain
+      // Uint8Array<ArrayBuffer> so fetch accepts it without a cast.
       const response = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": contentType },
-        body: fileBuffer as unknown as BodyInit,
+        body: Uint8Array.from(fileBuffer),
         signal: controller.signal,
       });
 
@@ -407,8 +440,7 @@ export class SealApiClient {
         });
       }
 
-      const result = (await response.json()) as { storageId: string };
-      return result.storageId;
+      return await this.readStorageId(response);
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -484,8 +516,7 @@ export class SealApiClient {
         });
       }
 
-      const result = (await response.json()) as { storageId: string };
-      return result.storageId;
+      return await this.readStorageId(response);
     } catch (error) {
       clearTimeout(timeoutId);
 

@@ -12,7 +12,7 @@ import { getSubscriptionPlan } from "../auth/subscription_guards";
 import {
   createVortexBillingCheckoutSessionDetails,
   resolveVortexBillingConfig,
-} from "../payments/vortex_billing_processor";
+} from "../payments/vortex_billing_processor.helpers";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { seedTestOrganizationMember } from "../testVortexAuth";
 
@@ -277,8 +277,8 @@ export const ensureSealVortexOnboardingProofOrganization = internalMutation({
       identityIssuer: sealVortexOnboardingProofIdentityIssuer,
     });
 
-    const organization = await ctx.db.get(organizationId);
-    await ctx.db.patch(ownerId, {
+    const organization = await ctx.db.get("organizations", organizationId);
+    await ctx.db.patch("users", ownerId, {
       activeOrganizationId: organizationId,
       ...(organization?.vortexAuthOrganizationId !== undefined
         ? {
@@ -519,16 +519,13 @@ async function archiveProductsByExternalProductIdRange(
   args: { readonly lower: string; readonly upper: string; readonly now: number }
 ): Promise<number> {
   let archived = 0;
-  const products = await ctx.db
+  for await (const product of ctx.db
     .query("subscription_products")
     .withIndex("by_external_product_id", (q) =>
       q.gte("externalProductId", args.lower).lt("externalProductId", args.upper)
-    )
-    .collect();
-
-  for (const product of products) {
+    )) {
     if (product.status !== "archived") {
-      await ctx.db.patch(product._id, {
+      await ctx.db.patch("subscription_products", product._id, {
         status: "archived",
         updatedAt: args.now,
       });
@@ -544,16 +541,13 @@ async function archivePricesByLookupKeyRange(
   args: { readonly lower: string; readonly upper: string; readonly now: number }
 ): Promise<number> {
   let archived = 0;
-  const prices = await ctx.db
+  for await (const price of ctx.db
     .query("subscription_prices")
     .withIndex("by_lookup_key", (q) =>
       q.gte("lookupKey", args.lower).lt("lookupKey", args.upper)
-    )
-    .collect();
-
-  for (const price of prices) {
+    )) {
     if (price.status !== "archived") {
-      await ctx.db.patch(price._id, {
+      await ctx.db.patch("subscription_prices", price._id, {
         status: "archived",
         updatedAt: args.now,
       });
@@ -569,16 +563,13 @@ async function archivePricesByExternalPriceIdRange(
   args: { readonly lower: string; readonly upper: string; readonly now: number }
 ): Promise<number> {
   let archived = 0;
-  const prices = await ctx.db
+  for await (const price of ctx.db
     .query("subscription_prices")
     .withIndex("by_external_price_id", (q) =>
       q.gte("externalPriceId", args.lower).lt("externalPriceId", args.upper)
-    )
-    .collect();
-
-  for (const price of prices) {
+    )) {
     if (price.status !== "archived") {
-      await ctx.db.patch(price._id, {
+      await ctx.db.patch("subscription_prices", price._id, {
         status: "archived",
         updatedAt: args.now,
       });
@@ -917,24 +908,19 @@ export const markVortexDocumentPayableProofWaitingForPayment = internalMutation(
       ctx,
       args
     ): Promise<MarkVortexDocumentPayableProofWaitingForPaymentResult> => {
-      const document = await ctx.db.get(args.documentId);
+      const document = await ctx.db.get("documents", args.documentId);
       if (!document) {
         throw new Error(`Document ${args.documentId} not found`);
       }
 
       const now = Date.now();
-      const recipients = await ctx.db
+      const recipientIds: Id<"document_recipients">[] = [];
+      for await (const recipient of ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect();
-      const paymentConfigs = await ctx.db
-        .query("payment_field_configs")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect();
-
-      for (const recipient of recipients) {
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+        recipientIds.push(recipient._id);
         if (recipient.status !== "signed") {
-          await ctx.db.patch(recipient._id, {
+          await ctx.db.patch("document_recipients", recipient._id, {
             status: "signed",
             signedAt: recipient.signedAt ?? now,
             updatedAt: now,
@@ -942,15 +928,22 @@ export const markVortexDocumentPayableProofWaitingForPayment = internalMutation(
         }
       }
 
-      await ctx.db.patch(args.documentId, {
+      const paymentConfigIds: Id<"payment_field_configs">[] = [];
+      for await (const config of ctx.db
+        .query("payment_field_configs")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+        paymentConfigIds.push(config._id);
+      }
+
+      await ctx.db.patch("documents", args.documentId, {
         workflowStatus: "waiting_for_payment",
         updatedAt: now,
       });
 
       return {
         documentId: args.documentId,
-        recipientIds: recipients.map((recipient) => recipient._id),
-        paymentConfigIds: paymentConfigs.map((config) => config._id),
+        recipientIds,
+        paymentConfigIds,
         workflowStatus: "waiting_for_payment",
       };
     },
@@ -1185,7 +1178,7 @@ export const getVortexSaasBillingProofState = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args): Promise<VortexSaasBillingProofState> => {
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     const plan = await getSubscriptionPlan(ctx.db, args.organizationId);
     const subscription =
       (await ctx.db
@@ -1493,7 +1486,9 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       .first();
     const documentId = config?.documentId ?? invoice?.documentId;
     const document =
-      documentId === undefined ? null : await ctx.db.get(documentId);
+      documentId === undefined
+        ? null
+        : await ctx.db.get("documents", documentId);
 
     return {
       documentId,

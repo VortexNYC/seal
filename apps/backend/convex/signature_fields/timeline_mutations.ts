@@ -15,7 +15,7 @@ export const undoFields = mutation({
       throw new Error("Unauthorized");
     }
 
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -37,7 +37,7 @@ export const redoFields = mutation({
       throw new Error("Unauthorized");
     }
 
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }

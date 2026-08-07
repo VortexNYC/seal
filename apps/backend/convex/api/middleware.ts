@@ -272,10 +272,23 @@ export function apiHttpAction(
         request,
         options
       );
+      // `auth` is null only for public endpoints, whose handlers are typed
+      // without an `auth` member (see `publicApiHttpAction`). The getter keeps
+      // the context type honest: touching `auth` on a public endpoint is a 401,
+      // never a null deref.
       const requestContext: ApiRequestContext = {
         ctx,
         request,
-        auth: auth as ApiAuthContext,
+        get auth(): ApiAuthContext {
+          if (!auth) {
+            throw new ApiError(
+              401,
+              "Authentication required",
+              "MISSING_AUTH_HEADER"
+            );
+          }
+          return auth;
+        },
         apiVersion,
         url,
         pathSegments,
@@ -310,7 +323,7 @@ export function apiHttpAction(
 export function publicApiHttpAction(
   handler: (context: Omit<ApiRequestContext, "auth">) => Promise<Response>
 ) {
-  return apiHttpAction(handler as ApiHandler, { public: true });
+  return apiHttpAction(handler, { public: true });
 }
 
 /**
@@ -320,13 +333,15 @@ export function publicApiHttpAction(
  * @returns Parsed JSON body
  * @throws {ApiError} 400 - If body is invalid JSON
  */
-export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
+export async function parseJsonBody<T = unknown>(request: Request): Promise<T>;
+export async function parseJsonBody(request: Request): Promise<unknown> {
   try {
     const text = await request.text();
     if (!text) {
-      return {} as T;
+      return {};
     }
-    return JSON.parse(text) as T;
+    const parsed: unknown = JSON.parse(text);
+    return parsed;
   } catch {
     throw new ApiError(
       400,
@@ -370,8 +385,8 @@ export function parsePagination(
  * @param nextCursor - Cursor for the next page (if hasMore is true)
  * @returns Response with pagination metadata
  */
-export function paginatedResponse<T>(
-  items: T[],
+export function paginatedResponse(
+  items: unknown[],
   hasMore: boolean,
   nextCursor?: string
 ): Response {

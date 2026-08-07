@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { parseId } from "@/lib/convex-ids";
 
 interface TransferOwnershipDialogProps {
   open: boolean;
@@ -67,7 +68,7 @@ export function TransferOwnershipDialog({
     try {
       await transferOwnership({
         documentId,
-        newOwnerId: selectedUserId as Id<"users">,
+        newOwnerId: parseId("users", selectedUserId),
       });
       toast.success("Document ownership transferred successfully");
       onOpenChange(false);

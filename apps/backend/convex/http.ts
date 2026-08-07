@@ -21,10 +21,11 @@ import {
   createMcpOAuthAccessRuntime,
   createMcpOAuthHttpHandlers,
 } from "@vortexnyc/auth/mcp";
+import { parse } from "@vortexnyc/convex/helpers";
 import { httpRouter } from "convex/server";
+import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import {
   API_SCOPES,
@@ -38,6 +39,12 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
+import {
+  vAiSettingsUpdate,
+  vNotificationSettingsUpdate,
+  vSecuritySettingsUpdate,
+  vSigningSettingsUpdate,
+} from "./api/v1/settings";
 import { registerAuthRoutes } from "./betterAuth";
 import { handleResendEventWebhookFromAction } from "./emails/resend_component";
 import {
@@ -150,10 +157,12 @@ function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
     }) =>
       await ctx.runQuery(internal.apiAuth.getOrganizationAccessForApiAuth, {
         userId,
-        requestedOrganizationId:
-          (requestedOrganizationId as Id<"organizations"> | null) ?? null,
-        organizationHintId:
-          (organizationHintId as Id<"organizations"> | null) ?? null,
+        requestedOrganizationId: requestedOrganizationId
+          ? parse(v.id("organizations"), requestedOrganizationId)
+          : null,
+        organizationHintId: organizationHintId
+          ? parse(v.id("organizations"), organizationHintId)
+          : null,
       }),
     normalizeScopes: (requestedScopes) => requireAllowedScopes(requestedScopes),
     validateScopes: ({ permissions, requestedScopes }) =>
@@ -163,7 +172,7 @@ function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
       }),
     requireAccessibleOrganization: (organizationId) =>
       requireAccessibleOrganization(
-        (organizationId as Id<"organizations"> | null) ?? null
+        organizationId ? parse(v.id("organizations"), organizationId) : null
       ),
     signAccessToken: async ({
       betterAuthUserId,
@@ -175,7 +184,7 @@ function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
       await ctx.runAction(internal.mcpOAuthNode.signAccessToken, {
         betterAuthUserId,
         clientId,
-        organizationId: organizationId as Id<"organizations">,
+        organizationId: parse(v.id("organizations"), organizationId),
         scopes: [...requireAllowedScopes(scopes)],
         audience,
       }),
@@ -204,7 +213,7 @@ async function createStoredMcpAuthorizationCode(
     clientId: input.clientId,
     redirectUri: input.redirectUri,
     betterAuthUserId: input.betterAuthUserId,
-    organizationId: input.organizationId as Id<"organizations">,
+    organizationId: parse(v.id("organizations"), input.organizationId),
     scopes: requireAllowedScopes(input.scopes),
     codeChallenge: input.codeChallenge,
     codeChallengeMethod: input.codeChallengeMethod,
@@ -292,7 +301,7 @@ function createBoundMcpOAuthHttpHandlers(ctx: McpHttpActionCtx) {
         return await ctx.runMutation(internal.mcpOAuthAuth.issueRefreshToken, {
           clientId: input.clientId,
           betterAuthUserId: input.betterAuthUserId,
-          organizationId: input.organizationId as Id<"organizations">,
+          organizationId: parse(v.id("organizations"), input.organizationId),
           scopes: requireAllowedScopes(input.scopes),
           audience: input.audience,
           resourceId: input.resourceId,
@@ -576,10 +585,10 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          title: body.title as string,
+          title: sealAssertPresent(body.title),
           description: body.description,
-          storageId: body.storage_id as string,
-          fileSize: body.file_size as number,
+          storageId: sealAssertPresent(body.storage_id),
+          fileSize: sealAssertPresent(body.file_size),
           fileType: body.file_type ?? "application/pdf",
           pageCount: body.page_count,
           deadline,
@@ -592,7 +601,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: documentId as Id<"documents">,
+          documentId: parse(v.id("documents"), documentId),
           includeRecipients: false,
         }
       );
@@ -633,7 +642,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
           includeRecipients: query.include_recipients === "true",
         }
       );
@@ -685,7 +694,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
           title: body.title,
           description: body.description,
           deadline,
@@ -706,7 +715,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
           includeRecipients: false,
         }
       );
@@ -743,7 +752,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
         }
       );
 
@@ -791,7 +800,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
           message: body.message,
         }
       );
@@ -816,7 +825,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
           includeRecipients: true,
         }
       );
@@ -856,8 +865,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
-          reason: body.reason as string,
+          documentId: parse(v.id("documents"), query.id),
+          reason: sealAssertPresent(body.reason),
         }
       );
 
@@ -881,7 +890,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
           includeRecipients: false,
         }
       );
@@ -918,7 +927,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.id),
         }
       );
 
@@ -961,7 +970,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.document_id),
         }
       );
 
@@ -1010,7 +1019,10 @@ http.route({
       validateRequiredFields(body, ["email", "name", "role"]);
 
       // Validate role
-      if (!["signer", "approver", "viewer"].includes(body.role as string)) {
+      if (
+        body.role === undefined ||
+        !["signer", "approver", "viewer"].includes(body.role)
+      ) {
         throw new ApiError(
           400,
           "role must be one of: signer, approver, viewer",
@@ -1023,10 +1035,10 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          email: body.email as string,
-          name: body.name as string,
-          role: body.role as "signer" | "approver" | "viewer",
+          documentId: parse(v.id("documents"), query.document_id),
+          email: sealAssertPresent(body.email),
+          name: sealAssertPresent(body.name),
+          role: body.role,
           order: body.order,
           customMessage: body.message,
         }
@@ -1052,8 +1064,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          recipientId: result.recipientId as Id<"document_recipients">,
+          documentId: parse(v.id("documents"), query.document_id),
+          recipientId: parse(v.id("document_recipients"), result.recipientId),
         }
       );
 
@@ -1091,8 +1103,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          recipientId: query.id as Id<"document_recipients">,
+          documentId: parse(v.id("documents"), query.document_id),
+          recipientId: parse(v.id("document_recipients"), query.id),
         }
       );
 
@@ -1154,8 +1166,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          recipientId: query.id as Id<"document_recipients">,
+          documentId: parse(v.id("documents"), query.document_id),
+          recipientId: parse(v.id("document_recipients"), query.id),
           name: body.name,
           role: body.role,
           order: body.order,
@@ -1183,8 +1195,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          recipientId: query.id as Id<"document_recipients">,
+          documentId: parse(v.id("documents"), query.document_id),
+          recipientId: parse(v.id("document_recipients"), query.id),
         }
       );
 
@@ -1222,8 +1234,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          recipientId: query.id as Id<"document_recipients">,
+          documentId: parse(v.id("documents"), query.document_id),
+          recipientId: parse(v.id("document_recipients"), query.id),
         }
       );
 
@@ -1278,8 +1290,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          recipientId: query.id as Id<"document_recipients">,
+          documentId: parse(v.id("documents"), query.document_id),
+          recipientId: parse(v.id("document_recipients"), query.id),
           message: body.message,
         }
       );
@@ -1381,8 +1393,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: body.document_id as Id<"documents">,
-          name: body.name as string,
+          documentId: parse(v.id("documents"), body.document_id),
+          name: sealAssertPresent(body.name),
           description: body.description,
         }
       );
@@ -1404,7 +1416,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: result.templateId as Id<"templates">,
+          templateId: parse(v.id("templates"), result.templateId),
           includeFields: true,
         }
       );
@@ -1442,7 +1454,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: query.id as Id<"templates">,
+          templateId: parse(v.id("templates"), query.id),
           includeFields: query.include_fields === "true",
         }
       );
@@ -1481,7 +1493,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: query.id as Id<"templates">,
+          templateId: parse(v.id("templates"), query.id),
         }
       );
 
@@ -1537,7 +1549,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: query.id as Id<"templates">,
+          templateId: parse(v.id("templates"), query.id),
           name: body.name,
           description: body.description,
           status: body.status,
@@ -1561,7 +1573,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: query.id as Id<"templates">,
+          templateId: parse(v.id("templates"), query.id),
           includeFields: false,
         }
       );
@@ -1596,7 +1608,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: query.id as Id<"templates">,
+          templateId: parse(v.id("templates"), query.id),
         }
       );
 
@@ -1648,7 +1660,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          templateId: query.id as Id<"templates">,
+          templateId: parse(v.id("templates"), query.id),
           documentName: body.title,
           description: body.description,
         }
@@ -1674,7 +1686,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: result.documentId as Id<"documents">,
+          documentId: parse(v.id("documents"), result.documentId),
           includeRecipients: false,
         }
       );
@@ -1722,7 +1734,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.document_id),
         }
       );
 
@@ -1764,8 +1776,8 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
-          signatureId: query.id as Id<"signatures">,
+          documentId: parse(v.id("documents"), query.document_id),
+          signatureId: parse(v.id("signatures"), query.id),
         }
       );
 
@@ -1803,7 +1815,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.document_id),
         }
       );
 
@@ -1844,7 +1856,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          documentId: query.document_id as Id<"documents">,
+          documentId: parse(v.id("documents"), query.document_id),
           limit,
         }
       );
@@ -1955,7 +1967,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          endpointId: query.id as Id<"webhook_endpoints">,
+          endpointId: parse(v.id("webhook_endpoints"), query.id),
         }
       );
 
@@ -2005,9 +2017,9 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          name: body.name as string,
-          url: body.url as string,
-          events: body.events as string[],
+          name: sealAssertPresent(body.name),
+          url: sealAssertPresent(body.url),
+          events: sealAssertPresent(body.events),
           description: body.description,
         }
       );
@@ -2026,7 +2038,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          endpointId: result.endpointId as Id<"webhook_endpoints">,
+          endpointId: parse(v.id("webhook_endpoints"), result.endpointId),
         }
       );
 
@@ -2080,7 +2092,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          endpointId: query.id as Id<"webhook_endpoints">,
+          endpointId: parse(v.id("webhook_endpoints"), query.id),
           name: body.name,
           url: body.url,
           events: body.events,
@@ -2106,7 +2118,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          endpointId: query.id as Id<"webhook_endpoints">,
+          endpointId: parse(v.id("webhook_endpoints"), query.id),
         }
       );
 
@@ -2144,7 +2156,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          endpointId: query.id as Id<"webhook_endpoints">,
+          endpointId: parse(v.id("webhook_endpoints"), query.id),
         }
       );
 
@@ -2193,7 +2205,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          endpointId: query.id as Id<"webhook_endpoints">,
+          endpointId: parse(v.id("webhook_endpoints"), query.id),
         }
       );
 
@@ -2253,12 +2265,17 @@ http.route({
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
-      const role = query.role as
-        | "owner"
-        | "admin"
-        | "member"
-        | "viewer"
-        | undefined;
+      const role = query.role
+        ? parse(
+            v.union(
+              v.literal("owner"),
+              v.literal("admin"),
+              v.literal("member"),
+              v.literal("viewer")
+            ),
+            query.role
+          )
+        : undefined;
       const members = await ctx.runQuery(internal.api.v1.members.listMembers, {
         userId: auth.userId,
         organizationId: auth.organizationId,
@@ -2293,7 +2310,7 @@ http.route({
         member = await ctx.runQuery(internal.api.v1.members.getMember, {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          memberId: query.id as Parameters<typeof ctx.runQuery>[1]["memberId"],
+          memberId: query.id,
         });
       } catch {
         // Invalid ID format — treat as not found
@@ -2356,16 +2373,20 @@ http.route({
       await ctx.runMutation(internal.api.v1.settings.updateSettings, {
         userId: auth.userId,
         organizationId: auth.organizationId,
-        signing: body.signing as Parameters<
-          typeof ctx.runMutation
-        >[1]["signing"],
-        notifications: body.notifications as Parameters<
-          typeof ctx.runMutation
-        >[1]["notifications"],
-        ai: body.ai as Parameters<typeof ctx.runMutation>[1]["ai"],
-        security: body.security as Parameters<
-          typeof ctx.runMutation
-        >[1]["security"],
+        signing:
+          body.signing === undefined
+            ? undefined
+            : parse(vSigningSettingsUpdate, body.signing),
+        notifications:
+          body.notifications === undefined
+            ? undefined
+            : parse(vNotificationSettingsUpdate, body.notifications),
+        ai:
+          body.ai === undefined ? undefined : parse(vAiSettingsUpdate, body.ai),
+        security:
+          body.security === undefined
+            ? undefined
+            : parse(vSecuritySettingsUpdate, body.security),
       });
 
       return apiResponse(200, { success: true });
@@ -2395,9 +2416,9 @@ http.route({
         organizationId: auth.organizationId,
         limit,
         cursor,
-        document_id: query.document_id as Parameters<
-          typeof ctx.runQuery
-        >[1]["document_id"],
+        document_id: query.document_id
+          ? parse(v.id("documents"), query.document_id)
+          : undefined,
         action: query.action,
         created_after: query.created_after
           ? new Date(query.created_after).getTime()
@@ -2433,7 +2454,16 @@ http.route({
         organizationId: auth.organizationId,
         limit,
         cursor,
-        status: query.status as Parameters<typeof ctx.runQuery>[1]["status"],
+        status: query.status
+          ? parse(
+              v.union(
+                v.literal("active"),
+                v.literal("inactive"),
+                v.literal("lead")
+              ),
+              query.status
+            )
+          : undefined,
         search: query.search,
       });
       return apiResponse(200, result);
@@ -2465,9 +2495,7 @@ http.route({
         contact = await ctx.runQuery(internal.api.v1.contacts.getContact, {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          contactId: query.id as Parameters<
-            typeof ctx.runQuery
-          >[1]["contactId"],
+          contactId: parse(v.id("contacts"), query.id),
         });
       } catch {
         // Invalid ID format — treat as not found
@@ -2503,11 +2531,7 @@ http.route({
         notes?: string;
         tags?: string[];
       }>(request);
-      validateRequiredFields(body as Record<string, unknown>, [
-        "first_name",
-        "last_name",
-        "email",
-      ]);
+      validateRequiredFields(body, ["first_name", "last_name", "email"]);
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (body.email && !emailRegex.test(body.email)) {
@@ -2527,9 +2551,17 @@ http.route({
           phone: body.phone,
           company: body.company,
           title: body.title,
-          status: body.status as Parameters<
-            typeof ctx.runMutation
-          >[1]["status"],
+          status:
+            body.status === undefined
+              ? undefined
+              : parse(
+                  v.union(
+                    v.literal("active"),
+                    v.literal("inactive"),
+                    v.literal("lead")
+                  ),
+                  body.status
+                ),
           notes: body.notes,
           tags: body.tags,
         }
@@ -2563,9 +2595,7 @@ http.route({
         await ctx.runMutation(internal.api.v1.contacts.deleteContact, {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          contactId: query.id as Parameters<
-            typeof ctx.runMutation
-          >[1]["contactId"],
+          contactId: parse(v.id("contacts"), query.id),
         });
       } catch {
         throw new ApiError(404, "Contact not found", "RESOURCE_NOT_FOUND");
@@ -2605,9 +2635,7 @@ http.route({
           {
             userId: auth.userId,
             organizationId: auth.organizationId,
-            documentId: query.id as Parameters<
-              typeof ctx.runQuery
-            >[1]["documentId"],
+            documentId: parse(v.id("documents"), query.id),
           }
         );
       } catch {
@@ -2641,17 +2669,20 @@ http.route({
         );
       }
       const body = await parseJsonBody<{ sharing_mode?: string }>(request);
-      validateRequiredFields(body as Record<string, unknown>, ["sharing_mode"]);
+      validateRequiredFields(body, ["sharing_mode"]);
 
       await ctx.runMutation(internal.api.v1.documents.updateDocumentAccess, {
         userId: auth.userId,
         organizationId: auth.organizationId,
-        documentId: query.id as Parameters<
-          typeof ctx.runMutation
-        >[1]["documentId"],
-        sharing_mode: body.sharing_mode as Parameters<
-          typeof ctx.runMutation
-        >[1]["sharing_mode"],
+        documentId: parse(v.id("documents"), query.id),
+        sharing_mode: parse(
+          v.union(
+            v.literal("private"),
+            v.literal("workspace"),
+            v.literal("specific")
+          ),
+          body.sharing_mode
+        ),
       });
       return apiResponse(200, { success: true });
     },
@@ -2678,10 +2709,7 @@ http.route({
         document_ids?: string[];
         reason?: string;
       }>(request);
-      validateRequiredFields(body as Record<string, unknown>, [
-        "document_ids",
-        "reason",
-      ]);
+      validateRequiredFields(body, ["document_ids", "reason"]);
 
       if (!Array.isArray(body.document_ids) || body.document_ids.length === 0) {
         throw new ApiError(
@@ -2703,9 +2731,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          document_ids: body.document_ids as Parameters<
-            typeof ctx.runMutation
-          >[1]["document_ids"],
+          document_ids: parse(v.array(v.id("documents")), body.document_ids),
           reason: sealAssertPresent(body.reason),
         }
       );
@@ -2730,7 +2756,7 @@ http.route({
         document_ids?: string[];
         message?: string;
       }>(request);
-      validateRequiredFields(body as Record<string, unknown>, ["document_ids"]);
+      validateRequiredFields(body, ["document_ids"]);
 
       if (!Array.isArray(body.document_ids) || body.document_ids.length === 0) {
         throw new ApiError(
@@ -2752,9 +2778,7 @@ http.route({
         {
           userId: auth.userId,
           organizationId: auth.organizationId,
-          document_ids: body.document_ids as Parameters<
-            typeof ctx.runMutation
-          >[1]["document_ids"],
+          document_ids: parse(v.array(v.id("documents")), body.document_ids),
           message: body.message,
         }
       );
@@ -2895,11 +2919,14 @@ http.route({
       });
     }
 
-    const body = (await request.json()) as {
-      prompt?: string;
-      messages?: string[];
-      documentId?: string;
-    };
+    const body = parse(
+      v.object({
+        prompt: v.optional(v.string()),
+        messages: v.optional(v.array(v.string())),
+        documentId: v.optional(v.string()),
+      }),
+      await request.json()
+    );
     const messages = body.messages ?? (body.prompt ? [body.prompt] : []);
     if (messages.length === 0) {
       return new Response(
@@ -2960,7 +2987,10 @@ http.route({
       });
     }
 
-    const body = (await request.json()) as { contractText?: string };
+    const body = parse(
+      v.object({ contractText: v.optional(v.string()) }),
+      await request.json()
+    );
     if (!body.contractText) {
       return new Response(
         JSON.stringify({ error: "contractText is required" }),

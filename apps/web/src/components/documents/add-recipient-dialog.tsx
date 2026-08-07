@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { cn, getErrorMessage } from "@/lib/utils";
 
+import { parseSelectValue } from "../../lib/select-values";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import {
@@ -28,6 +29,9 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+
+const RECIPIENT_TABS = ["team", "outsider"] as const;
+const RECIPIENT_ROLES = ["signer", "viewer", "approver"] as const;
 
 const outsiderSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -190,7 +194,9 @@ export function AddRecipientDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as "team" | "outsider")}
+            onValueChange={(v) =>
+              setActiveTab(parseSelectValue(v, RECIPIENT_TABS) ?? activeTab)
+            }
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="team">
@@ -322,7 +328,9 @@ export function AddRecipientDialog({
             <Label htmlFor="role">Role</Label>
             <Select
               value={role}
-              onValueChange={(v) => setRole(v as typeof role)}
+              onValueChange={(v) =>
+                setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role)
+              }
             >
               <SelectTrigger id="role">
                 <SelectValue />

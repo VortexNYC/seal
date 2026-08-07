@@ -90,7 +90,9 @@ describe("emails/resend_component", () => {
           input: Parameters<typeof fetch>[0],
           init?: Parameters<typeof fetch>[1]
         ) => {
-          expect(String(input)).toBe("https://api.resend.com/emails");
+          const requestUrl =
+            input instanceof Request ? input.url : String(input);
+          expect(requestUrl).toBe("https://api.resend.com/emails");
           expect(init?.method).toBe("POST");
 
           const headers = new Headers(init?.headers);
@@ -98,7 +100,10 @@ describe("emails/resend_component", () => {
           expect(headers.get("Content-Type")).toBe("application/json");
           expect(headers.get("Idempotency-Key")).toBe("email_key_123");
 
-          expect(JSON.parse(String(init?.body))).toEqual({
+          if (typeof init?.body !== "string") {
+            throw new Error("Expected a string request body");
+          }
+          expect(JSON.parse(init.body)).toEqual({
             from: "Seal <no-reply@seal.nyc>",
             headers: { "Idempotency-Key": "email_key_123" },
             html: "<p>Hello</p>",
@@ -112,7 +117,7 @@ describe("emails/resend_component", () => {
           });
         }
       );
-      globalThis.fetch = fetchMock as unknown as typeof fetch;
+      globalThis.fetch = fetchMock;
 
       const result = await sendResendEmail({
         from: "Seal <no-reply@seal.nyc>",
@@ -154,7 +159,7 @@ describe("emails/resend_component", () => {
       });
 
       await t.mutation(internal.emails.resend_component.handleEmailEvent, {
-        id: "email_id_123" as never,
+        id: "email_id_123",
         event: {
           type: "email.delivered",
           created_at: new Date().toISOString(),
@@ -212,7 +217,7 @@ describe("emails/resend_component", () => {
       });
 
       await t.mutation(internal.emails.resend_component.handleEmailEvent, {
-        id: "email_id_456" as never,
+        id: "email_id_456",
         event: {
           type: "email.opened",
           created_at: new Date().toISOString(),
@@ -268,7 +273,7 @@ describe("emails/resend_component", () => {
       });
 
       await t.mutation(internal.emails.resend_component.handleEmailEvent, {
-        id: "email_id_789" as never,
+        id: "email_id_789",
         event: {
           type: "email.bounced",
           created_at: new Date().toISOString(),
@@ -307,7 +312,7 @@ describe("emails/resend_component", () => {
 
     test("silently ignores non-auditable events (email.sent)", async () => {
       await t.mutation(internal.emails.resend_component.handleEmailEvent, {
-        id: "email_id_sent" as never,
+        id: "email_id_sent",
         event: {
           type: "email.sent",
           created_at: new Date().toISOString(),
@@ -330,7 +335,7 @@ describe("emails/resend_component", () => {
 
     test("silently ignores events with no matching notification", async () => {
       await t.mutation(internal.emails.resend_component.handleEmailEvent, {
-        id: "email_id_orphan" as never,
+        id: "email_id_orphan",
         event: {
           type: "email.delivered",
           created_at: new Date().toISOString(),
@@ -370,7 +375,7 @@ describe("emails/resend_component", () => {
       });
 
       await t.mutation(internal.emails.resend_component.handleEmailEvent, {
-        id: "email_id_minimal" as never,
+        id: "email_id_minimal",
         event: {
           type: "email.delivered",
           created_at: new Date().toISOString(),

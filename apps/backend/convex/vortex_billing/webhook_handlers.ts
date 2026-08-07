@@ -1,4 +1,6 @@
+import { parse } from "@vortexnyc/convex/helpers";
 import type { GenericActionCtx } from "convex/server";
+import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { DataModel, Id } from "../_generated/dataModel";
@@ -101,7 +103,7 @@ function parseVortexWebhookEnvelope(
     return null;
   }
 
-  return parsed as VortexWebhookEnvelope;
+  return { ...parsed, id, type, apiVersion, environment, createdAt };
 }
 
 export function parseVortexSubscriptionUpdatedProjection(
@@ -147,7 +149,7 @@ export function parseVortexSubscriptionUpdatedProjection(
   return {
     eventId: event.id,
     eventType: "subscription.updated",
-    sealOrganizationId: sealOrganizationId as Id<"organizations">,
+    sealOrganizationId: parse(v.id("organizations"), sealOrganizationId),
     subscriptionExternalId,
     customerExternalId,
     planCode,

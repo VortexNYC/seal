@@ -1,6 +1,8 @@
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { describe, expect, test } from "vitest";
 
-import type { Doc, Id } from "../../_generated/dataModel";
+import type { Doc } from "../../_generated/dataModel";
 import {
   findFirstIncompleteGroup,
   getNextPendingGroup,
@@ -20,9 +22,9 @@ function makeRecipient(
 ): Doc<"document_recipients"> {
   idCounter++;
   return {
-    _id: `recipient_${idCounter}` as Id<"document_recipients">,
+    _id: parse(v.id("document_recipients"), `recipient_${idCounter}`),
     _creationTime: Date.now(),
-    documentId: "doc_1" as Id<"documents">,
+    documentId: parse(v.id("documents"), "doc_1"),
     email: `user${idCounter}@test.com`,
     name: `User ${idCounter}`,
     role: "signer",
@@ -33,7 +35,7 @@ function makeRecipient(
     createdAt: Date.now(),
     updatedAt: Date.now(),
     ...overrides,
-  } as Doc<"document_recipients">;
+  };
 }
 
 // ---------------------------------------------------------------------------

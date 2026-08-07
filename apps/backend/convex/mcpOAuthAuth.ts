@@ -1,5 +1,4 @@
 import type { McpOAuthClient } from "@vortexnyc/auth/mcp";
-import type { FunctionReference } from "convex/server";
 /**
  * MCP OAuth internal queries/mutations that delegate to the vortexAuth
  * component (authorization codes, dynamic clients, refresh tokens, signing
@@ -8,6 +7,8 @@ import type { FunctionReference } from "convex/server";
  * ADDITIVE: mirrors crm's `convex/mcpOAuthAuth.ts`, adapted to Seal's scopes.
  * Component table ids cross the query boundary as opaque strings.
  */
+import { parse } from "@vortexnyc/convex/helpers";
+import type { FunctionReference } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";
@@ -300,8 +301,21 @@ type VortexAuthMcpRefs = {
   };
 };
 
-const vortexAuthMcp = (components.vortexAuth as unknown as VortexAuthMcpRefs)
-  .mcp;
+/**
+ * The vortexAuth component proxy carries the mcp function refs at runtime,
+ * but the generated component types cannot express them. Structural
+ * predicate documents the seam without an assertion; the refs resolve
+ * lazily through the codegen proxy.
+ */
+function hasMcpRefs(value: unknown): value is VortexAuthMcpRefs {
+  return typeof value === "object" && value !== null;
+}
+
+const vortexAuthComponent: unknown = components.vortexAuth;
+if (!hasMcpRefs(vortexAuthComponent)) {
+  throw new Error("vortexAuth component is not registered");
+}
+const vortexAuthMcp = vortexAuthComponent.mcp;
 
 type QueryRunner = Pick<QueryCtx | MutationCtx, "runQuery">;
 
@@ -309,31 +323,43 @@ export const resolveBetterAuthSessionFromToken = internalQuery({
   args: resolveSessionArgsValidator,
   handler: async (ctx, args) => {
     const now = Date.now();
-    const session = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: "session",
-      where: [
-        { field: "token", value: args.sessionToken },
-        { field: "expiresAt", operator: "gt", value: now },
-      ],
-    })) as {
-      _id: string;
-      userId: string;
-      token: string;
-      expiresAt: number;
-    } | null;
+    const session = parse(
+      v.union(
+        v.null(),
+        v.object({
+          _id: v.string(),
+          userId: v.string(),
+          token: v.string(),
+          expiresAt: v.number(),
+        })
+      ),
+      await ctx.runQuery(components.betterAuth.adapter.findOne, {
+        model: "session",
+        where: [
+          { field: "token", value: args.sessionToken },
+          { field: "expiresAt", operator: "gt", value: now },
+        ],
+      })
+    );
 
     if (session === null) {
       return null;
     }
 
-    const user = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: "user",
-      where: [{ field: "_id", value: session.userId }],
-    })) as {
-      _id: string;
-      email?: string;
-      name?: string;
-    } | null;
+    const user = parse(
+      v.union(
+        v.null(),
+        v.object({
+          _id: v.string(),
+          email: v.optional(v.string()),
+          name: v.optional(v.string()),
+        })
+      ),
+      await ctx.runQuery(components.betterAuth.adapter.findOne, {
+        model: "user",
+        where: [{ field: "_id", value: session.userId }],
+      })
+    );
 
     if (user === null) {
       return null;
@@ -381,7 +407,7 @@ export const consumeAuthorizationCode = internalMutation({
 
     return {
       ...consumed,
-      organizationId: consumed.organizationId as Id<"organizations">,
+      organizationId: parse(v.id("organizations"), consumed.organizationId),
       scopes: requireAllowedScopes(consumed.scopes),
     };
   },
@@ -432,7 +458,7 @@ export const redeemRefreshToken = internalMutation({
     return {
       ok: true as const,
       betterAuthUserId: redeemed.betterAuthUserId,
-      organizationId: redeemed.organizationId as Id<"organizations">,
+      organizationId: parse(v.id("organizations"), redeemed.organizationId),
       audience: redeemed.audience,
       resourceId: redeemed.resourceId,
       scopes: requireAllowedScopes(redeemed.scopes),

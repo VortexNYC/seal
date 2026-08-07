@@ -13,7 +13,15 @@ import {
 } from "../permissions";
 import type { PermissionKey } from "../permissions";
 
-const allPermissionKeys = Object.keys(PERMISSIONS) as PermissionKey[];
+function isPermissionKey(key: string): key is PermissionKey {
+  return isValidPermission(key);
+}
+
+function isRoleName(role: string): role is keyof typeof ROLE_TEMPLATES {
+  return Object.prototype.hasOwnProperty.call(ROLE_TEMPLATES, role);
+}
+
+const allPermissionKeys = Object.keys(PERMISSIONS).filter(isPermissionKey);
 
 describe("hasPermission", () => {
   test("exact match returns true", () => {
@@ -86,7 +94,7 @@ describe("hasAllPermissions", () => {
 describe("getExpandedPermissions", () => {
   test("owner returns ALL permissions since owner has ['*']", () => {
     const ownerPerms = getExpandedPermissions("owner");
-    const sortedAllKeys = [...allPermissionKeys].sort();
+    const sortedAllKeys = [...allPermissionKeys].toSorted();
     expect(ownerPerms).toEqual(sortedAllKeys);
     expect(ownerPerms).toHaveLength(allPermissionKeys.length);
   });
@@ -121,11 +129,9 @@ describe("getExpandedPermissions", () => {
   });
 
   test("returns a sorted array", () => {
-    for (const role of Object.keys(ROLE_TEMPLATES) as Array<
-      keyof typeof ROLE_TEMPLATES
-    >) {
+    for (const role of Object.keys(ROLE_TEMPLATES).filter(isRoleName)) {
       const perms = getExpandedPermissions(role);
-      const sorted = [...perms].sort();
+      const sorted = [...perms].toSorted();
       expect(perms).toEqual(sorted);
     }
   });

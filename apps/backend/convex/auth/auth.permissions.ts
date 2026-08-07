@@ -15,6 +15,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { AuthUtils, type AuthMember } from "../auth.utils";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { findCurrentUserRow } from "../lib/identity";
+import { resolveActiveOrganizationId } from "../lib/resolveActiveOrganization";
 import { enforceActiveOrgSecurityPolicy } from "../lib/suiteOrgPolicy";
 import type { OrganizationRole, UserType } from "../schema";
 import {
@@ -117,7 +118,7 @@ async function getMembershipOrThrow(
   organizationId: Id<"organizations">,
   notFoundMessage: string
 ): Promise<AuthMember> {
-  const user = await ctx.db.get(userId);
+  const user = await ctx.db.get("users", userId);
   if (!user) {
     throwPermissionAuthError("UNAUTHORIZED", "User not found");
   }
@@ -146,7 +147,7 @@ async function getOrganizationOrThrow(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">
 ): Promise<Doc<"organizations">> {
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throwPermissionAuthError("NOT_FOUND", "Organization not found");
   }
@@ -276,11 +277,11 @@ async function buildActiveMembershipContext(
   organization: Doc<"organizations">;
   organizationId: Id<"organizations">;
 }> {
-  if (!user.activeOrganizationId) {
+  const organizationId = await resolveActiveOrganizationId(ctx, user);
+  if (organizationId === null) {
     throwPermissionAuthError("FORBIDDEN", "No active organization");
   }
 
-  const organizationId = user.activeOrganizationId;
   const membership = await getMembershipOrThrow(
     ctx,
     user._id,
@@ -396,14 +397,14 @@ export async function getAuthContextWithPermissions(
   const user = await requireAuthenticatedUser(ctx);
 
   if (user.isSuperAdmin) {
-    if (!user.activeOrganizationId) {
+    const organizationId = await resolveActiveOrganizationId(ctx, user);
+    if (organizationId === null) {
       throwPermissionAuthError(
         "FORBIDDEN",
         "Super admin must have an active organization"
       );
     }
 
-    const organizationId = user.activeOrganizationId;
     const organization = await getOrganizationOrThrow(ctx, organizationId);
     const member = await getMembershipOrThrow(
       ctx,

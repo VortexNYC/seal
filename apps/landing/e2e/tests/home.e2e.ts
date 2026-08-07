@@ -39,12 +39,14 @@ test.describe("landing homepage", () => {
     const startFreeCount = await homePage.startFreeLinks().count();
     expect(startFreeCount).toBeGreaterThan(0);
 
-    for (let i = 0; i < startFreeCount; i += 1) {
-      await expect(homePage.startFreeLinks().nth(i)).toHaveAttribute(
-        "href",
-        `${APP_URL}/waitlist`
-      );
-    }
+    await Promise.all(
+      Array.from({ length: startFreeCount }, (_, i) =>
+        expect(homePage.startFreeLinks().nth(i)).toHaveAttribute(
+          "href",
+          `${APP_URL}/waitlist`
+        )
+      )
+    );
 
     await browserErrors.assertNoErrors();
   });

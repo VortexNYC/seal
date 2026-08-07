@@ -23,7 +23,7 @@ function useSealIcon(): HTMLImageElement | null {
   useEffect(() => {
     const img = new window.Image();
     img.src = "/logo/seal-icon-color-no-background.svg";
-    img.onload = () => setImage(img);
+    img.addEventListener("load", () => setImage(img));
   }, []);
 
   return image;
@@ -214,7 +214,7 @@ export function DraggableField({
   }, [isSelected]);
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target as Konva.Group;
+    const node = e.target;
     onDragEnd(node.x(), node.y());
   };
 

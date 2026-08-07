@@ -4,11 +4,14 @@
  * SEA-80/81/83: Document Templates - Mutation functions
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { permissionMutation } from "../auth";
 import { ensureProFeature } from "../auth/subscription_guards";
+import { fieldTypeTuple } from "../schemas/signature_fields";
 
 /**
  * Save a document as a template
@@ -30,7 +33,7 @@ export const saveAsTemplate = permissionMutation("templates:create")({
     await ensureProFeature(ctx.db, organizationId, "Templates");
 
     // 1. Get the source document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -41,10 +44,12 @@ export const saveAsTemplate = permissionMutation("templates:create")({
     }
 
     // 2. Get all signature fields for this document
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(field);
+    }
 
     // 3. Create the template
     const templateId = await ctx.db.insert("templates", {
@@ -108,7 +113,7 @@ export const createFromTemplate = permissionMutation("documents:create")({
     await ensureProFeature(ctx.db, organizationId, "Templates");
 
     // 1. Get the template
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
     }
@@ -119,12 +124,14 @@ export const createFromTemplate = permissionMutation("documents:create")({
     }
 
     // 2. Get template fields
-    const templateFields = await ctx.db
+    const templateFields: Doc<"template_fields">[] = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      templateFields.push(field);
+    }
 
     // 3. Create new document with template reference
     const documentName = args.documentName || `${template.name} - Copy`;
@@ -152,16 +159,7 @@ export const createFromTemplate = permissionMutation("documents:create")({
         documentId,
         recipientId: undefined,
         templateFieldId: tf._id,
-        fieldType: tf.fieldType as
-          | "signature"
-          | "text"
-          | "number"
-          | "date"
-          | "checkbox"
-          | "dropdown"
-          | "radio"
-          | "attachment"
-          | "payment",
+        fieldType: parse(fieldTypeTuple, tf.fieldType),
         label: tf.label ?? "",
         isRequired: tf.isRequired,
         x: tf.x,
@@ -176,7 +174,7 @@ export const createFromTemplate = permissionMutation("documents:create")({
     }
 
     // 5. Increment template use count
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       useCount: template.useCount + 1,
       updatedAt: now,
     });
@@ -201,7 +199,7 @@ export const updateTemplate = permissionMutation("templates:edit")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
     }
@@ -222,7 +220,7 @@ export const updateTemplate = permissionMutation("templates:edit")({
       updates.description = args.description;
     }
 
-    await ctx.db.patch(args.templateId, updates);
+    await ctx.db.patch("templates", args.templateId, updates);
 
     return { success: true };
   },
@@ -239,7 +237,7 @@ export const deleteTemplate = permissionMutation("templates:delete")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
     }
@@ -248,7 +246,7 @@ export const deleteTemplate = permissionMutation("templates:delete")({
       throw new ConvexError("Template not found");
     }
 
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       status: "deleted",
       updatedAt: Date.now(),
     });
@@ -268,7 +266,7 @@ export const archiveTemplate = permissionMutation("templates:edit")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
     }
@@ -277,7 +275,7 @@ export const archiveTemplate = permissionMutation("templates:edit")({
       throw new ConvexError("Template not found");
     }
 
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       status: "archived",
       updatedAt: Date.now(),
     });
@@ -297,7 +295,7 @@ export const restoreTemplate = permissionMutation("templates:edit")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
     }
@@ -310,7 +308,7 @@ export const restoreTemplate = permissionMutation("templates:edit")({
       throw new ConvexError("Template is not archived");
     }
 
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       status: "active",
       updatedAt: Date.now(),
     });
@@ -352,7 +350,7 @@ export const addTemplateField = permissionMutation("templates:edit")({
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
     }
@@ -361,12 +359,14 @@ export const addTemplateField = permissionMutation("templates:edit")({
     }
 
     // Determine next order value
-    const existingFields = await ctx.db
+    const existingFields: Doc<"template_fields">[] = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      existingFields.push(field);
+    }
     const nextOrder =
       existingFields.length > 0
         ? Math.max(...existingFields.map((f) => f.order)) + 1
@@ -389,7 +389,7 @@ export const addTemplateField = permissionMutation("templates:edit")({
     });
 
     // Touch template timestamp
-    await ctx.db.patch(args.templateId, { updatedAt: now });
+    await ctx.db.patch("templates", args.templateId, { updatedAt: now });
 
     return fieldId;
   },
@@ -410,12 +410,12 @@ export const updateTemplateField = permissionMutation("templates:edit")({
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
 
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("template_fields", args.fieldId);
     if (!field) {
       throw new ConvexError("Template field not found");
     }
 
-    const template = await ctx.db.get(field.templateId);
+    const template = await ctx.db.get("templates", field.templateId);
     if (
       !template ||
       template.status === "deleted" ||
@@ -424,14 +424,14 @@ export const updateTemplateField = permissionMutation("templates:edit")({
       throw new ConvexError("Template not found");
     }
 
-    await ctx.db.patch(args.fieldId, {
+    await ctx.db.patch("template_fields", args.fieldId, {
       ...(args.label !== undefined && { label: args.label }),
       ...(args.isRequired !== undefined && { isRequired: args.isRequired }),
       ...(args.properties !== undefined && { properties: args.properties }),
       updatedAt: now,
     });
 
-    await ctx.db.patch(field.templateId, { updatedAt: now });
+    await ctx.db.patch("templates", field.templateId, { updatedAt: now });
 
     return { success: true };
   },
@@ -454,12 +454,12 @@ export const repositionTemplateField = permissionMutation("templates:edit")({
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
 
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("template_fields", args.fieldId);
     if (!field) {
       throw new ConvexError("Template field not found");
     }
 
-    const template = await ctx.db.get(field.templateId);
+    const template = await ctx.db.get("templates", field.templateId);
     if (
       !template ||
       template.status === "deleted" ||
@@ -468,7 +468,7 @@ export const repositionTemplateField = permissionMutation("templates:edit")({
       throw new ConvexError("Template not found");
     }
 
-    await ctx.db.patch(args.fieldId, {
+    await ctx.db.patch("template_fields", args.fieldId, {
       ...(args.x !== undefined && { x: args.x }),
       ...(args.y !== undefined && { y: args.y }),
       ...(args.width !== undefined && { width: args.width }),
@@ -477,7 +477,7 @@ export const repositionTemplateField = permissionMutation("templates:edit")({
       updatedAt: now,
     });
 
-    await ctx.db.patch(field.templateId, { updatedAt: now });
+    await ctx.db.patch("templates", field.templateId, { updatedAt: now });
 
     return { success: true };
   },
@@ -495,12 +495,12 @@ export const deleteTemplateField = permissionMutation("templates:edit")({
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
 
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("template_fields", args.fieldId);
     if (!field) {
       throw new ConvexError("Template field not found");
     }
 
-    const template = await ctx.db.get(field.templateId);
+    const template = await ctx.db.get("templates", field.templateId);
     if (
       !template ||
       template.status === "deleted" ||
@@ -509,8 +509,8 @@ export const deleteTemplateField = permissionMutation("templates:edit")({
       throw new ConvexError("Template not found");
     }
 
-    await ctx.db.delete(args.fieldId);
-    await ctx.db.patch(field.templateId, { updatedAt: now });
+    await ctx.db.delete("template_fields", args.fieldId);
+    await ctx.db.patch("templates", field.templateId, { updatedAt: now });
 
     return { success: true };
   },
@@ -524,10 +524,10 @@ export const incrementUseCount = internalMutation({
     templateId: v.id("templates"),
   },
   handler: async (ctx, args) => {
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (!template) return;
 
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       useCount: template.useCount + 1,
       updatedAt: Date.now(),
     });

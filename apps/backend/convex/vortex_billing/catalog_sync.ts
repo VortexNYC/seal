@@ -6,7 +6,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
-import { createVortexBillingClient } from "../payments/vortex_billing_processor";
+import { createVortexBillingClient } from "../payments/vortex_billing_processor.helpers";
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
 type ProductStatus = "active" | "archived";
@@ -61,7 +61,11 @@ function readObject(value: unknown, label: string): UnknownRecord {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new ConvexError(`${label} must be an object`);
   }
-  return value as UnknownRecord;
+  const result: Record<string, unknown> = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    result[key] = entryValue;
+  }
+  return result;
 }
 
 function readString(value: unknown, label: string): string {

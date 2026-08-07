@@ -94,6 +94,11 @@ export function expirationPeriodToMs(
       return amount * 7 * MS_PER_DAY;
     case "month":
       return amount * 30 * MS_PER_DAY;
+    default: {
+      const _exhaustive: never = unit;
+      void _exhaustive;
+      throw new Error("Unsupported expiration unit");
+    }
   }
 }
 
@@ -383,42 +388,53 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         totalAmountCents: link.totalAmountCents,
         currency: link.currency,
       })),
-      configs: configs.map((config) => ({
-        configId: config._id,
-        ...(config.paymentStatus !== undefined
-          ? { paymentStatus: config.paymentStatus }
-          : {}),
-        ...(config.vortexRecurringPayableId !== undefined
-          ? { vortexRecurringPayableId: config.vortexRecurringPayableId }
-          : {}),
-        ...(config.vortexInstallmentPayableId !== undefined
-          ? { vortexInstallmentPayableId: config.vortexInstallmentPayableId }
-          : {}),
-        ...(config.vortexDepositBalancePayableId !== undefined
-          ? {
-              vortexDepositBalancePayableId:
-                config.vortexDepositBalancePayableId,
-            }
-          : {}),
-        ...(config.vortexPayableId !== undefined
-          ? { vortexPayableId: config.vortexPayableId }
-          : {}),
-        ...(config.vortexPaymentRequestId !== undefined
-          ? { vortexPaymentRequestId: config.vortexPaymentRequestId }
-          : {}),
-        ...(config.hostedInvoiceUrl !== undefined
-          ? { hostedInvoiceUrl: config.hostedInvoiceUrl }
-          : {}),
-        ...(config.providerInvoiceId !== undefined
-          ? { providerInvoiceId: config.providerInvoiceId }
-          : {}),
-        ...(config.providerPaymentIntentId !== undefined
-          ? { providerPaymentIntentId: config.providerPaymentIntentId }
-          : {}),
-        ...(config.providerSubscriptionId !== undefined
-          ? { providerSubscriptionId: config.providerSubscriptionId }
-          : {}),
-      })),
+      configs: configs.map((config) => {
+        const row: {
+          configId: (typeof configs)[number]["_id"];
+          paymentStatus?: (typeof configs)[number]["paymentStatus"];
+          vortexRecurringPayableId?: (typeof configs)[number]["vortexRecurringPayableId"];
+          vortexInstallmentPayableId?: (typeof configs)[number]["vortexInstallmentPayableId"];
+          vortexDepositBalancePayableId?: (typeof configs)[number]["vortexDepositBalancePayableId"];
+          vortexPayableId?: (typeof configs)[number]["vortexPayableId"];
+          vortexPaymentRequestId?: (typeof configs)[number]["vortexPaymentRequestId"];
+          hostedInvoiceUrl?: (typeof configs)[number]["hostedInvoiceUrl"];
+          providerInvoiceId?: (typeof configs)[number]["providerInvoiceId"];
+          providerPaymentIntentId?: (typeof configs)[number]["providerPaymentIntentId"];
+          providerSubscriptionId?: (typeof configs)[number]["providerSubscriptionId"];
+        } = { configId: config._id };
+        if (config.paymentStatus !== undefined) {
+          row.paymentStatus = config.paymentStatus;
+        }
+        if (config.vortexRecurringPayableId !== undefined) {
+          row.vortexRecurringPayableId = config.vortexRecurringPayableId;
+        }
+        if (config.vortexInstallmentPayableId !== undefined) {
+          row.vortexInstallmentPayableId = config.vortexInstallmentPayableId;
+        }
+        if (config.vortexDepositBalancePayableId !== undefined) {
+          row.vortexDepositBalancePayableId =
+            config.vortexDepositBalancePayableId;
+        }
+        if (config.vortexPayableId !== undefined) {
+          row.vortexPayableId = config.vortexPayableId;
+        }
+        if (config.vortexPaymentRequestId !== undefined) {
+          row.vortexPaymentRequestId = config.vortexPaymentRequestId;
+        }
+        if (config.hostedInvoiceUrl !== undefined) {
+          row.hostedInvoiceUrl = config.hostedInvoiceUrl;
+        }
+        if (config.providerInvoiceId !== undefined) {
+          row.providerInvoiceId = config.providerInvoiceId;
+        }
+        if (config.providerPaymentIntentId !== undefined) {
+          row.providerPaymentIntentId = config.providerPaymentIntentId;
+        }
+        if (config.providerSubscriptionId !== undefined) {
+          row.providerSubscriptionId = config.providerSubscriptionId;
+        }
+        return row;
+      }),
     };
   },
 });
@@ -453,7 +469,10 @@ async function syncRecipientAccess(
     return false;
   }
 
-  const organization = await ctx.db.get(document.organizationId);
+  const organization = await ctx.db.get(
+    "organizations",
+    document.organizationId
+  );
   const orgMember = organization
     ? await resolveComponentMembershipForOrganization(
         ctx,
@@ -473,7 +492,7 @@ async function syncRecipientAccess(
 
     if (!existingAccess || existingAccess.revokedAt !== undefined) {
       if (existingAccess) {
-        await ctx.db.patch(existingAccess._id, {
+        await ctx.db.patch("document_access", existingAccess._id, {
           permissionLevel: "view",
           grantedBy: document.ownerId,
           grantedAt: Date.now(),
@@ -493,7 +512,7 @@ async function syncRecipientAccess(
   }
 
   if (!recipient.userId) {
-    await ctx.db.patch(recipient._id, {
+    await ctx.db.patch("document_recipients", recipient._id, {
       userId: existingUser._id,
       updatedAt: Date.now(),
     });
@@ -517,7 +536,7 @@ async function shareDocumentWithRecipients(
   }
 
   if (sharedWithAnyUser && document.sharingMode === "private") {
-    await ctx.db.patch(documentId, {
+    await ctx.db.patch("documents", documentId, {
       sharingMode: "specific",
     });
   }
@@ -537,7 +556,7 @@ async function applyRecipientExpirationPeriod(
     now + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
 
   for (const recipient of recipients) {
-    await ctx.db.patch(recipient._id, {
+    await ctx.db.patch("document_recipients", recipient._id, {
       expiresAt,
       updatedAt: now,
       ...(recipient.status === "expired" && {
@@ -684,16 +703,18 @@ export const markDocumentAsSent = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
 
     // Get all recipients for this document
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     await shareDocumentWithRecipients(
       ctx,
@@ -706,7 +727,11 @@ export const markDocumentAsSent = internalMutation({
       recipients,
       args.expirationPeriod
     );
-    await ctx.db.patch(args.documentId, buildSentDocumentPatch(document, args));
+    await ctx.db.patch(
+      "documents",
+      args.documentId,
+      buildSentDocumentPatch(document, args)
+    );
 
     // Audit trail
     if (args.userId) {
@@ -969,7 +994,7 @@ export const resetExpiredRecipient = internalMutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.recipientId, {
+    await ctx.db.patch("document_recipients", args.recipientId, {
       status: "pending",
       expiresAt: args.expiresAt,
       expirationNotifiedAt: undefined,
@@ -986,10 +1011,10 @@ export const reactivateExpiredDocument = internalMutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.workflowStatus !== "expired") return;
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       workflowStatus: "sent",
       sentAt: Date.now(),
       expiredAt: undefined,

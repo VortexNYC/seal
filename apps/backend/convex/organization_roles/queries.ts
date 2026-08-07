@@ -2,7 +2,7 @@
  * Queries for organization roles
  */
 
-import { ConvexError, type GenericId, v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { components } from "../_generated/api";
 import { permissionQuery } from "../auth/wrappers";
@@ -57,8 +57,8 @@ export const getById = permissionQuery("users:roles")({
     const role = await ctx.runQuery(
       components.vortexAuth.organizations.getRole,
       {
-        roleId: args.id as GenericId<"organization_roles">,
-        organizationId: componentOrganizationId as GenericId<"organizations">,
+        roleId: args.id,
+        organizationId: componentOrganizationId,
       }
     );
 
@@ -77,7 +77,7 @@ export const getById = permissionQuery("users:roles")({
     }
 
     return toLegacyRole({
-      roleId: String(role._id),
+      roleId: role._id,
       organizationId: ctx.auth.organizationId,
       name: role.key,
       permissions: role.permissions,

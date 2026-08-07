@@ -9,7 +9,7 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Id, Doc } from "../_generated/dataModel";
 import {
   type ActionCtx,
   internalAction,
@@ -79,7 +79,7 @@ function createSealContext(
     organizationId: args.organizationId,
     userId: args.userId,
     documentId: args.documentId,
-  } as SealAICtx;
+  };
 }
 
 const TIER_MODEL: Record<number, string> = {
@@ -327,7 +327,7 @@ export const getOrCreateThread = authMutation({
     if (existing) return { threadId: existing.threadId, isNew: false };
 
     // Get document to verify access and get org
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) throw new ConvexError("Document not found");
 
     // Create agent thread (mutation overload — returns { threadId } only)
@@ -362,13 +362,17 @@ export const getOrCreateSearchThread = authMutation({
     const organizationId = ctx.auth.organizationId;
 
     // Check for existing search thread for this user in this org
-    const existing = await ctx.db
+    let existing: Doc<"ai_threads"> | null = null;
+    for await (const thread of ctx.db
       .query("ai_threads")
       .withIndex("by_organization_user", (q) =>
         q.eq("organizationId", organizationId).eq("userId", userId.toString())
-      )
-      .filter((q) => q.eq(q.field("threadType"), "search"))
-      .first();
+      )) {
+      if (thread.threadType === "search") {
+        existing = thread;
+        break;
+      }
+    }
 
     if (existing) return { threadId: existing.threadId, isNew: false };
 

@@ -14,7 +14,7 @@ export const setAiProcessingStatus = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       aiProcessingStatus: args.status,
       updatedAt: Date.now(),
     });
@@ -31,11 +31,14 @@ export const savePaymentExtractionOnSuggestion = internalMutation({
     paymentExtraction: paymentExtractionValidator,
   },
   handler: async (ctx, args) => {
-    const suggestion = await ctx.db.get(args.suggestionId);
+    const suggestion = await ctx.db.get(
+      "ai_field_suggestions",
+      args.suggestionId
+    );
     if (!suggestion) throw new Error("Suggestion not found");
     if (suggestion.status !== "pending") return; // already applied/dismissed
 
-    await ctx.db.patch(args.suggestionId, {
+    await ctx.db.patch("ai_field_suggestions", args.suggestionId, {
       paymentExtraction: args.paymentExtraction,
     });
   },

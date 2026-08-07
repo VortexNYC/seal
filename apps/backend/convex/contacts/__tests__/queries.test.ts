@@ -1,3 +1,5 @@
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { api } from "../../_generated/api";
@@ -112,7 +114,7 @@ describe("Contact queries", () => {
     });
 
     test("throws for non-existent contact", async () => {
-      const fakeId = "k17abc123def456gh" as Id<"contacts">;
+      const fakeId = parse(v.id("contacts"), "k17abc123def456gh");
 
       await expect(
         asOwner().query(api.contacts.queries.getById, { id: fakeId })

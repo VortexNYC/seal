@@ -85,6 +85,41 @@ function objectFromJson(value: Json, label: string): JsonObject {
   return value;
 }
 
+function isJson(value: unknown): value is Json {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "string"
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  if (typeof value === "object") {
+    return Object.values(value).every(isJson);
+  }
+  return false;
+}
+
+function toJson(value: unknown, label: string): Json {
+  assert(isJson(value), `Expected ${label} to be valid JSON`);
+  return value;
+}
+
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
+}
+
 function objectField(value: JsonObject, field: string): JsonObject {
   const child = value[field];
   assert(isJsonObject(child), `Expected ${field} to be an object`);
@@ -161,7 +196,11 @@ async function runConvex<T extends Json>(input: {
       `convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`
     );
   }
-  return parseConvexJson<T>(result.stdout, input.functionName);
+  const parsed = parseConvexJson(result.stdout, input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 async function getConvexEnv(input: {
@@ -205,14 +244,12 @@ async function runConvexExpectFailure(input: {
   return result;
 }
 
-function parseConvexJson<T extends Json>(
-  stdout: string,
-  functionName: string
-): T {
+function parseConvexJson(stdout: string, functionName: string): Json {
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
   assert(jsonStart >= 0, `No JSON returned from ${functionName}: ${trimmed}`);
-  return JSON.parse(trimmed.slice(jsonStart)) as T;
+  const raw: unknown = JSON.parse(trimmed.slice(jsonStart));
+  return toJson(raw, functionName);
 }
 
 async function setConvexEnv(input: {
@@ -239,7 +276,8 @@ function readStringRecord(
   if (value === undefined || value.trim().length === 0) {
     return {};
   }
-  const parsed = JSON.parse(value) as Json;
+  const rawParsed: unknown = JSON.parse(value);
+  const parsed = toJson(rawParsed, label);
   assert(isJsonObject(parsed), `Expected ${label} to be a JSON object`);
   const record: Record<string, string> = {};
   for (const [key, entry] of Object.entries(parsed)) {
@@ -294,8 +332,9 @@ async function requestVortexJson(input: {
     ...(input.body === undefined ? {} : { body: JSON.stringify(input.body) }),
   });
   const text = await response.text();
+  const rawBody: unknown = text.length > 0 ? JSON.parse(text) : null;
   const parsed = objectFromJson(
-    text.length > 0 ? (JSON.parse(text) as Json) : null,
+    toJson(rawBody, `${input.label} response`),
     `${input.label} response`
   );
   if (!response.ok) {

@@ -6,6 +6,7 @@
 
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { permissionQuery } from "../auth";
 import { contactStatusValidator } from "../schemas/contacts";
 
@@ -20,25 +21,30 @@ export const list = permissionQuery("contacts:view")({
   },
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
+    const contacts: Doc<"contacts">[] = [];
 
     if (args.status) {
       const status = args.status;
-      return await ctx.db
+      for await (const contact of ctx.db
         .query("contacts")
         .withIndex("by_org_status", (q) =>
           q.eq("organizationId", organizationId).eq("status", status)
         )
-        .order("desc")
-        .collect();
+        .order("desc")) {
+        contacts.push(contact);
+      }
+      return contacts;
     }
 
-    return await ctx.db
+    for await (const contact of ctx.db
       .query("contacts")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
       )
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      contacts.push(contact);
+    }
+    return contacts;
   },
 });
 
@@ -54,7 +60,7 @@ export const getById = permissionQuery("contacts:view")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const contact = await ctx.db.get(args.id);
+    const contact = await ctx.db.get("contacts", args.id);
 
     if (!contact) {
       throw new ConvexError("Contact not found");
@@ -81,7 +87,7 @@ export const search = permissionQuery("contacts:view")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    let searchQuery = ctx.db
+    const searchQuery = ctx.db
       .query("contacts")
       .withSearchIndex("search_contacts", (q) => {
         let sq = q
@@ -169,16 +175,18 @@ export const getRelatedDocuments = permissionQuery("contacts:view")({
     const orgId = ctx.auth.organization._id;
 
     // Find recipients with this email
-    const recipients = await ctx.db
+    const recipients: Doc<"document_recipients">[] = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .collect();
+      .withIndex("by_email", (q) => q.eq("email", args.email))) {
+      recipients.push(recipient);
+    }
 
     // Get unique document IDs and fetch documents
     const documentIds = [...new Set(recipients.map((r) => r.documentId))];
     const documents = await Promise.all(
       documentIds.map(async (docId) => {
-        const doc = await ctx.db.get(docId);
+        const doc = await ctx.db.get("documents", docId);
         if (!doc || doc.organizationId !== orgId) return null;
         const recipient = recipients.find((r) => r.documentId === docId);
         return {

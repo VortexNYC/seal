@@ -56,10 +56,12 @@ async function getActiveAccessWithUsers(
   ctx: SharingQueryDbCtx,
   documentId: Id<"documents">
 ) {
-  const accessRecords = await ctx.db
+  const accessRecords = [];
+  for await (const _row of ctx.db
     .query("document_access")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    accessRecords.push(_row);
+  }
 
   const activeAccessRecords = accessRecords.filter(
     (record) => record.revokedAt === undefined
@@ -67,8 +69,8 @@ async function getActiveAccessWithUsers(
 
   const sharedWith = await Promise.all(
     activeAccessRecords.map(async (access) => {
-      const user = await ctx.db.get(access.userId);
-      const grantedByUser = await ctx.db.get(access.grantedBy);
+      const user = await ctx.db.get("users", access.userId);
+      const grantedByUser = await ctx.db.get("users", access.grantedBy);
       return {
         _id: access._id,
         userId: access.userId,
@@ -171,7 +173,7 @@ export const updateSharingMode = permissionMutation("documents:share")({
       }
     }
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       sharingMode: args.sharingMode,
       updatedAt: Date.now(),
     });
@@ -240,7 +242,7 @@ export const grantAccess = permissionMutation("documents:share")({
 
     const now = Date.now();
     if (existingAccess) {
-      await ctx.db.patch(existingAccess._id, {
+      await ctx.db.patch("document_access", existingAccess._id, {
         permissionLevel: args.permissionLevel,
         grantedBy: currentUserId,
         grantedAt: now,
@@ -259,7 +261,7 @@ export const grantAccess = permissionMutation("documents:share")({
       });
     }
 
-    const currentUser = await ctx.db.get(currentUserId);
+    const currentUser = await ctx.db.get("users", currentUserId);
     const notificationId = await createNotification(ctx, {
       userId: args.userId,
       organizationId: document.organizationId,
@@ -336,7 +338,7 @@ export const grantAccessBulk = permissionMutation("documents:share")({
     }
 
     const now = Date.now();
-    const currentUser = await ctx.db.get(currentUserId);
+    const currentUser = await ctx.db.get("users", currentUserId);
     let granted = 0;
     let skipped = 0;
 
@@ -365,7 +367,7 @@ export const grantAccessBulk = permissionMutation("documents:share")({
         .first();
 
       if (existingAccess) {
-        await ctx.db.patch(existingAccess._id, {
+        await ctx.db.patch("document_access", existingAccess._id, {
           permissionLevel,
           grantedBy: currentUserId,
           grantedAt: now,
@@ -454,12 +456,12 @@ export const revokeAccess = permissionMutation("documents:share")({
       );
     }
 
-    await ctx.db.patch(access._id, {
+    await ctx.db.patch("document_access", access._id, {
       revokedAt: Date.now(),
       revokedBy: currentUserId,
     });
 
-    const currentUser = await ctx.db.get(currentUserId);
+    const currentUser = await ctx.db.get("users", currentUserId);
     await createNotification(ctx, {
       userId: args.userId,
       organizationId: document.organizationId,
@@ -533,7 +535,7 @@ export const updateAccessLevel = permissionMutation("documents:share")({
     }
 
     const now = Date.now();
-    await ctx.db.patch(access._id, {
+    await ctx.db.patch("document_access", access._id, {
       permissionLevel: args.newPermissionLevel,
       grantedBy: currentUserId,
       grantedAt: now,
@@ -541,7 +543,7 @@ export const updateAccessLevel = permissionMutation("documents:share")({
       updatedAt: now,
     });
 
-    const currentUser = await ctx.db.get(currentUserId);
+    const currentUser = await ctx.db.get("users", currentUserId);
     await createNotification(ctx, {
       userId: args.userId,
       organizationId: document.organizationId,
@@ -588,7 +590,7 @@ export const transferOwnership = permissionMutation("documents:share")({
     }
 
     const now = Date.now();
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       ownerId: args.newOwnerId,
       updatedAt: now,
     });
@@ -601,7 +603,7 @@ export const transferOwnership = permissionMutation("documents:share")({
       grantedAt: now,
     });
 
-    const currentUser = await ctx.db.get(currentUserId);
+    const currentUser = await ctx.db.get("users", currentUserId);
     await createNotification(ctx, {
       userId: args.newOwnerId,
       organizationId: document.organizationId,
@@ -629,7 +631,7 @@ export const getDocumentAccess = authQuery({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }
@@ -642,7 +644,7 @@ export const getDocumentAccess = authQuery({
       ctx,
       args.documentId
     );
-    const owner = await ctx.db.get(document.ownerId);
+    const owner = await ctx.db.get("users", document.ownerId);
     const hasSharedDocuments =
       document.sharingMode !== "private" || activeAccessRecords.length > 0;
     const subscriptionState = await getSharingSubscriptionState(
@@ -678,7 +680,7 @@ export const getShareableMembers = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return [];
     }
@@ -700,7 +702,10 @@ export const getShareableMembers = authQuery({
       return [];
     }
 
-    const organization = await ctx.db.get(document.organizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      document.organizationId
+    );
     if (!organization) {
       return [];
     }
@@ -713,10 +718,12 @@ export const getShareableMembers = authQuery({
     );
 
     // 4. Get existing access records to mark already-shared members
-    const accessRecords = await ctx.db
+    const accessRecords = [];
+    for await (const _row of ctx.db
       .query("document_access")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      accessRecords.push(_row);
+    }
 
     const activeAccessMap = new Map(
       accessRecords
@@ -730,7 +737,7 @@ export const getShareableMembers = authQuery({
         if (!member.userId) {
           return null;
         }
-        const user = await ctx.db.get(member.userId);
+        const user = await ctx.db.get("users", member.userId);
         const isOwner = member.userId === document.ownerId;
         const existingAccess = activeAccessMap.get(member.userId.toString());
 
@@ -749,7 +756,7 @@ export const getShareableMembers = authQuery({
     // Sort: owner first, then by name
     return shareableMembers
       .filter((member) => member !== null)
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         if (a.isOwner) return -1;
         if (b.isOwner) return 1;
         return (a.name ?? a.email).localeCompare(b.name ?? b.email);

@@ -33,7 +33,7 @@ describe("getDocumentsApproachingDeadline", () => {
       name: "Test Document",
       ownerId,
       organizationId,
-      status: (overrides.status ?? "active") as "active" | "deleted",
+      status: overrides.status ?? "active",
       sharingMode: "private" as const,
       fileSize: 1024,
       fileType: "application/pdf",

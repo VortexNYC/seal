@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
 import { decryptSignatureData } from "../crypto/encryption";
 import { findRecipientByToken } from "../documents/recipient_helpers";
@@ -22,10 +22,12 @@ export const getFieldsByDocument = query({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<Doc<"signature_fields">[]> => {
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(field);
+    }
 
     return fields;
   },
@@ -39,10 +41,14 @@ export const getFieldsByRecipient = query({
     recipientId: v.id("document_recipients"),
   },
   handler: async (ctx, args): Promise<Doc<"signature_fields">[]> => {
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
-      .collect();
+      .withIndex("by_recipient", (q) =>
+        q.eq("recipientId", args.recipientId)
+      )) {
+      fields.push(field);
+    }
 
     return fields;
   },
@@ -57,12 +63,14 @@ export const getFieldsByPage = query({
     page: v.number(),
   },
   handler: async (ctx, args): Promise<Doc<"signature_fields">[]> => {
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
       .withIndex("by_document_page", (q) =>
         q.eq("documentId", args.documentId).eq("page", args.page)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
     return fields;
   },
@@ -77,12 +85,14 @@ export const getFieldsByDocumentAndRecipient = query({
     recipientId: v.id("document_recipients"),
   },
   handler: async (ctx, args): Promise<Doc<"signature_fields">[]> => {
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
         q.eq("documentId", args.documentId).eq("recipientId", args.recipientId)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
     return fields;
   },
@@ -96,7 +106,7 @@ export const getFieldById = query({
     fieldId: v.id("signature_fields"),
   },
   handler: async (ctx, args): Promise<Doc<"signature_fields"> | null> => {
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     return field;
   },
 });
@@ -115,13 +125,13 @@ export const getFieldWithRecipient = query({
     field: Doc<"signature_fields">;
     recipient: Doc<"document_recipients"> | null;
   } | null> => {
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       return null;
     }
 
     const recipient = field.recipientId
-      ? await ctx.db.get(field.recipientId)
+      ? await ctx.db.get("document_recipients", field.recipientId)
       : null;
 
     return {
@@ -139,12 +149,14 @@ export const getFieldCountByDocument = query({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<number> => {
-    const fields = await ctx.db
+    let count = 0;
+    for await (const _field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      count++;
+    }
 
-    return fields.length;
+    return count;
   },
 });
 
@@ -164,10 +176,12 @@ export const getFieldStatsByDocument = query({
     optional: number;
     byType: Record<string, number>;
   }> => {
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(field);
+    }
 
     const required = fields.filter((f) => f.isRequired).length;
     const optional = fields.length - required;
@@ -204,10 +218,12 @@ export const checkRequiredFieldsComplete = query({
     missingFields: Doc<"signature_fields">[];
   }> => {
     // Get all required fields for the document
-    const allFields = await ctx.db
+    const allFields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      allFields.push(field);
+    }
 
     const requiredFields = allFields.filter((f) => f.isRequired);
 
@@ -236,6 +252,48 @@ export const checkRequiredFieldsComplete = query({
   },
 });
 
+type FieldWithValues = Doc<"signature_fields"> & {
+  currentValue: string | undefined;
+  currentSignatureImageUrl: string | undefined;
+  isFilled: boolean;
+  signatureDetails:
+    | {
+        signedAt: number;
+        signerName: string | undefined;
+        signerEmail: string | undefined;
+        signatureMethod: string | undefined;
+      }
+    | undefined;
+};
+
+async function buildFieldWithValues(
+  field: Doc<"signature_fields">,
+  signature: Doc<"signatures"> | null,
+  signerName: string | undefined,
+  signerEmail: string | undefined,
+  isPaymentPaid: boolean,
+  encKey: string | undefined
+): Promise<FieldWithValues> {
+  const decryptedImageUrl = await decryptSignatureData(
+    signature?.signatureImageUrl,
+    encKey
+  );
+
+  return Object.assign({}, field, {
+    currentValue: signature?.value,
+    currentSignatureImageUrl: decryptedImageUrl,
+    isFilled: !!signature || isPaymentPaid,
+    signatureDetails: signature
+      ? {
+          signedAt: signature.signedAt,
+          signerName,
+          signerEmail,
+          signatureMethod: signature.signatureMethod,
+        }
+      : undefined,
+  });
+}
+
 /**
  * Get all fields assigned to a recipient by signing token
  * Returns fields with their current values from signatures table
@@ -254,86 +312,69 @@ export const getFieldsBySigningToken = query({
     }
 
     // 2. Get all fields assigned to this recipient
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
         q
           .eq("documentId", recipient.documentId)
           .eq("recipientId", recipient._id)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
-    // 3. Get existing signatures for these fields with full details
     const encKey = process.env.SIGNATURE_ENCRYPTION_KEY;
-    const fieldsWithValues = await Promise.all(
-      fields.map(async (field) => {
-        const signature = await ctx.db
-          .query("signatures")
-          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
-          .first();
+    const fieldsWithValues: FieldWithValues[] = [];
+    for (const field of fields) {
+      const signature = await ctx.db
+        .query("signatures")
+        .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+        .first();
 
-        // Get recipient info for this signature if it exists
-        let signerName: string | undefined;
-        let signerEmail: string | undefined;
-
-        if (signature) {
-          const signerRecipient = await ctx.db.get(signature.recipientId);
-          if (signerRecipient) {
-            signerEmail = signerRecipient.email;
-            // Try recipient name first, then look up user by email for their name
-            if (signerRecipient.name) {
-              signerName = signerRecipient.name;
-            } else {
-              // Try to get user's name from users table by email
-              const signerUser = await ctx.db
-                .query("users")
-                .withIndex("by_email", (q) =>
-                  q.eq("email", signerRecipient.email)
-                )
-                .first();
-              signerName = signerUser?.name ?? undefined;
-            }
+      let signerName: string | undefined;
+      let signerEmail: string | undefined;
+      if (signature) {
+        const signerRecipient = await ctx.db.get(
+          "document_recipients",
+          signature.recipientId
+        );
+        if (signerRecipient) {
+          signerEmail = signerRecipient.email;
+          if (signerRecipient.name) {
+            signerName = signerRecipient.name;
+          } else {
+            const signerUser = await ctx.db
+              .query("users")
+              .withIndex("by_email", (q) =>
+                q.eq("email", signerRecipient.email)
+              )
+              .first();
+            signerName = signerUser?.name ?? undefined;
           }
         }
+      }
 
-        // Decrypt signature image data for display
-        const decryptedImageUrl = await decryptSignatureData(
-          signature?.signatureImageUrl,
+      let isPaymentPaid = false;
+      if (field.fieldType === "payment") {
+        const paymentConfig = await ctx.db
+          .query("payment_field_configs")
+          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+          .first();
+        isPaymentPaid = paymentConfig?.paymentStatus === "paid";
+      }
+
+      fieldsWithValues.push(
+        await buildFieldWithValues(
+          field,
+          signature,
+          signerName,
+          signerEmail,
+          isPaymentPaid,
           encKey
-        );
-
-        // For payment fields, check payment config status
-        let isPaymentPaid = false;
-        if (field.fieldType === "payment") {
-          const paymentConfig = await ctx.db
-            .query("payment_field_configs")
-            .withIndex("by_field", (q) => q.eq("fieldId", field._id))
-            .first();
-          isPaymentPaid = paymentConfig?.paymentStatus === "paid";
-        }
-
-        return {
-          ...field,
-          currentValue: signature?.value,
-          currentSignatureImageUrl: decryptedImageUrl,
-          isFilled: !!signature || isPaymentPaid,
-          // Include signature details for display
-          signatureDetails: signature
-            ? {
-                signedAt: signature.signedAt,
-                signerName,
-                signerEmail,
-                signatureMethod: signature.signatureMethod,
-              }
-            : undefined,
-        };
-      })
-    );
-
-    // 4. Sort by page number for easier rendering
-    fieldsWithValues.sort((a, b) => a.page - b.page);
-
-    return fieldsWithValues;
+        )
+      );
+    }
+    return fieldsWithValues.toSorted((a, b) => a.page - b.page);
   },
 });
 
@@ -350,7 +391,7 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get user email
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
     if (!user || !user.email) {
       return [];
     }
@@ -358,95 +399,82 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
     const userEmail = user.email.toLowerCase();
 
     // 2. Find recipient by document + email match
-    const recipient = await ctx.db
+    let recipient: Doc<"document_recipients"> | null = null;
+    for await (const candidate of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("email"), userEmail))
-      .first();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (candidate.email === userEmail) {
+        recipient = candidate;
+        break;
+      }
+    }
 
     if (!recipient) {
       return [];
     }
 
     // 3. Get all fields assigned to this recipient
-    const fields = await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
         q.eq("documentId", args.documentId).eq("recipientId", recipient._id)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
-    // 4. Get existing signatures for these fields with full details
     const encKey = process.env.SIGNATURE_ENCRYPTION_KEY;
-    const fieldsWithValues = await Promise.all(
-      fields.map(async (field) => {
-        const signature = await ctx.db
-          .query("signatures")
-          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
-          .first();
+    const fieldsWithValues: FieldWithValues[] = [];
+    for (const field of fields) {
+      const signature = await ctx.db
+        .query("signatures")
+        .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+        .first();
 
-        // Get recipient info for this signature if it exists
-        let signerName: string | undefined;
-        let signerEmail: string | undefined;
-
-        if (signature) {
-          const signerRecipient = await ctx.db.get(signature.recipientId);
-          if (signerRecipient) {
-            signerEmail = signerRecipient.email;
-            // Try recipient name first, then look up user by email for their name
-            if (signerRecipient.name) {
-              signerName = signerRecipient.name;
-            } else {
-              // Try to get user's name from users table by email
-              const signerUser = await ctx.db
-                .query("users")
-                .withIndex("by_email", (q) =>
-                  q.eq("email", signerRecipient.email)
-                )
-                .first();
-              signerName = signerUser?.name ?? undefined;
-            }
+      let signerName: string | undefined;
+      let signerEmail: string | undefined;
+      if (signature) {
+        const signerRecipient = await ctx.db.get(
+          "document_recipients",
+          signature.recipientId
+        );
+        if (signerRecipient) {
+          signerEmail = signerRecipient.email;
+          if (signerRecipient.name) {
+            signerName = signerRecipient.name;
+          } else {
+            const signerUser = await ctx.db
+              .query("users")
+              .withIndex("by_email", (q) =>
+                q.eq("email", signerRecipient.email)
+              )
+              .first();
+            signerName = signerUser?.name ?? undefined;
           }
         }
+      }
 
-        // Decrypt signature image data for display
-        const decryptedImageUrl = await decryptSignatureData(
-          signature?.signatureImageUrl,
+      let isPaymentPaid = false;
+      if (field.fieldType === "payment") {
+        const paymentConfig = await ctx.db
+          .query("payment_field_configs")
+          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+          .first();
+        isPaymentPaid = paymentConfig?.paymentStatus === "paid";
+      }
+
+      fieldsWithValues.push(
+        await buildFieldWithValues(
+          field,
+          signature,
+          signerName,
+          signerEmail,
+          isPaymentPaid,
           encKey
-        );
-
-        // For payment fields, check payment config status
-        let isPaymentPaid = false;
-        if (field.fieldType === "payment") {
-          const paymentConfig = await ctx.db
-            .query("payment_field_configs")
-            .withIndex("by_field", (q) => q.eq("fieldId", field._id))
-            .first();
-          isPaymentPaid = paymentConfig?.paymentStatus === "paid";
-        }
-
-        return {
-          ...field,
-          currentValue: signature?.value,
-          currentSignatureImageUrl: decryptedImageUrl,
-          isFilled: !!signature || isPaymentPaid,
-          // Include signature details for display
-          signatureDetails: signature
-            ? {
-                signedAt: signature.signedAt,
-                signerName,
-                signerEmail,
-                signatureMethod: signature.signatureMethod,
-              }
-            : undefined,
-        };
-      })
-    );
-
-    // 5. Sort by page number for easier rendering
-    fieldsWithValues.sort((a, b) => a.page - b.page);
-
-    return fieldsWithValues;
+        )
+      );
+    }
+    return fieldsWithValues.toSorted((a, b) => a.page - b.page);
   },
 });
 
@@ -454,14 +482,15 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
  * Internal query to get signature fields by document ID without access control
  * Used by actions that need to access signature fields
  */
-import { internalQuery } from "../_generated/server";
-
 export const getFieldsByDocumentInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const fields: Doc<"signature_fields">[] = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(field);
+    }
+    return fields;
   },
 });

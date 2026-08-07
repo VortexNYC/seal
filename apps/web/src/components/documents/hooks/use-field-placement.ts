@@ -4,9 +4,11 @@ import { useMutation } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { parseId } from "../../../lib/convex-ids";
+import { parseSelectValue } from "../../../lib/select-values";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";
 import { type FieldOptionsConfig } from "../field-options-dialog";
-import type { FieldType } from "../field-toolbar";
+import { FIELD_TYPES, type FieldType } from "../field-toolbar";
 
 type Recipient = {
   _id: Id<"document_recipients">;
@@ -15,7 +17,7 @@ type Recipient = {
 
 type SignatureField = {
   _id: Id<"signature_fields">;
-  fieldType: string;
+  fieldType: FieldType;
   x: number;
   y: number;
   width: number;
@@ -53,6 +55,34 @@ interface UseFieldPlacementOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
   signaturesByFieldId: Map<string, SignatureData>;
   paymentConfigByFieldId: Map<string, PaymentConfig>;
+}
+
+function formatFieldTypeLabel(fieldType: FieldType): string {
+  const typeLabels: Record<FieldType, string> = {
+    signature: "Signature",
+    text: "Text",
+    number: "Number",
+    date: "Date",
+    checkbox: "Checkbox",
+    dropdown: "Dropdown",
+    radio: "Radio",
+    attachment: "Attachment",
+    payment: "Payment",
+  };
+  return `${typeLabels[fieldType]} Field`;
+}
+
+function fieldTypeRequiresOptions(fieldType: FieldType): boolean {
+  return (
+    fieldType === "checkbox" ||
+    fieldType === "dropdown" ||
+    fieldType === "radio"
+  );
+}
+
+function handleFieldDragOver(e: React.DragEvent): void {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "copy";
 }
 
 /**
@@ -119,7 +149,7 @@ export function useFieldPlacement({
   useEffect(() => {
     const fields: PlacedField[] = signatureFields.map((field) => ({
       id: field._id,
-      fieldType: field.fieldType as FieldType,
+      fieldType: field.fieldType,
       x: field.x,
       y: field.y,
       width: field.width,
@@ -179,37 +209,12 @@ export function useFieldPlacement({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedFieldId, requestFieldDelete]);
 
-  const formatFieldTypeLabel = (fieldType: FieldType): string => {
-    const typeLabels: Record<FieldType, string> = {
-      signature: "Signature",
-      text: "Text",
-      number: "Number",
-      date: "Date",
-      checkbox: "Checkbox",
-      dropdown: "Dropdown",
-      radio: "Radio",
-      attachment: "Attachment",
-      payment: "Payment",
-    };
-    return `${typeLabels[fieldType]} Field`;
-  };
-
-  const fieldTypeRequiresOptions = (fieldType: FieldType): boolean => {
-    return (
-      fieldType === "checkbox" ||
-      fieldType === "dropdown" ||
-      fieldType === "radio"
-    );
-  };
-
-  const handleFieldDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-  };
-
   const handleFieldDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    const fieldType = e.dataTransfer.getData("fieldType") as FieldType;
+    const fieldType = parseSelectValue(
+      e.dataTransfer.getData("fieldType"),
+      FIELD_TYPES
+    );
     if (!fieldType) return;
 
     const signers = recipients.filter((r) => r.role === "signer");
@@ -297,7 +302,7 @@ export function useFieldPlacement({
 
       const fieldId = await createField({
         documentId,
-        recipientId: selectedRecipientId as Id<"document_recipients">,
+        recipientId: selectedRecipientId,
         fieldType: pendingFieldData.fieldType,
         label,
         isRequired: true,
@@ -382,7 +387,7 @@ export function useFieldPlacement({
 
     try {
       await repositionField({
-        fieldId: fieldId as Id<"signature_fields">,
+        fieldId: parseId("signature_fields", fieldId),
         x,
         y,
         width,
@@ -404,7 +409,9 @@ export function useFieldPlacement({
     if (!selectedFieldId) return;
 
     try {
-      await deleteField({ fieldId: selectedFieldId as Id<"signature_fields"> });
+      await deleteField({
+        fieldId: parseId("signature_fields", selectedFieldId),
+      });
       setSelectedFieldId(null);
       await refetchFields();
       toast.success("Field deleted");

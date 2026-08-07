@@ -86,7 +86,9 @@ function NotificationSettings() {
     }
     setFormData((prev) => ({
       ...prev,
-      reminderSchedule: [...prev.reminderSchedule, day].sort((a, b) => a - b),
+      reminderSchedule: [...prev.reminderSchedule, day].toSorted(
+        (a, b) => a - b
+      ),
     }));
     setNewReminderDay("");
   };

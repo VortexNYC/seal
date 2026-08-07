@@ -9,7 +9,6 @@
 
 import { v } from "convex/values";
 
-import type { Id } from "../../_generated/dataModel";
 import { internalMutation, internalQuery } from "../../_generated/server";
 
 /**
@@ -91,28 +90,40 @@ export const listTemplates = internalQuery({
   }> => {
     const limit = args.limit ?? 20;
 
-    // convex-cost-guard-allow: convex-aliased-db-handle — the aliased builder is consumed exclusively by .take(limit + 1) below (bounded page read); no unbounded collect flows through this alias. bound=per-tenant
-    let query = ctx.db
-      .query("templates")
-      .withIndex("by_organization_status", (q) => {
-        const base = q.eq("organizationId", args.organizationId);
-        if (args.status === "active" || args.status === "archived") {
-          return base.eq("status", args.status);
-        }
-        return base.eq("status", "active");
-      });
-
-    // Apply cursor if provided
+    let cursorCreationTime: number | undefined;
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(args.cursor as Id<"templates">);
-      if (cursorDoc) {
-        query = query.filter((q) =>
-          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
-        );
+      const cursorId = ctx.db.normalizeId("templates", args.cursor);
+      if (cursorId) {
+        const cursorDoc = await ctx.db.get("templates", cursorId);
+        if (cursorDoc) {
+          cursorCreationTime = cursorDoc._creationTime;
+        }
       }
     }
 
-    const templates = await query.order("desc").take(limit + 1);
+    const statusFilter =
+      args.status === "active" || args.status === "archived"
+        ? args.status
+        : "active";
+
+    const templates = [];
+    for await (const template of ctx.db
+      .query("templates")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", statusFilter)
+      )
+      .order("desc")) {
+      if (
+        cursorCreationTime !== undefined &&
+        template._creationTime >= cursorCreationTime
+      ) {
+        continue;
+      }
+      templates.push(template);
+      if (templates.length >= limit + 1) {
+        break;
+      }
+    }
 
     const hasMore = templates.length > limit;
     const resultTemplates = hasMore ? templates.slice(0, -1) : templates;
@@ -131,11 +142,14 @@ export const listTemplates = internalQuery({
         const field_count =
           lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
 
+        const status: ApiTemplate["status"] =
+          template.status === "archived" ? "archived" : "active";
+
         return {
           id: template._id,
           name: template.name,
           description: template.description,
-          status: template.status as "active" | "archived",
+          status,
           use_count: template.useCount,
           page_count: template.pageCount,
           field_count,
@@ -146,8 +160,7 @@ export const listTemplates = internalQuery({
     );
 
     const lastTemplate = resultTemplates[resultTemplates.length - 1];
-    const nextCursor =
-      hasMore && lastTemplate ? (lastTemplate._id as string) : undefined;
+    const nextCursor = hasMore && lastTemplate ? lastTemplate._id : undefined;
 
     return {
       templates: templatesWithCounts,
@@ -173,7 +186,7 @@ export const getTemplate = internalQuery({
     ctx,
     args
   ): Promise<(ApiTemplate & { fields?: ApiTemplateField[] }) | null> => {
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       return null;
@@ -195,11 +208,14 @@ export const getTemplate = internalQuery({
     const field_count =
       lastField.length > 0 ? (lastField[0]?.order ?? 0) + 1 : 0;
 
+    const apiStatus: ApiTemplate["status"] =
+      template.status === "archived" ? "archived" : "active";
+
     const result: ApiTemplate & { fields?: ApiTemplateField[] } = {
       id: template._id,
       name: template.name,
       description: template.description,
-      status: template.status as "active" | "archived",
+      status: apiStatus,
       use_count: template.useCount,
       page_count: template.pageCount,
       field_count,
@@ -210,12 +226,14 @@ export const getTemplate = internalQuery({
     if (args.includeFields) {
       // Include all fields for the requested template; API callers explicitly requested the complete field list.
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows bound=global
-      const fields = await ctx.db
+      const fields = [];
+      for await (const field of ctx.db
         .query("template_fields")
         .withIndex("by_template_order", (q) =>
           q.eq("templateId", args.templateId)
-        )
-        .collect();
+        )) {
+        fields.push(field);
+      }
 
       result.fields = fields.map((f) => ({
         id: f._id,
@@ -254,7 +272,7 @@ export const getTemplateFields = internalQuery({
     templateId: v.id("templates"),
   },
   handler: async (ctx, args): Promise<ApiTemplateField[] | null> => {
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       return null;
@@ -266,12 +284,14 @@ export const getTemplateFields = internalQuery({
 
     // Return all fields for the requested template; callers need the complete ordered template definition.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and does not truncate rows bound=global
-    const fields = await ctx.db
+    const fields = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
     return fields.map((f) => ({
       id: f._id,
@@ -321,7 +341,7 @@ export const createFromDocument = internalMutation({
     }
 
     // Get source document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
     }
@@ -332,10 +352,12 @@ export const createFromDocument = internalMutation({
 
     // Get signature fields from document. Template creation must copy every source field, so pagination/truncation would change the result.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count and required for a complete template copy bound=global
-    const fields = await ctx.db
+    const fields = [];
+    for await (const field of ctx.db
       .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      fields.push(field);
+    }
 
     const now = Date.now();
 
@@ -397,7 +419,7 @@ export const updateTemplate = internalMutation({
     status: v.optional(v.union(v.literal("active"), v.literal("archived"))),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       return { success: false, error: "Template not found" };
@@ -432,7 +454,7 @@ export const updateTemplate = internalMutation({
       updates.status = args.status;
     }
 
-    await ctx.db.patch(args.templateId, updates);
+    await ctx.db.patch("templates", args.templateId, updates);
 
     return { success: true };
   },
@@ -450,7 +472,7 @@ export const deleteTemplate = internalMutation({
     templateId: v.id("templates"),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       return { success: false, error: "Template not found" };
@@ -461,7 +483,7 @@ export const deleteTemplate = internalMutation({
     }
 
     // Soft delete
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       status: "deleted",
       updatedAt: Date.now(),
     });
@@ -502,7 +524,7 @@ export const useTemplate = internalMutation({
     }[];
     error?: string;
   }> => {
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       return { success: false, error: "Template not found" };
@@ -518,12 +540,14 @@ export const useTemplate = internalMutation({
 
     // Get template fields. Template use must copy every template field, so pagination/truncation would change the result.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single templateId, bounded by template field count and required for a complete document copy bound=global
-    const templateFields = await ctx.db
+    const templateFields = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      templateFields.push(field);
+    }
 
     const now = Date.now();
     const documentName = args.documentName || `${template.name} - Copy`;
@@ -547,7 +571,7 @@ export const useTemplate = internalMutation({
     });
 
     // Increment template use count
-    await ctx.db.patch(args.templateId, {
+    await ctx.db.patch("templates", args.templateId, {
       useCount: template.useCount + 1,
       updatedAt: now,
     });
