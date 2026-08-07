@@ -27,7 +27,7 @@ export const Route = createFileRoute("/changelog/$slug")({
     return { entry };
   },
   head: ({ loaderData }) => {
-    const data = loaderData as { entry: ChangelogManifestEntry } | undefined;
+    const data = loaderData;
     return {
       meta: [
         {
@@ -47,7 +47,7 @@ export const Route = createFileRoute("/changelog/$slug")({
 });
 
 function ChangelogDetailPage() {
-  const { entry } = Route.useLoaderData() as { entry: ChangelogManifestEntry };
+  const { entry } = Route.useLoaderData();
 
   return (
     <div className="bg-background min-h-dvh py-24 sm:py-32">

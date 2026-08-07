@@ -3,17 +3,33 @@ import {
   type InputNumberFormatProps,
   unformat,
 } from "@react-input/number-format";
+import { fromMajorUnits } from "@vortexnyc/money";
 
 import { cn } from "@/lib/utils";
 
 import { Input } from "./input";
 
 /**
- * Parse a formatted currency string to a number.
- * Uses en-US locale for USD formatting.
+ * Parse a formatted currency string to major units (dollars).
+ * Uses en-US locale for USD formatting via the input unformatter.
  */
 export function parseCurrency(value: string): number {
   return Number(unformat(value, "en-US"));
+}
+
+/**
+ * Parse a formatted currency string to integer minor units (cents).
+ * Routes major→minor through `@vortexnyc/money` (round-half-up).
+ */
+export function parseCurrencyToMinorUnits(
+  value: string,
+  currency: "USD" | "EUR" | "GBP" | "BRL" = "USD"
+): number {
+  const major = parseCurrency(value);
+  if (!Number.isFinite(major)) {
+    return 0;
+  }
+  return fromMajorUnits(major, currency, "half-up").amount;
 }
 
 type InputCurrencyProps = Omit<
@@ -25,8 +41,8 @@ type InputCurrencyProps = Omit<
 
 /**
  * Currency input with automatic formatting.
- * Displays formatted currency while typing and provides
- * the numeric value via parseCurrency helper.
+ * Displays formatted currency while typing; convert to minor units via
+ * `parseCurrencyToMinorUnits`.
  *
  * @example
  * ```tsx
@@ -37,8 +53,7 @@ type InputCurrencyProps = Omit<
  *   onChange={(e) => setAmount(e.target.value)}
  * />
  *
- * // Get numeric value:
- * const amountInCents = Math.round(parseCurrency(amount) * 100);
+ * const amountInCents = parseCurrencyToMinorUnits(amount);
  * ```
  */
 export function InputCurrency({

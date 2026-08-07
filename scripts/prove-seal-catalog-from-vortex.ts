@@ -47,6 +47,41 @@ function objectFromJson(value: Json, label: string): JsonObject {
   return value;
 }
 
+function isJson(value: unknown): value is Json {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "string"
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  if (typeof value === "object") {
+    return Object.values(value).every(isJson);
+  }
+  return false;
+}
+
+function toJson(value: unknown, label: string): Json {
+  assert(isJson(value), `Expected ${label} to be valid JSON`);
+  return value;
+}
+
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
+}
+
 function objectField(value: JsonObject, field: string): JsonObject {
   const child = value[field];
   assert(isJsonObject(child), `Expected ${field} to be an object`);
@@ -168,7 +203,12 @@ async function runConvex<T extends Json>(input: {
     jsonStart >= 0,
     `No JSON returned from ${input.functionName}: ${trimmed}`
   );
-  return JSON.parse(trimmed.slice(jsonStart)) as T;
+  const raw: unknown = JSON.parse(trimmed.slice(jsonStart));
+  const parsed = toJson(raw, input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 async function setConvexEnv(input: {
@@ -196,8 +236,9 @@ async function requestVortexCatalog(input: {
     },
   });
   const text = await response.text();
+  const rawBody: unknown = text.length > 0 ? JSON.parse(text) : null;
   const parsed = objectFromJson(
-    text.length > 0 ? (JSON.parse(text) as Json) : null,
+    toJson(rawBody, "Vortex catalog response"),
     "Vortex catalog response"
   );
   if (response.status < 200 || response.status >= 300) {

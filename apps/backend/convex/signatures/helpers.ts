@@ -192,10 +192,12 @@ export async function getDocumentCompletionStatus(
   incompleteRequiredFields: Doc<"signature_fields">[];
 }> {
   // Get all fields for the document
-  const fields = await ctx.db
+  const fields: Doc<"signature_fields">[] = [];
+  for await (const field of ctx.db
     .query("signature_fields")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    fields.push(field);
+  }
 
   let completedCount = 0;
   const incompleteRequiredFields: Doc<"signature_fields">[] = [];
@@ -237,12 +239,14 @@ export async function checkRecipientComplete(
   incompleteFields: Doc<"signature_fields">[];
 }> {
   // Get all fields assigned to this recipient
-  const fields = await ctx.db
+  const fields: Doc<"signature_fields">[] = [];
+  for await (const field of ctx.db
     .query("signature_fields")
     .withIndex("by_document_recipient", (q) =>
       q.eq("documentId", documentId).eq("recipientId", recipientId)
-    )
-    .collect();
+    )) {
+    fields.push(field);
+  }
 
   let completedCount = 0;
   const incompleteFields: Doc<"signature_fields">[] = [];
@@ -288,12 +292,9 @@ export async function verifyDocumentIntegrityForSigning(
 
   // Check if any existing signatures were made against a different document hash.
   // This detects tampering: if the document was modified after someone signed it.
-  const existingSignatures = await ctx.db
+  for await (const sig of ctx.db
     .query("signatures")
-    .withIndex("by_document", (q) => q.eq("documentId", document._id))
-    .collect();
-
-  for (const sig of existingSignatures) {
+    .withIndex("by_document", (q) => q.eq("documentId", document._id))) {
     if (
       sig.documentHashAtSigning &&
       sig.documentHashAtSigning !== document.documentHash

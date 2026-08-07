@@ -2,7 +2,7 @@
  * Organization/Workspace mutations for Control Zero
  */
 
-import { ConvexError, type GenericId, v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -118,7 +118,7 @@ async function upsertPersonalOrganization(
       updatedAt: Date.now(),
     });
 
-    const organization = await ctx.db.get(organizationId);
+    const organization = await ctx.db.get("organizations", organizationId);
     if (!organization) {
       throw new ConvexError("Failed to upsert organization");
     }
@@ -126,13 +126,16 @@ async function upsertPersonalOrganization(
     return organization;
   }
 
-  await ctx.db.patch(existingOrganization._id, {
+  await ctx.db.patch("organizations", existingOrganization._id, {
     name: args.organizationName || existingOrganization.name,
     slug: args.organizationSlug || existingOrganization.slug,
     updatedAt: Date.now(),
   });
 
-  const organization = await ctx.db.get(existingOrganization._id);
+  const organization = await ctx.db.get(
+    "organizations",
+    existingOrganization._id
+  );
   if (!organization) {
     throw new ConvexError("Failed to upsert organization");
   }
@@ -215,7 +218,7 @@ async function setComponentMemberStatus(
   status: ComponentMemberStatus
 ): Promise<void> {
   await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
-    memberId: memberId as GenericId<"organization_members">,
+    memberId,
     status,
   });
 }
@@ -236,11 +239,10 @@ async function setComponentMemberRole(
     role
   );
   await ctx.runMutation(components.vortexAuth.organizations.setMemberRole, {
-    memberId: memberId as GenericId<"organization_members">,
-    organizationId:
-      organization.vortexAuthOrganizationId as GenericId<"organizations">,
+    memberId,
+    organizationId: organization.vortexAuthOrganizationId,
     roleId,
-    assignedBy: assignedByVortexAuthUserId as GenericId<"users"> | undefined,
+    assignedBy: assignedByVortexAuthUserId,
   });
 }
 
@@ -300,7 +302,7 @@ function validateReminderSchedule(
     }
   }
 
-  const sorted = [...reminderSchedule].sort((a, b) => a - b);
+  const sorted = reminderSchedule.toSorted((a, b) => a - b);
   if (JSON.stringify(sorted) !== JSON.stringify(reminderSchedule)) {
     throw new ConvexError("Reminder schedule must be in ascending order");
   }
@@ -338,7 +340,7 @@ export const ensurePersonalOrganization = mutation({
       ownerUserId: user._id,
     });
 
-    await ctx.db.patch(user._id, {
+    await ctx.db.patch("users", user._id, {
       activeOrganizationId: organization._id,
       updatedAt: Date.now(),
     });
@@ -490,7 +492,7 @@ export const updateWorkspace = adminMutation({
     if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
     if (args.brand !== undefined) {
-      const org = await ctx.db.get(organization._id);
+      const org = await ctx.db.get("organizations", organization._id);
       if (!org) throw new ConvexError("Organization not found");
       updateData.brandingSettings = mirrorBrandIntoBrandingSettings(
         org.brandingSettings,
@@ -498,9 +500,9 @@ export const updateWorkspace = adminMutation({
       );
     }
 
-    await ctx.db.patch(organization._id, updateData);
+    await ctx.db.patch("organizations", organization._id, updateData);
 
-    const fresh = await ctx.db.get(organization._id);
+    const fresh = await ctx.db.get("organizations", organization._id);
     if (!fresh) throw new ConvexError("Organization not found");
 
     if (
@@ -529,7 +531,7 @@ export const deleteWorkspace = authMutation({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
@@ -547,15 +549,14 @@ export const deleteWorkspace = authMutation({
       await ctx.runMutation(
         components.vortexAuth.organizations.setOrganizationStatus,
         {
-          organizationId:
-            organization.vortexAuthOrganizationId as GenericId<"organizations">,
+          organizationId: organization.vortexAuthOrganizationId,
           status: "deleted",
         }
       );
     }
 
     // Delete organization
-    await ctx.db.delete(args.organizationId);
+    await ctx.db.delete("organizations", args.organizationId);
 
     return { success: true };
   },
@@ -576,7 +577,7 @@ export const addMember = adminMutation({
     await ensureSeatLimit(ctx, organization._id);
 
     // Check if user exists
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new ConvexError("User not found");
     }
@@ -949,7 +950,7 @@ export const updateAiSettings = adminMutation({
     aiShowRedlinesToSigners: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.aiSettings ?? {
@@ -958,7 +959,7 @@ export const updateAiSettings = adminMutation({
       aiShowRedlinesToSigners: false,
     };
 
-    await ctx.db.patch(org._id, {
+    await ctx.db.patch("organizations", org._id, {
       aiSettings: {
         aiEnabled: args.aiEnabled ?? current.aiEnabled,
         aiAutoAnalyze: args.aiAutoAnalyze ?? current.aiAutoAnalyze,
@@ -1007,7 +1008,7 @@ export const updateBrandingSettings = adminMutation({
       "Custom branding"
     );
 
-    const org = await ctx.db.get(ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.brandingSettings ?? {
@@ -1020,7 +1021,7 @@ export const updateBrandingSettings = adminMutation({
       args
     );
 
-    await ctx.db.patch(org._id, {
+    await ctx.db.patch("organizations", org._id, {
       brandingSettings: {
         logoStorageId,
         logoUrl,
@@ -1056,7 +1057,7 @@ export const updateSigningSettings = adminMutation({
     defaultDeadlineDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.signingSettings ?? {
@@ -1083,7 +1084,7 @@ export const updateSigningSettings = adminMutation({
       throw new ConvexError("At least one signature type must be allowed");
     }
 
-    await ctx.db.patch(org._id, {
+    await ctx.db.patch("organizations", org._id, {
       signingSettings: {
         defaultAuthMethod: "email",
         allowedSignatureTypes:
@@ -1109,7 +1110,7 @@ export const updateNotificationSettings = adminMutation({
     sendViewedNotification: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get(ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.notificationSettings ?? {
@@ -1127,7 +1128,7 @@ export const updateNotificationSettings = adminMutation({
       }
     }
 
-    await ctx.db.patch(org._id, {
+    await ctx.db.patch("organizations", org._id, {
       notificationSettings: {
         reminderSchedule: args.reminderSchedule ?? current.reminderSchedule,
         expirationAlertDays:
@@ -1159,7 +1160,7 @@ export const updateSecuritySettings = adminMutation({
       );
     }
 
-    const org = await ctx.db.get(ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.securitySettings ?? {
@@ -1179,7 +1180,7 @@ export const updateSecuritySettings = adminMutation({
 
     // SEA-604: requireMfa / sessionTimeoutMinutes are Core (VOR-183). Preserve
     // any legacy stored values; Seal only writes API access + IP allowlist.
-    await ctx.db.patch(org._id, {
+    await ctx.db.patch("organizations", org._id, {
       securitySettings: {
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
@@ -1202,8 +1203,6 @@ const settingsCategoryField = {
   security: "securitySettings",
 } as const;
 
-type SettingsCategory = keyof typeof settingsCategoryField;
-
 export const resetOrgSettings = adminMutation({
   args: {
     category: v.union(
@@ -1223,9 +1222,9 @@ export const resetOrgSettings = adminMutation({
       }
     }
 
-    const field = settingsCategoryField[args.category as SettingsCategory];
+    const field = settingsCategoryField[args.category];
 
-    await ctx.db.patch(ctx.auth.organization._id, {
+    await ctx.db.patch("organizations", ctx.auth.organization._id, {
       [field]: undefined,
       updatedAt: Date.now(),
     });
@@ -1243,7 +1242,7 @@ export const updateDelegateOwnership = adminMutation({
     enabled: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(ctx.auth.organization._id, {
+    await ctx.db.patch("organizations", ctx.auth.organization._id, {
       delegateOwnership: args.enabled,
       updatedAt: Date.now(),
     });

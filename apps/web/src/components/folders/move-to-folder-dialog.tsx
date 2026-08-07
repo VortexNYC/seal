@@ -91,7 +91,7 @@ function buildTree(
     const children = childMap.get(key) ?? [];
 
     return children
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
         return a.name.localeCompare(b.name);

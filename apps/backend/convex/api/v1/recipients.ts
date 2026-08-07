@@ -104,17 +104,19 @@ export const listRecipients = internalQuery({
   },
   handler: async (ctx, args): Promise<ApiRecipient[] | null> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!isDocumentAccessible(document, args.organizationId)) {
       return null;
     }
 
     // Get recipients. The list endpoint returns the complete ordered recipient set for this document.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and does not truncate rows bound=global
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(recipient);
+    }
 
     // Sort by order if present
     recipients.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
@@ -137,13 +139,13 @@ export const getRecipient = internalQuery({
   },
   handler: async (ctx, args): Promise<ApiRecipient | null> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!isDocumentAccessible(document, args.organizationId)) {
       return null;
     }
 
     // Get recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
       return null;
     }
@@ -194,7 +196,7 @@ export const addRecipient = internalMutation({
     args
   ): Promise<{ success: boolean; recipientId?: string; error?: string }> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
     }
@@ -214,11 +216,15 @@ export const addRecipient = internalMutation({
     const normalizedEmail = args.email.toLowerCase().trim();
 
     // Check if recipient already exists
-    const existing = await ctx.db
+    let existing = null;
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("email"), normalizedEmail))
-      .first();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (recipient.email === normalizedEmail) {
+        existing = recipient;
+        break;
+      }
+    }
 
     if (existing) {
       return {
@@ -270,7 +276,7 @@ export const updateRecipient = internalMutation({
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
     }
@@ -279,7 +285,7 @@ export const updateRecipient = internalMutation({
     }
 
     // Get recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
       return { success: false, error: "Recipient not found" };
     }
@@ -316,7 +322,7 @@ export const updateRecipient = internalMutation({
       updateData.customMessage = args.customMessage;
     }
 
-    await ctx.db.patch(args.recipientId, updateData);
+    await ctx.db.patch("document_recipients", args.recipientId, updateData);
 
     return { success: true };
   },
@@ -336,7 +342,7 @@ export const removeRecipient = internalMutation({
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
     }
@@ -345,7 +351,7 @@ export const removeRecipient = internalMutation({
     }
 
     // Get recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
       return { success: false, error: "Recipient not found" };
     }
@@ -359,7 +365,7 @@ export const removeRecipient = internalMutation({
     }
 
     // Delete recipient
-    await ctx.db.delete(args.recipientId);
+    await ctx.db.delete("document_recipients", args.recipientId);
 
     return { success: true };
   },
@@ -380,7 +386,7 @@ export const sendReminder = internalMutation({
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
     }
@@ -398,7 +404,7 @@ export const sendReminder = internalMutation({
     }
 
     // Get recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
       return { success: false, error: "Recipient not found" };
     }

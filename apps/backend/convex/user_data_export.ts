@@ -44,10 +44,12 @@ function buildUserProfile(user: Doc<"users">) {
 }
 
 async function getDocumentExports(ctx: QueryCtx, userId: Id<"users">) {
-  const documents = await ctx.db
+  const documents = [];
+  for await (const doc of ctx.db
     .query("documents")
-    .withIndex("by_owner", (q) => q.eq("ownerId", userId))
-    .collect();
+    .withIndex("by_owner", (q) => q.eq("ownerId", userId))) {
+    documents.push(doc);
+  }
 
   return documents.map((doc) => ({
     id: doc._id,
@@ -71,13 +73,15 @@ async function getDocumentExports(ctx: QueryCtx, userId: Id<"users">) {
 }
 
 async function getMembershipExports(ctx: QueryCtx, userId: Id<"users">) {
-  const user = await ctx.db.get(userId);
+  const user = await ctx.db.get("users", userId);
   if (!user) {
     return [];
   }
   const memberships = await resolveComponentMemberships(ctx, user);
   const organizations = await Promise.all(
-    memberships.map((membership) => ctx.db.get(membership.organizationId))
+    memberships.map((membership) =>
+      ctx.db.get("organizations", membership.organizationId)
+    )
   );
 
   return memberships.map((membership, index) => ({
@@ -89,10 +93,12 @@ async function getMembershipExports(ctx: QueryCtx, userId: Id<"users">) {
 }
 
 async function getSavedSignatureExports(ctx: QueryCtx, userId: Id<"users">) {
-  const savedSignatures = await ctx.db
+  const savedSignatures = [];
+  for await (const signature of ctx.db
     .query("saved_signatures")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_user", (q) => q.eq("userId", userId))) {
+    savedSignatures.push(signature);
+  }
 
   return savedSignatures.map((signature) => ({
     id: signature._id,
@@ -104,10 +110,12 @@ async function getSavedSignatureExports(ctx: QueryCtx, userId: Id<"users">) {
 }
 
 async function getNotificationExports(ctx: QueryCtx, userId: Id<"users">) {
-  const notifications = await ctx.db
+  const notifications = [];
+  for await (const notification of ctx.db
     .query("notifications")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_user", (q) => q.eq("userId", userId))) {
+    notifications.push(notification);
+  }
 
   return notifications.map((notification) => ({
     id: notification._id,
@@ -135,7 +143,7 @@ async function getAuditExports(ctx: QueryCtx, authSubject: string) {
 
 async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
   // Find the user's active org to look up org-scoped subscription
-  const user = await ctx.db.get(userId);
+  const user = await ctx.db.get("users", userId);
   if (!user?.activeOrganizationId) return null;
 
   const subscription = await ctx.db
@@ -161,14 +169,16 @@ async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
 }
 
 async function getAccessExports(ctx: QueryCtx, userId: Id<"users">) {
-  const accessGrants = await ctx.db
+  const accessGrants = [];
+  for await (const grant of ctx.db
     .query("document_access")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_user", (q) => q.eq("userId", userId))) {
+    accessGrants.push(grant);
+  }
 
   return Promise.all(
     accessGrants.map(async (grant) => {
-      const document = await ctx.db.get(grant.documentId);
+      const document = await ctx.db.get("documents", grant.documentId);
       return {
         documentName: document?.name ?? "Unknown",
         permissionLevel: grant.permissionLevel,
@@ -258,7 +268,7 @@ export const getLatestExport = authQuery({
 export const gatherUserData = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new ConvexError("User not found");
     }
@@ -324,7 +334,7 @@ export const generateDataExport = internalAction({
       // 4. Mark export as complete
       await ctx.runMutation(internal.user_data_export.markExportComplete, {
         exportId: args.exportId,
-        storageId: storageId as unknown as string,
+        storageId: String(storageId),
       });
     } catch (error) {
       // Mark export as failed
@@ -345,7 +355,7 @@ export const markExportComplete = internalMutation({
     storageId: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.exportId, {
+    await ctx.db.patch("data_exports", args.exportId, {
       status: "completed" as const,
       storageId: args.storageId,
       completedAt: Date.now(),
@@ -362,7 +372,7 @@ export const markExportFailed = internalMutation({
     error: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.exportId, {
+    await ctx.db.patch("data_exports", args.exportId, {
       status: "failed" as const,
       error: args.error,
       completedAt: Date.now(),

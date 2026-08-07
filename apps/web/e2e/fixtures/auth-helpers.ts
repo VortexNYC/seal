@@ -129,9 +129,15 @@ async function completeOnboardingIfPresent(
  */
 export async function ensureAuthenticatedWorkspaceHome(
   page: Page,
-  preferredOrganizationSlug?: string
+  preferredOrganizationSlug?: string,
+  attempt = 0
 ): Promise<void> {
-  for (let attempt = 0; attempt < 2; attempt++) {
+  if (attempt >= 2) {
+    throw new Error(
+      "[E2E] Failed to land on an authenticated workspace home route."
+    );
+  }
+  {
     await page.goto("/app", { waitUntil: "domcontentloaded" }).catch(() => {});
     await page
       .waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
@@ -192,8 +198,10 @@ export async function ensureAuthenticatedWorkspaceHome(
     await page.waitForTimeout(500);
   }
 
-  throw new Error(
-    "[E2E] Failed to land on an authenticated workspace home route."
+  return ensureAuthenticatedWorkspaceHome(
+    page,
+    preferredOrganizationSlug,
+    attempt + 1
   );
 }
 
@@ -222,11 +230,10 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
 
   const maxAttempts = 20;
   const delayMs = 500;
-  let authenticated = false;
 
-  for (let i = 0; i < maxAttempts; i++) {
-    // eslint-disable-next-line no-await-in-loop
-    authenticated = await page.evaluate(async () => {
+  const attemptAuth = async (attempt: number): Promise<boolean> => {
+    if (attempt >= maxAttempts) return false;
+    const authenticated = await page.evaluate(async () => {
       try {
         const client = window.__convexClient;
         const api = window.__convexApi;
@@ -243,11 +250,12 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
       }
     });
 
-    if (authenticated) break;
+    if (authenticated) return true;
     await page.waitForTimeout(delayMs);
-  }
+    return attemptAuth(attempt + 1);
+  };
 
-  if (!authenticated) {
+  if (!(await attemptAuth(0))) {
     throw new Error(
       "[E2E] Timed out waiting for Convex authentication. " +
         "Ensure Better-Auth sign-in completes and the Convex client receives a token."

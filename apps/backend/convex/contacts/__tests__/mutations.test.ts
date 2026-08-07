@@ -1,7 +1,9 @@
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { api } from "../../_generated/api";
-import type { Doc, Id } from "../../_generated/dataModel";
+import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import { seedTestOrganizationMember } from "../../testVortexAuth";
 
@@ -68,9 +70,9 @@ describe("Contact mutations", () => {
         email: "jane@example.com",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.fullName).toBe("Jane Smith");
     });
@@ -82,9 +84,9 @@ describe("Contact mutations", () => {
         email: "  Test@EXAMPLE.COM  ",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.email).toBe("test@example.com");
     });
@@ -96,9 +98,9 @@ describe("Contact mutations", () => {
         email: "default@example.com",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.status).toBe("active");
     });
@@ -116,9 +118,9 @@ describe("Contact mutations", () => {
         tags: ["vip", "conference-2026"],
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.phone).toBe("+1-555-0100");
       expect(contact?.company).toBe("ACME Inc");
@@ -153,9 +155,9 @@ describe("Contact mutations", () => {
         email: "created@example.com",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.createdBy).toBe(userId);
     });
@@ -169,9 +171,9 @@ describe("Contact mutations", () => {
       });
       const after = Date.now();
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.createdAt).toBeGreaterThanOrEqual(before);
       expect(contact?.createdAt).toBeLessThanOrEqual(after);
@@ -198,9 +200,9 @@ describe("Contact mutations", () => {
         company: "New Company",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.company).toBe("New Company");
       // Other fields unchanged
@@ -213,9 +215,9 @@ describe("Contact mutations", () => {
         firstName: "Updated",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.fullName).toBe("Updated Name");
     });
@@ -226,9 +228,9 @@ describe("Contact mutations", () => {
         lastName: "Changed",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.fullName).toBe("Original Changed");
     });
@@ -239,9 +241,9 @@ describe("Contact mutations", () => {
         email: "  UPPER@CASE.COM  ",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.email).toBe("upper@case.com");
     });
@@ -252,15 +254,15 @@ describe("Contact mutations", () => {
         status: "inactive",
       });
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact?.status).toBe("inactive");
     });
 
     test("throws on non-existent contact", async () => {
-      const fakeId = "k17abc123def456gh" as Id<"contacts">;
+      const fakeId = parse(v.id("contacts"), "k17abc123def456gh");
 
       await expect(
         asAdmin().mutation(api.contacts.mutations.update, {
@@ -285,15 +287,15 @@ describe("Contact mutations", () => {
 
       expect(result).toBe(_id);
 
-      const contact = (await t.run(async (ctx) => {
+      const contact = await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      })) as Doc<"contacts"> | null;
+      });
 
       expect(contact).toBeNull();
     });
 
     test("throws on non-existent contact", async () => {
-      const fakeId = "k17abc123def456gh" as Id<"contacts">;
+      const fakeId = parse(v.id("contacts"), "k17abc123def456gh");
 
       await expect(
         asAdmin().mutation(api.contacts.mutations.remove, {

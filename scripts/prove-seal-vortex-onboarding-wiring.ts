@@ -64,6 +64,41 @@ function objectFromJson(value: Json, label: string): JsonObject {
   return value;
 }
 
+function isJson(value: unknown): value is Json {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "string"
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  if (typeof value === "object") {
+    return Object.values(value).every(isJson);
+  }
+  return false;
+}
+
+function toJson(value: unknown, label: string): Json {
+  assert(isJson(value), `Expected ${label} to be valid JSON`);
+  return value;
+}
+
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
+}
+
 function objectField(value: JsonObject, field: string): JsonObject {
   const child = value[field];
   assert(isJsonObject(child), `Expected ${field} to be an object`);
@@ -185,7 +220,12 @@ async function runConvex<T extends Json>(input: {
     jsonStart >= 0,
     `No JSON returned from ${input.functionName}: ${trimmed}`
   );
-  return JSON.parse(trimmed.slice(jsonStart)) as T;
+  const raw: unknown = JSON.parse(trimmed.slice(jsonStart));
+  const parsed = toJson(raw, input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 async function getConvexEnv(input: {
@@ -251,8 +291,9 @@ async function requestVortexJson(input: {
     body: input.body === undefined ? undefined : JSON.stringify(input.body),
   });
   const text = await response.text();
+  const rawBody: unknown = text.length > 0 ? JSON.parse(text) : null;
   const parsed = objectFromJson(
-    text.length > 0 ? (JSON.parse(text) as Json) : null,
+    toJson(rawBody, `${input.method} ${input.path} response`),
     `${input.method} ${input.path} response`
   );
   if (response.status < 200 || response.status >= 300) {
@@ -375,7 +416,7 @@ async function hashHostedToken(token: string): Promise<string> {
 
 function hostedTokenFromUrl(url: string): string {
   const path = new URL(url).pathname;
-  const token = path.split("/").filter(Boolean).at(-1);
+  const token = path.split("/").findLast(Boolean);
   assert(
     token !== undefined && token.startsWith("monb_"),
     `Expected hosted URL token: ${url}`
@@ -461,7 +502,7 @@ async function refreshUntilApproved(input: {
     }
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
-  fail(
+  return fail(
     `Timed out after ${timeoutMs}ms waiting for onboarding approval:\n${JSON.stringify(latest, null, 2)}`
   );
 }
@@ -482,7 +523,11 @@ function mergeAllowlist(
     return normalized;
   }
   if (normalized.startsWith("[")) {
-    const parsed = JSON.parse(normalized) as Json;
+    const rawParsed: unknown = JSON.parse(normalized);
+    const parsed = toJson(
+      rawParsed,
+      "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS"
+    );
     assert(
       Array.isArray(parsed),
       "VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS must be an array"
@@ -698,7 +743,7 @@ async function main(): Promise<void> {
     "Expected Seal to store the Vortex merchant account id"
   );
   assert(
-    booleanField(sealMerchantState, "chargesEnabled") === true,
+    booleanField(sealMerchantState, "chargesEnabled"),
     "Expected Seal chargesEnabled true"
   );
 

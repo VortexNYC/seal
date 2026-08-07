@@ -88,7 +88,7 @@ export function StaticHero() {
                 className="h-full w-full object-cover object-top"
                 src="/product-screenshot.png"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                  e.currentTarget.style.display = "none";
                 }}
               />
             </div>

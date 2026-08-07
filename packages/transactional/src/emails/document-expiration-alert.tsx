@@ -16,12 +16,12 @@ export interface DocumentExpirationAlertProps {
 }
 
 export function DocumentExpirationAlert({
-  ownerName = "User",
-  documentName = "Document",
-  documentUrl = "https://seal.nyc/documents/example",
-  expiresAt = Date.now() + 3 * 24 * 60 * 60 * 1000,
-  daysRemaining = 3,
-  pendingRecipients = [],
+  ownerName,
+  documentName,
+  documentUrl,
+  expiresAt,
+  daysRemaining,
+  pendingRecipients,
 }: DocumentExpirationAlertProps) {
   const previewText = `"${documentName}" expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
 

@@ -46,7 +46,7 @@ export const sendViewedNotification = internalAction({
       );
 
       // Opt-out: sendViewedNotification defaults to true
-      if (notificationSettings.sendViewedNotification === false) {
+      if (!notificationSettings.sendViewedNotification) {
         return { success: false, error: "Viewed notifications disabled" };
       }
     }

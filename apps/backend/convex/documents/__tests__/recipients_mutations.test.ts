@@ -109,7 +109,7 @@ describe("Recipients mutations", () => {
       // Verify records in the database
       for (const id of result.recipientIds) {
         const recipient = await t.run(async (ctx) => {
-          return await ctx.db.get(id as Id<"document_recipients">);
+          return await ctx.db.get(id);
         });
 
         expect(recipient).toBeDefined();
@@ -137,9 +137,7 @@ describe("Recipients mutations", () => {
         });
 
       const recipient = await t.run(async (ctx) => {
-        return await ctx.db.get(
-          result.recipientIds[0] as Id<"document_recipients">
-        );
+        return await ctx.db.get(result.recipientIds[0]);
       });
 
       expect(recipient?.email).toBe("alice@example.com");
@@ -183,7 +181,8 @@ describe("Recipients mutations", () => {
             documentId,
             recipients: [{ email: "new@example.com", role: "signer" }],
           })
-      ).rejects.toThrow("Cannot add recipients to deleted document");
+        // RLS hides deleted documents, so the read resolves as not-found
+      ).rejects.toThrow("Document not found");
     });
 
     test("rejects unauthenticated requests", async () => {
@@ -326,7 +325,8 @@ describe("Recipients mutations", () => {
           .mutation(api.documents.recipients_mutations.removeRecipient, {
             recipientId,
           })
-      ).rejects.toThrow("Cannot remove recipients from deleted document");
+        // RLS hides deleted documents, so the read resolves as not-found
+      ).rejects.toThrow("Document not found");
     });
 
     test("rejects unauthenticated requests", async () => {

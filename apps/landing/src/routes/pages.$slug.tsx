@@ -14,7 +14,7 @@ export const Route = createFileRoute("/pages/$slug")({
     return { page };
   },
   head: ({ loaderData }) => {
-    const data = loaderData as { page: LandingPage } | undefined;
+    const data = loaderData;
     const page = data?.page;
     const schemas = page ? generateJsonLd(page) : [];
 
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/pages/$slug")({
 });
 
 function PageContent() {
-  const { page } = Route.useLoaderData() as { page: LandingPage };
+  const { page } = Route.useLoaderData();
 
   return (
     <div className="min-h-dvh">

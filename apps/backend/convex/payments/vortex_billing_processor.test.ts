@@ -325,9 +325,13 @@ describe("Vortex Billing SaaS processor", () => {
       "POST https://billing.vortex.test/v1/checkout/sessions",
     ]);
 
-    const applyBody = JSON.parse(
+    const applyBodyRaw: unknown = JSON.parse(
       await capturedRequests[1].clone().text()
-    ) as Record<string, unknown>;
+    );
+    if (typeof applyBodyRaw !== "object" || applyBodyRaw === null) {
+      throw new Error("Expected a JSON object apply body");
+    }
+    const applyBody = applyBodyRaw;
     expect(applyBody).toMatchObject({
       appliedCouponId: "seal-saas-coupon:org_seal_123:pro_monthly_v2:coupon_25",
       customerExternalId: "vtx_cust_seal_org_org_seal_123",

@@ -38,8 +38,7 @@ export function registerJamMetadata(getter: () => JamMetadataPayload): void {
  * Trigger Jam screen recording programmatically.
  */
 export function startJamRecording(): void {
-  const win = window as unknown as { Jam?: { startRecording?: () => void } };
-  win.Jam?.startRecording?.();
+  window.Jam?.startRecording?.();
 }
 
 /**

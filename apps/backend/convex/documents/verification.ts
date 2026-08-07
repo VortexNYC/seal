@@ -7,6 +7,7 @@
 
 import { v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 
 function maskEmail(email: string): string {
@@ -17,6 +18,13 @@ function maskEmail(email: string): string {
   if (local.length <= 1) return `*${domain}`;
   return `${local[0]}${"*".repeat(Math.min(local.length - 1, 5))}${domain}`;
 }
+
+type PublicSigner = {
+  name: string;
+  maskedEmail: string;
+  role: Doc<"document_recipients">["role"];
+  signedAt: number | null;
+};
 
 export const getDocumentByQrToken = query({
   args: { qrToken: v.string() },
@@ -30,19 +38,21 @@ export const getDocumentByQrToken = query({
       return null;
     }
 
-    const allRecipients = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", document._id))
-      .collect();
+    const signers: PublicSigner[] = [];
 
-    const signers = allRecipients
-      .filter((r) => r.status === "signed" || r.status === "approved")
-      .map((r) => ({
+    for await (const r of ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", document._id))) {
+      if (r.status !== "signed" && r.status !== "approved") {
+        continue;
+      }
+      signers.push({
         name: r.name ?? r.email,
         maskedEmail: maskEmail(r.email),
         role: r.role,
         signedAt: r.signedAt ?? r.approvedAt ?? null,
-      }));
+      });
+    }
 
     return {
       verified: true,

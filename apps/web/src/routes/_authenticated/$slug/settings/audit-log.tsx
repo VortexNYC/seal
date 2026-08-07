@@ -40,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { parseSelectValue } from "@/lib/select-values";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/audit-log"
@@ -57,6 +58,15 @@ type ActionCategory =
   | "signature"
   | "member"
   | "organization";
+
+const ACTION_CATEGORIES = [
+  "all",
+  "document",
+  "recipient",
+  "signature",
+  "member",
+  "organization",
+] as const satisfies readonly ActionCategory[];
 
 const ACTION_CATEGORY_LABELS: Record<ActionCategory, string> = {
   all: "All actions",
@@ -230,7 +240,7 @@ function downloadCsv(rows: AuditLogRow[]) {
         r.ipAddress,
         r.metadata?.description ?? "",
       ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .map((v) => `"${v.replace(/"/g, '""')}"`)
         .join(",")
     ),
   ];
@@ -376,15 +386,17 @@ function AuditLogPage() {
                 <Label className="text-sm">Action type</Label>
                 <Select
                   value={actionCategory}
-                  onValueChange={(v) => setActionCategory(v as ActionCategory)}
+                  onValueChange={(v) =>
+                    setActionCategory(
+                      parseSelectValue(v, ACTION_CATEGORIES) ?? actionCategory
+                    )
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(
-                      Object.keys(ACTION_CATEGORY_LABELS) as ActionCategory[]
-                    ).map((cat) => (
+                    {ACTION_CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {ACTION_CATEGORY_LABELS[cat]}
                       </SelectItem>
@@ -425,7 +437,7 @@ function AuditLogPage() {
             variant="outline"
             size="sm"
             disabled={!logs || logs.length === 0}
-            onClick={() => logs && downloadCsv(logs as AuditLogRow[])}
+            onClick={() => logs && downloadCsv(logs)}
           >
             <DownloadIcon className="mr-2 h-4 w-4" />
             Export CSV

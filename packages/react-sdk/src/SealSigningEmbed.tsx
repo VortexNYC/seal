@@ -16,6 +16,24 @@ import type {
 const DEFAULT_BASE_URL = "https://app.seal.nyc";
 const SEAL_ORIGIN_PATTERN = /^https?:\/\/(app\.seal\.nyc|localhost:\d+)$/;
 
+const SEAL_EVENT_TYPES: ReadonlySet<string> = new Set<SealEvent["type"]>([
+  "seal:ready",
+  "seal:viewed",
+  "seal:signed",
+  "seal:declined",
+  "seal:error",
+]);
+
+function isSealEvent(data: unknown): data is SealEvent {
+  return (
+    data !== null &&
+    typeof data === "object" &&
+    "type" in data &&
+    typeof data.type === "string" &&
+    SEAL_EVENT_TYPES.has(data.type)
+  );
+}
+
 /**
  * Embed Seal's signing experience in your React app.
  *
@@ -69,8 +87,8 @@ export const SealSigningEmbed = forwardRef<
         return;
       }
 
-      const data = event.data as SealEvent | undefined;
-      if (!data?.type?.startsWith("seal:")) return;
+      const data: unknown = event.data;
+      if (!isSealEvent(data)) return;
 
       switch (data.type) {
         case "seal:ready":

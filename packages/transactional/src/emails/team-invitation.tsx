@@ -123,12 +123,12 @@ function MemberBenefitsSection() {
 }
 
 export function TeamInvitation({
-  inviteeEmail = "invitee@example.com",
-  inviterName = "John Doe",
-  inviterEmail = "john@example.com",
-  organizationName = "Acme Inc",
-  role = "Member",
-  inviteUrl = "https://seal.nyc/invite/abc123",
+  inviteeEmail,
+  inviterName,
+  inviterEmail,
+  organizationName,
+  role,
+  inviteUrl,
   expiresAt,
 }: TeamInvitationProps) {
   const previewText = `${inviterName} invited you to join ${organizationName} on Seal`;

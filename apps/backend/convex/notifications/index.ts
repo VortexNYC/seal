@@ -1,7 +1,8 @@
+import { parse } from "@vortexnyc/convex/helpers";
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { DatabaseWriter } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
 import { authMutation, authQuery } from "../auth";
@@ -10,7 +11,7 @@ import type {
   NotificationData,
   NotificationType,
 } from "../schemas/notifications";
-import { emailStatusTuple } from "../schemas/notifications";
+import { documentSharedData, emailStatusTuple } from "../schemas/notifications";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -76,7 +77,7 @@ export const markAsRead = authMutation({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    const notification = await ctx.db.get(args.notificationId);
+    const notification = await ctx.db.get("notifications", args.notificationId);
     if (!notification) {
       return { success: false, error: "Notification not found" };
     }
@@ -89,7 +90,7 @@ export const markAsRead = authMutation({
       return { success: true };
     }
 
-    await ctx.db.patch(args.notificationId, {
+    await ctx.db.patch("notifications", args.notificationId, {
       read: true,
       readAt: Date.now(),
     });
@@ -103,17 +104,19 @@ export const markAllAsRead = authMutation({
   handler: async (ctx) => {
     const userId = ctx.auth.user._id;
 
-    const unreadNotifications = await ctx.db
+    const unreadNotifications: Doc<"notifications">[] = [];
+    for await (const notification of ctx.db
       .query("notifications")
       .withIndex("by_user_unread", (q) =>
         q.eq("userId", userId).eq("read", false)
-      )
-      .collect();
+      )) {
+      unreadNotifications.push(notification);
+    }
 
     const now = Date.now();
     await Promise.all(
       unreadNotifications.map((n) =>
-        ctx.db.patch(n._id, { read: true, readAt: now })
+        ctx.db.patch("notifications", n._id, { read: true, readAt: now })
       )
     );
 
@@ -128,7 +131,7 @@ export const deleteNotification = authMutation({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    const notification = await ctx.db.get(args.notificationId);
+    const notification = await ctx.db.get("notifications", args.notificationId);
     if (!notification) {
       return { success: false, error: "Notification not found" };
     }
@@ -137,7 +140,7 @@ export const deleteNotification = authMutation({
       return { success: false, error: "Not authorized" };
     }
 
-    await ctx.db.delete(args.notificationId);
+    await ctx.db.delete("notifications", args.notificationId);
     return { success: true };
   },
 });
@@ -147,12 +150,16 @@ export const clearAll = authMutation({
   handler: async (ctx) => {
     const userId = ctx.auth.user._id;
 
-    const notifications = await ctx.db
+    const notifications: Doc<"notifications">[] = [];
+    for await (const notification of ctx.db
       .query("notifications")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", userId))) {
+      notifications.push(notification);
+    }
 
-    await Promise.all(notifications.map((n) => ctx.db.delete(n._id)));
+    await Promise.all(
+      notifications.map((n) => ctx.db.delete("notifications", n._id))
+    );
 
     return { success: true, count: notifications.length };
   },
@@ -196,7 +203,7 @@ export async function createNotification(
   // Check user notification preferences before creating
   const category = getPreferenceCategory(params.type);
   if (category) {
-    const user = await ctx.db.get(params.userId);
+    const user = await ctx.db.get("users", params.userId);
     if (user) {
       const profile = await ctx.db
         .query("user_profiles")
@@ -254,7 +261,7 @@ export const updateEmailStatus = internalMutation({
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const notification = await ctx.db.get(args.notificationId);
+    const notification = await ctx.db.get("notifications", args.notificationId);
     if (!notification) {
       return { success: false, error: "Notification not found" };
     }
@@ -277,7 +284,7 @@ export const updateEmailStatus = internalMutation({
       updates.lastEmailError = args.error;
     }
 
-    await ctx.db.patch(args.notificationId, updates);
+    await ctx.db.patch("notifications", args.notificationId, updates);
 
     if (
       args.status === "failed" &&
@@ -302,7 +309,7 @@ export const retryEmailNotification = internalMutation({
     notificationId: v.id("notifications"),
   },
   handler: async (ctx, args) => {
-    const notification = await ctx.db.get(args.notificationId);
+    const notification = await ctx.db.get("notifications", args.notificationId);
     if (!notification) {
       return { success: false, error: "Notification not found" };
     }
@@ -322,11 +329,7 @@ export const retryEmailNotification = internalMutation({
       };
     }
 
-    const data = notification.data as {
-      documentId?: Id<"documents">;
-      permissionLevel: "view" | "edit" | "manage";
-      sharedBy: Id<"users">;
-    };
+    const data = parse(documentSharedData, notification.data);
 
     if (!data.documentId) {
       return { success: false, error: "Missing document ID" };

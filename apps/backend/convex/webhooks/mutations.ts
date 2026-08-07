@@ -226,7 +226,7 @@ export const createEndpoint = permissionMutation("settings:integrations")({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", ctx.auth.organizationId)
       )
-      .collect();
+      .take(10);
 
     if (existingEndpoints.length >= 10) {
       throw new ConvexError({
@@ -258,7 +258,7 @@ export const createEndpoint = permissionMutation("settings:integrations")({
       updatedAt: now,
     });
 
-    const endpoint = await ctx.db.get(endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", endpointId);
 
     return {
       endpoint,
@@ -291,7 +291,7 @@ export const updateEndpoint = permissionMutation("settings:integrations")({
     ),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       throw new ConvexError({
@@ -309,9 +309,9 @@ export const updateEndpoint = permissionMutation("settings:integrations")({
 
     const updates = buildEndpointUpdates(endpoint.status, args);
 
-    await ctx.db.patch(args.endpointId, updates);
+    await ctx.db.patch("webhook_endpoints", args.endpointId, updates);
 
-    return ctx.db.get(args.endpointId);
+    return ctx.db.get("webhook_endpoints", args.endpointId);
   },
 });
 
@@ -327,7 +327,7 @@ export const rotateSecret = permissionMutation("settings:integrations")({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       throw new ConvexError({
@@ -348,7 +348,7 @@ export const rotateSecret = permissionMutation("settings:integrations")({
     const secretHash = await hashSecret(secret);
     const secretPrefix = secret.slice(0, 12);
 
-    await ctx.db.patch(args.endpointId, {
+    await ctx.db.patch("webhook_endpoints", args.endpointId, {
       secretHash,
       secret,
       secretPrefix,
@@ -370,7 +370,7 @@ export const deleteEndpoint = permissionMutation("settings:integrations")({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       throw new ConvexError({
@@ -387,17 +387,14 @@ export const deleteEndpoint = permissionMutation("settings:integrations")({
     }
 
     // Delete all related deliveries first
-    const deliveries = await ctx.db
+    for await (const delivery of ctx.db
       .query("webhook_deliveries")
-      .withIndex("by_endpoint", (q) => q.eq("endpointId", args.endpointId))
-      .collect();
-
-    for (const delivery of deliveries) {
-      await ctx.db.delete(delivery._id);
+      .withIndex("by_endpoint", (q) => q.eq("endpointId", args.endpointId))) {
+      await ctx.db.delete("webhook_deliveries", delivery._id);
     }
 
     // Delete the endpoint
-    await ctx.db.delete(args.endpointId);
+    await ctx.db.delete("webhook_endpoints", args.endpointId);
 
     return { success: true };
   },
@@ -484,7 +481,7 @@ export const createSlackEndpoint = permissionMutation("settings:integrations")({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", ctx.auth.organizationId)
       )
-      .collect();
+      .take(10);
 
     if (existingEndpoints.length >= 10) {
       throw new ConvexError({
@@ -533,7 +530,7 @@ export const testEndpoint = permissionMutation("settings:integrations")({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       throw new ConvexError({
@@ -599,7 +596,7 @@ export const retryDelivery = permissionMutation("settings:integrations")({
     deliveryId: v.id("webhook_deliveries"),
   },
   handler: async (ctx, args) => {
-    const delivery = await ctx.db.get(args.deliveryId);
+    const delivery = await ctx.db.get("webhook_deliveries", args.deliveryId);
 
     if (!delivery) {
       throw new ConvexError({
@@ -623,7 +620,7 @@ export const retryDelivery = permissionMutation("settings:integrations")({
     }
 
     // Reset for retry
-    await ctx.db.patch(args.deliveryId, {
+    await ctx.db.patch("webhook_deliveries", args.deliveryId, {
       status: "pending",
       nextRetryAt: Date.now(),
       errorMessage: undefined,

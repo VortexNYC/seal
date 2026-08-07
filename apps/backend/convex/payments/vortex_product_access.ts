@@ -1,12 +1,12 @@
 import { v } from "convex/values";
 
 import { internalAction } from "../_generated/server";
-import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_actions";
+import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_env.helpers";
 import {
   createVortexBillingClient,
   readVortexProductAccess,
   resolveVortexBillingCustomerExternalId,
-} from "./vortex_billing_processor";
+} from "./vortex_billing_processor.helpers";
 
 /**
  * Read a Vortex product entitlement for an organization (VOR-67).

@@ -7,6 +7,7 @@ import type {
 
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
+import { resolveTemplateVariable } from "./variables";
 
 /**
  * Registers document resources with the MCP server.
@@ -60,7 +61,7 @@ export function registerDocumentResources(
     },
     async (uri, { id }, extra) => {
       const authToken = getAuthToken(extra);
-      const documentId = id as string;
+      const documentId = resolveTemplateVariable(id);
       const doc = await client.get<ApiDocument>(
         "/documents/get",
         {

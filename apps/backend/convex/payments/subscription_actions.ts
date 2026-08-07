@@ -8,7 +8,7 @@ import { type ActionCtx, action } from "../_generated/server";
 import {
   createVortexBillingCheckoutSession,
   createVortexBillingPortalSession,
-} from "./vortex_billing_processor";
+} from "./vortex_billing_processor.helpers";
 
 async function resolveAuthContext(ctx: ActionCtx): Promise<{
   user: Doc<"users">;

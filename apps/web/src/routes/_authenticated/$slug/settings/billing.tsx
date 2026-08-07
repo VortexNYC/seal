@@ -6,6 +6,7 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
+import { fromMajorUnits } from "@vortexnyc/money";
 import {
   VortexPaymentsProvider,
   VortexPlanComparison,
@@ -360,7 +361,11 @@ function buildPlanComparison(
         : "Checkout is not configured for this plan.",
       featureHighlights: parseFeatureHighlights(proPlan.features),
       id: proPlanId,
-      priceAmount: Math.round(proMonthly.amount * 100),
+      priceAmount: fromMajorUnits(
+        proMonthly.amount,
+        proMonthly.currency.toUpperCase(),
+        "half-up"
+      ).amount,
       status: isFreePlan ? "recommended" : "current",
       title: proPlan.name,
     });

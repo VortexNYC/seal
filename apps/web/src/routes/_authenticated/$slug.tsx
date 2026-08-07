@@ -7,7 +7,6 @@
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   type ErrorComponentProps,
   createFileRoute,
@@ -66,7 +65,7 @@ function WorkspaceLayout() {
     slug,
   });
 
-  const orgId = organization?._id as Id<"organizations"> | undefined;
+  const orgId = organization?._id;
 
   const permissions = useQuery(
     api.organizations.queries.getUserPermissions,

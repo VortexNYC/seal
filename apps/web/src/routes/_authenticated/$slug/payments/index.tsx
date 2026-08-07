@@ -22,6 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseSelectValue } from "@/lib/select-values";
+
+const INVOICE_STATUS_FILTERS = ["all", "paid", "open", "void"] as const;
 import {
   Table,
   TableBody,
@@ -68,9 +71,8 @@ function PaymentsOverviewPage() {
     }
   );
 
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "paid" | "open" | "void"
-  >("all");
+  const [statusFilter, setStatusFilter] =
+    useState<(typeof INVOICE_STATUS_FILTERS)[number]>("all");
 
   const stats = useQuery(
     api.payments.queries.getRevenueStats,
@@ -171,7 +173,11 @@ function PaymentsOverviewPage() {
           <h3 className="text-lg font-semibold">Transactions</h3>
           <Select
             value={statusFilter}
-            onValueChange={(val) => setStatusFilter(val as typeof statusFilter)}
+            onValueChange={(val) =>
+              setStatusFilter(
+                parseSelectValue(val, INVOICE_STATUS_FILTERS) ?? statusFilter
+              )
+            }
           >
             <SelectTrigger className="w-32">
               <SelectValue />

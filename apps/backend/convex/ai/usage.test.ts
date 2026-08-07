@@ -112,8 +112,8 @@ describe("AI usage tracking", () => {
       });
 
       expect(logs).toHaveLength(actions.length);
-      const loggedActions = logs.map((l) => l.action).sort();
-      expect(loggedActions).toEqual([...actions].sort());
+      const loggedActions = logs.map((l) => l.action).toSorted();
+      expect(loggedActions).toEqual([...actions].toSorted());
     });
 
     test("estimates cost for gemini-3-flash", async () => {

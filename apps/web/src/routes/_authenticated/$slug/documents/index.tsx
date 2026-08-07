@@ -99,12 +99,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { parseId } from "@/lib/convex-ids";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
   validateSearch: (search: Record<string, unknown>) => ({
-    folderId: (search.folderId as string) || undefined,
+    folderId:
+      typeof search.folderId === "string" && search.folderId
+        ? search.folderId
+        : undefined,
   }),
   head: () => ({
     meta: [
@@ -309,6 +313,7 @@ function confirmDialogContent(
           "Send this document? Once sent, recipients will be notified to take action.",
       };
     case "cancel":
+    default:
       return {
         title: "Cancel Document",
         description:
@@ -382,7 +387,7 @@ function sortDocuments(
   sortDirection: SortDirection
 ): readonly DocumentListItem[] {
   if (searchQuery.trim() && sortField === "createdAt") return documents;
-  return [...documents].sort((a, b) =>
+  return [...documents].toSorted((a, b) =>
     documentSortComparison(a, b, sortField, sortDirection)
   );
 }
@@ -1270,7 +1275,7 @@ function useDocumentListActions({
     setConfirmDialog({ open: true, type, documentId });
   };
   const handleOpenDocument = (documentId: Id<"documents">) => {
-    router.navigate({
+    void router.navigate({
       to: "/$slug/documents/$documentId",
       params: { slug, documentId },
     });
@@ -1283,7 +1288,7 @@ function useDocumentListActions({
       );
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");
-    } catch (_error) {
+    } catch {
       toast.error("Failed to download document");
     }
   };
@@ -1469,11 +1474,13 @@ function DocumentsPage() {
     api.folders.mutations.moveItemsToFolder
   );
 
-  // Cast folderId string from URL to Id<"folders"> if present
-  const folderId = folderIdParam ? (folderIdParam as Id<"folders">) : undefined;
+  // Parse folderId string from URL into Id<"folders"> if present
+  const folderId = folderIdParam
+    ? parseId("folders", folderIdParam)
+    : undefined;
 
   const handleFolderSelect = (selectedFolderId?: Id<"folders">) => {
-    navigate({
+    void navigate({
       to: "/$slug/documents",
       params: { slug },
       search: { folderId: selectedFolderId },

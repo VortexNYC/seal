@@ -15,7 +15,7 @@ const config: KnipConfig = {
     // Radix UI (used by shadcn/ui components)
     "@radix-ui/*",
   ],
-  ignoreBinaries: ["knip", "oxfmt", "oxlint"],
+  ignoreBinaries: ["knip", "vp"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };

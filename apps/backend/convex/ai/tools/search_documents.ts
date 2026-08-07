@@ -29,11 +29,11 @@ export const searchDocuments = createTool({
   execute: async (ctx: SealAICtx, { query }): Promise<string> => {
     try {
       // Use cached search — identical queries within 1 hour skip re-embedding
-      const results = (await searchCache.fetch(toActionCacheCtx(ctx), {
+      const results = await searchCache.fetch(toActionCacheCtx(ctx), {
         organizationId: ctx.organizationId,
         query,
         limit: 10,
-      })) as SearchResult[];
+      });
 
       if (results.length === 0) {
         return "No relevant documents found for this query.";

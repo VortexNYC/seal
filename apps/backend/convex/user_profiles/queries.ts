@@ -66,15 +66,6 @@ export const getUsageStatistics = authQuery({
     const userId = ctx.auth.user._id;
 
     // Get all documents owned by the user
-    const documents = await ctx.db
-      .query("documents")
-      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
-      .collect();
-
-    // Filter out deleted documents
-    const activeDocuments = documents.filter((doc) => doc.status !== "deleted");
-
-    // Count by workflow status
     const workflowCounts = {
       draft: 0,
       sent: 0,
@@ -85,15 +76,28 @@ export const getUsageStatistics = authQuery({
     };
 
     let totalStorageBytes = 0;
+    const activeDocuments = [];
 
-    for (const doc of activeDocuments) {
-      // Count workflow status
-      const status = doc.workflowStatus || "draft";
-      if (status in workflowCounts) {
-        workflowCounts[status as keyof typeof workflowCounts]++;
+    for await (const doc of ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", userId))) {
+      if (doc.status === "deleted") {
+        continue;
       }
-
-      // Sum storage
+      activeDocuments.push(doc);
+      const status = doc.workflowStatus || "draft";
+      switch (status) {
+        case "draft":
+        case "sent":
+        case "in_progress":
+        case "completed":
+        case "cancelled":
+        case "declined":
+          workflowCounts[status]++;
+          break;
+        default:
+          break;
+      }
       totalStorageBytes += doc.fileSize || 0;
     }
 

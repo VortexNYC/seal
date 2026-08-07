@@ -26,6 +26,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
+import { parseId } from "../../lib/convex-ids";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -229,7 +230,7 @@ function useFieldPropertiesActions({
     try {
       await assignField({
         fieldId: field._id,
-        recipientId: value as Id<"document_recipients">,
+        recipientId: parseId("document_recipients", value),
       });
       toast.success("Field assigned to recipient");
       onSave?.();

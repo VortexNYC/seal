@@ -7,14 +7,14 @@ type ActionCacheCtx<
   Action extends FunctionReference<"action", FunctionVisibility>,
 > = Parameters<ActionCache<Action>["fetch"]>[0];
 
-export function toActionCacheCtx<
-  Action extends FunctionReference<"action", FunctionVisibility>,
->(
+type AnyAction = FunctionReference<"action", FunctionVisibility>;
+
+export function toActionCacheCtx(
   ctx: Pick<ActionCtx, "runQuery" | "runMutation" | "runAction">
-): ActionCacheCtx<Action> {
+): ActionCacheCtx<AnyAction> {
   return {
     runQuery: ctx.runQuery,
     runMutation: ctx.runMutation,
     runAction: ctx.runAction,
-  } as unknown as ActionCacheCtx<Action>;
+  };
 }

@@ -12,7 +12,11 @@ import {
   checkDocumentAccess,
   getDocumentOrThrow,
 } from "../auth/access_control";
-import { loadSuiteOrgBrandAndSecurity } from "../lib/suiteOrgPolicy";
+import {
+  loadSuiteOrgBrandAndSecurity,
+  resolveEffectiveBrandingSettings,
+  type SuiteOrgBrand,
+} from "../lib/suiteOrgPolicy";
 import {
   isRecipientComplete,
   isRecipientTerminal,
@@ -66,10 +70,14 @@ async function getSequentialSigningState(
     };
   }
 
-  const allRecipients = await ctx.db
+  const allRecipients = [];
+  for await (const _row of ctx.db
     .query("document_recipients")
-    .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
-    .collect();
+    .withIndex("by_document", (q) =>
+      q.eq("documentId", recipient.documentId)
+    )) {
+    allRecipients.push(_row);
+  }
 
   return {
     waitingForPreviousGroup: !isRecipientGroupActive(recipient, allRecipients),
@@ -83,24 +91,23 @@ function buildRecipientTokenResponse(
   document: Doc<"documents">,
   organization: Doc<"organizations"> | null,
   sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>,
-  suiteBrand?: {
-    primaryColor?: string;
-    accentColor?: string;
-  }
+  suiteBrand?: SuiteOrgBrand
 ) {
-  // Prefer Core suite brand (VOR-182) over local brandingSettings colors.
-  const local = organization?.brandingSettings?.enabled
-    ? organization.brandingSettings
+  const local = organization?.brandingSettings;
+  const effective = organization
+    ? resolveEffectiveBrandingSettings(organization, suiteBrand)
     : undefined;
+  const hasSigningChrome =
+    local?.hideSealBranding === true || Boolean(local?.customFooterText);
   const branding =
-    local || suiteBrand
+    effective !== undefined && (effective.enabled || hasSigningChrome)
       ? {
-          logoUrl: local?.logoUrl,
-          brandColor: suiteBrand?.primaryColor ?? local?.brandColor,
-          accentColor: suiteBrand?.accentColor ?? local?.accentColor,
+          logoUrl: effective.logoUrl,
+          brandColor: effective.brandColor,
+          accentColor: effective.accentColor,
           hideSealBranding: local?.hideSealBranding,
           customFooterText: local?.customFooterText,
-          enabled: local?.enabled ?? Boolean(suiteBrand),
+          enabled: effective.enabled,
         }
       : undefined;
 
@@ -166,7 +173,7 @@ export const getDocumentRecipients = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -177,15 +184,20 @@ export const getDocumentRecipients = authQuery({
 
     if (!isOwner) {
       // Check if user is a recipient by email
-      const user = await ctx.db.get(userId);
+      const user = await ctx.db.get("users", userId);
       if (user) {
-        const recipient = await ctx.db
+        const userEmail = user.email?.toLowerCase() || "";
+        let recipient = null;
+        for await (const row of ctx.db
           .query("document_recipients")
-          .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-          .filter((q) =>
-            q.eq(q.field("email"), user.email?.toLowerCase() || "")
-          )
-          .first();
+          .withIndex("by_document", (q) =>
+            q.eq("documentId", args.documentId)
+          )) {
+          if (row.email === userEmail) {
+            recipient = row;
+            break;
+          }
+        }
         isRecipient = recipient !== null;
       }
     }
@@ -195,13 +207,15 @@ export const getDocumentRecipients = authQuery({
     }
 
     // 3. Get all recipients
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     // 4. Sort by order if specified, otherwise by creation time
-    recipients.sort((a, b) => {
+    const sortedRecipients = recipients.toSorted((a, b) => {
       if (a.order !== undefined && b.order !== undefined) {
         return a.order - b.order;
       }
@@ -212,7 +226,7 @@ export const getDocumentRecipients = authQuery({
 
     // 5. Sanitize sensitive data if not owner
     if (!isOwner) {
-      return recipients.map((r) => ({
+      return sortedRecipients.map((r) => ({
         _id: r._id,
         documentId: r.documentId,
         email: r.email,
@@ -233,7 +247,7 @@ export const getDocumentRecipients = authQuery({
     }
 
     // Owner sees everything including signing tokens
-    return recipients;
+    return sortedRecipients;
   },
 });
 
@@ -259,17 +273,17 @@ export const getRecipientByToken = query({
     }
 
     // 3. Get the document (without access control since they have the token)
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
 
     // 3a. Get document owner name for display
-    const owner = await ctx.db.get(document.ownerId);
+    const owner = await ctx.db.get("users", document.ownerId);
     const ownerName = owner?.name || owner?.email || "the sender";
 
     const organization = document.organizationId
-      ? await ctx.db.get(document.organizationId)
+      ? await ctx.db.get("organizations", document.organizationId)
       : null;
     const suitePolicy = organization
       ? await loadSuiteOrgBrandAndSecurity(ctx, organization)
@@ -309,10 +323,12 @@ export const getRecipientProgress = authQuery({
     }
 
     // Get all recipients
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     if (recipients.length === 0) {
       return {
@@ -386,22 +402,24 @@ export const getMyRecipientDocuments = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get user email
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
     if (!user || !user.email) {
       return [];
     }
 
     // 2. Get all recipients with user's email
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_email", (q) => q.eq("email", user.email.toLowerCase()))
-      .collect();
+      .withIndex("by_email", (q) => q.eq("email", user.email.toLowerCase()))) {
+      recipients.push(_row);
+    }
 
     // 3. Get documents for each recipient
     const documentsMap = new Map();
     for (const recipient of recipients) {
       if (!documentsMap.has(recipient.documentId)) {
-        const document = await ctx.db.get(recipient.documentId);
+        const document = await ctx.db.get("documents", recipient.documentId);
         if (document && document.status !== "deleted") {
           documentsMap.set(recipient.documentId, {
             document,
@@ -412,7 +430,7 @@ export const getMyRecipientDocuments = authQuery({
     }
 
     // 4. Return array of documents with recipient info
-    return Array.from(documentsMap.values()).sort(
+    return Array.from(documentsMap.values()).toSorted(
       (a, b) => b.document.createdAt - a.document.createdAt
     );
   },
@@ -431,7 +449,7 @@ export const getRecipientByAuthenticatedUser = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get user email
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
     if (!user || !user.email) {
       return null;
     }
@@ -439,18 +457,22 @@ export const getRecipientByAuthenticatedUser = authQuery({
     const userEmail = user.email.toLowerCase();
 
     // 2. Find recipient by document + email match
-    const recipient = await ctx.db
+    let recipient = null;
+    for await (const row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("email"), userEmail))
-      .first();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (row.email === userEmail) {
+        recipient = row;
+        break;
+      }
+    }
 
     if (!recipient) {
       return null;
     }
 
     // 3. Get the document to verify it exists and check workflow status
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }
@@ -486,10 +508,13 @@ import { internalQuery } from "../_generated/server";
 export const getDocumentRecipientsInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const recipients = [];
+    for await (const row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(row);
+    }
+    return recipients;
   },
 });
 
@@ -507,6 +532,6 @@ export const findRecipientByTokenInternal = internalQuery({
 export const getRecipientInternal = internalQuery({
   args: { recipientId: v.id("document_recipients") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.recipientId);
+    return await ctx.db.get("document_recipients", args.recipientId);
   },
 });

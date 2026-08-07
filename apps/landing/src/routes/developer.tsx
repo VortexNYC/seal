@@ -10,6 +10,10 @@ import { getDeveloperPageTree } from "~/lib/docs/manifest";
 
 const devPageTree = getDeveloperPageTree();
 
+const devLayoutStyle: CSSProperties & Record<"--fd-layout-width", string> = {
+  "--fd-layout-width": "100vw",
+};
+
 export const Route = createFileRoute("/developer")({
   component: DevLayoutRoute,
   head: () => ({
@@ -38,7 +42,7 @@ function DevLayoutRoute() {
       <ClientOnly>
         <DocsLayout
           containerProps={{
-            style: { "--fd-layout-width": "100vw" } as CSSProperties,
+            style: devLayoutStyle,
           }}
           tree={devPageTree}
           nav={{

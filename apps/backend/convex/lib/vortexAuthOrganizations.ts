@@ -14,7 +14,7 @@
  *    `imageUrl`.
  */
 
-import { ConvexError, type GenericId } from "convex/values";
+import { ConvexError } from "convex/values";
 
 import { components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -33,7 +33,7 @@ export async function ensureVortexAuthOrganization(
   organizationId: Id<"organizations">,
   createdByVortexAuthUserId?: string
 ) {
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (organization === null) {
     throw new ConvexError({
       code: "NOT_FOUND",
@@ -60,7 +60,7 @@ export async function ensureVortexAuthOrganization(
   );
 
   if (organization.vortexAuthOrganizationId !== result.organizationId) {
-    await ctx.db.patch(organization._id, {
+    await ctx.db.patch("organizations", organization._id, {
       vortexAuthOrganizationId: result.organizationId,
       updatedAt: Date.now(),
     });
@@ -144,7 +144,7 @@ export async function upsertVortexAuthMember(
     acceptedAt?: number;
   }
 ) {
-  const user = await ctx.db.get(args.userId);
+  const user = await ctx.db.get("users", args.userId);
   if (user === null) {
     throw new ConvexError({
       code: "NOT_FOUND",
@@ -173,7 +173,7 @@ export async function upsertVortexAuthMember(
     components.vortexAuth.organizations.upsertMember,
     {
       organizationId: vortexAuthOrganizationId,
-      userId: user.vortexAuthUserId as Id<"users">,
+      userId: user.vortexAuthUserId,
       roleId,
       status: args.status,
       invitedBy: await getOptionalVortexAuthUserId(ctx, args.invitedBy),
@@ -201,7 +201,7 @@ export async function anchorNewOrganizationOwner(
   ctx: VortexAuthMutationCtx,
   args: { organizationId: Id<"organizations">; ownerUserId: Id<"users"> }
 ): Promise<void> {
-  const owner = await ctx.db.get(args.ownerUserId);
+  const owner = await ctx.db.get("users", args.ownerUserId);
   await ensureVortexAuthOrganization(
     ctx,
     args.organizationId,
@@ -253,7 +253,7 @@ export async function createVortexAuthInvitation(
     expiresAt: number;
   }
 ): Promise<string> {
-  const invitedBy = await ctx.db.get(args.invitedBy);
+  const invitedBy = await ctx.db.get("users", args.invitedBy);
   if (invitedBy === null) {
     throw new ConvexError({
       code: "NOT_FOUND",
@@ -286,11 +286,11 @@ export async function createVortexAuthInvitation(
       email: args.email,
       tokenHash: args.tokenHash,
       status: args.status,
-      invitedBy: invitedBy.vortexAuthUserId as Id<"users">,
+      invitedBy: invitedBy.vortexAuthUserId,
       expiresAt: args.expiresAt,
     }
   );
-  return String(result.invitationId);
+  return result.invitationId;
 }
 
 /**
@@ -314,7 +314,7 @@ export async function setVortexAuthInvitationStatus(
   await ctx.runMutation(
     components.vortexAuth.organizations.setInvitationStatus,
     {
-      invitationId: args.invitationId as GenericId<"organization_invitations">,
+      invitationId: args.invitationId,
       organizationId,
       status: args.status,
       acceptedByUserId: await getOptionalVortexAuthUserId(
@@ -348,7 +348,7 @@ export async function recordVortexAuthInvitationEmailDelivery(
   await ctx.runMutation(
     components.vortexAuth.organizations.recordInvitationEmailDelivery,
     {
-      invitationId: args.invitationId as GenericId<"organization_invitations">,
+      invitationId: args.invitationId,
       organizationId,
       emailId: args.emailId ?? null,
       emailDeliveryStatus: args.emailDeliveryStatus,
@@ -381,7 +381,7 @@ export async function createVortexAuthApiKey(
     status?: ComponentApiKeyStatus;
   }
 ): Promise<string> {
-  const user = await ctx.db.get(args.userId);
+  const user = await ctx.db.get("users", args.userId);
   if (user === null) {
     throw new ConvexError({
       code: "NOT_FOUND",
@@ -416,7 +416,7 @@ export async function createVortexAuthApiKey(
     }
   );
 
-  return String(result.apiKeyId);
+  return result.apiKeyId;
 }
 
 /** Revoke a COMPONENT apiKey (idempotent). `apiKeyId` is the COMPONENT id. */
@@ -457,12 +457,10 @@ export async function touchVortexAuthApiKeyLastUsed(
 async function getOptionalVortexAuthUserId(
   ctx: VortexAuthMutationCtx,
   userId: Id<"users"> | undefined
-): Promise<Id<"users"> | undefined> {
+): Promise<string | undefined> {
   if (userId === undefined) {
     return undefined;
   }
-  const user = await ctx.db.get(userId);
-  // The component's `users` id space is distinct from Seal's; the bridge id is
-  // stored as a string on the Seal user row and cast to the component id type.
-  return (user?.vortexAuthUserId as Id<"users"> | undefined) ?? undefined;
+  const user = await ctx.db.get("users", userId);
+  return user?.vortexAuthUserId;
 }

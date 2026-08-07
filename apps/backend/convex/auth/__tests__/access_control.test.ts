@@ -1,4 +1,5 @@
-import { ConvexError } from "convex/values";
+import { parse } from "@vortexnyc/convex/helpers";
+import { ConvexError, v } from "convex/values";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
@@ -18,6 +19,18 @@ import {
   requireManageAccess,
   requireOwnership,
 } from "../access_control";
+
+/** Narrow a caught value to string ConvexError data, failing loudly otherwise. */
+function convexErrorData(error: unknown): string {
+  if (!(error instanceof ConvexError)) {
+    throw new Error("Expected a ConvexError");
+  }
+  const { data } = error;
+  if (typeof data !== "string") {
+    throw new Error("Expected string ConvexError data");
+  }
+  return data;
+}
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present."
@@ -151,9 +164,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect((error as ConvexError<string>).data).toBe(
-          ACCESS_ERRORS.OWNER_REQUIRED
-        );
+        expect(convexErrorData(error)).toBe(ACCESS_ERRORS.OWNER_REQUIRED);
       }
     });
 
@@ -170,7 +181,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect((error as ConvexError<string>).data).toBe("Custom owner error");
+        expect(convexErrorData(error)).toBe("Custom owner error");
       }
     });
   });
@@ -429,9 +440,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(
-          ACCESS_ERRORS.NO_ACCESS
-        );
+        expect(convexErrorData(error)).toContain(ACCESS_ERRORS.NO_ACCESS);
       }
     });
 
@@ -449,9 +458,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(
-          "Forbidden"
-        );
+        expect(convexErrorData(error)).toContain("Forbidden");
       }
     });
   });
@@ -584,9 +591,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(
-          ACCESS_ERRORS.MANAGE_REQUIRED
-        );
+        expect(convexErrorData(error)).toContain(ACCESS_ERRORS.MANAGE_REQUIRED);
       }
     });
 
@@ -599,7 +604,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain("Nope");
+        expect(convexErrorData(error)).toContain("Nope");
       }
     });
   });
@@ -690,9 +695,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(
-          ACCESS_ERRORS.NOT_ORG_MEMBER
-        );
+        expect(convexErrorData(error)).toContain(ACCESS_ERRORS.NOT_ORG_MEMBER);
       }
     });
 
@@ -709,9 +712,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(
-          "Not allowed"
-        );
+        expect(convexErrorData(error)).toContain("Not allowed");
       }
     });
   });
@@ -729,7 +730,7 @@ describe("access_control", () => {
     });
 
     test("throws ConvexError for non-existent document ID", async () => {
-      const fakeId = "not_a_real_id" as Id<"documents">;
+      const fakeId = parse(v.id("documents"), "not_a_real_id");
       await expect(
         t.run(async (ctx) => {
           return await getDocumentOrThrow(ctx, fakeId);
@@ -760,7 +761,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(
+        expect(convexErrorData(error)).toContain(
           ACCESS_ERRORS.DOCUMENT_NOT_FOUND
         );
       }
@@ -789,7 +790,7 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain("Gone");
+        expect(convexErrorData(error)).toContain("Gone");
       }
     });
   });
@@ -816,7 +817,7 @@ describe("access_control", () => {
     });
 
     test("throws when document does not exist", async () => {
-      const fakeId = "not_real" as Id<"documents">;
+      const fakeId = parse(v.id("documents"), "not_real");
       await expect(
         t.run(async (ctx) => {
           return await getDocumentWithAccessCheck(ctx, ownerId, fakeId);

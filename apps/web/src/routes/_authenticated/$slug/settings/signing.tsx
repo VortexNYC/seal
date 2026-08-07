@@ -27,6 +27,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+type SignatureTypeOption = "draw" | "type" | "upload";
+
+const SIGNATURE_TYPE_OPTIONS = [
+  "draw",
+  "type",
+  "upload",
+] as const satisfies readonly SignatureTypeOption[];
+
 export const Route = createFileRoute("/_authenticated/$slug/settings/signing")({
   component: SigningSettings,
   pendingComponent: FormSkeleton,
@@ -49,8 +57,12 @@ function SigningSettings() {
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    allowedSignatureTypes: ["draw", "type", "upload"] as string[],
+  const [formData, setFormData] = useState<{
+    allowedSignatureTypes: SignatureTypeOption[];
+    esignConsentText: string;
+    defaultDeadlineDays: number;
+  }>({
+    allowedSignatureTypes: [...SIGNATURE_TYPE_OPTIONS],
     esignConsentText: "",
     defaultDeadlineDays: 30,
   });
@@ -65,7 +77,10 @@ function SigningSettings() {
     }
   }, [signingSettings]);
 
-  const handleSignatureTypeToggle = (type: string, checked: boolean) => {
+  const handleSignatureTypeToggle = (
+    type: SignatureTypeOption,
+    checked: boolean
+  ) => {
     setFormData((prev) => ({
       ...prev,
       allowedSignatureTypes: checked
@@ -94,9 +109,7 @@ function SigningSettings() {
 
     try {
       await updateSigningSettings({
-        allowedSignatureTypes: formData.allowedSignatureTypes as Array<
-          "draw" | "type" | "upload"
-        >,
+        allowedSignatureTypes: formData.allowedSignatureTypes,
         esignConsentText: formData.esignConsentText || undefined,
         defaultDeadlineDays: formData.defaultDeadlineDays,
       });
@@ -131,7 +144,7 @@ function SigningSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {(["draw", "type", "upload"] as const).map((type) => (
+            {SIGNATURE_TYPE_OPTIONS.map((type) => (
               <div key={type} className="flex items-center gap-3">
                 <Checkbox
                   id={`sig-${type}`}

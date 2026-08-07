@@ -135,7 +135,7 @@ export const listSignatures = internalQuery({
   },
   handler: async (ctx, args): Promise<ApiSignature[] | null> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }
@@ -145,19 +145,23 @@ export const listSignatures = internalQuery({
 
     // Get all signatures for the document
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count bound=global
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(signature);
+    }
 
     // Get recipients and fields for enrichment
     const recipientIds = [...new Set(signatures.map((s) => s.recipientId))];
     const fieldIds = [...new Set(signatures.map((s) => s.fieldId))];
 
     const recipients = await Promise.all(
-      recipientIds.map((id) => ctx.db.get(id))
+      recipientIds.map((id) => ctx.db.get("document_recipients", id))
     );
-    const fields = await Promise.all(fieldIds.map((id) => ctx.db.get(id)));
+    const fields = await Promise.all(
+      fieldIds.map((id) => ctx.db.get("signature_fields", id))
+    );
 
     const recipientMap = new Map(recipients.map((r) => [r?._id, r]));
     const fieldMap = new Map(fields.map((f) => [f?._id, f]));
@@ -203,20 +207,20 @@ export const getSignature = internalQuery({
   },
   handler: async (ctx, args): Promise<ApiSignature | null> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!isAccessibleDocument(document, args.organizationId)) {
       return null;
     }
 
     // Get signature
-    const sig = await ctx.db.get(args.signatureId);
+    const sig = await ctx.db.get("signatures", args.signatureId);
     if (!sig || sig.documentId !== args.documentId) {
       return null;
     }
 
     // Get recipient and field
-    const recipient = await ctx.db.get(sig.recipientId);
-    const field = await ctx.db.get(sig.fieldId);
+    const recipient = await ctx.db.get("document_recipients", sig.recipientId);
+    const field = await ctx.db.get("signature_fields", sig.fieldId);
 
     return buildApiSignature(sig, recipient, field);
   },
@@ -235,7 +239,7 @@ export const verifyDocument = internalQuery({
   },
   handler: async (ctx, args): Promise<ApiVerificationResult | null> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }
@@ -245,17 +249,21 @@ export const verifyDocument = internalQuery({
 
     // Get all recipients. Verification requires complete recipient coverage for compliance and exact signed/total counts.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and does not truncate verification inputs bound=global
-    const recipients = await ctx.db
+    const recipients: Doc<"document_recipients">[] = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(recipient);
+    }
 
     // Get all signatures. Verification requires every signature on the document; missing rows would change the result.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count and does not truncate verification inputs bound=global
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(signature);
+    }
 
     // Build signature data
     const signatureData = await Promise.all(
@@ -335,7 +343,7 @@ export const getAuditTrail = internalQuery({
     }>;
   } | null> => {
     // Verify document exists and belongs to the organization
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }
@@ -362,10 +370,11 @@ export const getAuditTrail = internalQuery({
 
         if (log.userId) {
           // userId is an auth subject (string), find user by authSubject
+          const authSubject = log.userId;
           const user = await ctx.db
             .query("users")
             .withIndex("by_auth_subject", (q) =>
-              q.eq("authSubject", log.userId as string)
+              q.eq("authSubject", authSubject)
             )
             .first();
           if (user) {
@@ -381,7 +390,7 @@ export const getAuditTrail = internalQuery({
           actor_name: actorName,
           timestamp: new Date(log.createdAt).toISOString(),
           ip_address: log.ipAddress,
-          metadata: log.metadata as Record<string, unknown> | undefined,
+          metadata: log.metadata,
         };
       })
     );

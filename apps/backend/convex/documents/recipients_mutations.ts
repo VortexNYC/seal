@@ -50,6 +50,11 @@ async function generateSigningToken(): Promise<{
   return { token, tokenHash };
 }
 
+type RecipientDbCtx = Pick<MutationCtx, "db">;
+/** Structural ctx for ActionRetrier / WorkflowManager (runQuery + runMutation only). */
+type RecipientRetrierCtx = Pick<MutationCtx, "runQuery" | "runMutation">;
+type RecipientWorkflowCtx = Pick<MutationCtx, "runMutation">;
+
 type RecipientStatusChangeArgs = {
   status: Doc<"document_recipients">["status"];
   signatureData?: string;
@@ -102,7 +107,7 @@ function ensureRecipientCanUpdateStatus(
 }
 
 async function ensureRecipientPaymentsAreComplete(
-  ctx: MutationCtx,
+  ctx: RecipientDbCtx,
   recipient: Doc<"document_recipients">,
   status: RecipientStatusChangeArgs["status"]
 ): Promise<void> {
@@ -110,11 +115,15 @@ async function ensureRecipientPaymentsAreComplete(
     return;
   }
 
-  const paymentFields = await ctx.db
+  const paymentFields = [];
+  for await (const _row of ctx.db
     .query("signature_fields")
-    .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
-    .filter((q) => q.eq(q.field("fieldType"), "payment"))
-    .collect();
+    .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))) {
+    if (!(_row.fieldType === "payment")) {
+      continue;
+    }
+    paymentFields.push(_row);
+  }
 
   for (const paymentField of paymentFields) {
     const config = await ctx.db
@@ -132,7 +141,7 @@ async function ensureRecipientPaymentsAreComplete(
 }
 
 async function ensureSequentialRecipientIsActive(
-  ctx: MutationCtx,
+  ctx: RecipientDbCtx,
   recipient: Doc<"document_recipients">,
   documentId: Doc<"documents">["_id"],
   signingMode: Doc<"documents">["signingMode"] | undefined,
@@ -142,10 +151,12 @@ async function ensureSequentialRecipientIsActive(
     return;
   }
 
-  const allRecipients = await ctx.db
+  const allRecipients = [];
+  for await (const _row of ctx.db
     .query("document_recipients")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    allRecipients.push(_row);
+  }
 
   if (!isRecipientGroupActive(recipient, allRecipients)) {
     throw new ConvexError(
@@ -215,7 +226,7 @@ function getRecipientAuditAction(status: RecipientStatusChangeArgs["status"]) {
 }
 
 async function maybeSendViewedNotification(
-  ctx: MutationCtx,
+  ctx: RecipientRetrierCtx,
   recipient: Doc<"document_recipients">,
   viewedAt: number | undefined
 ): Promise<void> {
@@ -233,7 +244,7 @@ async function maybeSendViewedNotification(
 }
 
 export async function maybeStartPostSignatureWorkflow(
-  ctx: MutationCtx,
+  ctx: RecipientWorkflowCtx,
   recipient: Doc<"document_recipients">,
   status: RecipientStatusChangeArgs["status"]
 ): Promise<void> {
@@ -321,7 +332,7 @@ async function maybeMarkDocumentDeclined(
   }
 
   const declinedAt = Date.now();
-  await ctx.db.patch(document._id, {
+  await ctx.db.patch("documents", document._id, {
     workflowStatus: "declined",
     declinedAt,
     updatedAt: declinedAt,
@@ -342,7 +353,7 @@ async function maybeMarkDocumentDeclined(
 }
 
 async function loadTokenRecipientStatusContext(
-  ctx: MutationCtx,
+  ctx: RecipientDbCtx,
   signingToken: string
 ): Promise<{
   recipient: Doc<"document_recipients">;
@@ -356,7 +367,7 @@ async function loadTokenRecipientStatusContext(
     throw new ConvexError("Signing token has expired");
   }
 
-  const document = await ctx.db.get(recipient.documentId);
+  const document = await ctx.db.get("documents", recipient.documentId);
   return { recipient, document };
 }
 
@@ -385,7 +396,7 @@ async function applyRecipientStatusChange(
     args,
     args.ipAddress ?? "0.0.0.0"
   );
-  await ctx.db.patch(recipient._id, updateData);
+  await ctx.db.patch("document_recipients", recipient._id, updateData);
   return viewedAt;
 }
 
@@ -441,7 +452,7 @@ export const addRecipients = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -464,7 +475,7 @@ export const addRecipients = permissionMutation("documents:edit")({
     }
 
     // 5. Get user for audit logging
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
 
     // 6. Create recipient records
     const recipientIds = [];
@@ -527,7 +538,7 @@ export const removeRecipient = permissionMutation("documents:edit")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient) {
       throw new ConvexError("Recipient not found");
     }
@@ -536,7 +547,7 @@ export const removeRecipient = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, recipient.documentId, userId);
 
     // 3. Get the document
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -547,13 +558,17 @@ export const removeRecipient = permissionMutation("documents:edit")({
     }
 
     // 5. Get user for audit logging
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
 
     // 6. Find and delete all signature fields assigned to this recipient
-    const fieldsToDelete = await ctx.db
+    const fieldsToDelete = [];
+    for await (const _row of ctx.db
       .query("signature_fields")
-      .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
-      .collect();
+      .withIndex("by_recipient", (q) =>
+        q.eq("recipientId", args.recipientId)
+      )) {
+      fieldsToDelete.push(_row);
+    }
 
     for (const field of fieldsToDelete) {
       // Cascade-delete payment config if this is a payment field
@@ -563,10 +578,10 @@ export const removeRecipient = permissionMutation("documents:edit")({
           .withIndex("by_field", (q) => q.eq("fieldId", field._id))
           .unique();
         if (paymentConfig) {
-          await ctx.db.delete(paymentConfig._id);
+          await ctx.db.delete("payment_field_configs", paymentConfig._id);
         }
       }
-      await ctx.db.delete(field._id);
+      await ctx.db.delete("signature_fields", field._id);
     }
 
     // 7. Audit log before deletion (capture recipient info)
@@ -590,7 +605,7 @@ export const removeRecipient = permissionMutation("documents:edit")({
     }
 
     // 8. Delete the recipient
-    await ctx.db.delete(args.recipientId);
+    await ctx.db.delete("document_recipients", args.recipientId);
 
     return { success: true, deletedFieldsCount: fieldsToDelete.length };
   },
@@ -613,7 +628,7 @@ export const updateRecipientStatus = authMutation({
   },
   handler: async (ctx, args) => {
     const { recipient } = await loadTokenRecipientStatusContext(
-      ctx as unknown as MutationCtx,
+      ctx,
       args.signingToken
     );
     ensureRecipientCanUpdateStatus(
@@ -626,12 +641,8 @@ export const updateRecipientStatus = authMutation({
       args,
       args.ipAddress
     );
-    await ctx.db.patch(recipient._id, updateData);
-    await maybeSendViewedNotification(
-      ctx as unknown as MutationCtx,
-      recipient,
-      viewedAt
-    );
+    await ctx.db.patch("document_recipients", recipient._id, updateData);
+    await maybeSendViewedNotification(ctx, recipient, viewedAt);
     return { success: true, recipientId: recipient._id };
   },
 });
@@ -688,13 +699,13 @@ export const submitSignatureAuthenticated = authMutation({
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
     if (!user || !user.email) {
       throw new ConvexError("User not found or has no email");
     }
 
     const userEmail = user.email.toLowerCase();
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -712,11 +723,15 @@ export const submitSignatureAuthenticated = authMutation({
       throw new ConvexError("Cannot sign a completed document");
     }
 
-    const recipient = await ctx.db
+    let recipient = null;
+    for await (const row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("email"), userEmail))
-      .first();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      if (row.email === userEmail) {
+        recipient = row;
+        break;
+      }
+    }
 
     if (!recipient) {
       throw new ConvexError("You are not a recipient on this document");
@@ -726,13 +741,9 @@ export const submitSignatureAuthenticated = authMutation({
       args,
       `Cannot update status - you have already ${recipient.status}`
     );
-    await ensureRecipientPaymentsAreComplete(
-      ctx as unknown as MutationCtx,
-      recipient,
-      args.status
-    );
+    await ensureRecipientPaymentsAreComplete(ctx, recipient, args.status);
     await ensureSequentialRecipientIsActive(
-      ctx as unknown as MutationCtx,
+      ctx,
       recipient,
       args.documentId,
       document.signingMode,
@@ -745,7 +756,7 @@ export const submitSignatureAuthenticated = authMutation({
       "authenticated"
     );
 
-    await ctx.db.patch(recipient._id, updateData);
+    await ctx.db.patch("document_recipients", recipient._id, updateData);
     await maybeMarkDocumentDeclined(ctx, document, recipient, args);
 
     const auditAction = getRecipientAuditAction(args.status);
@@ -763,16 +774,8 @@ export const submitSignatureAuthenticated = authMutation({
       });
     }
 
-    await maybeSendViewedNotification(
-      ctx as unknown as MutationCtx,
-      recipient,
-      viewedAt
-    );
-    await maybeStartPostSignatureWorkflow(
-      ctx as unknown as MutationCtx,
-      recipient,
-      args.status
-    );
+    await maybeSendViewedNotification(ctx, recipient, viewedAt);
+    await maybeStartPostSignatureWorkflow(ctx, recipient, args.status);
 
     return { success: true, recipientId: recipient._id };
   },
@@ -795,7 +798,7 @@ export const updateRecipient = permissionMutation("documents:edit")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient) {
       throw new ConvexError("Recipient not found");
     }
@@ -804,7 +807,7 @@ export const updateRecipient = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, recipient.documentId, userId);
 
     // 3. Get the document
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -834,12 +837,14 @@ export const updateRecipient = permissionMutation("documents:edit")({
     if (args.email !== undefined) {
       const newEmail = args.email.toLowerCase();
       // Check for duplicate email among other recipients
-      const existingRecipients = await ctx.db
+      const existingRecipients = [];
+      for await (const _row of ctx.db
         .query("document_recipients")
         .withIndex("by_document", (q) =>
           q.eq("documentId", recipient.documentId)
-        )
-        .collect();
+        )) {
+        existingRecipients.push(_row);
+      }
 
       const duplicateEmail = existingRecipients.find(
         (r) => r._id !== args.recipientId && r.email === newEmail
@@ -850,7 +855,7 @@ export const updateRecipient = permissionMutation("documents:edit")({
     }
 
     // 7. Get user for audit logging
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get("users", userId);
 
     // 8. Build update object
     const updates: Record<string, unknown> = {
@@ -871,7 +876,7 @@ export const updateRecipient = permissionMutation("documents:edit")({
     }
 
     // 9. Update the recipient
-    await ctx.db.patch(args.recipientId, updates);
+    await ctx.db.patch("document_recipients", args.recipientId, updates);
 
     // 10. Audit log
     if (user) {
@@ -906,7 +911,7 @@ export const regenerateSigningToken = permissionMutation("documents:edit")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient) {
       throw new ConvexError("Recipient not found");
     }
@@ -931,7 +936,7 @@ export const regenerateSigningToken = permissionMutation("documents:edit")({
       await generateSigningToken();
     const newExpiration = now + 30 * 24 * 60 * 60 * 1000; // 30 days from now
 
-    await ctx.db.patch(args.recipientId, {
+    await ctx.db.patch("document_recipients", args.recipientId, {
       signingToken: newToken,
       tokenHash: newTokenHash,
       tokenExpiresAt: newExpiration,
@@ -967,7 +972,7 @@ export const recordEsignConsent = mutation({
 
     // Record consent
     const now = Date.now();
-    await ctx.db.patch(recipient._id, {
+    await ctx.db.patch("document_recipients", recipient._id, {
       esignConsentAt: now,
       esignConsentIp: args.ipAddress ?? "unknown",
       esignConsentVersion: args.consentVersion ?? "1.0",
@@ -975,7 +980,7 @@ export const recordEsignConsent = mutation({
     });
 
     // Log to audit trail
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (document) {
       await logRecipientAction(ctx, {
         organizationId: document.organizationId,
@@ -1019,7 +1024,7 @@ export const recordEsignOptOut = mutation({
     }
 
     // Log opt-out to audit trail
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (document) {
       await logRecipientAction(ctx, {
         organizationId: document.organizationId,
@@ -1051,7 +1056,7 @@ export const setAwaitingDictation = internalMutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    await ctx.db.patch(args.recipientId, {
+    await ctx.db.patch("document_recipients", args.recipientId, {
       awaitingDictation: true,
       updatedAt: now,
     });
@@ -1087,7 +1092,7 @@ export const dictateNextRecipient = mutation({
     }
 
     // 3. Fetch document and verify it has dictation enabled
-    const document = await ctx.db.get(recipient.documentId);
+    const document = await ctx.db.get("documents", recipient.documentId);
     if (!document) throw new ConvexError("Document not found");
     if (!document.allowDictateNextSigner) {
       throw new ConvexError("This document does not support dictation");
@@ -1100,15 +1105,19 @@ export const dictateNextRecipient = mutation({
     }
 
     // 5. Find the placeholder recipient in the next signing group
-    const allRecipients = await ctx.db
+    const allRecipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
-      .collect();
+      .withIndex("by_document", (q) =>
+        q.eq("documentId", recipient.documentId)
+      )) {
+      allRecipients.push(_row);
+    }
 
     const myOrder = recipient.order ?? 0;
     const placeholder = allRecipients
       .filter((r) => (r.order ?? 0) > myOrder && r.isPlaceholder)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+      .toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
 
     if (!placeholder) {
       throw new ConvexError(
@@ -1122,7 +1131,7 @@ export const dictateNextRecipient = mutation({
     const tokenExpiration = now + 30 * 24 * 60 * 60 * 1000;
 
     // 7. Update the placeholder with real identity
-    await ctx.db.patch(placeholder._id, {
+    await ctx.db.patch("document_recipients", placeholder._id, {
       name: args.nextName.trim(),
       email: args.nextEmail.trim().toLowerCase(),
       isPlaceholder: false,
@@ -1135,7 +1144,7 @@ export const dictateNextRecipient = mutation({
     });
 
     // 8. Clear awaitingDictation on the dictating signer
-    await ctx.db.patch(recipient._id, {
+    await ctx.db.patch("document_recipients", recipient._id, {
       awaitingDictation: false,
       updatedAt: now,
     });

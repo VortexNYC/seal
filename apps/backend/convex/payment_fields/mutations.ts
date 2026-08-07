@@ -100,7 +100,7 @@ export const upsertPaymentConfig = mutation({
     }
 
     // Verify the field exists and is a payment field
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new ConvexError("Field not found");
     }
@@ -109,7 +109,7 @@ export const upsertPaymentConfig = mutation({
     }
 
     // Get document to verify draft status and get organizationId
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -147,7 +147,7 @@ export const upsertPaymentConfig = mutation({
 
     if (existing) {
       // Update existing config
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("payment_field_configs", existing._id, {
         paymentType: args.paymentType,
         items: args.items,
         currency: args.currency.toLowerCase(),
@@ -211,7 +211,7 @@ export const deletePaymentConfig = mutation({
       .unique();
 
     if (existing) {
-      await ctx.db.delete(existing._id);
+      await ctx.db.delete("payment_field_configs", existing._id);
     }
 
     return { success: true };
@@ -230,12 +230,12 @@ export const updatePaymentStatus = mutation({
     providerPaymentIntentId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const config = await ctx.db.get(args.configId);
+    const config = await ctx.db.get("payment_field_configs", args.configId);
     if (!config) {
       throw new ConvexError("Payment config not found");
     }
 
-    await ctx.db.patch(args.configId, {
+    await ctx.db.patch("payment_field_configs", args.configId, {
       paymentStatus: args.paymentStatus,
       ...(args.providerInvoiceId !== undefined && {
         providerInvoiceId: args.providerInvoiceId,
@@ -293,7 +293,7 @@ export const updatePaymentStatusFromProviderInvoice = internalMutation({
       .first();
 
     if (config) {
-      await ctx.db.patch(config._id, {
+      await ctx.db.patch("payment_field_configs", config._id, {
         paymentStatus: args.paymentStatus,
         updatedAt: now,
       });
@@ -302,7 +302,7 @@ export const updatePaymentStatusFromProviderInvoice = internalMutation({
     if (invoiceRecord) {
       const invoiceStatus = statusMap[args.paymentStatus];
       if (invoiceStatus) {
-        await ctx.db.patch(invoiceRecord._id, {
+        await ctx.db.patch("document_invoices", invoiceRecord._id, {
           status: invoiceStatus,
           ...(invoiceStatus === "paid" && { paidAt: now }),
           ...(invoiceStatus === "void" && { voidedAt: now }),
@@ -430,24 +430,28 @@ async function getVortexPaymentWebhookRecords(
   ctx: Pick<MutationCtx, "db">,
   vortexPayableId: string
 ): Promise<VortexPaymentWebhookRecords> {
-  const configMatches = await ctx.db
+  const configMatches: Doc<"payment_field_configs">[] = [];
+  for await (const config of ctx.db
     .query("payment_field_configs")
     .withIndex("by_vortex_payable", (q) =>
       q.eq("vortexPayableId", vortexPayableId)
-    )
-    .collect();
+    )) {
+    configMatches.push(config);
+  }
   assertUniqueVortexPayableMatch(
     "payment_field_configs",
     vortexPayableId,
     configMatches.length
   );
 
-  const invoiceMatches = await ctx.db
+  const invoiceMatches: Doc<"document_invoices">[] = [];
+  for await (const invoice of ctx.db
     .query("document_invoices")
     .withIndex("by_vortex_payable", (q) =>
       q.eq("vortexPayableId", vortexPayableId)
-    )
-    .collect();
+    )) {
+    invoiceMatches.push(invoice);
+  }
 
   assertUniqueVortexPayableMatch(
     "document_invoices",
@@ -518,7 +522,10 @@ async function patchPaymentConfigStatus(
   paymentStatus: PaymentStatus,
   now: number
 ) {
-  await ctx.db.patch(config._id, { paymentStatus, updatedAt: now });
+  await ctx.db.patch("payment_field_configs", config._id, {
+    paymentStatus,
+    updatedAt: now,
+  });
 }
 
 async function patchDocumentInvoiceStatus(
@@ -528,6 +535,7 @@ async function patchDocumentInvoiceStatus(
   now: number
 ) {
   await ctx.db.patch(
+    "document_invoices",
     invoiceRecord._id,
     documentInvoicePatch(invoiceRecord, invoiceStatus, now)
   );
@@ -593,7 +601,7 @@ export const updatePaymentStatusFromProviderSubscription = internalMutation({
       return null;
     }
 
-    await ctx.db.patch(config._id, {
+    await ctx.db.patch("payment_field_configs", config._id, {
       paymentStatus: args.paymentStatus,
       updatedAt: Date.now(),
     });
@@ -621,14 +629,14 @@ export const storeProviderPaymentIds = internalMutation({
     customerName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const config = await ctx.db.get(args.configId);
+    const config = await ctx.db.get("payment_field_configs", args.configId);
     if (!config) {
       throw new ConvexError("Payment config not found");
     }
 
     const now = Date.now();
 
-    await ctx.db.patch(args.configId, {
+    await ctx.db.patch("payment_field_configs", args.configId, {
       paymentStatus: args.paymentStatus,
       ...(args.providerInvoiceId !== undefined && {
         providerInvoiceId: args.providerInvoiceId,
@@ -702,14 +710,14 @@ export const storeVortexPayableIds = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const config = await ctx.db.get(args.configId);
+    const config = await ctx.db.get("payment_field_configs", args.configId);
     if (!config) {
       throw new ConvexError("Payment config not found");
     }
 
     const now = Date.now();
 
-    await ctx.db.patch(args.configId, {
+    await ctx.db.patch("payment_field_configs", args.configId, {
       paymentStatus: args.paymentStatus,
       vortexPayableId: args.vortexPayableId,
       ...(args.vortexRecurringPayableId !== undefined && {
@@ -746,7 +754,7 @@ export const storeVortexPayableIds = internalMutation({
         return null;
       }
 
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("document_invoices", existing._id, {
         status: invoiceStatus,
         vortexPaymentRequestId: args.vortexPaymentRequestId,
         amountDue: config.totalAmountCents,
@@ -800,6 +808,10 @@ function documentInvoiceStatusForPaymentStatus(
       return "uncollectible";
     case "cancelled":
       return "void";
+    default: {
+      const _exhaustive: never = paymentStatus;
+      throw new Error(`Unhandled payment status: ${String(_exhaustive)}`);
+    }
   }
 }
 
@@ -864,7 +876,7 @@ export const upsertRecurringInvoice = internalMutation({
       }
 
       // Update existing record with latest data from Vortex Billing
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("document_invoices", existing._id, {
         status: args.status,
         amountDue: args.amountDue,
         hostedInvoiceUrl: args.hostedInvoiceUrl,

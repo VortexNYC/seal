@@ -40,8 +40,8 @@ describe("ensureVortexAuthSystemRoles", () => {
     const roles = await seedAndListRoles();
 
     expect(roles).toHaveLength(Object.keys(ROLE_PERMISSIONS).length);
-    expect(roles.map((role) => role.name).sort()).toEqual(
-      Object.keys(ROLE_PERMISSIONS).sort()
+    expect(roles.map((role) => role.name).toSorted()).toEqual(
+      Object.keys(ROLE_PERMISSIONS).toSorted()
     );
   });
 
@@ -63,8 +63,8 @@ describe("ensureVortexAuthSystemRoles", () => {
     const second = await seedAndListRoles();
 
     expect(second).toHaveLength(first.length);
-    expect(second.map((role) => role.roleId).sort()).toEqual(
-      first.map((role) => role.roleId).sort()
+    expect(second.map((role) => role.roleId).toSorted()).toEqual(
+      first.map((role) => role.roleId).toSorted()
     );
   });
 
@@ -96,8 +96,8 @@ describe("ensureVortexAuthSystemRoles", () => {
       expect(role.organizationId).toBe(otherOrgId);
       expect(org1Ids.has(role.roleId)).toBe(false);
     }
-    expect(org2Roles.map((role) => role.name).sort()).toEqual(
-      org1Roles.map((role) => role.name).sort()
+    expect(org2Roles.map((role) => role.name).toSorted()).toEqual(
+      org1Roles.map((role) => role.name).toSorted()
     );
   });
 });
