@@ -206,6 +206,27 @@ function parseJson(raw: string, label: string): Json {
   return parsed;
 }
 
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
+}
+
+function isVortexDelivery(value: Json): value is VortexDelivery {
+  return (
+    isJsonObject(value) &&
+    typeof value.deliveryId === "string" &&
+    typeof value.endpointId === "string" &&
+    typeof value.status === "string"
+  );
+}
+
 function optionalStringField(
   value: JsonObject,
   field: string
@@ -414,7 +435,11 @@ async function runSealConvex<T extends Json>(input: {
     jsonStart >= 0,
     `No JSON returned from ${input.functionName}: ${trimmed}`
   );
-  return parseJson(trimmed.slice(jsonStart), input.functionName) as T;
+  const parsed = parseJson(trimmed.slice(jsonStart), input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 async function runVortexConvex<T extends Json>(input: {
@@ -447,7 +472,11 @@ async function runVortexConvex<T extends Json>(input: {
     jsonStart >= 0,
     `No JSON returned from ${input.functionName}: ${trimmed}`
   );
-  return parseJson(trimmed.slice(jsonStart), input.functionName) as T;
+  const parsed = parseJson(trimmed.slice(jsonStart), input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 async function readPaymentState(input: {
@@ -932,10 +961,13 @@ async function attemptVortexWebhookRedrive(input: {
           },
         })
       : null;
-  const resentDeliveries =
-    dispatchTarget === null
-      ? []
-      : ((dispatchTarget.deliveries ?? []) as readonly VortexDelivery[]);
+  const rawResentDeliveries =
+    dispatchTarget === null ? [] : (dispatchTarget.deliveries ?? []);
+  const resentDeliveries: readonly VortexDelivery[] = Array.isArray(
+    rawResentDeliveries
+  )
+    ? rawResentDeliveries.filter(isVortexDelivery)
+    : [];
   const targetDelivery =
     deliveryToDispatch.status === "failed"
       ? resentDeliveries.find((delivery) => delivery.status === "pending")

@@ -43,10 +43,13 @@ export const fixUserActiveOrganization = mutation({
     }
 
     // Get organization details
-    const organization = await ctx.db.get(membership.organizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      membership.organizationId
+    );
 
     // Set activeOrganizationId
-    await ctx.db.patch(user._id, {
+    await ctx.db.patch("users", user._id, {
       activeOrganizationId: membership.organizationId,
       updatedAt: Date.now(),
     });

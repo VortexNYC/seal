@@ -159,7 +159,7 @@ function getUserManagementRules(
         if (doc._id === rlsCtx.userId) return true;
         const currentOrgId = rlsCtx.orgId;
         if (rlsCtx.hasPermission("users:view") && currentOrgId) {
-          const organization = await ctx.db.get(currentOrgId);
+          const organization = await ctx.db.get("organizations", currentOrgId);
           if (!organization) return false;
           const membership = await resolveComponentMembershipForOrganization(
             ctx,
@@ -181,14 +181,14 @@ function getUserManagementRules(
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (!rlsCtx.userId) return false;
-        const user = await queryCtx.db.get(rlsCtx.userId);
+        const user = await queryCtx.db.get("users", rlsCtx.userId);
         return user !== null && user.authSubject === doc.authSubject;
       },
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (!rlsCtx.userId) return false;
-        const user = await queryCtx.db.get(rlsCtx.userId);
+        const user = await queryCtx.db.get("users", rlsCtx.userId);
         return user !== null && user.authSubject === doc.authSubject;
       },
     },
@@ -255,7 +255,7 @@ function getPrimaryDocumentRules(
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.userId === rlsCtx.userId) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner" || access === "manage";
@@ -263,7 +263,7 @@ function getPrimaryDocumentRules(
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner" || access === "manage";
@@ -277,7 +277,7 @@ function getPrimaryDocumentRules(
           return doc._id === rlsCtx.recipientContext.recipientId;
         }
         if (doc.userId && doc.userId === rlsCtx.userId) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
@@ -288,7 +288,7 @@ function getPrimaryDocumentRules(
         if (rlsCtx.recipientContext) {
           return doc._id === rlsCtx.recipientContext.recipientId;
         }
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
@@ -306,7 +306,7 @@ function getDocumentWorkflowRules(
       read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
@@ -314,7 +314,7 @@ function getDocumentWorkflowRules(
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
@@ -360,7 +360,7 @@ function getDocumentAssetRules(
       read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         if (document.ownerId === rlsCtx.userId) return true;
         return (
@@ -371,7 +371,7 @@ function getDocumentAssetRules(
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         return document ? document.ownerId === rlsCtx.userId : false;
       },
     },
@@ -388,7 +388,7 @@ function getDocumentAssetRules(
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.organizationId !== rlsCtx.orgId) return false;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
@@ -406,7 +406,7 @@ function getSignatureWorkflowRules(
       read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
@@ -414,7 +414,7 @@ function getSignatureWorkflowRules(
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
@@ -427,7 +427,7 @@ function getSignatureWorkflowRules(
         if (rlsCtx.recipientContext) {
           return doc.documentId === rlsCtx.recipientContext.documentId;
         }
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
@@ -441,7 +441,7 @@ function getSignatureWorkflowRules(
             doc.recipientId === rlsCtx.recipientContext.recipientId
           );
         }
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return (
@@ -457,7 +457,7 @@ function getSignatureWorkflowRules(
         if (rlsCtx.recipientContext) {
           return doc.documentId === rlsCtx.recipientContext.documentId;
         }
-        const document = await queryCtx.db.get(doc.documentId);
+        const document = await queryCtx.db.get("documents", doc.documentId);
         if (!document) return false;
         const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
@@ -496,7 +496,7 @@ function getTemplateAndContactRules(
       read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const template = await queryCtx.db.get(doc.templateId);
+        const template = await queryCtx.db.get("templates", doc.templateId);
         if (!template || template.status === "deleted") return false;
         if (rlsCtx.orgId !== template.organizationId) return false;
         return rlsCtx.hasPermission("templates:view");
@@ -504,7 +504,7 @@ function getTemplateAndContactRules(
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        const template = await queryCtx.db.get(doc.templateId);
+        const template = await queryCtx.db.get("templates", doc.templateId);
         if (!template || template.status === "deleted") return false;
         if (rlsCtx.orgId !== template.organizationId) return false;
         if (template.createdBy === rlsCtx.userId) return true;
@@ -667,7 +667,10 @@ function getIntegrationAndWebhookRules(
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        const endpoint = await queryCtx.db.get(doc.endpointId);
+        const endpoint = await queryCtx.db.get(
+          "webhook_endpoints",
+          doc.endpointId
+        );
         if (!endpoint) return false;
         return rlsCtx.hasPermission("settings:integrations");
       },

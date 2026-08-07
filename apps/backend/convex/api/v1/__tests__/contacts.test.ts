@@ -1,3 +1,5 @@
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { internal } from "../../../_generated/api";
@@ -308,7 +310,7 @@ describe("api/v1/contacts", () => {
       const contact = await t.query(internal.api.v1.contacts.getContact, {
         userId,
         organizationId,
-        contactId: result.id as Id<"contacts">,
+        contactId: parse(v.id("contacts"), result.id),
       });
 
       expect(contact?.first_name).toBe("Jane");
@@ -336,7 +338,7 @@ describe("api/v1/contacts", () => {
       const contact = await t.query(internal.api.v1.contacts.getContact, {
         userId,
         organizationId,
-        contactId: result.id as Id<"contacts">,
+        contactId: parse(v.id("contacts"), result.id),
       });
 
       expect(contact?.phone).toBe("+1-555-0100");
@@ -359,7 +361,7 @@ describe("api/v1/contacts", () => {
       const contact = await t.query(internal.api.v1.contacts.getContact, {
         userId,
         organizationId,
-        contactId: result.id as Id<"contacts">,
+        contactId: parse(v.id("contacts"), result.id),
       });
 
       expect(contact?.status).toBe("active");

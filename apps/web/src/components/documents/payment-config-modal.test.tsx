@@ -1,6 +1,5 @@
 /// @vitest-environment jsdom
 
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -19,9 +18,10 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+import { parseId } from "../../lib/convex-ids";
 import { PaymentConfigModal } from "./payment-config-modal";
 
-const FAKE_FIELD_ID = "fake_id" as Id<"signature_fields">;
+const FAKE_FIELD_ID = parseId("signature_fields", "fake_id");
 
 describe("PaymentConfigModal", () => {
   afterEach(cleanup);

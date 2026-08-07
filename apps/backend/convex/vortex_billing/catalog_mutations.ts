@@ -43,7 +43,7 @@ export const upsertProductByVortexId = internalMutation({
       .first();
 
     if (existingProduct !== null) {
-      await ctx.db.patch(existingProduct._id, {
+      await ctx.db.patch("subscription_products", existingProduct._id, {
         vortexProductId: args.vortexProductId,
         name: args.name,
         description: args.description,
@@ -111,7 +111,7 @@ export const upsertPriceByVortexId = internalMutation({
       .first();
 
     if (existingPrice !== null) {
-      await ctx.db.patch(existingPrice._id, {
+      await ctx.db.patch("subscription_prices", existingPrice._id, {
         vortexPriceId: args.vortexPriceId,
         externalProductId: args.vortexProductId,
         subscriptionProductId: args.subscriptionProductId,

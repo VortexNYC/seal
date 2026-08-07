@@ -65,7 +65,7 @@ async function resolveE2eDocumentOwner(
       throw new Error(`e2e_owner_auth_subject_not_found: ${ownerAuthSubject}`);
     }
 
-    const organization = await ctx.db.get(organizationId);
+    const organization = await ctx.db.get("organizations", organizationId);
     if (!organization) {
       throw new Error(`e2e_organization_not_found: ${organizationId}`);
     }
@@ -85,17 +85,19 @@ async function resolveE2eDocumentOwner(
   }
 
   if (ownerEmail) {
-    const owners = await ctx.db
+    const owners = [];
+    for await (const owner of ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", ownerEmail))
-      .collect();
+      .withIndex("by_email", (q) => q.eq("email", ownerEmail))) {
+      owners.push(owner);
+    }
 
     if (owners.length === 0) {
       throw new Error(`e2e_owner_not_found: ${ownerEmail}`);
     }
 
     for (const owner of owners) {
-      const organization = await ctx.db.get(organizationId);
+      const organization = await ctx.db.get("organizations", organizationId);
       if (!organization) {
         throw new Error(`e2e_organization_not_found: ${organizationId}`);
       }
@@ -113,7 +115,7 @@ async function resolveE2eDocumentOwner(
     throw new Error(`e2e_owner_not_active_member: ${ownerEmail}`);
   }
 
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throw new Error(`e2e_organization_not_found: ${organizationId}`);
   }
@@ -128,7 +130,7 @@ async function resolveE2eDocumentOwner(
   }
 
   const ownerUserId = activeMember.userId;
-  const owner = await ctx.db.get(ownerUserId);
+  const owner = await ctx.db.get("users", ownerUserId);
   if (!owner) {
     throw new Error(`member_user_not_found_for_org: ${organizationId}`);
   }
@@ -282,7 +284,7 @@ export const purgeE2EDocuments = mutation({
     const toDelete = docs.slice(0, batchSize);
 
     for (const doc of toDelete) {
-      await ctx.db.delete(doc._id);
+      await ctx.db.delete("documents", doc._id);
     }
 
     return { deleted: toDelete.length, hasMore };
@@ -522,19 +524,24 @@ export const getTestDocumentState = query({
   },
   handler: async (ctx, { documentId }) => {
     requireE2eDeployment();
-    const id = documentId as Id<"documents">;
-    const doc = await ctx.db.get(id);
+    const id = ctx.db.normalizeId("documents", documentId);
+    if (!id) return null;
+    const doc = await ctx.db.get("documents", id);
     if (!doc) return null;
 
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", id))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", id))) {
+      recipients.push(recipient);
+    }
 
-    const auditEntries = await ctx.db
+    const auditEntries = [];
+    for await (const entry of ctx.db
       .query("audit_logs")
-      .withIndex("by_document", (q) => q.eq("documentId", id))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", id))) {
+      auditEntries.push(entry);
+    }
 
     return {
       workflowStatus: doc.workflowStatus,
@@ -569,9 +576,10 @@ export const deleteTestDocument = mutation({
   },
   handler: async (ctx, { documentId }) => {
     requireE2eDeployment();
-    const id = documentId as Id<"documents">;
-    const doc = await ctx.db.get(id);
-    if (doc) await ctx.db.delete(id);
+    const id = ctx.db.normalizeId("documents", documentId);
+    if (!id) return { deleted: false };
+    const doc = await ctx.db.get("documents", id);
+    if (doc) await ctx.db.delete("documents", id);
     return { deleted: !!doc };
   },
 });

@@ -41,7 +41,7 @@ export function CreateFolderDialog({
   const createFolder = useMutation(api.folders.mutations.createFolder);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
 
     const focusTimer = window.setTimeout(() => {
       inputRef.current?.focus();

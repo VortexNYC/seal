@@ -26,7 +26,7 @@ env:
 jobs:
   quality:
     name: Quality Checks
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 10
 
     steps:
@@ -57,7 +57,7 @@ jobs:
 
   test-backend:
     name: Backend Tests
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 10
     needs: quality
 
@@ -83,7 +83,7 @@ jobs:
 
   test-frontend:
     name: Frontend Tests
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 10
     needs: quality
 
@@ -113,7 +113,7 @@ jobs:
   test-web-e2e-smoke:
     name: Web E2E Smoke
     if: github.event_name == 'release' || inputs.confirm_production == 'production'
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 10
     needs: quality
 
@@ -166,7 +166,7 @@ jobs:
   test-web-e2e-chromium:
     name: Web E2E Chromium
     if: github.event_name == 'release' || inputs.confirm_production == 'production'
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 20
     needs:
       - quality
@@ -219,7 +219,7 @@ jobs:
   test-landing-e2e:
     name: Landing E2E
     if: github.event_name == 'release' || inputs.confirm_production == 'production'
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 20
     needs: quality
 

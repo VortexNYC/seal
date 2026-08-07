@@ -28,7 +28,7 @@ import { SignatureCapture } from "./signature-capture";
 interface FieldWithValue {
   _id: Id<"signature_fields">;
   documentId: Id<"documents">;
-  recipientId: Id<"document_recipients">;
+  recipientId?: Id<"document_recipients">;
   fieldType: FieldType;
   page: number;
   x: number;

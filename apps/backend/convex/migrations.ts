@@ -69,7 +69,10 @@ export const backfillSubscriptionOrganizationId = migrations.define({
       return;
     }
 
-    await ctx.db.patch(doc._id, { organizationId: org._id, userId: undefined });
+    await ctx.db.patch("subscriptions", doc._id, {
+      organizationId: org._id,
+      userId: undefined,
+    });
     console.info(
       `[migration] Backfilled subscription ${doc._id} → org ${org._id} (${org.name})`
     );
@@ -84,6 +87,6 @@ export const clearUserProfileBio = migrations.define({
   table: "user_profiles",
   migrateOne: async (ctx, doc) => {
     if (doc.bio === undefined) return;
-    await ctx.db.patch(doc._id, { bio: undefined });
+    await ctx.db.patch("user_profiles", doc._id, { bio: undefined });
   },
 });

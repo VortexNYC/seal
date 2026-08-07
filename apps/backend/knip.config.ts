@@ -11,7 +11,7 @@ const config: KnipConfig = {
     // Triple-slash reference in test.setup.ts — provided by vitest
     "vite",
   ],
-  ignoreBinaries: ["knip", "oxfmt", "oxlint"],
+  ignoreBinaries: ["knip", "vp", "tsc"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };

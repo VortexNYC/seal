@@ -32,6 +32,18 @@ export type FieldType =
   | "attachment"
   | "payment";
 
+export const FIELD_TYPES = [
+  "signature",
+  "text",
+  "number",
+  "date",
+  "checkbox",
+  "dropdown",
+  "radio",
+  "attachment",
+  "payment",
+] as const satisfies readonly FieldType[];
+
 interface FieldToolbarProps {
   onFieldDragStart?: (fieldType: FieldType) => void;
   onFieldDragEnd?: () => void;
@@ -253,11 +265,12 @@ export function FieldToolbar({
       if (!isModKey || e.key.toLowerCase() !== "z") return;
 
       // Don't capture if user is typing in an input
-      const target = e.target as HTMLElement;
+      const target = e.target;
       if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
       ) {
         return;
       }

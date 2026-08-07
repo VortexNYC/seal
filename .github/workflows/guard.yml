@@ -16,7 +16,7 @@ env:
 jobs:
   precommit-check:
     name: precommit:check
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 6
     steps:
       - name: Checkout
@@ -40,7 +40,7 @@ jobs:
 
   prepush-check:
     name: prepush:check
-    runs-on: [self-hosted, vortex, linux, x64, vortex-heavy]
+    runs-on: ubicloud-standard-4
     timeout-minutes: 20
     needs: precommit-check
     steps:

@@ -144,7 +144,7 @@ function PaymentsSettingsPage() {
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
   const settingsState = buildPaymentsSettingsState({
     merchantAccountResult,
-    organizationId: organization?._id as Id<"organizations"> | undefined,
+    organizationId: organization?._id,
     organizationName: organization?.name ?? slug,
     slug,
   });
@@ -446,7 +446,7 @@ function ConnectedMerchantAccountSection({
       config={{
         baseUrl: window.location.origin,
         environment: "test",
-        organizationId: String(settingsState.orgId ?? slug),
+        organizationId: settingsState.orgId ?? slug,
         branding: { brandName: "Seal", showVortexBrand: true },
       }}
     >

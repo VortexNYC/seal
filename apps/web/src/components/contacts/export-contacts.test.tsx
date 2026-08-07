@@ -1,8 +1,9 @@
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { parseId } from "../../lib/convex-ids";
 import { ExportContacts } from "./export-contacts";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -18,19 +19,19 @@ function makeContact(
   overrides: Partial<Doc<"contacts">> = {}
 ): Doc<"contacts"> {
   return {
-    _id: "contact_1" as Id<"contacts">,
+    _id: parseId("contacts", "contact_1"),
     _creationTime: 1700000000000,
-    organizationId: "org_1" as Id<"organizations">,
+    organizationId: parseId("organizations", "org_1"),
     firstName: "John",
     lastName: "Doe",
     fullName: "John Doe",
     email: "john@example.com",
     status: "active",
-    createdBy: "user_1" as Id<"users">,
+    createdBy: parseId("users", "user_1"),
     createdAt: 1700000000000,
     updatedAt: 1700000000000,
     ...overrides,
-  } as Doc<"contacts">;
+  };
 }
 
 describe("ExportContacts", () => {
@@ -162,7 +163,7 @@ describe("ExportContacts", () => {
       const contacts = [
         makeContact({ firstName: "Alice", email: "alice@test.com" }),
         makeContact({
-          _id: "contact_2" as Id<"contacts">,
+          _id: parseId("contacts", "contact_2"),
           firstName: "Bob",
           email: "bob@test.com",
         }),

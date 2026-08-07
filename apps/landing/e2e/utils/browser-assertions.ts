@@ -1,9 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 
 const ignoredConsoleErrorPatterns = [/\/favicon\.ico(?:\?|$)/i];
-const ignoredConsoleMessages = [
+const ignoredConsoleMessages = new Set([
   "Failed to load resource: the server responded with a status of 404 ()",
-];
+]);
 const ignoredRequestFailurePatterns = [
   /ERR_ABORTED/i,
   /NS_BINDING_ABORTED/i,
@@ -21,7 +21,7 @@ export function trackBrowserErrors(page: Page): {
     }
 
     const text = message.text();
-    if (ignoredConsoleMessages.includes(text)) {
+    if (ignoredConsoleMessages.has(text)) {
       return;
     }
 

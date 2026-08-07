@@ -8,6 +8,15 @@ import {
   validationErrorResponse,
 } from "../errors";
 
+/** Read a JSON response body as a plain record, without unsafe assertions. */
+async function jsonBody(res: Response): Promise<Record<string, unknown>> {
+  const body: unknown = await res.json();
+  if (typeof body !== "object" || body === null) {
+    throw new Error("Expected a JSON object body");
+  }
+  return { ...body };
+}
+
 describe("ApiError", () => {
   test("constructor sets status, code, message, and title correctly", () => {
     const error = new ApiError(401, "Invalid API key", "INVALID_API_KEY");
@@ -97,7 +106,7 @@ describe("apiErrorResponse", () => {
       "Insufficient scope",
       "INSUFFICIENT_SCOPE"
     );
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
 
     expect(body.type).toBe("https://api.seal.app/errors/insufficient-scope");
     expect(body.title).toBe("Forbidden");
@@ -115,7 +124,7 @@ describe("apiErrorResponse", () => {
 
     expect(res.headers.get("X-Request-Id")).toBe("abc-123");
 
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
     expect(body.instance).toBe("/api/v1/documents");
     expect(body.errors).toStrictEqual({ title: ["Required"] });
   });
@@ -154,7 +163,7 @@ describe("handleApiError", () => {
     expect(res.status).toBe(404);
     expect(res.headers.get("Content-Type")).toBe("application/problem+json");
 
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
     expect(body.code).toBe("DOCUMENT_NOT_FOUND");
     expect(body.detail).toBe("Not found");
     expect(body.instance).toBe("/api/v1/documents/123");
@@ -170,7 +179,7 @@ describe("handleApiError", () => {
     );
     const res = handleApiError(error);
 
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
     expect(body.errors).toStrictEqual({ email: ["Invalid"] });
   });
 
@@ -179,7 +188,7 @@ describe("handleApiError", () => {
 
     expect(res.status).toBe(500);
 
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
     expect(body.code).toBe("INTERNAL_ERROR");
     expect(body.detail).toBe("An unexpected error occurred");
     expect(body.instance).toBe("/api/v1/test");
@@ -190,7 +199,7 @@ describe("handleApiError", () => {
 
     expect(res.status).toBe(500);
 
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
     expect(body.code).toBe("INTERNAL_ERROR");
   });
 });
@@ -206,7 +215,7 @@ describe("validationErrorResponse", () => {
     expect(res.status).toBe(422);
     expect(res.headers.get("Content-Type")).toBe("application/problem+json");
 
-    const body = (await res.json()) as Record<string, unknown>;
+    const body = await jsonBody(res);
     expect(body.code).toBe("VALIDATION_ERROR");
     expect(body.detail).toBe("The request body contains invalid fields");
     expect(body.title).toBe("Unprocessable Entity");

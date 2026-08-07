@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
+import { parseSelectValue } from "@/lib/select-values";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/notifications"
@@ -37,6 +38,12 @@ export const Route = createFileRoute(
 });
 
 type NotificationFrequency = "instant" | "daily" | "weekly";
+
+const NOTIFICATION_FREQUENCIES = [
+  "instant",
+  "daily",
+  "weekly",
+] as const satisfies readonly NotificationFrequency[];
 
 interface EmailPreferences {
   enabled: boolean;
@@ -335,9 +342,15 @@ function NotificationSettings() {
             </div>
             <Select
               value={frequency}
-              onValueChange={(value) =>
-                handleFrequencyChange(value as NotificationFrequency)
-              }
+              onValueChange={(value) => {
+                const parsed = parseSelectValue(
+                  value,
+                  NOTIFICATION_FREQUENCIES
+                );
+                if (parsed) {
+                  void handleFrequencyChange(parsed);
+                }
+              }}
               disabled={isUpdating}
             >
               <SelectTrigger className="w-[180px]">

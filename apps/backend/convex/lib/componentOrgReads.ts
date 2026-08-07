@@ -95,7 +95,7 @@ function mapComponentStatus(
       return "active";
     case "invited":
       return "pending";
-    case "suspended":
+    default:
       return "suspended";
   }
 }
@@ -115,7 +115,7 @@ export async function resolveComponentMemberships(
 
   const componentMembers = await ctx.runQuery(
     components.vortexAuth.organizations.listMembershipsByUser,
-    { userId: vortexAuthUserId as ComponentUserId }
+    { userId: vortexAuthUserId }
   );
 
   const resolved: ComponentResolvedMembership[] = [];
@@ -147,8 +147,8 @@ export async function resolveComponentMembershipForOrganization(
   const member = await ctx.runQuery(
     components.vortexAuth.organizations.getMemberByUserOrganization,
     {
-      userId: vortexAuthUserId as ComponentUserId,
-      organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      userId: vortexAuthUserId,
+      organizationId: vortexAuthOrganizationId,
     }
   );
   if (member === null) {
@@ -174,7 +174,7 @@ export async function listComponentMembersByOrganization(
   const members = await ctx.runQuery(
     components.vortexAuth.organizations.listMembersByOrganization,
     {
-      organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      organizationId: vortexAuthOrganizationId,
       status: options?.status,
       limit: options?.limit,
     }
@@ -188,7 +188,7 @@ export async function listComponentMembersByOrganization(
     }
     const userId = await resolveSealUserId(ctx, member.userId ?? null);
     resolved.push({
-      memberId: String(member._id),
+      memberId: member._id,
       userId,
       role,
       status: mapComponentStatus(member.status),
@@ -210,7 +210,7 @@ export async function getComponentMemberById(
   const member = await ctx.runQuery(
     components.vortexAuth.organizations.getMemberByIdForSystem,
     {
-      memberId: componentMemberId as ComponentMemberId,
+      memberId: componentMemberId,
     }
   );
   if (member === null) {
@@ -223,7 +223,7 @@ export async function getComponentMemberById(
   const userId = await resolveSealUserId(ctx, member.userId ?? null);
   const role = await resolveRole(ctx, member.roleId, member.organizationId);
   return {
-    memberId: String(member._id),
+    memberId: member._id,
     organizationId,
     userId,
     role,
@@ -252,8 +252,8 @@ export async function getComponentMemberRefForUserOrganization(
   const member = await ctx.runQuery(
     components.vortexAuth.organizations.getMemberByUserOrganization,
     {
-      userId: vortexAuthUserId as ComponentUserId,
-      organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      userId: vortexAuthUserId,
+      organizationId: vortexAuthOrganizationId,
     }
   );
   if (member === null) {
@@ -274,7 +274,7 @@ export async function listComponentRolesByOrganization(
   const roles = (await ctx.runQuery(
     components.vortexAuth.organizations.listRolesByOrganization,
     {
-      organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      organizationId: vortexAuthOrganizationId,
     }
   )) as Array<{
     _id: ComponentRoleId;
@@ -285,7 +285,7 @@ export async function listComponentRolesByOrganization(
     updatedAt: number;
   }>;
   return roles.map((role) => ({
-    roleId: String(role._id),
+    roleId: role._id,
     organizationId: organization._id,
     name: role.key,
     permissions: role.permissions,
@@ -308,7 +308,7 @@ export async function getComponentRoleByKey(
   const role = await ctx.runQuery(
     components.vortexAuth.organizations.getRoleByKey,
     {
-      organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      organizationId: vortexAuthOrganizationId,
       key,
     }
   );
@@ -316,7 +316,7 @@ export async function getComponentRoleByKey(
     return null;
   }
   return {
-    roleId: String(role._id),
+    roleId: role._id,
     organizationId: organization._id,
     name: role.key,
     permissions: role.permissions,
@@ -358,8 +358,8 @@ async function mapComponentMembership(
     organizationId: sealOrganizationId,
     role,
     status: mapComponentStatus(member.status),
-    vortexAuthMemberId: String(member._id),
-    roleId: String(member.roleId),
+    vortexAuthMemberId: member._id,
+    roleId: member.roleId,
   };
 }
 
@@ -409,7 +409,7 @@ async function resolveSealUserId(
 
 /** Sorted membership ids (as strings) used for stable comparison/logging. */
 export function membershipIdSetKey(ids: readonly string[]): string {
-  return [...ids].map(String).sort().join(",");
+  return [...ids].toSorted((a, b) => a.localeCompare(b)).join(",");
 }
 
 // ---------------------------------------------------------------------------
@@ -498,7 +498,7 @@ export async function getComponentApiKeyByPrefix(
   if (apiKey === null) {
     return null;
   }
-  return await mapComponentApiKey(ctx, apiKey as RawComponentApiKey);
+  return await mapComponentApiKey(ctx, apiKey);
 }
 
 /** List a Seal organization's component apiKeys, mapped to Seal anchors. */
@@ -521,7 +521,7 @@ export async function listComponentApiKeysByOrganization(
   );
   const resolved: ComponentResolvedApiKey[] = [];
   for (const apiKey of apiKeys) {
-    const mapped = await mapComponentApiKey(ctx, apiKey as RawComponentApiKey);
+    const mapped = await mapComponentApiKey(ctx, apiKey);
     if (mapped !== null) {
       resolved.push(mapped);
     }
@@ -604,7 +604,7 @@ async function mapComponentInvitation(
         undefined);
 
   return {
-    _id: String(invitation._id),
+    _id: invitation._id,
     organizationId,
     email: invitation.email,
     tokenHash: invitation.tokenHash,
@@ -636,10 +636,7 @@ export async function getComponentInvitationByTokenHash(
   if (invitation === null) {
     return null;
   }
-  return await mapComponentInvitation(
-    ctx,
-    invitation as RawComponentInvitation
-  );
+  return await mapComponentInvitation(ctx, invitation);
 }
 
 /**
@@ -657,10 +654,7 @@ export async function getComponentInvitationByEmailId(
   if (invitation === null) {
     return null;
   }
-  return await mapComponentInvitation(
-    ctx,
-    invitation as RawComponentInvitation
-  );
+  return await mapComponentInvitation(ctx, invitation);
 }
 
 /**
@@ -674,15 +668,12 @@ export async function getComponentInvitationById(
 ): Promise<ComponentResolvedInvitation | null> {
   const invitation = await ctx.runQuery(
     components.vortexAuth.organizations.getInvitationByIdForSystem,
-    { invitationId: invitationId as ComponentInvitationId }
+    { invitationId: invitationId }
   );
   if (invitation === null) {
     return null;
   }
-  return await mapComponentInvitation(
-    ctx,
-    invitation as RawComponentInvitation
-  );
+  return await mapComponentInvitation(ctx, invitation);
 }
 
 /**
@@ -702,20 +693,17 @@ export async function listComponentInvitationsByOrganization(
   const invitations = await ctx.runQuery(
     components.vortexAuth.organizations.listInvitationsByOrganization,
     {
-      organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      organizationId: vortexAuthOrganizationId,
       limit: options?.limit ?? 500,
       status,
     }
   );
   const mapped: ComponentResolvedInvitation[] = [];
   for (const invitation of invitations) {
-    const resolved = await mapComponentInvitation(
-      ctx,
-      invitation as RawComponentInvitation
-    );
+    const resolved = await mapComponentInvitation(ctx, invitation);
     if (resolved !== null) {
       mapped.push(resolved);
     }
   }
-  return mapped.sort((a, b) => b.createdAt - a.createdAt);
+  return mapped.toSorted((a, b) => b.createdAt - a.createdAt);
 }

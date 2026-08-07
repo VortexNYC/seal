@@ -10,7 +10,7 @@
 import { v } from "convex/values";
 
 import { internal } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc } from "../../_generated/dataModel";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
 import { publishWebhookEvent } from "../../webhooks/publish";
@@ -35,7 +35,8 @@ export interface ApiDocument {
     | "waiting_for_payment"
     | "completed"
     | "cancelled"
-    | "declined";
+    | "declined"
+    | "expired";
   /** ISO 8601 creation timestamp */
   created_at: string;
   /** ISO 8601 last update timestamp */
@@ -46,6 +47,12 @@ export interface ApiDocument {
   signed_count: number;
   /** Optional signing deadline (ISO 8601) */
   deadline?: string;
+}
+
+function toApiDocumentStatus(
+  status: DocumentWorkflowStatus | undefined
+): ApiDocument["status"] {
+  return status ?? "draft";
 }
 
 /**
@@ -84,28 +91,17 @@ export const listDocuments = internalQuery({
     );
     const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
 
-    // convex-cost-guard-allow: convex-aliased-db-handle — the aliased builder is consumed exclusively by .take(fetchLimit) below (bounded, capped at 500); no unbounded collect flows through this alias. bound=per-tenant
-    // Get documents for the organization
-    let query = ctx.db
-      .query("documents")
-      .withIndex("by_organization_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active")
-      )
-      .order("desc");
-
-    // Apply cursor if provided (use _creationTime for index-based pagination)
+    let cursorCreationTime: number | undefined;
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(args.cursor as Id<"documents">);
-      if (cursorDoc) {
-        query = query.filter((q) =>
-          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
-        );
+      const cursorId = ctx.db.normalizeId("documents", args.cursor);
+      if (cursorId) {
+        const cursorDoc = await ctx.db.get("documents", cursorId);
+        if (cursorDoc) {
+          cursorCreationTime = cursorDoc._creationTime;
+        }
       }
     }
 
-    const documents = await query.take(fetchLimit);
-
-    // Apply post-filters
     const createdAfterMs = args.created_after
       ? new Date(args.created_after).getTime()
       : undefined;
@@ -114,17 +110,36 @@ export const listDocuments = internalQuery({
       : undefined;
     const titleSearch = args.title_search?.toLowerCase();
 
-    const filteredDocs = documents.filter((doc) => {
-      if (args.status && (doc.workflowStatus ?? "draft") !== args.status)
-        return false;
-      if (titleSearch && !doc.name.toLowerCase().includes(titleSearch))
-        return false;
-      if (createdAfterMs !== undefined && doc.createdAt < createdAfterMs)
-        return false;
-      if (createdBeforeMs !== undefined && doc.createdAt > createdBeforeMs)
-        return false;
-      return true;
-    });
+    const filteredDocs: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
+      .query("documents")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active")
+      )
+      .order("desc")) {
+      if (
+        cursorCreationTime !== undefined &&
+        doc._creationTime >= cursorCreationTime
+      ) {
+        continue;
+      }
+      if (args.status && (doc.workflowStatus ?? "draft") !== args.status) {
+        continue;
+      }
+      if (titleSearch && !doc.name.toLowerCase().includes(titleSearch)) {
+        continue;
+      }
+      if (createdAfterMs !== undefined && doc.createdAt < createdAfterMs) {
+        continue;
+      }
+      if (createdBeforeMs !== undefined && doc.createdAt > createdBeforeMs) {
+        continue;
+      }
+      filteredDocs.push(doc);
+      if (filteredDocs.length >= fetchLimit) {
+        break;
+      }
+    }
 
     const hasMore = filteredDocs.length > limit;
     const resultDocs = hasMore ? filteredDocs.slice(0, limit) : filteredDocs;
@@ -134,23 +149,28 @@ export const listDocuments = internalQuery({
       resultDocs.map(async (doc) => {
         // Complete recipient counts are part of the API response; this document-scoped collection does not truncate rows.
         // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and required for exact counts bound=global
-        const recipients = await ctx.db
+        let recipientsCount = 0;
+        let signedCount = 0;
+        for await (const recipient of ctx.db
           .query("document_recipients")
-          .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-          .collect();
-
-        const signedCount = recipients.filter(
-          (r) => r.status === "signed" || r.status === "approved"
-        ).length;
+          .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+          recipientsCount++;
+          if (
+            recipient.status === "signed" ||
+            recipient.status === "approved"
+          ) {
+            signedCount++;
+          }
+        }
 
         return {
           id: doc._id,
           title: doc.name,
           description: doc.description,
-          status: (doc.workflowStatus ?? "draft") as ApiDocument["status"],
+          status: toApiDocumentStatus(doc.workflowStatus),
           created_at: new Date(doc.createdAt).toISOString(),
           updated_at: new Date(doc.updatedAt).toISOString(),
-          recipients_count: recipients.length,
+          recipients_count: recipientsCount,
           signed_count: signedCount,
           deadline: doc.deadline
             ? new Date(doc.deadline).toISOString()
@@ -183,7 +203,7 @@ export const getDocument = internalQuery({
     includeRecipients: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document || document.status === "deleted") {
       return null;
@@ -196,10 +216,12 @@ export const getDocument = internalQuery({
 
     // Get recipients. The document response and optional includeRecipients payload require the complete document recipient set.
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count and required for exact counts bound=global
-    const recipients = await ctx.db
+    const recipients: Doc<"document_recipients">[] = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(recipient);
+    }
 
     const signedCount = recipients.filter(
       (r) => r.status === "signed" || r.status === "approved"
@@ -219,7 +241,7 @@ export const getDocument = internalQuery({
       id: document._id,
       title: document.name,
       description: document.description,
-      status: (document.workflowStatus ?? "draft") as ApiDocument["status"],
+      status: toApiDocumentStatus(document.workflowStatus),
       created_at: new Date(document.createdAt).toISOString(),
       updated_at: new Date(document.updatedAt).toISOString(),
       recipients_count: recipients.length,
@@ -305,7 +327,7 @@ export const updateDocument = internalMutation({
     deadline: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
@@ -336,7 +358,7 @@ export const updateDocument = internalMutation({
       updateData.deadline = args.deadline;
     }
 
-    await ctx.db.patch(args.documentId, updateData);
+    await ctx.db.patch("documents", args.documentId, updateData);
 
     return { success: true };
   },
@@ -355,7 +377,7 @@ export const deleteDocument = internalMutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
@@ -377,7 +399,7 @@ export const deleteDocument = internalMutation({
     }
 
     // Soft delete
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       status: "deleted",
       updatedAt: Date.now(),
     });
@@ -399,7 +421,7 @@ export const sendDocument = internalMutation({
     message: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
@@ -421,10 +443,12 @@ export const sendDocument = internalMutation({
 
     // Check that document has at least one recipient
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count; recipient completeness is required for send/status correctness. bound=global
-    const recipients = await ctx.db
+    const recipients: Doc<"document_recipients">[] = [];
+    for await (const recipient of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(recipient);
+    }
 
     if (recipients.length === 0) {
       return {
@@ -434,15 +458,15 @@ export const sendDocument = internalMutation({
     }
 
     // Update workflow status to sent
-    await ctx.db.patch(args.documentId, {
-      workflowStatus: "sent" as DocumentWorkflowStatus,
+    await ctx.db.patch("documents", args.documentId, {
+      workflowStatus: "sent",
       sentAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     // Update all recipients with sent timestamp
     for (const recipient of recipients) {
-      await ctx.db.patch(recipient._id, {
+      await ctx.db.patch("document_recipients", recipient._id, {
         sentAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -487,7 +511,7 @@ export const voidDocument = internalMutation({
     reason: v.string(),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document || document.status === "deleted") {
       return { success: false, error: "Document not found" };
@@ -508,8 +532,8 @@ export const voidDocument = internalMutation({
     }
 
     // Update workflow status to cancelled
-    await ctx.db.patch(args.documentId, {
-      workflowStatus: "cancelled" as DocumentWorkflowStatus,
+    await ctx.db.patch("documents", args.documentId, {
+      workflowStatus: "cancelled",
       cancelledAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -552,7 +576,7 @@ export const getDocumentDownloadUrl = internalQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<{ url: string } | null> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document || document.status === "deleted") {
       return null;
@@ -607,13 +631,13 @@ export const getDocumentAccess = internalQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<ApiDocumentAccess | null> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") return null;
     if (document.organizationId !== args.organizationId) return null;
 
     return {
       document_id: args.documentId,
-      sharing_mode: (document.sharingMode ?? "private") as DocumentSharingMode,
+      sharing_mode: document.sharingMode ?? "private",
     };
   },
 });
@@ -636,13 +660,13 @@ export const updateDocumentAccess = internalMutation({
     ),
   },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted")
       throw new Error("Document not found");
     if (document.organizationId !== args.organizationId)
       throw new Error("Document not found");
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       sharingMode: args.sharing_mode,
       updatedAt: Date.now(),
     });
@@ -686,7 +710,7 @@ export const bulkVoidDocuments = internalMutation({
     const results: BulkOperationResult[] = [];
 
     for (const documentId of args.document_ids) {
-      const document = await ctx.db.get(documentId);
+      const document = await ctx.db.get("documents", documentId);
 
       if (!document || document.status === "deleted") {
         results.push({
@@ -720,7 +744,7 @@ export const bulkVoidDocuments = internalMutation({
         continue;
       }
 
-      await ctx.db.patch(documentId, {
+      await ctx.db.patch("documents", documentId, {
         workflowStatus: "cancelled",
         cancelledAt: Date.now(),
         updatedAt: Date.now(),
@@ -757,7 +781,7 @@ export const bulkSendDocuments = internalMutation({
     const results: BulkOperationResult[] = [];
 
     for (const documentId of args.document_ids) {
-      const document = await ctx.db.get(documentId);
+      const document = await ctx.db.get("documents", documentId);
 
       if (!document || document.status === "deleted") {
         results.push({
@@ -788,10 +812,12 @@ export const bulkSendDocuments = internalMutation({
       }
 
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count; recipient completeness is required for send/status correctness. bound=global
-      const recipients = await ctx.db
+      const recipients: Doc<"document_recipients">[] = [];
+      for await (const recipient of ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", documentId))
-        .collect();
+        .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+        recipients.push(recipient);
+      }
 
       if (recipients.length === 0) {
         results.push({
@@ -802,7 +828,7 @@ export const bulkSendDocuments = internalMutation({
         continue;
       }
 
-      await ctx.db.patch(documentId, {
+      await ctx.db.patch("documents", documentId, {
         workflowStatus: "sent",
         sentAt: Date.now(),
         updatedAt: Date.now(),

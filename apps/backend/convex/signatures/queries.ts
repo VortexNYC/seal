@@ -21,10 +21,12 @@ export const getSignaturesByDocument = query({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<Doc<"signatures">[]> => {
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(signature);
+    }
 
     return signatures;
   },
@@ -38,10 +40,14 @@ export const getSignaturesByRecipient = query({
     recipientId: v.id("document_recipients"),
   },
   handler: async (ctx, args): Promise<Doc<"signatures">[]> => {
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
-      .collect();
+      .withIndex("by_recipient", (q) =>
+        q.eq("recipientId", args.recipientId)
+      )) {
+      signatures.push(signature);
+    }
 
     return signatures;
   },
@@ -73,12 +79,14 @@ export const getSignaturesByDocumentAndRecipient = query({
     recipientId: v.id("document_recipients"),
   },
   handler: async (ctx, args): Promise<Doc<"signatures">[]> => {
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
       .withIndex("by_document_recipient", (q) =>
         q.eq("documentId", args.documentId).eq("recipientId", args.recipientId)
-      )
-      .collect();
+      )) {
+      signatures.push(signature);
+    }
 
     return signatures;
   },
@@ -92,7 +100,7 @@ export const getSignatureById = query({
     signatureId: v.id("signatures"),
   },
   handler: async (ctx, args): Promise<Doc<"signatures"> | null> => {
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("signatures", args.signatureId);
     return signature;
   },
 });
@@ -112,13 +120,16 @@ export const getSignatureWithDetails = query({
     field: Doc<"signature_fields"> | null;
     recipient: Doc<"document_recipients"> | null;
   } | null> => {
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("signatures", args.signatureId);
     if (!signature) {
       return null;
     }
 
-    const field = await ctx.db.get(signature.fieldId);
-    const recipient = await ctx.db.get(signature.recipientId);
+    const field = await ctx.db.get("signature_fields", signature.fieldId);
+    const recipient = await ctx.db.get(
+      "document_recipients",
+      signature.recipientId
+    );
 
     return {
       signature,
@@ -172,15 +183,20 @@ export const getDocumentSignaturesWithFields = query({
       recipient: Doc<"document_recipients"> | null;
     }>
   > => {
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(signature);
+    }
 
     const signatureDetails = await Promise.all(
       signatures.map(async (signature) => {
-        const field = await ctx.db.get(signature.fieldId);
-        const recipient = await ctx.db.get(signature.recipientId);
+        const field = await ctx.db.get("signature_fields", signature.fieldId);
+        const recipient = await ctx.db.get(
+          "document_recipients",
+          signature.recipientId
+        );
 
         return {
           signature,
@@ -202,12 +218,14 @@ export const getSignatureCountByDocument = query({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args): Promise<number> => {
-    const signatures = await ctx.db
+    let count = 0;
+    for await (const _signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      count++;
+    }
 
-    return signatures.length;
+    return count;
   },
 });
 
@@ -220,10 +238,13 @@ export const getSignatureCountByDocument = query({
 export const getSignaturesByDocumentInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(signature);
+    }
+    return signatures;
   },
 });
 
@@ -234,21 +255,23 @@ export const getSignaturesByDocumentInternal = internalQuery({
 export const getDecryptedSignaturesByDocumentInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    const signatures = await ctx.db
+    const signatures: Doc<"signatures">[] = [];
+    for await (const signature of ctx.db
       .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      signatures.push(signature);
+    }
 
     const encKey = process.env.SIGNATURE_ENCRYPTION_KEY;
 
     return Promise.all(
-      signatures.map(async (sig) => ({
-        ...sig,
-        signatureImageUrl: await decryptSignatureData(
+      signatures.map(async (sig) => {
+        const signatureImageUrl = await decryptSignatureData(
           sig.signatureImageUrl,
           encKey
-        ),
-      }))
+        );
+        return Object.assign({}, sig, { signatureImageUrl });
+      })
     );
   },
 });

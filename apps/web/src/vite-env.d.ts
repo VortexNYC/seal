@@ -9,5 +9,13 @@ declare global {
   interface Window {
     __convexClient?: ConvexReactClient;
     __convexApi?: typeof api;
+    Jam?: { startRecording?: () => void };
+  }
+}
+
+// Allow CSS custom properties in style objects without type assertions
+declare module "react" {
+  interface CSSProperties {
+    [key: `--${string}`]: string | number | undefined;
   }
 }

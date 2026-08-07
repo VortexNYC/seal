@@ -7,6 +7,7 @@
  * Payment extraction is triggered later when suggestions are applied.
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
@@ -253,7 +254,7 @@ async function runDocumentProcessing(
 
   const result = await fetchFieldAnalysisWithRetry(
     toActionCacheCtx(ctx),
-    document.storageId as Id<"_storage">
+    parse(v.id("_storage"), document.storageId)
   );
   const suggestionId = await ctx.runMutation(
     internal.ai.mutations.saveFieldSuggestions,

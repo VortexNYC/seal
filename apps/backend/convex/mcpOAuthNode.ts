@@ -14,6 +14,7 @@ import {
   type McpOAuthSignedAccessToken,
   type McpOAuthSigningKeyRecord,
 } from "@vortexnyc/auth/mcp";
+import { parse } from "@vortexnyc/convex/helpers";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -65,10 +66,7 @@ async function ensureSigningKeyRecord(
 ): Promise<SigningKeyRecord> {
   return await ensureMcpOAuthSigningKey({
     loadActiveSigningKey: async () =>
-      (await ctx.runQuery(
-        internal.mcpOAuthAuth.getSigningKey,
-        {}
-      )) as SigningKeyRecord | null,
+      await ctx.runQuery(internal.mcpOAuthAuth.getSigningKey, {}),
     persistSigningKey: async (signingKey) => {
       await ctx.runMutation(internal.mcpOAuthAuth.upsertSigningKey, signingKey);
     },
@@ -162,7 +160,7 @@ async function signAccessTokenWithClaims(
     const organization = await ctx.runQuery(
       internal.organizations.helpers.getOrganizationById,
       {
-        organizationId: args.organizationId as never,
+        organizationId: parse(v.id("organizations"), args.organizationId),
       }
     );
     if (organization === null) {
@@ -176,10 +174,7 @@ async function signAccessTokenWithClaims(
 
   return await signMcpOAuthAccessTokenWithStoredKey({
     loadActiveSigningKey: async () =>
-      (await ctx.runQuery(
-        internal.mcpOAuthAuth.getSigningKey,
-        {}
-      )) as SigningKeyRecord | null,
+      await ctx.runQuery(internal.mcpOAuthAuth.getSigningKey, {}),
     persistSigningKey: async (signingKey) => {
       await ctx.runMutation(internal.mcpOAuthAuth.upsertSigningKey, signingKey);
     },

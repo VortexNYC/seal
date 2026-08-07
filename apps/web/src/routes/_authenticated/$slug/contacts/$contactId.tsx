@@ -8,7 +8,6 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
@@ -45,6 +44,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseId } from "@/lib/convex-ids";
 import { formatDate } from "@/lib/formatting";
 
 export const Route = createFileRoute(
@@ -143,7 +143,7 @@ function ContactDetailContent() {
 
   const { data: contact } = useSuspenseQuery(
     convexQuery(api.contacts.queries.getById, {
-      id: contactId as Doc<"contacts">["_id"],
+      id: parseId("contacts", contactId),
     })
   );
 
@@ -156,7 +156,7 @@ function ContactDetailContent() {
     try {
       await deleteContact({ id: contact._id });
       toast.success("Contact deleted");
-      router.navigate({ to: "/$slug/contacts", params: { slug } });
+      void router.navigate({ to: "/$slug/contacts", params: { slug } });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete contact";

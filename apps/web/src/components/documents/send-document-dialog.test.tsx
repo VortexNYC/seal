@@ -15,11 +15,12 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+import { parseId } from "../../lib/convex-ids";
 import { SendDocumentDialog } from "./send-document-dialog";
 
-const FAKE_DOC_ID = "fake_doc" as Id<"documents">;
-const FAKE_RECIPIENT_ID = "fake_recip" as Id<"document_recipients">;
-const FAKE_RECIPIENT_ID_2 = "fake_recip_2" as Id<"document_recipients">;
+const FAKE_DOC_ID = parseId("documents", "fake_doc");
+const FAKE_RECIPIENT_ID = parseId("document_recipients", "fake_recip");
+const FAKE_RECIPIENT_ID_2 = parseId("document_recipients", "fake_recip_2");
 
 interface BuildPropsOptions {
   open?: boolean;
@@ -135,7 +136,7 @@ describe("SendDocumentDialog", () => {
   test("shows payment summary when paymentConfigs has items", () => {
     mockUseQuery.mockReturnValue([
       {
-        _id: "cfg_1" as Id<"payment_field_configs">,
+        _id: parseId("payment_field_configs", "cfg_1"),
         currency: "usd",
         totalAmountCents: 5000,
       },
@@ -148,7 +149,7 @@ describe("SendDocumentDialog", () => {
   test("shows correct singular payment text for a single payment config", () => {
     mockUseQuery.mockReturnValue([
       {
-        _id: "cfg_1" as Id<"payment_field_configs">,
+        _id: parseId("payment_field_configs", "cfg_1"),
         currency: "usd",
         totalAmountCents: 10000,
       },
@@ -163,12 +164,12 @@ describe("SendDocumentDialog", () => {
   test("shows correct plural payment text for multiple payment configs", () => {
     mockUseQuery.mockReturnValue([
       {
-        _id: "cfg_1" as Id<"payment_field_configs">,
+        _id: parseId("payment_field_configs", "cfg_1"),
         currency: "usd",
         totalAmountCents: 5000,
       },
       {
-        _id: "cfg_2" as Id<"payment_field_configs">,
+        _id: parseId("payment_field_configs", "cfg_2"),
         currency: "usd",
         totalAmountCents: 2500,
       },

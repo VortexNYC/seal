@@ -129,10 +129,10 @@ function InvoiceSection({
 }
 
 export function DocumentInvitation({
-  recipientName = "Recipient",
-  senderName = "Sender",
-  documentName = "Document",
-  signingUrl = "https://seal.nyc/sign/example",
+  recipientName,
+  senderName,
+  documentName,
+  signingUrl,
   customMessage,
   expiresAt,
   invoiceUrl,

@@ -53,6 +53,18 @@ function parseJson(raw: string, label: string): Json {
   return parsed;
 }
 
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
+}
+
 function isJson(value: unknown): value is Json {
   if (
     value === null ||
@@ -251,7 +263,11 @@ async function runConvex<T extends Json>(input: {
     jsonStart >= 0,
     `No JSON returned from ${input.functionName}: ${trimmed}`
   );
-  return parseJson(trimmed.slice(jsonStart), input.functionName) as T;
+  const parsed = parseJson(trimmed.slice(jsonStart), input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
 function readStringRecord(

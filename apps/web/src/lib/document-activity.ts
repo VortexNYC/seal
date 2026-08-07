@@ -86,5 +86,5 @@ export function buildActivityEvents(
     }
   }
 
-  return events.sort((a, b) => b.timestamp - a.timestamp);
+  return events.toSorted((a, b) => b.timestamp - a.timestamp);
 }

@@ -12,11 +12,11 @@ const proofCommands: readonly ProofCommand[] = [
   {
     label:
       "Vortex document payment creation stores Vortex ids without non-Vortex provider ids",
-    command: "bun",
+    command: "pnpm",
     args: [
-      "run",
-      "--cwd",
+      "--dir",
       "apps/backend",
+      "run",
       "test",
       "convex/vortex_billing/__tests__/document_payable_local_proof.test.ts",
     ],
@@ -24,23 +24,23 @@ const proofCommands: readonly ProofCommand[] = [
   {
     label:
       "Vortex payable webhook projection updates Seal document payment state",
-    command: "bun",
+    command: "pnpm",
     args: [
-      "run",
-      "--cwd",
+      "--dir",
       "apps/backend",
+      "run",
       "test",
       "convex/vortex_billing/__tests__/webhook_projection.test.ts",
     ],
   },
   {
     label: "Vortex operational payments adoption guard",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:vortex-operational-payments-adoption"],
   },
   {
     label: "Vortex Payments backend adapter adoption guard",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:vortex-payments-backend-adapter-adoption"],
   },
 ];

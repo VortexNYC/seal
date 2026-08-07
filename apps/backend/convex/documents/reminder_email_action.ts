@@ -72,7 +72,7 @@ async function buildReminderEmailContext(
 export const getReminderById = internalQuery({
   args: { reminderId: v.id("document_reminders") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.reminderId);
+    return await ctx.db.get("document_reminders", args.reminderId);
   },
 });
 
@@ -82,7 +82,7 @@ export const getReminderById = internalQuery({
 export const getDocumentById = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.documentId);
+    return await ctx.db.get("documents", args.documentId);
   },
 });
 
@@ -92,7 +92,7 @@ export const getDocumentById = internalQuery({
 export const getRecipientById = internalQuery({
   args: { recipientId: v.id("document_recipients") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.recipientId);
+    return await ctx.db.get("document_recipients", args.recipientId);
   },
 });
 
@@ -102,7 +102,7 @@ export const getRecipientById = internalQuery({
 export const getDocumentOwner = internalQuery({
   args: { ownerId: v.id("users") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.ownerId);
+    return await ctx.db.get("users", args.ownerId);
   },
 });
 
@@ -128,7 +128,7 @@ export const updateReminderStatus = internalMutation({
   },
   handler: async (ctx, args) => {
     const { reminderId, ...updates } = args;
-    await ctx.db.patch(reminderId, {
+    await ctx.db.patch("document_reminders", reminderId, {
       ...updates,
       updatedAt: Date.now(),
     });

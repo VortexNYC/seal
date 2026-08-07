@@ -31,10 +31,13 @@ export const getPaymentConfigsByDocument = query({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const configs = [];
+    for await (const config of ctx.db
       .query("payment_field_configs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      configs.push(config);
+    }
+    return configs;
   },
 });
 
@@ -46,7 +49,7 @@ export const getPaymentConfigInternal = internalQuery({
     configId: v.id("payment_field_configs"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.configId);
+    return await ctx.db.get("payment_field_configs", args.configId);
   },
 });
 
@@ -58,9 +61,12 @@ export const getPaymentConfigsByDocumentInternal = internalQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const configs = [];
+    for await (const config of ctx.db
       .query("payment_field_configs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      configs.push(config);
+    }
+    return configs;
   },
 });

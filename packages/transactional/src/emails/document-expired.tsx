@@ -10,9 +10,9 @@ export interface DocumentExpiredProps {
 }
 
 export function DocumentExpired({
-  ownerName = "User",
-  documentName = "Document",
-  expiredAt = "January 1, 2026",
+  ownerName,
+  documentName,
+  expiredAt,
 }: DocumentExpiredProps) {
   const previewText = `Your document "${documentName}" has expired`;
 

@@ -62,7 +62,7 @@ export const getAccountInfo = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args): Promise<ApiAccountInfo> => {
-    const org = await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) {
       throw new Error("Organization not found");
     }
@@ -74,13 +74,6 @@ export const getAccountInfo = internalQuery({
     // Document counts. Account summaries need exact all-time workspace totals, so no document rows are dropped.
     // convex-cost-guard-allow: convex-broad-organization-collect — scoped to one organization and required for exact account counts across statuses bound=per-tenant
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to one organization and required for exact account counts across statuses bound=per-tenant
-    const allDocuments = await ctx.db
-      .query("documents")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId)
-      )
-      .collect();
-
     const docsByStatus = {
       draft: 0,
       sent: 0,
@@ -89,11 +82,25 @@ export const getAccountInfo = internalQuery({
       cancelled: 0,
       declined: 0,
     };
-    for (const doc of allDocuments) {
-      const status = (doc.workflowStatus ??
-        "draft") as keyof typeof docsByStatus;
-      if (status in docsByStatus) {
-        docsByStatus[status]++;
+    let documentTotal = 0;
+    for await (const doc of ctx.db
+      .query("documents")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )) {
+      documentTotal++;
+      const status = doc.workflowStatus ?? "draft";
+      switch (status) {
+        case "draft":
+        case "sent":
+        case "in_progress":
+        case "completed":
+        case "cancelled":
+        case "declined":
+          docsByStatus[status]++;
+          break;
+        default:
+          break;
       }
     }
 
@@ -114,7 +121,7 @@ export const getAccountInfo = internalQuery({
         },
       },
       documents: {
-        total: allDocuments.length,
+        total: documentTotal,
         ...docsByStatus,
       },
       signing_settings: {

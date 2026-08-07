@@ -26,7 +26,7 @@ export async function createVersionSnapshot(
     restoredFromVersion?: number;
   }
 ): Promise<number> {
-  const document = await ctx.db.get(params.documentId);
+  const document = await ctx.db.get("documents", params.documentId);
   if (!document) {
     throw new Error(`Document ${params.documentId} not found`);
   }

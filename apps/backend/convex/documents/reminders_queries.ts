@@ -33,20 +33,22 @@ export const getDocumentReminders = authQuery({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // Build query with status filter if provided
-    let reminders: Doc<"document_reminders">[];
+    const reminders: Doc<"document_reminders">[] = [];
     if (args.status) {
       const status = args.status; // TypeScript needs this to be non-optional
-      reminders = await ctx.db
+      for await (const row of ctx.db
         .query("document_reminders")
         .withIndex("by_document_status", (q) =>
           q.eq("documentId", args.documentId).eq("status", status)
-        )
-        .collect();
+        )) {
+        reminders.push(row);
+      }
     } else {
-      reminders = await ctx.db
+      for await (const row of ctx.db
         .query("document_reminders")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect();
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+        reminders.push(row);
+      }
     }
 
     // Filter by type if provided
@@ -59,7 +61,10 @@ export const getDocumentReminders = authQuery({
       filteredReminders.map(async (reminder) => {
         let recipientInfo = null;
         if (reminder.recipientId) {
-          const recipient = await ctx.db.get(reminder.recipientId);
+          const recipient = await ctx.db.get(
+            "document_recipients",
+            reminder.recipientId
+          );
           if (recipient) {
             recipientInfo = {
               email: recipient.email,
@@ -70,15 +75,16 @@ export const getDocumentReminders = authQuery({
           }
         }
 
-        return {
-          ...reminder,
+        return Object.assign({}, reminder, {
           recipient: recipientInfo,
-        };
+        });
       })
     );
 
     // Sort by scheduled time (most recent first)
-    return enrichedReminders.sort((a, b) => b.scheduledFor - a.scheduledFor);
+    return enrichedReminders.toSorted(
+      (a, b) => b.scheduledFor - a.scheduledFor
+    );
   },
 });
 
@@ -93,7 +99,7 @@ export const getRecipientReminders = authQuery({
     const userId = ctx.auth.user._id;
 
     // Get recipient to verify access
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient) {
       throw new Error("Recipient not found");
     }
@@ -102,13 +108,17 @@ export const getRecipientReminders = authQuery({
     await verifyDocumentOwnership(ctx, recipient.documentId, userId);
 
     // Get all reminders for this recipient
-    const reminders = await ctx.db
+    const reminders = [];
+    for await (const _row of ctx.db
       .query("document_reminders")
-      .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
-      .collect();
+      .withIndex("by_recipient", (q) =>
+        q.eq("recipientId", args.recipientId)
+      )) {
+      reminders.push(_row);
+    }
 
     // Sort by scheduled time (most recent first)
-    return reminders.sort((a, b) => b.scheduledFor - a.scheduledFor);
+    return reminders.toSorted((a, b) => b.scheduledFor - a.scheduledFor);
   },
 });
 
@@ -128,10 +138,12 @@ export const getReminderHistory = authQuery({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // Get sent and failed reminders
-    const reminders = await ctx.db
+    const reminders = [];
+    for await (const _row of ctx.db
       .query("document_reminders")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      reminders.push(_row);
+    }
 
     // Filter to only sent/failed reminders
     const history = reminders.filter(
@@ -139,7 +151,7 @@ export const getReminderHistory = authQuery({
     );
 
     // Sort by sent/failed time (most recent first)
-    const sorted = history.sort((a, b) => {
+    const sorted = history.toSorted((a, b) => {
       const timeA = a.sentAt || a.failedAt || a.scheduledFor;
       const timeB = b.sentAt || b.failedAt || b.scheduledFor;
       return timeB - timeA;
@@ -153,7 +165,10 @@ export const getReminderHistory = authQuery({
       limited.map(async (reminder) => {
         let recipientInfo = null;
         if (reminder.recipientId) {
-          const recipient = await ctx.db.get(reminder.recipientId);
+          const recipient = await ctx.db.get(
+            "document_recipients",
+            reminder.recipientId
+          );
           if (recipient) {
             recipientInfo = {
               email: recipient.email,
@@ -163,10 +178,9 @@ export const getReminderHistory = authQuery({
           }
         }
 
-        return {
-          ...reminder,
+        return Object.assign({}, reminder, {
           recipient: recipientInfo,
-        };
+        });
       })
     );
   },
@@ -186,10 +200,12 @@ export const getReminderStats = authQuery({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // Get all reminders
-    const reminders = await ctx.db
+    const reminders = [];
+    for await (const _row of ctx.db
       .query("document_reminders")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      reminders.push(_row);
+    }
 
     // Calculate statistics
     const stats = {
@@ -203,7 +219,7 @@ export const getReminderStats = authQuery({
       automated: reminders.filter((r) => r.type === "automated").length,
       lastSentAt: reminders
         .filter((r) => r.sentAt)
-        .sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0))[0]?.sentAt,
+        .toSorted((a, b) => (b.sentAt || 0) - (a.sentAt || 0))[0]?.sentAt,
     };
 
     return stats;
@@ -226,7 +242,7 @@ export const canRemindRecipient = authQuery({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // Get recipient
-    const recipient = await ctx.db.get(args.recipientId);
+    const recipient = await ctx.db.get("document_recipients", args.recipientId);
     if (!recipient || recipient.documentId !== args.documentId) {
       return {
         canRemind: false,
@@ -247,10 +263,14 @@ export const canRemindRecipient = authQuery({
     }
 
     // Check if there's a recent pending/scheduled reminder
-    const recentReminders = await ctx.db
+    const recentReminders = [];
+    for await (const _row of ctx.db
       .query("document_reminders")
-      .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
-      .collect();
+      .withIndex("by_recipient", (q) =>
+        q.eq("recipientId", args.recipientId)
+      )) {
+      recentReminders.push(_row);
+    }
 
     const hasRecentPending = recentReminders.some(
       (r) =>

@@ -1,9 +1,11 @@
 import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
 import posthog from "posthog-js";
 
-const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY as
-  | string
-  | undefined;
+const rawPosthogKey: unknown = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+const POSTHOG_KEY =
+  typeof rawPosthogKey === "string" && rawPosthogKey.length > 0
+    ? rawPosthogKey
+    : undefined;
 
 let initialized = false;
 

@@ -102,7 +102,7 @@ export const listApiKeys = query({
     );
     return Promise.all(
       keys.map(async (k: ComponentResolvedApiKey) => {
-        const creator = await ctx.db.get(k.userId);
+        const creator = await ctx.db.get("users", k.userId);
         return {
           _id: k._id,
           name: k.name,
@@ -141,7 +141,7 @@ export const getApiKeyByPrefix = internalQuery({
     if (apiKey === null) {
       return null;
     }
-    const user = await ctx.db.get(apiKey.userId);
+    const user = await ctx.db.get("users", apiKey.userId);
     return {
       _id: apiKey._id,
       name: apiKey.name,

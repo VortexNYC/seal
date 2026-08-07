@@ -62,7 +62,7 @@ export const listMembers = authQuery({
       if (!member.userId) {
         continue;
       }
-      const user = await ctx.db.get(member.userId);
+      const user = await ctx.db.get("users", member.userId);
       items.push({
         _id: member.memberId,
         roleTemplate: normalizeRoleTemplate(member.role),

@@ -2,7 +2,7 @@
  * Mutations for organization roles
  */
 
-import { ConvexError, type GenericId, v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { components } from "../_generated/api";
 import { isValidPermission } from "../auth/permissions";
@@ -51,18 +51,16 @@ export const create = permissionMutation("users:roles")({
     const result = await ctx.runMutation(
       components.vortexAuth.organizations.ensureRole,
       {
-        organizationId: organizationId as GenericId<"organizations">,
+        organizationId: organizationId,
         key: args.name,
         name: args.name,
         permissions: validPermissions,
         isSystem: false,
-        createdBy: ctx.auth.user.vortexAuthUserId as
-          | GenericId<"users">
-          | undefined,
+        createdBy: ctx.auth.user.vortexAuthUserId,
       }
     );
 
-    return { roleId: String(result.roleId) };
+    return { roleId: result.roleId };
   },
 });
 
@@ -88,8 +86,8 @@ export const update = permissionMutation("users:roles")({
     const role = await ctx.runQuery(
       components.vortexAuth.organizations.getRole,
       {
-        roleId: args.roleId as GenericId<"organization_roles">,
-        organizationId: componentOrganizationId as GenericId<"organizations">,
+        roleId: args.roleId,
+        organizationId: componentOrganizationId,
       }
     );
 
@@ -152,7 +150,7 @@ export const update = permissionMutation("users:roles")({
     }
 
     await ctx.runMutation(components.vortexAuth.organizations.setRoleDetails, {
-      roleId: args.roleId as GenericId<"organization_roles">,
+      roleId: args.roleId,
       name: nextName,
       permissions: nextPermissions,
     });
@@ -178,8 +176,8 @@ export const remove = permissionMutation("users:roles")({
     const role = await ctx.runQuery(
       components.vortexAuth.organizations.getRole,
       {
-        roleId: args.roleId as GenericId<"organization_roles">,
-        organizationId: componentOrganizationId as GenericId<"organizations">,
+        roleId: args.roleId,
+        organizationId: componentOrganizationId,
       }
     );
 
@@ -206,8 +204,8 @@ export const remove = permissionMutation("users:roles")({
     }
 
     await ctx.runMutation(components.vortexAuth.organizations.deleteRole, {
-      roleId: args.roleId as GenericId<"organization_roles">,
-      organizationId: componentOrganizationId as GenericId<"organizations">,
+      roleId: args.roleId,
+      organizationId: componentOrganizationId,
     });
     return { ok: true };
   },

@@ -63,7 +63,7 @@ export async function validateFieldAssignment(
   documentId: Id<"documents">,
   recipientId: Id<"document_recipients">
 ): Promise<{ valid: boolean; error?: string }> {
-  const recipient = await ctx.db.get(recipientId);
+  const recipient = await ctx.db.get("document_recipients", recipientId);
 
   if (!recipient) {
     return { valid: false, error: "Recipient not found" };
@@ -134,7 +134,7 @@ export async function validatePageNumber(
   documentId: Id<"documents">,
   pageNumber: number
 ): Promise<{ valid: boolean; error?: string }> {
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
 
   if (!document) {
     return { valid: false, error: "Document not found" };

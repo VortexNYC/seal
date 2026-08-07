@@ -8,6 +8,10 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { resolveComponentMemberships } from "./lib/componentOrgReads";
 import {
+  buildActiveOrganizationUserPatch,
+  resolveActiveOrganizationId,
+} from "./lib/resolveActiveOrganization";
+import {
   lookupBetterAuthTwoFactorEnabled,
   setVortexAuthActiveOrganizationWithMfaGate,
 } from "./lib/suiteOrgPolicy";
@@ -47,21 +51,32 @@ export const hasOrganization = query({
     const memberships = await resolveComponentMemberships(ctx, user);
     const membership = memberships[0] ?? null;
 
-    let activeOrganizationId = user.activeOrganizationId ?? null;
+    let activeOrganizationId =
+      (await resolveActiveOrganizationId(ctx, user)) ?? null;
     let activeOrganizationSlug: string | null = null;
     let needsActiveOrgFix = false;
 
-    // If user has no activeOrganizationId but has a membership, flag it for fix
+    // If user has no resolvable active org but has a membership, flag it for fix
     if (!activeOrganizationId && membership) {
       activeOrganizationId = membership.organizationId;
       needsActiveOrgFix = true;
     }
 
     if (activeOrganizationId) {
-      const activeOrganization = await ctx.db.get(activeOrganizationId);
+      const activeOrganization = await ctx.db.get(
+        "organizations",
+        activeOrganizationId
+      );
 
       if (activeOrganization) {
         activeOrganizationSlug = activeOrganization.slug;
+        // Legacy-only pointer: repair dual-write on next ensureActiveOrganization
+        if (
+          user.activeVortexAuthOrganizationId === undefined &&
+          activeOrganization.vortexAuthOrganizationId !== undefined
+        ) {
+          needsActiveOrgFix = true;
+        }
       } else {
         activeOrganizationId = null;
         if (membership) {
@@ -104,13 +119,31 @@ export const ensureActiveOrganization = mutation({
       return { success: false, reason: "User not found" };
     }
 
-    // If user already has an active organization, verify it still exists
-    if (user.activeOrganizationId) {
-      const activeOrg = await ctx.db.get(user.activeOrganizationId);
+    // If user already has a resolvable active organization, verify + repair dual-write
+    const resolvedActiveId = await resolveActiveOrganizationId(ctx, user);
+    if (resolvedActiveId !== null) {
+      const activeOrg = await ctx.db.get("organizations", resolvedActiveId);
       if (activeOrg) {
+        const needsVortexPointer =
+          user.activeVortexAuthOrganizationId === undefined &&
+          activeOrg.vortexAuthOrganizationId !== undefined;
+        const needsLegacyPointer = user.activeOrganizationId !== activeOrg._id;
+        if (needsVortexPointer || needsLegacyPointer) {
+          await ctx.db.patch(
+            "users",
+            user._id,
+            buildActiveOrganizationUserPatch(activeOrg)
+          );
+          return {
+            success: true,
+            activeOrganizationId: activeOrg._id,
+            activeOrganizationSlug: activeOrg.slug,
+            wasFixed: true,
+          };
+        }
         return {
           success: true,
-          activeOrganizationId: user.activeOrganizationId,
+          activeOrganizationId: activeOrg._id,
           activeOrganizationSlug: activeOrg.slug,
           wasFixed: false,
         };
@@ -127,16 +160,20 @@ export const ensureActiveOrganization = mutation({
     }
 
     // Get the organization
-    const organization = await ctx.db.get(membership.organizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      membership.organizationId
+    );
     if (!organization) {
       return { success: false, reason: "Organization not found" };
     }
 
-    // Update user's active organization
-    await ctx.db.patch(user._id, {
-      activeOrganizationId: organization._id,
-      updatedAt: Date.now(),
-    });
+    // Update user's active organization (dual-write when anchored)
+    await ctx.db.patch(
+      "users",
+      user._id,
+      buildActiveOrganizationUserPatch(organization)
+    );
 
     return {
       success: true,
@@ -208,11 +245,11 @@ export const setActiveOrganizationBySlug = mutation({
       twoFactorEnabled,
     });
 
-    await ctx.db.patch(user._id, {
-      activeOrganizationId: organization._id,
-      activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId,
-      updatedAt: Date.now(),
-    });
+    await ctx.db.patch(
+      "users",
+      user._id,
+      buildActiveOrganizationUserPatch(organization)
+    );
 
     return {
       success: true,
@@ -246,7 +283,10 @@ export const listUserOrganizations = query({
 
     const organizations = await Promise.all(
       memberships.map(async (membership) => {
-        const organization = await ctx.db.get(membership.organizationId);
+        const organization = await ctx.db.get(
+          "organizations",
+          membership.organizationId
+        );
         if (!organization) {
           return null;
         }
@@ -286,7 +326,10 @@ export const getDefaultOrganization = query({
       return null;
     }
 
-    const organization = await ctx.db.get(user.activeOrganizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      user.activeOrganizationId
+    );
     if (!organization) {
       return null;
     }
@@ -326,7 +369,10 @@ export const getAvailableOrganizations = query({
         if (membership.status !== "active") {
           return null;
         }
-        const organization = await ctx.db.get(membership.organizationId);
+        const organization = await ctx.db.get(
+          "organizations",
+          membership.organizationId
+        );
         if (!organization) {
           return null;
         }

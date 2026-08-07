@@ -2,6 +2,7 @@
  * Document mutations for Seal - Document Sharing
  */
 
+import { validate } from "@vortexnyc/convex/helpers";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
@@ -32,7 +33,7 @@ async function shouldAutoAnalyze(
   db: DatabaseReader,
   organizationId: Id<"organizations">
 ) {
-  const org = await db.get(organizationId);
+  const org = await db.get("organizations", organizationId);
   return org?.aiSettings?.aiAutoAnalyze !== false;
 }
 
@@ -124,14 +125,14 @@ async function assertTransferOwnershipAllowed(
     );
   }
 
-  const org = await ctx.db.get(document.organizationId);
+  const org = await ctx.db.get("organizations", document.organizationId);
   if (!org?.delegateOwnership) {
     throw new ConvexError(
       "Document ownership transfer is not enabled for this organization"
     );
   }
 
-  const newOwner = await ctx.db.get(newOwnerId);
+  const newOwner = await ctx.db.get("users", newOwnerId);
   if (!newOwner) {
     throw new ConvexError("Target user not found");
   }
@@ -199,7 +200,7 @@ export const createDocument = permissionMutation("documents:create")({
     }
 
     // 2. Verify user is a member of the organization
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
@@ -282,7 +283,9 @@ export const createDocument = permissionMutation("documents:create")({
         args.organizationId,
         ctx.auth.user._id
       );
-      await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
+      await ctx.db.patch("documents", documentId, {
+        aiProcessingStatus: "pending",
+      });
     }
 
     return documentId;
@@ -301,7 +304,7 @@ export const deleteDocument = permissionMutation("documents:delete")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -323,7 +326,7 @@ export const deleteDocument = permissionMutation("documents:delete")({
     }
 
     // 3. Mark as deleted (soft delete)
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       status: "deleted",
       updatedAt: Date.now(),
     });
@@ -369,7 +372,7 @@ export const updateDocument = permissionMutation("documents:edit")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -389,7 +392,11 @@ export const updateDocument = permissionMutation("documents:edit")({
 
     validateRedirectUrl(args.redirectUrl);
 
-    await ctx.db.patch(args.documentId, buildDocumentMetadataPatch(args));
+    await ctx.db.patch(
+      "documents",
+      args.documentId,
+      buildDocumentMetadataPatch(args)
+    );
 
     return { success: true };
   },
@@ -408,7 +415,7 @@ export const updateThumbnail = authMutation({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -426,7 +433,10 @@ export const updateThumbnail = authMutation({
     let hasAccess = document.ownerId === userId;
 
     if (!hasAccess) {
-      const organization = await ctx.db.get(document.organizationId);
+      const organization = await ctx.db.get(
+        "organizations",
+        document.organizationId
+      );
       const member = organization
         ? await resolveComponentMembershipForOrganization(
             ctx,
@@ -442,7 +452,7 @@ export const updateThumbnail = authMutation({
     }
 
     // 3. Update thumbnail
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       thumbnailDataUrl: args.thumbnailDataUrl,
       updatedAt: Date.now(),
     });
@@ -467,7 +477,7 @@ export const sendDocument = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -483,10 +493,12 @@ export const sendDocument = permissionMutation("documents:edit")({
     // 4. If re-sending an expired document, reset expired recipients
     if (currentStatus === "expired") {
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — sendDocument must visit every recipient for this single expired documentId so all expired recipients are reset; no caller receives fewer rows. bound=global
-      const recipients = await ctx.db
+      const recipients = [];
+      for await (const _row of ctx.db
         .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect();
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+        recipients.push(_row);
+      }
 
       const now = Date.now();
       const newExpiresAt = document.expirationPeriod
@@ -499,7 +511,7 @@ export const sendDocument = permissionMutation("documents:edit")({
 
       for (const recipient of recipients) {
         if (recipient.status === "expired") {
-          await ctx.db.patch(recipient._id, {
+          await ctx.db.patch("document_recipients", recipient._id, {
             status: "pending",
             expiresAt: newExpiresAt,
             expirationNotifiedAt: undefined,
@@ -533,7 +545,7 @@ export const cancelDocument = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -569,7 +581,7 @@ export const completeDocument = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
@@ -601,12 +613,12 @@ export const updateDocumentHash = internalMutation({
     documentHash: v.string(),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       documentHash: args.documentHash,
       updatedAt: Date.now(),
     });
@@ -625,12 +637,12 @@ export const updateExtractedText = internalMutation({
     extractedText: v.string(),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       extractedText: args.extractedText,
       updatedAt: Date.now(),
     });
@@ -651,15 +663,18 @@ export const updateSignedStorageId = internalMutation({
     signedStorageId: v.string(),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
 
     // Delete old signed PDF if it exists
-    if (document.signedStorageId) {
+    if (
+      document.signedStorageId &&
+      validate(v.id("_storage"), document.signedStorageId)
+    ) {
       try {
-        await ctx.storage.delete(document.signedStorageId as Id<"_storage">);
+        await ctx.storage.delete(document.signedStorageId);
       } catch {
         console.warn(
           `Could not delete old signed PDF: ${document.signedStorageId}`
@@ -667,7 +682,7 @@ export const updateSignedStorageId = internalMutation({
       }
     }
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       signedStorageId: args.signedStorageId,
       updatedAt: Date.now(),
     });
@@ -688,15 +703,18 @@ export const updateFillableStorageId = internalMutation({
     fillableStorageId: v.string(),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
     }
 
     // Delete the old fillable PDF if it exists
-    if (document.fillableStorageId) {
+    if (
+      document.fillableStorageId &&
+      validate(v.id("_storage"), document.fillableStorageId)
+    ) {
       try {
-        await ctx.storage.delete(document.fillableStorageId as Id<"_storage">);
+        await ctx.storage.delete(document.fillableStorageId);
       } catch {
         // Ignore errors if the old file doesn't exist
         console.warn(
@@ -705,7 +723,7 @@ export const updateFillableStorageId = internalMutation({
       }
     }
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       fillableStorageId: args.fillableStorageId,
       updatedAt: Date.now(),
     });
@@ -733,7 +751,7 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document and verify ownership
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -772,7 +790,7 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
     });
 
     // 5. Update document with new PDF
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       storageId: args.storageId,
       fileSize: args.fileSize,
       fileType: args.fileType,
@@ -826,7 +844,9 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
         document.organizationId,
         ctx.auth.user._id
       );
-      await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+      await ctx.db.patch("documents", args.documentId, {
+        aiProcessingStatus: "pending",
+      });
     }
 
     return { success: true, versionNumber: newVersionNumber };
@@ -848,7 +868,7 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document and verify ownership
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -892,7 +912,7 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     });
 
     // 5. Restore the snapshot data to the document
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       name: targetVersion.snapshot.name,
       description: targetVersion.snapshot.description,
       storageId: targetVersion.snapshot.storageId,
@@ -948,7 +968,9 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
         document.organizationId,
         ctx.auth.user._id
       );
-      await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+      await ctx.db.patch("documents", args.documentId, {
+        aiProcessingStatus: "pending",
+      });
     }
 
     return { success: true, versionNumber: newVersionNumber };
@@ -969,7 +991,7 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
     const isAdmin = ctx.auth.isAdmin();
     const isOwner = ctx.auth.isOwner();
 
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -983,7 +1005,7 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
       isOwner
     );
 
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       ownerId: args.newOwnerId,
       updatedAt: Date.now(),
     });

@@ -35,7 +35,8 @@ import {
   getBetterAuthIdentityProvider,
 } from "./authIdentities";
 
-type AnyCtx = QueryCtx | MutationCtx;
+type QueryDatabase = QueryCtx["db"];
+type MutationDatabase = MutationCtx["db"];
 
 // The glue's `GlueUserMinimum` requires `activeVortexAuthOrganizationId?:
 // string`, which Seal's schema now carries on the user doc.
@@ -49,6 +50,43 @@ type GlueUser = Doc<"users"> & {
 type GlueAnchor = Omit<Doc<"organizations">, "vortexAuthOrganizationId"> & {
   vortexAuthOrganizationId: string;
 };
+
+function isQueryDatabase(db: unknown): db is QueryDatabase {
+  return (
+    typeof db === "object" &&
+    db !== null &&
+    "query" in db &&
+    typeof db.query === "function" &&
+    "get" in db &&
+    typeof db.get === "function"
+  );
+}
+
+function isMutationDatabase(db: unknown): db is MutationDatabase {
+  return (
+    isQueryDatabase(db) &&
+    "insert" in db &&
+    typeof db.insert === "function" &&
+    "patch" in db &&
+    typeof db.patch === "function"
+  );
+}
+
+function isOrganizationMemberRole(
+  roleKey: string
+): roleKey is OrganizationMemberRole {
+  return Object.prototype.hasOwnProperty.call(ROLE_PERMISSIONS, roleKey);
+}
+
+function asGlueAnchor(row: Doc<"organizations">): GlueAnchor | null {
+  if (row.vortexAuthOrganizationId === undefined) {
+    return null;
+  }
+  return {
+    ...row,
+    vortexAuthOrganizationId: row.vortexAuthOrganizationId,
+  };
+}
 
 function slugifyName(input: string): string {
   const slug = input
@@ -69,22 +107,23 @@ async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
   //   2. local users.by_vortex_auth_user where vortexAuthUserId = componentUserId
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) return null;
-  const typed = ctx as unknown as AnyCtx;
+  if (!isQueryDatabase(ctx.db)) return null;
+  const db = ctx.db;
   const issuer =
     typeof identity.issuer === "string" && identity.issuer.length > 0
       ? identity.issuer
       : getBetterAuthIdentityIssuer();
-  const componentIdentity = (await ctx.runQuery(
+  const componentIdentity = await ctx.runQuery(
     components.vortexAuth.identity.getByIdentity,
     {
       provider: getBetterAuthIdentityProvider(),
       issuer,
       subject: identity.subject,
     }
-  )) as { userId: string } | null;
+  );
 
   const findByComponentUserId = async (componentUserId: string) =>
-    await typed.db
+    await db
       .query("users")
       .withIndex("by_vortex_auth_user", (q) =>
         q.eq("vortexAuthUserId", componentUserId)
@@ -117,14 +156,14 @@ async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
           ? identity.picture
           : undefined,
   });
-  const refreshed = (await ctx.runQuery(
+  const refreshed = await ctx.runQuery(
     components.vortexAuth.identity.getByIdentity,
     {
       provider: getBetterAuthIdentityProvider(),
       issuer,
       subject: identity.subject,
     }
-  )) as { userId: string } | null;
+  );
   if (refreshed === null) return null;
   return await findByComponentUserId(refreshed.userId);
 }
@@ -134,21 +173,21 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
     ctx: GlueCtx
   ): Promise<GlueUser | null> => {
     const user = await findOrProvisionUser(ctx);
-    if (user === null) return null;
-    return user as GlueUser;
+    return user;
   },
   findAnchorByVortexAuthOrganizationId: async (
     ctx: GlueCtx,
     id: string
   ): Promise<GlueAnchor | null> => {
-    const row = await (ctx as unknown as AnyCtx).db
+    if (!isQueryDatabase(ctx.db)) return null;
+    const row = await ctx.db
       .query("organizations")
       .withIndex("by_vortex_auth_organization", (q) =>
         q.eq("vortexAuthOrganizationId", id)
       )
       .unique();
-    if (row === null || row.vortexAuthOrganizationId === undefined) return null;
-    return row as GlueAnchor;
+    if (row === null) return null;
+    return asGlueAnchor(row);
   },
   insertAnchor: async (
     ctx: GlueCtx,
@@ -158,46 +197,42 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
       createdByVortexAuthUserId: string;
     }
   ): Promise<GlueAnchor> => {
-    const dbMaybe = (ctx as { db?: unknown }).db as
-      | { insert?: unknown }
-      | undefined;
-    if (dbMaybe === undefined || typeof dbMaybe.insert !== "function") {
+    if (!isMutationDatabase(ctx.db)) {
       throw new Error(
         "insertAnchor: cannot create anchor from a read-only context; retry via mutation"
       );
     }
+    const db = ctx.db;
     const now = Date.now();
-    const _id = await (ctx as unknown as MutationCtx).db.insert(
-      "organizations",
-      {
-        name: args.name,
-        slug: slugifyName(args.name),
-        type: "company",
-        timezone: "UTC",
-        isActive: true,
-        status: "active",
-        vortexAuthOrganizationId: args.vortexAuthOrganizationId,
-        updatedAt: now,
-      }
-    );
-    const row = await (ctx as unknown as MutationCtx).db.get(_id);
-    if (row === null || row.vortexAuthOrganizationId === undefined) {
+    const _id = await db.insert("organizations", {
+      name: args.name,
+      slug: slugifyName(args.name),
+      type: "company",
+      timezone: "UTC",
+      isActive: true,
+      status: "active",
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      updatedAt: now,
+    });
+    const row = await db.get("organizations", _id);
+    if (row === null) {
       throw new Error("insertAnchor: row vanished or bridge column missing");
     }
-    return row as GlueAnchor;
+    const anchor = asGlueAnchor(row);
+    if (anchor === null) {
+      throw new Error("insertAnchor: row vanished or bridge column missing");
+    }
+    return anchor;
   },
   setActiveOrganization: async (
     ctx: GlueCtx,
     user: GlueUser,
     vortexAuthOrganizationId: string
   ): Promise<void> => {
-    const dbMaybe = (ctx as { db?: unknown }).db as
-      | { patch?: unknown }
-      | undefined;
-    if (dbMaybe === undefined || typeof dbMaybe.patch !== "function") {
+    if (!isMutationDatabase(ctx.db)) {
       return;
     }
-    await (ctx as unknown as MutationCtx).db.patch(user._id, {
+    await ctx.db.patch("users", user._id, {
       activeVortexAuthOrganizationId: vortexAuthOrganizationId,
     });
   },
@@ -207,7 +242,9 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
   ): readonly string[] => {
     // Seal's auth.utils owns the canonical role→permission expansion.
     // Fall back to the glue-supplied permissions for any unknown role key.
-    const expanded = ROLE_PERMISSIONS[roleKey as OrganizationMemberRole];
+    const expanded = isOrganizationMemberRole(roleKey)
+      ? ROLE_PERMISSIONS[roleKey]
+      : undefined;
     return expanded ?? permissions;
   },
 };

@@ -18,7 +18,7 @@ export const start = internalMutation({
     const now = Date.now();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("ai_progress", existing._id, {
         step: 0,
         totalSteps: args.totalSteps,
         completedTools: [],
@@ -60,7 +60,7 @@ export const update = internalMutation({
 
     if (!existing) return;
 
-    await ctx.db.patch(existing._id, {
+    await ctx.db.patch("ai_progress", existing._id, {
       step: args.step,
       completedTools: args.completedTools,
       tokensUsed: args.tokensUsed,
@@ -83,7 +83,7 @@ export const complete = internalMutation({
     if (!existing) return;
 
     const now = Date.now();
-    await ctx.db.patch(existing._id, {
+    await ctx.db.patch("ai_progress", existing._id, {
       status: "completed",
       tokensUsed: args.totalTokens,
       updatedAt: now,
@@ -106,7 +106,7 @@ export const abort = internalMutation({
     if (!existing) return;
 
     const now = Date.now();
-    await ctx.db.patch(existing._id, {
+    await ctx.db.patch("ai_progress", existing._id, {
       status: "aborted",
       error: args.reason,
       updatedAt: now,
@@ -129,7 +129,7 @@ export const fail = internalMutation({
     if (!existing) return;
 
     const now = Date.now();
-    await ctx.db.patch(existing._id, {
+    await ctx.db.patch("ai_progress", existing._id, {
       status: "failed",
       error: args.error,
       updatedAt: now,

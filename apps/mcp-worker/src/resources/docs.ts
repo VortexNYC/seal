@@ -7,6 +7,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+import { resolveTemplateVariable } from "./variables";
+
 const KNOWLEDGE_BASE: Record<string, { title: string; content: string }> = {
   overview: {
     title: "Seal — Product Overview",
@@ -358,6 +360,7 @@ The MCP server uses OAuth 2.0. When connecting via Claude Desktop or another MCP
 };
 
 const VALID_TOPICS = Object.entries(KNOWLEDGE_BASE);
+const VALID_TOPIC_KEYS = Object.keys(KNOWLEDGE_BASE);
 
 /**
  * Registers product knowledge resources with the MCP server.
@@ -404,11 +407,11 @@ ${topicList}`,
     {
       description:
         "Seal product knowledge on a specific topic. Valid topics: " +
-        VALID_TOPICS.join(", "),
+        VALID_TOPIC_KEYS.join(", "),
       mimeType: "text/markdown",
     },
     async (uri, { topic }) => {
-      const topicKey = topic as string;
+      const topicKey = resolveTemplateVariable(topic);
       const entry = KNOWLEDGE_BASE[topicKey];
 
       if (!entry) {
@@ -417,7 +420,7 @@ ${topicList}`,
             {
               uri: uri.href,
               mimeType: "text/markdown",
-              text: `# Topic Not Found\n\nNo documentation found for topic: \`${topicKey}\`\n\nAvailable topics: ${VALID_TOPICS.join(", ")}`,
+              text: `# Topic Not Found\n\nNo documentation found for topic: \`${topicKey}\`\n\nAvailable topics: ${VALID_TOPIC_KEYS.join(", ")}`,
             },
           ],
         };

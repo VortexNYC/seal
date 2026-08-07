@@ -294,11 +294,11 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
   const markAllAsRead = useMutation(api.notifications.index.markAllAsRead);
 
   const handleMarkAsRead = (notificationId: Id<"notifications">) => {
-    markAsRead({ notificationId });
+    void markAsRead({ notificationId });
   };
 
   const handleMarkAllAsRead = () => {
-    markAllAsRead({});
+    void markAllAsRead({});
   };
 
   const isLoading = notifications === undefined;

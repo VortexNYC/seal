@@ -8,9 +8,38 @@
 
 import { v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { adminQuery, permissionQuery } from "../auth";
 import { listComponentMembersByOrganization } from "../lib/componentOrgReads";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
+
+// Convex tsconfig lib is ES2021; Node runtime has Array#toSorted (ES2023).
+declare global {
+  interface Array<T> {
+    toSorted(compareFn?: (a: T, b: T) => number): T[];
+  }
+}
+
+function averageSigningTimeMs(
+  documents: Array<{
+    workflowStatus?: string;
+    sentAt?: number;
+    completedAt?: number;
+  }>
+): number | null {
+  let totalMs = 0;
+  let count = 0;
+  for (const d of documents) {
+    if (d.workflowStatus !== "completed") continue;
+    const sentAt = d.sentAt;
+    const completedAt = d.completedAt;
+    if (sentAt === undefined || completedAt === undefined) continue;
+    totalMs += completedAt - sentAt;
+    count++;
+  }
+  if (count === 0) return null;
+  return Math.round(totalMs / count);
+}
 
 /**
  * Get document statistics for the dashboard
@@ -26,14 +55,16 @@ export const getDocumentStats = permissionQuery("documents:view")({
     // Non-admins are forced to personal scope regardless of what they request
     const scope = isAdmin ? (args.scope ?? "team") : "personal";
 
-    // convex-cost-guard-allow: convex-broad-organization-collect — dashboard stats require all non-deleted documents for the org to compute accurate counts bound=per-tenant
-    let documents = await ctx.db
+    let documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) => q.neq(q.field("status"), "deleted"))
-      .collect();
+      )) {
+      if (doc.status !== "deleted") {
+        documents.push(doc);
+      }
+    }
 
     if (scope === "personal") {
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
@@ -86,18 +117,7 @@ export const getDocumentStats = permissionQuery("documents:view")({
     const completionRate =
       finishedDocs > 0 ? Math.round((stats.completed / finishedDocs) * 100) : 0;
 
-    // Calculate average signing time (sentAt → completedAt) in milliseconds
-    const completedWithTimes = documents.filter(
-      (d) => d.workflowStatus === "completed" && d.sentAt && d.completedAt
-    );
-    let avgSigningTimeMs: number | null = null;
-    if (completedWithTimes.length > 0) {
-      const totalMs = completedWithTimes.reduce(
-        (sum, d) => sum + ((d.completedAt as number) - (d.sentAt as number)),
-        0
-      );
-      avgSigningTimeMs = Math.round(totalMs / completedWithTimes.length);
-    }
+    const avgSigningTimeMs = averageSigningTimeMs(documents);
 
     return {
       ...stats,
@@ -121,22 +141,27 @@ export const getRecentDocuments = permissionQuery("documents:view")({
     const organizationId = ctx.auth.organization._id;
     const limit = args.limit ?? 10;
 
-    const documents = await ctx.db
+    const documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
       )
-      .filter((q) => q.neq(q.field("status"), "deleted"))
-      .order("desc")
-      .take(limit);
+      .order("desc")) {
+      if (doc.status === "deleted") continue;
+      documents.push(doc);
+      if (documents.length >= limit) break;
+    }
 
     // Enrich with recipient count
     const enrichedDocs = await Promise.all(
       documents.map(async (doc) => {
-        const recipients = await ctx.db
+        const recipients: Doc<"document_recipients">[] = [];
+        for await (const recipient of ctx.db
           .query("document_recipients")
-          .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-          .collect();
+          .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+          recipients.push(recipient);
+        }
 
         const signedCount = recipients.filter(
           (r) => r.status === "signed"
@@ -175,19 +200,16 @@ export const getDocumentTrends = permissionQuery("documents:view")({
     const scope = ctx.auth.isAdmin() ? (args.scope ?? "team") : "personal";
     const { startDate, endDate } = getTrendRange(args);
 
-    let documents = await ctx.db
+    let documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("status"), "deleted"),
-          q.gte(q.field("createdAt"), startDate),
-          q.lte(q.field("createdAt"), endDate)
-        )
-      )
-      .collect();
+      )) {
+      if (doc.status === "deleted") continue;
+      if (doc.createdAt < startDate || doc.createdAt > endDate) continue;
+      documents.push(doc);
+    }
 
     if (scope === "personal") {
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
@@ -215,7 +237,7 @@ export const getDocumentTrends = permissionQuery("documents:view")({
         created: stats.created,
         completed: stats.completed,
       }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .toSorted((a, b) => a.date.localeCompare(b.date));
 
     return trend;
   },
@@ -311,19 +333,21 @@ export const getRecentActivity = permissionQuery("documents:view")({
         let actorEmail = "";
 
         // actorId stores auth subject as string, need to look up by authSubject
-        if (log.actorId && log.actorType === "user") {
+        const actorId = log.actorId;
+        if (actorId && log.actorType === "user") {
           const user = await ctx.db
             .query("users")
-            .withIndex("by_auth_subject", (q) =>
-              q.eq("authSubject", log.actorId as string)
-            )
+            .withIndex("by_auth_subject", (q) => q.eq("authSubject", actorId))
             .first();
           if (user) {
             actorName = user.name ?? user.email.split("@")[0] ?? "Unknown";
             actorEmail = user.email;
           }
         } else if (log.actorType === "recipient" && log.recipientId) {
-          const recipient = await ctx.db.get(log.recipientId);
+          const recipient = await ctx.db.get(
+            "document_recipients",
+            log.recipientId
+          );
           if (recipient) {
             actorName =
               recipient.name ?? recipient.email.split("@")[0] ?? "Unknown";
@@ -384,34 +408,22 @@ export const getPeriodStats = permissionQuery("documents:view")({
         break;
     }
 
-    let documents = await ctx.db
+    let allDocs: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("status"), "deleted"),
-          q.gte(q.field("createdAt"), startDate)
-        )
-      )
-      .collect();
-
-    if (scope === "personal") {
-      documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
+      )) {
+      if (doc.status !== "deleted") {
+        allDocs.push(doc);
+      }
     }
-
-    let allDocs = await ctx.db
-      .query("documents")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId)
-      )
-      .filter((q) => q.neq(q.field("status"), "deleted"))
-      .collect();
 
     if (scope === "personal") {
       allDocs = allDocs.filter((d) => d.ownerId === ctx.auth.user._id);
     }
+
+    const documents = allDocs.filter((d) => d.createdAt >= startDate);
 
     const completed = allDocs.filter(
       (d) =>
@@ -442,13 +454,16 @@ export const getDocumentsForExport = permissionQuery("documents:view")({
     const organizationId = ctx.auth.organization._id;
 
     // Get all non-deleted documents
-    let documents = await ctx.db
+    let documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) => q.neq(q.field("status"), "deleted"))
-      .collect();
+      )) {
+      if (doc.status !== "deleted") {
+        documents.push(doc);
+      }
+    }
 
     // Apply filters
     if (args.workflowStatus) {
@@ -470,12 +485,14 @@ export const getDocumentsForExport = permissionQuery("documents:view")({
     // Enrich with recipient data
     const enrichedDocs = await Promise.all(
       documents.map(async (doc) => {
-        const recipients = await ctx.db
+        const recipients: Doc<"document_recipients">[] = [];
+        for await (const recipient of ctx.db
           .query("document_recipients")
-          .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-          .collect();
+          .withIndex("by_document", (q) => q.eq("documentId", doc._id))) {
+          recipients.push(recipient);
+        }
 
-        const owner = await ctx.db.get(doc.ownerId);
+        const owner = await ctx.db.get("users", doc.ownerId);
 
         return {
           id: doc._id,
@@ -503,9 +520,7 @@ export const getDocumentsForExport = permissionQuery("documents:view")({
     );
 
     // Sort by createdAt descending
-    enrichedDocs.sort((a, b) => b.createdAt - a.createdAt);
-
-    return enrichedDocs;
+    return enrichedDocs.toSorted((a, b) => b.createdAt - a.createdAt);
   },
 });
 
@@ -527,13 +542,16 @@ export const getMemberActivity = adminQuery({
     );
 
     // Get all non-deleted documents
-    const documents = await ctx.db
+    const documents: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .filter((q) => q.neq(q.field("status"), "deleted"))
-      .collect();
+      )) {
+      if (doc.status !== "deleted") {
+        documents.push(doc);
+      }
+    }
 
     // Build per-member stats
     const memberStats = await Promise.all(
@@ -541,7 +559,7 @@ export const getMemberActivity = adminQuery({
         if (!member.userId) {
           return null;
         }
-        const user = await ctx.db.get(member.userId);
+        const user = await ctx.db.get("users", member.userId);
         const memberDocs = documents.filter((d) => d.ownerId === member.userId);
 
         const created = memberDocs.length;
@@ -553,19 +571,7 @@ export const getMemberActivity = adminQuery({
             d.workflowStatus === "sent" || d.workflowStatus === "in_progress"
         ).length;
 
-        // Average signing time for this member's completed docs
-        const completedWithTimes = memberDocs.filter(
-          (d) => d.workflowStatus === "completed" && d.sentAt && d.completedAt
-        );
-        let avgSigningTimeMs: number | null = null;
-        if (completedWithTimes.length > 0) {
-          const totalMs = completedWithTimes.reduce(
-            (sum, d) =>
-              sum + ((d.completedAt as number) - (d.sentAt as number)),
-            0
-          );
-          avgSigningTimeMs = Math.round(totalMs / completedWithTimes.length);
-        }
+        const avgSigningTimeMs = averageSigningTimeMs(memberDocs);
 
         return {
           userId: member.userId,
@@ -585,8 +591,6 @@ export const getMemberActivity = adminQuery({
 
     // Sort by created count descending
     const resolvedMemberStats = memberStats.filter((stat) => stat !== null);
-    resolvedMemberStats.sort((a, b) => b.created - a.created);
-
-    return resolvedMemberStats;
+    return resolvedMemberStats.toSorted((a, b) => b.created - a.created);
   },
 });
