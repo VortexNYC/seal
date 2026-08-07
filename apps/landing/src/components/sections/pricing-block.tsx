@@ -1,3 +1,4 @@
+import { cn } from "@vortexnyc/ui";
 import { ArrowRight, Check, Minus } from "lucide-react";
 import { useState } from "react";
 
@@ -5,7 +6,6 @@ import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
 import type { PricingSectionBlock } from "~/lib/content/types";
-import { cn } from "~/utils/cn";
 
 interface Plan {
   name: string;

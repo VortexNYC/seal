@@ -1,9 +1,17 @@
-import { Slot } from "@radix-ui/react-slot";
+import { Button as CoreButton, cn } from "@vortexnyc/ui";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ButtonHTMLAttributes } from "react";
 
-import { cn } from "~/utils/cn";
-
+/**
+ * Marketing-scale adapter over `@vortexnyc/ui`'s Button (SEA-610).
+ *
+ * Landing keeps its own size/shadow scale — larger touch targets and shadowed
+ * variants for the marketing site vs Core's compact operational density. The
+ * local cva below is appended after Core's classes, so tailwind-merge resolves
+ * every conflict in landing's favor. Core `size` is pinned to "lg" because it
+ * is the only Core size without `has-[>svg]` padding rules, which would leak
+ * into landing's icon-bearing CTA buttons.
+ */
 const buttonVariants = cva(
   "focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
@@ -48,10 +56,12 @@ function Button({
   asChild = false,
   ...props
 }: ButtonProps) {
-  const Comp = asChild ? Slot : "button";
   return (
-    <Comp
-      className={cn(buttonVariants({ variant, size, className }))}
+    <CoreButton
+      asChild={asChild}
+      className={cn(buttonVariants({ variant, size }), className)}
+      size="lg"
+      variant={variant}
       {...props}
     />
   );
