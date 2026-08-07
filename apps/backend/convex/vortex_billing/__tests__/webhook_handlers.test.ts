@@ -8,6 +8,30 @@ import {
 } from "../webhook_handlers";
 import { createVortexWebhookSignature } from "../webhook_signature";
 
+type WebhookHandlerCtx = Parameters<
+  typeof handleVortexBillingWebhookRequest
+>[0];
+
+/**
+ * The webhook handler only touches `runMutation`; the unit fake covers that
+ * surface. Runtime-checked structural narrowing keeps the seam cast-free.
+ */
+function isWebhookHandlerCtx(value: unknown): value is WebhookHandlerCtx {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "runMutation" in value &&
+    typeof value.runMutation === "function"
+  );
+}
+
+function toTestWebhookCtx(value: unknown): WebhookHandlerCtx {
+  if (!isWebhookHandlerCtx(value)) {
+    throw new Error("Expected a runMutation-capable test ctx");
+  }
+  return value;
+}
+
 describe("Vortex Billing webhook payload parsing", () => {
   test("extracts the hosted checkout subscription projection contract", () => {
     const event: VortexWebhookEnvelope = {
@@ -98,13 +122,13 @@ describe("Vortex Billing webhook payload parsing", () => {
       headers: { "Vortex-Signature": signed.header },
       body: payload,
     });
-    const ctx = {
+    const ctx = toTestWebhookCtx({
       runMutation: async (): Promise<never> => {
         throw new Error(
           "unexpected mutation dispatch for ignored invoice type"
         );
       },
-    } as unknown as Parameters<typeof handleVortexBillingWebhookRequest>[0];
+    });
 
     const response = await handleVortexBillingWebhookRequest(
       ctx,

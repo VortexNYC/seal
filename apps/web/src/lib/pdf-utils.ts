@@ -50,10 +50,9 @@ export async function generateThumbnailFromUrl(
 
     // Render page to canvas
     await page.render({
-      canvasContext: context,
+      canvas,
       viewport: scaledViewport,
-      // oxlint-disable-next-line typescript-eslint/no-explicit-any -- pdfjs types issue
-    } as any).promise;
+    }).promise;
 
     // Convert canvas to data URL
     return canvas.toDataURL("image/png");
@@ -93,10 +92,9 @@ export async function extractPdfMetadata(file: File): Promise<{
     canvas.height = scaledViewport.height;
 
     await page.render({
-      canvasContext: context,
+      canvas,
       viewport: scaledViewport,
-      // oxlint-disable-next-line typescript-eslint/no-explicit-any -- pdfjs types issue
-    } as any).promise;
+    }).promise;
 
     const thumbnail = canvas.toDataURL("image/png");
 

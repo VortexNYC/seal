@@ -8,7 +8,7 @@ type RequiredMarker = {
   readonly pattern: RegExp;
 };
 
-const repoRoot = resolve(import.meta.dir, "..");
+const repoRoot = resolve(import.meta.dirname, "..");
 const proofDocRelativePath =
   "docs/test-sessions/session-2026-07-08-seal-vortex-production-go-live.md";
 const proofDocArg = parseProofDocArg(process.argv.slice(2));

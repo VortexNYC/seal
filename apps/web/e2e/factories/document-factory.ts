@@ -1,4 +1,8 @@
-import { convexMutation, convexQuery } from "../fixtures/convex-test-api";
+import {
+  convexMutation,
+  convexQuery,
+  isRecord,
+} from "../fixtures/convex-test-api";
 
 function getDefaultOwnerEmail(): string {
   return (
@@ -17,15 +21,22 @@ export async function createDocument(args: {
 }): Promise<{ id: string; name: string }> {
   const name = args.name ?? `e2e-test-doc-${Date.now()}`;
   const ownerEmail = args.ownerEmail ?? getDefaultOwnerEmail();
-  const result = (await convexMutation("test_e2e_helpers:createTestDocument", {
+  const result = await convexMutation("test_e2e_helpers:createTestDocument", {
     organizationSlug: args.organizationSlug,
     storageId: args.storageId,
     name,
     ownerAuthSubject: args.ownerAuthSubject,
     ownerEmail,
-  })) as { status: string; value: { id: string } };
+  });
+  const value =
+    isRecord(result) && isRecord(result.value) ? result.value : null;
+  if (!value || typeof value.id !== "string") {
+    throw new Error(
+      `createTestDocument returned unexpected shape: ${JSON.stringify(result)}`
+    );
+  }
 
-  return { id: result.value.id, name };
+  return { id: value.id, name };
 }
 
 export type SignableDocument = {
@@ -50,7 +61,7 @@ export async function createSignableDocument(args: {
 }): Promise<SignableDocument> {
   const name = args.name ?? `e2e-signable-doc-${Date.now()}`;
   const ownerEmail = args.ownerEmail ?? getDefaultOwnerEmail();
-  const result = (await convexMutation(
+  const result = await convexMutation(
     "test_e2e_helpers:createSignableTestDocument",
     {
       organizationSlug: args.organizationSlug,
@@ -62,17 +73,28 @@ export async function createSignableDocument(args: {
       recipientName: args.recipientName,
       workflowStatus: args.workflowStatus,
     }
-  )) as {
-    status: string;
-    value: {
-      documentId: string;
-      recipientId: string;
-      signingToken: string;
-      fieldId: string;
-    };
-  };
+  );
+  const value =
+    isRecord(result) && isRecord(result.value) ? result.value : null;
+  if (
+    !value ||
+    typeof value.documentId !== "string" ||
+    typeof value.recipientId !== "string" ||
+    typeof value.signingToken !== "string" ||
+    typeof value.fieldId !== "string"
+  ) {
+    throw new Error(
+      `createSignableTestDocument returned unexpected shape: ${JSON.stringify(result)}`
+    );
+  }
 
-  return { ...result.value, name };
+  return {
+    documentId: value.documentId,
+    recipientId: value.recipientId,
+    signingToken: value.signingToken,
+    fieldId: value.fieldId,
+    name,
+  };
 }
 
 export type TestDocumentState = {
@@ -82,13 +104,24 @@ export type TestDocumentState = {
   auditActions: string[];
 };
 
+function isTestDocumentState(value: unknown): value is TestDocumentState {
+  return (
+    isRecord(value) &&
+    typeof value.workflowStatus === "string" &&
+    typeof value.status === "string" &&
+    Array.isArray(value.recipients) &&
+    Array.isArray(value.auditActions)
+  );
+}
+
 export async function getDocumentState(
   documentId: string
 ): Promise<TestDocumentState | null> {
-  const result = (await convexQuery("test_e2e_helpers:getTestDocumentState", {
+  const result = await convexQuery("test_e2e_helpers:getTestDocumentState", {
     documentId,
-  })) as { status: string; value: TestDocumentState | null };
-  return result.value;
+  });
+  const value = isRecord(result) ? result.value : null;
+  return isTestDocumentState(value) ? value : null;
 }
 
 export async function deleteDocument(documentId: string): Promise<void> {

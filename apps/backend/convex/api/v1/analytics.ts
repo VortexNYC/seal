@@ -75,12 +75,21 @@ export const getAnalytics = internalQuery({
     // All org documents. Analytics uses complete workspace history for exact snapshots and caller-specified period metrics.
     // convex-cost-guard-allow: convex-broad-organization-collect — scoped to one organization and required for exact analytics snapshots; no date cutoff is imposed bound=per-tenant
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to one organization and required for exact analytics snapshots; no date cutoff is imposed bound=per-tenant
-    const allDocs = await ctx.db
+    const allDocs: Array<{
+      workflowStatus?: string;
+      createdAt: number;
+      sentAt?: number;
+      completedAt?: number;
+      cancelledAt?: number;
+      declinedAt?: number;
+    }> = [];
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId)
-      )
-      .collect();
+      )) {
+      allDocs.push(doc);
+    }
 
     // Workspace snapshot (all-time counts)
     const snapshot = {
@@ -92,8 +101,19 @@ export const getAnalytics = internalQuery({
       declined: 0,
     };
     for (const doc of allDocs) {
-      const status = (doc.workflowStatus ?? "draft") as keyof typeof snapshot;
-      if (status in snapshot) snapshot[status]++;
+      const status = doc.workflowStatus ?? "draft";
+      switch (status) {
+        case "draft":
+        case "sent":
+        case "in_progress":
+        case "completed":
+        case "cancelled":
+        case "declined":
+          snapshot[status]++;
+          break;
+        default:
+          break;
+      }
     }
 
     // Period-filtered documents (by creation date)

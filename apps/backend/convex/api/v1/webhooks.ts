@@ -158,12 +158,14 @@ export const listEndpoints = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args): Promise<ApiWebhookEndpoint[]> => {
-    const endpoints = await ctx.db
+    const endpoints = [];
+    for await (const endpoint of ctx.db
       .query("webhook_endpoints")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId)
-      )
-      .collect();
+      )) {
+      endpoints.push(endpoint);
+    }
 
     // Get delivery stats for each endpoint
     const endpointsWithStats = await Promise.all(
@@ -222,7 +224,7 @@ export const getEndpoint = internalQuery({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args): Promise<ApiWebhookEndpoint | null> => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       return null;
@@ -355,7 +357,7 @@ export const createEndpoint = internalMutation({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId)
       )
-      .collect();
+      .take(10);
 
     if (existingEndpoints.length >= 10) {
       return {
@@ -410,7 +412,7 @@ export const updateEndpoint = internalMutation({
     ),
   },
   handler: async (ctx, args): Promise<UpdateEndpointResult> => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       return { success: false, error: "Webhook endpoint not found" };
@@ -425,7 +427,7 @@ export const updateEndpoint = internalMutation({
       return { success: false, error };
     }
 
-    await ctx.db.patch(args.endpointId, updates);
+    await ctx.db.patch("webhook_endpoints", args.endpointId, updates);
 
     return { success: true };
   },
@@ -443,7 +445,7 @@ export const deleteEndpoint = internalMutation({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       return { success: false, error: "Webhook endpoint not found" };
@@ -454,17 +456,14 @@ export const deleteEndpoint = internalMutation({
     }
 
     // Delete all related deliveries
-    const deliveries = await ctx.db
+    for await (const delivery of ctx.db
       .query("webhook_deliveries")
-      .withIndex("by_endpoint", (q) => q.eq("endpointId", args.endpointId))
-      .collect();
-
-    for (const delivery of deliveries) {
-      await ctx.db.delete(delivery._id);
+      .withIndex("by_endpoint", (q) => q.eq("endpointId", args.endpointId))) {
+      await ctx.db.delete("webhook_deliveries", delivery._id);
     }
 
     // Delete the endpoint
-    await ctx.db.delete(args.endpointId);
+    await ctx.db.delete("webhook_endpoints", args.endpointId);
 
     return { success: true };
   },
@@ -485,7 +484,7 @@ export const rotateSecret = internalMutation({
     ctx,
     args
   ): Promise<{ success: boolean; secret?: string; error?: string }> => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       return { success: false, error: "Webhook endpoint not found" };
@@ -500,7 +499,7 @@ export const rotateSecret = internalMutation({
     const secretHash = await hashSecret(secret);
     const secretPrefix = secret.slice(0, 12);
 
-    await ctx.db.patch(args.endpointId, {
+    await ctx.db.patch("webhook_endpoints", args.endpointId, {
       secretHash,
       secret,
       secretPrefix,

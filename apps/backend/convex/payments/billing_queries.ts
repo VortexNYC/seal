@@ -66,13 +66,16 @@ async function buildAvailablePlan(
   ctx: BillingQueryDbCtx,
   product: Doc<"subscription_products">
 ) {
-  const prices = await ctx.db
+  const prices: Doc<"subscription_prices">[] = [];
+  for await (const price of ctx.db
     .query("subscription_prices")
     .withIndex("by_subscription_product_id", (q) =>
       q.eq("subscriptionProductId", product._id)
-    )
-    .filter((q) => q.eq(q.field("status"), "active"))
-    .collect();
+    )) {
+    if (price.status === "active") {
+      prices.push(price);
+    }
+  }
 
   const { monthly, yearly, fallback } = selectPlanPrices(prices);
   if (!fallback) {
@@ -211,10 +214,12 @@ export const getAvailablePlans = query({
   args: {},
   returns: v.array(availablePlanValidator),
   handler: async (ctx) => {
-    const products = await ctx.db
+    const products: Doc<"subscription_products">[] = [];
+    for await (const product of ctx.db
       .query("subscription_products")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .withIndex("by_status", (q) => q.eq("status", "active"))) {
+      products.push(product);
+    }
 
     const plans = [];
 

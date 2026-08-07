@@ -6,6 +6,7 @@
  */
 
 import { Workpool } from "@convex-dev/workpool";
+import type { GenericDataModel, GenericMutationCtx } from "convex/server";
 
 import { components, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -23,14 +24,13 @@ export const aiPoolFree = new Workpool(components.aiPoolFree, {
 
 /**
  * Ctx shape needed by workpool enqueue — mutation wrappers omit parts of
- * MutationCtx/ActionCtx, so accept the structural run* surface and cast at
- * the enqueue boundary.
+ * MutationCtx/ActionCtx, so accept the structural run* surface the workpool
+ * client actually requires (its MutationCtx is exactly this Pick).
  */
-type WorkpoolEnqueueCtx = Parameters<typeof aiPoolPro.enqueueAction>[0];
-type WorkpoolCtx = {
-  runMutation: WorkpoolEnqueueCtx["runMutation"];
-  runQuery: WorkpoolEnqueueCtx["runQuery"];
-};
+type WorkpoolCtx = Pick<
+  GenericMutationCtx<GenericDataModel>,
+  "runQuery" | "runMutation"
+>;
 
 /**
  * Enqueue a document for AI processing via the appropriate priority pool.
@@ -48,15 +48,11 @@ export async function enqueueAiPipeline(
   const isPro = await isProOrganization(db, organizationId);
   const pool = isPro ? aiPoolPro : aiPoolFree;
 
-  await pool.enqueueAction(
-    ctx as WorkpoolEnqueueCtx,
-    internal.ai.pipeline.processDocument,
-    {
-      documentId,
-      organizationId,
-      userId,
-    }
-  );
+  await pool.enqueueAction(ctx, internal.ai.pipeline.processDocument, {
+    documentId,
+    organizationId,
+    userId,
+  });
 }
 
 /**

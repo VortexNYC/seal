@@ -21,7 +21,7 @@ export async function transitionWorkflowStatus(
   documentId: Id<"documents">,
   newStatus: DocumentWorkflowStatus
 ): Promise<void> {
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
   if (!document) {
     throw new ConvexError("Document not found");
   }
@@ -70,7 +70,7 @@ export async function transitionWorkflowStatus(
       break;
   }
 
-  await ctx.db.patch(documentId, updateData);
+  await ctx.db.patch("documents", documentId, updateData);
 }
 
 /**
@@ -116,7 +116,7 @@ export async function verifyDocumentOwnership(
   documentId: Id<"documents">,
   userId: Id<"users">
 ): Promise<void> {
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
   if (!document) {
     throw new ConvexError("Document not found");
   }

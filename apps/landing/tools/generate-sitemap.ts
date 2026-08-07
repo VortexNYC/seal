@@ -11,7 +11,7 @@ const SITE_URL = "https://seal.nyc";
 const OUTPUT_FILE = path.resolve("public", "sitemap.xml");
 
 async function generateSitemap(): Promise<void> {
-  const today = new Date().toISOString().split("T")[0] as string;
+  const today = new Date().toISOString().slice(0, 10);
   const docsPages = source.getPages();
   const landingPages = getAllPageSlugs();
   const changelogEntries = getChangelogEntries();

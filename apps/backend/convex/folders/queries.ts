@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { authQuery } from "../auth";
 import { AuthUtils } from "../auth.utils";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
@@ -13,7 +14,7 @@ export const listFolders = authQuery({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) throw new ConvexError("Organization not found");
     const member = await resolveComponentMembershipForOrganization(
       ctx,
@@ -26,12 +27,14 @@ export const listFolders = authQuery({
     const isAdminOrOwner = AuthUtils.isAdminOrOwner(member);
 
     // Query folders by parent
-    const allFolders = await ctx.db
+    const allFolders: Doc<"folders">[] = [];
+    for await (const folder of ctx.db
       .query("folders")
       .withIndex("by_org_type", (q) =>
         q.eq("organizationId", args.organizationId).eq("type", args.type)
-      )
-      .collect();
+      )) {
+      allFolders.push(folder);
+    }
 
     // Filter by parentId (in-memory since Convex can't do optional index prefix + filter)
     const filtered = allFolders.filter((f) => {
@@ -54,7 +57,7 @@ export const listFolders = authQuery({
     });
 
     // Sort: pinned first, then alphabetical
-    return filtered.sort((a, b) => {
+    return filtered.toSorted((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return a.name.localeCompare(b.name);
@@ -68,13 +71,13 @@ export const getFolderBreadcrumbs = authQuery({
   },
   handler: async (ctx, args) => {
     const breadcrumbs: Array<{ id: string; name: string }> = [];
-    let current = await ctx.db.get(args.folderId);
+    let current = await ctx.db.get("folders", args.folderId);
     let depth = 0;
 
     while (current && depth < 10) {
       breadcrumbs.unshift({ id: current._id, name: current.name });
       if (!current.parentId) break;
-      current = await ctx.db.get(current.parentId);
+      current = await ctx.db.get("folders", current.parentId);
       depth++;
     }
 
@@ -87,7 +90,7 @@ export const getFolder = authQuery({
     folderId: v.id("folders"),
   },
   handler: async (ctx, args) => {
-    const folder = await ctx.db.get(args.folderId);
+    const folder = await ctx.db.get("folders", args.folderId);
     if (!folder) throw new ConvexError("Folder not found");
     return folder;
   },
@@ -104,7 +107,7 @@ export const getAllFoldersFlat = authQuery({
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) throw new ConvexError("Organization not found");
     const member = await resolveComponentMembershipForOrganization(
       ctx,
@@ -115,12 +118,14 @@ export const getAllFoldersFlat = authQuery({
     if (!member) throw new ConvexError("No access to this organization");
     const isAdminOrOwner = AuthUtils.isAdminOrOwner(member);
 
-    const allFolders = await ctx.db
+    const allFolders: Doc<"folders">[] = [];
+    for await (const folder of ctx.db
       .query("folders")
       .withIndex("by_org_type", (q) =>
         q.eq("organizationId", args.organizationId).eq("type", args.type)
-      )
-      .collect();
+      )) {
+      allFolders.push(folder);
+    }
 
     return allFolders
       .filter((f) => {

@@ -8,6 +8,7 @@
 
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import { signatureTypeTuple } from "../schemas/saved_signatures";
 
@@ -41,10 +42,12 @@ export const saveSignature = mutation({
     }
 
     // Check signature limit (max 10 per user)
-    const existingSignatures = await ctx.db
+    const existingSignatures: Doc<"saved_signatures">[] = [];
+    for await (const signature of ctx.db
       .query("saved_signatures")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", user._id))) {
+      existingSignatures.push(signature);
+    }
 
     if (existingSignatures.length >= 10) {
       throw new ConvexError(
@@ -59,7 +62,9 @@ export const saveSignature = mutation({
     if (isDefault) {
       const currentDefault = existingSignatures.find((s) => s.isDefault);
       if (currentDefault) {
-        await ctx.db.patch(currentDefault._id, { isDefault: false });
+        await ctx.db.patch("saved_signatures", currentDefault._id, {
+          isDefault: false,
+        });
       }
     }
 
@@ -106,23 +111,27 @@ export const updateSignature = mutation({
       throw new ConvexError("User not found");
     }
 
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("saved_signatures", args.signatureId);
     if (!signature || signature.userId !== user._id) {
       throw new ConvexError("Signature not found");
     }
 
     // If setting as default, unset existing default
     if (args.isDefault === true) {
-      const existingSignatures = await ctx.db
+      const existingSignatures: Doc<"saved_signatures">[] = [];
+      for await (const existing of ctx.db
         .query("saved_signatures")
-        .withIndex("by_user", (q) => q.eq("userId", user._id))
-        .collect();
+        .withIndex("by_user", (q) => q.eq("userId", user._id))) {
+        existingSignatures.push(existing);
+      }
 
       const currentDefault = existingSignatures.find(
         (s) => s.isDefault && s._id !== args.signatureId
       );
       if (currentDefault) {
-        await ctx.db.patch(currentDefault._id, { isDefault: false });
+        await ctx.db.patch("saved_signatures", currentDefault._id, {
+          isDefault: false,
+        });
       }
     }
 
@@ -137,7 +146,7 @@ export const updateSignature = mutation({
       updates.isDefault = args.isDefault;
     }
 
-    await ctx.db.patch(args.signatureId, updates);
+    await ctx.db.patch("saved_signatures", args.signatureId, updates);
 
     return { success: true };
   },
@@ -168,27 +177,31 @@ export const deleteSignature = mutation({
       throw new ConvexError("User not found");
     }
 
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("saved_signatures", args.signatureId);
     if (!signature || signature.userId !== user._id) {
       throw new ConvexError("Signature not found");
     }
 
-    await ctx.db.delete(args.signatureId);
+    await ctx.db.delete("saved_signatures", args.signatureId);
 
     // If deleted was default, set another as default
     if (signature.isDefault) {
-      const remainingSignatures = await ctx.db
+      const remainingSignatures: Doc<"saved_signatures">[] = [];
+      for await (const remaining of ctx.db
         .query("saved_signatures")
-        .withIndex("by_user", (q) => q.eq("userId", user._id))
-        .collect();
+        .withIndex("by_user", (q) => q.eq("userId", user._id))) {
+        remainingSignatures.push(remaining);
+      }
 
       if (remainingSignatures.length > 0) {
         // Set the most recently created as default
-        const mostRecent = remainingSignatures.sort(
+        const mostRecent = remainingSignatures.toSorted(
           (a, b) => b.createdAt - a.createdAt
         )[0];
         if (mostRecent) {
-          await ctx.db.patch(mostRecent._id, { isDefault: true });
+          await ctx.db.patch("saved_signatures", mostRecent._id, {
+            isDefault: true,
+          });
         }
       }
     }
@@ -222,12 +235,12 @@ export const incrementUsageCount = mutation({
       throw new ConvexError("User not found");
     }
 
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("saved_signatures", args.signatureId);
     if (!signature || signature.userId !== user._id) {
       throw new ConvexError("Signature not found");
     }
 
-    await ctx.db.patch(args.signatureId, {
+    await ctx.db.patch("saved_signatures", args.signatureId, {
       usageCount: signature.usageCount + 1,
       updatedAt: Date.now(),
     });

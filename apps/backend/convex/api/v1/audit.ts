@@ -7,6 +7,7 @@
  */
 import { v } from "convex/values";
 
+import type { Doc } from "../../_generated/dataModel";
 import { internalQuery } from "../../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -74,49 +75,54 @@ export const listAuditLog = internalQuery({
     const hasFilters = !!(args.action || args.created_before);
     const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
 
-    let query;
-
-    if (args.document_id) {
-      // Filter by document
-      query = ctx.db
-        .query("audit_logs")
-        .withIndex("by_document_created", (q) =>
-          q
-            .eq("documentId", sealAssertPresent(args.document_id))
-            .gte("createdAt", args.created_after ?? 0)
-        );
-    } else {
-      // Org-wide filter
-      query = ctx.db
-        .query("audit_logs")
-        .withIndex("by_organization_created", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .gte("createdAt", args.created_after ?? 0)
-        );
-    }
-
-    // Apply cursor if provided (use _creationTime for index-based pagination)
+    let cursorCreationTime: number | undefined;
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(
-        args.cursor as Parameters<typeof ctx.db.get>[0]
-      );
-      if (cursorDoc) {
-        query = query.filter((q) =>
-          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
-        );
+      const cursorId = ctx.db.normalizeId("audit_logs", args.cursor);
+      if (cursorId) {
+        const cursorDoc = await ctx.db.get("audit_logs", cursorId);
+        if (cursorDoc) {
+          cursorCreationTime = cursorDoc._creationTime;
+        }
       }
     }
 
-    const allEntries = await query.order("desc").take(fetchLimit);
+    const baseQuery = args.document_id
+      ? ctx.db
+          .query("audit_logs")
+          .withIndex("by_document_created", (q) =>
+            q
+              .eq("documentId", sealAssertPresent(args.document_id))
+              .gte("createdAt", args.created_after ?? 0)
+          )
+          .order("desc")
+      : ctx.db
+          .query("audit_logs")
+          .withIndex("by_organization_created", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .gte("createdAt", args.created_after ?? 0)
+          )
+          .order("desc");
 
-    // Apply upper date bound and action filter in-memory (Convex single-range index)
-    const filtered = allEntries.filter((e) => {
-      if (args.created_before && e.createdAt > args.created_before)
-        return false;
-      if (args.action && e.action !== args.action) return false;
-      return true;
-    });
+    const filtered: Doc<"audit_logs">[] = [];
+    for await (const entry of baseQuery) {
+      if (
+        cursorCreationTime !== undefined &&
+        entry._creationTime >= cursorCreationTime
+      ) {
+        continue;
+      }
+      if (args.created_before && entry.createdAt > args.created_before) {
+        continue;
+      }
+      if (args.action && entry.action !== args.action) {
+        continue;
+      }
+      filtered.push(entry);
+      if (filtered.length >= fetchLimit) {
+        break;
+      }
+    }
 
     const has_more = filtered.length > limit;
     const items = has_more ? filtered.slice(0, limit) : filtered;
@@ -140,14 +146,21 @@ export const listAuditLog = internalQuery({
             actor_name = user.name;
             actor_email = user.email;
           }
-        } else if (entry.actorType === "recipient" && entry.actorId) {
-          const recipient = await ctx.db.get(
-            entry.actorId as Parameters<typeof ctx.db.get>[0]
-          );
-          if (recipient && "email" in recipient) {
-            actor_email = recipient.email as string;
-            actor_name =
-              "name" in recipient ? (recipient.name as string) : undefined;
+        } else if (entry.actorType === "recipient") {
+          const recipientId =
+            entry.recipientId ??
+            (entry.actorId
+              ? ctx.db.normalizeId("document_recipients", entry.actorId)
+              : null);
+          if (recipientId) {
+            const recipient = await ctx.db.get(
+              "document_recipients",
+              recipientId
+            );
+            if (recipient) {
+              actor_email = recipient.email;
+              actor_name = recipient.name;
+            }
           }
         }
 

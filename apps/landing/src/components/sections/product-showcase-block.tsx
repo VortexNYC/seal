@@ -98,8 +98,12 @@ function ShowcaseImage({ tab }: { tab: TabData }) {
 export function StaticProductShowcase() {
   const [activeTab, setActiveTab] = useState(0);
   const prefersReducedMotion = useReducedMotion();
-  // Safe: activeTab is always 0..2, constrained by the tab buttons below
-  const currentTab = tabs[activeTab] as TabData;
+  // activeTab is always 0..2, constrained by the tab buttons below
+  const currentTab = tabs[activeTab] ?? tabs[0];
+
+  if (currentTab === undefined) {
+    return null;
+  }
 
   return (
     <section className="px-6 py-32 sm:py-40">

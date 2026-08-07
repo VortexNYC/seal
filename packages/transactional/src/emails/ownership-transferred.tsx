@@ -10,10 +10,10 @@ export interface OwnershipTransferredProps {
 }
 
 export function OwnershipTransferred({
-  newOwnerName = "User",
-  documentName = "Document",
-  documentUrl = "https://app.seal.so/documents/example",
-  transferredAt = Date.now(),
+  newOwnerName,
+  documentName,
+  documentUrl,
+  transferredAt,
 }: OwnershipTransferredProps) {
   const previewText = `You are now the owner of "${documentName}"`;
 

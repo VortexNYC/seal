@@ -21,7 +21,7 @@ export function useJamMetadata() {
   locationRef.current = location;
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user) return undefined;
 
     registerJamMetadata(() => ({
       userId: userRef.current?.id,

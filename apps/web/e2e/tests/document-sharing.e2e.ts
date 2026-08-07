@@ -5,6 +5,18 @@ import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { ShareDialogPage } from "../pages/documents/share-dialog-page";
 import { waitForToast } from "../utils/test-helpers";
 
+async function openShareForDocument(
+  page: Page,
+  documentsListPage: DocumentsListPage,
+  docName: string
+): Promise<void> {
+  const row = await documentsListPage.waitForDocumentRowByName(docName);
+  await row.getByRole("button", { name: /document actions for/i }).click();
+  const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
+  await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
+  await shareMenuItem.click({ force: true });
+}
+
 test.describe("Document Sharing", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(120000);
@@ -34,18 +46,6 @@ test.describe("Document Sharing", () => {
       }
     }
   );
-
-  const openShareForDocument = async (
-    page: Page,
-    documentsListPage: DocumentsListPage,
-    docName: string
-  ) => {
-    const row = await documentsListPage.waitForDocumentRowByName(docName);
-    await row.getByRole("button", { name: /document actions for/i }).click();
-    const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
-    await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
-    await shareMenuItem.click({ force: true });
-  };
 
   test.describe("Share Dialog Opening", () => {
     test("should open share dialog from document row actions", async ({

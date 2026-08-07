@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -34,9 +33,10 @@ vi.mock("../../lib/upload-validation", () => ({
   validateFileForUpload: () => ({ valid: true, errors: [] }),
 }));
 
+import { parseId } from "../../lib/convex-ids";
 import { UploadDialog } from "./upload-dialog";
 
-const FAKE_ORG_ID = "fake_org_id" as Id<"organizations">;
+const FAKE_ORG_ID = parseId("organizations", "fake_org_id");
 
 function renderDialog(
   overrides: {

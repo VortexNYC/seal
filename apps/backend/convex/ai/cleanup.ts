@@ -22,17 +22,23 @@ export const cleanupOldUsageLogs = internalMutation({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - USAGE_LOG_RETENTION_MS;
-    const old = await ctx.db
-      .query("ai_usage_log")
-      .filter((q) => q.lt(q.field("createdAt"), cutoff))
-      .take(BATCH_SIZE);
+    let deletedCount = 0;
 
-    for (const row of old) {
-      await ctx.db.delete(row._id);
+    for await (const row of ctx.db.query("ai_usage_log")) {
+      if (row.createdAt >= cutoff) {
+        continue;
+      }
+      await ctx.db.delete("ai_usage_log", row._id);
+      deletedCount += 1;
+      if (deletedCount >= BATCH_SIZE) {
+        break;
+      }
     }
 
-    if (old.length > 0) {
-      console.info(`[AI Cleanup] Deleted ${old.length} old usage log entries`);
+    if (deletedCount > 0) {
+      console.info(
+        `[AI Cleanup] Deleted ${deletedCount} old usage log entries`
+      );
     }
   },
 });
@@ -44,23 +50,22 @@ export const cleanupDismissedSuggestions = internalMutation({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - DISMISSED_RETENTION_MS;
-    const old = await ctx.db
-      .query("ai_field_suggestions")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "dismissed"),
-          q.lt(q.field("_creationTime"), cutoff)
-        )
-      )
-      .take(BATCH_SIZE);
+    let deletedCount = 0;
 
-    for (const row of old) {
-      await ctx.db.delete(row._id);
+    for await (const row of ctx.db.query("ai_field_suggestions")) {
+      if (row.status !== "dismissed" || row._creationTime >= cutoff) {
+        continue;
+      }
+      await ctx.db.delete("ai_field_suggestions", row._id);
+      deletedCount += 1;
+      if (deletedCount >= BATCH_SIZE) {
+        break;
+      }
     }
 
-    if (old.length > 0) {
+    if (deletedCount > 0) {
       console.info(
-        `[AI Cleanup] Deleted ${old.length} old dismissed suggestions`
+        `[AI Cleanup] Deleted ${deletedCount} old dismissed suggestions`
       );
     }
   },
@@ -73,23 +78,22 @@ export const cleanupDismissedAnnotations = internalMutation({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - DISMISSED_RETENTION_MS;
-    const old = await ctx.db
-      .query("ai_document_annotations")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "dismissed"),
-          q.lt(q.field("createdAt"), cutoff)
-        )
-      )
-      .take(BATCH_SIZE);
+    let deletedCount = 0;
 
-    for (const row of old) {
-      await ctx.db.delete(row._id);
+    for await (const row of ctx.db.query("ai_document_annotations")) {
+      if (row.status !== "dismissed" || row.createdAt >= cutoff) {
+        continue;
+      }
+      await ctx.db.delete("ai_document_annotations", row._id);
+      deletedCount += 1;
+      if (deletedCount >= BATCH_SIZE) {
+        break;
+      }
     }
 
-    if (old.length > 0) {
+    if (deletedCount > 0) {
       console.info(
-        `[AI Cleanup] Deleted ${old.length} old dismissed annotations`
+        `[AI Cleanup] Deleted ${deletedCount} old dismissed annotations`
       );
     }
   },

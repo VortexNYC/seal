@@ -13,10 +13,10 @@ export interface SigningCompleteProps {
 }
 
 export function SigningComplete({
-  recipientName = "Recipient",
-  documentName = "Document",
-  signedAt = Date.now(),
-  role = "signer",
+  recipientName,
+  documentName,
+  signedAt,
+  role,
   downloadUrl,
 }: SigningCompleteProps) {
   const actionText =

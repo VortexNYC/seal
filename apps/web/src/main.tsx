@@ -19,11 +19,12 @@ import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
 
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
+const RAW_CONVEX_URL: unknown = import.meta.env.VITE_CONVEX_URL;
 
-if (!CONVEX_URL) {
+if (typeof RAW_CONVEX_URL !== "string" || RAW_CONVEX_URL === "") {
   throw new Error("missing VITE_CONVEX_URL envar");
 }
+const CONVEX_URL = RAW_CONVEX_URL;
 
 const convex = new ConvexReactClient(CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
@@ -93,7 +94,8 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY as string;
+const RAW_POSTHOG_KEY: unknown = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+const POSTHOG_KEY = typeof RAW_POSTHOG_KEY === "string" ? RAW_POSTHOG_KEY : "";
 const posthogInitOptions = createVortexPostHogWebInitOptions({
   apiHost: "/ingest",
   uiHost: "https://us.i.posthog.com",

@@ -327,7 +327,9 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     });
 
     expect(invoices).toHaveLength(2);
-    const invoiceIds = invoices.map((i) => i.providerInvoiceId).sort();
+    const invoiceIds = invoices
+      .map((i) => i.providerInvoiceId)
+      .toSorted((a, b) => (a ?? "").localeCompare(b ?? ""));
     expect(invoiceIds).toEqual(["in_cycle2", "in_cycle3"]);
   });
 

@@ -31,6 +31,10 @@ interface PdfPageWithCanvasProps {
   onPageRef?: (pageNumber: number, element: HTMLDivElement | null) => void;
 }
 
+function handleCanvasReady(_stage: Konva.Stage): void {
+  // Canvas is ready for interaction
+}
+
 /**
  * Wrapper component that combines a PDF page with an interactive canvas layer
  * Handles dimension synchronization between PDF and canvas
@@ -71,10 +75,6 @@ export function PdfPageWithCanvas({
     });
     // Notify parent of page dimensions for coordinate conversion
     onPageDimensions?.(pageNumber, width, renderedHeight);
-  };
-
-  const handleCanvasReady = (_stage: Konva.Stage) => {
-    // Canvas is ready for interaction
   };
 
   // SEA-78: Ref callback for page scroll navigation

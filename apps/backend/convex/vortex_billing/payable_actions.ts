@@ -1,17 +1,42 @@
 "use node";
 
+import { allocate, applyRate, money, subtractMoney } from "@vortexnyc/money";
 import {
   createDepositBalancePayable,
   createInstallmentPayable,
   createPayable,
   createRecurringPayable,
+  type CreateDepositBalancePayableRequest,
+  type CreateInstallmentPayableRequest,
+  type CreatePayableRequest,
+  type CreateRecurringPayableRequest,
 } from "@vortexnyc/payments-sdk";
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
-import { createVortexBillingClient } from "../payments/vortex_billing_processor";
+import { createVortexBillingClient } from "../payments/vortex_billing_processor.helpers";
+import {
+  readVortexBillingEnv,
+  readVortexBillingEnvFromProcess,
+  type VortexBillingEnv,
+  type VortexBillingEnvInput,
+} from "./payable_env.helpers";
+
+export type { VortexBillingEnv, VortexBillingEnvInput };
+export { readVortexBillingEnv, readVortexBillingEnvFromProcess };
+
+export type {
+  CreateDepositBalancePayableRequest,
+  CreateInstallmentPayableRequest,
+  CreatePayableRequest,
+  CreateRecurringPayableRequest,
+};
+
+/** US banking convention: round-half-up per portion. */
+const MONEY_ROUNDING = "half-up" as const;
+const PAYABLE_CURRENCY = "USD";
 
 type Env = {
   readonly [key: string]: string | undefined;
@@ -27,34 +52,6 @@ type Json =
 type JsonObject = { readonly [key: string]: Json };
 
 export type DocumentPaymentProvider = "vortex_billing";
-
-export type VortexBillingEnvInput = {
-  readonly apiBaseUrl?: string;
-  readonly apiKey?: string;
-  readonly sourceNamespace?: string;
-  readonly customerMapJson?: string;
-  readonly billingAccountMapJson?: string;
-  readonly defaultBillingAccountId?: string;
-  readonly merchantAccountMapJson?: string;
-  readonly defaultMerchantAccountId?: string;
-  readonly paymentsEnvironment?: string;
-  readonly priceMapJson?: string;
-  readonly defaultPriceId?: string;
-};
-
-export type VortexBillingEnv = {
-  readonly apiBaseUrl: string;
-  readonly apiKey: string;
-  readonly sourceNamespace: string;
-  readonly paymentsEnvironment: string;
-  readonly customerMap: Record<string, string>;
-  readonly billingAccountMap: Record<string, string>;
-  readonly defaultBillingAccountId?: string;
-  readonly merchantAccountMap: Record<string, string>;
-  readonly defaultMerchantAccountId?: string;
-  readonly priceMap: Record<string, string>;
-  readonly defaultPriceId?: string;
-};
 
 type PaymentFieldConfigInput = {
   readonly _id: string;
@@ -145,23 +142,6 @@ type FeePolicy = {
   readonly evidence: readonly string[];
 };
 
-export type CreatePayableRequest = {
-  readonly sourceType: "document_payment_field";
-  readonly sourceId: string;
-  readonly documentId: string;
-  readonly paymentFieldId: string;
-  readonly customerExternalId: string;
-  readonly billingAccountId: string;
-  readonly collectionIntent: "manual";
-  readonly feePolicy: FeePolicy;
-  readonly dueAt?: string;
-  readonly lineItems: readonly JsonObject[];
-  readonly taxable?: boolean;
-  readonly taxBehavior?: TaxBehavior;
-  readonly taxClassificationKey?: TaxClassificationKey;
-  readonly metadata: Record<string, string>;
-};
-
 type CreatePayableResult = {
   readonly payableId: string;
   readonly paymentRequestId: string | undefined;
@@ -186,63 +166,11 @@ type RecurringEndPolicy =
       readonly endAt: string;
     };
 
-export type CreateRecurringPayableRequest = {
-  readonly sourceType: "document_payment_field";
-  readonly sourceId: string;
-  readonly documentId: string;
-  readonly paymentFieldId: string;
-  readonly customerExternalId: string;
-  readonly billingAccountId: string;
-  readonly merchantAccountId?: string;
-  readonly currency: VortexCurrency;
-  readonly lineItems: readonly JsonObject[];
-  readonly taxMode: VortexTaxMode;
-  readonly taxable?: boolean;
-  readonly taxBehavior?: TaxBehavior;
-  readonly taxClassificationKey?: TaxClassificationKey;
-  readonly collectionIntent: "manual";
-  readonly feePolicy: FeePolicy;
-  readonly cadence: {
-    readonly interval: "week" | "month" | "year";
-    readonly intervalCount: number;
-  };
-  readonly endPolicy: RecurringEndPolicy;
-  readonly startAt: string;
-  readonly metadata: Record<string, string>;
-};
-
 type CreateRecurringPayableResult = {
   readonly recurringPayableId: string;
   readonly payableId: string;
   readonly paymentRequestId: string | undefined;
   readonly checkoutUrl: string | undefined;
-};
-
-type InstallmentPlanItem = {
-  readonly installmentNumber: number;
-  readonly role: "installment";
-  readonly dueAt: string;
-  readonly amountDue: number;
-  readonly lineItems: readonly JsonObject[];
-};
-
-export type CreateInstallmentPayableRequest = {
-  readonly sourceType: "document_payment_field";
-  readonly sourceId: string;
-  readonly documentId: string;
-  readonly paymentFieldId: string;
-  readonly customerExternalId: string;
-  readonly billingAccountId: string;
-  readonly merchantAccountId?: string;
-  readonly currency: VortexCurrency;
-  readonly taxMode: VortexTaxMode;
-  readonly taxable?: boolean;
-  readonly taxBehavior?: TaxBehavior;
-  readonly taxClassificationKey?: TaxClassificationKey;
-  readonly collectionIntent: "manual";
-  readonly feePolicy: FeePolicy;
-  readonly installments: readonly InstallmentPlanItem[];
-  readonly metadata: Record<string, string>;
 };
 
 type CreateInstallmentPayableResult = {
@@ -252,59 +180,12 @@ type CreateInstallmentPayableResult = {
   readonly checkoutUrl: string | undefined;
 };
 
-type DepositBalancePart = {
-  readonly dueAt: string;
-  readonly amountDue: number;
-  readonly lineItems: readonly JsonObject[];
-};
-
-export type CreateDepositBalancePayableRequest = {
-  readonly sourceType: "document_payment_field";
-  readonly sourceId: string;
-  readonly documentId: string;
-  readonly paymentFieldId: string;
-  readonly customerExternalId: string;
-  readonly billingAccountId: string;
-  readonly merchantAccountId?: string;
-  readonly currency: VortexCurrency;
-  readonly taxMode: VortexTaxMode;
-  readonly taxable?: boolean;
-  readonly taxBehavior?: TaxBehavior;
-  readonly taxClassificationKey?: TaxClassificationKey;
-  readonly collectionIntent: "manual";
-  readonly feePolicy: FeePolicy;
-  readonly deposit: DepositBalancePart;
-  readonly balance: DepositBalancePart;
-  readonly metadata: Record<string, string>;
-};
-
 type CreateDepositBalancePayableResult = {
   readonly depositBalancePayableId: string;
   readonly payableId: string;
   readonly paymentRequestId: string | undefined;
   readonly checkoutUrl: string | undefined;
 };
-
-const API_BASE_URL_ENV = "VORTEX_BILLING_API_BASE_URL";
-const API_KEY_ENV = "VORTEX_BILLING_API_KEY";
-const SOURCE_NAMESPACE_ENV = "VORTEX_BILLING_SOURCE_NAMESPACE";
-const DOCUMENT_CUSTOMER_MAP_ENV = "VORTEX_BILLING_DOCUMENT_CUSTOMER_MAP";
-const SHARED_CUSTOMER_MAP_ENV = "VORTEX_BILLING_CUSTOMER_MAP";
-const DOCUMENT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_DOCUMENT_ACCOUNT_MAP";
-const SHARED_ACCOUNT_MAP_ENV = "VORTEX_BILLING_ACCOUNT_MAP";
-const DOCUMENT_DEFAULT_ACCOUNT_ID_ENV = "VORTEX_BILLING_DOCUMENT_ACCOUNT_ID";
-const SHARED_ACCOUNT_ID_ENV = "VORTEX_BILLING_ACCOUNT_ID";
-const DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV =
-  "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_MAP";
-const SHARED_MERCHANT_ACCOUNT_MAP_ENV = "VORTEX_BILLING_MERCHANT_ACCOUNT_MAP";
-const DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV =
-  "VORTEX_BILLING_DOCUMENT_MERCHANT_ACCOUNT_ID";
-const SHARED_MERCHANT_ACCOUNT_ID_ENV = "VORTEX_BILLING_MERCHANT_ACCOUNT_ID";
-const DOCUMENT_PRICE_MAP_ENV = "VORTEX_BILLING_DOCUMENT_PRICE_MAP";
-const SHARED_PRICE_MAP_ENV = "VORTEX_BILLING_PRICE_MAP";
-const DOCUMENT_DEFAULT_PRICE_ID_ENV = "VORTEX_BILLING_DOCUMENT_PRICE_ID";
-const SHARED_PRICE_ID_ENV = "VORTEX_BILLING_PRICE_ID";
-const PAYMENTS_ENVIRONMENT_ENV = "VORTEX_BILLING_PAYMENTS_ENVIRONMENT";
 
 export function selectDocumentPaymentProvider(
   _organizationId: string,
@@ -315,67 +196,6 @@ export function selectDocumentPaymentProvider(
   _env: Env = process.env
 ): DocumentPaymentProvider {
   return "vortex_billing";
-}
-
-export function readVortexBillingEnv(
-  input: VortexBillingEnvInput
-): VortexBillingEnv {
-  const customerMap = parseOptionalStringRecord(
-    input.customerMapJson,
-    "customerMapJson"
-  );
-  const billingAccountMap = parseOptionalStringRecord(
-    input.billingAccountMapJson,
-    "billingAccountMapJson"
-  );
-  const merchantAccountMap = parseOptionalStringRecord(
-    input.merchantAccountMapJson,
-    "merchantAccountMapJson"
-  );
-  const priceMap = parseOptionalStringRecord(
-    input.priceMapJson,
-    "priceMapJson"
-  );
-
-  return {
-    apiBaseUrl: readRequiredValue(input.apiBaseUrl, "apiBaseUrl"),
-    apiKey: readRequiredValue(input.apiKey, "apiKey"),
-    sourceNamespace: input.sourceNamespace ?? "seal",
-    paymentsEnvironment: input.paymentsEnvironment ?? "sandbox",
-    customerMap,
-    billingAccountMap,
-    defaultBillingAccountId: input.defaultBillingAccountId,
-    merchantAccountMap,
-    defaultMerchantAccountId: input.defaultMerchantAccountId,
-    priceMap,
-    defaultPriceId: input.defaultPriceId,
-  };
-}
-
-export function readVortexBillingEnvFromProcess(
-  env: Env = process.env
-): VortexBillingEnv {
-  return readVortexBillingEnv({
-    apiBaseUrl: env[API_BASE_URL_ENV],
-    apiKey: env[API_KEY_ENV],
-    sourceNamespace: env[SOURCE_NAMESPACE_ENV] ?? "seal",
-    customerMapJson:
-      env[DOCUMENT_CUSTOMER_MAP_ENV] ?? env[SHARED_CUSTOMER_MAP_ENV],
-    billingAccountMapJson:
-      env[DOCUMENT_ACCOUNT_MAP_ENV] ?? env[SHARED_ACCOUNT_MAP_ENV],
-    defaultBillingAccountId:
-      env[DOCUMENT_DEFAULT_ACCOUNT_ID_ENV] ?? env[SHARED_ACCOUNT_ID_ENV],
-    merchantAccountMapJson:
-      env[DOCUMENT_MERCHANT_ACCOUNT_MAP_ENV] ??
-      env[SHARED_MERCHANT_ACCOUNT_MAP_ENV],
-    defaultMerchantAccountId:
-      env[DOCUMENT_DEFAULT_MERCHANT_ACCOUNT_ID_ENV] ??
-      env[SHARED_MERCHANT_ACCOUNT_ID_ENV],
-    paymentsEnvironment: env[PAYMENTS_ENVIRONMENT_ENV] ?? "sandbox",
-    priceMapJson: env[DOCUMENT_PRICE_MAP_ENV] ?? env[SHARED_PRICE_MAP_ENV],
-    defaultPriceId:
-      env[DOCUMENT_DEFAULT_PRICE_ID_ENV] ?? env[SHARED_PRICE_ID_ENV],
-  });
 }
 
 export function buildCreatePayableRequest(input: {
@@ -396,7 +216,7 @@ export function buildCreatePayableRequest(input: {
     throw new ConvexError("Payment field has no line items configured");
   }
 
-  const organizationKey = String(config.organizationId);
+  const organizationKey = config.organizationId;
   const customerExternalId =
     env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
   if (!customerExternalId) {
@@ -418,14 +238,14 @@ export function buildCreatePayableRequest(input: {
     env,
     input.vortexMerchantAccountId
   );
-  const sourceId = String(config._id);
+  const sourceId = config._id;
   const dueAt = getDueAt(config, now);
 
   return {
     sourceType: "document_payment_field",
     sourceId,
-    documentId: String(config.documentId),
-    paymentFieldId: String(config.fieldId),
+    documentId: config.documentId,
+    paymentFieldId: config.fieldId,
     customerExternalId,
     billingAccountId,
     collectionIntent: "manual",
@@ -439,8 +259,8 @@ export function buildCreatePayableRequest(input: {
       sourceSystem: env.sourceNamespace,
       vortexPaymentsEnvironment: env.paymentsEnvironment,
       sealOrganizationId: organizationKey,
-      sealDocumentId: String(config.documentId),
-      sealPaymentFieldId: String(config.fieldId),
+      sealDocumentId: config.documentId,
+      sealPaymentFieldId: config.fieldId,
       sealPaymentConfigId: sourceId,
       recipientEmail: recipient.email,
       ...(recipient.name !== undefined
@@ -481,7 +301,7 @@ export function buildCreateRecurringPayableRequest(input: {
     );
   }
 
-  const organizationKey = String(config.organizationId);
+  const organizationKey = config.organizationId;
   const customerExternalId =
     env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
   if (!customerExternalId) {
@@ -503,13 +323,13 @@ export function buildCreateRecurringPayableRequest(input: {
     env,
     input.vortexMerchantAccountId
   );
-  const sourceId = String(config._id);
+  const sourceId = config._id;
 
   return {
     sourceType: "document_payment_field",
     sourceId,
-    documentId: String(config.documentId),
-    paymentFieldId: String(config.fieldId),
+    documentId: config.documentId,
+    paymentFieldId: config.fieldId,
     customerExternalId,
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
@@ -531,8 +351,8 @@ export function buildCreateRecurringPayableRequest(input: {
       sourceSystem: env.sourceNamespace,
       vortexPaymentsEnvironment: env.paymentsEnvironment,
       sealOrganizationId: organizationKey,
-      sealDocumentId: String(config.documentId),
-      sealPaymentFieldId: String(config.fieldId),
+      sealDocumentId: config.documentId,
+      sealPaymentFieldId: config.fieldId,
       sealPaymentConfigId: sourceId,
       sealPaymentType: config.paymentType,
       recipientEmail: recipient.email,
@@ -570,7 +390,7 @@ export function buildCreateInstallmentPayableRequest(input: {
   }
   const installmentsConfig = config.installmentsConfig;
 
-  const organizationKey = String(config.organizationId);
+  const organizationKey = config.organizationId;
   const customerExternalId =
     env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
   if (!customerExternalId) {
@@ -592,7 +412,7 @@ export function buildCreateInstallmentPayableRequest(input: {
     env,
     input.vortexMerchantAccountId
   );
-  const sourceId = String(config._id);
+  const sourceId = config._id;
   const firstDueAt = getDueAt(config, now) ?? new Date(now).toISOString();
   const amounts = buildInstallmentAmounts(
     config.totalAmountCents,
@@ -602,8 +422,8 @@ export function buildCreateInstallmentPayableRequest(input: {
   return {
     sourceType: "document_payment_field",
     sourceId,
-    documentId: String(config.documentId),
-    paymentFieldId: String(config.fieldId),
+    documentId: config.documentId,
+    paymentFieldId: config.fieldId,
     customerExternalId,
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
@@ -632,8 +452,8 @@ export function buildCreateInstallmentPayableRequest(input: {
       sourceSystem: env.sourceNamespace,
       vortexPaymentsEnvironment: env.paymentsEnvironment,
       sealOrganizationId: organizationKey,
-      sealDocumentId: String(config.documentId),
-      sealPaymentFieldId: String(config.fieldId),
+      sealDocumentId: config.documentId,
+      sealPaymentFieldId: config.fieldId,
       sealPaymentConfigId: sourceId,
       sealPaymentType: config.paymentType,
       recipientEmail: recipient.email,
@@ -670,7 +490,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
     );
   }
 
-  const organizationKey = String(config.organizationId);
+  const organizationKey = config.organizationId;
   const customerExternalId =
     env.customerMap[recipient.email] ?? env.customerMap[organizationKey];
   if (!customerExternalId) {
@@ -692,7 +512,7 @@ export function buildCreateDepositBalancePayableRequest(input: {
     env,
     input.vortexMerchantAccountId
   );
-  const sourceId = String(config._id);
+  const sourceId = config._id;
   const depositDueAt = getDueAt(config, now) ?? new Date(now).toISOString();
   const amounts = buildDepositBalanceAmounts(
     config.totalAmountCents,
@@ -706,8 +526,8 @@ export function buildCreateDepositBalancePayableRequest(input: {
   return {
     sourceType: "document_payment_field",
     sourceId,
-    documentId: String(config.documentId),
-    paymentFieldId: String(config.fieldId),
+    documentId: config.documentId,
+    paymentFieldId: config.fieldId,
     customerExternalId,
     billingAccountId,
     ...(merchantAccountId.length > 0 ? { merchantAccountId } : {}),
@@ -742,8 +562,8 @@ export function buildCreateDepositBalancePayableRequest(input: {
       sourceSystem: env.sourceNamespace,
       vortexPaymentsEnvironment: env.paymentsEnvironment,
       sealOrganizationId: organizationKey,
-      sealDocumentId: String(config.documentId),
-      sealPaymentFieldId: String(config.fieldId),
+      sealDocumentId: config.documentId,
+      sealPaymentFieldId: config.fieldId,
       sealPaymentConfigId: sourceId,
       sealPaymentType: config.paymentType,
       recipientEmail: recipient.email,
@@ -887,10 +707,16 @@ function buildDepositBalanceAmounts(
     throw new ConvexError("Deposit/balance due days must be at least one");
   }
 
-  const depositAmountDue = Math.round(
-    totalAmountCents * (config.depositPercent / 100)
-  );
-  const balanceAmountDue = totalAmountCents - depositAmountDue;
+  const total = money(totalAmountCents, PAYABLE_CURRENCY);
+  const depositAmountDue = applyRate(
+    total,
+    config.depositPercent / 100,
+    MONEY_ROUNDING
+  ).amount;
+  const balanceAmountDue = subtractMoney(
+    total,
+    money(depositAmountDue, PAYABLE_CURRENCY)
+  ).amount;
   if (depositAmountDue <= 0 || balanceAmountDue <= 0) {
     throw new ConvexError(
       "Deposit and balance amounts must both be greater than zero"
@@ -989,15 +815,15 @@ function splitInstallmentAmount(
   totalAmountCents: number,
   count: number
 ): readonly number[] {
-  const baseAmount = Math.floor(totalAmountCents / count);
-  const remainder = totalAmountCents % count;
-  if (baseAmount <= 0) {
+  const parts = allocate(
+    money(totalAmountCents, PAYABLE_CURRENCY),
+    Array.from({ length: count }, () => 1)
+  ).map((part) => part.amount);
+  if (parts.some((amount) => amount <= 0)) {
     throw new ConvexError("Installment amount must be greater than zero");
   }
 
-  return Array.from({ length: count }, (_, index) =>
-    index < remainder ? baseAmount + 1 : baseAmount
-  );
+  return parts;
 }
 
 function addInstallmentInterval(
@@ -1039,6 +865,12 @@ function buildRecurringEndPolicy(
         mode: "on_date",
         endAt: new Date(config.endOnDate).toISOString(),
       };
+    default: {
+      const _exhaustive: never = config.endCondition;
+      throw new Error(
+        `Unhandled recurring end condition: ${String(_exhaustive)}`
+      );
+    }
   }
 }
 
@@ -1073,7 +905,7 @@ function buildFeePolicy(
     config.feeHandling === "pass_to_recipient"
       ? "customer_pays_processing"
       : "merchant_pays_processing";
-  const sourceId = String(config._id);
+  const sourceId = config._id;
   const platformFee: PlatformFee =
     platformFeeCents !== undefined && platformFeeCents > 0
       ? {
@@ -1154,6 +986,10 @@ function getDueDays(
       return 60;
     case "custom":
       return customDueDays ?? 30;
+    default: {
+      const _exhaustive: never = terms;
+      throw new Error(`Unhandled due date terms: ${String(_exhaustive)}`);
+    }
   }
 }
 
@@ -1199,7 +1035,7 @@ async function createVortexPayable(
   const { data, error, response } = await createPayable({
     client,
     headers: { "Idempotency-Key": idempotencyKey },
-    body: request as unknown as Parameters<typeof createPayable>[0]["body"],
+    body: request,
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(
@@ -1221,9 +1057,7 @@ async function createVortexRecurringPayable(
   const { data, error, response } = await createRecurringPayable({
     client,
     headers: { "Idempotency-Key": idempotencyKey },
-    body: request as unknown as Parameters<
-      typeof createRecurringPayable
-    >[0]["body"],
+    body: request,
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(
@@ -1245,9 +1079,7 @@ async function createVortexInstallmentPayable(
   const { data, error, response } = await createInstallmentPayable({
     client,
     headers: { "Idempotency-Key": idempotencyKey },
-    body: request as unknown as Parameters<
-      typeof createInstallmentPayable
-    >[0]["body"],
+    body: request,
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(
@@ -1269,9 +1101,7 @@ async function createVortexDepositBalancePayable(
   const { data, error, response } = await createDepositBalancePayable({
     client,
     headers: { "Idempotency-Key": idempotencyKey },
-    body: request as unknown as Parameters<
-      typeof createDepositBalancePayable
-    >[0]["body"],
+    body: request,
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(
@@ -1727,54 +1557,15 @@ export function isDocumentPaymentOrganizationAllowlisted(
   return true;
 }
 
-function readRequiredValue(value: string | undefined, label: string): string {
-  if (value === undefined || value.trim() === "") {
-    throw new ConvexError(
-      `Vortex Billing ${label} is required for document payments`
-    );
-  }
-  return value;
-}
-
-function parseOptionalStringRecord(
-  raw: string | undefined,
-  name: string
-): Record<string, string> {
-  if (raw === undefined || raw.trim() === "") {
-    return {};
-  }
-  return parseStringRecord(raw, name);
-}
-
-function parseStringRecord(raw: string, name: string): Record<string, string> {
-  const parsed = parseJson(raw, name);
-  const object = readObject(parsed, name);
-  const record: Record<string, string> = {};
-
-  for (const [key, value] of Object.entries(object)) {
-    if (typeof value !== "string" || value.length === 0) {
-      throw new ConvexError(`${name} must map strings to non-empty strings`);
-    }
-    record[key] = value;
-  }
-
-  return record;
-}
-
-function parseJson(raw: string, label: string): unknown {
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new ConvexError(`${label} is not valid JSON: ${message}`);
-  }
-}
-
 function readObject(value: unknown, label: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new ConvexError(`${label} must be an object`);
   }
-  return value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    result[key] = entryValue;
+  }
+  return result;
 }
 
 function readString(value: unknown, label: string): string {

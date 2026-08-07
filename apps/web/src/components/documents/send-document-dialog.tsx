@@ -23,6 +23,7 @@ import { z } from "zod";
 
 import { cn, getErrorMessage } from "@/lib/utils";
 
+import { parseSelectValue } from "../../lib/select-values";
 import { Button } from "../ui/button";
 import {
   Collapsible,
@@ -48,6 +49,24 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
+
+type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
+type CustomUnit = "day" | "week" | "month";
+
+const EXPIRATION_PRESETS = [
+  "none",
+  "7",
+  "14",
+  "30",
+  "60",
+  "90",
+  "custom",
+] as const satisfies readonly ExpirationPreset[];
+const CUSTOM_UNITS = [
+  "day",
+  "week",
+  "month",
+] as const satisfies readonly CustomUnit[];
 
 const expirationSchema = z.object({
   amount: z.number().int().min(1, "Expiration period must be at least 1"),
@@ -103,16 +122,14 @@ export function SendDocumentDialog({
   );
 
   // SEA-119: Expiration period state — pre-populate from org default if set
-  type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
   const [expirationPreset, setExpirationPreset] = useState<ExpirationPreset>(
     defaultDeadlineDays
-      ? [7, 14, 30, 60, 90].includes(defaultDeadlineDays)
-        ? (String(defaultDeadlineDays) as ExpirationPreset)
-        : "custom"
+      ? (parseSelectValue(String(defaultDeadlineDays), EXPIRATION_PRESETS) ??
+          "custom")
       : "none"
   );
   const [customAmount, setCustomAmount] = useState(defaultDeadlineDays ?? 30);
-  const [customUnit, setCustomUnit] = useState<"day" | "week" | "month">("day");
+  const [customUnit, setCustomUnit] = useState<CustomUnit>("day");
 
   // Signing mode: parallel (all at once) or sequential (by order groups)
   const [signingMode, setSigningMode] = useState<"parallel" | "sequential">(
@@ -300,8 +317,8 @@ export function SendDocumentDialog({
                 <Collapsible
                   key={recipient._id}
                   open={expandedRecipient === recipient._id}
-                  onOpenChange={(open) =>
-                    setExpandedRecipient(open ? recipient._id : null)
+                  onOpenChange={(isExpanded) =>
+                    setExpandedRecipient(isExpanded ? recipient._id : null)
                   }
                 >
                   <div className="overflow-hidden rounded-md border">
@@ -483,7 +500,9 @@ export function SendDocumentDialog({
             <Select
               value={expirationPreset}
               onValueChange={(val) =>
-                setExpirationPreset(val as ExpirationPreset)
+                setExpirationPreset(
+                  parseSelectValue(val, EXPIRATION_PRESETS) ?? expirationPreset
+                )
               }
             >
               <SelectTrigger>
@@ -516,7 +535,9 @@ export function SendDocumentDialog({
                 <Select
                   value={customUnit}
                   onValueChange={(val) =>
-                    setCustomUnit(val as "day" | "week" | "month")
+                    setCustomUnit(
+                      parseSelectValue(val, CUSTOM_UNITS) ?? customUnit
+                    )
                   }
                 >
                   <SelectTrigger className="w-32">

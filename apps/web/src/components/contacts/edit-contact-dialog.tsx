@@ -31,6 +31,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { parseSelectValue } from "@/lib/select-values";
+
+const CONTACT_STATUSES = [
+  "active",
+  "inactive",
+  "lead",
+] as const satisfies readonly ContactStatus[];
 
 interface EditContactDialogProps {
   open: boolean;
@@ -239,7 +246,9 @@ export function EditContactDialog({
             <Label htmlFor="edit-status">Status</Label>
             <Select
               value={status}
-              onValueChange={(value) => setStatus(value as ContactStatus)}
+              onValueChange={(value) =>
+                setStatus(parseSelectValue(value, CONTACT_STATUSES) ?? status)
+              }
             >
               <SelectTrigger id="edit-status">
                 <SelectValue placeholder="Select status" />

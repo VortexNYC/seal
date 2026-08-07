@@ -35,6 +35,7 @@ apps/backend/convex/
 | REST API      | `apps/backend/convex/api/v1/`       | Public endpoints                    |
 | Webhooks      | `apps/backend/convex/http.ts`       | Vortex Billing + auth HTTP router   |
 | RLS rules     | `apps/backend/convex/rls.ts`        | Access control                      |
+| Email transport | `apps/backend/convex/emails/resend_component.ts` | Seal Resend send seam; auth drafts via `sendAuthEmailDraft`. Transport is consumer-owned by design (vortex-core `docs/email-transport-recipe.md`). |
 
 ## CONVENTIONS
 
@@ -42,6 +43,7 @@ apps/backend/convex/
 - File names are snake_case; exported functions are camelCase.
 - Permission strings follow `resource:action` (see `auth.utils.ts`).
 - Commit `apps/backend/convex/_generated/` after schema changes.
+- Auth/verify/invite HTML comes from `@vortexnyc/auth/convex` drafts; document templates stay in `@seal/transactional` (`@vortexnyc/email` is render-only by design — transport is consumer-owned).
 
 ## ANTI-PATTERNS
 
@@ -49,6 +51,7 @@ apps/backend/convex/
 - Modify `apps/backend/convex/schemas/subscription_coupons.ts` or `apps/backend/convex/schemas/subscription_promo_codes.ts` directly.
 - Update usage accounting through the Vortex Billing projection path (preserve usage history).
 - Edit `apps/backend/convex/_generated/*` manually.
+- Hand-roll auth email HTML — use Core draft builders + `sendAuthEmailDraft`.
 
 ## See Also
 
@@ -56,3 +59,4 @@ apps/backend/convex/
 - [Web app guide](../../web/AGENTS.md) — frontend routing, components, E2E tests
 - [Landing/docs guide](../../landing/AGENTS.md) — marketing site, Fumadocs, API reference
 - [Transactional email guide](../../../packages/transactional/AGENTS.md) — email templates and previews
+- vortex-core `docs/email-transport-recipe.md` — consumer email wiring recipe (Core owns policy/templates; Seal owns transport)

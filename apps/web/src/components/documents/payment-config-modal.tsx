@@ -1,6 +1,13 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
-import { formatMoney, money, toMajorNumber } from "@vortexnyc/money";
+import {
+  allocate,
+  applyRate,
+  formatMoney,
+  money,
+  subtractMoney,
+  toMajorNumber,
+} from "@vortexnyc/money";
 import { useMutation, useQuery } from "convex/react";
 import { format, parse } from "date-fns";
 import {
@@ -13,6 +20,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";
@@ -28,7 +36,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { InputCurrency, parseCurrency } from "../ui/input-currency";
+import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
@@ -40,6 +48,9 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+
+const MONEY_ROUNDING = "half-up" as const;
+const DRAFT_CURRENCY = "USD";
 
 // --- Types ---
 
@@ -61,6 +72,46 @@ type RecurringEndCondition = "never" | "after_count" | "on_date";
 type InstallmentInterval = "week" | "month";
 type LateFeeType = "percentage" | "fixed";
 type TaxBehavior = "inclusive" | "exclusive";
+
+const PAYMENT_TYPES = [
+  "one_time",
+  "recurring",
+  "installments",
+  "deposit_balance",
+] as const satisfies readonly PaymentType[];
+const DUE_DATE_TERMS = [
+  "on_receipt",
+  "net_15",
+  "net_30",
+  "net_60",
+  "custom",
+] as const satisfies readonly DueDateTerms[];
+const FEE_HANDLING = [
+  "absorb",
+  "pass_to_recipient",
+] as const satisfies readonly FeeHandling[];
+const RECURRING_INTERVALS = [
+  "week",
+  "month",
+  "year",
+] as const satisfies readonly RecurringInterval[];
+const RECURRING_END_CONDITIONS = [
+  "never",
+  "after_count",
+  "on_date",
+] as const satisfies readonly RecurringEndCondition[];
+const INSTALLMENT_INTERVALS = [
+  "week",
+  "month",
+] as const satisfies readonly InstallmentInterval[];
+const LATE_FEE_TYPES = [
+  "percentage",
+  "fixed",
+] as const satisfies readonly LateFeeType[];
+const TAX_BEHAVIORS = [
+  "inclusive",
+  "exclusive",
+] as const satisfies readonly TaxBehavior[];
 
 interface LineItem {
   id: string;
@@ -444,7 +495,7 @@ function InvoiceItemRow({
             form.updateItem(
               item.id,
               "unitPrice",
-              Math.round(parseCurrency(event.target.value) * 100)
+              parseCurrencyToMinorUnits(event.target.value)
             );
           }}
           placeholder="$0.00"
@@ -518,7 +569,10 @@ function PaymentTypeSection({
       <Select
         value={draft.paymentType}
         onValueChange={(value) =>
-          setDraftField("paymentType", value as PaymentType)
+          setDraftField(
+            "paymentType",
+            parseSelectValue(value, PAYMENT_TYPES) ?? draft.paymentType
+          )
         }
       >
         <SelectTrigger>
@@ -548,7 +602,10 @@ function DueDateSection({
       <Select
         value={draft.dueDateTerms}
         onValueChange={(value) =>
-          setDraftField("dueDateTerms", value as DueDateTerms)
+          setDraftField(
+            "dueDateTerms",
+            parseSelectValue(value, DUE_DATE_TERMS) ?? draft.dueDateTerms
+          )
         }
       >
         <SelectTrigger>
@@ -687,7 +744,11 @@ function RecurringScheduleSection({
         <Select
           value={draft.recurringInterval}
           onValueChange={(value) =>
-            setDraftField("recurringInterval", value as RecurringInterval)
+            setDraftField(
+              "recurringInterval",
+              parseSelectValue(value, RECURRING_INTERVALS) ??
+                draft.recurringInterval
+            )
           }
         >
           <SelectTrigger className="w-32">
@@ -721,7 +782,11 @@ function RecurringEndConditionSection({
       <Select
         value={draft.recurringEndCondition}
         onValueChange={(value) =>
-          setDraftField("recurringEndCondition", value as RecurringEndCondition)
+          setDraftField(
+            "recurringEndCondition",
+            parseSelectValue(value, RECURRING_END_CONDITIONS) ??
+              draft.recurringEndCondition
+          )
         }
       >
         <SelectTrigger>
@@ -790,7 +855,12 @@ function InstallmentPlanSection({
         <p className="text-muted-foreground text-sm">
           {draft.installmentsCount} payments of{" "}
           <span className="font-medium">
-            {formatCents(Math.ceil(total / draft.installmentsCount))}
+            {formatCents(
+              allocate(
+                money(total, DRAFT_CURRENCY),
+                Array.from({ length: draft.installmentsCount }, () => 1)
+              )[0]?.amount ?? 0
+            )}
           </span>
         </p>
       )}
@@ -811,7 +881,11 @@ function InstallmentIntervalSelect({
       <Select
         value={draft.installmentsInterval}
         onValueChange={(value) =>
-          setDraftField("installmentsInterval", value as InstallmentInterval)
+          setDraftField(
+            "installmentsInterval",
+            parseSelectValue(value, INSTALLMENT_INTERVALS) ??
+              draft.installmentsInterval
+          )
         }
       >
         <SelectTrigger>
@@ -835,7 +909,16 @@ function DepositBalanceSection({
   readonly setDraftField: DraftFieldSetter;
   readonly total: number;
 }) {
-  const depositAmount = Math.round((total * draft.depositPercent) / 100);
+  const totalMoney = money(total, DRAFT_CURRENCY);
+  const depositAmount = applyRate(
+    totalMoney,
+    draft.depositPercent / 100,
+    MONEY_ROUNDING
+  ).amount;
+  const balanceAmount = subtractMoney(
+    totalMoney,
+    money(depositAmount, DRAFT_CURRENCY)
+  ).amount;
   return (
     <div className="space-y-4 rounded-lg border p-4">
       <span className="text-sm font-medium">Deposit & Balance</span>
@@ -852,9 +935,7 @@ function DepositBalanceSection({
           </p>
           <p>
             Balance:{" "}
-            <span className="font-medium">
-              {formatCents(total - depositAmount)}
-            </span>{" "}
+            <span className="font-medium">{formatCents(balanceAmount)}</span>{" "}
             due in {draft.balanceDueDays} days
           </p>
         </div>
@@ -958,7 +1039,10 @@ function LateFeeInputs({
         <Select
           value={draft.lateFeeType}
           onValueChange={(value) =>
-            setDraftField("lateFeeType", value as LateFeeType)
+            setDraftField(
+              "lateFeeType",
+              parseSelectValue(value, LATE_FEE_TYPES) ?? draft.lateFeeType
+            )
           }
         >
           <SelectTrigger>
@@ -1024,7 +1108,10 @@ function FeeHandlingSection({
       <Select
         value={feeHandling}
         onValueChange={(value) =>
-          setDraftField("feeHandling", value as FeeHandling)
+          setDraftField(
+            "feeHandling",
+            parseSelectValue(value, FEE_HANDLING) ?? feeHandling
+          )
         }
       >
         <SelectTrigger>
@@ -1126,7 +1213,10 @@ function TaxBehaviorSelect({
       <Select
         value={draft.taxBehavior}
         onValueChange={(value) =>
-          setDraftField("taxBehavior", value as TaxBehavior)
+          setDraftField(
+            "taxBehavior",
+            parseSelectValue(value, TAX_BEHAVIORS) ?? draft.taxBehavior
+          )
         }
       >
         <SelectTrigger>

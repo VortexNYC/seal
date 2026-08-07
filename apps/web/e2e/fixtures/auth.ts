@@ -1,4 +1,3 @@
-/* oxlint-disable react-hooks/rules-of-hooks */
 import { test as base, type Page } from "@playwright/test";
 
 import { createDocument, deleteDocument } from "../factories/document-factory";
@@ -15,15 +14,6 @@ type AuthFixtures = {
   organizationSlug: string;
   /** Create a document via Convex API (~300ms) and return its ID and name. Auto-deletes after test. */
   createApiDocument: () => Promise<{ id: string; name: string }>;
-};
-
-type BetterAuthSessionData = {
-  user?: {
-    id?: unknown;
-  };
-  session?: {
-    userId?: unknown;
-  };
 };
 
 /** Shared in-memory cache of the PDF storageId across all workers in a process */
@@ -53,9 +43,27 @@ async function getBetterAuthSubject(page: Page): Promise<string | undefined> {
     if (!raw) return null;
 
     try {
-      const parsed = JSON.parse(raw) as BetterAuthSessionData;
-      const userId = parsed.user?.id ?? parsed.session?.userId;
-      return typeof userId === "string" ? userId : null;
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed !== "object" || parsed === null) return null;
+      const user =
+        "user" in parsed && typeof parsed.user === "object"
+          ? parsed.user
+          : null;
+      if (user && "id" in user && typeof user.id === "string") {
+        return user.id;
+      }
+      const session =
+        "session" in parsed && typeof parsed.session === "object"
+          ? parsed.session
+          : null;
+      if (
+        session &&
+        "userId" in session &&
+        typeof session.userId === "string"
+      ) {
+        return session.userId;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -94,9 +102,9 @@ export const test = base.extend<AuthFixtures>({
     await use(factory);
 
     // Auto-cleanup all docs created during this test
-    for (const { id } of created) {
-      await deleteDocument(id).catch(() => {});
-    }
+    await Promise.all(
+      created.map(({ id }) => deleteDocument(id).catch(() => {}))
+    );
   },
 
   organizationSlug: async ({ authenticatedPage }, use) => {

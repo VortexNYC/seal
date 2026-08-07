@@ -8,7 +8,7 @@
  * Search: Hybrid semantic + keyword search returns ranked excerpts with citations.
  */
 
-import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
+import { ActionCache } from "@convex-dev/action-cache";
 import { RAG } from "@convex-dev/rag";
 import { gateway } from "ai";
 import type { FunctionReference } from "convex/server";
@@ -269,14 +269,14 @@ function hasSearchFilters(args: {
   );
 }
 
-function extractDocumentIds(entries: RagSearchEntry[]): Id<"documents">[] {
+function extractDocumentIds(entries: RagSearchEntry[]): string[] {
   const ids = new Set(
     entries
       .map((entry) => entry.key?.split(":")[1])
       .filter((id): id is string => Boolean(id))
   );
 
-  return [...ids] as unknown as Id<"documents">[];
+  return [...ids];
 }
 
 function matchesSearchFilters(
@@ -415,7 +415,7 @@ export const searchCache: ActionCache<SearchAction> = new ActionCache(
     action: internal.ai.search.hybridSearchDocuments,
     name: "documentSearch-v1",
     ttl: 60 * 60 * 1000, // 1 hour
-  } as ActionCacheConfig<SearchAction>
+  }
 );
 
 // =============================================================================
@@ -427,7 +427,7 @@ export const getDocumentForIndexing = internalQuery({
   args: { documentId: v.id("documents") },
   returns: searchIndexDocumentValidator,
   handler: async (ctx, args): Promise<SearchIndexDocument | null> => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (document === null) {
       return null;
     }
@@ -444,12 +444,16 @@ export const getDocumentForIndexing = internalQuery({
 
 /** Get multiple documents by IDs for post-filtering. */
 export const getDocumentsByIds = internalQuery({
-  args: { documentIds: v.array(v.id("documents")) },
+  args: { documentIds: v.array(v.string()) },
   returns: v.array(searchFilterDocumentValidator),
   handler: async (ctx, args): Promise<SearchFilterDocument[]> => {
     const docs: SearchFilterDocument[] = [];
-    for (const id of args.documentIds) {
-      const doc = await ctx.db.get(id);
+    for (const rawId of args.documentIds) {
+      const id = ctx.db.normalizeId("documents", rawId);
+      if (id === null || id === undefined) {
+        continue;
+      }
+      const doc = await ctx.db.get("documents", id);
       if (doc) {
         docs.push({
           _id: doc._id,
@@ -466,7 +470,7 @@ export const getDocumentsByIds = internalQuery({
 export const markDocumentIndexed = internalMutation({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       searchIndexedAt: Date.now(),
       updatedAt: Date.now(),
     });

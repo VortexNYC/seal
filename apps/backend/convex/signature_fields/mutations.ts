@@ -101,13 +101,16 @@ async function determineMainSignatureField(
     return undefined;
   }
 
-  const existingSignatureFields = await ctx.db
+  const existingSignatureFields: Doc<"signature_fields">[] = [];
+  for await (const field of ctx.db
     .query("signature_fields")
     .withIndex("by_document_recipient", (q) =>
       q.eq("documentId", documentId).eq("recipientId", recipientId)
-    )
-    .filter((q) => q.eq(q.field("fieldType"), "signature"))
-    .collect();
+    )) {
+    if (field.fieldType === "signature") {
+      existingSignatureFields.push(field);
+    }
+  }
 
   return existingSignatureFields.length === 0 ? true : undefined;
 }
@@ -167,7 +170,7 @@ export const createField = mutation({
     }
 
     // Get document and verify access
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -272,13 +275,13 @@ export const updateField = mutation({
     }
 
     // Get existing field
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
 
     // Get document and verify access
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -306,7 +309,7 @@ export const updateField = mutation({
     };
 
     // Update field
-    await ctx.db.patch(args.fieldId, {
+    await ctx.db.patch("signature_fields", args.fieldId, {
       ...(args.label !== undefined && { label: args.label }),
       ...(args.isRequired !== undefined && { isRequired: args.isRequired }),
       ...(args.properties !== undefined && { properties: args.properties }),
@@ -363,13 +366,13 @@ export const repositionField = mutation({
     }
 
     // Get existing field
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
 
     // Get document and verify access
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -417,7 +420,7 @@ export const repositionField = mutation({
     };
 
     // Update field position
-    await ctx.db.patch(args.fieldId, {
+    await ctx.db.patch("signature_fields", args.fieldId, {
       x: newX,
       y: newY,
       width: newWidth,
@@ -469,13 +472,13 @@ export const deleteField = mutation({
     }
 
     // Get existing field
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
 
     // Get document and verify access
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -484,12 +487,12 @@ export const deleteField = mutation({
     verifyDocumentIsDraft(document);
 
     // Check if field has signatures
-    const signatures = await ctx.db
+    const existingSignature = await ctx.db
       .query("signatures")
       .withIndex("by_field", (q) => q.eq("fieldId", args.fieldId))
-      .collect();
+      .first();
 
-    if (signatures.length > 0) {
+    if (existingSignature) {
       throw new Error("Cannot delete field that has been signed");
     }
 
@@ -512,12 +515,12 @@ export const deleteField = mutation({
         .withIndex("by_field", (q) => q.eq("fieldId", args.fieldId))
         .unique();
       if (paymentConfig) {
-        await ctx.db.delete(paymentConfig._id);
+        await ctx.db.delete("payment_field_configs", paymentConfig._id);
       }
     }
 
     // Delete field
-    await ctx.db.delete(args.fieldId);
+    await ctx.db.delete("signature_fields", args.fieldId);
 
     // Log action to audit trail
     await logFieldAction(ctx, {
@@ -555,12 +558,12 @@ export const assignFieldToRecipient = mutation({
       throw new Error("Unauthorized");
     }
 
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
 
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -579,30 +582,32 @@ export const assignFieldToRecipient = mutation({
 
     const oldRecipientId = field.recipientId;
 
-    await ctx.db.patch(args.fieldId, {
+    await ctx.db.patch("signature_fields", args.fieldId, {
       recipientId: args.recipientId,
       updatedAt: Date.now(),
     });
 
     // Auto-designate main signature if this is the first signature field for this recipient
     if (field.fieldType === "signature") {
-      const existingSignatureFields = await ctx.db
+      let existingMainSignature: Doc<"signature_fields"> | null = null;
+      for await (const candidate of ctx.db
         .query("signature_fields")
         .withIndex("by_document_recipient", (q) =>
           q
             .eq("documentId", field.documentId)
             .eq("recipientId", args.recipientId)
-        )
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("fieldType"), "signature"),
-            q.eq(q.field("isMainSignature"), true)
-          )
-        )
-        .first();
+        )) {
+        if (
+          candidate.fieldType === "signature" &&
+          candidate.isMainSignature === true
+        ) {
+          existingMainSignature = candidate;
+          break;
+        }
+      }
 
-      if (!existingSignatureFields) {
-        await ctx.db.patch(args.fieldId, {
+      if (!existingMainSignature) {
+        await ctx.db.patch("signature_fields", args.fieldId, {
           isMainSignature: true,
           updatedAt: Date.now(),
         });
@@ -668,7 +673,7 @@ export const bulkCreateFields = mutation({
     // Verify all documents are in draft status before creating any fields
     const documentIds = new Set(args.fields.map((f) => f.documentId));
     for (const documentId of documentIds) {
-      const document = await ctx.db.get(documentId);
+      const document = await ctx.db.get("documents", documentId);
       if (!document) {
         throw new Error(`Document not found: ${documentId}`);
       }
@@ -757,7 +762,7 @@ export const setMainSignature = mutation({
     }
 
     // Get the field
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
@@ -768,7 +773,7 @@ export const setMainSignature = mutation({
     }
 
     // Get document and verify access
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -787,30 +792,32 @@ export const setMainSignature = mutation({
     }
 
     // Find any other main signature for this recipient and unset it
-    const existingMainSignature = await ctx.db
+    let existingMainSignature: Doc<"signature_fields"> | null = null;
+    for await (const candidate of ctx.db
       .query("signature_fields")
       .withIndex("by_document_recipient", (q) =>
         q
           .eq("documentId", field.documentId)
           .eq("recipientId", field.recipientId)
-      )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("fieldType"), "signature"),
-          q.eq(q.field("isMainSignature"), true)
-        )
-      )
-      .first();
+      )) {
+      if (
+        candidate.fieldType === "signature" &&
+        candidate.isMainSignature === true
+      ) {
+        existingMainSignature = candidate;
+        break;
+      }
+    }
 
     if (existingMainSignature && existingMainSignature._id !== args.fieldId) {
-      await ctx.db.patch(existingMainSignature._id, {
+      await ctx.db.patch("signature_fields", existingMainSignature._id, {
         isMainSignature: false,
         updatedAt: Date.now(),
       });
     }
 
     // Set this field as the main signature
-    await ctx.db.patch(args.fieldId, {
+    await ctx.db.patch("signature_fields", args.fieldId, {
       isMainSignature: true,
       updatedAt: Date.now(),
     });

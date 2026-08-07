@@ -95,7 +95,7 @@ export function getApiVersion(request: Request): ApiVersion {
   const requestedVersion = request.headers.get(API_VERSION_HEADER);
 
   // Get the latest version config (we know this exists)
-  const latestConfig = API_VERSIONS[LATEST_API_VERSION] as ApiVersionConfig;
+  const latestConfig = API_VERSIONS[LATEST_API_VERSION];
 
   if (!requestedVersion) {
     return {

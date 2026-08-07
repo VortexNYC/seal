@@ -70,7 +70,7 @@ export const logAiUsage = internalMutation({
     });
 
     // Keep aggregate in sync
-    const doc = await ctx.db.get(id);
+    const doc = await ctx.db.get("ai_usage_log", id);
     if (doc) {
       await aiUsageAggregate.insert(ctx, doc);
     }

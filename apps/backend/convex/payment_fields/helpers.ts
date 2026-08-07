@@ -1,6 +1,6 @@
 import { formatMoney, money } from "@vortexnyc/money";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import type { PaymentType } from "../schemas/payment_field_configs";
 
@@ -165,17 +165,22 @@ export async function findExistingPaymentFieldForRecipient(
   recipientId: Id<"document_recipients">,
   excludeFieldId?: Id<"signature_fields">
 ): Promise<Id<"signature_fields"> | null> {
-  const fields = await ctx.db
+  let existing: Doc<"signature_fields"> | null = null;
+
+  for await (const field of ctx.db
     .query("signature_fields")
     .withIndex("by_document_recipient", (q) =>
       q.eq("documentId", documentId).eq("recipientId", recipientId)
-    )
-    .filter((q) => q.eq(q.field("fieldType"), "payment"))
-    .collect();
-
-  const existing = excludeFieldId
-    ? fields.find((f) => f._id !== excludeFieldId)
-    : fields[0];
+    )) {
+    if (field.fieldType !== "payment") {
+      continue;
+    }
+    if (excludeFieldId !== undefined && field._id === excludeFieldId) {
+      continue;
+    }
+    existing = field;
+    break;
+  }
 
   return existing?._id ?? null;
 }

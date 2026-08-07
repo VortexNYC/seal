@@ -20,7 +20,7 @@ export const getOrganizationById = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.organizationId);
+    return await ctx.db.get("organizations", args.organizationId);
   },
 });
 
@@ -32,7 +32,7 @@ export const getUserById = internalQuery({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
+    return await ctx.db.get("users", args.userId);
   },
 });
 
@@ -63,8 +63,8 @@ export const getActiveMembershipByUserAndOrganization = internalQuery({
   },
   handler: async (ctx, args) => {
     const [user, organization] = await Promise.all([
-      ctx.db.get(args.userId),
-      ctx.db.get(args.organizationId),
+      ctx.db.get("users", args.userId),
+      ctx.db.get("organizations", args.organizationId),
     ]);
     if (!user || !organization) {
       return null;
@@ -97,7 +97,7 @@ export const getActiveMemberCount = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) {
       return 0;
     }

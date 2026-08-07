@@ -92,7 +92,7 @@ export function AttachmentFieldInput({
       const validation = validateValue(newStorageId);
       setError(validation.error);
       onValidationChange(validation.isValid, validation.error);
-    } catch (_err) {
+    } catch {
       setError("Failed to upload file");
       onValidationChange(false, "Failed to upload file");
     } finally {

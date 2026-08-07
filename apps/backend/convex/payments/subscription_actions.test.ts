@@ -1,6 +1,8 @@
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import {
   cancelSubscription,
@@ -10,46 +12,37 @@ import {
   resumeSubscription,
 } from "./subscription_actions";
 
-type CheckoutArgs = {
-  readonly lookupKey: string;
-  readonly successUrl: string;
-  readonly cancelUrl: string;
-};
+/**
+ * Registered Convex actions carry their raw handler as `_handler` at
+ * runtime; the public types do not expose it. Runtime-checked extraction
+ * keeps the unit-test seam cast-free: the handler is invoked as-is and its
+ * result surfaces as `unknown` for the assertions.
+ */
+function actionHandler(
+  action: unknown
+): (ctx: ActionCtx, args: unknown) => Promise<unknown> {
+  if (
+    (typeof action !== "object" && typeof action !== "function") ||
+    action === null ||
+    !("_handler" in action) ||
+    typeof action._handler !== "function"
+  ) {
+    throw new Error("Expected a registered Convex action with a _handler");
+  }
+  const handler = action._handler;
+  return async (ctx, args) => {
+    const result: unknown = await handler(ctx, args);
+    return result;
+  };
+}
 
-type CheckoutHandler = (
-  ctx: ActionCtx,
-  args: CheckoutArgs
-) => Promise<{ checkoutUrl: string }>;
+const checkoutHandler = actionHandler(createCheckoutSession);
+const portalHandler = actionHandler(createCustomerPortalSession);
+const pauseHandler = actionHandler(pauseSubscription);
+const resumeHandler = actionHandler(resumeSubscription);
+const cancelHandler = actionHandler(cancelSubscription);
 
-const checkoutHandler = (
-  createCheckoutSession as unknown as { readonly _handler: CheckoutHandler }
-)._handler;
-
-type PortalHandler = (
-  ctx: ActionCtx,
-  args: { readonly returnUrl: string }
-) => Promise<{ url: string }>;
-
-const portalHandler = (
-  createCustomerPortalSession as unknown as { readonly _handler: PortalHandler }
-)._handler;
-
-type LifecycleHandler = (
-  ctx: ActionCtx,
-  args: { readonly slug: string; readonly subscriptionId: string }
-) => Promise<unknown>;
-
-const pauseHandler = (
-  pauseSubscription as unknown as { readonly _handler: LifecycleHandler }
-)._handler;
-const resumeHandler = (
-  resumeSubscription as unknown as { readonly _handler: LifecycleHandler }
-)._handler;
-const cancelHandler = (
-  cancelSubscription as unknown as { readonly _handler: LifecycleHandler }
-)._handler;
-
-const organizationId = "org_seal_123" as Id<"organizations">;
+const organizationId = parse(v.id("organizations"), "org_seal_123");
 const baseCheckoutArgs = {
   lookupKey: "pro:monthly:v2",
   successUrl: "https://seal.test/success",
@@ -106,11 +99,17 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     );
     vi.stubGlobal("fetch", mockFetch);
 
-    const ctx = createCheckoutActionCtx({
+    const { ctx, runMutation } = createCheckoutActionCtx({
       priceLookupResult: null,
       catalogPriceLookupResult: {
-        subscriptionPriceId: "subprice_vortex" as Id<"subscription_prices">,
-        subscriptionProductId: "subprod_vortex" as Id<"subscription_products">,
+        subscriptionPriceId: parse(
+          v.id("subscription_prices"),
+          "subprice_vortex"
+        ),
+        subscriptionProductId: parse(
+          v.id("subscription_products"),
+          "subprod_vortex"
+        ),
         externalPriceId: "vtx_price_pro",
         vortexPriceId: "vtx_price_pro",
         externalProductId: "vtx_prod_pro",
@@ -123,22 +122,23 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     await expect(checkoutHandler(ctx, baseCheckoutArgs)).resolves.toEqual({
       checkoutUrl: "https://pay.vortex.test/checkout",
     });
-    expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(runMutation).not.toHaveBeenCalled();
     expect(captured).toBeInstanceOf(Request);
     if (captured === undefined) {
       throw new Error("Expected Vortex checkout request to be captured");
     }
-    const body = JSON.parse(await captured.clone().text()) as {
-      lineItems: readonly [{ priceId: string }];
-    };
-    expect(body.lineItems[0].priceId).toBe("vtx_price_pro");
+    const body = parse(
+      v.object({ lineItems: v.array(v.object({ priceId: v.string() })) }),
+      JSON.parse(await captured.clone().text())
+    );
+    expect(body.lineItems[0]?.priceId).toBe("vtx_price_pro");
   });
 
   test("fails closed on Vortex Billing when the local catalog price is missing", async () => {
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
-    const ctx = createCheckoutActionCtx({
+    const { ctx, runMutation } = createCheckoutActionCtx({
       priceLookupResult: null,
       catalogPriceLookupResult: null,
     });
@@ -146,14 +146,14 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     await expect(checkoutHandler(ctx, baseCheckoutArgs)).rejects.toThrow(
       "Seal subscription price not found for Vortex checkout lookupKey: pro:monthly:v2"
     );
-    expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(runMutation).not.toHaveBeenCalled();
   });
 
   test("fails closed on Vortex Billing when the lookup key is not in the Vortex price map", async () => {
     process.env.VORTEX_BILLING_API_BASE_URL = "https://billing.vortex.test";
     process.env.VORTEX_BILLING_API_KEY = "vb_test";
     process.env.VORTEX_BILLING_ACCOUNT_ID = "bacc_seal_123";
-    const ctx = createCheckoutActionCtx({
+    const { ctx, runMutation } = createCheckoutActionCtx({
       priceLookupResult: null,
       catalogPriceLookupResult: null,
     });
@@ -166,17 +166,33 @@ describe("payments/subscription_actions.createCheckoutSession", () => {
     ).rejects.toThrow(
       "Seal subscription price not found for Vortex checkout lookupKey: unknown:monthly:v2"
     );
-    expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(runMutation).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The unit fakes cover only the ctx surface the actions touch; the real
+ * ActionCtx shape (scheduler, storage, vector search) is irrelevant here.
+ * Runtime-checked structural narrowing keeps the seam cast-free.
+ */
+function isTestActionCtx(value: unknown): value is ActionCtx {
+  return typeof value === "object" && value !== null;
+}
+
+function toTestActionCtx(value: unknown): ActionCtx {
+  if (!isTestActionCtx(value)) {
+    throw new Error("Expected an object test ctx");
+  }
+  return value;
+}
 
 function createCheckoutActionCtx(args: {
   readonly priceLookupResult: unknown;
   readonly catalogPriceLookupResult?: unknown;
   readonly organizationOverrides?: Partial<Doc<"organizations">>;
-}): ActionCtx {
+}): { ctx: ActionCtx; runMutation: ReturnType<typeof vi.fn> } {
   const user = {
-    _id: "user_seal_123" as Id<"users">,
+    _id: parse(v.id("users"), "user_seal_123"),
     _creationTime: 1,
     email: "owner@seal.test",
     name: "Seal Owner",
@@ -197,7 +213,7 @@ function createCheckoutActionCtx(args: {
     timezone: "UTC",
     updatedAt: 1,
     ...args.organizationOverrides,
-  } as Doc<"organizations">;
+  };
 
   const queryResults: readonly unknown[] =
     args.catalogPriceLookupResult === undefined
@@ -223,10 +239,9 @@ function createCheckoutActionCtx(args: {
   );
 
   return {
-    auth,
-    runQuery,
+    ctx: toTestActionCtx({ auth, runQuery, runMutation }),
     runMutation,
-  } as unknown as ActionCtx;
+  };
 }
 
 describe("payments/subscription_actions.createCustomerPortalSession", () => {
@@ -261,14 +276,16 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
     );
     vi.stubGlobal("fetch", mockFetch);
 
-    const ctx = createCheckoutActionCtx({ priceLookupResult: null });
+    const { ctx, runMutation } = createCheckoutActionCtx({
+      priceLookupResult: null,
+    });
 
     await expect(
       portalHandler(ctx, { returnUrl: "https://seal.test/billing" })
     ).resolves.toEqual({
       url: "https://pay.vortex.test/portal/plink_123",
     });
-    expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(runMutation).not.toHaveBeenCalled();
   });
 
   test("uses Vortex portal even when no billing allowlist is configured", async () => {
@@ -293,7 +310,7 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
     );
     vi.stubGlobal("fetch", mockFetch);
 
-    const ctx = createCheckoutActionCtx({
+    const { ctx, runMutation } = createCheckoutActionCtx({
       priceLookupResult: null,
       organizationOverrides: { billingCustomerId: "cus_existing" },
     });
@@ -303,12 +320,12 @@ describe("payments/subscription_actions.createCustomerPortalSession", () => {
     ).resolves.toEqual({
       url: "https://pay.vortex.test/portal/default",
     });
-    expect(ctx.runMutation).not.toHaveBeenCalled();
+    expect(runMutation).not.toHaveBeenCalled();
   });
 });
 
 describe("payments/subscription_actions Vortex lifecycle guards", () => {
-  const lifecycleCtx = {} as ActionCtx;
+  const lifecycleCtx = toTestActionCtx({});
   const lifecycleArgs = {
     slug: "seal-test-org",
     subscriptionId: "vtx_sub_seal_org_org_seal_123_pro_monthly_v2",

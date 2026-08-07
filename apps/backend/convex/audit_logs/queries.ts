@@ -48,29 +48,34 @@ async function getAuditExportData(
   fields: AuditExportFields;
   auditLogs: AuditExportLogs;
 }> {
-  const [signatures, recipients, fields, auditLogs] = await Promise.all([
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document signature count bound=global
-    ctx.db
-      .query("signatures")
-      .withIndex("by_document", (q) => q.eq("documentId", documentId))
-      .collect(),
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document recipient count bound=global
-    ctx.db
-      .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", documentId))
-      .collect(),
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, bounded by document field count bound=global
-    ctx.db
-      .query("signature_fields")
-      .withIndex("by_document", (q) => q.eq("documentId", documentId))
-      .collect(),
-    // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance bound=global
-    ctx.db
-      .query("audit_logs")
-      .withIndex("by_document_created", (q) => q.eq("documentId", documentId))
-      .order("desc")
-      .collect(),
-  ]);
+  const signatures: AuditExportSignatures = [];
+  for await (const signature of ctx.db
+    .query("signatures")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    signatures.push(signature);
+  }
+
+  const recipients: AuditExportRecipients = [];
+  for await (const recipient of ctx.db
+    .query("document_recipients")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    recipients.push(recipient);
+  }
+
+  const fields: AuditExportFields = [];
+  for await (const field of ctx.db
+    .query("signature_fields")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    fields.push(field);
+  }
+
+  const auditLogs: AuditExportLogs = [];
+  for await (const log of ctx.db
+    .query("audit_logs")
+    .withIndex("by_document_created", (q) => q.eq("documentId", documentId))
+    .order("desc")) {
+    auditLogs.push(log);
+  }
 
   return { signatures, recipients, fields, auditLogs };
 }
@@ -220,13 +225,15 @@ export const getDocumentAuditLogs = authQuery({
 
     // 3. Get audit trail
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance bound=global
-    const auditLogs = await ctx.db
+    const auditLogs = [];
+    for await (const log of ctx.db
       .query("audit_logs")
       .withIndex("by_document_created", (q) =>
         q.eq("documentId", args.documentId)
       )
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      auditLogs.push(log);
+    }
 
     return auditLogs;
   },
@@ -283,7 +290,7 @@ export const exportDocumentAuditTrail = authQuery({
     const userId = ctx.auth.user._id;
 
     // 1. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -320,14 +327,17 @@ export const exportDocumentAuditTrail = authQuery({
 export const getDocumentAuditTrailInternal = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const auditLogs = [];
+    for await (const log of ctx.db
       // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single documentId, audit trail must be complete for compliance
       .query("audit_logs")
       .withIndex("by_document_created", (q) =>
         q.eq("documentId", args.documentId)
       )
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      auditLogs.push(log);
+    }
+    return auditLogs;
   },
 });
 
@@ -352,22 +362,24 @@ export const getSigningSessionAuditTrail = query({
 
     // 3. Get audit logs for this recipient only (for privacy)
     // convex-cost-guard-allow: convex-indexed-collect-unbounded-range — scoped to a single recipientId before the public action allowlist filter; complete signing-session activity is required, so no caller receives fewer rows bound=global
-    const recipientLogs = await ctx.db
+    const recipientLogs = [];
+    for await (const log of ctx.db
       .query("audit_logs")
       .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      recipientLogs.push(log);
+    }
 
     // 4. Filter to only show relevant actions to the signer
-    const allowedActions = [
+    const allowedActions = new Set([
       "recipient.viewed",
       "signature.created",
       "signature.updated",
       "recipient.signed",
-    ];
+    ]);
 
     const filteredLogs = recipientLogs.filter((log) =>
-      allowedActions.includes(log.action)
+      allowedActions.has(log.action)
     );
 
     return {

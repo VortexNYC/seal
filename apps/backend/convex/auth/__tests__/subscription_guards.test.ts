@@ -8,12 +8,50 @@ import { seedTestOrganizationMember } from "../../testVortexAuth";
 import {
   GRACE_PERIOD_MS,
   PLAN_LIMITS,
+  calculateApplicationFee,
   ensureProFeature,
   ensureSeatLimit,
   getSubscriptionPlan,
 } from "../subscription_guards";
 
+/** Narrow a caught value to string ConvexError data, failing loudly otherwise. */
+function convexErrorData(error: unknown): string {
+  if (!(error instanceof ConvexError)) {
+    throw new Error("Expected a ConvexError");
+  }
+  const { data } = error;
+  if (typeof data !== "string") {
+    throw new Error("Expected string ConvexError data");
+  }
+  return data;
+}
+
 describe("subscription_guards", () => {
+  describe("calculateApplicationFee", () => {
+    test("returns 0 for ACH", () => {
+      expect(calculateApplicationFee(10_000, "pro", true)).toBe(0);
+    });
+
+    test("applies free-tier card rate with half-up rounding via Core money", () => {
+      // 10000 * 0.045 + 30 = 480
+      expect(calculateApplicationFee(10_000, "free", false)).toBe(480);
+    });
+
+    test("applies pro-tier card rate", () => {
+      // 10000 * 0.04 + 30 = 430
+      expect(calculateApplicationFee(10_000, "pro", false)).toBe(430);
+    });
+
+    test("uses custom enterprise rates when provided", () => {
+      expect(
+        calculateApplicationFee(10_000, "enterprise", false, {
+          cardRate: 0.03,
+          cardFixed: 25,
+        })
+      ).toBe(325);
+    });
+  });
+
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
 
@@ -105,7 +143,7 @@ describe("subscription_guards", () => {
       return await ctx.db.insert("users", {
         email: `user-${Math.random().toString(36).slice(2)}@test.com`,
         name: "Test User",
-        authSubject: `${Math.random().toString(36).slice(2)}`,
+        authSubject: Math.random().toString(36).slice(2),
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -435,7 +473,7 @@ describe("subscription_guards", () => {
         expect.unreachable("Expected ensureProFeature to throw");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        const message = (error as ConvexError<string>).data;
+        const message = convexErrorData(error);
         expect(message).toContain("Custom branding");
         expect(message).toContain("upgrade");
       }
@@ -502,7 +540,7 @@ describe("subscription_guards", () => {
         expect.unreachable("Expected ensureSeatLimit to throw");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        const message = (error as ConvexError<string>).data;
+        const message = convexErrorData(error);
         expect(message).toContain("Upgrade");
       }
     });

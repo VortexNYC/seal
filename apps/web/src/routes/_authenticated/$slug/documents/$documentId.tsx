@@ -28,6 +28,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { toast } from "sonner";
 
+import { FIELD_TYPES } from "@/components/documents/field-toolbar";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
@@ -38,7 +39,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { parseId } from "@/lib/convex-ids";
 import { buildActivityEvents } from "@/lib/document-activity";
+import { parseSelectValue } from "@/lib/select-values";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +61,6 @@ import { DocumentPresence } from "../../../../components/documents/document-pres
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
-import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { useDocumentState } from "../../../../components/documents/hooks/use-document-state";
 import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
 import { useFieldPlacement } from "../../../../components/documents/hooks/use-field-placement";
@@ -111,46 +113,45 @@ function DocumentErrorComponent(props: ErrorComponentProps) {
 
 function DocumentDetailPage() {
   const { slug, documentId } = Route.useParams();
+  const typedDocumentId = parseId("documents", documentId);
   const router = useRouter();
 
   // ── Convex queries ──────────────────────────────────────────────────────
   const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
     convexQuery(api.documents.queries.getDocument, {
-      documentId: documentId as Id<"documents">,
+      documentId: typedDocumentId,
     })
   );
 
-  const { data: recipients = [], refetch: refetchRecipients } =
-    useSuspenseQuery(
-      convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
-        documentId: documentId as Id<"documents">,
-      })
-    );
+  const { data: recipients, refetch: refetchRecipients } = useSuspenseQuery(
+    convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
+      documentId: typedDocumentId,
+    })
+  );
 
   const { data: progress } = useSuspenseQuery(
     convexQuery(api.documents.recipients_queries.getRecipientProgress, {
-      documentId: documentId as Id<"documents">,
+      documentId: typedDocumentId,
     })
   );
 
-  const { data: signatureFields = [], refetch: refetchFields } =
-    useSuspenseQuery(
-      convexQuery(api.signature_fields.queries.getFieldsByDocument, {
-        documentId: documentId as Id<"documents">,
-      })
-    );
+  const { data: signatureFields, refetch: refetchFields } = useSuspenseQuery(
+    convexQuery(api.signature_fields.queries.getFieldsByDocument, {
+      documentId: typedDocumentId,
+    })
+  );
 
   const signatureFieldCount = countSignatureFields(signatureFields);
 
-  const { data: documentSignatures = [] } = useSuspenseQuery(
+  const { data: documentSignatures } = useSuspenseQuery(
     convexQuery(api.signatures.queries.getSignaturesByDocument, {
-      documentId: documentId as Id<"documents">,
+      documentId: typedDocumentId,
     })
   );
 
-  const { data: paymentConfigs = [] } = useSuspenseQuery(
+  const { data: paymentConfigs } = useSuspenseQuery(
     convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
-      documentId: documentId as Id<"documents">,
+      documentId: typedDocumentId,
     })
   );
 
@@ -159,17 +160,17 @@ function DocumentDetailPage() {
       convexQuery(
         api.documents.recipients_queries.getRecipientByAuthenticatedUser,
         {
-          documentId: documentId as Id<"documents">,
+          documentId: typedDocumentId,
         }
       )
     );
 
-  const { data: currentUserFields = [], refetch: refetchCurrentUserFields } =
+  const { data: currentUserFields, refetch: refetchCurrentUserFields } =
     useSuspenseQuery(
       convexQuery(
         api.signature_fields.queries.getFieldsForAuthenticatedRecipient,
         {
-          documentId: documentId as Id<"documents">,
+          documentId: typedDocumentId,
         }
       )
     );
@@ -268,10 +269,10 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const pdfViewer = usePdfViewer(documentId as Id<"documents">);
+  const pdfViewer = usePdfViewer(typedDocumentId);
 
   const fieldPlacement = useFieldPlacement({
-    documentId: documentId as Id<"documents">,
+    documentId: typedDocumentId,
     recipients,
     signatureFields,
     currentPage: pdfViewer.currentPage,
@@ -285,19 +286,17 @@ function DocumentDetailPage() {
 
   const docState = useDocumentState(documentData.redirectUrl ?? "");
 
-  const documentAnnotations = useDocumentAnnotations(
-    documentId as Id<"documents">
-  );
+  const documentAnnotations = useDocumentAnnotations(typedDocumentId);
   const { openSections, toggleSection } = useSectionState(
     documentAnnotations.annotations !== null
   );
 
-  const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
+  const aiSuggestions = useAIFieldSuggestions(typedDocumentId);
   const {
     threadId,
     isCreating: isCreatingThread,
     getOrCreateThread,
-  } = useDocumentThread(documentId as Id<"documents">);
+  } = useDocumentThread(typedDocumentId);
   const [showAIChat, setShowAIChat] = useState(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
@@ -364,7 +363,7 @@ function DocumentDetailPage() {
     () =>
       signatureFields.map((f) => ({
         ...f,
-        fieldType: f.fieldType as FieldType,
+        fieldType: f.fieldType,
         recipientId: f.recipientId ?? undefined,
         paymentConfig: paymentConfigByFieldId.get(f._id),
       })),
@@ -421,8 +420,8 @@ function DocumentDetailPage() {
       );
       docState.setRemoveRecipientOpen(false);
       docState.setRecipientToRemove(null);
-      refetchRecipients();
-      refetchFields();
+      void refetchRecipients();
+      void refetchFields();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to remove recipient";
@@ -435,7 +434,7 @@ function DocumentDetailPage() {
   const handleResendEmail = async (recipientId: Id<"document_recipients">) => {
     try {
       const result = await resendRecipientEmail({
-        documentId: documentId as Id<"documents">,
+        documentId: typedDocumentId,
         recipientId,
       });
       if (result.success) {
@@ -459,7 +458,7 @@ function DocumentDetailPage() {
 
     try {
       await addRecipients({
-        documentId: documentId as Id<"documents">,
+        documentId: typedDocumentId,
         recipients: [
           {
             email: user.primaryEmailAddress.emailAddress,
@@ -470,7 +469,7 @@ function DocumentDetailPage() {
       });
       toast.success("Added yourself as a signer");
       docState.setAddMyselfOpen(false);
-      refetchRecipients();
+      void refetchRecipients();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to add yourself";
@@ -497,7 +496,7 @@ function DocumentDetailPage() {
     docState.setIsSavingRedirect(true);
     try {
       await updateDocument({
-        documentId: documentId as Id<"documents">,
+        documentId: typedDocumentId,
         redirectUrl: url || null,
       });
       toast.success(url ? "Redirect URL saved" : "Redirect URL removed");
@@ -862,10 +861,10 @@ function DocumentDetailPage() {
               currentUserRecipient={currentUserRecipient}
               currentUserFields={currentUserFields}
               onCurrentUserFieldsRefetch={() => {
-                refetchCurrentUserFields();
-                refetchCurrentUserRecipient();
-                refetchRecipients();
-                refetchFields();
+                void refetchCurrentUserFields();
+                void refetchCurrentUserRecipient();
+                void refetchRecipients();
+                void refetchFields();
               }}
               canEdit={canEdit}
               isUserAlreadyRecipient={isUserAlreadyRecipient}
@@ -887,9 +886,7 @@ function DocumentDetailPage() {
               }}
               onFieldDragStart={(fieldType) =>
                 fieldPlacement.setDraggingFieldType(
-                  fieldType as Parameters<
-                    typeof fieldPlacement.setDraggingFieldType
-                  >[0]
+                  parseSelectValue(fieldType, FIELD_TYPES)
                 )
               }
               onFieldDragEnd={() => fieldPlacement.setDraggingFieldType(null)}
@@ -911,17 +908,9 @@ function DocumentDetailPage() {
                   email: full.email,
                   name: full.name ?? undefined,
                   role: full.role,
-                  status: full.status as
-                    | "pending"
-                    | "viewed"
-                    | "signed"
-                    | "approved"
-                    | "declined"
-                    | "expired",
+                  status: full.status,
                   signingToken:
-                    "signingToken" in full
-                      ? (full.signingToken as string)
-                      : undefined,
+                    "signingToken" in full ? full.signingToken : undefined,
                 });
                 docState.setRecipientOptionsOpen(true);
               }}
@@ -933,7 +922,7 @@ function DocumentDetailPage() {
 
         {/* ── Dialogs ─────────────────────────────────────────────────────── */}
         <AddRecipientDialog
-          documentId={documentId as Id<"documents">}
+          documentId={typedDocumentId}
           organizationId={documentData.organizationId}
           open={docState.addRecipientOpen}
           onOpenChange={docState.setAddRecipientOpen}
@@ -1004,7 +993,7 @@ function DocumentDetailPage() {
           }
           recipients={recipients}
           onSave={() => {
-            refetchFields();
+            void refetchFields();
           }}
           onConfigurePayment={(fieldId) => {
             fieldPlacement.setShowFieldProperties(false);
@@ -1023,7 +1012,7 @@ function DocumentDetailPage() {
         />
 
         <SendDocumentDialog
-          documentId={documentId as Id<"documents">}
+          documentId={typedDocumentId}
           documentName={documentData.name}
           recipients={recipients}
           signatureFieldCount={signatureFieldCount}
@@ -1032,13 +1021,13 @@ function DocumentDetailPage() {
           onOpenChange={docState.setSendDocumentOpen}
           defaultDeadlineDays={signingSettings?.defaultDeadlineDays}
           onSuccess={() => {
-            refetchDocument();
-            refetchRecipients();
+            void refetchDocument();
+            void refetchRecipients();
           }}
         />
 
         <SaveAsTemplateDialog
-          documentId={documentId as Id<"documents">}
+          documentId={typedDocumentId}
           documentName={documentData.name}
           open={docState.saveAsTemplateOpen}
           onOpenChange={docState.setSaveAsTemplateOpen}

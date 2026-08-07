@@ -212,7 +212,7 @@ function ContactsTableContent({
   };
 
   const handleOpenContact = (contactId: Id<"contacts">) => {
-    router.navigate({
+    void router.navigate({
       to: `/${slug}/contacts/${contactId}`,
     });
   };

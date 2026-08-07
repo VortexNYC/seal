@@ -77,6 +77,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -387,6 +388,20 @@ function StatCard({
   );
 }
 
+function formatDateLabel(range: DateRange | undefined): string {
+  if (!range?.from) return "Pick dates";
+  const from = range.from.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  if (!range.to) return from;
+  const to = range.to.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  return `${from} – ${to}`;
+}
+
 function TrendControls({
   preset,
   onPresetChange,
@@ -404,20 +419,6 @@ function TrendControls({
     { value: "90", label: "90 days" },
     { value: "custom", label: "Custom" },
   ];
-
-  const formatDateLabel = (range: DateRange | undefined) => {
-    if (!range?.from) return "Pick dates";
-    const from = range.from.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-    if (!range.to) return from;
-    const to = range.to.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-    return `${from} – ${to}`;
-  };
 
   return (
     <div className="flex items-center gap-2">
@@ -1038,6 +1039,24 @@ type ExportStatus =
   | "declined";
 type ExportPeriod = "all" | "week" | "month" | "quarter" | "year";
 
+const EXPORT_STATUSES = [
+  "all",
+  "draft",
+  "sent",
+  "in_progress",
+  "waiting_for_payment",
+  "completed",
+  "cancelled",
+  "declined",
+] as const satisfies readonly ExportStatus[];
+const EXPORT_PERIODS = [
+  "all",
+  "week",
+  "month",
+  "quarter",
+  "year",
+] as const satisfies readonly ExportPeriod[];
+
 function ExportPanel() {
   const [statusFilter, setStatusFilter] = useState<ExportStatus>("all");
   const [periodFilter, setPeriodFilter] = useState<ExportPeriod>("all");
@@ -1155,7 +1174,7 @@ function ExportPanel() {
 
     try {
       const { default: jsPDF } = await import("jspdf");
-      await import("jspdf-autotable");
+      const { default: autoTable } = await import("jspdf-autotable");
 
       const doc = new jsPDF({ orientation: "landscape" });
 
@@ -1193,11 +1212,7 @@ function ExportPanel() {
         d.signedCount,
       ]);
 
-      (
-        doc as typeof doc & {
-          autoTable: (options: Record<string, unknown>) => void;
-        }
-      ).autoTable({
+      autoTable(doc, {
         head: [headers],
         body: rows,
         startY: 33,
@@ -1232,7 +1247,11 @@ function ExportPanel() {
             </Label>
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as ExportStatus)}
+              onValueChange={(v) =>
+                setStatusFilter(
+                  parseSelectValue(v, EXPORT_STATUSES) ?? statusFilter
+                )
+              }
             >
               <SelectTrigger id="analytics-export-status" className="w-[160px]">
                 <SelectValue />
@@ -1258,7 +1277,11 @@ function ExportPanel() {
             </Label>
             <Select
               value={periodFilter}
-              onValueChange={(v) => setPeriodFilter(v as ExportPeriod)}
+              onValueChange={(v) =>
+                setPeriodFilter(
+                  parseSelectValue(v, EXPORT_PERIODS) ?? periodFilter
+                )
+              }
             >
               <SelectTrigger id="analytics-export-period" className="w-[160px]">
                 <SelectValue />

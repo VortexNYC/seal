@@ -26,10 +26,12 @@ async function getActiveReminders(
   ctx: WorkflowMutationDbCtx,
   documentId: Id<"documents">
 ): Promise<Doc<"document_reminders">[]> {
-  const reminders = await ctx.db
+  const reminders = [];
+  for await (const _row of ctx.db
     .query("document_reminders")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .collect();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    reminders.push(_row);
+  }
 
   return reminders.filter(
     (reminder) =>
@@ -42,7 +44,7 @@ async function cancelReminders(
   reminders: Doc<"document_reminders">[]
 ): Promise<void> {
   for (const reminder of reminders) {
-    await ctx.db.patch(reminder._id, {
+    await ctx.db.patch("document_reminders", reminder._id, {
       status: "cancelled",
       cancelledAt: Date.now(),
       updatedAt: Date.now(),
@@ -69,7 +71,10 @@ async function shareDocumentWithRecipientUsers(
       continue;
     }
 
-    const organization = await ctx.db.get(document.organizationId);
+    const organization = await ctx.db.get(
+      "organizations",
+      document.organizationId
+    );
     const orgMember = organization
       ? await resolveComponentMembershipForOrganization(
           ctx,
@@ -88,7 +93,7 @@ async function shareDocumentWithRecipientUsers(
 
       if (!existingAccess || existingAccess.revokedAt !== undefined) {
         if (existingAccess) {
-          await ctx.db.patch(existingAccess._id, {
+          await ctx.db.patch("document_access", existingAccess._id, {
             permissionLevel: "view",
             grantedBy: userId,
             grantedAt: Date.now(),
@@ -108,7 +113,7 @@ async function shareDocumentWithRecipientUsers(
     }
 
     if (!recipient.userId) {
-      await ctx.db.patch(recipient._id, {
+      await ctx.db.patch("document_recipients", recipient._id, {
         userId: existingUser._id,
         updatedAt: Date.now(),
       });
@@ -174,17 +179,19 @@ export const sendDocument = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
 
     // 3. Validate document can be sent
     // Document should have at least one recipient
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     if (recipients.length === 0) {
       throw new ConvexError(
@@ -203,7 +210,7 @@ export const sendDocument = permissionMutation("documents:edit")({
 
     // 5. Update document status
     const now = Date.now();
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       status: "active",
       workflowStatus: "sent",
       sentAt: now,
@@ -245,16 +252,18 @@ export const completeDocument = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
 
     // 3. Verify all recipients have completed their actions
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     const allCompleted = recipients.every((recipient) =>
       isRecipientFinished(recipient.status)
@@ -267,7 +276,7 @@ export const completeDocument = permissionMutation("documents:edit")({
     }
 
     // 4. Mark document as completed
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       workflowStatus: "completed",
       completedAt: Date.now(),
       updatedAt: Date.now(),
@@ -309,7 +318,7 @@ export const cancelDocument = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -320,7 +329,7 @@ export const cancelDocument = permissionMutation("documents:edit")({
     }
 
     // 4. Mark document as cancelled
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       workflowStatus: "cancelled",
       cancelledAt: Date.now(),
       updatedAt: Date.now(),
@@ -362,7 +371,7 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
     await verifyDocumentOwnership(ctx, args.documentId, userId);
 
     // 2. Get the document
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -377,10 +386,12 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
     }
 
     // 4. Check if all recipients have completed
-    const recipients = await ctx.db
+    const recipients = [];
+    for await (const _row of ctx.db
       .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      recipients.push(_row);
+    }
 
     if (recipients.length === 0) {
       return { success: true, completed: false, reason: "no_recipients" };
@@ -395,10 +406,12 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
     }
 
     // 5. Check for unpaid payment fields
-    const paymentConfigs = await ctx.db
+    const paymentConfigs = [];
+    for await (const _row of ctx.db
       .query("payment_field_configs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      paymentConfigs.push(_row);
+    }
 
     const hasUnpaidPayments = paymentConfigs.some(
       (config) =>
@@ -407,7 +420,7 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
 
     if (hasUnpaidPayments) {
       // Route to waiting_for_payment instead of completed
-      await ctx.db.patch(args.documentId, {
+      await ctx.db.patch("documents", args.documentId, {
         workflowStatus: "waiting_for_payment",
         updatedAt: Date.now(),
       });
@@ -425,7 +438,7 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
     }
 
     // 6. No payment fields (or all paid) — mark document as completed
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       workflowStatus: "completed",
       completedAt: Date.now(),
       updatedAt: Date.now(),
@@ -465,7 +478,7 @@ export const checkPaymentCompletionAndFinalize = internalMutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document) return { completed: false, reason: "document_not_found" };
 
     // Only act on documents in waiting_for_payment
@@ -474,10 +487,12 @@ export const checkPaymentCompletionAndFinalize = internalMutation({
     }
 
     // Check all payment configs for this document
-    const paymentConfigs = await ctx.db
+    const paymentConfigs = [];
+    for await (const _row of ctx.db
       .query("payment_field_configs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
+      paymentConfigs.push(_row);
+    }
 
     const allPaid = paymentConfigs.every(
       (config) =>
@@ -489,7 +504,7 @@ export const checkPaymentCompletionAndFinalize = internalMutation({
     }
 
     // All payments collected — complete the document
-    await ctx.db.patch(args.documentId, {
+    await ctx.db.patch("documents", args.documentId, {
       workflowStatus: "completed",
       completedAt: Date.now(),
       updatedAt: Date.now(),

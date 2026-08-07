@@ -18,12 +18,14 @@ import { permissionQuery } from "../auth/wrappers";
 export const listEndpoints = permissionQuery("settings:integrations")({
   args: {},
   handler: async (ctx) => {
-    const endpoints = await ctx.db
+    const endpoints = [];
+    for await (const endpoint of ctx.db
       .query("webhook_endpoints")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", ctx.auth.organizationId)
-      )
-      .collect();
+      )) {
+      endpoints.push(endpoint);
+    }
 
     // Get recent delivery stats for each endpoint
     const endpointsWithStats = await Promise.all(
@@ -50,8 +52,7 @@ export const listEndpoints = permissionQuery("settings:integrations")({
           ...safeEndpoint
         } = endpoint;
 
-        return {
-          ...safeEndpoint,
+        return Object.assign(safeEndpoint, {
           stats: {
             recentDeliveries: recentDeliveries.length,
             delivered,
@@ -61,7 +62,7 @@ export const listEndpoints = permissionQuery("settings:integrations")({
                 ? Math.round((delivered / recentDeliveries.length) * 100)
                 : 100,
           },
-        };
+        });
       })
     );
 
@@ -81,7 +82,7 @@ export const getEndpoint = permissionQuery("settings:integrations")({
     endpointId: v.id("webhook_endpoints"),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint) {
       return null;
@@ -116,7 +117,7 @@ export const listDeliveries = permissionQuery("settings:integrations")({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const endpoint = await ctx.db.get(args.endpointId);
+    const endpoint = await ctx.db.get("webhook_endpoints", args.endpointId);
 
     if (!endpoint || endpoint.organizationId !== ctx.auth.organizationId) {
       return [];
@@ -148,7 +149,7 @@ export const getDelivery = permissionQuery("settings:integrations")({
     deliveryId: v.id("webhook_deliveries"),
   },
   handler: async (ctx, args) => {
-    const delivery = await ctx.db.get(args.deliveryId);
+    const delivery = await ctx.db.get("webhook_deliveries", args.deliveryId);
 
     if (!delivery) {
       return null;

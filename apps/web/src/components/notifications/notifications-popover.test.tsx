@@ -22,6 +22,7 @@ vi.mock("@tanstack/react-router", () => ({
   }) => <a {...props}>{children}</a>,
 }));
 
+import { parseId } from "../../lib/convex-ids";
 import { NotificationsPopover } from "./notifications-popover";
 
 // ---------------------------------------------------------------------------
@@ -45,10 +46,10 @@ function makeNotification(
   overrides: Partial<NotificationItem> = {}
 ): NotificationItem {
   return {
-    _id: "notif_1" as Id<"notifications">,
+    _id: parseId("notifications", "notif_1"),
     _creationTime: Date.now(),
-    userId: "user_1" as Id<"users">,
-    organizationId: "org_1" as Id<"organizations">,
+    userId: parseId("users", "user_1"),
+    organizationId: parseId("organizations", "org_1"),
     type: "document_signed",
     data: {
       documentName: "My Contract",
@@ -275,7 +276,7 @@ describe("NotificationsPopover", () => {
         type: "document_shared",
         data: {
           documentName: "Budget Sheet",
-          sharedBy: "user_2" as Id<"users">,
+          sharedBy: "user_2",
           sharedByName: "Bob",
           permissionLevel: "view",
         },
@@ -296,7 +297,7 @@ describe("NotificationsPopover", () => {
         type: "document_shared",
         data: {
           documentName: "Budget Sheet",
-          sharedBy: "user_2" as Id<"users">,
+          sharedBy: "user_2",
           permissionLevel: "view",
         },
       });
@@ -383,7 +384,7 @@ describe("NotificationsPopover", () => {
         type: "ownership_transferred",
         data: {
           documentName: "Company Bylaws",
-          previousOwnerId: "user_3" as Id<"users">,
+          previousOwnerId: "user_3",
           previousOwnerName: "Dave",
         },
       });
@@ -425,7 +426,7 @@ describe("NotificationsPopover", () => {
           documentName: "Roadmap",
           oldPermissionLevel: "view",
           newPermissionLevel: "edit",
-          updatedBy: "user_4" as Id<"users">,
+          updatedBy: "user_4",
           updatedByName: "Frank",
         },
       });
@@ -466,7 +467,7 @@ describe("NotificationsPopover", () => {
 
     test("wraps notification in a link when documentId is present", async () => {
       const user = userEvent.setup();
-      const docId = "doc_123" as Id<"documents">;
+      const docId = parseId("documents", "doc_123");
       const notif = makeNotification({
         type: "document_signed",
         data: {
@@ -543,12 +544,12 @@ describe("NotificationsPopover", () => {
     test("renders multiple notifications in order", async () => {
       const user = userEvent.setup();
       const notif1 = makeNotification({
-        _id: "notif_a" as Id<"notifications">,
+        _id: parseId("notifications", "notif_a"),
         type: "document_signed",
         data: { documentName: "Doc A", signedBy: "Alice", remainingSigners: 0 },
       });
       const notif2 = makeNotification({
-        _id: "notif_b" as Id<"notifications">,
+        _id: parseId("notifications", "notif_b"),
         type: "document_completed",
         data: { documentName: "Doc B", totalSigners: 1 },
       });

@@ -100,14 +100,16 @@ test.describe("landing public routes", () => {
       },
     ] as const;
 
-    for (const routeCheck of routeChecks) {
-      const page = await browser.newPage();
-      const browserErrors = trackBrowserErrors(page);
+    await Promise.all(
+      routeChecks.map(async (routeCheck) => {
+        const page = await browser.newPage();
+        const browserErrors = trackBrowserErrors(page);
 
-      await page.goto(routeCheck.path);
-      await routeCheck.assert(page);
-      await browserErrors.assertNoErrors();
-      await page.close();
-    }
+        await page.goto(routeCheck.path);
+        await routeCheck.assert(page);
+        await browserErrors.assertNoErrors();
+        await page.close();
+      })
+    );
   });
 });

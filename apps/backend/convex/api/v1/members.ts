@@ -52,7 +52,7 @@ export const listMembers = internalQuery({
     ),
   },
   handler: async (ctx, args): Promise<ApiMember[]> => {
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) {
       return [];
     }
@@ -74,7 +74,7 @@ export const listMembers = internalQuery({
       if (args.role && member.role !== args.role) continue;
 
       if (!member.userId) continue;
-      const user = await ctx.db.get(member.userId);
+      const user = await ctx.db.get("users", member.userId);
       if (!user) continue;
 
       results.push({
@@ -83,17 +83,31 @@ export const listMembers = internalQuery({
         name: user.name ?? user.email,
         email: user.email,
         avatar_url: user.avatar ?? undefined,
-        role: member.role as ApiMember["role"],
+        role: member.role,
         status: member.status,
         joined_at: new Date(member.createdAt).toISOString(),
       });
     }
 
-    return results.sort((a, b) => {
-      const roleCompare = (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99);
-      if (roleCompare !== 0) return roleCompare;
-      return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
-    });
+    const sorted: ApiMember[] = [];
+    for (const member of results) {
+      let insertAt = sorted.length;
+      for (let i = 0; i < sorted.length; i++) {
+        const current = sorted[i];
+        if (!current) continue;
+        const roleCompare =
+          (roleOrder[member.role] ?? 99) - (roleOrder[current.role] ?? 99);
+        const joinedCompare =
+          new Date(member.joined_at).getTime() -
+          new Date(current.joined_at).getTime();
+        if (roleCompare < 0 || (roleCompare === 0 && joinedCompare < 0)) {
+          insertAt = i;
+          break;
+        }
+      }
+      sorted.splice(insertAt, 0, member);
+    }
+    return sorted;
   },
 });
 
@@ -114,12 +128,13 @@ export const getMember = internalQuery({
       !member ||
       member.organizationId !== args.organizationId ||
       !member.userId ||
-      !member.role
+      !member.role ||
+      member.role === "system"
     ) {
       return null;
     }
 
-    const user = await ctx.db.get(member.userId);
+    const user = await ctx.db.get("users", member.userId);
     if (!user) return null;
 
     return {
@@ -128,7 +143,7 @@ export const getMember = internalQuery({
       name: user.name ?? user.email,
       email: user.email,
       avatar_url: user.avatar ?? undefined,
-      role: member.role as ApiMember["role"],
+      role: member.role,
       status: member.status,
       joined_at: new Date(member.createdAt).toISOString(),
     };

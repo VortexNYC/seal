@@ -115,14 +115,14 @@ function renderDunningHtml(
 export const getInvoiceById = internalQuery({
   args: { invoiceId: v.id("document_invoices") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.invoiceId);
+    return await ctx.db.get("document_invoices", args.invoiceId);
   },
 });
 
 export const getDocumentById = internalQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.documentId);
+    return await ctx.db.get("documents", args.documentId);
   },
 });
 

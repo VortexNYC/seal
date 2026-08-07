@@ -80,23 +80,31 @@ async function wait(ms: number): Promise<void> {
 
 async function processInBatches<TItem, TResult extends BulkOperationResult>(
   items: TItem[],
-  processItem: (item: TItem) => Promise<TResult>
+  processItem: (item: TItem) => Promise<TResult>,
+  start = 0
 ): Promise<{ results: TResult[]; successCount: number }> {
-  const results: TResult[] = [];
-  let successCount = 0;
-
-  for (let i = 0; i < items.length; i += BULK_BATCH_SIZE) {
-    const batch = items.slice(i, i + BULK_BATCH_SIZE);
-    const batchResults = await Promise.all(batch.map(processItem));
-    results.push(...batchResults);
-    successCount += batchResults.filter((result) => result.success).length;
-
-    if (i + BULK_BATCH_SIZE < items.length) {
-      await wait(100);
-    }
+  if (start >= items.length) {
+    return { results: [], successCount: 0 };
   }
 
-  return { results, successCount };
+  const batch = items.slice(start, start + BULK_BATCH_SIZE);
+  const batchResults = await Promise.all(batch.map(processItem));
+  const successCount = batchResults.filter((result) => result.success).length;
+
+  if (start + BULK_BATCH_SIZE >= items.length) {
+    return { results: batchResults, successCount };
+  }
+
+  await wait(100);
+  const rest = await processInBatches(
+    items,
+    processItem,
+    start + BULK_BATCH_SIZE
+  );
+  return {
+    results: [...batchResults, ...rest.results],
+    successCount: successCount + rest.successCount,
+  };
 }
 
 async function addRecipientWithResult(

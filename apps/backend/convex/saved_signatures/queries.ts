@@ -8,6 +8,7 @@
 
 import { v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 
 /**
@@ -33,13 +34,15 @@ export const getUserSignatures = query({
       return [];
     }
 
-    const signatures = await ctx.db
+    const signatures: Doc<"saved_signatures">[] = [];
+    for await (const signature of ctx.db
       .query("saved_signatures")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", user._id))) {
+      signatures.push(signature);
+    }
 
     // Sort by usage count (most used first), then by creation date
-    return signatures.sort((a, b) => {
+    return signatures.toSorted((a, b) => {
       if (b.usageCount !== a.usageCount) {
         return b.usageCount - a.usageCount;
       }
@@ -107,7 +110,7 @@ export const getSignatureById = query({
       return null;
     }
 
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("saved_signatures", args.signatureId);
 
     // Ensure the signature belongs to this user
     if (!signature || signature.userId !== user._id) {
@@ -141,11 +144,13 @@ export const getSignatureCount = query({
       return 0;
     }
 
-    const signatures = await ctx.db
+    let count = 0;
+    for await (const _signature of ctx.db
       .query("saved_signatures")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", user._id))) {
+      count++;
+    }
 
-    return signatures.length;
+    return count;
   },
 });

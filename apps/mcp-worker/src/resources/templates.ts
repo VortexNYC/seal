@@ -8,6 +8,7 @@ import type {
 
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
+import { resolveTemplateVariable } from "./variables";
 
 /**
  * Registers template resources with the MCP server.
@@ -61,7 +62,7 @@ export function registerTemplateResources(
     },
     async (uri, { id }, extra) => {
       const authToken = getAuthToken(extra);
-      const templateId = id as string;
+      const templateId = resolveTemplateVariable(id);
 
       // Get template with fields
       const template = await client.get<

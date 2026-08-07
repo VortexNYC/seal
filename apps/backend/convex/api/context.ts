@@ -30,6 +30,8 @@ import {
   resolveLinkedBetterAuthMcpSession,
   resolveStoredApiKeyCredential,
 } from "@vortexnyc/auth/convex";
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -326,7 +328,7 @@ async function buildAuthContext(
     { organizationId: params.organizationId }
   );
 
-  if (securitySettings.allowApiAccess === false) {
+  if (!securitySettings.allowApiAccess) {
     throw new ApiError(
       403,
       "API access is disabled for this organization. An organization owner can enable it in Settings > Security.",
@@ -473,7 +475,7 @@ async function resolveMcpApiAuth(
       scopes: verified.scope,
       userId: verified.betterAuthUserId,
     },
-    requestedOrganizationId: verified.orgId as Id<"organizations">,
+    requestedOrganizationId: parse(v.id("organizations"), verified.orgId),
     audience: MCP_OAUTH_AUDIENCE,
     resourceId: MCP_OAUTH_RESOURCE_ID,
     resourceType: "mcp.tool",
@@ -729,8 +731,8 @@ export async function resolveMcpAuth(
       organizationId: resolved.organizationId,
       authorizeOrganizationAccess: async ({ userId, organizationId }) =>
         await authorizeMcpOrganizationAccess(ctx, {
-          userId: userId as Id<"users">,
-          organizationId: organizationId as Id<"organizations">,
+          userId: parse(v.id("users"), userId),
+          organizationId: parse(v.id("organizations"), organizationId),
         }),
     });
 
@@ -745,8 +747,8 @@ export async function resolveMcpAuth(
     return {
       authType: "mcp_oauth",
       scopes: authorized.scopes,
-      userId: authorized.userId as Id<"users">,
-      organizationId: authorized.organizationId as Id<"organizations">,
+      userId: parse(v.id("users"), authorized.userId),
+      organizationId: parse(v.id("organizations"), authorized.organizationId),
       betterAuthUserId: resolved.betterAuthUserId,
       role: authorized.role,
       permissions: authorized.permissions,

@@ -1,5 +1,13 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { PLAN_LIMITS } from "@seal/backend/convex/auth/plan_limits";
+
+import { parseSelectValue } from "@/lib/select-values";
+
+const PLAN_TIERS = [
+  "free",
+  "pro",
+  "enterprise",
+] as const satisfies readonly (keyof typeof PLAN_LIMITS)[];
 import { useQuery } from "convex/react";
 
 /**
@@ -15,7 +23,8 @@ export function useSubscriptionLimits() {
 
   const isLoading = subscription === undefined;
 
-  const tier = (subscription?.tier ?? "free") as keyof typeof PLAN_LIMITS;
+  const tier =
+    parseSelectValue(subscription?.tier ?? "free", PLAN_TIERS) ?? "free";
   const isActive =
     subscription?.status === "active" || subscription?.status === "trialing";
 

@@ -1,13 +1,36 @@
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { describe, expect, test } from "vitest";
 
 import {
   API_SCOPES,
   type ApiAuthContext,
+  type ApiAuthType,
   canUserUseScope,
   requireScope,
   SCOPE_PERMISSION_MAP,
 } from "./context";
 import { ApiError } from "./errors";
+
+/** Build a complete, cast-free ApiAuthContext unit fixture. */
+function makeAuth(overrides: {
+  authType: ApiAuthType;
+  role: string;
+  permissions: string[];
+  scopes: string[];
+}): ApiAuthContext {
+  return {
+    ...overrides,
+    userId: parse(v.id("users"), "user_test"),
+    organizationId: parse(v.id("organizations"), "org_test"),
+    authSubject: "test-subject",
+    subjectType: "user",
+    hasScope: (scope) => overrides.scopes.includes(scope),
+    hasAnyScope: (scopes) => scopes.some((s) => overrides.scopes.includes(s)),
+    hasAllScopes: (scopes) => scopes.every((s) => overrides.scopes.includes(s)),
+    hasPermission: (permission) => overrides.permissions.includes(permission),
+  };
+}
 
 describe("SCOPE_PERMISSION_MAP", () => {
   test("WEBHOOKS_MANAGE maps to settings:integrations", () => {
@@ -99,12 +122,12 @@ describe("requireScope", () => {
   // hold the mapped permission. No owner/admin role bypass.
 
   test("denies when the token lacks the scope, even for owner (scope is the ceiling)", () => {
-    const auth = {
-      authType: "mcp_oauth" as const,
+    const auth = makeAuth({
+      authType: "mcp_oauth",
       role: "owner",
       permissions: ["settings:integrations"],
       scopes: [],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
       ApiError
@@ -112,34 +135,34 @@ describe("requireScope", () => {
   });
 
   test("allows owner with the granted scope (owner carries the mapped permission)", () => {
-    const auth = {
-      authType: "mcp_oauth" as const,
+    const auth = makeAuth({
+      authType: "mcp_oauth",
       role: "owner",
       permissions: ["settings:integrations"],
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
   test("allows member with the granted scope AND the mapped permission", () => {
-    const auth = {
-      authType: "mcp_oauth" as const,
+    const auth = makeAuth({
+      authType: "mcp_oauth",
       role: "member",
       permissions: ["settings:integrations"],
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
   test("denies member with the granted scope but no mapped permission", () => {
-    const auth = {
-      authType: "mcp_oauth" as const,
+    const auth = makeAuth({
+      authType: "mcp_oauth",
       role: "member",
       permissions: ["settings:view", "documents:view"],
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
       ApiError
@@ -147,23 +170,23 @@ describe("requireScope", () => {
   });
 
   test("allows API key with the granted scope AND the mapped permission", () => {
-    const auth = {
-      authType: "api_key" as const,
+    const auth = makeAuth({
+      authType: "api_key",
       role: "owner",
       permissions: ["settings:integrations"],
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
   test("rejects API key without the matching scope (scope is the ceiling)", () => {
-    const auth = {
-      authType: "api_key" as const,
+    const auth = makeAuth({
+      authType: "api_key",
       role: "owner",
       permissions: ["settings:integrations"],
       scopes: [],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
       ApiError
@@ -171,12 +194,12 @@ describe("requireScope", () => {
   });
 
   test("rejects API key with the scope but no mapped permission (defense in depth)", () => {
-    const auth = {
-      authType: "api_key" as const,
+    const auth = makeAuth({
+      authType: "api_key",
       role: "member",
       permissions: ["documents:view"],
       scopes: [API_SCOPES.WEBHOOKS_MANAGE],
-    } as unknown as ApiAuthContext;
+    });
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(
       ApiError

@@ -10,10 +10,10 @@
  * the same updated prompt, and the same retry logic.
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 import { toActionCacheCtx } from "./component_ctx";
 import { paymentExtractionCache } from "./tools/extract_payment_terms";
@@ -46,7 +46,7 @@ export const extractPaymentTermsForSuggestion = internalAction({
     const extracted = await paymentExtractionCache.fetch(
       toActionCacheCtx(ctx),
       {
-        storageId: document.storageId as Id<"_storage">,
+        storageId: parse(v.id("_storage"), document.storageId),
       }
     );
 

@@ -88,7 +88,10 @@ export const getActiveVortexSubscriptionPriceByLookupKey = internalQuery({
     }
 
     const price = activeVortexPrices[0];
-    const product = await ctx.db.get(price.subscriptionProductId);
+    const product = await ctx.db.get(
+      "subscription_products",
+      price.subscriptionProductId
+    );
     return serializeSubscriptionPrice(price, product);
   },
 });

@@ -1,5 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { pollUntil } from "../../fixtures/poll";
+
 export class DashboardPage {
   readonly page: Page;
   readonly heading: Locator;
@@ -165,7 +167,8 @@ export class DashboardPage {
 
       await mobileTrigger.waitFor({ state: "visible", timeout: 5000 });
 
-      for (let attempt = 0; attempt < 2; attempt++) {
+      const attemptOpen = async (attempt: number): Promise<void> => {
+        if (attempt >= 2) return;
         await mobileTrigger.click();
 
         if (await this.waitForAnyVisible([sectionButton, itemLink], 2000)) {
@@ -173,7 +176,9 @@ export class DashboardPage {
         }
 
         await this.page.waitForTimeout(500);
-      }
+        return attemptOpen(attempt + 1);
+      };
+      await attemptOpen(0);
     }
   }
 
@@ -214,18 +219,16 @@ export class DashboardPage {
     locators: Locator[],
     timeoutMs: number
   ): Promise<boolean> {
-    const deadline = Date.now() + timeoutMs;
+    const anyVisible = await pollUntil(
+      async () => {
+        const visibilities = await Promise.all(
+          locators.map((locator) => locator.isVisible().catch(() => false))
+        );
+        return visibilities.some(Boolean) || undefined;
+      },
+      { deadline: Date.now() + timeoutMs, intervalMs: 100 }
+    );
 
-    while (Date.now() < deadline) {
-      for (const locator of locators) {
-        if (await locator.isVisible().catch(() => false)) {
-          return true;
-        }
-      }
-
-      await this.page.waitForTimeout(100);
-    }
-
-    return false;
+    return anyVisible === true;
   }
 }

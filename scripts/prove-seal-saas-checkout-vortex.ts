@@ -57,6 +57,41 @@ function isJsonObject(value: Json): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function isJson(value: unknown): value is Json {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "string"
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  if (typeof value === "object") {
+    return Object.values(value).every(isJson);
+  }
+  return false;
+}
+
+function toJson(value: unknown, label: string): Json {
+  assert(isJson(value), `Expected ${label} to be valid JSON`);
+  return value;
+}
+
+/**
+ * Convex function results are JSON; callers declare the expected shape via
+ * the type parameter. That shape is trusted at this single documented seam
+ * (or validated when a predicate is supplied).
+ */
+function isExpectedJsonShape<T extends Json>(
+  value: Json,
+  validate?: (candidate: Json) => candidate is T
+): value is T {
+  return validate ? validate(value) : true;
+}
+
 function objectField(value: JsonObject, field: string): JsonObject {
   const child = value[field];
   assert(isJsonObject(child), `Expected ${field} to be an object`);
@@ -180,17 +215,19 @@ async function runVortexConvex<T extends Json>(input: {
       `vortex convex run ${input.functionName} failed\n${result.stderr}\n${result.stdout}`
     );
   }
-  return parseConvexJson<T>(result.stdout, input.functionName);
+  const parsed = parseConvexJson(result.stdout, input.functionName);
+  if (isExpectedJsonShape<T>(parsed)) {
+    return parsed;
+  }
+  return fail(`Unexpected JSON shape from ${input.functionName}`);
 }
 
-function parseConvexJson<T extends Json>(
-  stdout: string,
-  functionName: string
-): T {
+function parseConvexJson(stdout: string, functionName: string): Json {
   const trimmed = stdout.trim();
   const jsonStart = trimmed.search(/[[{"]/);
   assert(jsonStart >= 0, `No JSON returned from ${functionName}: ${trimmed}`);
-  return JSON.parse(trimmed.slice(jsonStart)) as T;
+  const raw: unknown = JSON.parse(trimmed.slice(jsonStart));
+  return toJson(raw, functionName);
 }
 
 function readStringRecord(
@@ -200,7 +237,8 @@ function readStringRecord(
   if (value === undefined || value.trim().length === 0) {
     return {};
   }
-  const parsed = JSON.parse(value) as Json;
+  const rawParsed: unknown = JSON.parse(value);
+  const parsed = toJson(rawParsed, label);
   assert(isJsonObject(parsed), `Expected ${label} to be a JSON object`);
   const record: Record<string, string> = {};
   for (const [key, entry] of Object.entries(parsed)) {
@@ -240,7 +278,8 @@ function readStringArray(
     value.trim() !== "*",
     `${label}=* requires SEAL_VORTEX_PROOF_ORGANIZATION_ID`
   );
-  const parsed = JSON.parse(value) as Json;
+  const rawParsed: unknown = JSON.parse(value);
+  const parsed = toJson(rawParsed, label);
   assert(Array.isArray(parsed), `Expected ${label} to be a JSON string array`);
   const entries = parsed.map((entry, index) => {
     assert(
@@ -331,8 +370,9 @@ async function requestVortexJson(input: {
     ...(input.body === undefined ? {} : { body: JSON.stringify(input.body) }),
   });
   const text = await response.text();
+  const rawBody: unknown = text.length > 0 ? JSON.parse(text) : null;
   const parsed = objectField(
-    { response: text.length > 0 ? (JSON.parse(text) as Json) : null },
+    { response: toJson(rawBody, `${input.label} response`) },
     "response"
   );
   if (!response.ok) {
@@ -553,7 +593,9 @@ async function createCheckoutProofSession(
   });
 
   if (explicitResult.exitCode === 0) {
-    return parseConvexJson<JsonObject>(explicitResult.stdout, functionName);
+    const parsed = parseConvexJson(explicitResult.stdout, functionName);
+    assert(isJsonObject(parsed), `Expected object from ${functionName}`);
+    return parsed;
   }
 
   const output = `${explicitResult.stderr}\n${explicitResult.stdout}`;
@@ -574,7 +616,9 @@ async function createCheckoutProofSession(
         `${legacyResult.stderr}\n${legacyResult.stdout}`
     );
   }
-  return parseConvexJson<JsonObject>(legacyResult.stdout, functionName);
+  const legacyParsed = parseConvexJson(legacyResult.stdout, functionName);
+  assert(isJsonObject(legacyParsed), `Expected object from ${functionName}`);
+  return legacyParsed;
 }
 
 async function main(): Promise<void> {

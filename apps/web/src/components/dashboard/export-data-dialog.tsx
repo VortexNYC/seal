@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { parseSelectValue } from "@/lib/select-values";
 
 type DateRange = {
   from: Date | undefined;
@@ -54,6 +55,16 @@ type WorkflowStatus =
   | "cancelled"
   | "declined";
 
+const WORKFLOW_STATUSES = [
+  "all",
+  "draft",
+  "sent",
+  "in_progress",
+  "completed",
+  "cancelled",
+  "declined",
+] as const satisfies readonly WorkflowStatus[];
+
 const QUICK_RANGES = [
   { label: "Last 7 days", value: "7d" },
   { label: "Last 30 days", value: "30d" },
@@ -62,6 +73,31 @@ const QUICK_RANGES = [
   { label: "Last year", value: "1y" },
   { label: "All time", value: "all" },
 ];
+
+function getDateRangeFromQuick(value: string): DateRange {
+  const now = new Date();
+  switch (value) {
+    case "7d":
+      return { from: subDays(now, 7), to: now };
+    case "30d":
+      return { from: subDays(now, 30), to: now };
+    case "3m":
+      return { from: subMonths(now, 3), to: now };
+    case "6m":
+      return { from: subMonths(now, 6), to: now };
+    case "1y":
+      return { from: subMonths(now, 12), to: now };
+    case "all":
+      return { from: undefined, to: undefined };
+    default:
+      return { from: subDays(now, 30), to: now };
+  }
+}
+
+function formatDate(timestamp: number | undefined): string {
+  if (!timestamp) return "";
+  return format(new Date(timestamp), "yyyy-MM-dd HH:mm");
+}
 
 export function ExportDataDialog() {
   const [open, setOpen] = useState(false);
@@ -72,27 +108,6 @@ export function ExportDataDialog() {
     to: new Date(),
   });
   const [isExporting, setIsExporting] = useState(false);
-
-  // Calculate date range based on quick selection
-  const getDateRangeFromQuick = (value: string): DateRange => {
-    const now = new Date();
-    switch (value) {
-      case "7d":
-        return { from: subDays(now, 7), to: now };
-      case "30d":
-        return { from: subDays(now, 30), to: now };
-      case "3m":
-        return { from: subMonths(now, 3), to: now };
-      case "6m":
-        return { from: subMonths(now, 6), to: now };
-      case "1y":
-        return { from: subMonths(now, 12), to: now };
-      case "all":
-        return { from: undefined, to: undefined };
-      default:
-        return { from: subDays(now, 30), to: now };
-    }
-  };
 
   const handleQuickRangeChange = (value: string) => {
     setQuickRange(value);
@@ -110,11 +125,6 @@ export function ExportDataDialog() {
         }
       : "skip"
   );
-
-  const formatDate = (timestamp: number | undefined) => {
-    if (!timestamp) return "";
-    return format(new Date(timestamp), "yyyy-MM-dd HH:mm");
-  };
 
   const handleExportCSV = () => {
     if (!exportData || exportData.length === 0) {
@@ -282,7 +292,11 @@ export function ExportDataDialog() {
             <Label>Document Status</Label>
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as WorkflowStatus)}
+              onValueChange={(v) =>
+                setStatusFilter(
+                  parseSelectValue(v, WORKFLOW_STATUSES) ?? statusFilter
+                )
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />

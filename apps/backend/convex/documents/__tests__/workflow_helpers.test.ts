@@ -234,12 +234,14 @@ describe("transitionWorkflowStatus", () => {
   });
 
   test("non-existent document throws 'Document not found'", async () => {
-    // Use a fake document ID by re-using ownerId (valid Id format, wrong table semantics)
-    const fakeDocumentId = "nonexistent" as Id<"documents">;
+    // Hard-delete the document so its id is valid-format but dangling
+    await t.run(async (ctx) => {
+      await ctx.db.delete("documents", documentId);
+    });
 
     await expect(
       t.run(async (ctx) => {
-        await transitionWorkflowStatus(ctx, fakeDocumentId, "sent");
+        await transitionWorkflowStatus(ctx, documentId, "sent");
       })
     ).rejects.toThrow("Document not found");
   });
@@ -324,11 +326,14 @@ describe("verifyDocumentOwnership", () => {
   });
 
   test("throws 'Document not found' for non-existent document", async () => {
-    const fakeDocumentId = "nonexistent" as Id<"documents">;
+    // Hard-delete the document so its id is valid-format but dangling
+    await t.run(async (ctx) => {
+      await ctx.db.delete("documents", documentId);
+    });
 
     await expect(
       t.run(async (ctx) => {
-        await verifyDocumentOwnership(ctx, fakeDocumentId, ownerId);
+        await verifyDocumentOwnership(ctx, documentId, ownerId);
       })
     ).rejects.toThrow("Document not found");
   });

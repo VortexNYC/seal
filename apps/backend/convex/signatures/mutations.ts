@@ -131,7 +131,7 @@ async function upsertSignatureRecord(
   const { recipient, field, document, existingSignature } = signatureContext;
 
   if (existingSignature) {
-    await ctx.db.patch(existingSignature._id, {
+    await ctx.db.patch("signatures", existingSignature._id, {
       ...(input.value !== undefined && { value: input.value }),
       ...(input.signatureImageUrl !== undefined && {
         signatureImageUrl: payload.encryptedImageUrl,
@@ -221,7 +221,7 @@ async function autoSubmitMainSignature(
         ? "approved"
         : "viewed";
 
-  await ctx.db.patch(recipient._id, {
+  await ctx.db.patch("document_recipients", recipient._id, {
     status,
     signatureData: signatureImageUrl,
     signatureType: "drawn",
@@ -288,7 +288,7 @@ async function prepareTokenSignatureSave(
     throw new Error("Signing token has expired");
   }
 
-  const field = await ctx.db.get(input.fieldId);
+  const field = await ctx.db.get("signature_fields", input.fieldId);
   if (!field) {
     throw new Error("Field not found");
   }
@@ -299,7 +299,7 @@ async function prepareTokenSignatureSave(
     throw new Error("Field does not belong to this document");
   }
 
-  const document = await ctx.db.get(field.documentId);
+  const document = await ctx.db.get("documents", field.documentId);
   if (!document) {
     throw new Error("Document not found");
   }
@@ -324,12 +324,12 @@ async function prepareAuthenticatedSignatureSave(
   documentId: Id<"documents">,
   input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">
 ): Promise<PreparedSignatureContext> {
-  const user = await ctx.db.get(userId);
+  const user = await ctx.db.get("users", userId);
   if (!user || !user.email) {
     throw new Error("User not found or has no email");
   }
 
-  const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get("documents", documentId);
   if (!document) {
     throw new Error("Document not found");
   }
@@ -345,17 +345,21 @@ async function prepareAuthenticatedSignatureSave(
 
   await verifyDocumentIntegrityForSigning(ctx, document);
 
-  const recipient = await ctx.db
+  let recipient: Doc<"document_recipients"> | null = null;
+  for await (const candidate of ctx.db
     .query("document_recipients")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))
-    .filter((q) => q.eq(q.field("email"), user.email.toLowerCase()))
-    .first();
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
+    if (candidate.email === user.email.toLowerCase()) {
+      recipient = candidate;
+      break;
+    }
+  }
 
   if (!recipient) {
     throw new Error("You are not a recipient on this document");
   }
 
-  const field = await ctx.db.get(input.fieldId);
+  const field = await ctx.db.get("signature_fields", input.fieldId);
   if (!field) {
     throw new Error("Field not found");
   }
@@ -406,7 +410,7 @@ export const createSignature = mutation({
   },
   handler: async (ctx, args) => {
     // Get the field being signed
-    const field = await ctx.db.get(args.fieldId);
+    const field = await ctx.db.get("signature_fields", args.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
@@ -417,7 +421,7 @@ export const createSignature = mutation({
     }
 
     // Get document
-    const document = await ctx.db.get(field.documentId);
+    const document = await ctx.db.get("documents", field.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -518,19 +522,19 @@ export const updateSignature = mutation({
   },
   handler: async (ctx, args) => {
     // Get existing signature
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("signatures", args.signatureId);
     if (!signature) {
       throw new Error("Signature not found");
     }
 
     // Get the field
-    const field = await ctx.db.get(signature.fieldId);
+    const field = await ctx.db.get("signature_fields", signature.fieldId);
     if (!field) {
       throw new Error("Field not found");
     }
 
     // Get document
-    const document = await ctx.db.get(signature.documentId);
+    const document = await ctx.db.get("documents", signature.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -582,7 +586,7 @@ export const updateSignature = mutation({
       : undefined;
 
     // Update signature
-    await ctx.db.patch(args.signatureId, {
+    await ctx.db.patch("signatures", args.signatureId, {
       ...(args.value !== undefined && { value: args.value }),
       ...(encryptedImageUrl !== undefined && {
         signatureImageUrl: encryptedImageUrl,
@@ -633,13 +637,13 @@ export const deleteSignature = mutation({
     }
 
     // Get existing signature
-    const signature = await ctx.db.get(args.signatureId);
+    const signature = await ctx.db.get("signatures", args.signatureId);
     if (!signature) {
       throw new Error("Signature not found");
     }
 
     // Get document
-    const document = await ctx.db.get(signature.documentId);
+    const document = await ctx.db.get("documents", signature.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -657,7 +661,7 @@ export const deleteSignature = mutation({
     };
 
     // Delete signature
-    await ctx.db.delete(args.signatureId);
+    await ctx.db.delete("signatures", args.signatureId);
 
     // Log action to audit trail
     await logSignatureAction(ctx, {
