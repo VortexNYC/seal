@@ -99,7 +99,6 @@ Core owns:
 - packages/transactional - React Email templates
 - packages/react-sdk - embeddable signing components
 - packages/tokens - shared Seal design tokens
-- packages/vortex-payments - Vortex payments adapter package
 
 ## Forbidden Touch Zones
 
