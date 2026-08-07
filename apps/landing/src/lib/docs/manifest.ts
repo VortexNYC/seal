@@ -1,36 +1,41 @@
 import type { Root } from "fumadocs-core/page-tree";
 import { deserializePageTree } from "fumadocs-core/source/client";
+import { z } from "zod";
 
 import developerManifestData from "../../../.source/developer-manifest.json";
 import docsManifestData from "../../../.source/docs-manifest.json";
 
-interface SerializedPageTree {
-  $fumadocs_loader: "page-tree";
-  data: object;
-}
+const serializedPageTreeSchema = z.object({
+  $fumadocs_loader: z.literal("page-tree"),
+  data: z.record(z.string(), z.unknown()),
+});
 
-export interface DocsManifestPage {
-  description?: string;
-  lastModified?: string;
-  path: string;
-  slugs: string[];
-  title: string;
-  toc: Array<{
-    depth: number;
-    title: string;
-    url: string;
-  }>;
-  url: string;
-}
+const docsManifestPageSchema = z.object({
+  description: z.string().optional(),
+  lastModified: z.string().optional(),
+  path: z.string(),
+  slugs: z.array(z.string()),
+  title: z.string(),
+  toc: z.array(
+    z.object({
+      depth: z.number(),
+      title: z.string(),
+      url: z.string(),
+    })
+  ),
+  url: z.string(),
+});
 
-interface DocsManifest {
-  pageTree: SerializedPageTree;
-  pages: Record<string, DocsManifestPage>;
-}
+const docsManifestSchema = z.object({
+  pageTree: serializedPageTreeSchema,
+  pages: z.record(z.string(), docsManifestPageSchema),
+});
+
+export type DocsManifestPage = z.infer<typeof docsManifestPageSchema>;
 
 // Docs
-const docsManifest = docsManifestData as unknown as DocsManifest;
-const docsPageTree = deserializePageTree(docsManifest.pageTree) as Root;
+const docsManifest = docsManifestSchema.parse(docsManifestData);
+const docsPageTree = deserializePageTree(docsManifest.pageTree);
 
 export function getDocsPage(slugs: string[]): DocsManifestPage | undefined {
   return docsManifest.pages[slugs.join("/")];
@@ -41,10 +46,8 @@ export function getDocsPageTree(): Root {
 }
 
 // Developer
-const developerManifest = developerManifestData as unknown as DocsManifest;
-const developerPageTree = deserializePageTree(
-  developerManifest.pageTree
-) as Root;
+const developerManifest = docsManifestSchema.parse(developerManifestData);
+const developerPageTree = deserializePageTree(developerManifest.pageTree);
 
 export function getDeveloperPage(
   slugs: string[]

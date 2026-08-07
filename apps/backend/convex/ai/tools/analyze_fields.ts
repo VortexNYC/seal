@@ -1,12 +1,10 @@
 import { createTool } from "@convex-dev/agent";
+import { parse } from "@vortexnyc/convex/helpers";
+import { v } from "convex/values";
 import { z } from "zod";
 
 import { internal } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
-import {
-  fieldAnalysisCache,
-  type FieldAnalysisResult,
-} from "../analyzeFieldsAction";
+import { fieldAnalysisCache } from "../analyzeFieldsAction";
 import { toActionCacheCtx } from "../component_ctx";
 import type { SealAICtx } from "../types";
 
@@ -21,13 +19,12 @@ export const analyzeDocumentFields = createTool({
   }),
   execute: async (ctx: SealAICtx, args): Promise<string> => {
     try {
-      const docId = (args.documentId ?? ctx.documentId) as
-        | Id<"documents">
-        | undefined;
-      if (!docId)
+      const rawDocId = args.documentId ?? ctx.documentId;
+      if (!rawDocId)
         throw new Error(
           "No document ID provided and no current document context"
         );
+      const docId = parse(v.id("documents"), rawDocId);
 
       // Rate limit expensive Gemini vision call (20 ops/min per org)
       await ctx.runMutation(
@@ -46,9 +43,9 @@ export const analyzeDocumentFields = createTool({
       if (!document) throw new Error("Document not found");
 
       // Use cached Gemini analysis — same PDF (storageId) returns cached result
-      const result = (await fieldAnalysisCache.fetch(toActionCacheCtx(ctx), {
-        storageId: document.storageId as Id<"_storage">,
-      })) as FieldAnalysisResult;
+      const result = await fieldAnalysisCache.fetch(toActionCacheCtx(ctx), {
+        storageId: parse(v.id("_storage"), document.storageId),
+      });
 
       await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
         documentId: docId,

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { parseId } from "../../lib/convex-ids";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -116,7 +117,7 @@ export function RecipientSelectorDialog({
                   value={selectedRecipientId ?? ""}
                   onValueChange={(value) => {
                     if (value) {
-                      onRecipientSelect(value as Id<"document_recipients">);
+                      onRecipientSelect(parseId("document_recipients", value));
                     }
                   }}
                 >

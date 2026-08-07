@@ -9,7 +9,7 @@ export const disconnectApp = authMutation({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    const app = await ctx.db.get(args.appId);
+    const app = await ctx.db.get("connected_apps", args.appId);
 
     if (!app) {
       throw new ConvexError("Connected app not found");
@@ -28,7 +28,7 @@ export const disconnectApp = authMutation({
       createdAt: Date.now(),
     });
 
-    await ctx.db.delete(args.appId);
+    await ctx.db.delete("connected_apps", args.appId);
 
     return { success: true };
   },

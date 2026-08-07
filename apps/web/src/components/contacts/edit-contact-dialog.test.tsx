@@ -1,7 +1,9 @@
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
+
+import { parseId } from "../../lib/convex-ids";
 
 const mockUpdateContact = vi.fn();
 
@@ -19,9 +21,9 @@ function makeContact(
   overrides: Partial<Doc<"contacts">> = {}
 ): Doc<"contacts"> {
   return {
-    _id: "contact_1" as Id<"contacts">,
+    _id: parseId("contacts", "contact_1"),
     _creationTime: 1700000000000,
-    organizationId: "org_1" as Id<"organizations">,
+    organizationId: parseId("organizations", "org_1"),
     firstName: "Jane",
     lastName: "Smith",
     fullName: "Jane Smith",
@@ -31,11 +33,22 @@ function makeContact(
     title: "CTO",
     status: "active",
     notes: "Important client",
-    createdBy: "user_1" as Id<"users">,
+    createdBy: parseId("users", "user_1"),
     createdAt: 1700000000000,
     updatedAt: 1700000000000,
     ...overrides,
-  } as Doc<"contacts">;
+  };
+}
+
+function getFieldByLabel<ElementType extends HTMLElement>(
+  label: RegExp,
+  elementType: abstract new () => ElementType
+): ElementType {
+  const element = screen.getByLabelText(label);
+  if (!(element instanceof elementType)) {
+    throw new Error(`Expected ${elementType.name} for label ${String(label)}`);
+  }
+  return element;
 }
 
 function renderDialog(
@@ -68,43 +81,43 @@ describe("EditContactDialog", () => {
 
     test("pre-populates first name from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/first name/i) as HTMLInputElement;
+      const input = getFieldByLabel(/first name/i, HTMLInputElement);
       expect(input.value).toBe("Jane");
     });
 
     test("pre-populates last name from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/last name/i) as HTMLInputElement;
+      const input = getFieldByLabel(/last name/i, HTMLInputElement);
       expect(input.value).toBe("Smith");
     });
 
     test("pre-populates email from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/email/i) as HTMLInputElement;
+      const input = getFieldByLabel(/email/i, HTMLInputElement);
       expect(input.value).toBe("jane@example.com");
     });
 
     test("pre-populates phone from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/phone/i) as HTMLInputElement;
+      const input = getFieldByLabel(/phone/i, HTMLInputElement);
       expect(input.value).toBe("+1-555-9876");
     });
 
     test("pre-populates company from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/company/i) as HTMLInputElement;
+      const input = getFieldByLabel(/company/i, HTMLInputElement);
       expect(input.value).toBe("Acme Corp");
     });
 
     test("pre-populates title from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/^title$/i) as HTMLInputElement;
+      const input = getFieldByLabel(/^title$/i, HTMLInputElement);
       expect(input.value).toBe("CTO");
     });
 
     test("pre-populates notes from contact prop", () => {
       renderDialog();
-      const input = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
+      const input = getFieldByLabel(/notes/i, HTMLTextAreaElement);
       expect(input.value).toBe("Important client");
     });
 
@@ -117,8 +130,8 @@ describe("EditContactDialog", () => {
           notes: undefined,
         }),
       });
-      const phone = screen.getByLabelText(/phone/i) as HTMLInputElement;
-      const company = screen.getByLabelText(/company/i) as HTMLInputElement;
+      const phone = getFieldByLabel(/phone/i, HTMLInputElement);
+      const company = getFieldByLabel(/company/i, HTMLInputElement);
       expect(phone.value).toBe("");
       expect(company.value).toBe("");
     });

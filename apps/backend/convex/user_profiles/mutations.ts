@@ -50,7 +50,7 @@ export const updateNotificationPreferences = mutation({
         ...notificationPreferences,
       };
 
-      await ctx.db.patch(existingProfile._id, {
+      await ctx.db.patch("user_profiles", existingProfile._id, {
         notificationPreferences: mergedPreferences,
         updatedAt: Date.now(),
       });

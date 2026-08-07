@@ -33,8 +33,8 @@ export const getMembership = internalQuery({
   },
   handler: async (ctx, args) => {
     const [user, organization] = await Promise.all([
-      ctx.db.get(args.userId),
-      ctx.db.get(args.organizationId),
+      ctx.db.get("users", args.userId),
+      ctx.db.get("organizations", args.organizationId),
     ]);
     if (!user || !organization) {
       return null;
@@ -69,11 +69,11 @@ export const getMembership = internalQuery({
 export const getUserActiveOrganization = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (!user?.activeOrganizationId) {
       return null;
     }
-    return ctx.db.get(user.activeOrganizationId);
+    return ctx.db.get("organizations", user.activeOrganizationId);
   },
 });
 
@@ -93,8 +93,8 @@ export const getUserPermissions = internalQuery({
   },
   handler: async (ctx, args) => {
     const [user, organization] = await Promise.all([
-      ctx.db.get(args.userId),
-      ctx.db.get(args.organizationId),
+      ctx.db.get("users", args.userId),
+      ctx.db.get("organizations", args.organizationId),
     ]);
     if (!user || !organization) {
       return null;
@@ -130,7 +130,7 @@ export const getUserPermissions = internalQuery({
 export const getOrganizationOwner = internalQuery({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) {
       return null;
     }
@@ -142,7 +142,7 @@ export const getOrganizationOwner = internalQuery({
     );
 
     if (ownerMembership?.userId) {
-      return ctx.db.get(ownerMembership.userId);
+      return ctx.db.get("users", ownerMembership.userId);
     }
 
     const adminMembership = members.find(
@@ -154,7 +154,7 @@ export const getOrganizationOwner = internalQuery({
       return null;
     }
 
-    return ctx.db.get(adminMembership.userId);
+    return ctx.db.get("users", adminMembership.userId);
   },
 });
 
@@ -175,7 +175,7 @@ export const getDocumentForApi = internalQuery({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
 
     if (!document) {
       return null;
@@ -201,7 +201,7 @@ export const getDocumentForApi = internalQuery({
 export const getUserOrganizationMemberships = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get("users", args.userId);
     if (!user) {
       return [];
     }
@@ -210,12 +210,14 @@ export const getUserOrganizationMemberships = internalQuery({
     // Fetch organization details for each membership
     const membershipsWithOrgs = await Promise.all(
       memberships.map(async (membership) => {
-        const org = await ctx.db.get(membership.organizationId);
-        return {
-          ...membership,
+        const org = await ctx.db.get(
+          "organizations",
+          membership.organizationId
+        );
+        return Object.assign({}, membership, {
           userId: args.userId,
           organization: org,
-        };
+        });
       })
     );
 

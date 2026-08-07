@@ -125,9 +125,10 @@ function runAudit(proofDoc: string): {
   readonly audit: ProductionProofBoundaryAudit;
 } {
   const result = spawnSync(
-    "bun",
+    "pnpm",
     [
-      "run",
+      "exec",
+      "tsx",
       "scripts/audit-seal-vortex-production-proof-boundary.ts",
       "--proof-doc",
       proofDoc,
@@ -163,11 +164,15 @@ function parseAudit(output: string): ProductionProofBoundaryAudit {
   return parsed;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function isAudit(value: unknown): value is ProductionProofBoundaryAudit {
-  if (typeof value !== "object" || value === null) {
+  if (!isRecord(value)) {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value;
   return (
     typeof record.ok === "boolean" &&
     record.check === "seal_vortex_production_proof_boundary" &&

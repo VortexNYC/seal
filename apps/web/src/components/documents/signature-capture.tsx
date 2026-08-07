@@ -58,10 +58,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseSelectValue } from "@/lib/select-values";
 import { cn } from "@/lib/utils";
 
 type SignatureType = "drawn" | "typed" | "uploaded";
 type TabType = SignatureType | "saved";
+
+const TAB_TYPES = [
+  "drawn",
+  "typed",
+  "uploaded",
+  "saved",
+] as const satisfies readonly TabType[];
 
 // Available signature fonts
 const SIGNATURE_FONTS = [
@@ -85,6 +93,8 @@ const SIGNATURE_FONTS = [
 ] as const;
 
 type SignatureFont = (typeof SIGNATURE_FONTS)[number]["value"];
+
+const SIGNATURE_FONT_VALUES = SIGNATURE_FONTS.map((font) => font.value);
 
 interface SignatureCaptureProps {
   recipientName?: string;
@@ -110,9 +120,7 @@ export function SignatureCapture({
     upload: "uploaded",
   };
   const allowedTabs: SignatureType[] = allowedSignatureTypes
-    ? (allowedSignatureTypes
-        .map((t) => ORG_TO_TAB[t])
-        .filter(Boolean) as SignatureType[])
+    ? allowedSignatureTypes.map((t) => ORG_TO_TAB[t]).filter(Boolean)
     : ["drawn", "typed", "uploaded"];
   const hasAvailableMethods = allowedTabs.length > 0 || showLibrary;
 
@@ -296,10 +304,12 @@ export function SignatureCapture({
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setUploadedImage(dataUrl);
-    };
+    reader.addEventListener("load", (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === "string") {
+        setUploadedImage(dataUrl);
+      }
+    });
     reader.readAsDataURL(file);
   };
 
@@ -451,7 +461,9 @@ export function SignatureCapture({
       <CardContent>
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as TabType)}
+          onValueChange={(v) =>
+            setActiveTab(parseSelectValue(v, TAB_TYPES) ?? activeTab)
+          }
         >
           {/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
           <TabsList
@@ -567,7 +579,7 @@ export function SignatureCapture({
                               aria-label={`Set ${sig.name} as default signature`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleSetDefault(sig._id);
+                                void handleSetDefault(sig._id);
                               }}
                               title="Set as default"
                             >
@@ -581,7 +593,7 @@ export function SignatureCapture({
                             aria-label={`Delete saved signature ${sig.name}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteSavedSignature(sig._id);
+                              void handleDeleteSavedSignature(sig._id);
                             }}
                             title="Delete signature"
                           >
@@ -676,7 +688,11 @@ export function SignatureCapture({
                 <Label htmlFor="font-select">Select signature style</Label>
                 <Select
                   value={selectedFont}
-                  onValueChange={(v) => setSelectedFont(v as SignatureFont)}
+                  onValueChange={(v) =>
+                    setSelectedFont(
+                      parseSelectValue(v, SIGNATURE_FONT_VALUES) ?? selectedFont
+                    )
+                  }
                 >
                   <SelectTrigger id="font-select" className="h-11 sm:h-10">
                     <SelectValue placeholder="Select a font" />
@@ -757,7 +773,7 @@ export function SignatureCapture({
           </Button>
           <Button
             onClick={() => {
-              if (activeTab === "saved") handleSavedSignature();
+              if (activeTab === "saved") void handleSavedSignature();
               else if (activeTab === "drawn") handleDrawnSignature();
               else if (activeTab === "typed") handleTypedSignature();
               else handleUploadedSignature();

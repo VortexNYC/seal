@@ -159,7 +159,7 @@ export const generateAndStoreFillablePdf = action({
     );
 
     // Store the fillable PDF in Convex storage
-    const fillableBlob = new Blob([fillablePdfBytes as BlobPart], {
+    const fillableBlob = new Blob([new Uint8Array(fillablePdfBytes)], {
       type: "application/pdf",
     });
     const fillableStorageId = await ctx.storage.store(fillableBlob);
@@ -169,13 +169,13 @@ export const generateAndStoreFillablePdf = action({
       internal.documents.mutations.updateFillableStorageId,
       {
         documentId: args.documentId,
-        fillableStorageId: fillableStorageId as unknown as string,
+        fillableStorageId: fillableStorageId,
       }
     );
 
     return {
       success: true,
-      fillableStorageId: fillableStorageId as unknown as string,
+      fillableStorageId,
     };
   },
 });

@@ -1,8 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { DocData } from "fumadocs-mdx/runtime/types";
-import type { ReactNode } from "react";
+import { z } from "zod";
 
 import { changelog } from "../.source/server";
 import type { ChangelogFeature } from "../src/lib/changelog/manifest";
@@ -50,32 +49,15 @@ interface ChangelogManifest {
   entriesBySlug: Record<string, ChangelogManifestEntry>;
 }
 
-type DocsPageData = DocData & {
-  description?: string;
-  lastModified?: Date;
-  title: string;
-};
+// Location fields fumadocs attaches to collection entries at runtime but does
+// not expose on the generated collection types.
+const entryLocationSchema = z.object({
+  path: z.string(),
+  slugs: z.array(z.string()),
+  url: z.string(),
+});
 
-type ChangelogDocData = DocData & {
-  breakingChanges?: string[];
-  coverImage?: ContentImage;
-  description?: string;
-  features?: ChangelogFeature[];
-  fixes?: string[];
-  improvements?: string[];
-  releaseDate: string;
-  summary?: string;
-  title: string;
-  version: string;
-};
-
-interface ChangelogCollectionEntry extends ChangelogDocData {
-  path: string;
-  slugs: string[];
-  url: string;
-}
-
-function serializeTocTitle(title: ReactNode): string {
+function serializeTocTitle(title: unknown): string {
   if (typeof title === "string" || typeof title === "number") {
     return String(title);
   }
@@ -84,9 +66,11 @@ function serializeTocTitle(title: ReactNode): string {
     return title.map(serializeTocTitle).join("");
   }
 
-  if (title && typeof title === "object" && "props" in title) {
-    const element = title as { props?: { children?: ReactNode } };
-    return serializeTocTitle(element.props?.children ?? "");
+  if (title !== null && typeof title === "object" && "props" in title) {
+    const props: unknown = title.props;
+    if (props !== null && typeof props === "object" && "children" in props) {
+      return serializeTocTitle(props.children);
+    }
   }
 
   return "";
@@ -110,7 +94,7 @@ async function generateDocsManifest(): Promise<void> {
 
   // Docs manifest
   for (const page of docsSource.getPages()) {
-    const data = page.data as DocsPageData;
+    const { data } = page;
     const key = page.slugs.join("/");
     const toc = data.toc.map((item) => ({
       depth: item.depth,
@@ -139,8 +123,9 @@ async function generateDocsManifest(): Promise<void> {
   // Developer manifest
   const devPages: Record<string, DocsManifestPage> = {};
   for (const page of developerSource.getPages()) {
-    const data = page.data as DocsPageData;
-    if ((data as { type?: string }).type === "openapi") continue;
+    const { data } = page;
+    // OpenAPI-generated pages carry API-page accessors; skip them.
+    if ("getAPIPageProps" in data) continue;
     const key = page.slugs.join("/");
     const toc = data.toc.map((item) => ({
       depth: item.depth,
@@ -175,11 +160,12 @@ async function generateDocsManifest(): Promise<void> {
 async function generateChangelogManifest(): Promise<void> {
   const entries: ChangelogManifestEntry[] = [];
 
-  for (const entry of changelog as unknown as ChangelogCollectionEntry[]) {
-    const [slug] = entry.slugs;
+  for (const entry of changelog) {
+    const location = entryLocationSchema.parse(entry);
+    const [slug] = location.slugs;
 
     if (!slug) {
-      throw new Error(`Missing changelog slug for ${entry.path}`);
+      throw new Error(`Missing changelog slug for ${location.path}`);
     }
 
     entries.push({
@@ -188,12 +174,12 @@ async function generateChangelogManifest(): Promise<void> {
       features: entry.features ?? [],
       fixes: entry.fixes ?? [],
       improvements: entry.improvements ?? [],
-      path: entry.path,
+      path: location.path,
       releaseDate: entry.releaseDate,
       slug,
       summary: entry.summary ?? entry.description,
       title: entry.title,
-      url: entry.url,
+      url: location.url,
       version: entry.version,
     });
   }

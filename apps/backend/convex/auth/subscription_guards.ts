@@ -8,6 +8,7 @@
  * All lookups are scoped to the ORGANIZATION, not the user.
  */
 
+import { addMoney, applyRate, money } from "@vortexnyc/money";
 import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
@@ -19,6 +20,10 @@ import {
 import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
+
+/** US banking convention: round-half-up per line, then sum minor units. */
+const FEE_ROUNDING = "half-up" as const;
+const FEE_CURRENCY = "USD";
 
 export { PLAN_LIMITS, type TierPlan };
 
@@ -229,7 +234,7 @@ export async function ensureSeatLimit(
   const { plan } = await getSubscriptionPlan(ctx.db, organizationId);
   const limits = PLAN_LIMITS[plan];
 
-  const organization = await ctx.db.get(organizationId);
+  const organization = await ctx.db.get("organizations", organizationId);
   if (!organization) {
     throw new ConvexError("Organization not found");
   }
@@ -283,14 +288,39 @@ export function calculateApplicationFee(
 ): number {
   if (isAch) return 0;
 
+  const charge = money(amountCents, FEE_CURRENCY);
   if (customRates) {
-    return Math.round(
-      amountCents * customRates.cardRate + customRates.cardFixed
-    );
+    return addMoney(
+      applyRate(charge, customRates.cardRate, FEE_ROUNDING),
+      money(customRates.cardFixed, FEE_CURRENCY)
+    ).amount;
   }
 
   const rates = SEAL_FEE_RATES[plan];
-  return Math.round(amountCents * rates.cardPercent + rates.cardFixedCents);
+  return addMoney(
+    applyRate(charge, rates.cardPercent, FEE_ROUNDING),
+    money(rates.cardFixedCents, FEE_CURRENCY)
+  ).amount;
+}
+
+function readEnterpriseCustomRates(
+  org: Doc<"organizations"> | null
+): { cardRate: number; cardFixed: number } | undefined {
+  if (org === null) {
+    return undefined;
+  }
+  const raw = Object.getOwnPropertyDescriptor(org, "customPaymentRates")?.value;
+  if (typeof raw !== "object" || raw === null) {
+    return undefined;
+  }
+  if (!("cardRate" in raw) || !("cardFixed" in raw)) {
+    return undefined;
+  }
+  const { cardRate, cardFixed } = raw;
+  if (typeof cardRate !== "number" || typeof cardFixed !== "number") {
+    return undefined;
+  }
+  return { cardRate, cardFixed };
 }
 
 /**
@@ -305,15 +335,9 @@ export async function getApplicationFee(
   const { plan } = await getSubscriptionPlan(db, organizationId);
 
   // Check for enterprise custom rates
-  const org = await db.get(organizationId);
+  const org = await db.get("organizations", organizationId);
   const customRates =
-    plan === "enterprise"
-      ? (
-          org as {
-            customPaymentRates?: { cardRate: number; cardFixed: number };
-          }
-        )?.customPaymentRates
-      : undefined;
+    plan === "enterprise" ? readEnterpriseCustomRates(org) : undefined;
 
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }

@@ -22,13 +22,15 @@ export const getOrganizationTemplates = permissionQuery("templates:read")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const templates = await ctx.db
+    const templates: Doc<"templates">[] = [];
+    for await (const template of ctx.db
       .query("templates")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", organizationId).eq("status", "active")
       )
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      templates.push(template);
+    }
 
     // Filter by folder
     const folderFiltered =
@@ -53,7 +55,7 @@ export const getTemplate = permissionQuery("templates:read")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
@@ -80,7 +82,7 @@ export const getTemplateFields = permissionQuery("templates:read")({
     const organizationId = ctx.auth.organization._id;
 
     // Verify template access
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
     if (
       !template ||
       template.status === "deleted" ||
@@ -89,12 +91,14 @@ export const getTemplateFields = permissionQuery("templates:read")({
       throw new ConvexError("Template not found");
     }
 
-    const fields = await ctx.db
+    const fields: Doc<"template_fields">[] = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
     return fields;
   },
@@ -111,7 +115,7 @@ export const getTemplateWithFields = permissionQuery("templates:read")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const template = await ctx.db.get(args.templateId);
+    const template = await ctx.db.get("templates", args.templateId);
 
     if (!template || template.status === "deleted") {
       throw new ConvexError("Template not found");
@@ -121,12 +125,14 @@ export const getTemplateWithFields = permissionQuery("templates:read")({
       throw new ConvexError("Template not found");
     }
 
-    const fields = await ctx.db
+    const fields: Doc<"template_fields">[] = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
 
     return {
       ...template,
@@ -143,7 +149,7 @@ export const getTemplateInternal = internalQuery({
     templateId: v.id("templates"),
   },
   handler: async (ctx, args): Promise<Doc<"templates"> | null> => {
-    return await ctx.db.get(args.templateId);
+    return await ctx.db.get("templates", args.templateId);
   },
 });
 
@@ -155,12 +161,15 @@ export const getTemplateFieldsInternal = internalQuery({
     templateId: v.id("templates"),
   },
   handler: async (ctx, args): Promise<Doc<"template_fields">[]> => {
-    return await ctx.db
+    const fields: Doc<"template_fields">[] = [];
+    for await (const field of ctx.db
       .query("template_fields")
       .withIndex("by_template_order", (q) =>
         q.eq("templateId", args.templateId)
-      )
-      .collect();
+      )) {
+      fields.push(field);
+    }
+    return fields;
   },
 });
 
@@ -175,12 +184,14 @@ export const searchTemplates = permissionQuery("templates:read")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    const templates = await ctx.db
+    const templates: Doc<"templates">[] = [];
+    for await (const template of ctx.db
       .query("templates")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", organizationId).eq("status", "active")
-      )
-      .collect();
+      )) {
+      templates.push(template);
+    }
 
     // Simple case-insensitive search
     const searchTerm = args.query.toLowerCase();

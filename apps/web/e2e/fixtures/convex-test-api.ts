@@ -13,6 +13,21 @@ const CONVEX_URL =
   process.env.VITE_CONVEX_URL ?? "https://coordinated-lemur-768.convex.cloud";
 const DEPLOY_KEY = process.env.CONVEX_DEPLOY_KEY ?? "";
 
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** Read the upload URL out of a Convex function-call response body. */
+function readUploadUrl(data: unknown): string | undefined {
+  if (!isRecord(data)) return undefined;
+  const { value } = data;
+  if (typeof value === "string") return value;
+  if (isRecord(value) && typeof value.uploadUrl === "string") {
+    return value.uploadUrl;
+  }
+  return undefined;
+}
+
 function getConvexDeploymentName(convexUrl: string): string {
   try {
     return new URL(convexUrl).hostname.split(".")[0] ?? convexUrl;
@@ -31,33 +46,37 @@ function getConvexAuthHeaders(): HeadersInit {
 const STORAGE_ID_FILE = pdfStorageIdPath;
 
 export async function convexMutation(
-  path: string,
+  functionPath: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
     headers: getConvexAuthHeaders(),
-    body: JSON.stringify({ path, args, format: "json" }),
+    body: JSON.stringify({ path: functionPath, args, format: "json" }),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Convex mutation ${path} failed (${res.status}): ${text}`);
+    throw new Error(
+      `Convex mutation ${functionPath} failed (${res.status}): ${text}`
+    );
   }
   return res.json();
 }
 
 export async function convexQuery(
-  path: string,
+  functionPath: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
     method: "POST",
     headers: getConvexAuthHeaders(),
-    body: JSON.stringify({ path, args, format: "json" }),
+    body: JSON.stringify({ path: functionPath, args, format: "json" }),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Convex query ${path} failed (${res.status}): ${text}`);
+    throw new Error(
+      `Convex query ${functionPath} failed (${res.status}): ${text}`
+    );
   }
   return res.json();
 }
@@ -96,13 +115,8 @@ export async function assertConvexE2eHelperAvailability(): Promise<void> {
     );
   }
 
-  const data = (await response.json()) as {
-    status: string;
-    value?: string | { uploadUrl?: string };
-    errorMessage?: string;
-  };
-  const uploadUrl =
-    typeof data.value === "string" ? data.value : data.value?.uploadUrl;
+  const data: unknown = await response.json();
+  const uploadUrl = readUploadUrl(data);
 
   if (!uploadUrl) {
     throw new Error(
@@ -137,14 +151,8 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
 
   if (!uploadUrlRes.ok)
     throw new Error(`generateUploadUrl failed: ${uploadUrlRes.status}`);
-  const uploadUrlData = (await uploadUrlRes.json()) as {
-    status: string;
-    value?: string | { uploadUrl?: string };
-  };
-  const uploadUrl =
-    typeof uploadUrlData.value === "string"
-      ? uploadUrlData.value
-      : uploadUrlData.value?.uploadUrl;
+  const uploadUrlData: unknown = await uploadUrlRes.json();
+  const uploadUrl = readUploadUrl(uploadUrlData);
 
   if (!uploadUrl) {
     throw new Error(
@@ -160,7 +168,16 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
     body: pdfBytes,
   });
   if (!uploadRes.ok) throw new Error(`PDF upload failed: ${uploadRes.status}`);
-  const { storageId } = (await uploadRes.json()) as { storageId: string };
+  const uploadJson: unknown = await uploadRes.json();
+  const storageId =
+    isRecord(uploadJson) && typeof uploadJson.storageId === "string"
+      ? uploadJson.storageId
+      : null;
+  if (!storageId) {
+    throw new Error(
+      `PDF upload returned no storageId: ${JSON.stringify(uploadJson)}`
+    );
+  }
 
   // Cache for this test run
   fs.mkdirSync(path.dirname(STORAGE_ID_FILE), { recursive: true });

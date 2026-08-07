@@ -62,13 +62,14 @@ export function PdfCanvasLayer({
   const pageFields = fields.filter((field) => field.pageNumber === pageNumber);
 
   // Convert fields from percentage coordinates (stored in DB) to pixel coordinates (for rendering)
-  const pageFieldsInPixels = pageFields.map((field) => ({
-    ...field,
-    x: (field.x / 100) * pdfWidth,
-    y: (field.y / 100) * pdfHeight,
-    width: (field.width / 100) * pdfWidth,
-    height: (field.height / 100) * pdfHeight,
-  }));
+  const pageFieldsInPixels = pageFields.map((field) =>
+    Object.assign({}, field, {
+      x: (field.x / 100) * pdfWidth,
+      y: (field.y / 100) * pdfHeight,
+      width: (field.width / 100) * pdfWidth,
+      height: (field.height / 100) * pdfHeight,
+    })
+  );
 
   // Handle stage click to deselect fields
   const handleStageClick = (

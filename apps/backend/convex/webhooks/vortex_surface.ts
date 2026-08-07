@@ -115,6 +115,7 @@ async function requireOrgEndpoint(
   ctx: {
     db: {
       get: (
+        table: "webhook_endpoints",
         id: Id<"webhook_endpoints">
       ) => Promise<Doc<"webhook_endpoints"> | null>;
     };
@@ -122,7 +123,7 @@ async function requireOrgEndpoint(
   },
   endpointId: Id<"webhook_endpoints">
 ): Promise<Doc<"webhook_endpoints">> {
-  const endpoint = await ctx.db.get(endpointId);
+  const endpoint = await ctx.db.get("webhook_endpoints", endpointId);
   if (!endpoint || endpoint.organizationId !== ctx.auth.organizationId) {
     throw new ConvexError({
       code: "NOT_FOUND",
@@ -161,13 +162,14 @@ async function toDeliveryListItem(
   ctx: {
     db: {
       get: (
+        table: "webhook_endpoints",
         id: Id<"webhook_endpoints">
       ) => Promise<Doc<"webhook_endpoints"> | null>;
     };
   },
   delivery: Doc<"webhook_deliveries">
 ) {
-  const endpoint = await ctx.db.get(delivery.endpointId);
+  const endpoint = await ctx.db.get("webhook_endpoints", delivery.endpointId);
   return {
     _id: delivery._id,
     endpointId: delivery.endpointId,
@@ -325,7 +327,7 @@ export const createEndpoint = authMutation({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", ctx.auth.organizationId)
       )
-      .collect();
+      .take(10);
 
     if (existingEndpoints.length >= 10) {
       throw new ConvexError({
@@ -380,7 +382,7 @@ export const updateEndpoint = authMutation({
     validateHttpsUrl(args.url);
     validateEvents(args.events);
 
-    await ctx.db.patch(endpointId, {
+    await ctx.db.patch("webhook_endpoints", endpointId, {
       url: args.url,
       events: args.events,
       description: args.description,
@@ -411,7 +413,7 @@ export const rotateEndpointSecret = authMutation({
     const secretHash = await hashSecret(secret);
     const secretPrefix = secret.slice(0, 12);
 
-    await ctx.db.patch(endpointId, {
+    await ctx.db.patch("webhook_endpoints", endpointId, {
       secretHash,
       secret,
       secretPrefix,
@@ -439,7 +441,7 @@ export const archiveEndpoint = authMutation({
     if (endpoint.status === "paused") {
       return { ok: true };
     }
-    await ctx.db.patch(endpointId, {
+    await ctx.db.patch("webhook_endpoints", endpointId, {
       status: "paused",
       updatedAt: Date.now(),
     });
@@ -464,7 +466,7 @@ export const disableEndpoint = authMutation({
     if (endpoint.status === "disabled") {
       return { ok: true };
     }
-    await ctx.db.patch(endpointId, {
+    await ctx.db.patch("webhook_endpoints", endpointId, {
       status: "disabled",
       updatedAt: Date.now(),
     });
@@ -493,15 +495,12 @@ export const removeEndpoint = authMutation({
       });
     }
 
-    const deliveries = await ctx.db
+    for await (const delivery of ctx.db
       .query("webhook_deliveries")
-      .withIndex("by_endpoint", (q) => q.eq("endpointId", endpointId))
-      .collect();
-
-    for (const delivery of deliveries) {
-      await ctx.db.delete(delivery._id);
+      .withIndex("by_endpoint", (q) => q.eq("endpointId", endpointId))) {
+      await ctx.db.delete("webhook_deliveries", delivery._id);
     }
-    await ctx.db.delete(endpointId);
+    await ctx.db.delete("webhook_endpoints", endpointId);
     return { ok: true };
   },
 });
@@ -581,7 +580,7 @@ export const retryDelivery = authMutation({
         message: "Delivery not found",
       });
     }
-    const delivery = await ctx.db.get(deliveryId);
+    const delivery = await ctx.db.get("webhook_deliveries", deliveryId);
     if (!delivery || delivery.organizationId !== ctx.auth.organizationId) {
       throw new ConvexError({
         code: "NOT_FOUND",
@@ -595,7 +594,7 @@ export const retryDelivery = authMutation({
       });
     }
 
-    await ctx.db.patch(deliveryId, {
+    await ctx.db.patch("webhook_deliveries", deliveryId, {
       status: "pending",
       nextRetryAt: Date.now(),
       errorMessage: undefined,

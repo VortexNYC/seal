@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import { vi, describe, test, expect, beforeEach, afterEach } from "vitest";
 
@@ -10,9 +9,10 @@ vi.mock("convex/react", () => ({
   useAction: vi.fn(() => vi.fn()),
 }));
 
+import { parseId } from "../../../lib/convex-ids";
 import { PaymentFieldSummary } from "./payment-field-summary";
 
-const FAKE_FIELD_ID = "fake_field_id" as Id<"signature_fields">;
+const FAKE_FIELD_ID = parseId("signature_fields", "fake_field_id");
 
 function makeConfig(overrides: Record<string, unknown> = {}) {
   return {

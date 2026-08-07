@@ -229,7 +229,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        void handleSend();
       }
     },
     [handleSend]

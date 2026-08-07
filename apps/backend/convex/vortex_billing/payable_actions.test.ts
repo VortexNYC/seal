@@ -20,6 +20,42 @@ type BuildDepositBalancePayableInput = Parameters<
   typeof buildCreateDepositBalancePayableRequest
 >[0];
 
+function readStopCondition(feePolicy: {
+  readonly [key: string]: unknown;
+}): string {
+  const execution = feePolicy.execution;
+  if (
+    typeof execution !== "object" ||
+    execution === null ||
+    !("stopCondition" in execution)
+  ) {
+    throw new Error("feePolicy.execution.stopCondition missing");
+  }
+  const stopCondition = execution.stopCondition;
+  if (typeof stopCondition !== "string") {
+    throw new Error("feePolicy.execution.stopCondition must be a string");
+  }
+  return stopCondition;
+}
+
+function readFirstLineItemTaxable(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || !("lineItems" in value)) {
+    throw new Error("expected object with lineItems");
+  }
+  const lineItems = value.lineItems;
+  if (!Array.isArray(lineItems) || lineItems.length === 0) {
+    throw new Error("expected non-empty lineItems");
+  }
+  const first = lineItems[0];
+  if (typeof first !== "object" || first === null || !("taxable" in first)) {
+    throw new Error("expected lineItems[0].taxable");
+  }
+  if (typeof first.taxable !== "boolean") {
+    throw new Error("lineItems[0].taxable must be a boolean");
+  }
+  return first.taxable;
+}
+
 const baseConfig: BuildPayableInput["config"] = {
   _id: "seal_config_123",
   fieldId: "seal_field_123",
@@ -218,7 +254,7 @@ describe("Vortex Billing document payable bridge", () => {
     expect(request.feePolicy.evidence).toContain(
       "platform_fee:fixed_amount:219:USD:half_up"
     );
-    expect(request.feePolicy.execution.stopCondition).toBe(
+    expect(readStopCondition(request.feePolicy)).toBe(
       "fixed application fee is modeled for Vortex payable creation; Vortex executes it on card charge"
     );
   });
@@ -302,7 +338,7 @@ describe("Vortex Billing document payable bridge", () => {
       taxBehavior: "inclusive",
       taxClassificationKey: "standard_taxable",
     });
-    expect(installmentRequest.installments[0]?.lineItems[0]?.taxable).toBe(
+    expect(readFirstLineItemTaxable(installmentRequest.installments[0])).toBe(
       false
     );
 
@@ -326,8 +362,8 @@ describe("Vortex Billing document payable bridge", () => {
       taxBehavior: "inclusive",
       taxClassificationKey: "standard_taxable",
     });
-    expect(depositBalanceRequest.deposit.lineItems[0]?.taxable).toBe(false);
-    expect(depositBalanceRequest.balance.lineItems[0]?.taxable).toBe(false);
+    expect(readFirstLineItemTaxable(depositBalanceRequest.deposit)).toBe(false);
+    expect(readFirstLineItemTaxable(depositBalanceRequest.balance)).toBe(false);
   });
 
   test("defaults taxable Vortex request tax behavior to exclusive", () => {

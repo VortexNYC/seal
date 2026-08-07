@@ -218,12 +218,15 @@ describe("createVersionSnapshot", () => {
   });
 
   test("throws for non-existent document", async () => {
-    const fakeDocumentId = "nonexistent" as Id<"documents">;
+    // Hard-delete the document so its id is valid-format but dangling
+    await t.run(async (ctx) => {
+      await ctx.db.delete("documents", documentId);
+    });
 
     await expect(
       t.run(async (ctx) => {
         await createVersionSnapshot(ctx, {
-          documentId: fakeDocumentId,
+          documentId,
           createdBy: ownerId,
           changeType: "created",
         });

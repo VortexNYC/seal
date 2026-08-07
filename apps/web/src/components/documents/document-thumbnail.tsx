@@ -90,7 +90,7 @@ export function DocumentThumbnail({
       }
     };
 
-    generateThumbnail();
+    void generateThumbnail();
   }, [
     storageUrl,
     thumbnailDataUrl,

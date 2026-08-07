@@ -96,9 +96,13 @@ describe("SignatureCapture", () => {
     const user = userEvent.setup();
     renderSignatureCapture({ recipientName: "Jane Smith" });
     await user.click(screen.getByRole("tab", { name: /Type/i }));
-    const input = screen.getByRole("textbox", {
+    const element = screen.getByRole("textbox", {
       name: /type your full name/i,
-    }) as HTMLInputElement;
+    });
+    if (!(element instanceof HTMLInputElement)) {
+      throw new Error("Expected an input element");
+    }
+    const input = element;
     expect(input).toBeInTheDocument();
     expect(input.value).toBe("Jane Smith");
   });

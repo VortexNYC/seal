@@ -3,8 +3,9 @@
  *
  * Source of truth: vortex-auth organization `metadataJson.brand` /
  * `metadataJson.security` (Core VOR-182 / VOR-183). Seal mirrors brand
- * colors/email into local `brandingSettings` so signing/emails keep working
- * until every reader is cut over.
+ * colors/email into local `brandingSettings` for rollback; readers should
+ * use `resolveEffectiveBrandingSettings` / `loadEffectiveBrandingSettings`
+ * (Core first, KEEP_SEAL chrome from local).
  *
  * Brand parse helpers live in `@vortexnyc/auth/react`; this module keeps a
  * Convex-safe copy so the backend never imports the React entry.
@@ -19,6 +20,7 @@ import { ConvexError } from "convex/values";
 import { components } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { BrandingSettings } from "../schemas/organizations";
 
 type OrgCtx = Pick<QueryCtx | MutationCtx, "runQuery">;
 type OrgWriteCtx = Pick<MutationCtx, "db" | "runQuery" | "runMutation">;
@@ -196,8 +198,59 @@ export async function syncSuiteOrgDetailsToVortexAuth(
 }
 
 /**
+ * Merge Core suite brand with Seal brandingSettings for product readers.
+ * Core owns identity colors / email from / website; Seal owns signing chrome.
+ */
+export function resolveEffectiveBrandingSettings(
+  org: Pick<Doc<"organizations">, "brandingSettings" | "logo">,
+  suiteBrand?: SuiteOrgBrand
+): BrandingSettings {
+  const local = org.brandingSettings;
+  const brandColor = suiteBrand?.primaryColor ?? local?.brandColor;
+  const accentColor = suiteBrand?.accentColor ?? local?.accentColor;
+  const emailFromName = suiteBrand?.emailFromName ?? local?.emailFromName;
+  const emailReplyTo = suiteBrand?.emailReplyTo ?? local?.emailReplyTo;
+  const companyWebsite = suiteBrand?.website ?? local?.companyWebsite;
+  const logoUrl = org.logo ?? local?.logoUrl;
+  const hasSuiteIdentity =
+    Boolean(suiteBrand?.primaryColor) ||
+    Boolean(suiteBrand?.accentColor) ||
+    Boolean(suiteBrand?.emailFromName) ||
+    Boolean(suiteBrand?.emailReplyTo) ||
+    Boolean(suiteBrand?.website);
+
+  return {
+    logoStorageId: local?.logoStorageId,
+    logoUrl,
+    brandColor,
+    accentColor,
+    emailFromName,
+    emailReplyTo,
+    hideSealBranding: local?.hideSealBranding,
+    customFooterText: local?.customFooterText,
+    companyName: local?.companyName,
+    companyWebsite,
+    enabled: local?.enabled === true || hasSuiteIdentity || Boolean(org.logo),
+  };
+}
+
+/**
+ * Load Core suite brand and merge with local brandingSettings.
+ */
+export async function loadEffectiveBrandingSettings(
+  ctx: OrgCtx,
+  org: Pick<
+    Doc<"organizations">,
+    "brandingSettings" | "logo" | "vortexAuthOrganizationId"
+  >
+): Promise<BrandingSettings> {
+  const { brand } = await loadSuiteOrgBrandAndSecurity(ctx, org);
+  return resolveEffectiveBrandingSettings(org, brand);
+}
+
+/**
  * Mirror Core brand fields into Seal brandingSettings so signing page /
- * document emails keep reading local branding until fully cut over.
+ * document emails keep a fallback copy until the write mirror is retired.
  */
 export function mirrorBrandIntoBrandingSettings(
   current: Doc<"organizations">["brandingSettings"] | undefined,

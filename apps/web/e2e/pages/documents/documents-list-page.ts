@@ -7,6 +7,7 @@ import {
   ensureAuthenticatedWorkspaceHome,
   ensureConvexAuth,
 } from "../../fixtures/auth-helpers";
+import { pollUntil } from "../../fixtures/poll";
 
 export class DocumentsListPage {
   readonly page: Page;
@@ -50,17 +51,21 @@ export class DocumentsListPage {
       await ensureAuthenticatedWorkspaceHome(this.page);
     });
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    const attemptNavigation = async (attempt: number): Promise<boolean> => {
+      if (attempt >= 3) return false;
       await this.page.goto(targetUrl, { waitUntil: "domcontentloaded" });
 
       if (await this.waitForDocumentsShell(15000).catch(() => false)) {
-        return;
+        return true;
       }
 
       if (await this.authRequiredError.isVisible().catch(() => false)) {
         await this.recoverFromAuthError(targetUrl);
       }
-    }
+      return attemptNavigation(attempt + 1);
+    };
+
+    if (await attemptNavigation(0)) return;
 
     throw new Error(
       "Documents page did not become ready after multiple navigation attempts."
@@ -124,25 +129,21 @@ export class DocumentsListPage {
         });
     }
 
-    const start = Date.now();
-    const timeout = 10000;
-    let rowDetectedWithName = false;
-    while (Date.now() - start < timeout) {
-      const isFileVisible = await this.page
-        .getByText(fileName)
-        .isVisible()
-        .catch(() => false);
-      if (isFileVisible) {
-        rowDetectedWithName = true;
-        break;
-      }
+    const rowOutcome = await pollUntil(
+      async (): Promise<"named-row" | "row-count" | undefined> => {
+        const isFileVisible = await this.page
+          .getByText(fileName)
+          .isVisible()
+          .catch(() => false);
+        if (isFileVisible) return "named-row";
 
-      const latestCount = await this.getDocumentRowCount();
-      if (latestCount > existingCount) {
-        break;
-      }
-      await this.page.waitForTimeout(250);
-    }
+        const latestCount = await this.getDocumentRowCount();
+        if (latestCount > existingCount) return "row-count";
+        return undefined;
+      },
+      { deadline: Date.now() + 10000, intervalMs: 250 }
+    );
+    const rowDetectedWithName = rowOutcome === "named-row";
 
     if (!rowDetectedWithName) {
       await this.waitForAnyDocumentRow(10000).catch(() => {
@@ -203,9 +204,10 @@ export class DocumentsListPage {
   ): Promise<Locator> {
     const row = this.getDocumentRowByName(documentName);
     const deadline = Date.now() + timeoutMs;
-    let attempts = 0;
 
-    while (Date.now() < deadline) {
+    const poll = async (attempts: number): Promise<Locator | undefined> => {
+      if (Date.now() >= deadline) return undefined;
+
       if (await row.isVisible().catch(() => false)) {
         return row;
       }
@@ -220,11 +222,14 @@ export class DocumentsListPage {
         return row;
       }
 
-      attempts += 1;
-      if (attempts % 6 === 0) {
+      const nextAttempts = attempts + 1;
+      if (nextAttempts % 6 === 0) {
         await this.page.reload({ waitUntil: "domcontentloaded" });
       }
-    }
+      return poll(nextAttempts);
+    };
+
+    if (await poll(0)) return row;
 
     await expect(row).toBeVisible({ timeout: 1000 });
     return row;
@@ -299,73 +304,80 @@ export class DocumentsListPage {
   private async waitForDocumentListResolution(
     timeoutMs = 5000
   ): Promise<"rows" | "empty"> {
-    const deadline = Date.now() + timeoutMs;
+    const resolution = await pollUntil(
+      async (): Promise<"rows" | "empty" | undefined> => {
+        if (await this.recoverFromAuthError()) {
+          return undefined;
+        }
 
-    while (Date.now() < deadline) {
-      if (await this.recoverFromAuthError()) {
-        continue;
-      }
+        if ((await this.documentRows.count()) > 0) {
+          return "rows";
+        }
 
-      if ((await this.documentRows.count()) > 0) {
-        return "rows";
-      }
+        if (await this.emptyDocumentsState.isVisible().catch(() => false)) {
+          return "empty";
+        }
 
-      if (await this.emptyDocumentsState.isVisible().catch(() => false)) {
-        return "empty";
-      }
-
-      await this.page.waitForTimeout(250);
-    }
-
-    throw new Error(
-      "Timed out waiting for the documents list to resolve to rows or an empty state."
+        return undefined;
+      },
+      { deadline: Date.now() + timeoutMs, intervalMs: 250 }
     );
+
+    if (!resolution) {
+      throw new Error(
+        "Timed out waiting for the documents list to resolve to rows or an empty state."
+      );
+    }
+    return resolution;
   }
 
   private async waitForDocumentsShell(timeoutMs = 10000): Promise<boolean> {
-    const deadline = Date.now() + timeoutMs;
+    const outcome = await pollUntil(
+      async (): Promise<"ready" | "auth-error" | undefined> => {
+        const headingVisible = await this.heading
+          .isVisible()
+          .catch(() => false);
+        const createVisible = await this.createDocumentButton
+          .isVisible()
+          .catch(() => false);
+        const searchVisible = await this.searchInput
+          .isVisible()
+          .catch(() => false);
+        const draftsVisible = await this.draftsFilterButton
+          .isVisible()
+          .catch(() => false);
+        const rowsVisible = await this.documentRows
+          .first()
+          .isVisible()
+          .catch(() => false);
+        const emptyVisible = await this.emptyDocumentsState
+          .isVisible()
+          .catch(() => false);
+        const shellReady =
+          headingVisible &&
+          (createVisible ||
+            searchVisible ||
+            draftsVisible ||
+            rowsVisible ||
+            emptyVisible);
 
-    while (Date.now() < deadline) {
-      const headingVisible = await this.heading.isVisible().catch(() => false);
-      const createVisible = await this.createDocumentButton
-        .isVisible()
-        .catch(() => false);
-      const searchVisible = await this.searchInput
-        .isVisible()
-        .catch(() => false);
-      const draftsVisible = await this.draftsFilterButton
-        .isVisible()
-        .catch(() => false);
-      const rowsVisible = await this.documentRows
-        .first()
-        .isVisible()
-        .catch(() => false);
-      const emptyVisible = await this.emptyDocumentsState
-        .isVisible()
-        .catch(() => false);
-      const shellReady =
-        headingVisible &&
-        (createVisible ||
-          searchVisible ||
-          draftsVisible ||
-          rowsVisible ||
-          emptyVisible);
+        if (shellReady) {
+          return "ready";
+        }
 
-      if (shellReady) {
-        return true;
-      }
+        const authErrorVisible = await this.authRequiredError
+          .isVisible()
+          .catch(() => false);
+        if (authErrorVisible) {
+          return "auth-error";
+        }
 
-      const authErrorVisible = await this.authRequiredError
-        .isVisible()
-        .catch(() => false);
-      if (authErrorVisible) {
-        return false;
-      }
+        return undefined;
+      },
+      { deadline: Date.now() + timeoutMs, intervalMs: 250 }
+    );
 
-      await this.page.waitForTimeout(250);
-    }
-
-    return false;
+    return outcome === "ready";
   }
 
   private async recoverFromAuthError(targetUrl?: string): Promise<boolean> {
@@ -396,22 +408,25 @@ export class DocumentsListPage {
     timeoutMs = 5000
   ): Promise<void> {
     const selectedFile = uploadDialog.getByText(fileName, { exact: true });
-    const deadline = Date.now() + timeoutMs;
 
-    while (Date.now() < deadline) {
-      const fileIsListed = await selectedFile.isVisible().catch(() => false);
-      if (
-        fileIsListed &&
-        (await uploadPdfButton.isEnabled().catch(() => false))
-      ) {
-        return;
-      }
-
-      await this.page.waitForTimeout(250);
-    }
-
-    throw new Error(
-      "Timed out waiting for the upload dialog to register the selected PDF."
+    const ready = await pollUntil(
+      async () => {
+        const fileIsListed = await selectedFile.isVisible().catch(() => false);
+        if (
+          fileIsListed &&
+          (await uploadPdfButton.isEnabled().catch(() => false))
+        ) {
+          return true;
+        }
+        return undefined;
+      },
+      { deadline: Date.now() + timeoutMs, intervalMs: 250 }
     );
+
+    if (!ready) {
+      throw new Error(
+        "Timed out waiting for the upload dialog to register the selected PDF."
+      );
+    }
   }
 }

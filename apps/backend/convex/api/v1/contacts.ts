@@ -7,6 +7,7 @@
  */
 import { v } from "convex/values";
 
+import type { Doc } from "../../_generated/dataModel";
 import { internalMutation, internalQuery } from "../../_generated/server";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -80,51 +81,54 @@ export const listContacts = internalQuery({
     const hasSearch = !!args.search;
     const fetchLimit = hasSearch ? Math.min(limit * 5, 500) : limit + 1;
 
-    let query;
-    if (args.status) {
-      query = ctx.db
-        .query("contacts")
-        .withIndex("by_org_status", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("status", sealAssertPresent(args.status))
-        )
-        .order("desc");
-    } else {
-      query = ctx.db
-        .query("contacts")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId)
-        )
-        .order("desc");
-    }
-
-    // Apply cursor if provided (use _creationTime for index-based pagination)
+    let cursorCreationTime: number | undefined;
     if (args.cursor) {
-      const cursorDoc = await ctx.db.get(
-        args.cursor as Parameters<typeof ctx.db.get>[0]
-      );
-      if (cursorDoc) {
-        query = query.filter((q) =>
-          q.lt(q.field("_creationTime"), cursorDoc._creationTime)
-        );
+      const cursorId = ctx.db.normalizeId("contacts", args.cursor);
+      if (cursorId) {
+        const cursorDoc = await ctx.db.get("contacts", cursorId);
+        if (cursorDoc) {
+          cursorCreationTime = cursorDoc._creationTime;
+        }
       }
     }
 
-    const raw = await query.take(fetchLimit);
+    const baseQuery = args.status
+      ? ctx.db
+          .query("contacts")
+          .withIndex("by_org_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", sealAssertPresent(args.status))
+          )
+          .order("desc")
+      : ctx.db
+          .query("contacts")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId)
+          )
+          .order("desc");
 
-    // Client-side search filter
-    const filtered = args.search
-      ? raw.filter(
-          (c) =>
-            c.fullName
-              .toLowerCase()
-              .includes(sealAssertPresent(args.search).toLowerCase()) ||
-            c.email
-              .toLowerCase()
-              .includes(sealAssertPresent(args.search).toLowerCase())
-        )
-      : raw;
+    const searchLower = args.search?.toLowerCase();
+    const filtered: Doc<"contacts">[] = [];
+    for await (const contact of baseQuery) {
+      if (
+        cursorCreationTime !== undefined &&
+        contact._creationTime >= cursorCreationTime
+      ) {
+        continue;
+      }
+      if (
+        searchLower &&
+        !contact.fullName.toLowerCase().includes(searchLower) &&
+        !contact.email.toLowerCase().includes(searchLower)
+      ) {
+        continue;
+      }
+      filtered.push(contact);
+      if (filtered.length >= fetchLimit) {
+        break;
+      }
+    }
 
     const has_more = filtered.length > limit;
     const items = has_more ? filtered.slice(0, limit) : filtered;
@@ -167,7 +171,7 @@ export const getContact = internalQuery({
     contactId: v.id("contacts"),
   },
   handler: async (ctx, args): Promise<ApiContact | null> => {
-    const c = await ctx.db.get(args.contactId);
+    const c = await ctx.db.get("contacts", args.contactId);
     if (!c || c.organizationId !== args.organizationId) return null;
 
     return {
@@ -249,12 +253,12 @@ export const deleteContact = internalMutation({
     contactId: v.id("contacts"),
   },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const contact = await ctx.db.get(args.contactId);
+    const contact = await ctx.db.get("contacts", args.contactId);
     if (!contact || contact.organizationId !== args.organizationId) {
       throw new Error("Contact not found");
     }
 
-    await ctx.db.delete(args.contactId);
+    await ctx.db.delete("contacts", args.contactId);
     return { success: true };
   },
 });

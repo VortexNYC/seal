@@ -35,7 +35,7 @@ export const markDocumentAsCompleted = internalMutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.db.get(args.documentId);
+    const document = await ctx.db.get("documents", args.documentId);
     if (!document || document.status === "deleted") {
       throw new ConvexError("Document not found");
     }
@@ -44,7 +44,7 @@ export const markDocumentAsCompleted = internalMutation({
     if (document.workflowStatus !== "completed") {
       const now = Date.now();
       const SEVEN_YEARS_MS = 7 * 365.25 * 24 * 60 * 60 * 1000;
-      await ctx.db.patch(args.documentId, {
+      await ctx.db.patch("documents", args.documentId, {
         workflowStatus: "completed",
         completedAt: now,
         updatedAt: now,
@@ -165,7 +165,7 @@ async function notifyNextSequentialGroup(
   }
 
   const nextGroup = [...groups.entries()]
-    .sort(([firstOrder], [secondOrder]) => firstOrder - secondOrder)
+    .toSorted(([firstOrder], [secondOrder]) => firstOrder - secondOrder)
     .find(
       ([order, group]) =>
         order > myOrder &&
@@ -290,7 +290,7 @@ async function sendCompletionEmailToOwner(
 export const getRecipientById = internalQuery({
   args: { recipientId: v.id("document_recipients") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.recipientId);
+    return await ctx.db.get("document_recipients", args.recipientId);
   },
 });
 

@@ -31,6 +31,9 @@ export async function resolveSubscriptionPriceAndProductByAnyId(
     return { price: null, product: null };
   }
 
-  const product = await db.get(price.subscriptionProductId);
+  const product = await db.get(
+    "subscription_products",
+    price.subscriptionProductId
+  );
   return { price, product };
 }

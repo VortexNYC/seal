@@ -9,11 +9,26 @@ import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { betterAuthConvexProvider } from "./auth.config";
 import { authComponent as consumerAuthComponent } from "./betterAuthClient";
-import { sendEmailFromAction } from "./emails/resend_component";
+import { sendAuthEmailDraft } from "./emails/resend_component";
 
 /** Auth-email from-address (same source as Seal's transactional senders). */
 function authEmailFromAddress(): string {
   return process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
+}
+
+/**
+ * Better Auth types its handler ctx as the broad GenericCtx union; the email
+ * sender only needs `runMutation`. Runtime-checked narrowing at the seam.
+ */
+function isMutationCapableCtx(
+  value: unknown
+): value is Parameters<typeof sendAuthEmailDraft>[0] {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "runMutation" in value &&
+    typeof value.runMutation === "function"
+  );
 }
 
 const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
@@ -63,11 +78,13 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
       }
       // Better Auth invokes sendEmail inside a mutation-capable handler ctx;
       // the seam types it as the broad GenericCtx, so narrow to the sender's
-      // expected ctx (which needs runMutation).
-      const sendCtx = ctx as unknown as Parameters<
-        typeof sendEmailFromAction
-      >[0];
-      await sendEmailFromAction(sendCtx, draft);
+      // expected ctx (which needs runMutation) with a runtime check.
+      if (!isMutationCapableCtx(ctx)) {
+        throw new Error(
+          "auth email send requires a mutation-capable ctx (runMutation)"
+        );
+      }
+      await sendAuthEmailDraft(ctx, draft);
     },
     // Captcha is a PROVEN opt-in capability (Cloudflare Turnstile,
     // sign-up/reset scoped). Kept DISABLED on the shared dev deployment

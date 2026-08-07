@@ -8,7 +8,15 @@ export default defineConfig({
   fmt: vortexFormat,
   lint: vortexLint,
   staged: {
-    "*.{js,jsx,ts,tsx}": ["vp lint --fix", "vp fmt"],
-    "*.{css,json,jsonc}": "vp fmt",
+    // --no-error-on-unmatched-pattern: a staged set that is entirely
+    // tool-ignored (only *.gen.* or _generated/* staged) is a SUCCESSFUL
+    // commit, not a failure -- without it both tools exit non-zero and the
+    // pre-commit hook reverts the commit (VOR-187; bit vortex-payments three
+    // times in two days and blocked the vortex-auth 0.14.1 release commit).
+    "*.{js,jsx,ts,tsx}": [
+      "vp lint --fix --no-error-on-unmatched-pattern",
+      "vp fmt --no-error-on-unmatched-pattern",
+    ],
+    "*.{css,json,jsonc}": "vp fmt --no-error-on-unmatched-pattern",
   },
 });

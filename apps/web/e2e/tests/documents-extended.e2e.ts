@@ -216,7 +216,10 @@ test.describe("Document Editor - Zoom Controls", () => {
 
   test.beforeAll(async ({ browser }, testInfo) => {
     const storageId = await ensurePdfStorageId(sampleDocumentPath);
-    const storageState = testInfo.project.use.storageState as string;
+    const storageState = testInfo.project.use.storageState;
+    if (typeof storageState !== "string") {
+      throw new Error("Expected a file-based storageState for setup context");
+    }
 
     zoomDocId = await withSetupContext(
       browser,

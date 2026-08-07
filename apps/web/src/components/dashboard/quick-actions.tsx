@@ -30,7 +30,7 @@ interface QuickActionItem {
   iconBg: string;
   iconColor: string;
   to: string;
-  search?: Record<string, unknown>;
+  search?: Record<string, string | undefined>;
 }
 
 interface QuickActionsProps {
@@ -107,7 +107,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
                   router.navigate({
                     to: action.to,
                     params: { slug },
-                    search: action.search as Record<string, string | undefined>,
+                    search: action.search,
                   })
                 }
               >

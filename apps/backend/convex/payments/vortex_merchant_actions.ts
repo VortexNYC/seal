@@ -8,6 +8,8 @@ import {
   getMerchantAccountPayouts,
   getMerchantAccountSettlements,
   getMerchantAccountState,
+  type MerchantAccountCreateRequest,
+  type MerchantOnboardingLinkRequest,
 } from "@vortexnyc/payments-sdk";
 import { ConvexError, v } from "convex/values";
 
@@ -16,17 +18,8 @@ import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { action, internalAction } from "../_generated/server";
 import { isAdmin } from "../auth.utils";
-import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_actions";
-import { createVortexBillingClient } from "./vortex_billing_processor";
-
-type Json =
-  | null
-  | boolean
-  | number
-  | string
-  | readonly Json[]
-  | { readonly [key: string]: Json };
-type JsonObject = { readonly [key: string]: Json };
+import { readVortexBillingEnvFromProcess } from "../vortex_billing/payable_env.helpers";
+import { createVortexBillingClient } from "./vortex_billing_processor.helpers";
 
 type VortexMerchantState = {
   readonly chargesEnabled: boolean;
@@ -377,7 +370,22 @@ function readObject(value: unknown, label: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new ConvexError(`${label} must be an object`);
   }
-  return value as Record<string, unknown>;
+  const record: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    record[key] = entry;
+  }
+  return record;
+}
+
+function readPaymentsEnvironment(
+  value: string
+): MerchantAccountCreateRequest["environment"] {
+  if (value === "sandbox" || value === "production") {
+    return value;
+  }
+  throw new ConvexError(
+    `paymentsEnvironment must be "sandbox" or "production", got "${value}"`
+  );
 }
 
 function readString(value: unknown, label: string): string {
@@ -737,8 +745,8 @@ function deriveBalance(input: {
     derived: true,
     label: "derived_from_vortex_settlements_and_payouts",
     currencies: [...balances.entries()]
-      .map(([currency, balance]) => ({ currency, ...balance }))
-      .sort((left, right) => left.currency.localeCompare(right.currency)),
+      .map(([currency, balance]) => Object.assign({ currency }, balance))
+      .toSorted((left, right) => left.currency.localeCompare(right.currency)),
   };
 }
 
@@ -1055,8 +1063,8 @@ async function createVortexMerchantAccountForOrganization(
   }
 
   const env = readVortexBillingEnvFromProcess();
-  const body: JsonObject = {
-    environment: env.paymentsEnvironment,
+  const body: MerchantAccountCreateRequest = {
+    environment: readPaymentsEnvironment(env.paymentsEnvironment),
     // Do NOT send tenantId: Vortex derives the tenant from the API key's org context and rejects
     // a mismatch ("tenantId must match current organization"). Seal's own org id is not the Vortex
     // tenant. externalMerchantRef + metadata.sealOrganizationId carry the Seal linkage instead.
@@ -1082,9 +1090,7 @@ async function createVortexMerchantAccountForOrganization(
   const { data, error, response } = await createMerchantAccount({
     client,
     headers: { "Idempotency-Key": `seal-vortex-merchant:${organizationId}` },
-    body: body as unknown as Parameters<
-      typeof createMerchantAccount
-    >[0]["body"],
+    body,
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(
@@ -1164,8 +1170,8 @@ async function createVortexOnboardingLinkForOrganization(
   }
 
   const env = readVortexBillingEnvFromProcess();
-  const body: JsonObject = {
-    environment: env.paymentsEnvironment,
+  const body: MerchantOnboardingLinkRequest = {
+    environment: readPaymentsEnvironment(env.paymentsEnvironment),
     createdByRef: `seal:${organizationId}`,
   };
   const client = createVortexBillingClient({
@@ -1175,9 +1181,7 @@ async function createVortexOnboardingLinkForOrganization(
   const { data, error, response } = await createMerchantOnboardingLink({
     client,
     path: { merchantAccountId: existing.providerAccountId },
-    body: body as unknown as Parameters<
-      typeof createMerchantOnboardingLink
-    >[0]["body"],
+    body,
   });
   if (error !== undefined || response === undefined || !response.ok) {
     throw new ConvexError(

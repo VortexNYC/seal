@@ -71,7 +71,7 @@ export const upsertMerchantAccount = internalMutation({
     };
 
     if (existing) {
-      await ctx.db.patch(existing._id, payload);
+      await ctx.db.patch("merchant_accounts", existing._id, payload);
       return existing._id;
     }
 
@@ -101,7 +101,7 @@ export const updateFeeHandling = adminMutation({
       throw new ConvexError("Merchant account not connected");
     }
 
-    await ctx.db.patch(account._id, {
+    await ctx.db.patch("merchant_accounts", account._id, {
       feeHandling: args.feeHandling,
       updatedAt: Date.now(),
     });

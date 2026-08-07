@@ -22,21 +22,18 @@ export const getRevenueStats = memberQuery({
   handler: async (ctx, args) => {
     const organizationId = assertActiveOrganization(ctx.auth, args.slug);
 
-    // convex-cost-guard-allow: convex-broad-organization-collect — revenue stats require scanning all invoices for the org to compute accurate totals bound=per-tenant
-    const invoices = await ctx.db
-      .query("document_invoices")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId)
-      )
-      .collect();
-
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     let totalRevenue = 0;
     let paidCount = 0;
     let pendingCount = 0;
     let monthlyRevenue = 0;
+    let currency = "usd";
 
-    for (const invoice of invoices) {
+    for await (const invoice of ctx.db
+      .query("document_invoices")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId)
+      )) {
       if (invoice.status === "paid") {
         totalRevenue += invoice.amountDue;
         paidCount += 1;
@@ -47,6 +44,7 @@ export const getRevenueStats = memberQuery({
       } else if (invoice.status === "open") {
         pendingCount += 1;
       }
+      currency = invoice.currency;
     }
 
     return {
@@ -54,7 +52,7 @@ export const getRevenueStats = memberQuery({
       paidCount,
       pendingCount,
       monthlyRevenue,
-      currency: invoices[0]?.currency ?? "usd",
+      currency,
     };
   },
 });
@@ -74,42 +72,44 @@ export const getTransactionList = memberQuery({
   handler: async (ctx, args) => {
     const organizationId = assertActiveOrganization(ctx.auth, args.slug);
 
-    const invoices = await ctx.db
+    const statusFilter = args.statusFilter satisfies
+      | PaymentStatusFilter
+      | undefined;
+
+    const results = [];
+    for await (const invoice of ctx.db
       .query("document_invoices")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
       )
-      .order("desc")
-      .collect();
+      .order("desc")) {
+      if (
+        statusFilter !== undefined &&
+        statusFilter !== "all" &&
+        invoice.status !== statusFilter
+      ) {
+        continue;
+      }
 
-    const statusFilter = args.statusFilter satisfies
-      | PaymentStatusFilter
-      | undefined;
-    const filtered =
-      statusFilter !== undefined && statusFilter !== "all"
-        ? invoices.filter((invoice) => invoice.status === statusFilter)
-        : invoices;
+      const document = await ctx.db.get("documents", invoice.documentId);
 
-    return await Promise.all(
-      filtered.map(async (invoice) => {
-        const document = await ctx.db.get(invoice.documentId);
+      results.push({
+        _id: invoice._id,
+        documentId: invoice.documentId,
+        documentTitle: document?.name ?? "Untitled Document",
+        customerEmail: invoice.customerEmail,
+        customerName: invoice.customerName,
+        amountDue: invoice.amountDue,
+        currency: invoice.currency,
+        status: invoice.status,
+        hostedInvoiceUrl: invoice.hostedInvoiceUrl,
+        invoicePdf: invoice.invoicePdf,
+        paidAt: invoice.paidAt,
+        createdAt: invoice.createdAt,
+      });
+    }
 
-        return {
-          _id: invoice._id,
-          documentId: invoice.documentId,
-          documentTitle: document?.name ?? "Untitled Document",
-          customerEmail: invoice.customerEmail,
-          customerName: invoice.customerName,
-          amountDue: invoice.amountDue,
-          currency: invoice.currency,
-          status: invoice.status,
-          hostedInvoiceUrl: invoice.hostedInvoiceUrl,
-          invoicePdf: invoice.invoicePdf,
-          paidAt: invoice.paidAt,
-          createdAt: invoice.createdAt,
-        };
-      })
-    );
+    return results;
   },
 });
 
@@ -120,18 +120,19 @@ export const getActiveSubscriptions = memberQuery({
   handler: async (ctx, args) => {
     const organizationId = assertActiveOrganization(ctx.auth, args.slug);
 
-    const configs = await ctx.db
+    const recurring = [];
+    for await (const config of ctx.db
       .query("payment_field_configs")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId)
-      )
-      .collect();
-
-    const recurring = configs.filter(
-      (config) =>
+      )) {
+      if (
         config.paymentType === "recurring" &&
         config.providerSubscriptionId !== undefined
-    );
+      ) {
+        recurring.push(config);
+      }
+    }
 
     return await Promise.all(
       recurring.map(async (config) => {
@@ -142,7 +143,7 @@ export const getActiveSubscriptions = memberQuery({
           );
         }
 
-        const document = await ctx.db.get(config.documentId);
+        const document = await ctx.db.get("documents", config.documentId);
 
         const invoice =
           config.providerInvoiceId === undefined

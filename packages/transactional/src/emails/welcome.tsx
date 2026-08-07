@@ -11,8 +11,8 @@ export interface WelcomeProps {
 }
 
 export function Welcome({
-  userName = "there",
-  userEmail = "user@example.com",
+  userName,
+  userEmail,
   dashboardUrl = "https://seal.nyc/dashboard",
 }: WelcomeProps) {
   const previewText =

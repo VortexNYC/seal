@@ -8,12 +8,14 @@
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   internalAction,
   internalMutation,
   internalQuery,
 } from "../_generated/server";
 import { sendExpirationAlert } from "./email";
+
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present."
@@ -35,43 +37,46 @@ export const getDocumentsApproachingDeadline = internalQuery({
   handler: async (ctx) => {
     const now = Date.now();
 
-    // Get all active documents with deadlines
-    const sentDocs = await ctx.db
+    const activeDocs: Doc<"documents">[] = [];
+    for await (const doc of ctx.db
       .query("documents")
-      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "sent"))
-      .collect();
-    const inProgressDocs = await ctx.db
+      .withIndex("by_workflow_status", (q) => q.eq("workflowStatus", "sent"))) {
+      if (doc.deadline && doc.organizationId && doc.status !== "deleted") {
+        activeDocs.push(doc);
+      }
+    }
+    for await (const doc of ctx.db
       .query("documents")
       .withIndex("by_workflow_status", (q) =>
         q.eq("workflowStatus", "in_progress")
-      )
-      .collect();
-
-    const activeDocs = [...sentDocs, ...inProgressDocs].filter(
-      (doc) => doc.deadline && doc.organizationId && doc.status !== "deleted"
-    );
-
-    // Group by org for settings lookup
-    const docsByOrg = new Map<string, typeof activeDocs>();
-    for (const doc of activeDocs) {
-      const orgId = doc.organizationId as string;
-      if (!docsByOrg.has(orgId)) {
-        docsByOrg.set(orgId, []);
+      )) {
+      if (doc.deadline && doc.organizationId && doc.status !== "deleted") {
+        activeDocs.push(doc);
       }
-      sealAssertPresent(docsByOrg.get(orgId)).push(doc);
+    }
+
+    const docsByOrg = new Map<Id<"organizations">, Doc<"documents">[]>();
+    for (const doc of activeDocs) {
+      const orgId = doc.organizationId;
+      const group = docsByOrg.get(orgId);
+      if (group) {
+        group.push(doc);
+      } else {
+        docsByOrg.set(orgId, [doc]);
+      }
     }
 
     const alertCandidates: Array<{
-      documentId: (typeof activeDocs)[0]["_id"];
+      documentId: Doc<"documents">["_id"];
       documentName: string;
-      ownerId: (typeof activeDocs)[0]["ownerId"];
-      organizationId: (typeof activeDocs)[0]["organizationId"];
+      ownerId: Doc<"documents">["ownerId"];
+      organizationId: Doc<"documents">["organizationId"];
       deadline: number;
       daysRemaining: number;
     }> = [];
 
     for (const [orgId, docs] of docsByOrg) {
-      const org = await ctx.db.get(orgId as (typeof docs)[0]["organizationId"]);
+      const org = await ctx.db.get("organizations", orgId);
       const expirationAlertDays =
         org?.notificationSettings?.expirationAlertDays ?? 3;
 
@@ -80,7 +85,6 @@ export const getDocumentsApproachingDeadline = internalQuery({
           (sealAssertPresent(doc.deadline) - now) / DAY_MS
         );
 
-        // Alert if within the configured window, not already past, and not already alerted
         const alreadyAlerted = (doc.expirationAlertsSent ?? []).includes(
           daysUntilDeadline
         );
@@ -115,13 +119,11 @@ export const recordExpirationAlert = internalMutation({
     daysRemaining: v.number(),
   },
   handler: async (ctx, args) => {
-    const doc = await ctx.db.get(args.documentId);
+    const doc = await ctx.db.get("documents", args.documentId);
     if (!doc) return;
 
-    // Store alert timestamp on the document to prevent re-alerting
-    const existingAlerts =
-      (doc.expirationAlertsSent as number[] | undefined) ?? [];
-    await ctx.db.patch(args.documentId, {
+    const existingAlerts = doc.expirationAlertsSent ?? [];
+    await ctx.db.patch("documents", args.documentId, {
       expirationAlertsSent: [...existingAlerts, args.daysRemaining],
     });
   },
@@ -141,7 +143,6 @@ export const processExpirationAlerts = internalAction({
     let alertsSent = 0;
 
     for (const candidate of candidates) {
-      // Get owner info
       const owner = await ctx.runQuery(
         internal.organizations.helpers.getUserById,
         {
@@ -150,7 +151,6 @@ export const processExpirationAlerts = internalAction({
       );
       if (!owner?.email) continue;
 
-      // Get pending recipients
       const recipients = await ctx.runQuery(
         internal.documents.recipients_queries.getDocumentRecipientsInternal,
         { documentId: candidate.documentId }

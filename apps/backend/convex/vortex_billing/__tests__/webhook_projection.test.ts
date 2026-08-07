@@ -283,13 +283,13 @@ describe("Vortex Billing subscription projection", () => {
     expect(second).toMatchObject({ processed: false, duplicate: true });
     expect(await activeSubscriptions()).toHaveLength(1);
 
-    const eventRows = await t.run((ctx) =>
+    const webhookEventRows = await t.run((ctx) =>
       ctx.db
         .query("vortex_billing_webhook_events")
         .withIndex("by_event_id", (q) => q.eq("eventId", projection.eventId))
         .collect()
     );
-    expect(eventRows).toHaveLength(1);
+    expect(webhookEventRows).toHaveLength(1);
   });
 
   test("projects invoice.paid recovery onto active and clears dunning anchor", async () => {

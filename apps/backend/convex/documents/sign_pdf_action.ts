@@ -101,7 +101,7 @@ async function saveSignedPdfToStorage(
   pdfDoc: Awaited<ReturnType<typeof PDFDocument.load>>
 ): Promise<string> {
   const signedPdfBytes = await pdfDoc.save();
-  const signedBlob = new Blob([signedPdfBytes as BlobPart], {
+  const signedBlob = new Blob([new Uint8Array(signedPdfBytes)], {
     type: "application/pdf",
   });
   return await ctx.storage.store(signedBlob);
@@ -587,7 +587,7 @@ async function embedSignaturesIntoPdf(
       pdfDoc,
       signature,
       field,
-      recipientMap.get(signature.recipientId as Id<"document_recipients">),
+      recipientMap.get(signature.recipientId),
       helvetica,
       helveticaBold
     );
@@ -640,8 +640,8 @@ export const generateAndGetSignedPdfByToken = action({
 
     const allRecipientsComplete =
       recipients.length > 0 &&
-      recipients.every((recipient) =>
-        isRecipientComplete(recipient.role, recipient.status)
+      recipients.every((docRecipient) =>
+        isRecipientComplete(docRecipient.role, docRecipient.status)
       );
 
     // 4. Check if signed PDF already exists and document is fully complete
@@ -712,7 +712,7 @@ export const generateAndGetSignedPdfByToken = action({
     const signedPdfBytes = await pdfDoc.save();
 
     // 10. Store the signed PDF
-    const signedBlob = new Blob([signedPdfBytes as BlobPart], {
+    const signedBlob = new Blob([new Uint8Array(signedPdfBytes)], {
       type: "application/pdf",
     });
     const signedStorageId = await ctx.storage.store(signedBlob);

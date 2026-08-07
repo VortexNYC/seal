@@ -44,7 +44,7 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
     // First reset the error boundary state
     reset();
     // Then invalidate and reload the current route
-    router.invalidate();
+    void router.invalidate();
   };
 
   const handleSignOut = async () => {

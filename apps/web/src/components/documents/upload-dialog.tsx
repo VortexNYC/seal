@@ -7,6 +7,7 @@ import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { useAnalytics } from "../../hooks/use-analytics";
+import { parseId } from "../../lib/convex-ids";
 import { extractPdfMetadata } from "../../lib/pdf-utils";
 import {
   DROPZONE_ACCEPT_TYPES,
@@ -65,10 +66,6 @@ type CreateDocumentInput = {
   storageId: Id<"_storage">;
   pageCount?: number;
   thumbnailDataUrl?: string;
-};
-
-type StorageUploadResponse = {
-  storageId: Id<"_storage">;
 };
 
 type UsageStats = {
@@ -675,12 +672,10 @@ function CancelUploadDialog({
 async function buildUploadFiles(
   files: readonly File[]
 ): Promise<FileWithStatus[]> {
-  const validatedFiles: FileWithStatus[] = [];
-  for (const file of files) {
-    const uploadFile = await buildUploadFile(file);
-    if (uploadFile) validatedFiles.push(uploadFile);
-  }
-  return validatedFiles;
+  const uploadFiles = await Promise.all(
+    files.map((file) => buildUploadFile(file))
+  );
+  return uploadFiles.flatMap((uploadFile) => (uploadFile ? [uploadFile] : []));
 }
 
 async function buildUploadFile(file: File): Promise<FileWithStatus | null> {
@@ -709,18 +704,15 @@ function showRejectedFileErrors(rejectedFiles: readonly FileRejection[]) {
 }
 
 async function uploadSingleFileWithRetry(
-  input: UploadSingleFileInput
+  input: UploadSingleFileInput,
+  retryCount = 0
 ): Promise<boolean> {
-  let retryCount = 0;
-  while (retryCount <= MAX_RETRIES) {
-    const outcome = await uploadSingleFileAttempt(input, retryCount);
-    if (outcome === "success") return true;
-    if (outcome === "retry") {
-      retryCount++;
-      await sleep(getRetryDelay(retryCount - 1));
-      continue;
-    }
-    return false;
+  if (retryCount > MAX_RETRIES) return false;
+  const outcome = await uploadSingleFileAttempt(input, retryCount);
+  if (outcome === "success") return true;
+  if (outcome === "retry") {
+    await sleep(getRetryDelay(retryCount));
+    return uploadSingleFileWithRetry(input, retryCount + 1);
   }
   return false;
 }
@@ -764,7 +756,16 @@ async function createUploadedDocument(
   }
 
   input.updateFile(input.index, { progress: 70 });
-  const { storageId } = (await result.json()) as StorageUploadResponse;
+  const responseBody: unknown = await result.json();
+  if (
+    typeof responseBody !== "object" ||
+    responseBody === null ||
+    !("storageId" in responseBody) ||
+    typeof responseBody.storageId !== "string"
+  ) {
+    throw new Error("Upload response did not include a storage id");
+  }
+  const storageId = parseId("_storage", responseBody.storageId);
   input.updateFile(input.index, { progress: 90 });
   await input.createDocument(buildCreateDocumentInput(input, storageId));
 }

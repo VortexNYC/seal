@@ -1,5 +1,3 @@
-"use node";
-
 /**
  * Action to compute and store document hash for integrity verification
  *
@@ -7,6 +5,9 @@
  *
  * This action downloads the PDF from storage, computes its SHA-256 hash,
  * and stores the hash in the document record for later verification.
+ *
+ * Uses Web Crypto (runtime-neutral) so this file stays on the Convex JS
+ * action runtime — no "use node" import from crypto/node_helpers.
  */
 
 import { ConvexError, v } from "convex/values";
@@ -14,7 +15,22 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { action, internalAction } from "../_generated/server";
-import { generateSHA256Hash } from "../crypto/node_helpers";
+
+/**
+ * SHA-256 hex digest via Web Crypto (same output as Node createHash("sha256")).
+ */
+async function generateSHA256Hash(
+  data: ArrayBuffer | Uint8Array
+): Promise<string> {
+  const source = data instanceof Uint8Array ? data : new Uint8Array(data);
+  // Copy into a fresh ArrayBuffer so Web Crypto accepts BufferSource.
+  const copy = new Uint8Array(source.byteLength);
+  copy.set(source);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", copy);
+  return Array.from(new Uint8Array(hashBuffer), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+}
 
 /**
  * Compute and store the SHA-256 hash of a document
@@ -57,7 +73,7 @@ export const hashDocument = internalAction({
     const pdfArrayBuffer = await response.arrayBuffer();
 
     // Generate SHA-256 hash
-    const hash = generateSHA256Hash(pdfArrayBuffer);
+    const hash = await generateSHA256Hash(pdfArrayBuffer);
 
     // Store the hash in the document record
     await ctx.runMutation(internal.documents.mutations.updateDocumentHash, {
@@ -112,7 +128,7 @@ export const verifyDocumentIntegrity = action({
     const pdfArrayBuffer = await response.arrayBuffer();
 
     // Generate current hash
-    const currentHash = generateSHA256Hash(pdfArrayBuffer);
+    const currentHash = await generateSHA256Hash(pdfArrayBuffer);
 
     // Compare with stored hash
     if (!document.documentHash) {

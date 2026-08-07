@@ -72,7 +72,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useIsomorphicLayoutEffect(() => {
     if (typeof window === "undefined") {
-      return;
+      return undefined;
     }
 
     const nextResolved = theme === "system" ? readSystemPreference() : theme;
@@ -86,7 +86,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (theme !== "system") {
-      return;
+      return undefined;
     }
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");

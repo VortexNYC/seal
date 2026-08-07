@@ -13,12 +13,12 @@ export interface DocumentViewedProps {
 }
 
 export function DocumentViewed({
-  ownerName = "User",
-  documentName = "Document",
-  documentUrl = "https://seal.nyc/documents/example",
-  recipientName = "Recipient",
-  recipientEmail = "recipient@example.com",
-  viewedAt = Date.now(),
+  ownerName,
+  documentName,
+  documentUrl,
+  recipientName,
+  recipientEmail,
+  viewedAt,
 }: DocumentViewedProps) {
   const previewText = `${recipientName} viewed "${documentName}"`;
 
