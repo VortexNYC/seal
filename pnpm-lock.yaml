@@ -161,8 +161,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))(rxjs@7.8.2)
       '@vortexnyc/payments-sdk':
-        specifier: 0.1.2
-        version: 0.1.2
+        specifier: 0.2.0
+        version: 0.2.0
       '@vortexnyc/permissions':
         specifier: 0.2.1
         version: 0.2.1
@@ -6649,8 +6649,8 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@vortexnyc/payments-sdk@0.1.2':
-    resolution: {integrity: sha512-1pg9tUeED7H09FIYW18MGia9+Zd5Y+JGFoCSZT9l0lwKM9ZnYCqQZBlQMy3j98RIi+2xQbvGnz4clOeF+QovGQ==, tarball: https://npm.pkg.github.com/download/@vortexnyc/payments-sdk/0.1.2/aa024b7ea3b566192cf3e72b8dbf8c3688fc224b}
+  '@vortexnyc/payments-sdk@0.2.0':
+    resolution: {integrity: sha512-iMSkDkUMImcdbsTKbInCJ7br7eZELies6ROqad5qbH7YktV7KcybgWJStVmMet00GYQXLBqfzUH/kz2sb15aeQ==, tarball: https://npm.pkg.github.com/download/@vortexnyc/payments-sdk/0.2.0/f12e0816af8e3ae335e55f45d9470b5808c2dc42}
 
   '@vortexnyc/permissions@0.2.1':
     resolution: {integrity: sha512-9sOlQk+lQ2NvX+A85tJ5P0ik6UewY8SSQ68rWaKnwMwMn1LG0tz/VtHjuBqnHAvnRnVoLrMrS78gYoGQXM3BOA==, tarball: https://npm.pkg.github.com/download/@VortexNYC/permissions/0.2.1/2719eef650c2df240c04994b28f8fe2e4a7c69a0}
@@ -19049,7 +19049,7 @@ snapshots:
     dependencies:
       react: 19.2.8
 
-  '@vortexnyc/payments-sdk@0.1.2': {}
+  '@vortexnyc/payments-sdk@0.2.0': {}
 
   '@vortexnyc/permissions@0.2.1': {}
 
