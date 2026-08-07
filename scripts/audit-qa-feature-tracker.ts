@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const trackerPath = resolve(
-  import.meta.dir,
+  import.meta.dirname,
   "../docs/qa/feature-user-stories.csv"
 );
 

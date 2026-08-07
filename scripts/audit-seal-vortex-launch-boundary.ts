@@ -256,7 +256,7 @@ function runJsonScript<T>(input: {
   readonly allowedStatuses: ReadonlySet<number>;
   readonly isExpectedShape: (value: unknown) => value is T;
 }): T {
-  const result = spawnSync("bun", ["run", input.scriptPath], {
+  const result = spawnSync("pnpm", ["run", input.scriptPath], {
     cwd: repoRoot,
     env: process.env,
     encoding: "utf8",

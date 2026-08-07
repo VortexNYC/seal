@@ -83,68 +83,68 @@ const proofCommands: readonly ProofCommand[] = [
   {
     label:
       "No retired-provider package, path, or provider-shaped content residue",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:zero-retired-provider-residue"],
   },
   {
     label: "Vortex billing settings adoption",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:vortex-billing-settings-adoption"],
   },
   {
     label: "Vortex payments settings adoption",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:vortex-payments-settings-adoption"],
   },
   {
     label: "Vortex merchant settings adoption",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:vortex-merchant-settings-adoption"],
   },
   {
     label: "Vortex account creation and onboarding local proof",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:seal-account-onboarding-vortex-local"],
   },
   {
     label: "Vortex SaaS webhook projection",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:vortex-saas-webhook-projection"],
   },
   {
     label:
       "Vortex SaaS checkout, catalog, coupon, portal, and lifecycle local proof",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:seal-saas-vortex-local"],
   },
   {
     label: "Seal document payment Vortex local proof",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:seal-document-payment-vortex-local"],
   },
   {
     label: "Seal Vortex hosted outcomes boundary",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "audit:seal-vortex-hosted-outcomes-boundary"],
   },
   {
     label: "Seal Vortex sandbox settlement boundary",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "audit:seal-vortex-sandbox-settlement-boundary"],
   },
   {
     label: "Seal Vortex production proof boundary self-proof",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "prove:seal-vortex-production-proof-boundary"],
   },
   {
     label: "Seal Vortex production proof boundary",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "audit:seal-vortex-production-proof-boundary"],
   },
   {
     label: "Seal Vortex launch boundary",
-    command: "bun",
+    command: "pnpm",
     args: ["run", "audit:seal-vortex-launch-boundary"],
   },
 ];

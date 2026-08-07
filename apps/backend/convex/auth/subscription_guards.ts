@@ -21,7 +21,7 @@ import { selectSaasBillingProvider } from "../payments/saas_billing_provider";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 
-/** Stripe / US banking: round-half-up per line, then sum minor units. */
+/** US banking convention: round-half-up per line, then sum minor units. */
 const FEE_ROUNDING = "half-up" as const;
 const FEE_CURRENCY = "USD";
 

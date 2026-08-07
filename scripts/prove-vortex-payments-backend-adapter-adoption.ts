@@ -34,7 +34,7 @@ const requiredFragments: readonly RequiredFragment[] = [
     ],
   },
   {
-    path: "apps/backend/convex/payments/vortex_billing_processor.ts",
+    path: "apps/backend/convex/payments/vortex_billing_processor.helpers.ts",
     fragments: [
       'from "@vortexnyc/payments-sdk"',
       "createClient",
@@ -233,6 +233,8 @@ function isVortexAdapterPath(relativePath: string): boolean {
     relativePath.startsWith("apps/backend/convex/vortex_billing/") ||
     relativePath ===
       "apps/backend/convex/payments/vortex_billing_processor.ts" ||
+    relativePath ===
+      "apps/backend/convex/payments/vortex_billing_processor.helpers.ts" ||
     relativePath === "apps/backend/convex/payments/vortex_merchant_actions.ts"
   );
 }

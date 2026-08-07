@@ -34,7 +34,7 @@ export type {
   CreateRecurringPayableRequest,
 };
 
-/** Stripe / US banking: round-half-up per portion. */
+/** US banking convention: round-half-up per portion. */
 const MONEY_ROUNDING = "half-up" as const;
 const PAYABLE_CURRENCY = "USD";
 

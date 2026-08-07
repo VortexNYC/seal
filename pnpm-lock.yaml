@@ -633,6 +633,9 @@ importers:
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.17
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/tokens: {}
 

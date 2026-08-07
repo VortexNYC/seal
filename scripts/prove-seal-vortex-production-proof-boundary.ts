@@ -125,9 +125,10 @@ function runAudit(proofDoc: string): {
   readonly audit: ProductionProofBoundaryAudit;
 } {
   const result = spawnSync(
-    "bun",
+    "pnpm",
     [
-      "run",
+      "exec",
+      "tsx",
       "scripts/audit-seal-vortex-production-proof-boundary.ts",
       "--proof-doc",
       proofDoc,
