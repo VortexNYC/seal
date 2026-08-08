@@ -99,7 +99,7 @@
     "@seal/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@vortexnyc/auth": "0.18.0",
-    "@vortexnyc/tooling": "0.11.23",
+    "@vortexnyc/tooling": "0.11.25",
     "baseline-browser-mapping": "^2.10.14",
     "browserslist": "^4.28.2",
     "eslint": "10.7.0",
