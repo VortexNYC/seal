@@ -6,7 +6,7 @@ name: Vortex Proof
 # base branch, so rerunning the same wall after merge only adds cost and noise.
 on:
   pull_request:
-    branches: [staging]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:

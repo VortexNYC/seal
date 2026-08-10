@@ -14,7 +14,7 @@
   "instructions": {
     "name": "seal",
     "displayName": "Seal",
-    "baseBranch": "staging",
+    "baseBranch": "main",
     "packageManager": "pnpm@11.13.1",
     "setupCommands": ["pnpm install"],
     "verificationCommands": [

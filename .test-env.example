@@ -2,8 +2,8 @@
 # Copy to .test-env and fill with local-safe test values. Do not commit secrets.
 
 PROJECT_NAME=seal
-BASE_BRANCH=staging
-PACKAGE_MANAGER=bun@1.3.11
+BASE_BRANCH=main
+PACKAGE_MANAGER=pnpm@11.13.1
 PUBLIC_CONVEX_URL=
 
 # Vortex Auth / Better Auth defaults. Use project-specific non-production accounts only.
