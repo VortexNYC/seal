@@ -31,6 +31,33 @@ function isMutationCapableCtx(
   );
 }
 
+/**
+ * Trusted origins for Better-Auth CORS/CSRF validation.
+ *
+ * Exported (and unit-tested — see betterAuth.test.ts) so the deployed origin
+ * surface is a checked invariant, not a silent string-list drift. The staging
+ * entry is `staging-app.seal.nyc` (the Worker `seal-web-staging`'s bound
+ * domain, per apps/web/package.json deploy:staging + CI
+ * BETTER_AUTH_TRUSTED_ORIGINS), NOT the legacy non-resolving `staging.seal.nyc`.
+ * `sign.app.vortex.nyc` is the Vortex Sign app origin bound to the production
+ * `seal-web` Worker via apps/web/wrangler.jsonc custom-domain routes.
+ */
+export const TRUSTED_ORIGINS: readonly string[] = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+  // Any localhost port (Vite dev assigns a dynamic port under portless).
+  "http://localhost:*",
+  "http://127.0.0.1:*",
+  // portless dev origin used by the test protocol.
+  "http://seal.localhost:1355",
+  // Staging + production web app origins.
+  "https://app.seal.nyc",
+  "https://staging-app.seal.nyc",
+  "https://sign.app.vortex.nyc",
+];
+
 const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
   createBetterAuthConvexRuntime<DataModel>({
     components: {
@@ -100,20 +127,7 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
       window: 60,
       max: 100,
     },
-    trustedOrigins: [
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://localhost:4173",
-      "http://127.0.0.1:4173",
-      // Any localhost port (Vite dev assigns a dynamic port under portless).
-      "http://localhost:*",
-      "http://127.0.0.1:*",
-      // portless dev origin used by the test protocol.
-      "http://seal.localhost:1355",
-      // Staging + production web app origins.
-      "https://app.seal.nyc",
-      "https://staging.seal.nyc",
-    ],
+    trustedOrigins: [...TRUSTED_ORIGINS],
   });
 
 export const authComponent = betterAuthRuntime.authComponent;
