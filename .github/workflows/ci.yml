@@ -110,6 +110,34 @@ jobs:
         # while the normal workspace script execution is stable.
         run: cd apps/web && pnpm run test
 
+  build-landing:
+    name: Landing Build
+    runs-on: ubicloud-standard-4
+    timeout-minutes: 15
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build landing
+        # Landing is deployed from its Vite build, but no other CI job builds it —
+        # a broken landing build (SEA-617) shipped silently. Keep this as a hard gate.
+        run: pnpm --filter @seal/landing run build
+
   test-web-e2e-smoke:
     name: Web E2E Smoke
     if: github.event_name == 'release' || inputs.confirm_production == 'production'

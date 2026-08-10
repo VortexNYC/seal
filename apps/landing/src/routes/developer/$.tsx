@@ -39,7 +39,7 @@ const serverLoader = createServerFn({ method: "GET" })
         type: "openapi" as const,
         title: page.data.title,
         description: page.data.description,
-        props: await page.data.getClientAPIPageProps(),
+        props: page.data.getClientAPIPageProps(),
       };
     }
 

@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
  * generated files for sidebar metadata only and render with a client-side
  * alternative (e.g. the /api-reference Scalar embed route).
  *
- * Run with: bun run docs:generate:api
+ * Run with: pnpm run docs:generate:api
  */
 import { generateFiles } from "fumadocs-openapi";
 import { createOpenAPI } from "fumadocs-openapi/server";
@@ -20,7 +20,7 @@ const specPath = path.join(root, "openapi.yaml");
 
 // Use a stable key instead of the absolute path so generated MDX is portable
 const input = createOpenAPI({
-  input: () => ({ "seal-api": specPath }),
+  input: { "seal-api": specPath },
 });
 
 await generateFiles({
