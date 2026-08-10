@@ -8,7 +8,7 @@
 
 ## OVERVIEW
 
-Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
+Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
 
 ## STRUCTURE
 
@@ -18,9 +18,7 @@ seal/
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
 ├── docs/               # planning, architecture, design notes (mostly archival)
-├── .mcp.json           # MCP server config
-├── turbo.json          # Turborepo task graph
-└── bunfig.toml
+└── .mcp.json           # MCP server config
 ```
 
 ## WHERE TO LOOK
@@ -80,28 +78,28 @@ seal/
 ## COMMANDS
 
 ```bash
-bun run dev
-bunx turbo run dev --filter=@seal/web
-bunx turbo run dev --filter=@seal/landing
-bunx turbo run dev --filter=@seal/backend
-bunx turbo run dev --filter=@seal/mcp-server
-bunx turbo run dev --filter=@seal/transactional
+pnpm run dev
+pnpm --filter @seal/web run dev
+pnpm --filter @seal/landing run dev
+pnpm --filter @seal/backend run dev
+pnpm --filter @seal/mcp-worker run dev
+pnpm --filter @seal/transactional run dev
 
-bun run build
-bun run lint
-bun run format
-bun run typecheck
-bun run verify
-bun run test
+pnpm run build
+pnpm run lint
+pnpm run format
+pnpm run typecheck
+pnpm run verify
+pnpm run test
 
-bunx turbo run test --filter=@seal/backend
-bunx turbo run test --filter=@seal/web
-bun --cwd apps/web run test:e2e
-bun --cwd apps/landing run docs:generate:api
+pnpm --filter @seal/backend run test
+pnpm --filter @seal/web run test
+pnpm --dir apps/web run test:e2e
+pnpm --dir apps/landing run docs:generate:api
 ```
 
-`bun run dev` starts the main product stack only: `@seal/backend` and `@seal/web`.
-Use targeted `dev --filter=...` commands for other workspaces; `@seal/landing` and `@seal/transactional` both default to port `3001`.
+`pnpm run dev` starts the main product stack: `@seal/backend`, `@seal/web`, and `@seal/landing`.
+Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/landing` and `@seal/transactional` both default to port `3001`.
 
 ## NOTES
 

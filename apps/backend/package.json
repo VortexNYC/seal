@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit -p ./convex/tsconfig.json",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files",
-    "clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
+    "clean": "git clean -xdf .cache node_modules convex/_generated"
   },
   "dependencies": {
     "@convex-dev/action-cache": "^0.3.0",
