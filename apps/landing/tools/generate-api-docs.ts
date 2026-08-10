@@ -20,7 +20,7 @@ const specPath = path.join(root, "openapi.yaml");
 
 // Use a stable key instead of the absolute path so generated MDX is portable
 const input = createOpenAPI({
-  input: () => ({ "seal-api": specPath }),
+  input: { "seal-api": specPath },
 });
 
 await generateFiles({

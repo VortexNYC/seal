@@ -52,6 +52,8 @@ minimumReleaseAgeExclude:
   - "@tanstack/router-generator@1.167.22"
   - "@tanstack/router-plugin@1.168.24"
   - '@vortexnyc/payments-sdk@0.2.0'
+  - fumadocs-core@16.14.1
+  - fumadocs-ui@16.14.1
 
 overrides:
   "@tanstack/router-core": "1.171.16"
