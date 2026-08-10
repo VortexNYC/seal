@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd ../.. && bun run turbo build --filter=@seal/landing",
-  "installCommand": "cd ../.. && bun install",
+  "buildCommand": "cd ../.. && pnpm --filter @seal/landing run build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "framework": null,
   "rewrites": [
     {
