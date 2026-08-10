@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
  * generated files for sidebar metadata only and render with a client-side
  * alternative (e.g. the /api-reference Scalar embed route).
  *
- * Run with: bun run docs:generate:api
+ * Run with: pnpm run docs:generate:api
  */
 import { generateFiles } from "fumadocs-openapi";
 import { createOpenAPI } from "fumadocs-openapi/server";

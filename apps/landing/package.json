@@ -6,11 +6,11 @@
   "scripts": {
     "dev": "vite dev",
     "content:generate": "pnpm exec fumadocs-mdx source.config.ts .source",
-    "content:manifest": "VITE_SEAL_CONTENT_TOOL=1 vite-node ./tools/generate-content-manifests.ts",
+    "content:manifest": "VITE_SEAL_CONTENT_TOOL=1 pnpm exec tsx tools/run-content-tool.ts tools/generate-content-manifests.ts",
     "content:prepare": "pnpm run content:generate && pnpm run content:manifest",
     "docs:generate:api": "pnpm exec tsx tools/generate-api-docs.ts",
-    "content:search": "VITE_SEAL_CONTENT_TOOL=1 vite-node ./tools/generate-search-index.ts",
-    "content:sitemap": "VITE_SEAL_CONTENT_TOOL=1 vite-node ./tools/generate-sitemap.ts",
+    "content:search": "VITE_SEAL_CONTENT_TOOL=1 pnpm exec tsx tools/run-content-tool.ts tools/generate-search-index.ts",
+    "content:sitemap": "VITE_SEAL_CONTENT_TOOL=1 pnpm exec tsx tools/run-content-tool.ts tools/generate-sitemap.ts",
     "build:app": "vite build",
     "build": "pnpm run content:prepare && pnpm run content:search && pnpm run content:sitemap && pnpm run build:app",
     "postbuild": "pnpm exec tsx tools/copy-server-runtime-deps.ts",
@@ -66,7 +66,6 @@
     "fumadocs-mdx": "^14.2.11",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-node": "catalog:",
     "wrangler": "^4.100.0"
   }
 }
