@@ -1,0 +1,31 @@
+{
+  "name": "@vortex/sign-api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^0.19.5",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.5",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.19.1",
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "@seal/tsconfig": "workspace:*",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.20.5",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "^4.100.0"
+  }
+}

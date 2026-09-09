@@ -1,0 +1,12 @@
+{
+  "extends": "@seal/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types"],
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "*.config.ts"]
+}
