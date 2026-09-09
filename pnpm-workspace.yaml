@@ -26,6 +26,7 @@ allowBuilds:
   onnxruntime-node: true
   protobufjs: true
   sharp: true
+  simple-git-hooks: true
   workerd: true
 
 onlyBuiltDependencies:

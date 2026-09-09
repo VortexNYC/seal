@@ -1,7 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import type { CloudflareBindings } from "./types/env.js";
-
 const app = new OpenAPIHono<{ Bindings: CloudflareBindings }>();
 
 app.doc("/openapi.json", {
