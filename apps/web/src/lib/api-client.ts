@@ -636,11 +636,20 @@ export async function deleteDocument(publicId: string): Promise<void> {
   });
 }
 
-export async function sendDocument(publicId: string): Promise<void> {
+export async function sendDocument(
+  publicId: string,
+  options?: {
+    expirationPeriod?: { amount: number; unit: "day" | "week" | "month" };
+    recipientMessages?: Record<string, string>;
+  }
+): Promise<void> {
   await apiFetch(
     `/api/documents/${encodeURIComponent(publicId)}/send`,
     z.void(),
-    { method: "POST" }
+    {
+      method: "POST",
+      body: JSON.stringify(options ?? {}),
+    }
   );
 }
 

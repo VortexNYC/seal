@@ -3265,11 +3265,24 @@ app.openapi(deleteRouteDef, async (c) => {
   return c.json({ success: true });
 });
 
+const sendDocumentBodySchema = z.object({
+  expirationPeriod: z
+    .object({
+      amount: z.number().int(),
+      unit: z.enum(["day", "week", "month"]),
+    })
+    .optional(),
+  recipientMessages: z.record(z.string(), z.string()).optional(),
+});
+
 const sendRouteDef = createRoute({
   method: "post",
   path: "/{publicId}/send",
   request: {
     params: z.object({ publicId: z.string() }),
+    body: {
+      content: { "application/json": { schema: sendDocumentBodySchema } },
+    },
   },
   responses: {
     200: {
@@ -3290,6 +3303,7 @@ app.openapi(sendRouteDef, async (c) => {
   const organizationId = user!.session!.activeOrganizationId!;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
 
   const db = createD1(c.env.D1);
   const docRows = await db
@@ -3318,10 +3332,55 @@ app.openapi(sendRouteDef, async (c) => {
   }
 
   const now = new Date();
+  const expirationMs = input.expirationPeriod
+    ? input.expirationPeriod.amount *
+      (input.expirationPeriod.unit === "day"
+        ? 24 * 60 * 60 * 1000
+        : input.expirationPeriod.unit === "week"
+          ? 7 * 24 * 60 * 60 * 1000
+          : 30 * 24 * 60 * 60 * 1000)
+    : 30 * 24 * 60 * 60 * 1000;
+  const tokenExpiresAt = new Date(now.getTime() + expirationMs);
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+
+  const recipientUpdates = recipientRows.map((recipient) => {
+    const token = recipient.signingToken ?? generateSigningToken();
+    return {
+      id: recipient.id,
+      signingToken: token,
+      tokenExpiresAt,
+      updatedAt: now,
+    };
+  });
+
+  await Promise.all(
+    recipientUpdates.map((update) =>
+      db.update(recipients).set(update).where(eq(recipients.id, update.id))
+    )
+  );
+
   await db
     .update(documents)
     .set({ status: "sent", sentAt: now, updatedAt: now })
     .where(eq(documents.id, doc.id));
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "document.sent",
+    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      recipientCount: recipientRows.length,
+    }),
+    createdAt: now,
+  });
 
   return c.json({ success: true });
 });
