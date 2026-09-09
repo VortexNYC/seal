@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { toContactStatus, type ContactStatus } from "@/lib/contact-status";
 import {
   toWorkflowStatus,
   type DocumentWorkflowStatus,
@@ -97,6 +98,33 @@ const activitySchema = z.object({
   timestamp: z.number(),
 });
 
+const contactSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  organizationId: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  fullName: z.string(),
+  email: z.string(),
+  phone: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  status: z.string(),
+  notes: z.string().nullable().optional(),
+  tags: z.array(z.string()),
+  lastContactedAt: z.number().nullable().optional(),
+  createdBy: z.string(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+const relatedDocumentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  workflowStatus: z.string(),
+  role: z.string(),
+});
+
 export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
@@ -112,6 +140,24 @@ export type ApiRecentDocument = {
 };
 export type ApiDocumentAttention = z.infer<typeof documentAttentionSchema>;
 export type ApiActivity = z.infer<typeof activitySchema>;
+export type ApiContact = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  company?: string | null;
+  title?: string | null;
+  status: ContactStatus;
+  notes?: string | null;
+  tags?: string[];
+  lastContactedAt?: number | null;
+  createdBy?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+export type ApiRelatedDocument = z.infer<typeof relatedDocumentSchema>;
 
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
@@ -140,6 +186,10 @@ async function apiFetch<T>(
   if (!response.ok) {
     const text = await response.text().catch(() => "Unknown error");
     throw new Error(`API error ${response.status}: ${text}`);
+  }
+
+  if (response.status === 204) {
+    return schema.parse(undefined);
   }
 
   const data: unknown = await response.json();
@@ -203,4 +253,129 @@ export async function getRecentDocuments(
 
 export async function getDocumentAttention(): Promise<ApiDocumentAttention> {
   return apiFetch("/api/documents/attention", documentAttentionSchema);
+}
+
+type ContactListParams = {
+  search?: string;
+  status?: "active" | "inactive" | "lead";
+};
+
+function toApiContact(row: z.infer<typeof contactSchema>): ApiContact {
+  return {
+    _id: row.publicId,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    fullName: row.fullName,
+    email: row.email,
+    phone: row.phone,
+    company: row.company,
+    title: row.title,
+    status: toContactStatus(row.status),
+    notes: row.notes,
+    tags: row.tags,
+    lastContactedAt: row.lastContactedAt,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export async function getContacts(
+  params: ContactListParams = {}
+): Promise<ApiContact[]> {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.status) query.set("status", params.status);
+  const queryString = query.toString();
+  const path = `/api/contacts${queryString ? `?${queryString}` : ""}`;
+
+  const rows = await apiFetch(path, z.array(contactSchema));
+  return rows.map(toApiContact);
+}
+
+export async function getContactByEmail(
+  email: string
+): Promise<ApiContact | null> {
+  const row = await apiFetch(
+    `/api/contacts/by-email?email=${encodeURIComponent(email)}`,
+    contactSchema.nullable()
+  );
+  return row ? toApiContact(row) : null;
+}
+
+export async function getContact(publicId: string): Promise<ApiContact> {
+  const row = await apiFetch(
+    `/api/contacts/${encodeURIComponent(publicId)}`,
+    contactSchema
+  );
+  return toApiContact(row);
+}
+
+type ContactInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  status?: "active" | "inactive" | "lead";
+  notes?: string;
+  tags?: string[];
+  lastContactedAt?: number;
+};
+
+export async function createContact(input: ContactInput): Promise<ApiContact> {
+  const row = await apiFetch("/api/contacts", contactSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return toApiContact(row);
+}
+
+export async function updateContact(
+  publicId: string,
+  input: Partial<ContactInput>
+): Promise<ApiContact> {
+  const row = await apiFetch(
+    `/api/contacts/${encodeURIComponent(publicId)}`,
+    contactSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+  return toApiContact(row);
+}
+
+export async function deleteContact(publicId: string): Promise<void> {
+  await apiFetch(`/api/contacts/${encodeURIComponent(publicId)}`, z.void(), {
+    method: "DELETE",
+  });
+}
+
+export async function bulkDeleteContacts(
+  publicIds: string[]
+): Promise<{ id: string; success: boolean }[]> {
+  return apiFetch(
+    "/api/contacts/bulk-delete",
+    z.array(
+      z.object({
+        id: z.string(),
+        success: z.boolean(),
+      })
+    ),
+    {
+      method: "POST",
+      body: JSON.stringify({ ids: publicIds }),
+    }
+  );
+}
+
+export async function getContactRelatedDocuments(
+  email: string
+): Promise<ApiRelatedDocument[]> {
+  return apiFetch(
+    `/api/contacts/related-documents?email=${encodeURIComponent(email)}`,
+    z.array(relatedDocumentSchema)
+  );
 }

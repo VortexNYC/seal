@@ -362,3 +362,40 @@ export const activity = sqliteTable(
     index("activity_createdAt_idx").on(table.createdAt),
   ]
 );
+
+export const contacts = sqliteTable(
+  "contacts",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    company: text("company"),
+    title: text("title"),
+    status: text("status").notNull().default("active"),
+    notes: text("notes"),
+    tags: text("tags"),
+    lastContactedAt: integer("last_contacted_at", { mode: "timestamp_ms" }),
+    createdBy: text("created_by").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("contacts_organizationId_idx").on(table.organizationId),
+    index("contacts_email_idx").on(table.email),
+    index("contacts_org_email_idx").on(table.organizationId, table.email),
+    index("contacts_org_status_idx").on(table.organizationId, table.status),
+    index("contacts_fullName_idx").on(table.fullName),
+  ]
+);

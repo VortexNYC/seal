@@ -3,6 +3,10 @@ interface D1Migration {
   queries: string[];
 }
 
+declare namespace Cloudflare {
+  interface Env extends CloudflareBindings {}
+}
+
 declare interface CloudflareBindings {
   D1: D1Database;
   DOCUMENTS_BUCKET: R2Bucket;

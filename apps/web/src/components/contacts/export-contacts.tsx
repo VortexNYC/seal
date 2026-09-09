@@ -5,13 +5,13 @@
  * Downloads a CSV file with contact details.
  */
 
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { DownloadIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import type { ApiContact } from "@/lib/api-client";
 
 interface ExportContactsProps {
-  contacts: Doc<"contacts">[];
+  contacts: ApiContact[];
 }
 
 function escapeCSVField(value: string): string {

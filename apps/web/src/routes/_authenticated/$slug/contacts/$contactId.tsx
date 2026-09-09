@@ -6,11 +6,8 @@
  * Route: /{slug}/contacts/{contactId}
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
 import {
   ArrowLeftIcon,
   BuildingIcon,
@@ -44,7 +41,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseId } from "@/lib/convex-ids";
+import {
+  deleteContact,
+  getContact,
+  getContactRelatedDocuments,
+  type ApiRelatedDocument,
+} from "@/lib/api-client";
+import { toWorkflowStatus } from "@/lib/document-status";
 import { formatDate } from "@/lib/formatting";
 
 export const Route = createFileRoute(
@@ -95,11 +98,12 @@ function RelatedDocumentsContent({
   slug: string;
 }) {
   const router = useRouter();
-  const { data: documents } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.getRelatedDocuments, { email })
-  );
+  const { data: documents } = useSuspenseQuery({
+    queryKey: ["api", "contacts", "related-documents", email],
+    queryFn: () => getContactRelatedDocuments(email),
+  });
 
-  if (documents.length === 0) {
+  if ((documents ?? []).length === 0) {
     return (
       <p className="text-muted-foreground py-4 text-center text-sm">
         No documents found
@@ -109,14 +113,14 @@ function RelatedDocumentsContent({
 
   return (
     <div className="space-y-3">
-      {documents.map((doc) => (
+      {(documents ?? []).map((doc: ApiRelatedDocument) => (
         <button
-          key={doc._id}
+          key={doc.id}
           type="button"
           onClick={() =>
             router.navigate({
               to: "/$slug/documents/$documentId",
-              params: { slug, documentId: doc._id },
+              params: { slug, documentId: doc.id },
             })
           }
           className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-2 text-left transition-colors"
@@ -127,7 +131,7 @@ function RelatedDocumentsContent({
               {doc.role}
             </p>
           </div>
-          <WorkflowStatusBadge status={doc.workflowStatus} />
+          <WorkflowStatusBadge status={toWorkflowStatus(doc.workflowStatus)} />
         </button>
       ))}
     </div>
@@ -139,13 +143,12 @@ function ContactDetailContent() {
   const slug = params.slug;
   const contactId = params.contactId;
   const router = useRouter();
-  const deleteContact = useMutation(api.contacts.mutations.remove);
+  const queryClient = useQueryClient();
 
-  const { data: contact } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.getById, {
-      id: parseId("contacts", contactId),
-    })
-  );
+  const { data: contact } = useSuspenseQuery({
+    queryKey: ["api", "contacts", contactId],
+    queryFn: () => getContact(contactId),
+  });
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -154,7 +157,8 @@ function ContactDetailContent() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteContact({ id: contact._id });
+      await deleteContact(contactId);
+      await queryClient.invalidateQueries({ queryKey: ["api", "contacts"] });
       toast.success("Contact deleted");
       void router.navigate({ to: "/$slug/contacts", params: { slug } });
     } catch (error) {
@@ -312,6 +316,9 @@ function ContactDetailContent() {
         open={editOpen}
         onOpenChange={setEditOpen}
         contact={contact}
+        onUpdated={() =>
+          queryClient.invalidateQueries({ queryKey: ["api", "contacts"] })
+        }
       />
 
       {/* Delete confirmation */}

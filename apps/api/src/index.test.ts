@@ -3,10 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import app from "./index.js";
 
-declare module "cloudflare:test" {
-  interface ProvidedEnv extends CloudflareBindings {}
-}
-
 describe("app", () => {
   it("returns ok from /health", async () => {
     const res = await app.fetch(
