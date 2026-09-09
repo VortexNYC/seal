@@ -12,8 +12,7 @@ export default defineConfig({
     hookTimeout: 30_000,
     server: {
       deps: {
-        // Force Vite to transform zod as ESM instead of letting bun's native
-        // runtime handle it (bun --bun breaks Zod v4's re-exports).
+        // Force Vite to transform zod as ESM; native bun runtime is no longer in use.
         inline: ["zod"],
       },
     },

@@ -43,8 +43,8 @@ apps/landing/
 - Routes use TanStack file-based routing; `apps/landing/src/routeTree.gen.ts` is generated.
 - MDX docs live in `content/docs/`; sidebar/group metadata is defined in adjacent `meta.json` files.
 - Changelog entries live in `content/changelog/` and are compiled into generated manifests under `.source/`.
-- API reference pages in `content/docs/api-reference/` are generated from `openapi.yaml` via `bun run docs:generate:api`.
-- Fumadocs collection files in `apps/landing/.source/` are generated via `bun run content:generate`.
+- API reference pages in `content/docs/api-reference/` are generated from `openapi.yaml` via `pnpm run docs:generate:api`.
+- Fumadocs collection files in `apps/landing/.source/` are generated via `pnpm run content:generate`.
 - Repo-managed landing pages should go through `src/lib/content/*` and the existing page-builder components.
 - Landing browser coverage lives in `e2e/`; prefer accessible selectors first and `data-testid` only when needed for stable Playwright assertions.
 

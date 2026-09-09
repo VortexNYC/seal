@@ -79,7 +79,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun run build && PORT=5181 bun run start",
+    command: "pnpm run build && PORT=5181 pnpm run start",
     url: "http://localhost:5181",
     reuseExistingServer: false,
     stdout: "ignore",
