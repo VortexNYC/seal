@@ -1327,6 +1327,228 @@ app.openapi(listPaymentConfigsRouteDef, async (c) => {
   return c.json(rows.map(paymentConfigSummaryResponse));
 });
 
+type RecipientStatus =
+  | "pending"
+  | "viewed"
+  | "signed"
+  | "approved"
+  | "declined"
+  | "expired";
+type RecipientRole = "signer" | "viewer" | "approver";
+
+const recipientStatusSet = new Set<string>([
+  "pending",
+  "viewed",
+  "signed",
+  "approved",
+  "declined",
+  "expired",
+]);
+const recipientRoleSet = new Set<string>(["signer", "viewer", "approver"]);
+
+function isRecipientStatus(status: string): status is RecipientStatus {
+  return recipientStatusSet.has(status);
+}
+
+function isRecipientRole(role: string): role is RecipientRole {
+  return recipientRoleSet.has(role);
+}
+
+function isRecipientComplete(role: string, status: string): boolean {
+  switch (role) {
+    case "signer":
+      return status === "signed";
+    case "approver":
+      return status === "approved";
+    case "viewer":
+      return status === "viewed";
+    default:
+      return false;
+  }
+}
+
+const RecipientProgressSchema = z
+  .object({
+    total: z.number().int(),
+    completed: z.number().int(),
+    percentComplete: z.number().int(),
+    byStatus: z.object({
+      pending: z.number().int(),
+      viewed: z.number().int(),
+      signed: z.number().int(),
+      approved: z.number().int(),
+      declined: z.number().int(),
+      expired: z.number().int(),
+    }),
+    byRole: z.object({
+      signer: z.object({ total: z.number().int(), completed: z.number().int() }),
+      viewer: z.object({ total: z.number().int(), completed: z.number().int() }),
+      approver: z.object({ total: z.number().int(), completed: z.number().int() }),
+    }),
+  })
+  .openapi("RecipientProgress");
+
+const recipientProgressRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/recipients/progress",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: RecipientProgressSchema },
+      },
+      description: "Recipient progress for the document",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(recipientProgressRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const rows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+
+  if (rows.length === 0) {
+    return c.json({
+      total: 0,
+      completed: 0,
+      percentComplete: 0,
+      byStatus: {
+        pending: 0,
+        viewed: 0,
+        signed: 0,
+        approved: 0,
+        declined: 0,
+        expired: 0,
+      },
+      byRole: {
+        signer: { total: 0, completed: 0 },
+        viewer: { total: 0, completed: 0 },
+        approver: { total: 0, completed: 0 },
+      },
+    });
+  }
+
+  const byStatus = {
+    pending: 0,
+    viewed: 0,
+    signed: 0,
+    approved: 0,
+    declined: 0,
+    expired: 0,
+  };
+  const byRole = {
+    signer: { total: 0, completed: 0 },
+    viewer: { total: 0, completed: 0 },
+    approver: { total: 0, completed: 0 },
+  };
+
+  let completed = 0;
+  for (const recipient of rows) {
+    if (isRecipientStatus(recipient.status)) {
+      byStatus[recipient.status]++;
+    }
+    if (isRecipientRole(recipient.role)) {
+      byRole[recipient.role].total++;
+      if (isRecipientComplete(recipient.role, recipient.status)) {
+        completed++;
+        byRole[recipient.role].completed++;
+      }
+    }
+  }
+
+  const percentComplete = Math.round((completed / rows.length) * 100);
+
+  return c.json({
+    total: rows.length,
+    completed,
+    percentComplete,
+    byStatus,
+    byRole,
+  });
+});
+
+const recipientByMeRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/recipients/me",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: RecipientSchema.nullable() } },
+      description: "Current user's recipient record for the document",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(recipientByMeRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userEmail = user!.user.email?.toLowerCase();
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || !userEmail) {
+    return c.json(null);
+  }
+
+  const rows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.documentId, doc.id),
+        eq(recipients.email, userEmail)
+      )
+    )
+    .limit(1);
+
+  const recipient = rows[0];
+  if (!recipient) {
+    return c.json(null);
+  }
+
+  return c.json(recipientResponse(recipient));
+});
+
 const SignatureSchema = z
   .object({
     id: z.string(),

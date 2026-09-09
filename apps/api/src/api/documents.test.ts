@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { documents, folders, member, organization, paymentFieldConfigs, signatureFields, user } from "../global/schema.js";
+import { documents, folders, member, organization, paymentFieldConfigs, recipients, signatureFields, user } from "../global/schema.js";
 import type { SessionUser } from "../platform/session.js";
 import documentsRoute from "./documents.js";
 
@@ -668,5 +668,130 @@ describe("documents API", () => {
     expect(configs.length).toBe(1);
     expect(configs[0]?.totalAmountCents).toBe(10000);
     expect(configs[0]?.paymentStatus).toBe("pending");
+  });
+
+  it("returns recipient progress for a document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Progress Doc",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      email: "signer1@example.com",
+      name: "Signer One",
+      role: "signer",
+      order: 1,
+      status: "signed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      email: "signer2@example.com",
+      name: "Signer Two",
+      role: "signer",
+      order: 2,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/recipients/progress`
+      ),
+      env
+    );
+    const progress = z
+      .object({
+        total: z.number(),
+        completed: z.number(),
+        percentComplete: z.number(),
+        byStatus: z.object({
+          pending: z.number(),
+          viewed: z.number(),
+          signed: z.number(),
+          approved: z.number(),
+          declined: z.number(),
+          expired: z.number(),
+        }),
+        byRole: z.object({
+          signer: z.object({ total: z.number(), completed: z.number() }),
+        }),
+      })
+      .parse(await parseJson(response));
+    expect(progress.total).toBe(2);
+    expect(progress.completed).toBe(1);
+    expect(progress.percentComplete).toBe(50);
+    expect(progress.byStatus.signed).toBe(1);
+    expect(progress.byStatus.pending).toBe(1);
+    expect(progress.byRole.signer.total).toBe(2);
+    expect(progress.byRole.signer.completed).toBe(1);
+  });
+
+  it("returns the current user's recipient record", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Me Doc",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      email: "test@example.com",
+      name: "Test User",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(`http://localhost:8787/api/documents/${publicId}/recipients/me`),
+      env
+    );
+    const me = z
+      .object({
+        email: z.string(),
+        role: z.string(),
+        status: z.string(),
+      })
+      .nullable()
+      .parse(await parseJson(response));
+    expect(me?.email).toBe("test@example.com");
+    expect(me?.role).toBe("signer");
   });
 });
