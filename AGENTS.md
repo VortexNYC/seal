@@ -106,6 +106,7 @@ Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/l
 
 - LSP codemap unavailable in this environment.
 - Complexity hotspots: `apps/backend/convex/http.ts`, `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx`, `apps/web/src/routes/sign.$token.tsx`.
+- D1 migrations: `drizzle-kit generate` can emit full-schema snapshots when `migrations/meta/_journal.json` is out of sync with existing `.sql` files. Use manual incremental `.sql` migrations and keep `_journal.json` aligned; `readD1Migrations` / `applyD1Migrations` in tests apply all `.sql` files in filename order.
 
 <!-- BEGIN VORTEX TOOLING MANAGED REVIEW GUIDELINES -->
 ## Review guidelines
