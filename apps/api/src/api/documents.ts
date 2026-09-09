@@ -862,6 +862,86 @@ const updateDocumentBodySchema = z.object({
   allowDictateNextSigner: z.boolean().optional(),
 });
 
+const FieldTypeEnum = z.enum([
+  "signature",
+  "text",
+  "number",
+  "date",
+  "checkbox",
+  "dropdown",
+  "radio",
+  "attachment",
+  "payment",
+]);
+
+function validateFieldPosition(
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): { valid: boolean; error?: string } {
+  if (x < 0 || x > 100) {
+    return { valid: false, error: "X coordinate must be between 0 and 100" };
+  }
+  if (y < 0 || y > 100) {
+    return { valid: false, error: "Y coordinate must be between 0 and 100" };
+  }
+  if (width <= 0 || width > 100) {
+    return { valid: false, error: "Width must be between 0 and 100" };
+  }
+  if (height <= 0 || height > 100) {
+    return { valid: false, error: "Height must be between 0 and 100" };
+  }
+  if (x + width > 100) {
+    return { valid: false, error: "Field extends beyond right page boundary" };
+  }
+  if (y + height > 100) {
+    return { valid: false, error: "Field extends beyond bottom page boundary" };
+  }
+  return { valid: true };
+}
+
+function validatePageNumber(
+  page: number,
+  pageCount: number | null
+): { valid: boolean; error?: string } {
+  if (page < 1) {
+    return { valid: false, error: "Page number must be at least 1" };
+  }
+  if (pageCount !== null && page > pageCount) {
+    return {
+      valid: false,
+      error: `Page number exceeds document page count (${pageCount})`,
+    };
+  }
+  return { valid: true };
+}
+
+function validateFieldTypeAndProperties(
+  fieldType: string,
+  properties: z.infer<typeof FieldPropertiesSchema> | null
+): { valid: boolean; error?: string } {
+  if (fieldType === "payment") {
+    return { valid: true };
+  }
+  if (fieldType === "dropdown" || fieldType === "radio") {
+    if (!properties?.options || properties.options.length === 0) {
+      return {
+        valid: false,
+        error: `${fieldType} fields must have at least one option`,
+      };
+    }
+  }
+  if (
+    properties?.maxLength !== undefined &&
+    properties?.minLength !== undefined &&
+    properties.maxLength < properties.minLength
+  ) {
+    return { valid: false, error: "maxLength must be greater than minLength" };
+  }
+  return { valid: true };
+}
+
 const updateRouteDef = createRoute({
   method: "patch",
   path: "/{publicId}",
@@ -1877,6 +1957,664 @@ app.openapi(getSignatureFieldsForMeRouteDef, async (c) => {
       return signatureFieldWithValuesResponse(field, signature, isFilled);
     })
   );
+});
+
+const createSignatureFieldBodySchema = z.object({
+  recipientPublicId: z.string().optional(),
+  fieldType: FieldTypeEnum,
+  label: z.string().min(1),
+  isRequired: z.boolean(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  page: z.number().int(),
+  properties: FieldPropertiesSchema.optional(),
+  validationRules: FieldValidationRulesSchema.optional(),
+  templateFieldId: z.string().optional(),
+});
+
+const createSignatureFieldRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/signature-fields",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: createSignatureFieldBodySchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": { schema: SignatureFieldSchema },
+      },
+      description: "Signature field created",
+    },
+    400: { description: "Invalid field data or document not editable" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(createSignatureFieldRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can edit fields" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+  }
+
+  const positionValidation = validateFieldPosition(
+    input.x,
+    input.y,
+    input.width,
+    input.height
+  );
+  if (!positionValidation.valid) {
+    return c.json({ error: positionValidation.error }, 400);
+  }
+
+  const pageValidation = validatePageNumber(input.page, doc.pageCount);
+  if (!pageValidation.valid) {
+    return c.json({ error: pageValidation.error }, 400);
+  }
+
+  const typeValidation = validateFieldTypeAndProperties(
+    input.fieldType,
+    input.properties ?? null
+  );
+  if (!typeValidation.valid) {
+    return c.json({ error: typeValidation.error }, 400);
+  }
+
+  let recipientId: string | null = null;
+  if (input.recipientPublicId) {
+    const recipientRows = await db
+      .select()
+      .from(recipients)
+      .where(
+        and(
+          eq(recipients.publicId, input.recipientPublicId),
+          eq(recipients.documentId, doc.id)
+        )
+      )
+      .limit(1);
+
+    const recipient = recipientRows[0];
+    if (!recipient) {
+      return c.json({ error: "Recipient not found" }, 404);
+    }
+    recipientId = recipient.id;
+
+    if (input.fieldType === "payment") {
+      const existingPayment = await db
+        .select({ value: count() })
+        .from(signatureFields)
+        .where(
+          and(
+            eq(signatureFields.documentId, doc.id),
+            eq(signatureFields.recipientId, recipientId),
+            eq(signatureFields.fieldType, "payment")
+          )
+        );
+      if ((existingPayment[0]?.value ?? 0) > 0) {
+        return c.json(
+          { error: "Each recipient can only have one payment field" },
+          400
+        );
+      }
+    }
+  }
+
+  let isMainSignature = false;
+  if (input.fieldType === "signature" && recipientId) {
+    const existingSignatures = await db
+      .select({ value: count() })
+      .from(signatureFields)
+      .where(
+        and(
+          eq(signatureFields.documentId, doc.id),
+          eq(signatureFields.recipientId, recipientId),
+          eq(signatureFields.fieldType, "signature")
+        )
+      );
+    isMainSignature = (existingSignatures[0]?.value ?? 0) === 0;
+  }
+
+  const fieldId = crypto.randomUUID();
+  const fieldPublicId = crypto.randomUUID();
+  const now = new Date();
+  const propertiesJson = input.properties
+    ? JSON.stringify(input.properties)
+    : null;
+  const validationJson = input.validationRules
+    ? JSON.stringify(input.validationRules)
+    : null;
+
+  await db.insert(signatureFields).values({
+    id: fieldId,
+    publicId: fieldPublicId,
+    documentId: doc.id,
+    recipientId,
+    templateFieldId: input.templateFieldId ?? null,
+    fieldType: input.fieldType,
+    label: input.label,
+    isRequired: input.isRequired,
+    isMainSignature,
+    x: input.x,
+    y: input.y,
+    width: input.width,
+    height: input.height,
+    page: input.page,
+    properties: propertiesJson,
+    validationRules: validationJson,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const rows = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.id, fieldId))
+    .limit(1);
+
+  const field = rows[0];
+  if (!field) {
+    return c.json({ error: "Failed to create field" }, 500);
+  }
+
+  return c.json(signatureFieldResponse(field), 201);
+});
+
+const updateSignatureFieldBodySchema = z.object({
+  label: z.string().min(1).optional(),
+  isRequired: z.boolean().optional(),
+  properties: FieldPropertiesSchema.optional(),
+  validationRules: FieldValidationRulesSchema.optional(),
+});
+
+const updateSignatureFieldRouteDef = createRoute({
+  method: "patch",
+  path: "/{publicId}/signature-fields/{fieldPublicId}",
+  request: {
+    params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateSignatureFieldBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SignatureFieldSchema } },
+      description: "Signature field updated",
+    },
+    400: { description: "Invalid field data or document not editable" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or field not found" },
+  },
+});
+
+app.openapi(updateSignatureFieldRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId, fieldPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can edit fields" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, fieldPublicId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  if (input.properties) {
+    const parsedProperties =
+      field.properties !== null ? JSON.parse(field.properties) : null;
+    const mergedProperties = { ...parsedProperties, ...input.properties };
+    const typeValidation = validateFieldTypeAndProperties(
+      field.fieldType,
+      mergedProperties
+    );
+    if (!typeValidation.valid) {
+      return c.json({ error: typeValidation.error }, 400);
+    }
+  }
+
+  const updateData: {
+    label?: string;
+    isRequired?: boolean;
+    properties?: string | null;
+    validationRules?: string | null;
+    updatedAt?: Date;
+  } = { updatedAt: new Date() };
+
+  if (input.label !== undefined) {
+    updateData.label = input.label;
+  }
+  if (input.isRequired !== undefined) {
+    updateData.isRequired = input.isRequired;
+  }
+  if (input.properties !== undefined) {
+    updateData.properties = JSON.stringify(input.properties);
+  }
+  if (input.validationRules !== undefined) {
+    updateData.validationRules = JSON.stringify(input.validationRules);
+  }
+
+  await db
+    .update(signatureFields)
+    .set(updateData)
+    .where(eq(signatureFields.id, field.id));
+
+  const updatedRows = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.id, field.id))
+    .limit(1);
+
+  const updatedField = updatedRows[0];
+  if (!updatedField) {
+    return c.json({ error: "Failed to update field" }, 500);
+  }
+
+  return c.json(signatureFieldResponse(updatedField));
+});
+
+const repositionSignatureFieldBodySchema = z.object({
+  x: z.number().optional(),
+  y: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  page: z.number().int().optional(),
+});
+
+const repositionSignatureFieldRouteDef = createRoute({
+  method: "patch",
+  path: "/{publicId}/signature-fields/{fieldPublicId}/position",
+  request: {
+    params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: repositionSignatureFieldBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SignatureFieldSchema } },
+      description: "Signature field repositioned",
+    },
+    400: { description: "Invalid position or document not editable" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or field not found" },
+  },
+});
+
+app.openapi(repositionSignatureFieldRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId, fieldPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can edit fields" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, fieldPublicId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  const newX = input.x ?? field.x;
+  const newY = input.y ?? field.y;
+  const newWidth = input.width ?? field.width;
+  const newHeight = input.height ?? field.height;
+  const newPage = input.page ?? field.page;
+
+  const positionValidation = validateFieldPosition(
+    newX,
+    newY,
+    newWidth,
+    newHeight
+  );
+  if (!positionValidation.valid) {
+    return c.json({ error: positionValidation.error }, 400);
+  }
+
+  const pageValidation = validatePageNumber(newPage, doc.pageCount);
+  if (!pageValidation.valid) {
+    return c.json({ error: pageValidation.error }, 400);
+  }
+
+  await db
+    .update(signatureFields)
+    .set({
+      x: newX,
+      y: newY,
+      width: newWidth,
+      height: newHeight,
+      page: newPage,
+      updatedAt: new Date(),
+    })
+    .where(eq(signatureFields.id, field.id));
+
+  const updatedRows = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.id, field.id))
+    .limit(1);
+
+  const updatedField = updatedRows[0];
+  if (!updatedField) {
+    return c.json({ error: "Failed to reposition field" }, 500);
+  }
+
+  return c.json(signatureFieldResponse(updatedField));
+});
+
+const assignSignatureFieldBodySchema = z.object({
+  recipientPublicId: z.string(),
+});
+
+const assignSignatureFieldRouteDef = createRoute({
+  method: "patch",
+  path: "/{publicId}/signature-fields/{fieldPublicId}/assign",
+  request: {
+    params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: assignSignatureFieldBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SignatureFieldSchema } },
+      description: "Signature field assigned",
+    },
+    400: { description: "Invalid recipient or document not editable" },
+    403: { description: "Forbidden" },
+    404: { description: "Document, field, or recipient not found" },
+  },
+});
+
+app.openapi(assignSignatureFieldRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId, fieldPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can edit fields" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, fieldPublicId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.publicId, input.recipientPublicId),
+        eq(recipients.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  let isMainSignature = field.isMainSignature;
+  if (
+    field.fieldType === "signature" &&
+    recipient.id !== field.recipientId
+  ) {
+    const existingMain = await db
+      .select({ value: count() })
+      .from(signatureFields)
+      .where(
+        and(
+          eq(signatureFields.documentId, doc.id),
+          eq(signatureFields.recipientId, recipient.id),
+          eq(signatureFields.fieldType, "signature"),
+          eq(signatureFields.isMainSignature, true)
+        )
+      );
+    isMainSignature = (existingMain[0]?.value ?? 0) === 0;
+  }
+
+  await db
+    .update(signatureFields)
+    .set({
+      recipientId: recipient.id,
+      isMainSignature,
+      updatedAt: new Date(),
+    })
+    .where(eq(signatureFields.id, field.id));
+
+  const updatedRows = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.id, field.id))
+    .limit(1);
+
+  const updatedField = updatedRows[0];
+  if (!updatedField) {
+    return c.json({ error: "Failed to assign field" }, 500);
+  }
+
+  return c.json(signatureFieldResponse(updatedField));
+});
+
+const deleteSignatureFieldRouteDef = createRoute({
+  method: "delete",
+  path: "/{publicId}/signature-fields/{fieldPublicId}",
+  request: {
+    params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+      description: "Signature field deleted",
+    },
+    400: { description: "Cannot delete field or document not editable" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or field not found" },
+  },
+});
+
+app.openapi(deleteSignatureFieldRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId, fieldPublicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can edit fields" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, fieldPublicId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  const existingSignatures = await db
+    .select({ value: count() })
+    .from(signatures)
+    .where(eq(signatures.fieldId, field.id));
+
+  if ((existingSignatures[0]?.value ?? 0) > 0) {
+    return c.json({ error: "Cannot delete field that has been signed" }, 400);
+  }
+
+  await db.delete(signatureFields).where(eq(signatureFields.id, field.id));
+
+  return c.json({ success: true });
 });
 
 const PaymentConfigSummarySchema = z

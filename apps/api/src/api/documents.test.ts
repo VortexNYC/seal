@@ -1082,4 +1082,116 @@ describe("documents API", () => {
       .limit(1);
     expect(updated[0]?.signingToken).not.toBe(oldToken);
   });
+
+  it("creates, repositions, assigns, and deletes a signature field", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Field CRUD",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      pageCount: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const recipientPublicId = crypto.randomUUID();
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: recipientPublicId,
+      documentId: docId,
+      email: "field@example.com",
+      name: "Field User",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const createResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/signature-fields`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientPublicId,
+            fieldType: "signature",
+            label: "Sign here",
+            isRequired: true,
+            x: 10,
+            y: 20,
+            width: 30,
+            height: 40,
+            page: 1,
+          }),
+        }
+      ),
+      env
+    );
+    const created = z
+      .object({
+        id: z.string(),
+        publicId: z.string(),
+        isMainSignature: z.boolean(),
+        x: z.number(),
+      })
+      .parse(await parseJson(createResponse));
+    expect(created.isMainSignature).toBe(true);
+
+    const fieldPublicId = created.publicId;
+
+    const repositionResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/signature-fields/${fieldPublicId}/position`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ x: 15, y: 25 }),
+        }
+      ),
+      env
+    );
+    const repositioned = z
+      .object({ x: z.number(), y: z.number() })
+      .parse(await parseJson(repositionResponse));
+    expect(repositioned.x).toBe(15);
+
+    const updateResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/signature-fields/${fieldPublicId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ label: "Updated label" }),
+        }
+      ),
+      env
+    );
+    const updated = z
+      .object({ label: z.string() })
+      .parse(await parseJson(updateResponse));
+    expect(updated.label).toBe("Updated label");
+
+    const deleteResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/signature-fields/${fieldPublicId}`,
+        { method: "DELETE" }
+      ),
+      env
+    );
+    const deleted = z
+      .object({ success: z.boolean() })
+      .parse(await parseJson(deleteResponse));
+    expect(deleted.success).toBe(true);
+  });
 });
