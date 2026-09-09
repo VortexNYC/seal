@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { count, eq, and, desc, asc } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, recipients } from "../global/schema.js";
+import { documents, recipients, signatures } from "../global/schema.js";
 
 const DocumentSchema = z
   .object({
@@ -512,6 +512,207 @@ app.openapi(listRecipientsRouteDef, async (c) => {
     .orderBy(asc(recipients.order), asc(recipients.createdAt));
 
   return c.json(rows.map(recipientResponse));
+});
+
+const SignatureSchema = z
+  .object({
+    id: z.string(),
+    recipientId: z.string(),
+    documentId: z.string(),
+    signedAt: z.number(),
+    ipAddress: z.string().nullable().optional(),
+    value: z.string().nullable().optional(),
+  })
+  .openapi("Signature");
+
+const signBodySchema = z.object({
+  value: z.string().optional(),
+});
+
+const signRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/recipients/{recipientPublicId}/sign",
+  request: {
+    params: z.object({
+      publicId: z.string(),
+      recipientPublicId: z.string(),
+    }),
+    body: {
+      content: {
+        "application/json": { schema: signBodySchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      content: { "application/json": { schema: SignatureSchema } },
+      description: "Signature recorded",
+    },
+    400: { description: "Recipient cannot sign" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(signRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId, recipientPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.publicId, recipientPublicId),
+        eq(recipients.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  if (recipient.status === "signed" || recipient.status === "declined") {
+    return c.json({ error: "Recipient is in a terminal state" }, 400);
+  }
+
+  const now = new Date();
+  const ipAddress =
+    c.req.header("CF-Connecting-IP") ?? c.req.header("X-Forwarded-For") ?? null;
+
+  await db
+    .update(recipients)
+    .set({
+      status: "signed",
+      signedAt: now,
+      updatedAt: now,
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  const signatureRows = await db
+    .insert(signatures)
+    .values({
+      id: crypto.randomUUID(),
+      recipientId: recipient.id,
+      documentId: doc.id,
+      signedAt: now,
+      ipAddress,
+      value: input.value ?? null,
+    })
+    .returning();
+
+  const signature = signatureRows[0];
+  if (!signature) {
+    return c.json({ error: "Failed to record signature" }, 500);
+  }
+
+  const pendingSigners = await db
+    .select({ value: count() })
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.documentId, doc.id),
+        eq(recipients.role, "signer"),
+        eq(recipients.status, "pending")
+      )
+    );
+
+  const pendingCount = pendingSigners[0]?.value ?? 0;
+  if (pendingCount === 0) {
+    await db
+      .update(documents)
+      .set({ status: "completed", updatedAt: now })
+      .where(eq(documents.id, doc.id));
+  }
+
+  return c.json(
+    {
+      id: signature.id,
+      recipientId: signature.recipientId,
+      documentId: signature.documentId,
+      signedAt: signature.signedAt.getTime(),
+      ipAddress: signature.ipAddress,
+      value: signature.value,
+    },
+    201
+  );
+});
+
+const listSignaturesRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/signatures",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(SignatureSchema) },
+      },
+      description: "Signatures for the document",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(listSignaturesRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const rows = await db
+    .select()
+    .from(signatures)
+    .where(eq(signatures.documentId, doc.id))
+    .orderBy(desc(signatures.signedAt));
+
+  return c.json(
+    rows.map((signature) => ({
+      id: signature.id,
+      recipientId: signature.recipientId,
+      documentId: signature.documentId,
+      signedAt: signature.signedAt.getTime(),
+      ipAddress: signature.ipAddress,
+      value: signature.value,
+    }))
+  );
 });
 
 export default app;
