@@ -938,4 +938,148 @@ describe("documents API", () => {
     );
     expect(fields[0]?.signatureDetails?.signatureMethod).toBe("draw");
   });
+
+  it("adds recipients to a document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Add Recipients",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(`http://localhost:8787/api/documents/${publicId}/recipients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipients: [
+            { email: "a@example.com", name: "A" },
+            { email: "b@example.com", name: "B", role: "viewer" },
+          ],
+        }),
+      }),
+      env
+    );
+    const result = z
+      .array(z.object({ email: z.string(), role: z.string() }))
+      .parse(await parseJson(response));
+    expect(result.length).toBe(2);
+    expect(result[0]?.email).toBe("a@example.com");
+    expect(result[1]?.role).toBe("viewer");
+  });
+
+  it("removes a recipient and their fields", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Remove Recipient",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const recipientPublicId = crypto.randomUUID();
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: recipientPublicId,
+      documentId: docId,
+      email: "remove@example.com",
+      name: "Remove Me",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/recipients/${recipientPublicId}`,
+        { method: "DELETE" }
+      ),
+      env
+    );
+    const result = z
+      .object({ success: z.boolean() })
+      .parse(await parseJson(response));
+    expect(result.success).toBe(true);
+  });
+
+  it("resends a recipient email by rotating the signing token", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Resend",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const recipientPublicId = crypto.randomUUID();
+    const oldToken = crypto.randomUUID();
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: recipientPublicId,
+      documentId: docId,
+      email: "resend@example.com",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      signingToken: oldToken,
+      tokenExpiresAt: new Date(Date.now() - 1000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/recipients/${recipientPublicId}/resend`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
+      ),
+      env
+    );
+    const result = z
+      .object({ success: z.boolean() })
+      .parse(await parseJson(response));
+    expect(result.success).toBe(true);
+
+    const updated = await db
+      .select({ signingToken: recipients.signingToken })
+      .from(recipients)
+      .where(eq(recipients.publicId, recipientPublicId))
+      .limit(1);
+    expect(updated[0]?.signingToken).not.toBe(oldToken);
+  });
 });

@@ -123,6 +123,14 @@ function generatePublicId() {
   return crypto.randomUUID();
 }
 
+function generateSigningToken(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
+}
+
 function validateRedirectUrl(redirectUrl: string | null | undefined): void {
   if (!redirectUrl) {
     return;
@@ -1156,35 +1164,44 @@ const recipientResponse = (recipient: {
   updatedAt: recipient.updatedAt.getTime(),
 });
 
-const createRecipientBodySchema = z.object({
-  email: z.string().email(),
-  name: z.string().optional(),
-  role: z.enum(["signer", "viewer"]).optional(),
+const addRecipientsBodySchema = z.object({
+  recipients: z.array(
+    z.object({
+      email: z.string().email(),
+      name: z.string().optional(),
+      role: z.enum(["signer", "viewer", "approver"]).optional(),
+      order: z.number().int().optional(),
+      isPlaceholder: z.boolean().optional(),
+    })
+  ),
 });
 
-const createRecipientRouteDef = createRoute({
+const addRecipientsRouteDef = createRoute({
   method: "post",
   path: "/{publicId}/recipients",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
       content: {
-        "application/json": { schema: createRecipientBodySchema },
+        "application/json": { schema: addRecipientsBodySchema },
       },
     },
   },
   responses: {
     201: {
-      content: { "application/json": { schema: RecipientSchema } },
-      description: "Recipient added",
+      content: { "application/json": { schema: z.array(RecipientSchema) } },
+      description: "Recipients added",
     },
+    400: { description: "Invalid request" },
+    403: { description: "Forbidden" },
     404: { description: "Document not found" },
   },
 });
 
-app.openapi(createRecipientRouteDef, async (c) => {
+app.openapi(addRecipientsRouteDef, async (c) => {
   const user = c.get("user");
   const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -1205,42 +1222,72 @@ app.openapi(createRecipientRouteDef, async (c) => {
     return c.json({ error: "Document not found" }, 404);
   }
 
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can add recipients" }, 403);
+  }
+
+  if (doc.status === "deleted" || doc.documentStatus !== "active") {
+    return c.json({ error: "Cannot add recipients to this document" }, 400);
+  }
+
+  if (input.recipients.length === 0) {
+    return c.json({ error: "At least one recipient is required" }, 400);
+  }
+
+  const emails = input.recipients.map((r) => r.email.toLowerCase());
+  const uniqueEmails = new Set(emails);
+  if (emails.length !== uniqueEmails.size) {
+    return c.json({ error: "Duplicate recipient emails are not allowed" }, 400);
+  }
+
   const countResult = await db
     .select({ value: count() })
     .from(recipients)
     .where(eq(recipients.documentId, doc.id));
 
   const now = new Date();
-  const order = (countResult[0]?.value ?? 0) + 1;
+  const baseOrder = countResult[0]?.value ?? 0;
+  const tokenExpiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-  await db.insert(recipients).values({
+  const recipientValues = input.recipients.map((recipientInput, index) => ({
     id: crypto.randomUUID(),
     publicId: crypto.randomUUID(),
     documentId: doc.id,
-    name: input.name ?? null,
-    email: input.email,
-    role: input.role ?? "signer",
-    order,
-    status: "pending",
+    name: recipientInput.name ?? null,
+    email: recipientInput.email.toLowerCase(),
+    role: recipientInput.role ?? "signer",
+    order: recipientInput.order ?? baseOrder + index + 1,
+    status: "pending" as const,
+    signingToken: generateSigningToken(),
+    tokenExpiresAt: tokenExpiration,
     createdAt: now,
     updatedAt: now,
-  });
+  }));
 
+  await db.insert(recipients).values(recipientValues);
+
+  const insertedIds = recipientValues.map((r) => r.id);
   const rows = await db
     .select()
     .from(recipients)
-    .where(
-      and(eq(recipients.documentId, doc.id), eq(recipients.email, input.email))
-    )
-    .orderBy(desc(recipients.createdAt))
-    .limit(1);
+    .where(and(eq(recipients.documentId, doc.id), inArray(recipients.id, insertedIds)))
+    .orderBy(asc(recipients.order), asc(recipients.createdAt));
 
-  const recipient = rows[0];
-  if (!recipient) {
-    return c.json({ error: "Failed to create recipient" }, 500);
-  }
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "recipients.added",
+    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      count: rows.length,
+    }),
+    createdAt: now,
+  });
 
-  return c.json(recipientResponse(recipient), 201);
+  return c.json(rows.map(recipientResponse), 201);
 });
 
 const listRecipientsRouteDef = createRoute({
@@ -1289,6 +1336,202 @@ app.openapi(listRecipientsRouteDef, async (c) => {
     .orderBy(asc(recipients.order), asc(recipients.createdAt));
 
   return c.json(rows.map(recipientResponse));
+});
+
+const removeRecipientRouteDef = createRoute({
+  method: "delete",
+  path: "/{publicId}/recipients/{recipientPublicId}",
+  request: {
+    params: z.object({
+      publicId: z.string(),
+      recipientPublicId: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Recipient removed",
+    },
+    400: { description: "Cannot remove recipient" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(removeRecipientRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId, recipientPublicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can remove recipients" }, 403);
+  }
+
+  if (doc.status === "deleted") {
+    return c.json({ error: "Cannot remove recipients from a deleted document" }, 400);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.publicId, recipientPublicId),
+        eq(recipients.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  await db
+    .delete(signatureFields)
+    .where(eq(signatureFields.recipientId, recipient.id));
+
+  await db.delete(recipients).where(eq(recipients.id, recipient.id));
+
+  return c.json({ success: true });
+});
+
+const resendRecipientBodySchema = z.object({
+  customMessage: z.string().optional(),
+});
+
+const resendRecipientRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/recipients/{recipientPublicId}/resend",
+  request: {
+    params: z.object({
+      publicId: z.string(),
+      recipientPublicId: z.string(),
+    }),
+    body: {
+      content: {
+        "application/json": { schema: resendRecipientBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Recipient email resent",
+    },
+    400: { description: "Cannot resend email" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(resendRecipientRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId, recipientPublicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can resend emails" }, 403);
+  }
+
+  if (doc.status === "draft") {
+    return c.json(
+      { error: "Cannot resend email - document has not been sent yet" },
+      400
+    );
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.publicId, recipientPublicId),
+        eq(recipients.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  if (recipient.status === "signed" || recipient.status === "approved") {
+    return c.json(
+      { error: `Cannot resend - recipient has already ${recipient.status}` },
+      400
+    );
+  }
+
+  const now = new Date();
+  const newToken = generateSigningToken();
+  const newExpiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  await db
+    .update(recipients)
+    .set({
+      signingToken: newToken,
+      tokenExpiresAt: newExpiration,
+      updatedAt: now,
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "recipient.resend",
+    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      recipientId: recipient.id,
+    }),
+    createdAt: now,
+  });
+
+  return c.json({ success: true });
 });
 
 const FieldPropertiesSchema = z
