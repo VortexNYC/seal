@@ -8,12 +8,14 @@
     "deploy": "wrangler deploy",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "pretest": "[ -f wrangler.toml ] || cp wrangler.toml.example wrangler.toml",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@hono/zod-openapi": "^0.19.5",
+    "better-auth": "1.6.9",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.5",
     "zod": "catalog:"
