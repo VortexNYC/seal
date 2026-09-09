@@ -484,6 +484,7 @@ const documentSchema = z.object({
   documentStatus: z.string(),
   workflowStatus: z.string(),
   sharingMode: z.string(),
+  signingMode: z.string().nullable().optional(),
   aiProcessingStatus: z.string().nullable().optional(),
   storageKey: z.string().nullable().optional(),
   contentType: z.string().nullable().optional(),
@@ -491,6 +492,8 @@ const documentSchema = z.object({
   fileSize: z.number().int().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
   thumbnailDataUrl: z.string().nullable().optional(),
+  redirectUrl: z.string().nullable().optional(),
+  allowDictateNextSigner: z.boolean(),
   sentAt: z.number().nullable().optional(),
   deadline: z.number().nullable().optional(),
   createdAt: z.number(),
@@ -764,5 +767,368 @@ export async function getOrganizationMembers(
   return apiFetch(
     `/api/organizations/${encodeURIComponent(slug)}/members`,
     z.array(teamMemberSchema)
+  );
+}
+
+const recipientSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  documentId: z.string(),
+  name: z.string().nullable().optional(),
+  email: z.string(),
+  role: z.string(),
+  order: z.number().int(),
+  status: z.string(),
+  signingToken: z.string().nullable().optional(),
+  tokenExpiresAt: z.number().nullable().optional(),
+  viewedAt: z.number().nullable().optional(),
+  signedAt: z.number().nullable().optional(),
+  approvedAt: z.number().nullable().optional(),
+  declinedAt: z.number().nullable().optional(),
+  signatureData: z.string().nullable().optional(),
+  signatureType: z.string().nullable().optional(),
+  authenticationData: z.string().nullable().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type ApiRecipient = z.infer<typeof recipientSchema>;
+
+const recipientProgressSchema = z.object({
+  total: z.number().int(),
+  completed: z.number().int(),
+  percentage: z.number().int(),
+  byStatus: z.record(z.string(), z.number().int()),
+  byRole: z.record(z.string(), z.number().int()),
+});
+
+export type ApiRecipientProgress = z.infer<typeof recipientProgressSchema>;
+
+const fieldPropertiesSchema = z
+  .object({
+    placeholder: z.string().optional(),
+    defaultValue: z.string().optional(),
+    options: z.array(z.string()).optional(),
+    maxLength: z.number().optional(),
+    minLength: z.number().optional(),
+    pattern: z.string().optional(),
+    helpText: z.string().optional(),
+  })
+  .partial()
+  .passthrough()
+  .nullable();
+
+const fieldValidationRulesSchema = z
+  .object({
+    required: z.boolean().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    pattern: z.string().optional(),
+    customMessage: z.string().optional(),
+  })
+  .partial()
+  .passthrough()
+  .nullable();
+
+const signatureFieldSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  documentId: z.string(),
+  recipientId: z.string().nullable().optional(),
+  templateFieldId: z.string().nullable().optional(),
+  fieldType: z.string(),
+  label: z.string(),
+  isRequired: z.boolean(),
+  isMainSignature: z.boolean(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  page: z.number().int(),
+  properties: fieldPropertiesSchema,
+  validationRules: fieldValidationRulesSchema,
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type ApiSignatureField = z.infer<typeof signatureFieldSchema>;
+
+const signatureFieldWithValuesSchema = signatureFieldSchema.extend({
+  currentValue: z.string().nullable().optional(),
+  currentSignatureImageUrl: z.string().nullable().optional(),
+  isFilled: z.boolean(),
+  signatureDetails: z
+    .object({
+      signedAt: z.number(),
+      signerName: z.string().nullable().optional(),
+      signerEmail: z.string().nullable().optional(),
+      signatureMethod: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export type ApiSignatureFieldWithValues = z.infer<
+  typeof signatureFieldWithValuesSchema
+>;
+
+const signatureSchema = z.object({
+  id: z.string(),
+  fieldId: z.string().nullable().optional(),
+  recipientId: z.string(),
+  documentId: z.string(),
+  signedAt: z.number(),
+  ipAddress: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+  value: z.string().nullable().optional(),
+  signatureImageUrl: z.string().nullable().optional(),
+  signatureMethod: z.string().nullable().optional(),
+  signatureHash: z.string().nullable().optional(),
+  signatureImageHash: z.string().nullable().optional(),
+  documentHashAtSigning: z.string().nullable().optional(),
+  authenticationData: z.string().nullable().optional(),
+});
+
+export type ApiSignature = z.infer<typeof signatureSchema>;
+
+const paymentConfigSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  fieldId: z.string(),
+  documentId: z.string(),
+  paymentType: z.string(),
+  totalAmountCents: z.number().int(),
+  currency: z.string(),
+  paymentStatus: z.string().nullable().optional(),
+});
+
+export type ApiPaymentConfig = z.infer<typeof paymentConfigSchema>;
+
+export async function getDocument(publicId: string): Promise<ApiDocument> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}`,
+    documentSchema
+  );
+}
+
+export async function updateDocument(
+  publicId: string,
+  input: {
+    name?: string;
+    description?: string | null;
+    redirectUrl?: string | null;
+    allowDictateNextSigner?: boolean;
+  }
+): Promise<ApiDocument> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}`,
+    documentSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function getDocumentRecipients(
+  publicId: string
+): Promise<ApiRecipient[]> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/recipients`,
+    z.array(recipientSchema)
+  );
+}
+
+export async function getRecipientProgress(
+  publicId: string
+): Promise<ApiRecipientProgress> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/recipients/progress`,
+    recipientProgressSchema
+  );
+}
+
+export async function getCurrentUserRecipient(
+  publicId: string
+): Promise<ApiRecipient | null> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/recipients/me`,
+    recipientSchema.nullable()
+  );
+}
+
+export async function addRecipients(
+  publicId: string,
+  recipients: Array<{
+    email: string;
+    name?: string;
+    role?: "signer" | "viewer" | "approver";
+    order?: number;
+    isPlaceholder?: boolean;
+  }>
+): Promise<ApiRecipient[]> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/recipients`,
+    z.array(recipientSchema),
+    {
+      method: "POST",
+      body: JSON.stringify({ recipients }),
+    }
+  );
+}
+
+export async function removeRecipient(
+  publicId: string,
+  recipientPublicId: string
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}`,
+    z.object({ success: z.boolean() }),
+    { method: "DELETE" }
+  );
+}
+
+export async function resendRecipientEmail(
+  publicId: string,
+  recipientPublicId: string,
+  customMessage?: string
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}/resend`,
+    z.object({ success: z.boolean() }),
+    {
+      method: "POST",
+      body: JSON.stringify({ customMessage }),
+    }
+  );
+}
+
+export async function getDocumentSignatureFields(
+  publicId: string
+): Promise<ApiSignatureField[]> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields`,
+    z.array(signatureFieldSchema)
+  );
+}
+
+export async function getCurrentUserSignatureFields(
+  publicId: string
+): Promise<ApiSignatureFieldWithValues[]> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/me`,
+    z.array(signatureFieldWithValuesSchema)
+  );
+}
+
+export async function getDocumentSignatures(
+  publicId: string
+): Promise<ApiSignature[]> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signatures`,
+    z.array(signatureSchema)
+  );
+}
+
+export async function getDocumentPaymentConfigs(
+  publicId: string
+): Promise<ApiPaymentConfig[]> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/payment-configs`,
+    z.array(paymentConfigSchema)
+  );
+}
+
+export async function createSignatureField(
+  publicId: string,
+  input: {
+    recipientPublicId?: string;
+    fieldType: string;
+    label: string;
+    isRequired: boolean;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    page: number;
+    properties?: Record<string, unknown> | null;
+    validationRules?: Record<string, unknown> | null;
+    templateFieldId?: string;
+  }
+): Promise<ApiSignatureField> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields`,
+    signatureFieldSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function updateSignatureField(
+  publicId: string,
+  fieldPublicId: string,
+  input: {
+    label?: string;
+    isRequired?: boolean;
+    properties?: Record<string, unknown> | null;
+    validationRules?: Record<string, unknown> | null;
+  }
+): Promise<ApiSignatureField> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
+    signatureFieldSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function repositionSignatureField(
+  publicId: string,
+  fieldPublicId: string,
+  input: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    page?: number;
+  }
+): Promise<ApiSignatureField> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/position`,
+    signatureFieldSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function assignSignatureField(
+  publicId: string,
+  fieldPublicId: string,
+  recipientPublicId: string
+): Promise<ApiSignatureField> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/assign`,
+    signatureFieldSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ recipientPublicId }),
+    }
+  );
+}
+
+export async function deleteSignatureField(
+  publicId: string,
+  fieldPublicId: string
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
+    z.object({ success: z.boolean() }),
+    { method: "DELETE" }
   );
 }
