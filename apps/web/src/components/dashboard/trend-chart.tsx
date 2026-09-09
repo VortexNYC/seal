@@ -5,8 +5,6 @@
  * Uses semantic color tokens (no hardcoded hex values) and fades in on mount.
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
@@ -25,11 +23,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getDocumentTrends } from "@/lib/api-client";
 
 export function TrendChart(): React.ReactElement {
-  const { data: trends } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentTrends, { days: 30 })
-  );
+  const { data: trends } = useSuspenseQuery({
+    queryKey: ["api", "documents", "trends", 30],
+    queryFn: () => getDocumentTrends(30),
+  });
 
   const chartData = useMemo(() => {
     return trends.map((item) => ({

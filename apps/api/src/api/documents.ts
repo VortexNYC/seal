@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { count, eq, and, desc, asc, gte, type SQL } from "drizzle-orm";
+import { count, eq, and, desc, asc, gte, lt, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { documents, recipients, signatures } from "../global/schema.js";
@@ -174,9 +174,13 @@ const DocumentStatsSchema = z
   .object({
     total: z.number().int(),
     pending: z.number().int(),
+    draft: z.number().int(),
     sent: z.number().int(),
     inProgress: z.number().int(),
     completed: z.number().int(),
+    cancelled: z.number().int(),
+    declined: z.number().int(),
+    expired: z.number().int(),
     completionRate: z.number(),
     createdThisMonth: z.number().int(),
     completedThisMonth: z.number().int(),
@@ -214,6 +218,11 @@ app.openapi(statsRouteDef, async (c) => {
   const completed = await countDocuments(eq(documents.status, "completed"));
   const sent = await countDocuments(eq(documents.status, "sent"));
   const inProgress = await countDocuments(eq(documents.status, "in_progress"));
+  const cancelled = await countDocuments(eq(documents.status, "cancelled"));
+  const declined = await countDocuments(eq(documents.status, "declined"));
+  const expired = await countDocuments(eq(documents.status, "expired"));
+  const draftCount = await countDocuments(eq(documents.status, "draft"));
+  const uploadedCount = await countDocuments(eq(documents.status, "uploaded"));
 
   const now = new Date();
   const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
@@ -232,13 +241,103 @@ app.openapi(statsRouteDef, async (c) => {
   return c.json({
     total,
     pending: total - completed,
+    draft: draftCount + uploadedCount,
     sent,
     inProgress,
     completed,
+    cancelled,
+    declined,
+    expired,
     completionRate,
     createdThisMonth,
     completedThisMonth,
   });
+});
+
+const DocumentTrendsSchema = z
+  .object({
+    date: z.string(),
+    created: z.number().int(),
+    completed: z.number().int(),
+  })
+  .openapi("DocumentTrend");
+
+const trendsRouteDef = createRoute({
+  method: "get",
+  path: "/trends",
+  request: {
+    query: z.object({
+      days: z.coerce.number().int().min(1).max(90).default(30),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(DocumentTrendsSchema) },
+      },
+      description: "Daily document creation and completion trends",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(trendsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { days } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+
+  const now = new Date();
+  const dayRanges: { day: Date; nextDay: Date }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i)
+    );
+    const nextDay = new Date(
+      Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() + 1)
+    );
+    dayRanges.push({ day, nextDay });
+  }
+
+  const createdPromises = dayRanges.map(({ day, nextDay }) =>
+    db
+      .select({ value: count() })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, organizationId),
+          gte(documents.createdAt, day),
+          lt(documents.createdAt, nextDay)
+        )
+      )
+  );
+
+  const completedPromises = dayRanges.map(({ day, nextDay }) =>
+    db
+      .select({ value: count() })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, organizationId),
+          eq(documents.status, "completed"),
+          gte(documents.updatedAt, day),
+          lt(documents.updatedAt, nextDay)
+        )
+      )
+  );
+
+  const createdRows = await Promise.all(createdPromises);
+  const completedRows = await Promise.all(completedPromises);
+
+  const results = dayRanges.map(({ day }, index) => ({
+    date: day.toISOString().slice(0, 10),
+    created: createdRows[index]?.[0]?.value ?? 0,
+    completed: completedRows[index]?.[0]?.value ?? 0,
+  }));
+
+  return c.json(results);
 });
 
 const getRouteDef = createRoute({

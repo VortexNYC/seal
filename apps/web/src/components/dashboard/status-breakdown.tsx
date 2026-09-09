@@ -6,8 +6,6 @@
  * progress-bar-per-status approach with a single proportional visualization.
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
 import {
@@ -17,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getDocumentStats } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 interface StatusSegment {
@@ -27,9 +26,10 @@ interface StatusSegment {
 }
 
 export function StatusBreakdown(): React.ReactElement {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {})
-  );
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["api", "documents", "stats"],
+    queryFn: getDocumentStats,
+  });
 
   const breakdown: StatusSegment[] = [
     {

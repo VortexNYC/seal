@@ -22,12 +22,22 @@ const teamSummarySchema = z.object({
   }),
 });
 
+const documentTrendSchema = z.object({
+  date: z.string(),
+  created: z.number().int(),
+  completed: z.number().int(),
+});
+
 const documentStatsSchema = z.object({
   total: z.number().int(),
   pending: z.number().int(),
+  draft: z.number().int(),
   sent: z.number().int(),
   inProgress: z.number().int(),
   completed: z.number().int(),
+  cancelled: z.number().int(),
+  declined: z.number().int(),
+  expired: z.number().int(),
   completionRate: z.number(),
   createdThisMonth: z.number().int(),
   completedThisMonth: z.number().int(),
@@ -36,6 +46,7 @@ const documentStatsSchema = z.object({
 export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
+export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
 
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
@@ -88,4 +99,13 @@ export async function getOrganizationTeam(
 
 export async function getDocumentStats(): Promise<ApiDocumentStats> {
   return apiFetch("/api/documents/stats", documentStatsSchema);
+}
+
+export async function getDocumentTrends(
+  days = 30
+): Promise<ApiDocumentTrend[]> {
+  return apiFetch(
+    `/api/documents/trends?days=${encodeURIComponent(days)}`,
+    z.array(documentTrendSchema)
+  );
 }
