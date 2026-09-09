@@ -17,4 +17,12 @@ describe("app", () => {
     const body = await res.json<{ status: string }>();
     expect(body.status).toBe("ok");
   });
+
+  it("rejects unauthenticated document requests", async () => {
+    const res = await app.fetch(
+      new Request("http://localhost:8787/api/documents"),
+      env
+    );
+    expect(res.status).toBe(401);
+  });
 });
