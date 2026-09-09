@@ -1,14 +1,11 @@
-import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { ConvexError } from "convex/values";
+import { useQuery } from "convex/react";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -44,6 +41,15 @@ import { buildActivityEvents } from "@/lib/document-activity";
 import { parseSelectValue } from "@/lib/select-values";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { cn } from "@/lib/utils";
+import { isWorkflowStatus } from "@/lib/document-status";
+
+import { useDocumentDetail } from "@/data/document-detail";
+import {
+  addRecipients as addRecipientsApi,
+  removeRecipient as removeRecipientApi,
+  resendRecipientEmail as resendRecipientEmailApi,
+  updateDocument as updateDocumentApi,
+} from "@/lib/api-client";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
@@ -63,7 +69,10 @@ import { FieldOptionsDialog } from "../../../../components/documents/field-optio
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import { useDocumentState } from "../../../../components/documents/hooks/use-document-state";
 import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
-import { useFieldPlacement } from "../../../../components/documents/hooks/use-field-placement";
+import {
+  useFieldPlacement,
+  type SignatureData,
+} from "../../../../components/documents/hooks/use-field-placement";
 import { usePdfViewer } from "../../../../components/documents/hooks/use-pdf-viewer";
 import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
 import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
@@ -113,67 +122,28 @@ function DocumentErrorComponent(props: ErrorComponentProps) {
 
 function DocumentDetailPage() {
   const { slug, documentId } = Route.useParams();
+  const documentPublicId = documentId;
   const typedDocumentId = parseId("documents", documentId);
   const router = useRouter();
 
-  // ── Convex queries ──────────────────────────────────────────────────────
-  const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
-    convexQuery(api.documents.queries.getDocument, {
-      documentId: typedDocumentId,
-    })
-  );
-
-  const { data: recipients, refetch: refetchRecipients } = useSuspenseQuery(
-    convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
-      documentId: typedDocumentId,
-    })
-  );
-
-  const { data: progress } = useSuspenseQuery(
-    convexQuery(api.documents.recipients_queries.getRecipientProgress, {
-      documentId: typedDocumentId,
-    })
-  );
-
-  const { data: signatureFields, refetch: refetchFields } = useSuspenseQuery(
-    convexQuery(api.signature_fields.queries.getFieldsByDocument, {
-      documentId: typedDocumentId,
-    })
-  );
+  // ── Worker queries ──────────────────────────────────────────────────────
+  const {
+    documentData,
+    recipients,
+    progress,
+    signatureFields,
+    documentSignatures,
+    paymentConfigs,
+    currentUserRecipient,
+    currentUserFields,
+    refetchDocument,
+    refetchRecipients,
+    refetchFields,
+    refetchCurrentUserRecipient,
+    refetchCurrentUserFields,
+  } = useDocumentDetail(documentPublicId);
 
   const signatureFieldCount = countSignatureFields(signatureFields);
-
-  const { data: documentSignatures } = useSuspenseQuery(
-    convexQuery(api.signatures.queries.getSignaturesByDocument, {
-      documentId: typedDocumentId,
-    })
-  );
-
-  const { data: paymentConfigs } = useSuspenseQuery(
-    convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
-      documentId: typedDocumentId,
-    })
-  );
-
-  const { data: currentUserRecipient, refetch: refetchCurrentUserRecipient } =
-    useSuspenseQuery(
-      convexQuery(
-        api.documents.recipients_queries.getRecipientByAuthenticatedUser,
-        {
-          documentId: typedDocumentId,
-        }
-      )
-    );
-
-  const { data: currentUserFields, refetch: refetchCurrentUserFields } =
-    useSuspenseQuery(
-      convexQuery(
-        api.signature_fields.queries.getFieldsForAuthenticatedRecipient,
-        {
-          documentId: typedDocumentId,
-        }
-      )
-    );
 
   const merchantAccount = useQuery(
     api.payments.merchant_account_queries.getMerchantAccount,
@@ -188,14 +158,20 @@ function DocumentDetailPage() {
     (merchantAccount?.account?.chargesEnabled ?? false);
 
   const aiSettings = useQuery(api.organizations.queries.getAiSettings, {
-    organizationId: documentData.organizationId,
+    organizationId: parseId(
+      "organizations",
+      documentData.organizationId
+    ),
   });
   const aiEnabled = aiSettings?.aiEnabled !== false;
 
   const signingSettings = useQuery(
     api.organizations.queries.getSigningSettings,
     {
-      organizationId: documentData.organizationId,
+      organizationId: parseId(
+        "organizations",
+        documentData.organizationId
+      ),
     }
   );
 
@@ -213,7 +189,7 @@ function DocumentDetailPage() {
       }
     >();
     for (const config of paymentConfigs) {
-      map.set(config.fieldId, {
+      map.set(String(config.fieldId), {
         totalAmountCents: config.totalAmountCents,
         currency: config.currency,
         paymentType: config.paymentType,
@@ -230,11 +206,11 @@ function DocumentDetailPage() {
 
   const signaturesByFieldId = useMemo(
     () =>
-      new Map(
+      new Map<string, SignatureData>(
         documentSignatures.map((signature) => {
           const signer = recipientsById.get(signature.recipientId);
           return [
-            signature.fieldId,
+            signature.fieldId ? String(signature.fieldId) : "",
             {
               signatureImageUrl: signature.signatureImageUrl,
               value: signature.value,
@@ -250,16 +226,22 @@ function DocumentDetailPage() {
   );
 
   // ── Mutations ───────────────────────────────────────────────────────────
-  const removeRecipient = useMutation(
-    api.documents.recipients_mutations.removeRecipient
-  );
-  const addRecipients = useMutation(
-    api.documents.recipients_mutations.addRecipients
-  );
-  const updateDocument = useMutation(api.documents.mutations.updateDocument);
-  const resendRecipientEmail = useAction(
-    api.documents.send_document_action.resendRecipientEmail
-  );
+  const removeRecipient = async (recipientPublicId: string) => {
+    await removeRecipientApi(documentPublicId, recipientPublicId);
+  };
+  const addRecipients = async (
+    recipientsInput: { email: string; name?: string; role: "signer" | "viewer" | "approver" }[]
+  ) => {
+    await addRecipientsApi(documentPublicId, recipientsInput);
+  };
+  const updateDocument = async (
+    input: { name?: string; description?: string | null; redirectUrl?: string | null; allowDictateNextSigner?: boolean }
+  ) => {
+    await updateDocumentApi(documentPublicId, input);
+  };
+  const resendRecipientEmail = async (recipientPublicId: string) => {
+    await resendRecipientEmailApi(documentPublicId, recipientPublicId);
+  };
 
   // ── Auth ────────────────────────────────────────────────────────────────
   const { user } = useUser();
@@ -269,10 +251,10 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const pdfViewer = usePdfViewer(typedDocumentId);
+  const pdfViewer = usePdfViewer(documentPublicId);
 
   const fieldPlacement = useFieldPlacement({
-    documentId: typedDocumentId,
+    documentPublicId,
     recipients,
     signatureFields,
     currentPage: pdfViewer.currentPage,
@@ -286,17 +268,17 @@ function DocumentDetailPage() {
 
   const docState = useDocumentState(documentData.redirectUrl ?? "");
 
-  const documentAnnotations = useDocumentAnnotations(typedDocumentId);
+  const documentAnnotations = useDocumentAnnotations(documentPublicId);
   const { openSections, toggleSection } = useSectionState(
     documentAnnotations.annotations !== null
   );
 
-  const aiSuggestions = useAIFieldSuggestions(typedDocumentId);
+  const aiSuggestions = useAIFieldSuggestions(documentPublicId);
   const {
     threadId,
     isCreating: isCreatingThread,
     getOrCreateThread,
-  } = useDocumentThread(typedDocumentId);
+  } = useDocumentThread(documentPublicId);
   const [showAIChat, setShowAIChat] = useState(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
@@ -411,7 +393,7 @@ function DocumentDetailPage() {
     if (!docState.recipientToRemove) return;
 
     try {
-      await removeRecipient({ recipientId: docState.recipientToRemove.id });
+      await removeRecipient(docState.recipientToRemove.publicId);
       const hasFields = docState.recipientToRemove.fieldCount > 0;
       toast.success(
         hasFields
@@ -431,17 +413,13 @@ function DocumentDetailPage() {
     }
   };
 
-  const handleResendEmail = async (recipientId: Id<"document_recipients">) => {
+  const handleResendEmail = async (recipientId: string) => {
+    const recipient = recipients.find((r) => r._id === recipientId);
+    if (!recipient) return;
+
     try {
-      const result = await resendRecipientEmail({
-        documentId: typedDocumentId,
-        recipientId,
-      });
-      if (result.success) {
-        toast.success("Email resent successfully");
-      } else {
-        toast.error(result.error || "Failed to resend email");
-      }
+      await resendRecipientEmail(recipient.publicId);
+      toast.success("Email resent successfully");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to resend email"
@@ -457,16 +435,13 @@ function DocumentDetailPage() {
     }
 
     try {
-      await addRecipients({
-        documentId: typedDocumentId,
-        recipients: [
-          {
-            email: user.primaryEmailAddress.emailAddress,
-            name: user.fullName || undefined,
-            role: "signer",
-          },
-        ],
-      });
+      await addRecipients([
+        {
+          email: user.primaryEmailAddress.emailAddress,
+          name: user.fullName || undefined,
+          role: "signer",
+        },
+      ]);
       toast.success("Added yourself as a signer");
       docState.setAddMyselfOpen(false);
       void refetchRecipients();
@@ -496,7 +471,6 @@ function DocumentDetailPage() {
     docState.setIsSavingRedirect(true);
     try {
       await updateDocument({
-        documentId: typedDocumentId,
         redirectUrl: url || null,
       });
       toast.success(url ? "Redirect URL saved" : "Redirect URL removed");
@@ -515,14 +489,17 @@ function DocumentDetailPage() {
     name?: string;
     role: string;
   }) => {
+    const full = recipients.find((r) => r._id === recipient._id);
+    if (!full) return;
     const fieldCount = signatureFields.filter(
-      (f) => f.recipientId === recipient._id
+      (f) => f.recipientId === full._id
     ).length;
     docState.setRecipientToRemove({
-      id: recipient._id,
-      email: recipient.email,
-      name: recipient.name,
-      role: recipient.role,
+      id: full._id,
+      publicId: full.publicId,
+      email: full.email,
+      name: full.name,
+      role: full.role,
       fieldCount,
     });
     docState.setRemoveRecipientOpen(true);
@@ -848,10 +825,15 @@ function DocumentDetailPage() {
             <DocumentSidebar
               documentId={documentId}
               slug={slug}
-              workflowStatus={documentData.workflowStatus}
+              workflowStatus={
+                documentData.workflowStatus &&
+                isWorkflowStatus(documentData.workflowStatus)
+                  ? documentData.workflowStatus
+                  : undefined
+              }
               createdAt={documentData.createdAt}
               description={documentData.description}
-              fileSize={documentData.fileSize}
+              fileSize={documentData.fileSize ?? 0}
               pageCount={documentData.pageCount}
               numPages={pdfViewer.numPages}
               recipients={sidebarRecipients}
@@ -904,13 +886,13 @@ function DocumentDetailPage() {
                 const full = recipients.find((r) => r._id === recipient._id);
                 if (!full) return;
                 docState.setSelectedRecipientForOptions({
-                  _id: full._id,
+                  _id: parseId("document_recipients", full._id),
+                  publicId: full.publicId,
                   email: full.email,
                   name: full.name ?? undefined,
                   role: full.role,
                   status: full.status,
-                  signingToken:
-                    "signingToken" in full ? full.signingToken : undefined,
+                  signingToken: full.signingToken,
                 });
                 docState.setRecipientOptionsOpen(true);
               }}
@@ -923,7 +905,7 @@ function DocumentDetailPage() {
         {/* ── Dialogs ─────────────────────────────────────────────────────── */}
         <AddRecipientDialog
           documentId={typedDocumentId}
-          organizationId={documentData.organizationId}
+          organizationId={parseId("organizations", documentData.organizationId)}
           open={docState.addRecipientOpen}
           onOpenChange={docState.setAddRecipientOpen}
           onSuccess={() => refetchRecipients()}
@@ -1008,7 +990,11 @@ function DocumentDetailPage() {
             fieldPlacement.setShowPaymentConfigModal(open);
             if (!open) fieldPlacement.setPaymentConfigFieldId(null);
           }}
-          fieldId={fieldPlacement.paymentConfigFieldId}
+          fieldId={
+            fieldPlacement.paymentConfigFieldId
+              ? parseId("signature_fields", fieldPlacement.paymentConfigFieldId)
+              : null
+          }
         />
 
         <SendDocumentDialog

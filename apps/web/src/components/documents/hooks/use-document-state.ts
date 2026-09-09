@@ -3,6 +3,7 @@ import { useState } from "react";
 
 type RecipientToRemove = {
   id: Id<"document_recipients">;
+  publicId: string;
   email: string;
   name?: string;
   role: string;
@@ -11,6 +12,7 @@ type RecipientToRemove = {
 
 type RecipientForOptions = {
   _id: Id<"document_recipients">;
+  publicId: string;
   email: string;
   name?: string;
   role: "signer" | "viewer" | "approver";

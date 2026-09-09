@@ -99,7 +99,7 @@ function documentResponse(doc: {
     folderId: doc.folderId,
     name: doc.name,
     description: doc.description,
-    status: doc.status,
+    status: doc.documentStatus,
     documentStatus: doc.documentStatus,
     workflowStatus: doc.status,
     sharingMode: doc.sharingMode,
