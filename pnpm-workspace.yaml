@@ -37,6 +37,7 @@ onlyBuiltDependencies:
   - onnxruntime-node
   - protobufjs
   - sharp
+  - simple-git-hooks
   - workerd
 
 minimumReleaseAgeExclude:

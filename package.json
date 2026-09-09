@@ -19,6 +19,7 @@
     "format:check": "vp fmt --check",
     "check": "vp check",
     "knip": "vp run -r knip",
+    "scan:secrets": "secretlint . --no-gitignore --secretlintignore .secretlintignore",
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
@@ -26,11 +27,17 @@
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
     "@vortexnyc/tooling": "0.11.25",
     "knip": "^6.3.0",
+    "secretlint": "^13.0.5",
+    "simple-git-hooks": "^2.14.0",
     "tsx": "^4.20.5",
     "typescript": "~5.9.3",
     "vite-plus": "0.2.4"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm run scan:secrets"
   },
   "packageManager": "pnpm@11.13.1"
 }
