@@ -1,18 +1,11 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.stubEnv("VITE_CONVEX_URL", "https://example.com");
-
-const mockUseMutation = vi.fn();
-const mockUseQuery = vi.fn();
-
-vi.mock("convex/react", () => ({
-  useMutation: () => mockUseMutation,
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
+import { UploadDialog } from "./upload-dialog";
 
 vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 vi.mock("../../hooks/use-analytics", () => ({
@@ -33,10 +26,12 @@ vi.mock("../../lib/upload-validation", () => ({
   validateFileForUpload: () => ({ valid: true, errors: [] }),
 }));
 
-import { parseId } from "../../lib/convex-ids";
-import { UploadDialog } from "./upload-dialog";
-
-const FAKE_ORG_ID = parseId("organizations", "fake_org_id");
+const queryClient = new QueryClient({
+  defaultOptions: {
+    mutations: { retry: false },
+    queries: { retry: false },
+  },
+});
 
 function renderDialog(
   overrides: {
@@ -46,12 +41,16 @@ function renderDialog(
   } = {}
 ) {
   const props = {
-    organizationId: FAKE_ORG_ID,
+    organizationId: "fake_org_id",
     open: true,
     onOpenChange: vi.fn(),
     ...overrides,
   };
-  render(<UploadDialog {...props} />);
+  render(
+    <QueryClientProvider client={queryClient}>
+      <UploadDialog {...props} />
+    </QueryClientProvider>
+  );
   return props;
 }
 
@@ -63,123 +62,31 @@ describe("UploadDialog", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllEnvs();
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
+    queryClient.clear();
   });
 
   test("does not render dialog content when open is false", () => {
-    mockUseQuery.mockReturnValue(undefined);
     renderDialog({ open: false });
     expect(screen.queryByText("Upload Documents")).not.toBeInTheDocument();
   });
 
   test("renders dialog title when open is true", () => {
-    mockUseQuery.mockReturnValue(undefined);
     renderDialog({ open: true });
     expect(screen.getByText("Upload Documents")).toBeInTheDocument();
   });
 
-  test("does not show usage stats when query returns undefined (loading)", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  test("does not show usage stats", () => {
     renderDialog();
     expect(screen.queryByText("Documents this month")).not.toBeInTheDocument();
   });
 
-  test("shows usage stats when query returns data", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 3,
-      documentsLimit: 10,
-      plan: "free",
-    });
-    renderDialog();
-    expect(screen.getByText("Documents this month")).toBeInTheDocument();
-    expect(screen.getByText("3 / 10")).toBeInTheDocument();
-  });
-
-  test("does not show limit reached message when under the limit", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 3,
-      documentsLimit: 10,
-      plan: "free",
-    });
-    renderDialog();
-    expect(
-      screen.queryByText(/You've reached your monthly document limit/)
-    ).not.toBeInTheDocument();
-  });
-
-  test("shows limit reached message when at capacity", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 10,
-      documentsLimit: 10,
-      plan: "free",
-    });
-    renderDialog();
-    expect(
-      screen.getByText(/You've reached your monthly document limit/)
-    ).toBeInTheDocument();
-  });
-
-  test("shows upgrade prompt for free plan when at limit", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 10,
-      documentsLimit: 10,
-      plan: "free",
-    });
-    renderDialog();
-    expect(
-      screen.getByText(
-        /Upgrade to Professional for up to 500 documents per month/
-      )
-    ).toBeInTheDocument();
-  });
-
-  test("does not show upgrade prompt for non-free plan when at limit", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 500,
-      documentsLimit: 500,
-      plan: "pro",
-    });
-    renderDialog();
-    expect(
-      screen.queryByText(
-        /Upgrade to Professional for up to 500 documents per month/
-      )
-    ).not.toBeInTheDocument();
-  });
-
   test("upload button is disabled when no files are selected", () => {
-    mockUseQuery.mockReturnValue(undefined);
     renderDialog();
-    const uploadButton = screen.getByRole("button", { name: "Upload PDF" });
-    expect(uploadButton).toBeDisabled();
-  });
-
-  test("upload button is disabled when at document limit", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 10,
-      documentsLimit: 10,
-      plan: "free",
-    });
-    renderDialog();
-    const uploadButton = screen.getByRole("button", { name: "Upload PDF" });
-    expect(uploadButton).toBeDisabled();
-  });
-
-  test("upload button is enabled when under limit and no file selected check passes", () => {
-    mockUseQuery.mockReturnValue({
-      documentsThisMonth: 3,
-      documentsLimit: 10,
-      plan: "free",
-    });
-    renderDialog();
-    // Button should be disabled because no file is selected yet, regardless of limit status
     const uploadButton = screen.getByRole("button", { name: "Upload PDF" });
     expect(uploadButton).toBeDisabled();
   });
 
   test("renders dropzone area with PDF instructions", () => {
-    mockUseQuery.mockReturnValue(undefined);
     renderDialog();
     expect(
       screen.getByText("Drag & drop a PDF file here, or click to select")
@@ -190,7 +97,6 @@ describe("UploadDialog", () => {
   });
 
   test("renders cancel button", () => {
-    mockUseQuery.mockReturnValue(undefined);
     renderDialog();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });

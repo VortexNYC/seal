@@ -5,9 +5,7 @@
  * Used by Documents and Templates pages.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FolderPlusIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -24,21 +22,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createFolder } from "@/lib/api-client";
 
 interface CreateFolderDialogProps {
   type: "document" | "template";
-  parentId?: Id<"folders">;
+  parentId?: string;
 }
 
 export function CreateFolderDialog({
   type,
   parentId,
 }: CreateFolderDialogProps): React.ReactElement {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const createFolder = useMutation(api.folders.mutations.createFolder);
+  const createFolderMutation = useMutation({
+    mutationFn: createFolder,
+  });
 
   useEffect(() => {
     if (!open) return undefined;
@@ -58,10 +60,15 @@ export function CreateFolderDialog({
 
     setIsCreating(true);
     try {
-      await createFolder({ name: trimmed, type, parentId });
+      await createFolderMutation.mutateAsync({
+        name: trimmed,
+        type,
+        parentId,
+      });
       toast.success(`Folder "${trimmed}" created`);
       setName("");
       setOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["api", "folders"] });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to create folder";
@@ -69,7 +76,7 @@ export function CreateFolderDialog({
     } finally {
       setIsCreating(false);
     }
-  }, [name, createFolder, type, parentId]);
+  }, [name, createFolderMutation, type, parentId, queryClient]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {

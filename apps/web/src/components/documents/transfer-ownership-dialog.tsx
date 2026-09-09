@@ -1,7 +1,5 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
-import { ArrowRightLeftIcon, AlertTriangleIcon } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { AlertTriangleIcon, ArrowRightLeftIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -22,14 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { parseId } from "@/lib/convex-ids";
+import {
+  getOrganizationMembers,
+  transferDocument,
+} from "@/lib/api-client";
 
 interface TransferOwnershipDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  documentId: Id<"documents">;
+  documentId: string;
   documentName: string;
-  currentOwnerId: Id<"users">;
+  currentOwnerId: string;
   sharingMode: string;
   slug: string;
 }
@@ -46,17 +47,16 @@ export function TransferOwnershipDialog({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: members } = useQuery({
+    queryKey: ["api", "organization", slug, "members"],
+    queryFn: () => getOrganizationMembers(slug),
+    enabled: open,
   });
-  const members = useQuery(
-    api.organizations.queries.getOrganizationMembers,
-    organization ? { organizationId: organization._id } : "skip"
-  );
 
-  const transferOwnership = useMutation(
-    api.documents.mutations.transferDocumentOwnership
-  );
+  const transferOwnership = useMutation({
+    mutationFn: (variables: { publicId: string; newOwnerId: string }) =>
+      transferDocument(variables.publicId, variables.newOwnerId),
+  });
 
   const eligibleMembers =
     members?.filter((m) => m.userId !== currentOwnerId) ?? [];
@@ -66,9 +66,9 @@ export function TransferOwnershipDialog({
     if (!selectedUserId) return;
     setIsSubmitting(true);
     try {
-      await transferOwnership({
-        documentId,
-        newOwnerId: parseId("users", selectedUserId),
+      await transferOwnership.mutateAsync({
+        publicId: documentId,
+        newOwnerId: selectedUserId,
       });
       toast.success("Document ownership transferred successfully");
       onOpenChange(false);

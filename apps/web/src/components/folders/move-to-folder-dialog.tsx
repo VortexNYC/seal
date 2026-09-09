@@ -3,13 +3,11 @@
  *
  * A modal dialog with a tree picker for moving documents/templates
  * between folders. Builds an in-memory tree from a flat folder list.
- * Supports excluding specific folders (e.g., when moving a folder,
+ * Supports excluding specific folders (e.g. when moving a folder,
  * exclude itself and its descendants).
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, FolderIcon, Home } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -22,21 +20,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getAllFolders, type ApiFolder } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 interface MoveToFolderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  organizationId: Id<"organizations">;
+  organizationId?: string;
   type: "document" | "template";
-  excludeFolderIds?: Id<"folders">[];
-  onMove: (targetFolderId?: Id<"folders">) => void;
+  excludeFolderIds?: string[];
+  onMove: (targetFolderId?: string) => void;
 }
 
 interface FlatFolder {
-  _id: Id<"folders">;
+  _id: string;
   name: string;
-  parentId?: Id<"folders">;
+  parentId?: string;
   pinned?: boolean;
 }
 
@@ -45,13 +44,22 @@ interface TreeNode {
   children: TreeNode[];
 }
 
+function toFlatFolder(folder: ApiFolder): FlatFolder {
+  return {
+    _id: folder.publicId,
+    name: folder.name,
+    parentId: folder.parentId ?? undefined,
+    pinned: folder.pinned,
+  };
+}
+
 /**
  * Collect all descendant IDs of a set of folder IDs from a flat list.
  * Returns the union of excludeIds and all their transitive children.
  */
 function getExcludedSet(
   folders: FlatFolder[],
-  excludeIds: Id<"folders">[]
+  excludeIds: string[]
 ): Set<string> {
   const excluded = new Set<string>(excludeIds);
   let changed = true;
@@ -72,10 +80,7 @@ function getExcludedSet(
 /**
  * Build a tree structure from a flat folder list, excluding specified folders.
  */
-function buildTree(
-  folders: FlatFolder[],
-  excludedSet: Set<string>
-): TreeNode[] {
+function buildTree(folders: FlatFolder[], excludedSet: Set<string>): TreeNode[] {
   const filtered = folders.filter((f) => !excludedSet.has(f._id));
   const childMap = new Map<string | undefined, FlatFolder[]>();
 
@@ -108,31 +113,36 @@ function buildTree(
 export function MoveToFolderDialog({
   open,
   onOpenChange,
-  organizationId,
   type,
   excludeFolderIds,
   onMove,
 }: MoveToFolderDialogProps) {
-  const folders = useQuery(
-    api.folders.queries.getAllFoldersFlat,
-    open ? { organizationId, type } : "skip"
+  const { data: apiFolders } = useQuery({
+    queryKey: ["api", "folders", "all", type],
+    queryFn: () => getAllFolders(type),
+    enabled: open,
+  });
+
+  const folders = useMemo(
+    () => apiFolders?.map(toFlatFolder) ?? [],
+    [apiFolders]
   );
 
   const [selectedFolderId, setSelectedFolderId] = useState<
-    Id<"folders"> | undefined
+    string | undefined
   >(undefined);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const excludedSet = useMemo(
     () =>
-      folders && excludeFolderIds
+      folders.length > 0 && excludeFolderIds
         ? getExcludedSet(folders, excludeFolderIds)
         : new Set<string>(),
     [folders, excludeFolderIds]
   );
 
   const tree = useMemo(
-    () => (folders ? buildTree(folders, excludedSet) : []),
+    () => buildTree(folders, excludedSet),
     [folders, excludedSet]
   );
 
@@ -193,7 +203,7 @@ export function MoveToFolderDialog({
           </button>
 
           {/* Folder tree */}
-          {folders === undefined ? (
+          {apiFolders === undefined ? (
             <div className="text-muted-foreground px-2 py-4 text-center text-sm">
               Loading...
             </div>
@@ -230,9 +240,9 @@ export function MoveToFolderDialog({
 interface TreeNodeItemProps {
   node: TreeNode;
   depth: number;
-  selectedFolderId: Id<"folders"> | undefined;
+  selectedFolderId: string | undefined;
   expandedIds: Set<string>;
-  onSelect: (folderId: Id<"folders">) => void;
+  onSelect: (folderId: string) => void;
   onToggleExpand: (folderId: string) => void;
 }
 

@@ -9,7 +9,7 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
@@ -114,18 +114,18 @@ type SortField = "name" | "createdAt" | "useCount";
 type SortDirection = "asc" | "desc";
 
 interface TemplatesListProps {
-  organizationId: Id<"organizations">;
+  organizationId: string;
   viewMode: ViewMode;
   sortField: SortField;
   sortDirection: SortDirection;
   searchQuery: string;
-  folderId: Id<"folders"> | undefined;
+  folderId: string | undefined;
   onSortChange: (field: SortField) => void;
   onUseTemplate: (template: Doc<"templates">) => void;
   onEditTemplate: (template: Doc<"templates">) => void;
   onDeleteTemplate: (template: Doc<"templates">) => void;
-  onMoveToFolder: (templateId: Id<"templates">) => void;
-  onFolderNavigate: (folderId?: Id<"folders">) => void;
+  onMoveToFolder: (templateId: string) => void;
+  onFolderNavigate: (folderId?: string) => void;
 }
 
 function formatDate(timestamp: number): string {
@@ -165,18 +165,21 @@ function TemplatesList({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
+  const convexFolderId = folderId ? parseId("folders", folderId) : undefined;
+  const convexOrganizationId = parseId("organizations", organizationId);
+
   const { data: templates } = useSuspenseQuery(
     convexQuery(api.templates.queries.getOrganizationTemplates, {
-      folderId,
+      folderId: convexFolderId,
       rootOnly: !folderId,
     })
   );
 
   // Query subfolders at the current level for inline folder rows
   const subfolders = useQuery(api.folders.queries.listFolders, {
-    organizationId,
+    organizationId: convexOrganizationId,
     type: "template" as const,
-    parentId: folderId,
+    parentId: convexFolderId,
   });
 
   // Filter by search query
@@ -609,17 +612,14 @@ function TemplatesPage() {
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveTemplateId, setMoveTemplateId] = useState<Id<"templates"> | null>(
+  const [moveTemplateId, setMoveTemplateId] = useState<string | null>(
     null
   );
   const moveItemsToFolder = useMutation(
     api.folders.mutations.moveItemsToFolder
   );
 
-  // Parse folderId string from URL into Id<"folders"> if present
-  const folderId = folderIdParam
-    ? parseId("folders", folderIdParam)
-    : undefined;
+  const folderId = folderIdParam ? parseId("folders", folderIdParam) : undefined;
 
   // Dialog states
   const [useTemplateDialog, setUseTemplateDialog] = useState<{
@@ -660,7 +660,7 @@ function TemplatesPage() {
     }
   };
 
-  const handleFolderSelect = (selectedFolderId?: Id<"folders">) => {
+  const handleFolderSelect = (selectedFolderId?: string) => {
     void navigate({
       to: "/$slug/templates",
       params: { slug },
@@ -668,18 +668,20 @@ function TemplatesPage() {
     });
   };
 
-  const handleMoveToFolder = (templateId: Id<"templates">) => {
+  const handleMoveToFolder = (templateId: string) => {
     setMoveTemplateId(templateId);
     setMoveDialogOpen(true);
   };
 
-  const handleMoveConfirm = async (targetFolderId?: Id<"folders">) => {
+  const handleMoveConfirm = async (targetFolderId?: string) => {
     if (!moveTemplateId) return;
     try {
       await moveItemsToFolder({
-        itemIds: [moveTemplateId],
+        itemIds: [parseId("templates", moveTemplateId)],
         itemType: "template",
-        targetFolderId,
+        targetFolderId: targetFolderId
+          ? parseId("folders", targetFolderId)
+          : undefined,
       });
       toast.success("Template moved successfully");
       setRefreshKey((prev) => prev + 1);

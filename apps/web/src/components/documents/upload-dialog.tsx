@@ -1,13 +1,11 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
 import { useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { useAnalytics } from "../../hooks/use-analytics";
-import { parseId } from "../../lib/convex-ids";
+import { createDocument, uploadDocument } from "../../lib/api-client";
 import { extractPdfMetadata } from "../../lib/pdf-utils";
 import {
   DROPZONE_ACCEPT_TYPES,
@@ -41,7 +39,7 @@ import { Label } from "../ui/label";
 import { Progress } from "../ui/progress";
 
 interface UploadDialogProps {
-  organizationId: Id<"organizations">;
+  organizationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -58,12 +56,10 @@ interface FileWithStatus {
 }
 
 type CreateDocumentInput = {
-  organizationId: Id<"organizations">;
   name: string;
   description?: string;
   fileSize: number;
-  fileType: string;
-  storageId: Id<"_storage">;
+  contentType: string;
   pageCount?: number;
   thumbnailDataUrl?: string;
 };
@@ -107,10 +103,16 @@ type UploadController = {
 type UploadSingleFileInput = {
   readonly fileWithStatus: FileWithStatus;
   readonly index: number;
-  readonly organizationId: Id<"organizations">;
+  readonly organizationId: string;
   readonly description: string;
-  readonly generateUploadUrl: () => Promise<string>;
-  readonly createDocument: (input: CreateDocumentInput) => Promise<unknown>;
+  readonly createDocument: (input: CreateDocumentInput) => Promise<{
+    publicId: string;
+  }>;
+  readonly uploadDocument: (
+    publicId: string,
+    contentBase64: string,
+    contentType: string
+  ) => Promise<unknown>;
   readonly updateFile: (index: number, patch: Partial<FileWithStatus>) => void;
   readonly trackDocumentUploaded: (input: {
     readonly fileSize: number;
@@ -194,17 +196,7 @@ function useDocumentLimit(): {
   readonly usageStats: UsageStats | null | undefined;
   readonly atDocumentLimit: boolean;
 } {
-  const usageStats = useQuery(api.user_profiles.queries.getUsageStatistics);
-  const isTestDeployment = import.meta.env.VITE_CONVEX_URL?.includes(
-    "coordinated-lemur"
-  );
-  const atDocumentLimit =
-    !isTestDeployment &&
-    usageStats !== undefined &&
-    usageStats !== null &&
-    usageStats.documentsThisMonth >= usageStats.documentsLimit;
-
-  return { usageStats, atDocumentLimit };
+  return { usageStats: undefined, atDocumentLimit: false };
 }
 
 function useUploadController({
@@ -218,10 +210,16 @@ function useUploadController({
   const state = useUploadState();
   const { track } = useAnalytics();
   const { usageStats, atDocumentLimit } = useDocumentLimit();
-  const generateUploadUrl = useMutation(
-    api.documents.mutations.generateUploadUrl
-  );
-  const createDocument = useMutation(api.documents.mutations.createDocument);
+  const createDocumentMutation = useMutation({
+    mutationFn: createDocument,
+  });
+  const uploadDocumentMutation = useMutation({
+    mutationFn: (variables: {
+      publicId: string;
+      contentBase64: string;
+      contentType: string;
+    }) => uploadDocument(variables.publicId, variables.contentBase64, variables.contentType),
+  });
 
   const clearAndClose = () => {
     state.setFiles([]);
@@ -252,8 +250,13 @@ function useUploadController({
       index,
       organizationId,
       description: state.description,
-      generateUploadUrl: () => generateUploadUrl({}),
-      createDocument,
+      createDocument: (input) => createDocumentMutation.mutateAsync(input),
+      uploadDocument: (publicId, contentBase64, contentType) =>
+        uploadDocumentMutation.mutateAsync({
+          publicId,
+          contentBase64,
+          contentType,
+        }),
       updateFile,
       trackDocumentUploaded: track.documentUploaded,
     });
@@ -730,6 +733,21 @@ async function uploadSingleFileAttempt(
   }
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("Failed to read file as data URL"));
+        return;
+      }
+      resolve(reader.result.split(",")[1] ?? "");
+    });
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function createUploadedDocument(
   input: UploadSingleFileInput,
   retryCount: number
@@ -741,47 +759,26 @@ async function createUploadedDocument(
     retryCount,
   });
   input.updateFile(input.index, { progress: 10 });
-  const uploadUrl = await input.generateUploadUrl();
-  input.updateFile(input.index, { progress: 20 });
 
-  const result = await fetch(uploadUrl, {
-    method: "POST",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!result.ok) {
-    throw new Error(
-      `Upload failed with status ${result.status}: ${result.statusText}`
-    );
-  }
+  const contentBase64 = await fileToBase64(file);
+  input.updateFile(input.index, { progress: 40 });
 
-  input.updateFile(input.index, { progress: 70 });
-  const responseBody: unknown = await result.json();
-  if (
-    typeof responseBody !== "object" ||
-    responseBody === null ||
-    !("storageId" in responseBody) ||
-    typeof responseBody.storageId !== "string"
-  ) {
-    throw new Error("Upload response did not include a storage id");
-  }
-  const storageId = parseId("_storage", responseBody.storageId);
+  const created = await input.createDocument(buildCreateDocumentInput(input));
+  input.updateFile(input.index, { progress: 60 });
+
+  await input.uploadDocument(created.publicId, contentBase64, file.type);
   input.updateFile(input.index, { progress: 90 });
-  await input.createDocument(buildCreateDocumentInput(input, storageId));
 }
 
 function buildCreateDocumentInput(
-  input: UploadSingleFileInput,
-  storageId: Id<"_storage">
+  input: UploadSingleFileInput
 ): CreateDocumentInput {
   const { file, pageCount, thumbnail } = input.fileWithStatus;
   return {
-    organizationId: input.organizationId,
     name: file.name,
     description: input.description || undefined,
     fileSize: file.size,
-    fileType: file.type,
-    storageId,
+    contentType: file.type,
     pageCount,
     thumbnailDataUrl: thumbnail || undefined,
   };

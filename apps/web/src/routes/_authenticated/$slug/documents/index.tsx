@@ -1,14 +1,9 @@
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   useNavigate,
-  useRouteContext,
   useRouter,
 } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import Fuse, { type FuseResultMatch } from "fuse.js";
 import {
   ArrowDownIcon,
@@ -35,18 +30,23 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
 import { TransferOwnershipDialog } from "@/components/documents/transfer-ownership-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
-import {
-  type DocumentWorkflowStatus,
-  WorkflowStatusBadge,
-} from "@/components/documents/workflow-status-badge";
+import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
+import { toWorkflowStatus, type DocumentWorkflowStatus } from "@/lib/document-status";
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
@@ -99,8 +99,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { parseId } from "@/lib/convex-ids";
 import { pageSEO } from "@/lib/seo";
+import {
+  cancelDocument as cancelDocumentApi,
+  deleteDocument as deleteDocumentApi,
+  downloadDocument,
+  getDocuments,
+  getFolders,
+  getOrganization,
+  moveDocumentsToFolder,
+  sendDocument as sendDocumentApi,
+  type ApiDocument,
+  type ApiFolder,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
@@ -189,7 +200,6 @@ function HighlightedText({
 }
 
 interface DocumentsListProps {
-  organizationId: Id<"organizations">;
   filter: FilterType;
   workflowStatusFilter: WorkflowStatusFilter;
   viewMode: ViewMode;
@@ -199,28 +209,28 @@ interface DocumentsListProps {
   /** SEA-74: Date range filter */
   dateRange: DateRange | undefined;
   /** Folder filter */
-  folderId: Id<"folders"> | undefined;
-  onShareClick: (documentId: Id<"documents">, documentName: string) => void;
+  folderId: string | undefined;
+  onShareClick: (documentId: string, documentName: string) => void;
   onSortChange: (field: SortField) => void;
   /** SEA-140: Callback to open upload dialog from empty state */
   onUploadClick: () => void;
   /** Open move-to-folder dialog for a document */
-  onMoveToFolder: (documentId: Id<"documents">) => void;
+  onMoveToFolder: (documentId: string) => void;
   /** Navigate into a folder */
-  onFolderNavigate: (folderId?: Id<"folders">) => void;
+  onFolderNavigate: (folderId?: string) => void;
   /** Whether the org has ownership transfer enabled */
   delegateOwnership: boolean;
   /** Open transfer ownership dialog for a document */
   onTransferOwnership: (doc: {
-    _id: Id<"documents">;
+    _id: string;
     name: string;
-    ownerId: Id<"users">;
+    ownerId: string;
     sharingMode: string;
   }) => void;
 }
 
 type DocumentListItem = {
-  readonly _id: Id<"documents">;
+  readonly _id: string;
   readonly name: string;
   readonly description?: string;
   readonly storageId: string;
@@ -231,30 +241,30 @@ type DocumentListItem = {
   readonly workflowStatus?: DocumentWorkflowStatus;
   readonly aiProcessingStatus?: string;
   readonly sharingMode: string;
-  readonly ownerId: Id<"users">;
+  readonly ownerId: string;
 };
 
 type FolderListItem = {
-  readonly _id: Id<"folders">;
+  readonly _id: string;
   readonly name: string;
   readonly createdAt: number;
 };
 
 type DocumentListActions = {
-  readonly openDocument: (documentId: Id<"documents">) => void;
-  readonly sendDocument: (documentId: Id<"documents">) => void;
-  readonly cancelDocument: (documentId: Id<"documents">) => void;
-  readonly downloadDocument: (documentId: Id<"documents">) => void;
+  readonly openDocument: (documentId: string) => void;
+  readonly sendDocument: (documentId: string) => void;
+  readonly cancelDocument: (documentId: string) => void;
+  readonly downloadDocument: (documentId: string) => void;
   readonly shareDocument: (
-    documentId: Id<"documents">,
+    documentId: string,
     documentName: string
   ) => void;
-  readonly moveToFolder: (documentId: Id<"documents">) => void;
-  readonly deleteDocument: (documentId: Id<"documents">) => void;
+  readonly moveToFolder: (documentId: string) => void;
+  readonly deleteDocument: (documentId: string) => void;
   readonly transferOwnership: (doc: {
-    _id: Id<"documents">;
+    _id: string;
     name: string;
-    ownerId: Id<"users">;
+    ownerId: string;
     sharingMode: string;
   }) => void;
 };
@@ -262,7 +272,7 @@ type DocumentListActions = {
 type ConfirmDialogState = {
   readonly open: boolean;
   readonly type: "delete" | "send" | "cancel";
-  readonly documentId: Id<"documents"> | null;
+  readonly documentId: string | null;
 };
 
 type ConfirmDialogContent = {
@@ -274,7 +284,7 @@ type DocumentsListData = {
   readonly currentPage: number;
   readonly hasFiltersOrSearch: boolean;
   readonly matchesMap: Map<
-    Id<"documents">,
+    string,
     readonly FuseResultMatch[] | undefined
   >;
   readonly paginatedDocuments: readonly DocumentListItem[];
@@ -427,9 +437,9 @@ function buildMatchesMap(
     readonly item: DocumentListItem;
     readonly matches?: readonly FuseResultMatch[];
   }[]
-): Map<Id<"documents">, readonly FuseResultMatch[] | undefined> {
+): Map<string, readonly FuseResultMatch[] | undefined> {
   const map = new Map<
-    Id<"documents">,
+    string,
     readonly FuseResultMatch[] | undefined
   >();
   for (const result of searchResults) map.set(result.item._id, result.matches);
@@ -449,7 +459,7 @@ function FolderTableRow({
   onFolderNavigate,
 }: {
   readonly folder: FolderListItem;
-  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
     <TableRow
@@ -501,8 +511,7 @@ function DocumentTableRow({
     >
       <TableCell>
         <DocumentThumbnail
-          documentId={doc._id}
-          storageId={doc.storageId}
+          publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
         />
@@ -570,7 +579,7 @@ function FolderGridCard({
   onFolderNavigate,
 }: {
   readonly folder: FolderListItem;
-  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
     <Card
@@ -609,8 +618,7 @@ function DocumentGridCard({
     >
       <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
         <DocumentThumbnail
-          documentId={doc._id}
-          storageId={doc.storageId}
+          publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
           className="h-full w-full"
@@ -814,11 +822,35 @@ function DocumentActionsMenu({
   );
 }
 
+function toDocumentListItem(doc: ApiDocument): DocumentListItem {
+  return {
+    _id: doc.publicId,
+    name: doc.name,
+    description: doc.description ?? undefined,
+    storageId: doc.storageKey ?? "",
+    thumbnailDataUrl: doc.thumbnailDataUrl ?? undefined,
+    pageCount: doc.pageCount ?? undefined,
+    createdAt: doc.createdAt,
+    fileSize: doc.fileSize ?? doc.size ?? 0,
+    workflowStatus: toWorkflowStatus(doc.workflowStatus),
+    aiProcessingStatus: doc.aiProcessingStatus ?? undefined,
+    sharingMode: doc.sharingMode,
+    ownerId: doc.ownerId,
+  };
+}
+
+function toFolderListItem(folder: ApiFolder): FolderListItem {
+  return {
+    _id: folder.publicId,
+    name: folder.name,
+    createdAt: folder.createdAt,
+  };
+}
+
 function useDocumentsListData({
   dateRange,
   filter,
   folderId,
-  organizationId,
   searchQuery,
   sortDirection,
   sortField,
@@ -828,26 +860,39 @@ function useDocumentsListData({
   | "dateRange"
   | "filter"
   | "folderId"
-  | "organizationId"
   | "searchQuery"
   | "sortDirection"
   | "sortField"
   | "workflowStatusFilter"
 >): DocumentsListData & { readonly refetch: () => void } {
   const [currentPage, setCurrentPage] = useState(1);
-  const { data: allDocuments, refetch } = useSuspenseQuery(
-    convexQuery(api.documents.queries.listDocuments, {
-      organizationId,
-      filter,
-      folderId,
-      rootOnly: !folderId,
-    })
-  );
-  const subfolders = useQuery(api.folders.queries.listFolders, {
-    organizationId,
-    type: "document" as const,
-    parentId: folderId,
+  const {
+    data: apiDocuments,
+    refetch: refetchDocuments,
+  } = useSuspenseQuery({
+    queryKey: ["api", "documents", filter, workflowStatusFilter, folderId],
+    queryFn: () =>
+      getDocuments({
+        filter,
+        workflowStatus:
+          workflowStatusFilter === "all" ? undefined : workflowStatusFilter,
+        folderId,
+        rootOnly: !folderId,
+      }),
   });
+  const { data: apiFolders, refetch: refetchFolders } = useSuspenseQuery({
+    queryKey: ["api", "folders", "document", folderId],
+    queryFn: () => getFolders({ type: "document", parentId: folderId }),
+  });
+
+  const allDocuments = useMemo(
+    () => apiDocuments.map(toDocumentListItem),
+    [apiDocuments]
+  );
+  const subfolders = useMemo(
+    () => apiFolders?.map(toFolderListItem),
+    [apiFolders]
+  );
 
   const filteredByStatus = useMemo(
     () =>
@@ -900,6 +945,11 @@ function useDocumentsListData({
     dateRange,
   ]);
 
+  const refetch = useCallback(() => {
+    void refetchDocuments();
+    void refetchFolders();
+  }, [refetchDocuments, refetchFolders]);
+
   return {
     currentPage,
     hasFiltersOrSearch: Boolean(
@@ -934,7 +984,7 @@ function DocumentsListContent({
   readonly data: DocumentsListData;
   readonly delegateOwnership: boolean;
   readonly documentActions: DocumentListActions;
-  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onFolderNavigate: (folderId?: string) => void;
   readonly onSortChange: (field: SortField) => void;
   readonly onUploadClick: () => void;
   readonly searchQuery: string;
@@ -1020,7 +1070,7 @@ function DocumentsTable({
   readonly data: DocumentsListData;
   readonly delegateOwnership: boolean;
   readonly documentActions: DocumentListActions;
-  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onFolderNavigate: (folderId?: string) => void;
   readonly onSortChange: (field: SortField) => void;
   readonly searchQuery: string;
   readonly sortDirection: SortDirection;
@@ -1094,7 +1144,7 @@ function DocumentsGrid({
 }: {
   readonly data: DocumentsListData;
   readonly documentActions: DocumentListActions;
-  readonly onFolderNavigate: (folderId?: Id<"folders">) => void;
+  readonly onFolderNavigate: (folderId?: string) => void;
   readonly searchQuery: string;
 }) {
   return (
@@ -1259,35 +1309,39 @@ function useDocumentListActions({
 } {
   const { slug } = Route.useParams();
   const router = useRouter();
-  const { convexClient } = useRouteContext({ from: "__root__" });
   const { track } = useAnalytics();
-  const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
-  const sendDocument = useMutation(api.documents.mutations.sendDocument);
-  const cancelDocument = useMutation(api.documents.mutations.cancelDocument);
+  const deleteDocument = useMutation({
+    mutationFn: deleteDocumentApi,
+  });
+  const sendDocument = useMutation({
+    mutationFn: sendDocumentApi,
+  });
+  const cancelDocument = useMutation({
+    mutationFn: cancelDocumentApi,
+  });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(
     defaultConfirmDialog()
   );
 
   const openConfirmDialog = (
     type: ConfirmDialogState["type"],
-    documentId: Id<"documents">
+    documentId: string
   ) => {
     setConfirmDialog({ open: true, type, documentId });
   };
-  const handleOpenDocument = (documentId: Id<"documents">) => {
+  const handleOpenDocument = (documentId: string) => {
     void router.navigate({
       to: "/$slug/documents/$documentId",
       params: { slug, documentId },
     });
   };
-  const handleDownload = async (documentId: Id<"documents">) => {
+  const handleDownload = async (documentId: string) => {
     try {
-      const url = await convexClient.query(
-        api.documents.queries.getDocumentUrl,
-        { documentId }
-      );
+      const blob = await downloadDocument(documentId);
+      const url = window.URL.createObjectURL(blob);
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     } catch {
       toast.error("Failed to download document");
     }
@@ -1295,14 +1349,21 @@ function useDocumentListActions({
   const handleConfirmAction = async () => {
     if (!confirmDialog.documentId) return;
     try {
-      await runConfirmedDocumentAction({
-        cancelDocument,
-        confirmDialog,
-        deleteDocument,
-        refetch,
-        sendDocument,
-        track,
-      });
+      const documentId = confirmDialog.documentId;
+      if (confirmDialog.type === "delete") {
+        await deleteDocument.mutateAsync(documentId);
+        track.documentDeleted({ documentId });
+        toast.success("Document deleted");
+      } else if (confirmDialog.type === "send") {
+        await sendDocument.mutateAsync(documentId);
+        track.documentSent({ documentId });
+        toast.success("Document sent successfully");
+      } else {
+        await cancelDocument.mutateAsync(documentId);
+        track.documentCancelled({ documentId });
+        toast.success("Document cancelled");
+      }
+      refetch();
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -1331,47 +1392,7 @@ function useDocumentListActions({
   };
 }
 
-async function runConfirmedDocumentAction({
-  cancelDocument,
-  confirmDialog,
-  deleteDocument,
-  refetch,
-  sendDocument,
-  track,
-}: {
-  readonly cancelDocument: (args: {
-    readonly documentId: Id<"documents">;
-  }) => Promise<unknown>;
-  readonly confirmDialog: ConfirmDialogState;
-  readonly deleteDocument: (args: {
-    readonly documentId: Id<"documents">;
-  }) => Promise<unknown>;
-  readonly refetch: () => void;
-  readonly sendDocument: (args: {
-    readonly documentId: Id<"documents">;
-  }) => Promise<unknown>;
-  readonly track: ReturnType<typeof useAnalytics>["track"];
-}) {
-  const documentId = confirmDialog.documentId;
-  if (!documentId) return;
-  if (confirmDialog.type === "delete") {
-    await deleteDocument({ documentId });
-    track.documentDeleted({ documentId });
-    toast.success("Document deleted");
-  } else if (confirmDialog.type === "send") {
-    await sendDocument({ documentId });
-    track.documentSent({ documentId });
-    toast.success("Document sent successfully");
-  } else {
-    await cancelDocument({ documentId });
-    track.documentCancelled({ documentId });
-    toast.success("Document cancelled");
-  }
-  refetch();
-}
-
 function DocumentsList({
-  organizationId,
   filter,
   workflowStatusFilter,
   viewMode,
@@ -1392,7 +1413,6 @@ function DocumentsList({
     dateRange,
     filter,
     folderId,
-    organizationId,
     searchQuery,
     sortDirection,
     sortField,
@@ -1440,13 +1460,13 @@ function DocumentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] =
-    useState<Id<"documents"> | null>(null);
+    useState<string | null>(null);
   const [selectedDocumentName, setSelectedDocumentName] = useState("");
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-  const [transferDocument, setTransferDocument] = useState<{
-    id: Id<"documents">;
+  const [documentToTransfer, setDocumentToTransfer] = useState<{
+    id: string;
     name: string;
-    ownerId: Id<"users">;
+    ownerId: string;
     sharingMode: string;
   } | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -1465,21 +1485,19 @@ function DocumentsPage() {
   // SEA-74: Date range filter state
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
+  const queryClient = useQueryClient();
+
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveDocumentId, setMoveDocumentId] = useState<Id<"documents"> | null>(
-    null
-  );
-  const moveItemsToFolder = useMutation(
-    api.folders.mutations.moveItemsToFolder
-  );
+  const [moveDocumentId, setMoveDocumentId] = useState<string | null>(null);
+  const moveDocumentsToFolderMutation = useMutation({
+    mutationFn: moveDocumentsToFolder,
+  });
 
-  // Parse folderId string from URL into Id<"folders"> if present
-  const folderId = folderIdParam
-    ? parseId("folders", folderIdParam)
-    : undefined;
+  // folderIdParam is a public folder id from the URL
+  const folderId = folderIdParam ?? undefined;
 
-  const handleFolderSelect = (selectedFolderId?: Id<"folders">) => {
+  const handleFolderSelect = (selectedFolderId?: string) => {
     void navigate({
       to: "/$slug/documents",
       params: { slug },
@@ -1487,20 +1505,20 @@ function DocumentsPage() {
     });
   };
 
-  const handleMoveToFolder = (documentId: Id<"documents">) => {
+  const handleMoveToFolder = (documentId: string) => {
     setMoveDocumentId(documentId);
     setMoveDialogOpen(true);
   };
 
-  const handleMoveConfirm = async (targetFolderId?: Id<"folders">) => {
+  const handleMoveConfirm = async (targetFolderId?: string) => {
     if (!moveDocumentId) return;
     try {
-      await moveItemsToFolder({
-        itemIds: [moveDocumentId],
-        itemType: "document",
-        targetFolderId,
+      await moveDocumentsToFolderMutation.mutateAsync({
+        documentIds: [moveDocumentId],
+        folderId: targetFolderId,
       });
       toast.success("Document moved successfully");
+      await queryClient.invalidateQueries({ queryKey: ["api"] });
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
       const msg =
@@ -1523,16 +1541,33 @@ function DocumentsPage() {
     }
   };
 
-  const { data: organization } = useSuspenseQuery(
-    convexQuery(api.organizations.queries.getOrganization, { slug })
-  );
+  const { data: organization } = useSuspenseQuery({
+    queryKey: ["api", "organization", slug],
+    queryFn: () => getOrganization(slug),
+  });
+
+  const delegateOwnership = useMemo(() => {
+    if (!organization?.metadata) return false;
+    try {
+      const metadataSchema = z.object({
+        delegateOwnership: z.boolean().optional(),
+      });
+      const parsed = metadataSchema.safeParse(
+        JSON.parse(organization.metadata)
+      );
+      return parsed.success ? (parsed.data.delegateOwnership ?? false) : false;
+    } catch {
+      return false;
+    }
+  }, [organization?.metadata]);
 
   const handleRefetch = () => {
+    void queryClient.invalidateQueries({ queryKey: ["api"] });
     setRefreshKey((prev) => prev + 1);
   };
 
   const handleShareClick = (
-    documentId: Id<"documents">,
+    documentId: string,
     documentName: string
   ) => {
     setSelectedDocumentId(documentId);
@@ -1541,12 +1576,12 @@ function DocumentsPage() {
   };
 
   const handleTransferOwnership = (doc: {
-    _id: Id<"documents">;
+    _id: string;
     name: string;
-    ownerId: Id<"users">;
+    ownerId: string;
     sharingMode: string;
   }) => {
-    setTransferDocument({
+    setDocumentToTransfer({
       id: doc._id,
       name: doc.name,
       ownerId: doc.ownerId,
@@ -1880,7 +1915,6 @@ function DocumentsPage() {
           }
         >
           <DocumentsList
-            organizationId={organization._id}
             filter={filter}
             workflowStatusFilter={workflowStatusFilter}
             viewMode={viewMode}
@@ -1894,14 +1928,14 @@ function DocumentsPage() {
             onUploadClick={() => setUploadOpen(true)}
             onMoveToFolder={handleMoveToFolder}
             onFolderNavigate={handleFolderSelect}
-            delegateOwnership={organization.delegateOwnership ?? false}
+            delegateOwnership={delegateOwnership}
             onTransferOwnership={handleTransferOwnership}
           />
         </Suspense>
       </div>
 
       <UploadDialog
-        organizationId={organization._id}
+        organizationId={organization.id}
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onSuccess={handleRefetch}
@@ -1911,6 +1945,7 @@ function DocumentsPage() {
         <ShareDocumentDialog
           documentId={selectedDocumentId}
           documentName={selectedDocumentName}
+          slug={slug}
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
         />
@@ -1919,19 +1954,19 @@ function DocumentsPage() {
       <MoveToFolderDialog
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
-        organizationId={organization._id}
+        organizationId={organization.id}
         type="document"
         onMove={handleMoveConfirm}
       />
 
-      {transferDocument && (
+      {documentToTransfer && (
         <TransferOwnershipDialog
           open={transferDialogOpen}
           onOpenChange={setTransferDialogOpen}
-          documentId={transferDocument.id}
-          documentName={transferDocument.name}
-          currentOwnerId={transferDocument.ownerId}
-          sharingMode={transferDocument.sharingMode}
+          documentId={documentToTransfer.id}
+          documentName={documentToTransfer.name}
+          currentOwnerId={documentToTransfer.ownerId}
+          sharingMode={documentToTransfer.sharingMode}
           slug={slug}
         />
       )}
