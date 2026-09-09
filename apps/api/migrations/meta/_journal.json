@@ -64,6 +64,13 @@
       "when": 1788980500000,
       "tag": "0008_add_signature_and_payment_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788980600000,
+      "tag": "0009_expand_signing_schema",
+      "breakpoints": true
     }
   ]
 }

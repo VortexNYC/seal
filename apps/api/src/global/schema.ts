@@ -317,6 +317,13 @@ export const documents = sqliteTable(
     thumbnailDataUrl: text("thumbnail_data_url"),
     sentAt: integer("sent_at", { mode: "timestamp_ms" }),
     deadline: integer("deadline", { mode: "timestamp_ms" }),
+    redirectUrl: text("redirect_url"),
+    allowDictateNextSigner: integer("allow_dictate_next_signer", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(false),
+    signingMode: text("signing_mode").notNull().default("parallel"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -375,8 +382,15 @@ export const recipients = sqliteTable(
     role: text("role").notNull().default("signer"),
     order: integer("order", { mode: "number" }).notNull().default(0),
     status: text("status").notNull().default("pending"),
+    signingToken: text("signing_token").unique(),
+    tokenExpiresAt: integer("token_expires_at", { mode: "timestamp_ms" }),
     viewedAt: integer("viewed_at", { mode: "timestamp_ms" }),
     signedAt: integer("signed_at", { mode: "timestamp_ms" }),
+    approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
+    declinedAt: integer("declined_at", { mode: "timestamp_ms" }),
+    signatureData: text("signature_data"),
+    signatureType: text("signature_type"),
+    authenticationData: text("authentication_data"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -388,6 +402,7 @@ export const recipients = sqliteTable(
   (table) => [
     index("recipients_documentId_idx").on(table.documentId),
     index("recipients_email_idx").on(table.email),
+    index("recipients_signingToken_idx").on(table.signingToken),
   ]
 );
 
@@ -395,6 +410,9 @@ export const signatures = sqliteTable(
   "signatures",
   {
     id: text("id").primaryKey(),
+    fieldId: text("field_id").references(() => signatureFields.id, {
+      onDelete: "set null",
+    }),
     recipientId: text("recipient_id")
       .notNull()
       .references(() => recipients.id, { onDelete: "cascade" }),
@@ -405,14 +423,30 @@ export const signatures = sqliteTable(
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
     ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
     value: text("value"),
+    signatureImageUrl: text("signature_image_url"),
+    signatureMethod: text("signature_method"),
+    signatureHash: text("signature_hash"),
+    signatureImageHash: text("signature_image_hash"),
+    documentHashAtSigning: text("document_hash_at_signing"),
+    authenticationData: text("authentication_data"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("signatures_recipientId_idx").on(table.recipientId),
     index("signatures_documentId_idx").on(table.documentId),
+    index("signatures_fieldId_idx").on(table.fieldId),
+    index("signatures_documentRecipient_idx").on(
+      table.documentId,
+      table.recipientId
+    ),
   ]
 );
 

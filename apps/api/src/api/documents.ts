@@ -40,6 +40,7 @@ const DocumentSchema = z
     documentStatus: z.string(),
     workflowStatus: z.string(),
     sharingMode: z.string(),
+    signingMode: z.string().nullable().optional(),
     aiProcessingStatus: z.string().nullable().optional(),
     storageKey: z.string().nullable().optional(),
     contentType: z.string().nullable().optional(),
@@ -47,6 +48,8 @@ const DocumentSchema = z
     fileSize: z.number().int().nullable().optional(),
     pageCount: z.number().int().nullable().optional(),
     thumbnailDataUrl: z.string().nullable().optional(),
+    redirectUrl: z.string().nullable().optional(),
+    allowDictateNextSigner: z.boolean(),
     sentAt: z.number().nullable().optional(),
     deadline: z.number().nullable().optional(),
     createdAt: z.number(),
@@ -73,12 +76,15 @@ function documentResponse(doc: {
   status: string;
   documentStatus: string;
   sharingMode: string;
+  signingMode: string | null;
   aiProcessingStatus: string | null;
   storageKey: string | null;
   contentType: string | null;
   size: number | null;
   pageCount: number | null;
   thumbnailDataUrl: string | null;
+  redirectUrl: string | null;
+  allowDictateNextSigner: boolean;
   sentAt: Date | null;
   deadline: Date | null;
   createdAt: Date;
@@ -96,6 +102,7 @@ function documentResponse(doc: {
     documentStatus: doc.documentStatus,
     workflowStatus: doc.status,
     sharingMode: doc.sharingMode,
+    signingMode: doc.signingMode,
     aiProcessingStatus: doc.aiProcessingStatus,
     storageKey: doc.storageKey,
     contentType: doc.contentType,
@@ -103,6 +110,8 @@ function documentResponse(doc: {
     fileSize: doc.size,
     pageCount: doc.pageCount,
     thumbnailDataUrl: doc.thumbnailDataUrl,
+    redirectUrl: doc.redirectUrl,
+    allowDictateNextSigner: doc.allowDictateNextSigner,
     sentAt: doc.sentAt ? doc.sentAt.getTime() : null,
     deadline: doc.deadline ? doc.deadline.getTime() : null,
     createdAt: doc.createdAt.getTime(),
@@ -926,7 +935,15 @@ const RecipientSchema = z
     role: z.string(),
     order: z.number().int(),
     status: z.string(),
+    signingToken: z.string().nullable().optional(),
+    tokenExpiresAt: z.number().nullable().optional(),
+    viewedAt: z.number().nullable().optional(),
     signedAt: z.number().nullable().optional(),
+    approvedAt: z.number().nullable().optional(),
+    declinedAt: z.number().nullable().optional(),
+    signatureData: z.string().nullable().optional(),
+    signatureType: z.string().nullable().optional(),
+    authenticationData: z.string().nullable().optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   })
@@ -941,7 +958,15 @@ const recipientResponse = (recipient: {
   role: string;
   order: number;
   status: string;
+  signingToken: string | null;
+  tokenExpiresAt: Date | null;
+  viewedAt: Date | null;
   signedAt: Date | null;
+  approvedAt: Date | null;
+  declinedAt: Date | null;
+  signatureData: string | null;
+  signatureType: string | null;
+  authenticationData: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) => ({
@@ -953,7 +978,17 @@ const recipientResponse = (recipient: {
   role: recipient.role,
   order: recipient.order,
   status: recipient.status,
+  signingToken: recipient.signingToken,
+  tokenExpiresAt: recipient.tokenExpiresAt
+    ? recipient.tokenExpiresAt.getTime()
+    : null,
+  viewedAt: recipient.viewedAt ? recipient.viewedAt.getTime() : null,
   signedAt: recipient.signedAt ? recipient.signedAt.getTime() : null,
+  approvedAt: recipient.approvedAt ? recipient.approvedAt.getTime() : null,
+  declinedAt: recipient.declinedAt ? recipient.declinedAt.getTime() : null,
+  signatureData: recipient.signatureData,
+  signatureType: recipient.signatureType,
+  authenticationData: recipient.authenticationData,
   createdAt: recipient.createdAt.getTime(),
   updatedAt: recipient.updatedAt.getTime(),
 });
@@ -1552,17 +1587,66 @@ app.openapi(recipientByMeRouteDef, async (c) => {
 const SignatureSchema = z
   .object({
     id: z.string(),
+    fieldId: z.string().nullable().optional(),
     recipientId: z.string(),
     documentId: z.string(),
     signedAt: z.number(),
     ipAddress: z.string().nullable().optional(),
+    userAgent: z.string().nullable().optional(),
     value: z.string().nullable().optional(),
+    signatureImageUrl: z.string().nullable().optional(),
+    signatureMethod: z.string().nullable().optional(),
+    signatureHash: z.string().nullable().optional(),
+    signatureImageHash: z.string().nullable().optional(),
+    documentHashAtSigning: z.string().nullable().optional(),
+    authenticationData: z.string().nullable().optional(),
   })
   .openapi("Signature");
 
 const signBodySchema = z.object({
+  fieldId: z.string().optional(),
   value: z.string().optional(),
+  signatureImageUrl: z.string().optional(),
+  signatureMethod: z.string().optional(),
+  signatureHash: z.string().optional(),
+  signatureImageHash: z.string().optional(),
+  documentHashAtSigning: z.string().optional(),
+  userAgent: z.string().optional(),
 });
+
+function signatureResponse(signature: {
+  id: string;
+  fieldId: string | null;
+  recipientId: string;
+  documentId: string;
+  signedAt: Date;
+  ipAddress: string | null;
+  userAgent: string | null;
+  value: string | null;
+  signatureImageUrl: string | null;
+  signatureMethod: string | null;
+  signatureHash: string | null;
+  signatureImageHash: string | null;
+  documentHashAtSigning: string | null;
+  authenticationData: string | null;
+}) {
+  return {
+    id: signature.id,
+    fieldId: signature.fieldId,
+    recipientId: signature.recipientId,
+    documentId: signature.documentId,
+    signedAt: signature.signedAt.getTime(),
+    ipAddress: signature.ipAddress,
+    userAgent: signature.userAgent,
+    value: signature.value,
+    signatureImageUrl: signature.signatureImageUrl,
+    signatureMethod: signature.signatureMethod,
+    signatureHash: signature.signatureHash,
+    signatureImageHash: signature.signatureImageHash,
+    documentHashAtSigning: signature.documentHashAtSigning,
+    authenticationData: signature.authenticationData,
+  };
+}
 
 const signRouteDef = createRoute({
   method: "post",
@@ -1635,11 +1719,20 @@ app.openapi(signRouteDef, async (c) => {
   const ipAddress =
     c.req.header("CF-Connecting-IP") ?? c.req.header("X-Forwarded-For") ?? null;
 
+  const recipientStatus =
+    recipient.role === "approver"
+      ? "approved"
+      : recipient.role === "viewer"
+        ? "viewed"
+        : "signed";
+
   await db
     .update(recipients)
     .set({
-      status: "signed",
-      signedAt: now,
+      status: recipientStatus,
+      signedAt: recipientStatus === "signed" ? now : null,
+      approvedAt: recipientStatus === "approved" ? now : null,
+      viewedAt: recipientStatus === "viewed" ? now : null,
       updatedAt: now,
     })
     .where(eq(recipients.id, recipient.id));
@@ -1648,11 +1741,19 @@ app.openapi(signRouteDef, async (c) => {
     .insert(signatures)
     .values({
       id: crypto.randomUUID(),
+      fieldId: input.fieldId ?? null,
       recipientId: recipient.id,
       documentId: doc.id,
       signedAt: now,
       ipAddress,
+      userAgent: input.userAgent ?? null,
       value: input.value ?? null,
+      signatureImageUrl: input.signatureImageUrl ?? null,
+      signatureMethod: input.signatureMethod ?? null,
+      signatureHash: input.signatureHash ?? null,
+      signatureImageHash: input.signatureImageHash ?? null,
+      documentHashAtSigning: input.documentHashAtSigning ?? null,
+      updatedAt: now,
     })
     .returning();
 
@@ -1664,7 +1765,7 @@ app.openapi(signRouteDef, async (c) => {
   await db.insert(activity).values({
     id: crypto.randomUUID(),
     organizationId,
-    action: "recipient.signed",
+    action: `recipient.${recipientStatus}`,
     actorName: recipient.name ?? recipient.email,
     targetName: doc.name,
     metadata: JSON.stringify({
@@ -1675,36 +1776,28 @@ app.openapi(signRouteDef, async (c) => {
     createdAt: now,
   });
 
-  const pendingSigners = await db
-    .select({ value: count() })
-    .from(recipients)
-    .where(
-      and(
-        eq(recipients.documentId, doc.id),
-        eq(recipients.role, "signer"),
-        eq(recipients.status, "pending")
-      )
-    );
+  if (recipient.role === "signer") {
+    const pendingSigners = await db
+      .select({ value: count() })
+      .from(recipients)
+      .where(
+        and(
+          eq(recipients.documentId, doc.id),
+          eq(recipients.role, "signer"),
+          eq(recipients.status, "pending")
+        )
+      );
 
-  const pendingCount = pendingSigners[0]?.value ?? 0;
-  if (pendingCount === 0) {
-    await db
-      .update(documents)
-      .set({ status: "completed", updatedAt: now })
-      .where(eq(documents.id, doc.id));
+    const pendingCount = pendingSigners[0]?.value ?? 0;
+    if (pendingCount === 0) {
+      await db
+        .update(documents)
+        .set({ status: "completed", updatedAt: now })
+        .where(eq(documents.id, doc.id));
+    }
   }
 
-  return c.json(
-    {
-      id: signature.id,
-      recipientId: signature.recipientId,
-      documentId: signature.documentId,
-      signedAt: signature.signedAt.getTime(),
-      ipAddress: signature.ipAddress,
-      value: signature.value,
-    },
-    201
-  );
+  return c.json(signatureResponse(signature), 201);
 });
 
 const listSignaturesRouteDef = createRoute({
@@ -1752,16 +1845,7 @@ app.openapi(listSignaturesRouteDef, async (c) => {
     .where(eq(signatures.documentId, doc.id))
     .orderBy(desc(signatures.signedAt));
 
-  return c.json(
-    rows.map((signature) => ({
-      id: signature.id,
-      recipientId: signature.recipientId,
-      documentId: signature.documentId,
-      signedAt: signature.signedAt.getTime(),
-      ipAddress: signature.ipAddress,
-      value: signature.value,
-    }))
-  );
+  return c.json(rows.map(signatureResponse));
 });
 
 async function requireDocumentOwner(
