@@ -91,4 +91,70 @@ describe("folders API", () => {
     expect(list.length).toBe(1);
     expect(list[0]?.name).toBe("Folder A");
   });
+
+  it("returns folder breadcrumbs", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const grandparentPublicId = crypto.randomUUID();
+    const parentPublicId = crypto.randomUUID();
+    const childPublicId = crypto.randomUUID();
+
+    const grandparentId = crypto.randomUUID();
+    const parentId = crypto.randomUUID();
+    const childId = crypto.randomUUID();
+
+    await db.insert(folders).values({
+      id: grandparentId,
+      publicId: grandparentPublicId,
+      organizationId: "org_1",
+      name: "Grandparent",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(folders).values({
+      id: parentId,
+      publicId: parentPublicId,
+      organizationId: "org_1",
+      parentId: grandparentId,
+      name: "Parent",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(folders).values({
+      id: childId,
+      publicId: childPublicId,
+      organizationId: "org_1",
+      parentId: parentId,
+      name: "Child",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/folders/${childPublicId}/breadcrumbs`
+      ),
+      env
+    );
+    const breadcrumbs = z.array(z.object({ id: z.string(), name: z.string() })).parse(
+      await parseJson(response)
+    );
+    expect(breadcrumbs.length).toBe(3);
+    expect(breadcrumbs[0]?.name).toBe("Grandparent");
+    expect(breadcrumbs[1]?.name).toBe("Parent");
+    expect(breadcrumbs[2]?.name).toBe("Child");
+    expect(breadcrumbs[0]?.id).toBe(grandparentPublicId);
+  });
 });

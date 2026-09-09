@@ -48,6 +48,11 @@ function folderResponse(folder: {
   };
 }
 
+const BreadcrumbSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
   Variables: { user: import("../platform/session.js").SessionUser | null };
@@ -124,6 +129,70 @@ app.openapi(listRouteDef, async (c) => {
     .orderBy(desc(folders.createdAt));
 
   return c.json(rows.map(folderResponse));
+});
+
+const breadcrumbsRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/breadcrumbs",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(BreadcrumbSchema) },
+      },
+      description: "Folder breadcrumb chain",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+    404: { description: "Folder not found" },
+  },
+});
+
+app.openapi(breadcrumbsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+
+  const startRows = await db
+    .select({ id: folders.id, publicId: folders.publicId, name: folders.name, parentId: folders.parentId })
+    .from(folders)
+    .where(
+      and(
+        eq(folders.publicId, publicId),
+        eq(folders.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const start = startRows[0];
+  if (!start) {
+    return c.json({ error: "Folder not found" }, 404);
+  }
+
+  const allFolders = await db
+    .select({ id: folders.id, publicId: folders.publicId, name: folders.name, parentId: folders.parentId })
+    .from(folders)
+    .where(eq(folders.organizationId, organizationId));
+
+  const folderById = new Map(allFolders.map((folder) => [folder.id, folder]));
+
+  const breadcrumbs: { id: string; name: string }[] = [];
+  let current: typeof start | undefined = start;
+  let depth = 0;
+
+  while (current && depth < 10) {
+    breadcrumbs.unshift({ id: current.publicId, name: current.name });
+    if (!current.parentId) break;
+
+    current = folderById.get(current.parentId);
+    depth++;
+  }
+
+  return c.json(breadcrumbs);
 });
 
 export default app;
