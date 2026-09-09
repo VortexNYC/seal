@@ -297,6 +297,7 @@ export const recipients = sqliteTable(
     name: text("name"),
     email: text("email").notNull(),
     role: text("role").notNull().default("signer"),
+    order: integer("order", { mode: "number" }).notNull().default(0),
     status: text("status").notNull().default("pending"),
     signedAt: integer("signed_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })

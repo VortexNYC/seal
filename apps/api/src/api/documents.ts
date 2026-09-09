@@ -1,8 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { eq, and, desc } from "drizzle-orm";
+import { count, eq, and, desc, asc } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents } from "../global/schema.js";
+import { documents, recipients } from "../global/schema.js";
 
 const DocumentSchema = z
   .object({
@@ -335,6 +335,183 @@ app.openapi(downloadRouteDef, async (c) => {
   if (object.size) headers["content-length"] = String(object.size);
 
   return c.body(object.body, { headers });
+});
+
+const RecipientSchema = z
+  .object({
+    id: z.string(),
+    publicId: z.string(),
+    documentId: z.string(),
+    name: z.string().nullable().optional(),
+    email: z.string(),
+    role: z.string(),
+    order: z.number().int(),
+    status: z.string(),
+    signedAt: z.number().nullable().optional(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .openapi("Recipient");
+
+const recipientResponse = (recipient: {
+  id: string;
+  publicId: string;
+  documentId: string;
+  name: string | null;
+  email: string;
+  role: string;
+  order: number;
+  status: string;
+  signedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) => ({
+  id: recipient.id,
+  publicId: recipient.publicId,
+  documentId: recipient.documentId,
+  name: recipient.name,
+  email: recipient.email,
+  role: recipient.role,
+  order: recipient.order,
+  status: recipient.status,
+  signedAt: recipient.signedAt ? recipient.signedAt.getTime() : null,
+  createdAt: recipient.createdAt.getTime(),
+  updatedAt: recipient.updatedAt.getTime(),
+});
+
+const createRecipientBodySchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional(),
+  role: z.enum(["signer", "viewer"]).optional(),
+});
+
+const createRecipientRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/recipients",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: createRecipientBodySchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      content: { "application/json": { schema: RecipientSchema } },
+      description: "Recipient added",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(createRecipientRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const countResult = await db
+    .select({ value: count() })
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+
+  const now = new Date();
+  const order = (countResult[0]?.value ?? 0) + 1;
+
+  await db.insert(recipients).values({
+    id: crypto.randomUUID(),
+    publicId: crypto.randomUUID(),
+    documentId: doc.id,
+    name: input.name ?? null,
+    email: input.email,
+    role: input.role ?? "signer",
+    order,
+    status: "pending",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const rows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(eq(recipients.documentId, doc.id), eq(recipients.email, input.email))
+    )
+    .orderBy(desc(recipients.createdAt))
+    .limit(1);
+
+  const recipient = rows[0];
+  if (!recipient) {
+    return c.json({ error: "Failed to create recipient" }, 500);
+  }
+
+  return c.json(recipientResponse(recipient), 201);
+});
+
+const listRecipientsRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/recipients",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(RecipientSchema) },
+      },
+      description: "Recipients for the document",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(listRecipientsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const rows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id))
+    .orderBy(asc(recipients.order), asc(recipients.createdAt));
+
+  return c.json(rows.map(recipientResponse));
 });
 
 export default app;
