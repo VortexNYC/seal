@@ -5,8 +5,7 @@
  * and relative timestamps. Includes skeleton loading state.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ActivityIcon,
   CheckCircle2Icon,
@@ -28,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getRecentActivity } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { cn } from "@/lib/utils";
 
@@ -109,12 +109,13 @@ function getActionLabel(action: string): {
 // ─── Component ────────────────────────────────────────────────────────────
 
 export function RecentActivity(): React.ReactElement {
-  const activities = useQuery(api.dashboard.queries.getRecentActivity, {
-    limit: 10,
+  const { data: activities, isPending } = useQuery({
+    queryKey: ["api", "activity"],
+    queryFn: () => getRecentActivity(10),
   });
 
   // Loading skeleton
-  if (activities === undefined) {
+  if (isPending || activities === undefined) {
     return (
       <Card
         style={{
@@ -176,7 +177,7 @@ export function RecentActivity(): React.ReactElement {
               } = getActionLabel(activity.action);
               return (
                 <div
-                  key={activity._id}
+                  key={activity.id}
                   className="group hover:bg-secondary/50 -mx-1 flex items-start gap-3 rounded-lg px-1 py-2 transition-colors duration-[var(--duration-fast)]"
                 >
                   <div

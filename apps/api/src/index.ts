@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 
+import activity from "./api/activity.js";
 import documents from "./api/documents.js";
 import organizations from "./api/organizations.js";
 import { createAuth } from "./platform/auth.js";
@@ -51,6 +52,7 @@ app.all("/api/auth/*", (c) => {
   return auth.handler(c.req.raw);
 });
 
+app.route("/api/activity", activity);
 app.route("/api/documents", documents);
 app.route("/api/organizations", organizations);
 

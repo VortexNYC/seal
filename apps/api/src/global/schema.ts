@@ -338,3 +338,24 @@ export const signatures = sqliteTable(
     index("signatures_documentId_idx").on(table.documentId),
   ]
 );
+
+export const activity = sqliteTable(
+  "activity",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    action: text("action").notNull(),
+    actorName: text("actor_name").notNull(),
+    targetName: text("target_name"),
+    metadata: text("metadata"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("activity_organizationId_idx").on(table.organizationId),
+    index("activity_createdAt_idx").on(table.createdAt),
+  ]
+);

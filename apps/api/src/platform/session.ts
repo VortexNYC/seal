@@ -3,7 +3,11 @@ import { z } from "zod";
 import { createAuth } from "./auth.js";
 
 const sessionResponseSchema = z.object({
-  user: z.object({ id: z.string() }),
+  user: z.object({
+    id: z.string(),
+    name: z.string().optional().nullable(),
+    email: z.string().optional().nullable(),
+  }),
   session: z
     .object({
       activeOrganizationId: z.string().optional().nullable(),

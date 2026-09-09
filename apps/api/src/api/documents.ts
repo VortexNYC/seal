@@ -2,7 +2,12 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { count, eq, and, desc, asc, gte, lt, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, recipients, signatures } from "../global/schema.js";
+import {
+  activity,
+  documents,
+  recipients,
+  signatures,
+} from "../global/schema.js";
 
 const DocumentSchema = z
   .object({
@@ -114,14 +119,26 @@ app.openapi(createRouteDef, async (c) => {
   const publicId = generatePublicId();
   const now = new Date();
 
+  const documentId = crypto.randomUUID();
+
   await db.insert(documents).values({
-    id: crypto.randomUUID(),
+    id: documentId,
     publicId,
     organizationId,
     name,
     status: "draft",
     createdAt: now,
     updatedAt: now,
+  });
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "document.created",
+    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    targetName: name,
+    metadata: JSON.stringify({ documentId, publicId }),
+    createdAt: now,
   });
 
   const rows = await db
@@ -795,6 +812,20 @@ app.openapi(signRouteDef, async (c) => {
   if (!signature) {
     return c.json({ error: "Failed to record signature" }, 500);
   }
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "recipient.signed",
+    actorName: recipient.name ?? recipient.email,
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      recipientId: recipient.id,
+    }),
+    createdAt: now,
+  });
 
   const pendingSigners = await db
     .select({ value: count() })

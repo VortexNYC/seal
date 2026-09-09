@@ -43,10 +43,21 @@ const documentStatsSchema = z.object({
   completedThisMonth: z.number().int(),
 });
 
+const activitySchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  action: z.string(),
+  actorName: z.string(),
+  targetName: z.string().nullable().optional(),
+  metadata: z.string().nullable().optional(),
+  timestamp: z.number(),
+});
+
 export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
+export type ApiActivity = z.infer<typeof activitySchema>;
 
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
@@ -107,5 +118,12 @@ export async function getDocumentTrends(
   return apiFetch(
     `/api/documents/trends?days=${encodeURIComponent(days)}`,
     z.array(documentTrendSchema)
+  );
+}
+
+export async function getRecentActivity(limit = 10): Promise<ApiActivity[]> {
+  return apiFetch(
+    `/api/activity?limit=${encodeURIComponent(limit)}`,
+    z.array(activitySchema)
   );
 }
