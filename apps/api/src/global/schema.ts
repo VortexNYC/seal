@@ -643,3 +643,95 @@ export const contacts = sqliteTable(
     index("contacts_fullName_idx").on(table.fullName),
   ]
 );
+
+export const aiFieldSuggestions = sqliteTable(
+  "ai_field_suggestions",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    fields: text("fields").notNull(),
+    modelUsed: text("model_used").notNull(),
+    tokensUsed: integer("tokens_used").notNull(),
+    processingTimeMs: integer("processing_time_ms").notNull(),
+    paymentExtraction: text("payment_extraction"),
+    status: text("status").notNull().default("pending"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("aiFieldSuggestions_documentId_idx").on(table.documentId),
+    index("aiFieldSuggestions_documentStatus_idx").on(table.documentId, table.status),
+    index("aiFieldSuggestions_organizationId_idx").on(table.organizationId),
+  ]
+);
+
+export const aiDocumentAnnotations = sqliteTable(
+  "ai_document_annotations",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    annotations: text("annotations").notNull(),
+    modelUsed: text("model_used").notNull(),
+    tokensUsed: integer("tokens_used").notNull(),
+    processingTimeMs: integer("processing_time_ms").notNull(),
+    status: text("status").notNull().default("active"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("aiDocumentAnnotations_documentId_idx").on(table.documentId),
+    index("aiDocumentAnnotations_documentStatus_idx").on(table.documentId, table.status),
+    index("aiDocumentAnnotations_organizationId_idx").on(table.organizationId),
+  ]
+);
+
+export const aiThreads = sqliteTable(
+  "ai_threads",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    threadId: text("thread_id").notNull().unique(),
+    documentId: text("document_id").references(() => documents.id, {
+      onDelete: "cascade",
+    }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(),
+    threadType: text("thread_type").notNull().default("document"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("aiThreads_threadId_idx").on(table.threadId),
+    index("aiThreads_documentId_idx").on(table.documentId),
+    index("aiThreads_organizationUser_idx").on(table.organizationId, table.userId),
+  ]
+);

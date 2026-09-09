@@ -1,6 +1,4 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangleIcon,
   BanknoteIcon,
@@ -11,6 +9,10 @@ import {
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  dismissDocumentAnnotations,
+  getDocumentAnnotations,
+} from "@/lib/api-client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,13 +119,16 @@ const SEVERITY_DOT: Record<AnnotationSeverity, string> = {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useDocumentAnnotations(documentId: Id<"documents">) {
-  const annotations = useQuery(api.ai.queries.getDocumentAnnotations, {
-    documentId,
+export function useDocumentAnnotations(documentPublicId: string) {
+  const { data: annotations } = useQuery({
+    queryKey: ["documents", documentPublicId, "ai", "annotations"],
+    queryFn: () => getDocumentAnnotations(documentPublicId),
   });
-  const dismissMutation = useMutation(
-    api.ai.mutations.dismissDocumentAnnotations
-  );
+
+  const dismissMutation = useMutation({
+    mutationFn: () => dismissDocumentAnnotations(documentPublicId),
+  });
+
   const [enabledCategories, setEnabledCategories] = useState<
     Set<AnnotationCategory>
   >(new Set(["obligation", "payment", "risk", "dates", "terms"]));
@@ -141,14 +146,13 @@ export function useDocumentAnnotations(documentId: Id<"documents">) {
   }, []);
 
   const handleDismiss = useCallback(async () => {
-    if (!annotations) return;
     try {
-      await dismissMutation({ annotationId: annotations._id });
+      await dismissMutation.mutateAsync();
       toast.info("Annotations dismissed");
     } catch {
       toast.error("Failed to dismiss annotations");
     }
-  }, [annotations, dismissMutation]);
+  }, [dismissMutation]);
 
   return {
     annotations,

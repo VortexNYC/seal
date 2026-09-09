@@ -1180,3 +1180,133 @@ export async function submitSignature(
     }
   );
 }
+
+// ---------------------------------------------------------------------------
+// AI
+// ---------------------------------------------------------------------------
+
+const annotationItemSchema = z.object({
+  page: z.number().int(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  category: z.enum(["obligation", "payment", "risk", "dates", "terms"]),
+  severity: z.enum(["informational", "important", "critical"]),
+  text: z.string(),
+  summary: z.string(),
+});
+
+const annotationSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  documentId: z.string(),
+  organizationId: z.string(),
+  annotations: z.array(annotationItemSchema),
+  modelUsed: z.string(),
+  tokensUsed: z.number().int(),
+  processingTimeMs: z.number().int(),
+  status: z.string(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+
+export type ApiDocumentAnnotations = z.infer<typeof annotationSchema>;
+
+export async function getDocumentAnnotations(
+  publicId: string
+): Promise<ApiDocumentAnnotations | null> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/annotations`,
+    annotationSchema.nullable()
+  );
+}
+
+export async function dismissDocumentAnnotations(publicId: string): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/annotations/dismiss`,
+    z.void(),
+    { method: "POST" }
+  );
+}
+
+const suggestionItemSchema = z.object({
+  fieldType: z.string(),
+  page: z.number().int(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  label: z.string(),
+  confidence: z.number(),
+  isRequired: z.boolean(),
+});
+
+const fieldSuggestionSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  documentId: z.string(),
+  organizationId: z.string(),
+  fields: z.array(suggestionItemSchema),
+  modelUsed: z.string(),
+  tokensUsed: z.number().int(),
+  processingTimeMs: z.number().int(),
+  status: z.string(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+
+export type ApiFieldSuggestions = z.infer<typeof fieldSuggestionSchema>;
+
+export async function getFieldSuggestions(
+  publicId: string
+): Promise<ApiFieldSuggestions | null> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/field-suggestions`,
+    fieldSuggestionSchema.nullable()
+  );
+}
+
+export async function applyFieldSuggestions(
+  publicId: string,
+  suggestionId: string,
+  selectedFieldIndices?: number[]
+): Promise<{ fieldIds: string[]; count: number }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/field-suggestions/${encodeURIComponent(suggestionId)}/apply`,
+    z.object({ fieldIds: z.array(z.string()), count: z.number().int() }),
+    {
+      method: "POST",
+      body: JSON.stringify({ selectedFieldIndices }),
+    }
+  );
+}
+
+export async function dismissFieldSuggestions(publicId: string): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/field-suggestions/dismiss`,
+    z.void(),
+    { method: "POST" }
+  );
+}
+
+const threadResponseSchema = z.object({
+  threadId: z.string().nullable(),
+});
+
+export async function getThreadForDocument(
+  publicId: string
+): Promise<{ threadId: string | null }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/thread`,
+    threadResponseSchema
+  );
+}
+
+export async function getOrCreateThread(publicId: string): Promise<{ threadId: string | null }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/ai/thread`,
+    threadResponseSchema,
+    { method: "POST" }
+  );
+}

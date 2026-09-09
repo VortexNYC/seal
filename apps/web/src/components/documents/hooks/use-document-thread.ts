@@ -1,20 +1,24 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+
+import {
+  getOrCreateThread as getOrCreateThreadApi,
+  getThreadForDocument,
+} from "@/lib/api-client";
 
 /**
  * Manages the AI chat thread for a document.
  * Creates or retrieves the thread when needed.
  */
-export function useDocumentThread(documentId: Id<"documents">) {
-  const existingThread = useQuery(api.ai.threads.getThreadForDocument, {
-    documentId,
+export function useDocumentThread(documentPublicId: string) {
+  const { data: existingThread } = useQuery({
+    queryKey: ["documents", documentPublicId, "ai", "thread"],
+    queryFn: () => getThreadForDocument(documentPublicId),
   });
 
-  const getOrCreateThreadMutation = useMutation(
-    api.ai.threads.getOrCreateThread
-  );
+  const getOrCreateThreadMutation = useMutation({
+    mutationFn: () => getOrCreateThreadApi(documentPublicId),
+  });
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -26,13 +30,13 @@ export function useDocumentThread(documentId: Id<"documents">) {
 
     setIsCreating(true);
     try {
-      const result = await getOrCreateThreadMutation({ documentId });
+      const result = await getOrCreateThreadMutation.mutateAsync();
       setThreadId(result.threadId);
       return result.threadId;
     } finally {
       setIsCreating(false);
     }
-  }, [resolvedThreadId, getOrCreateThreadMutation, documentId]);
+  }, [resolvedThreadId, getOrCreateThreadMutation]);
 
   return {
     threadId: resolvedThreadId,

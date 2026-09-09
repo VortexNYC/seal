@@ -1,7 +1,4 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CalendarIcon,
   CheckIcon,
@@ -19,6 +16,15 @@ import {
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  applyFieldSuggestions as applyFieldSuggestionsApi,
+  dismissFieldSuggestions as dismissFieldSuggestionsApi,
+  getFieldSuggestions,
+  type ApiFieldSuggestions,
+} from "@/lib/api-client";
+import { parseSelectValue } from "@/lib/select-values";
+
+import { FIELD_TYPES, type FieldType } from "./field-toolbar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -174,12 +180,65 @@ function SuggestionOverlay({
  * Shared hook for AI field suggestion state.
  * Used by both AIFieldOverlays (inside TransformComponent) and AIFieldReviewBar (outside it).
  */
-export function useAIFieldSuggestions(documentId: Id<"documents">) {
-  const suggestions = useQuery(api.ai.queries.getFieldSuggestions, {
-    documentId,
+type FieldSuggestionItem = Omit<
+  ApiFieldSuggestions["fields"][number],
+  "fieldType"
+> & {
+  fieldType: FieldType;
+};
+
+type SuggestionsWithFieldTypes = Omit<ApiFieldSuggestions, "fields"> & {
+  fields: FieldSuggestionItem[];
+};
+
+function toSuggestionWithFieldTypes(
+  suggestion: ApiFieldSuggestions
+): SuggestionsWithFieldTypes {
+  return {
+    ...suggestion,
+    fields: suggestion.fields.map((field) => ({
+      ...field,
+      fieldType:
+        parseSelectValue(field.fieldType, FIELD_TYPES) ??
+        ("text" as const satisfies FieldType),
+    })),
+  };
+}
+
+export function useAIFieldSuggestions(
+  documentPublicId: string
+): {
+  suggestions: SuggestionsWithFieldTypes | null;
+  selectedIndices: Set<number>;
+  isApplying: boolean;
+  toggleField: (index: number) => void;
+  selectAll: () => void;
+  selectHighConfidence: () => void;
+  handleApply: () => Promise<void>;
+  handleDismiss: () => Promise<void>;
+} {
+  const { data: apiSuggestions } = useQuery({
+    queryKey: ["documents", documentPublicId, "ai", "field-suggestions"],
+    queryFn: () => getFieldSuggestions(documentPublicId),
   });
-  const applyMutation = useMutation(api.ai.mutations.applyFieldSuggestions);
-  const dismissMutation = useMutation(api.ai.mutations.dismissFieldSuggestions);
+
+  const applyMutation = useMutation({
+    mutationFn: ({
+      suggestionId,
+      selectedFieldIndices,
+    }: {
+      suggestionId: string;
+      selectedFieldIndices?: number[];
+    }) =>
+      applyFieldSuggestionsApi(documentPublicId, suggestionId, selectedFieldIndices),
+  });
+  const dismissMutation = useMutation({
+    mutationFn: () => dismissFieldSuggestionsApi(documentPublicId),
+  });
+
+  const suggestions = apiSuggestions
+    ? toSuggestionWithFieldTypes(apiSuggestions)
+    : null;
 
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
     new Set()
@@ -217,8 +276,8 @@ export function useAIFieldSuggestions(documentId: Id<"documents">) {
     try {
       const indices =
         selectedIndices.size > 0 ? [...selectedIndices] : undefined;
-      const result = await applyMutation({
-        suggestionId: suggestions._id,
+      const result = await applyMutation.mutateAsync({
+        suggestionId: suggestions.publicId,
         selectedFieldIndices: indices,
       });
       toast.success(
@@ -234,7 +293,7 @@ export function useAIFieldSuggestions(documentId: Id<"documents">) {
   const handleDismiss = useCallback(async () => {
     if (!suggestions) return;
     try {
-      await dismissMutation({ suggestionId: suggestions._id });
+      await dismissMutation.mutateAsync();
       toast.info("AI suggestions dismissed");
     } catch {
       toast.error("Failed to dismiss suggestions");

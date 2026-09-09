@@ -13,6 +13,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 
+import ai from "./ai.js";
 import { createD1 } from "../global/db.js";
 import {
   activity,
@@ -4333,5 +4334,7 @@ app.openapi(updatePermissionRouteDef, async (c) => {
 
   return c.json({ success: true });
 });
+
+app.route("/:publicId/ai", ai);
 
 export default app;
