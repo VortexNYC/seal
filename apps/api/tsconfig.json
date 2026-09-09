@@ -2,7 +2,8 @@
   "extends": "@seal/tsconfig/base.json",
   "compilerOptions": {
     "types": ["@cloudflare/workers-types"],
-    "rootDir": "."
+    "rootDir": ".",
+    "lib": ["ES2022", "ES2023.Array"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "*.config.ts"]
 }

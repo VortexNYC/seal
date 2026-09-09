@@ -58,6 +58,35 @@ const recentDocumentSchema = z.object({
   thumbnailDataUrl: z.string().nullable().optional(),
 });
 
+const documentAttentionSchema = z.object({
+  totalIssues: z.number().int(),
+  staleRecipients: z.array(
+    z.object({
+      documentId: z.string(),
+      documentName: z.string(),
+      recipientName: z.string(),
+      recipientEmail: z.string(),
+      daysPending: z.number().int(),
+    })
+  ),
+  approachingDeadline: z.array(
+    z.object({
+      documentId: z.string(),
+      documentName: z.string(),
+      deadline: z.number(),
+      daysRemaining: z.number().int(),
+      unsignedCount: z.number().int(),
+    })
+  ),
+  bouncedEmails: z.array(
+    z.object({
+      documentId: z.string(),
+      documentName: z.string(),
+      recipientEmail: z.string(),
+    })
+  ),
+});
+
 const activitySchema = z.object({
   id: z.string(),
   organizationId: z.string(),
@@ -81,6 +110,7 @@ export type ApiRecentDocument = {
   workflowStatus: DocumentWorkflowStatus;
   thumbnailDataUrl: string | null | undefined;
 };
+export type ApiDocumentAttention = z.infer<typeof documentAttentionSchema>;
 export type ApiActivity = z.infer<typeof activitySchema>;
 
 function getBaseUrl(): string {
@@ -169,4 +199,8 @@ export async function getRecentDocuments(
     workflowStatus: toWorkflowStatus(row.status),
     thumbnailDataUrl: row.thumbnailDataUrl,
   }));
+}
+
+export async function getDocumentAttention(): Promise<ApiDocumentAttention> {
+  return apiFetch("/api/documents/attention", documentAttentionSchema);
 }

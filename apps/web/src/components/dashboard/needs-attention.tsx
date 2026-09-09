@@ -6,12 +6,12 @@
  * elements for accessibility.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { AlertTriangleIcon, ClockIcon, MailXIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDocumentAttention } from "@/lib/api-client";
 
 interface NeedsAttentionProps {
   slug: string;
@@ -20,9 +20,10 @@ interface NeedsAttentionProps {
 export function NeedsAttention({
   slug,
 }: NeedsAttentionProps): React.ReactElement | null {
-  const attention = useQuery(
-    api.dashboard.analytics_queries.getDocumentsNeedingAttention
-  );
+  const { data: attention } = useQuery({
+    queryKey: ["api", "documents", "attention"],
+    queryFn: getDocumentAttention,
+  });
 
   if (!attention || attention.totalIssues === 0) return null;
 

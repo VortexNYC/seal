@@ -272,6 +272,8 @@ export const documents = sqliteTable(
     storageKey: text("storage_key"),
     contentType: text("content_type"),
     size: integer("size"),
+    sentAt: integer("sent_at", { mode: "timestamp_ms" }),
+    deadline: integer("deadline", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -299,6 +301,7 @@ export const recipients = sqliteTable(
     role: text("role").notNull().default("signer"),
     order: integer("order", { mode: "number" }).notNull().default(0),
     status: text("status").notNull().default("pending"),
+    viewedAt: integer("viewed_at", { mode: "timestamp_ms" }),
     signedAt: integer("signed_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()

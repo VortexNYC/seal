@@ -450,6 +450,159 @@ app.openapi(recentRouteDef, async (c) => {
   return c.json(results);
 });
 
+const DocumentAttentionSchema = z
+  .object({
+    totalIssues: z.number().int(),
+    staleRecipients: z.array(
+      z.object({
+        documentId: z.string(),
+        documentName: z.string(),
+        recipientName: z.string(),
+        recipientEmail: z.string(),
+        daysPending: z.number().int(),
+      })
+    ),
+    approachingDeadline: z.array(
+      z.object({
+        documentId: z.string(),
+        documentName: z.string(),
+        deadline: z.number(),
+        daysRemaining: z.number().int(),
+        unsignedCount: z.number().int(),
+      })
+    ),
+    bouncedEmails: z.array(
+      z.object({
+        documentId: z.string(),
+        documentName: z.string(),
+        recipientEmail: z.string(),
+      })
+    ),
+  })
+  .openapi("DocumentAttention");
+
+const attentionRouteDef = createRoute({
+  method: "get",
+  path: "/attention",
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: DocumentAttentionSchema },
+      },
+      description: "Documents needing attention",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(attentionRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        inArray(documents.status, ["sent", "in_progress"])
+      )
+    );
+
+  const docIds = docRows.map((doc) => doc.id);
+  const allRecipientRows =
+    docIds.length > 0
+      ? await db
+          .select()
+          .from(recipients)
+          .where(inArray(recipients.documentId, docIds))
+      : [];
+
+  const recipientsByDocument = new Map<string, typeof allRecipientRows>();
+  for (const recipient of allRecipientRows) {
+    const existing = recipientsByDocument.get(recipient.documentId) ?? [];
+    existing.push(recipient);
+    recipientsByDocument.set(recipient.documentId, existing);
+  }
+
+  const staleRecipients: {
+    documentId: string;
+    documentName: string;
+    recipientName: string;
+    recipientEmail: string;
+    daysPending: number;
+  }[] = [];
+
+  const approachingDeadline: {
+    documentId: string;
+    documentName: string;
+    deadline: number;
+    daysRemaining: number;
+    unsignedCount: number;
+  }[] = [];
+
+  for (const doc of docRows) {
+    const recipientRows = recipientsByDocument.get(doc.id) ?? [];
+    const sentAt = doc.sentAt?.getTime() ?? doc.createdAt.getTime();
+
+    for (const recipient of recipientRows) {
+      if (
+        recipient.status === "pending" &&
+        !recipient.viewedAt &&
+        now - sentAt > threeDaysMs
+      ) {
+        staleRecipients.push({
+          documentId: doc.publicId,
+          documentName: doc.name,
+          recipientName: recipient.name ?? recipient.email,
+          recipientEmail: recipient.email,
+          daysPending: Math.floor((now - sentAt) / (1000 * 60 * 60 * 24)),
+        });
+      }
+    }
+
+    if (doc.deadline) {
+      const deadlineTime = doc.deadline.getTime();
+      const daysRemaining = Math.ceil(
+        (deadlineTime - now) / (1000 * 60 * 60 * 24)
+      );
+      const unsignedCount = recipientRows.filter(
+        (r) => r.status === "pending" || r.status === "viewed"
+      ).length;
+
+      if (daysRemaining <= 3 && daysRemaining > 0 && unsignedCount > 0) {
+        approachingDeadline.push({
+          documentId: doc.publicId,
+          documentName: doc.name,
+          deadline: deadlineTime,
+          daysRemaining,
+          unsignedCount,
+        });
+      }
+    }
+  }
+
+  const result = {
+    totalIssues: staleRecipients.length + approachingDeadline.length,
+    staleRecipients: staleRecipients.slice(0, 10),
+    approachingDeadline: approachingDeadline
+      .toSorted((a, b) => a.daysRemaining - b.daysRemaining)
+      .slice(0, 10),
+    bouncedEmails: [] as {
+      documentId: string;
+      documentName: string;
+      recipientEmail: string;
+    }[],
+  };
+
+  return c.json(result);
+});
+
 const getRouteDef = createRoute({
   method: "get",
   path: "/{publicId}",
