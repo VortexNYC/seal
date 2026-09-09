@@ -4,26 +4,6 @@
   "private": true,
   "description": "Vortex Sign — open-source, agent-native e-signature platform",
   "type": "module",
-  "workspaces": {
-    "packages": [
-      "apps/*",
-      "packages/*",
-      "tooling/*"
-    ],
-    "catalog": {
-      "@types/node": "^25.5.2",
-      "@types/react": "^19.2.14",
-      "@types/react-dom": "^19.2.3",
-      "convex": "^1.41.0",
-      "react": "^19.2.4",
-      "react-dom": "^19.2.4",
-      "typescript": "~5.9.3",
-      "vite": "^8.0.3",
-      "vite-node": "^6.0.0",
-      "vitest": "^4.1.2",
-      "zod": "^4.3.6"
-    }
-  },
   "scripts": {
     "dev": "vp run -r dev --filter @seal/backend --filter @seal/web --filter @seal/landing",
     "dev:web": "pnpm --dir apps/web run dev -- --host 0.0.0.0",
@@ -44,30 +24,13 @@
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "clean": "(cd apps/backend && pnpm run clean) && (cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules"
   },
-  "dependencies": {
-    "@tanstack/router-core": "1.171.16",
-    "@vortexnyc/convex": "0.9.0"
-  },
   "devDependencies": {
-    "@convex-dev/eslint-plugin": "2.0.0",
     "@seal/tsconfig": "workspace:*",
-    "@types/node": "catalog:",
-    "@vortexnyc/auth": "0.18.0",
     "@vortexnyc/tooling": "0.11.25",
-    "baseline-browser-mapping": "^2.10.14",
-    "browserslist": "^4.28.2",
-    "eslint": "10.7.0",
     "knip": "^6.3.0",
-    "lefthook": "2.1.10",
-    "promptfoo": "^0.121.3",
     "tsx": "^4.20.5",
     "typescript": "~5.9.3",
-    "typescript-eslint": "8.63.0",
     "vite-plus": "0.2.4"
-  },
-  "overrides": {
-    "@convex-dev/agent": "0.6.4",
-    "@tanstack/router-core": "1.171.16"
   },
   "packageManager": "pnpm@11.13.1"
 }
