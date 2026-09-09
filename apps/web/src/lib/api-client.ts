@@ -125,6 +125,43 @@ const relatedDocumentSchema = z.object({
   role: z.string(),
 });
 
+const notificationTypeSchema = z.enum([
+  "document_shared",
+  "access_revoked",
+  "access_updated",
+  "ownership_transferred",
+  "document_signed",
+  "document_completed",
+  "signature_requested",
+  "reminder",
+  "sharing_disabled",
+  "bulk_access_revoked",
+]);
+
+const notificationEmailStatusSchema = z.enum([
+  "pending",
+  "sent",
+  "failed",
+  "not_applicable",
+]);
+
+const notificationSchema = z.object({
+  _id: z.string(),
+  userId: z.string(),
+  organizationId: z.string(),
+  type: notificationTypeSchema,
+  data: z.record(z.string(), z.unknown()),
+  read: z.boolean(),
+  readAt: z.number().optional(),
+  emailStatus: notificationEmailStatusSchema.optional(),
+  emailSentAt: z.number().optional(),
+  emailAttempts: z.number().int().optional(),
+  lastEmailError: z.string().optional(),
+  emailMessageId: z.string().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
 export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
@@ -140,6 +177,11 @@ export type ApiRecentDocument = {
 };
 export type ApiDocumentAttention = z.infer<typeof documentAttentionSchema>;
 export type ApiActivity = z.infer<typeof activitySchema>;
+export type ApiNotification = z.infer<typeof notificationSchema>;
+export type ApiNotificationType = z.infer<typeof notificationTypeSchema>;
+export type ApiNotificationEmailStatus = z.infer<
+  typeof notificationEmailStatusSchema
+>;
 export type ApiContact = {
   _id: string;
   firstName: string;
@@ -378,4 +420,38 @@ export async function getContactRelatedDocuments(
     `/api/contacts/related-documents?email=${encodeURIComponent(email)}`,
     z.array(relatedDocumentSchema)
   );
+}
+
+export async function getNotifications(limit = 20): Promise<ApiNotification[]> {
+  return apiFetch(
+    `/api/notifications?limit=${encodeURIComponent(limit)}`,
+    z.array(notificationSchema)
+  );
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const result = await apiFetch(
+    "/api/notifications/unread-count",
+    z.object({ count: z.number().int() })
+  );
+  return result.count;
+}
+
+export async function markNotificationAsRead(
+  publicId: string
+): Promise<ApiNotification> {
+  return apiFetch(
+    `/api/notifications/${encodeURIComponent(publicId)}/read`,
+    notificationSchema,
+    { method: "POST" }
+  );
+}
+
+export async function markAllNotificationsAsRead(): Promise<number> {
+  const result = await apiFetch(
+    "/api/notifications/read-all",
+    z.object({ count: z.number().int() }),
+    { method: "POST" }
+  );
+  return result.count;
 }

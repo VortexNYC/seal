@@ -1,7 +1,5 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import {
   AlertCircleIcon,
   BellIcon,
@@ -10,13 +8,23 @@ import {
   ClockIcon,
   FileTextIcon,
   KeyIcon,
-  Loader2Icon,
   MailIcon,
   Share2Icon,
   ShieldAlertIcon,
   UserIcon,
 } from "lucide-react";
 
+import type {
+  ApiNotification,
+  ApiNotificationEmailStatus,
+  ApiNotificationType,
+} from "@/lib/api-client";
+import {
+  getNotifications,
+  getUnreadNotificationCount,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";
@@ -24,7 +32,7 @@ import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Skeleton } from "../ui/skeleton";
 
-type Notification = Doc<"notifications">;
+type Notification = ApiNotification;
 
 interface NotificationsPopoverProps {
   slug: string;
@@ -44,7 +52,7 @@ function formatRelativeTime(timestamp: number): string {
   return "Just now";
 }
 
-function getNotificationIcon(type: Notification["type"]) {
+function getNotificationIcon(type: ApiNotificationType) {
   switch (type) {
     case "document_shared":
       return <Share2Icon className="text-info h-4 w-4" />;
@@ -66,41 +74,69 @@ function getNotificationIcon(type: Notification["type"]) {
   }
 }
 
+function getString(
+  data: Record<string, unknown>,
+  key: string
+): string | undefined {
+  if (key in data && typeof data[key] === "string") {
+    return data[key];
+  }
+  return undefined;
+}
+
+function getNumber(
+  data: Record<string, unknown>,
+  key: string
+): number | undefined {
+  if (key in data && typeof data[key] === "number") {
+    return data[key];
+  }
+  return undefined;
+}
+
+function getDocumentName(data: Record<string, unknown>): string {
+  return getString(data, "documentName") ?? "a document";
+}
+
 function getNotificationMessage(notification: Notification): string {
   const data = notification.data;
-  const documentName =
-    "documentName" in data ? (data.documentName ?? "a document") : "a document";
+  const documentName = getDocumentName(data);
 
   switch (notification.type) {
     case "document_shared": {
-      if ("sharedByName" in data && data.sharedByName) {
-        return `${data.sharedByName} shared "${documentName}" with you`;
+      const sharedByName = getString(data, "sharedByName");
+      if (sharedByName) {
+        return `${sharedByName} shared "${documentName}" with you`;
       }
       return `You were given access to "${documentName}"`;
     }
     case "access_revoked": {
-      if ("revokedByName" in data && data.revokedByName) {
-        return `${data.revokedByName} revoked your access to "${documentName}"`;
+      const revokedByName = getString(data, "revokedByName");
+      if (revokedByName) {
+        return `${revokedByName} revoked your access to "${documentName}"`;
       }
-      if ("message" in data && data.message) {
-        return data.message;
+      const message = getString(data, "message");
+      if (message) {
+        return message;
       }
       return `Your access to "${documentName}" was revoked`;
     }
     case "access_updated": {
-      if ("newPermissionLevel" in data && "updatedByName" in data) {
-        const level = data.newPermissionLevel;
-        const updater = data.updatedByName ?? "Someone";
+      const level = getString(data, "newPermissionLevel");
+      const updater = getString(data, "updatedByName") ?? "Someone";
+      if (level) {
         return `${updater} changed your access to "${documentName}" to ${level}`;
       }
       return `Your access to "${documentName}" was updated`;
     }
     case "ownership_transferred": {
-      if ("message" in data && data.message) {
-        return data.message;
+      const message = getString(data, "message");
+      if (message) {
+        return message;
       }
-      if ("previousOwnerName" in data && data.previousOwnerName) {
-        return `${data.previousOwnerName} transferred "${documentName}" to you`;
+      const previousOwnerName = getString(data, "previousOwnerName");
+      if (previousOwnerName) {
+        return `${previousOwnerName} transferred "${documentName}" to you`;
       }
       return `You are now the owner of "${documentName}"`;
     }
@@ -113,20 +149,24 @@ function getNotificationMessage(notification: Notification): string {
     case "reminder":
       return `Reminder: "${documentName}" needs your attention`;
     case "sharing_disabled": {
-      if ("message" in data && data.message) {
-        return data.message;
+      const message = getString(data, "message");
+      if (message) {
+        return message;
       }
-      if ("documentsAffected" in data) {
-        return `Sharing was disabled for ${data.documentsAffected} document(s)`;
+      const documentsAffected = getNumber(data, "documentsAffected");
+      if (documentsAffected !== undefined) {
+        return `Sharing was disabled for ${documentsAffected} document(s)`;
       }
       return "Document sharing was disabled";
     }
     case "bulk_access_revoked": {
-      if ("message" in data && data.message) {
-        return data.message;
+      const message = getString(data, "message");
+      if (message) {
+        return message;
       }
-      if ("removedUserName" in data && data.removedUserName) {
-        return `${data.removedUserName}'s access to "${documentName}" was revoked`;
+      const removedUserName = getString(data, "removedUserName");
+      if (removedUserName) {
+        return `${removedUserName}'s access to "${documentName}" was revoked`;
       }
       return `Access to "${documentName}" was revoked`;
     }
@@ -139,7 +179,7 @@ function EmailStatusIndicator({
   status,
   lastError,
 }: {
-  status: Notification["emailStatus"];
+  status: ApiNotificationEmailStatus | undefined;
   lastError?: string;
 }) {
   if (!status || status === "not_applicable") return null;
@@ -179,6 +219,10 @@ function EmailStatusIndicator({
   }
 }
 
+function getDocumentId(data: Record<string, unknown>): string | undefined {
+  return getString(data, "documentId");
+}
+
 function NotificationItem({
   notification,
   slug,
@@ -186,12 +230,9 @@ function NotificationItem({
 }: {
   notification: Notification;
   slug: string;
-  onMarkAsRead: (id: Id<"notifications">) => void;
+  onMarkAsRead: (id: string) => void;
 }) {
-  const documentId =
-    "documentId" in notification.data
-      ? notification.data.documentId
-      : undefined;
+  const documentId = getDocumentId(notification.data);
 
   const handleClick = () => {
     if (!notification.read) {
@@ -288,22 +329,41 @@ function EmptyState() {
 }
 
 export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
-  const notifications = useQuery(api.notifications.index.list, { limit: 20 });
-  const unreadCount = useQuery(api.notifications.index.getUnreadCount, {});
-  const markAsRead = useMutation(api.notifications.index.markAsRead);
-  const markAllAsRead = useMutation(api.notifications.index.markAllAsRead);
+  const queryClient = useQueryClient();
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ["api", "notifications"],
+    queryFn: () => getNotifications(20),
+  });
+  const { data: unreadCount } = useQuery({
+    queryKey: ["api", "notifications", "unread-count"],
+    queryFn: getUnreadNotificationCount,
+  });
+  const markAsReadMutation = useMutation({
+    mutationFn: markNotificationAsRead,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["api", "notifications"],
+      });
+    },
+  });
+  const markAllAsReadMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["api", "notifications"],
+      });
+    },
+  });
 
-  const handleMarkAsRead = (notificationId: Id<"notifications">) => {
-    void markAsRead({ notificationId });
+  const handleMarkAsRead = (notificationId: string) => {
+    markAsReadMutation.mutate(notificationId);
   };
 
   const handleMarkAllAsRead = () => {
-    void markAllAsRead({});
+    markAllAsReadMutation.mutate();
   };
 
-  const isLoading = notifications === undefined;
-  const hasNotifications =
-    notifications?.items && notifications.items.length > 0;
+  const hasNotifications = (notifications?.length ?? 0) > 0;
   const hasUnread = (unreadCount ?? 0) > 0;
 
   return (
@@ -349,7 +409,7 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
             <EmptyState />
           ) : (
             <div className="space-y-1 p-2">
-              {notifications.items.map((notification) => (
+              {notifications?.map((notification) => (
                 <NotificationItem
                   key={notification._id}
                   notification={notification}
@@ -360,19 +420,6 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
             </div>
           )}
         </div>
-
-        {hasNotifications && notifications.hasMore && (
-          <div className="border-t px-4 py-3 text-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground text-xs"
-            >
-              <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />
-              Load more
-            </Button>
-          </div>
-        )}
       </PopoverContent>
     </Popover>
   );

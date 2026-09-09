@@ -363,6 +363,40 @@ export const activity = sqliteTable(
   ]
 );
 
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    userId: text("user_id").notNull(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    data: text("data").notNull(),
+    read: integer("read", { mode: "boolean" }).notNull().default(false),
+    readAt: integer("read_at", { mode: "timestamp_ms" }),
+    emailStatus: text("email_status"),
+    emailSentAt: integer("email_sent_at", { mode: "timestamp_ms" }),
+    emailAttempts: integer("email_attempts"),
+    lastEmailError: text("last_email_error"),
+    emailMessageId: text("email_message_id"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("notifications_organizationId_idx").on(table.organizationId),
+    index("notifications_userId_idx").on(table.userId),
+    index("notifications_user_read_idx").on(table.userId, table.read),
+    index("notifications_user_createdAt_idx").on(table.userId, table.createdAt),
+  ]
+);
+
 export const contacts = sqliteTable(
   "contacts",
   {
