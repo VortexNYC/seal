@@ -455,4 +455,75 @@ describe("documents API", () => {
       .where(eq(documents.publicId, publicId));
     expect(rows[0]?.ownerId).toBe("user_2");
   });
+
+  it("grants and lists document sharing", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    await db.insert(user).values({
+      id: "user_2",
+      name: "Shared User",
+      email: "shared@example.com",
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_1",
+      userId: "user_2",
+      role: "member",
+      createdAt: new Date(),
+    });
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Share Me",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const shareResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/share`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user_2", permissionLevel: "view" }),
+        }
+      ),
+      env
+    );
+    expect(shareResponse.status).toBe(200);
+
+    const sharingResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/sharing`
+      ),
+      env
+    );
+    const sharing = z
+      .object({
+        sharingMode: z.string(),
+        owner: z.object({ name: z.string().nullable(), email: z.string() }),
+        sharedWith: z.array(
+          z.object({
+            userId: z.string(),
+            userEmail: z.string(),
+            permissionLevel: z.string(),
+          })
+        ),
+      })
+      .parse(await parseJson(sharingResponse));
+    expect(sharing.sharedWith.length).toBe(1);
+    expect(sharing.sharedWith[0]?.userId).toBe("user_2");
+    expect(sharing.sharedWith[0]?.permissionLevel).toBe("view");
+  });
 });

@@ -22,6 +22,7 @@ import {
   member,
   recipients,
   signatures,
+  user as userTable,
 } from "../global/schema.js";
 
 const DocumentSchema = z
@@ -1685,6 +1686,386 @@ app.openapi(transferOwnershipRouteDef, async (c) => {
   }
 
   return c.json(documentResponse(updated));
+});
+
+const SharingUserSchema = z.object({
+  name: z.string().nullable().optional(),
+  email: z.string(),
+});
+
+const SharingAccessSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  userName: z.string().nullable().optional(),
+  userEmail: z.string(),
+  permissionLevel: z.string(),
+  grantedByName: z.string().nullable().optional(),
+});
+
+const SharingResponseSchema = z.object({
+  sharingMode: z.string(),
+  canUseTeamSharing: z.boolean(),
+  subscriptionWarning: z.string().nullable().optional(),
+  owner: SharingUserSchema,
+  sharedWith: z.array(SharingAccessSchema),
+});
+
+const sharingRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/sharing",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: SharingResponseSchema },
+      },
+      description: "Document sharing state",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(sharingRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const accessRows = await db
+    .select()
+    .from(documentAccess)
+    .where(
+      and(
+        eq(documentAccess.documentId, doc.id),
+        isNull(documentAccess.revokedAt)
+      )
+    );
+
+  const userIds = new Set<string>([doc.ownerId]);
+  for (const access of accessRows) {
+    userIds.add(access.userId);
+    if (access.grantedBy) {
+      userIds.add(access.grantedBy);
+    }
+  }
+
+  const userRows = await db
+    .select({ id: userTable.id, name: userTable.name, email: userTable.email })
+    .from(userTable)
+    .where(inArray(userTable.id, Array.from(userIds)));
+
+  const usersById = new Map(
+    userRows.map((u) => [u.id, { name: u.name, email: u.email }])
+  );
+
+  const owner = usersById.get(doc.ownerId) ?? { name: null, email: "" };
+
+  const sharedWith = accessRows.map((access) => {
+    const accessUser = usersById.get(access.userId);
+    const granter = access.grantedBy ? usersById.get(access.grantedBy) : null;
+    return {
+      id: access.id,
+      userId: access.userId,
+      userName: accessUser?.name,
+      userEmail: accessUser?.email ?? "",
+      permissionLevel: access.permissionLevel,
+      grantedByName: granter?.name ?? granter?.email,
+    };
+  });
+
+  return c.json({
+    sharingMode: doc.sharingMode,
+    canUseTeamSharing: true,
+    subscriptionWarning: null,
+    owner,
+    sharedWith,
+  });
+});
+
+const updateSharingBodySchema = z.object({
+  sharingMode: z.enum(["private", "workspace", "specific"]),
+});
+
+const updateSharingRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/sharing",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateSharingBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SharingResponseSchema } },
+      description: "Sharing mode updated",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(updateSharingRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const { sharingMode } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  await db
+    .update(documents)
+    .set({ sharingMode, updatedAt: new Date() })
+    .where(eq(documents.id, ownerCheck.docId));
+
+  return c.json({
+    sharingMode,
+    canUseTeamSharing: true,
+    subscriptionWarning: null,
+    owner: { name: null, email: "" },
+    sharedWith: [],
+  });
+});
+
+const shareBodySchema = z.object({
+  userId: z.string(),
+  permissionLevel: z.enum(["view", "edit", "manage"]),
+});
+
+const shareRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/share",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: { "application/json": { schema: shareBodySchema } },
+    },
+  },
+  responses: {
+    200: { description: "Access granted" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+    422: { description: "Invalid user" },
+  },
+});
+
+app.openapi(shareRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const { userId: targetUserId, permissionLevel } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  const membership = await db
+    .select()
+    .from(member)
+    .where(
+      and(
+        eq(member.organizationId, organizationId),
+        eq(member.userId, targetUserId)
+      )
+    )
+    .limit(1);
+  if (!membership[0]) {
+    return c.json({ error: "User is not an organization member" }, 422);
+  }
+
+  const existing = await db
+    .select()
+    .from(documentAccess)
+    .where(
+      and(
+        eq(documentAccess.documentId, ownerCheck.docId),
+        eq(documentAccess.userId, targetUserId)
+      )
+    )
+    .limit(1);
+
+  const now = new Date();
+  if (existing[0]) {
+    await db
+      .update(documentAccess)
+      .set({
+        permissionLevel,
+        revokedAt: null,
+        revokedBy: null,
+        updatedBy: userId,
+        updatedAt: now,
+      })
+      .where(eq(documentAccess.id, existing[0].id));
+  } else {
+    await db.insert(documentAccess).values({
+      id: crypto.randomUUID(),
+      documentId: ownerCheck.docId,
+      userId: targetUserId,
+      permissionLevel,
+      grantedBy: userId,
+      grantedAt: now,
+    });
+  }
+
+  return c.json({ success: true });
+});
+
+const revokeBodySchema = z.object({
+  userId: z.string(),
+});
+
+const revokeRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/revoke",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: { "application/json": { schema: revokeBodySchema } },
+    },
+  },
+  responses: {
+    200: { description: "Access revoked" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(revokeRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const { userId: targetUserId } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  await db
+    .update(documentAccess)
+    .set({
+      revokedAt: new Date(),
+      revokedBy: userId,
+      updatedBy: userId,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(documentAccess.documentId, ownerCheck.docId),
+        eq(documentAccess.userId, targetUserId)
+      )
+    );
+
+  return c.json({ success: true });
+});
+
+const updatePermissionBodySchema = z.object({
+  userId: z.string(),
+  permissionLevel: z.enum(["view", "edit", "manage"]),
+});
+
+const updatePermissionRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/permission",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updatePermissionBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: { description: "Permission updated" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(updatePermissionRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const { userId: targetUserId, permissionLevel } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  await db
+    .update(documentAccess)
+    .set({
+      permissionLevel,
+      updatedBy: userId,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(documentAccess.documentId, ownerCheck.docId),
+        eq(documentAccess.userId, targetUserId),
+        isNull(documentAccess.revokedAt)
+      )
+    );
+
+  return c.json({ success: true });
 });
 
 export default app;
