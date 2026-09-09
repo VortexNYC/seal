@@ -455,3 +455,314 @@ export async function markAllNotificationsAsRead(): Promise<number> {
   );
   return result.count;
 }
+
+const folderSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  organizationId: z.string(),
+  name: z.string(),
+  parentId: z.string().nullable().optional(),
+  type: z.string(),
+  visibility: z.string(),
+  pinned: z.boolean(),
+  createdBy: z.string(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type ApiFolder = z.infer<typeof folderSchema>;
+
+const documentSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  organizationId: z.string(),
+  ownerId: z.string(),
+  folderId: z.string().nullable().optional(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  status: z.string(),
+  documentStatus: z.string(),
+  workflowStatus: z.string(),
+  sharingMode: z.string(),
+  aiProcessingStatus: z.string().nullable().optional(),
+  storageKey: z.string().nullable().optional(),
+  contentType: z.string().nullable().optional(),
+  size: z.number().int().nullable().optional(),
+  fileSize: z.number().int().nullable().optional(),
+  pageCount: z.number().int().nullable().optional(),
+  thumbnailDataUrl: z.string().nullable().optional(),
+  sentAt: z.number().nullable().optional(),
+  deadline: z.number().nullable().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type ApiDocument = z.infer<typeof documentSchema>;
+
+const sharingResponseSchema = z.object({
+  sharingMode: z.string(),
+  canUseTeamSharing: z.boolean(),
+  subscriptionWarning: z.string().nullable().optional(),
+  owner: z.object({
+    name: z.string().nullable().optional(),
+    email: z.string(),
+  }),
+  sharedWith: z.array(
+    z.object({
+      id: z.string(),
+      userId: z.string(),
+      userName: z.string().nullable().optional(),
+      userEmail: z.string(),
+      permissionLevel: z.string(),
+      grantedByName: z.string().nullable().optional(),
+    })
+  ),
+});
+
+export type ApiDocumentSharing = z.infer<typeof sharingResponseSchema>;
+
+const teamMemberSchema = z.object({
+  userId: z.string(),
+  name: z.string().nullable(),
+  email: z.string(),
+  role: z.string(),
+});
+
+export type ApiTeamMember = z.infer<typeof teamMemberSchema>;
+
+export async function getDocuments(options: {
+  filter?: "all" | "owned" | "shared";
+  workflowStatus?: string;
+  folderId?: string;
+  rootOnly?: boolean;
+} = {}): Promise<ApiDocument[]> {
+  const query = new URLSearchParams();
+  if (options.filter && options.filter !== "all") {
+    query.set("filter", options.filter);
+  }
+  if (options.workflowStatus) {
+    query.set("status", options.workflowStatus);
+  }
+  if (options.folderId) {
+    query.set("folderId", options.folderId);
+  }
+  if (options.rootOnly) {
+    query.set("rootOnly", "true");
+  }
+  const queryString = query.toString();
+  const path = `/api/documents${queryString ? `?${queryString}` : ""}`;
+  return apiFetch(path, z.array(documentSchema));
+}
+
+export async function getFolders(options: {
+  type?: "document" | "template";
+  parentId?: string;
+} = {}): Promise<ApiFolder[]> {
+  const query = new URLSearchParams();
+  query.set("type", options.type ?? "document");
+  if (options.parentId) {
+    query.set("parentId", options.parentId);
+  }
+  return apiFetch(`/api/folders?${query.toString()}`, z.array(folderSchema));
+}
+
+export async function getAllFolders(
+  type: "document" | "template" = "document"
+): Promise<ApiFolder[]> {
+  return apiFetch(`/api/folders/all?type=${type}`, z.array(folderSchema));
+}
+
+export async function createFolder(options: {
+  name: string;
+  type: "document" | "template";
+  parentId?: string;
+  visibility?: "everyone" | "members" | "restricted";
+  pinned?: boolean;
+}): Promise<ApiFolder> {
+  return apiFetch("/api/folders", folderSchema, {
+    method: "POST",
+    body: JSON.stringify(options),
+  });
+}
+
+export async function getFolderBreadcrumbs(
+  publicId: string
+): Promise<Array<{ id: string; name: string }>> {
+  return apiFetch(
+    `/api/folders/${encodeURIComponent(publicId)}/breadcrumbs`,
+    z.array(z.object({ id: z.string(), name: z.string() }))
+  );
+}
+
+export async function createDocument(input: {
+  name: string;
+  description?: string;
+  fileSize?: number;
+  contentType?: string;
+  pageCount?: number;
+  thumbnailDataUrl?: string;
+  folderId?: string;
+}): Promise<ApiDocument> {
+  return apiFetch("/api/documents", documentSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function uploadDocument(
+  publicId: string,
+  contentBase64: string,
+  contentType: string
+): Promise<{ storageKey: string; contentType: string; size: number }> {
+  return apiFetch(`/api/documents/${encodeURIComponent(publicId)}/upload`,
+    z.object({
+      storageKey: z.string(),
+      contentType: z.string(),
+      size: z.number().int(),
+    }),
+    {
+      method: "POST",
+      body: JSON.stringify({ contentBase64, contentType }),
+    }
+  );
+}
+
+export async function deleteDocument(publicId: string): Promise<void> {
+  await apiFetch(`/api/documents/${encodeURIComponent(publicId)}`, z.void(), {
+    method: "DELETE",
+  });
+}
+
+export async function sendDocument(publicId: string): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/send`,
+    z.void(),
+    { method: "POST" }
+  );
+}
+
+export async function cancelDocument(publicId: string): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/cancel`,
+    z.void(),
+    { method: "POST" }
+  );
+}
+
+export async function downloadDocument(publicId: string): Promise<Blob> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/documents/${encodeURIComponent(publicId)}/download`,
+    { credentials: "include" }
+  );
+  if (!response.ok) {
+    const text = await response.text().catch(() => "Unknown error");
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+  return response.blob();
+}
+
+export async function moveDocumentsToFolder(options: {
+  documentIds: string[];
+  folderId?: string;
+}): Promise<{ moved: number }> {
+  return apiFetch("/api/documents/move", z.object({ moved: z.number().int() }), {
+    method: "POST",
+    body: JSON.stringify(options),
+  });
+}
+
+export async function updateDocumentThumbnail(
+  publicId: string,
+  thumbnailDataUrl: string
+): Promise<ApiDocument> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/thumbnail`,
+    documentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ thumbnailDataUrl }),
+    }
+  );
+}
+
+export async function transferDocument(
+  publicId: string,
+  newOwnerId: string
+): Promise<ApiDocument> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/transfer`,
+    documentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ newOwnerId }),
+    }
+  );
+}
+
+export async function getDocumentSharing(
+  publicId: string
+): Promise<ApiDocumentSharing> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/sharing`,
+    sharingResponseSchema
+  );
+}
+
+export async function updateDocumentSharing(
+  publicId: string,
+  sharingMode: "private" | "workspace" | "specific"
+): Promise<ApiDocumentSharing> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/sharing`,
+    sharingResponseSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ sharingMode }),
+    }
+  );
+}
+
+export async function shareDocument(
+  publicId: string,
+  userId: string,
+  permissionLevel: "view" | "edit" | "manage"
+): Promise<void> {
+  await apiFetch(`/api/documents/${encodeURIComponent(publicId)}/share`, z.void(), {
+    method: "POST",
+    body: JSON.stringify({ userId, permissionLevel }),
+  });
+}
+
+export async function revokeDocumentAccess(
+  publicId: string,
+  userId: string
+): Promise<void> {
+  await apiFetch(`/api/documents/${encodeURIComponent(publicId)}/revoke`, z.void(), {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
+}
+
+export async function updateDocumentPermission(
+  publicId: string,
+  userId: string,
+  permissionLevel: "view" | "edit" | "manage"
+): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/permission`,
+    z.void(),
+    {
+      method: "POST",
+      body: JSON.stringify({ userId, permissionLevel }),
+    }
+  );
+}
+
+export async function getOrganizationMembers(
+  slug: string
+): Promise<ApiTeamMember[]> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/members`,
+    z.array(teamMemberSchema)
+  );
+}
