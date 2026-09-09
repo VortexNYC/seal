@@ -8,13 +8,17 @@ import {
   gte,
   lt,
   inArray,
+  isNull,
+  not,
   type SQL,
 } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
   activity,
+  documentAccess,
   documents,
+  folders,
   recipients,
   signatures,
 } from "../global/schema.js";
@@ -24,11 +28,23 @@ const DocumentSchema = z
     id: z.string(),
     publicId: z.string(),
     organizationId: z.string(),
+    ownerId: z.string(),
+    folderId: z.string().nullable().optional(),
     name: z.string(),
+    description: z.string().nullable().optional(),
     status: z.string(),
+    documentStatus: z.string(),
+    workflowStatus: z.string(),
+    sharingMode: z.string(),
+    aiProcessingStatus: z.string().nullable().optional(),
     storageKey: z.string().nullable().optional(),
     contentType: z.string().nullable().optional(),
     size: z.number().int().nullable().optional(),
+    fileSize: z.number().int().nullable().optional(),
+    pageCount: z.number().int().nullable().optional(),
+    thumbnailDataUrl: z.string().nullable().optional(),
+    sentAt: z.number().nullable().optional(),
+    deadline: z.number().nullable().optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   })
@@ -46,11 +62,21 @@ function documentResponse(doc: {
   id: string;
   publicId: string;
   organizationId: string;
+  ownerId: string;
+  folderId: string | null;
   name: string;
+  description: string | null;
   status: string;
+  documentStatus: string;
+  sharingMode: string;
+  aiProcessingStatus: string | null;
   storageKey: string | null;
   contentType: string | null;
   size: number | null;
+  pageCount: number | null;
+  thumbnailDataUrl: string | null;
+  sentAt: Date | null;
+  deadline: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -58,11 +84,23 @@ function documentResponse(doc: {
     id: doc.id,
     publicId: doc.publicId,
     organizationId: doc.organizationId,
+    ownerId: doc.ownerId,
+    folderId: doc.folderId,
     name: doc.name,
+    description: doc.description,
     status: doc.status,
+    documentStatus: doc.documentStatus,
+    workflowStatus: doc.status,
+    sharingMode: doc.sharingMode,
+    aiProcessingStatus: doc.aiProcessingStatus,
     storageKey: doc.storageKey,
     contentType: doc.contentType,
     size: doc.size,
+    fileSize: doc.size,
+    pageCount: doc.pageCount,
+    thumbnailDataUrl: doc.thumbnailDataUrl,
+    sentAt: doc.sentAt ? doc.sentAt.getTime() : null,
+    deadline: doc.deadline ? doc.deadline.getTime() : null,
     createdAt: doc.createdAt.getTime(),
     updatedAt: doc.updatedAt.getTime(),
   };
@@ -135,8 +173,11 @@ app.openapi(createRouteDef, async (c) => {
     id: documentId,
     publicId,
     organizationId,
+    ownerId: user!.user.id,
     name,
     status: "draft",
+    documentStatus: "active",
+    sharingMode: "private",
     createdAt: now,
     updatedAt: now,
   });
@@ -173,6 +214,17 @@ app.openapi(createRouteDef, async (c) => {
 const listRouteDef = createRoute({
   method: "get",
   path: "/",
+  request: {
+    query: z.object({
+      filter: z.enum(["all", "owned", "shared"]).optional(),
+      workflowStatus: z.string().optional(),
+      folderId: z.string().optional(),
+      rootOnly: z
+        .union([z.literal("true"), z.literal("false")])
+        .optional()
+        .transform((v) => v === "true"),
+    }),
+  },
   responses: {
     200: {
       content: {
@@ -186,12 +238,68 @@ const listRouteDef = createRoute({
 app.openapi(listRouteDef, async (c) => {
   const user = c.get("user");
   const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { filter, workflowStatus, folderId, rootOnly } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
+
+  const conditions: SQL[] = [
+    eq(documents.organizationId, organizationId),
+    eq(documents.documentStatus, "active"),
+  ];
+
+  if (workflowStatus) {
+    conditions.push(eq(documents.status, workflowStatus));
+  }
+
+  if (folderId) {
+    const folderRows = await db
+      .select({ id: folders.id })
+      .from(folders)
+      .where(
+        and(
+          eq(folders.publicId, folderId),
+          eq(folders.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const folder = folderRows[0];
+    if (folder) {
+      conditions.push(eq(documents.folderId, folder.id));
+    } else {
+      return c.json([]);
+    }
+  } else if (rootOnly) {
+    conditions.push(isNull(documents.folderId));
+  }
+
+  if (filter === "owned") {
+    conditions.push(eq(documents.ownerId, userId));
+  } else if (filter === "shared") {
+    const accessibleDocIds = await db
+      .select({ documentId: documentAccess.documentId })
+      .from(documentAccess)
+      .where(
+        and(eq(documentAccess.userId, userId), isNull(documentAccess.revokedAt))
+      );
+
+    if (accessibleDocIds.length === 0) {
+      return c.json([]);
+    }
+
+    conditions.push(not(eq(documents.ownerId, userId)));
+    conditions.push(
+      inArray(
+        documents.id,
+        accessibleDocIds.map((row) => row.documentId)
+      )
+    );
+  }
+
   const rows = await db
     .select()
     .from(documents)
-    .where(eq(documents.organizationId, organizationId))
+    .where(and(...conditions))
     .orderBy(desc(documents.createdAt));
 
   return c.json(rows.map(documentResponse));

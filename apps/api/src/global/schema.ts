@@ -259,6 +259,39 @@ export const accountRelations = relations(account, ({ one }) => ({
 // Vortex Sign domain tables
 // -----------------------------------------------------------------------------
 
+export const folders = sqliteTable(
+  "folders",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    parentId: text("parent_id"),
+    type: text("type").notNull().default("document"),
+    visibility: text("visibility").notNull().default("everyone"),
+    pinned: integer("pinned", { mode: "boolean" }).default(false),
+    createdBy: text("created_by").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("folders_organizationId_idx").on(table.organizationId),
+    index("folders_parentId_idx").on(table.parentId),
+    index("folders_org_type_idx").on(table.organizationId, table.type),
+    index("folders_org_createdBy_idx").on(
+      table.organizationId,
+      table.createdBy
+    ),
+  ]
+);
+
 export const documents = sqliteTable(
   "documents",
   {
@@ -267,11 +300,21 @@ export const documents = sqliteTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id").notNull().default(""),
+    folderId: text("folder_id").references(() => folders.id, {
+      onDelete: "set null",
+    }),
     name: text("name").notNull(),
+    description: text("description"),
     status: text("status").notNull().default("draft"),
+    documentStatus: text("document_status").notNull().default("active"),
+    sharingMode: text("sharing_mode").notNull().default("private"),
+    aiProcessingStatus: text("ai_processing_status"),
     storageKey: text("storage_key"),
     contentType: text("content_type"),
     size: integer("size"),
+    pageCount: integer("page_count"),
+    thumbnailDataUrl: text("thumbnail_data_url"),
     sentAt: integer("sent_at", { mode: "timestamp_ms" }),
     deadline: integer("deadline", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -285,6 +328,37 @@ export const documents = sqliteTable(
   (table) => [
     index("documents_organizationId_idx").on(table.organizationId),
     index("documents_publicId_idx").on(table.publicId),
+    index("documents_ownerId_idx").on(table.ownerId),
+    index("documents_folderId_idx").on(table.folderId),
+    index("documents_documentStatus_idx").on(table.documentStatus),
+  ]
+);
+
+export const documentAccess = sqliteTable(
+  "document_access",
+  {
+    id: text("id").primaryKey(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(),
+    permissionLevel: text("permission_level").notNull().default("view"),
+    grantedBy: text("granted_by").notNull(),
+    grantedAt: integer("granted_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedBy: text("updated_by"),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    revokedBy: text("revoked_by"),
+  },
+  (table) => [
+    index("documentAccess_documentId_idx").on(table.documentId),
+    index("documentAccess_userId_idx").on(table.userId),
+    index("documentAccess_document_user_idx").on(
+      table.documentId,
+      table.userId
+    ),
   ]
 );
 
