@@ -122,8 +122,10 @@ apps/web/convex/_generated/
 .claude/skills/openlogs-server-logs
 .agents/skills/openlogs-server-logs/
 apps/*/PORT
+apps/api/.wrangler/
 apps/landing/.wrangler/
 apps/web/.wrangler/
+apps/api/wrangler.toml
 
 # opencode tooling
 .opencode/
