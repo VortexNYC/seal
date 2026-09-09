@@ -19,3 +19,7 @@ declare module "react" {
     [key: `--${string}`]: string | number | undefined;
   }
 }
+
+interface ImportMetaEnv {
+  readonly VITE_API_URL: string;
+}
