@@ -3146,6 +3146,286 @@ app.openapi(signRouteDef, async (c) => {
   return c.json(signatureResponse(signature), 201);
 });
 
+const saveSignatureFieldBodySchema = z.object({
+  value: z.string().optional(),
+  signatureImageUrl: z.string().optional(),
+  signatureMethod: z.string().optional(),
+  userAgent: z.string().optional(),
+});
+
+const saveSignatureFieldRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/signature-fields/{fieldPublicId}/save",
+  request: {
+    params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: saveSignatureFieldBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SignatureSchema } },
+      description: "Signature saved",
+    },
+    400: { description: "Invalid save request" },
+    403: { description: "Forbidden" },
+    404: { description: "Document, field, or recipient not found" },
+  },
+});
+
+app.openapi(saveSignatureFieldRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userEmail = user!.user.email?.toLowerCase();
+  if (!userEmail) {
+    return c.json({ error: "User email not available" }, 400);
+  }
+  const { publicId, fieldPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.documentId, doc.id),
+        eq(recipients.email, userEmail)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, fieldPublicId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  if (field.recipientId && field.recipientId !== recipient.id) {
+    return c.json({ error: "Field is not assigned to you" }, 403);
+  }
+
+  const ipAddress =
+    c.req.header("cf-connecting-ip") ??
+    c.req.header("x-forwarded-for") ??
+    null;
+  const now = new Date();
+
+  const existing = await db
+    .select()
+    .from(signatures)
+    .where(
+      and(
+        eq(signatures.fieldId, field.id),
+        eq(signatures.recipientId, recipient.id)
+      )
+    )
+    .limit(1);
+
+  let signatureId: string;
+  if (existing[0]) {
+    signatureId = existing[0].id;
+    await db
+      .update(signatures)
+      .set({
+        value: input.value ?? existing[0].value,
+        signatureImageUrl:
+          input.signatureImageUrl ?? existing[0].signatureImageUrl,
+        signatureMethod: input.signatureMethod ?? existing[0].signatureMethod,
+        userAgent: input.userAgent ?? existing[0].userAgent,
+        ipAddress: ipAddress ?? existing[0].ipAddress,
+        updatedAt: now,
+      })
+      .where(eq(signatures.id, existing[0].id));
+  } else {
+    signatureId = crypto.randomUUID();
+    await db.insert(signatures).values({
+      id: signatureId,
+      fieldId: field.id,
+      recipientId: recipient.id,
+      documentId: doc.id,
+      signedAt: now,
+      ipAddress,
+      userAgent: input.userAgent ?? null,
+      value: input.value ?? null,
+      signatureImageUrl: input.signatureImageUrl ?? null,
+      signatureMethod: input.signatureMethod ?? null,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  const rows = await db
+    .select()
+    .from(signatures)
+    .where(eq(signatures.id, signatureId))
+    .limit(1);
+
+  const signature = rows[0];
+  if (!signature) {
+    return c.json({ error: "Failed to save signature" }, 500);
+  }
+
+  return c.json(signatureResponse(signature));
+});
+
+const submitSignatureBodySchema = z.object({
+  status: z.enum(["signed", "approved", "declined"]),
+  signatureData: z.string().optional(),
+  signatureType: z.string().optional(),
+  declineReason: z.string().optional(),
+});
+
+const submitSignatureRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/submit",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: { "application/json": { schema: submitSignatureBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Signature submitted",
+    },
+    400: { description: "Invalid submission" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(submitSignatureRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userEmail = user!.user.email?.toLowerCase();
+  if (!userEmail) {
+    return c.json({ error: "User email not available" }, 400);
+  }
+  const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.documentId, doc.id),
+        eq(recipients.email, userEmail)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  const now = new Date();
+  const updateData: {
+    status: string;
+    signedAt?: Date | null;
+    approvedAt?: Date | null;
+    declinedAt?: Date | null;
+    signatureData?: string | null;
+    signatureType?: string | null;
+    updatedAt: Date;
+  } = { status: input.status, updatedAt: now };
+
+  if (input.status === "signed") {
+    updateData.signedAt = now;
+    updateData.approvedAt = null;
+    updateData.declinedAt = null;
+    if (input.signatureData) updateData.signatureData = input.signatureData;
+    if (input.signatureType) updateData.signatureType = input.signatureType;
+  } else if (input.status === "approved") {
+    updateData.approvedAt = now;
+    updateData.signedAt = null;
+    updateData.declinedAt = null;
+    if (input.signatureData) updateData.signatureData = input.signatureData;
+    if (input.signatureType) updateData.signatureType = input.signatureType;
+  } else {
+    updateData.declinedAt = now;
+    updateData.signedAt = null;
+    updateData.approvedAt = null;
+  }
+
+  await db
+    .update(recipients)
+    .set(updateData)
+    .where(eq(recipients.id, recipient.id));
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: `recipient.${input.status}`,
+    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      recipientEmail: recipient.email,
+      declineReason: input.declineReason ?? null,
+    }),
+    createdAt: now,
+  });
+
+  return c.json({ success: true });
+});
+
 const listSignaturesRouteDef = createRoute({
   method: "get",
   path: "/{publicId}/signatures",
@@ -3307,7 +3587,12 @@ app.openapi(sendRouteDef, async (c) => {
 
   const db = createD1(c.env.D1);
   const docRows = await db
-    .select({ id: documents.id, ownerId: documents.ownerId, status: documents.status })
+    .select({
+      id: documents.id,
+      ownerId: documents.ownerId,
+      status: documents.status,
+      name: documents.name,
+    })
     .from(documents)
     .where(
       and(

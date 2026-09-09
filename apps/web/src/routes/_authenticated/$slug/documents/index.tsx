@@ -1314,7 +1314,7 @@ function useDocumentListActions({
     mutationFn: deleteDocumentApi,
   });
   const sendDocument = useMutation({
-    mutationFn: sendDocumentApi,
+    mutationFn: (publicId: string) => sendDocumentApi(publicId),
   });
   const cancelDocument = useMutation({
     mutationFn: cancelDocumentApi,

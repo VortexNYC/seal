@@ -1141,3 +1141,42 @@ export async function deleteSignatureField(
     { method: "DELETE" }
   );
 }
+
+export async function saveSignatureField(
+  publicId: string,
+  fieldPublicId: string,
+  input: {
+    value?: string;
+    signatureImageUrl?: string;
+    signatureMethod?: string;
+    userAgent?: string;
+  }
+): Promise<ApiSignature> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/save`,
+    signatureSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function submitSignature(
+  publicId: string,
+  input: {
+    status: "signed" | "approved" | "declined";
+    signatureData?: string;
+    signatureType?: string;
+    declineReason?: string;
+  }
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/submit`,
+    z.object({ success: z.boolean() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
