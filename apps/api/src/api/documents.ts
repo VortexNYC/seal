@@ -123,6 +123,55 @@ function generatePublicId() {
   return crypto.randomUUID();
 }
 
+function validateRedirectUrl(redirectUrl: string | null | undefined): void {
+  if (!redirectUrl) {
+    return;
+  }
+
+  try {
+    const parsed = new URL(redirectUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("Redirect URL must use http or https protocol");
+    }
+  } catch {
+    throw new Error("Redirect URL must be a valid URL");
+  }
+
+  if (redirectUrl.length > 2048) {
+    throw new Error("Redirect URL must be 2048 characters or less");
+  }
+}
+
+async function hasEditDocumentAccess(
+  db: ReturnType<typeof createD1>,
+  document: {
+    id: string;
+    ownerId: string;
+    organizationId: string;
+  },
+  userId: string
+): Promise<boolean> {
+  if (document.ownerId === userId) {
+    return true;
+  }
+
+  const rows = await db
+    .select({ permissionLevel: documentAccess.permissionLevel })
+    .from(documentAccess)
+    .where(
+      and(
+        eq(documentAccess.documentId, document.id),
+        eq(documentAccess.userId, userId)
+      )
+    )
+    .limit(1);
+
+  const access = rows[0];
+  return (
+    access?.permissionLevel === "edit" || access?.permissionLevel === "manage"
+  );
+}
+
 function r2Key(organizationId: string, publicId: string) {
   return `${organizationId}/documents/${publicId}`;
 }
@@ -798,6 +847,120 @@ app.openapi(getRouteDef, async (c) => {
   return c.json(documentResponse(doc));
 });
 
+const updateDocumentBodySchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  redirectUrl: z.string().nullable().optional(),
+  allowDictateNextSigner: z.boolean().optional(),
+});
+
+const updateRouteDef = createRoute({
+  method: "patch",
+  path: "/{publicId}",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateDocumentBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: DocumentSchema } },
+      description: "Document updated",
+    },
+    400: { description: "Invalid redirect URL or immutable document" },
+    403: { description: "Forbidden" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(updateRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = rows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.status === "completed") {
+    return c.json(
+      {
+        error:
+          "Completed documents cannot be modified. They are immutable for legal compliance.",
+      },
+      400
+    );
+  }
+
+  if (!(await hasEditDocumentAccess(db, doc, userId))) {
+    return c.json({ error: "You don't have permission to edit this document" }, 403);
+  }
+
+  try {
+    validateRedirectUrl(input.redirectUrl);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid redirect URL";
+    return c.json({ error: message }, 400);
+  }
+
+  const updateData: {
+    name?: string;
+    description?: string | null;
+    redirectUrl?: string | null;
+    allowDictateNextSigner?: boolean;
+    updatedAt?: Date;
+  } = { updatedAt: new Date() };
+
+  if (input.name !== undefined) {
+    updateData.name = input.name;
+  }
+  if (input.description !== undefined) {
+    updateData.description = input.description;
+  }
+  if (input.redirectUrl !== undefined) {
+    updateData.redirectUrl = input.redirectUrl;
+  }
+  if (input.allowDictateNextSigner !== undefined) {
+    updateData.allowDictateNextSigner = input.allowDictateNextSigner;
+  }
+
+  await db
+    .update(documents)
+    .set(updateData)
+    .where(eq(documents.id, doc.id));
+
+  const updated = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, doc.id))
+    .limit(1);
+
+  const updatedDoc = updated[0];
+  if (!updatedDoc) {
+    return c.json({ error: "Failed to update document" }, 500);
+  }
+
+  return c.json(documentResponse(updatedDoc));
+});
+
 const uploadBodySchema = z.object({
   contentBase64: z.string().min(1),
   contentType: z.string().optional(),
@@ -1223,6 +1386,69 @@ function signatureFieldResponse(field: {
   };
 }
 
+const SignatureFieldWithValuesSchema = SignatureFieldSchema.extend({
+  currentValue: z.string().nullable().optional(),
+  currentSignatureImageUrl: z.string().nullable().optional(),
+  isFilled: z.boolean(),
+  signatureDetails: z
+    .object({
+      signedAt: z.number(),
+      signerName: z.string().nullable().optional(),
+      signerEmail: z.string().nullable().optional(),
+      signatureMethod: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+}).openapi("SignatureFieldWithValues");
+
+function signatureFieldWithValuesResponse(
+  field: {
+    id: string;
+    publicId: string;
+    documentId: string;
+    recipientId: string | null;
+    templateFieldId: string | null;
+    fieldType: string;
+    label: string;
+    isRequired: boolean;
+    isMainSignature: boolean;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    page: number;
+    properties: string | null;
+    validationRules: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+  signature: {
+    value: string | null;
+    signatureImageUrl: string | null;
+    signatureMethod: string | null;
+    signedAt: Date;
+    signerName: string | null;
+    signerEmail: string | null;
+  } | null,
+  isFilled: boolean
+) {
+  const base = signatureFieldResponse(field);
+  return {
+    ...base,
+    currentValue: signature?.value,
+    currentSignatureImageUrl: signature?.signatureImageUrl,
+    isFilled,
+    signatureDetails: signature
+      ? {
+          signedAt: signature.signedAt.getTime(),
+          signerName: signature.signerName,
+          signerEmail: signature.signerEmail,
+          signatureMethod: signature.signatureMethod,
+        }
+      : undefined,
+  };
+}
+
 const listSignatureFieldsRouteDef = createRoute({
   method: "get",
   path: "/{publicId}/signature-fields",
@@ -1269,6 +1495,145 @@ app.openapi(listSignatureFieldsRouteDef, async (c) => {
     .orderBy(asc(signatureFields.page), asc(signatureFields.createdAt));
 
   return c.json(rows.map(signatureFieldResponse));
+});
+
+const getSignatureFieldsForMeRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/signature-fields/me",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(SignatureFieldWithValuesSchema) },
+      },
+      description: "Signature fields assigned to the current user",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(getSignatureFieldsForMeRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userEmail = user!.user.email?.toLowerCase();
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || !userEmail) {
+    return c.json([]);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(eq(recipients.documentId, doc.id), eq(recipients.email, userEmail))
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json([]);
+  }
+
+  const fields = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.recipientId, recipient.id))
+    .orderBy(asc(signatureFields.page), asc(signatureFields.createdAt));
+
+  const signaturePromises = fields.map((field) =>
+    db
+      .select({
+        value: signatures.value,
+        signatureImageUrl: signatures.signatureImageUrl,
+        signatureMethod: signatures.signatureMethod,
+        signedAt: signatures.signedAt,
+        signerName: recipients.name,
+        signerEmail: recipients.email,
+      })
+      .from(signatures)
+      .leftJoin(recipients, eq(recipients.id, signatures.recipientId))
+      .where(
+        and(
+          eq(signatures.fieldId, field.id),
+          eq(signatures.documentId, doc.id)
+        )
+      )
+      .limit(1)
+  );
+
+  const signaturesByField = new Map<
+    string,
+    {
+      value: string | null;
+      signatureImageUrl: string | null;
+      signatureMethod: string | null;
+      signedAt: Date;
+      signerName: string | null;
+      signerEmail: string | null;
+    }
+  >();
+
+  const signatureResults = await Promise.all(signaturePromises);
+  for (const [index, field] of fields.entries()) {
+    const result = signatureResults[index];
+    const signature = result?.[0];
+    if (signature) {
+      signaturesByField.set(field.id, {
+        value: signature.value,
+        signatureImageUrl: signature.signatureImageUrl,
+        signatureMethod: signature.signatureMethod,
+        signedAt: signature.signedAt,
+        signerName: signature.signerName,
+        signerEmail: signature.signerEmail,
+      });
+    }
+  }
+
+  const paymentFieldIds = fields
+    .filter((field) => field.fieldType === "payment")
+    .map((field) => field.id);
+
+  const paymentConfigs = paymentFieldIds.length
+    ? await db
+        .select({
+          fieldId: paymentFieldConfigs.fieldId,
+          paymentStatus: paymentFieldConfigs.paymentStatus,
+        })
+        .from(paymentFieldConfigs)
+        .where(inArray(paymentFieldConfigs.fieldId, paymentFieldIds))
+    : [];
+
+  const paidFieldIds = new Set(
+    paymentConfigs
+      .filter((config) => config.paymentStatus === "paid")
+      .map((config) => config.fieldId)
+  );
+
+  return c.json(
+    fields.map((field) => {
+      const signature = signaturesByField.get(field.id) ?? null;
+      const isFilled =
+        signature !== null ||
+        (field.fieldType === "payment" && paidFieldIds.has(field.id));
+      return signatureFieldWithValuesResponse(field, signature, isFilled);
+    })
+  );
 });
 
 const PaymentConfigSummarySchema = z

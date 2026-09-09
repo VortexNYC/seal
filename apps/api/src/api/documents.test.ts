@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { documents, folders, member, organization, paymentFieldConfigs, recipients, signatureFields, user } from "../global/schema.js";
+import { documents, folders, member, organization, paymentFieldConfigs, recipients, signatureFields, signatures, user } from "../global/schema.js";
 import type { SessionUser } from "../platform/session.js";
 import documentsRoute from "./documents.js";
 
@@ -793,5 +793,149 @@ describe("documents API", () => {
       .parse(await parseJson(response));
     expect(me?.email).toBe("test@example.com");
     expect(me?.role).toBe("signer");
+  });
+
+  it("updates document metadata", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Update Me",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(`http://localhost:8787/api/documents/${publicId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Updated Name",
+          description: "New description",
+          redirectUrl: "https://example.com/signed",
+          allowDictateNextSigner: true,
+        }),
+      }),
+      env
+    );
+    const result = z
+      .object({
+        name: z.string(),
+        description: z.string().nullable(),
+        redirectUrl: z.string().nullable(),
+        allowDictateNextSigner: z.boolean(),
+      })
+      .parse(await parseJson(response));
+    expect(result.name).toBe("Updated Name");
+    expect(result.description).toBe("New description");
+    expect(result.redirectUrl).toBe("https://example.com/signed");
+    expect(result.allowDictateNextSigner).toBe(true);
+  });
+
+  it("returns current-user signature fields with values", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "My Fields",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const recipientId = crypto.randomUUID();
+    await db.insert(recipients).values({
+      id: recipientId,
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      email: "test@example.com",
+      name: "Test User",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const fieldId = crypto.randomUUID();
+    await db.insert(signatureFields).values({
+      id: fieldId,
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      recipientId,
+      fieldType: "signature",
+      label: "Sign here",
+      isRequired: true,
+      isMainSignature: true,
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.4,
+      page: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(signatures).values({
+      id: crypto.randomUUID(),
+      fieldId,
+      documentId: docId,
+      recipientId,
+      signedAt: new Date(),
+      value: "John Hancock",
+      signatureImageUrl: "https://cdn.example.com/sig.png",
+      signatureMethod: "draw",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/signature-fields/me`
+      ),
+      env
+    );
+    const fields = z
+      .array(
+        z.object({
+          id: z.string(),
+          fieldType: z.string(),
+          isFilled: z.boolean(),
+          currentValue: z.string().nullable().optional(),
+          currentSignatureImageUrl: z.string().nullable().optional(),
+          signatureDetails: z
+            .object({
+              signedAt: z.number(),
+              signerEmail: z.string().nullable().optional(),
+              signatureMethod: z.string().nullable().optional(),
+            })
+            .nullable()
+            .optional(),
+        })
+      )
+      .parse(await parseJson(response));
+    expect(fields.length).toBe(1);
+    expect(fields[0]?.isFilled).toBe(true);
+    expect(fields[0]?.currentValue).toBe("John Hancock");
+    expect(fields[0]?.currentSignatureImageUrl).toBe(
+      "https://cdn.example.com/sig.png"
+    );
+    expect(fields[0]?.signatureDetails?.signatureMethod).toBe("draw");
   });
 });
