@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { eq } from "drizzle-orm";
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -226,5 +227,160 @@ describe("documents API", () => {
     const list = documentListSchema.parse(await parseJson(response));
     expect(list.length).toBe(1);
     expect(list[0]?.name).toBe("Owned Doc");
+  });
+
+  it("deletes a document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Delete Me",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}`,
+        { method: "DELETE" }
+      ),
+      env
+    );
+    const result = z.object({ success: z.boolean() }).parse(await parseJson(response));
+    expect(result.success).toBe(true);
+
+    const rows = await db
+      .select({ documentStatus: documents.documentStatus })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(rows[0]?.documentStatus).toBe("deleted");
+  });
+
+  it("sends a draft document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Send Me",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/send`,
+        { method: "POST" }
+      ),
+      env
+    );
+    const result = z.object({ success: z.boolean() }).parse(await parseJson(response));
+    expect(result.success).toBe(true);
+
+    const rows = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(rows[0]?.status).toBe("sent");
+  });
+
+  it("cancels a sent document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Cancel Me",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/cancel`,
+        { method: "POST" }
+      ),
+      env
+    );
+    const result = z.object({ success: z.boolean() }).parse(await parseJson(response));
+    expect(result.success).toBe(true);
+
+    const rows = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(rows[0]?.status).toBe("cancelled");
+  });
+
+  it("moves documents to a folder", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const folderId = crypto.randomUUID();
+    const folderPublicId = crypto.randomUUID();
+    await db.insert(folders).values({
+      id: folderId,
+      publicId: folderPublicId,
+      organizationId: "org_1",
+      name: "Target",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Move Me",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/documents/move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds: [publicId], folderId: folderPublicId }),
+      }),
+      env
+    );
+    const result = z.object({ moved: z.number() }).parse(await parseJson(response));
+    expect(result.moved).toBe(1);
+
+    const rows = await db
+      .select({ folderId: documents.folderId })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(rows[0]?.folderId).toBe(folderId);
   });
 });

@@ -1270,4 +1270,339 @@ app.openapi(listSignaturesRouteDef, async (c) => {
   );
 });
 
+async function requireDocumentOwner(
+  db: ReturnType<typeof createD1>,
+  publicId: string,
+  organizationId: string,
+  userId: string
+) {
+  const rows = await db
+    .select({ id: documents.id, ownerId: documents.ownerId })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = rows[0];
+  if (!doc) {
+    return { ok: false, status: 404, error: "Document not found" } as const;
+  }
+  if (doc.ownerId !== userId) {
+    return { ok: false, status: 403, error: "Forbidden" } as const;
+  }
+  return { ok: true, docId: doc.id } as const;
+}
+
+const deleteRouteDef = createRoute({
+  method: "delete",
+  path: "/{publicId}",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Document deleted",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(deleteRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  await db
+    .update(documents)
+    .set({ documentStatus: "deleted", updatedAt: new Date() })
+    .where(eq(documents.id, ownerCheck.docId));
+
+  return c.json({ success: true });
+});
+
+const sendRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/send",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Document sent",
+    },
+    400: { description: "Cannot send document" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(sendRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({ id: documents.id, ownerId: documents.ownerId, status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  if (doc.status !== "draft" && doc.status !== "expired") {
+    return c.json(
+      { error: `Cannot send document with status: ${doc.status}` },
+      400
+    );
+  }
+
+  const now = new Date();
+  await db
+    .update(documents)
+    .set({ status: "sent", sentAt: now, updatedAt: now })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({ success: true });
+});
+
+const cancelRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/cancel",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Document cancelled",
+    },
+    400: { description: "Cannot cancel document" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(cancelRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({ id: documents.id, ownerId: documents.ownerId, status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const terminalStatuses = ["completed", "cancelled", "declined", "expired"];
+  if (terminalStatuses.includes(doc.status)) {
+    return c.json(
+      { error: `Cannot cancel document with status: ${doc.status}` },
+      400
+    );
+  }
+
+  await db
+    .update(documents)
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({ success: true });
+});
+
+const moveDocumentsBodySchema = z.object({
+  documentIds: z.array(z.string()).min(1),
+  folderId: z.string().optional(),
+});
+
+const moveDocumentsRouteDef = createRoute({
+  method: "post",
+  path: "/move",
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: moveDocumentsBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ moved: z.number().int() }) },
+      },
+      description: "Documents moved",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Folder not found" },
+  },
+});
+
+app.openapi(moveDocumentsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { documentIds, folderId } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+
+  let targetFolderInternalId: string | null = null;
+  if (folderId) {
+    const folderRows = await db
+      .select({ id: folders.id })
+      .from(folders)
+      .where(
+        and(
+          eq(folders.publicId, folderId),
+          eq(folders.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const folder = folderRows[0];
+    if (!folder) {
+      return c.json({ error: "Folder not found" }, 404);
+    }
+    targetFolderInternalId = folder.id;
+  }
+
+  const matchedRows = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        inArray(documents.publicId, documentIds)
+      )
+    );
+
+  const matchedIds = matchedRows.map((row) => row.id);
+
+  if (matchedIds.length > 0) {
+    await db
+      .update(documents)
+      .set({ folderId: targetFolderInternalId, updatedAt: new Date() })
+      .where(inArray(documents.id, matchedIds));
+  }
+
+  return c.json({ moved: matchedIds.length });
+});
+
+const updateThumbnailBodySchema = z.object({
+  thumbnailDataUrl: z.string().min(1),
+});
+
+const updateThumbnailRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/thumbnail",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateThumbnailBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: DocumentSchema },
+      },
+      description: "Thumbnail updated",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(updateThumbnailRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const { thumbnailDataUrl } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  await db
+    .update(documents)
+    .set({ thumbnailDataUrl, updatedAt: new Date() })
+    .where(eq(documents.id, ownerCheck.docId));
+
+  const rows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, ownerCheck.docId))
+    .limit(1);
+
+  const updated = rows[0];
+  if (!updated) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  return c.json(documentResponse(updated));
+});
+
 export default app;
