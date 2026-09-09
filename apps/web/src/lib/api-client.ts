@@ -22,8 +22,20 @@ const teamSummarySchema = z.object({
   }),
 });
 
+const documentStatsSchema = z.object({
+  total: z.number().int(),
+  pending: z.number().int(),
+  sent: z.number().int(),
+  inProgress: z.number().int(),
+  completed: z.number().int(),
+  completionRate: z.number(),
+  createdThisMonth: z.number().int(),
+  completedThisMonth: z.number().int(),
+});
+
 export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
+export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
@@ -72,4 +84,8 @@ export async function getOrganizationTeam(
     `/api/organizations/${encodeURIComponent(slug)}/team`,
     teamSummarySchema
   );
+}
+
+export async function getDocumentStats(): Promise<ApiDocumentStats> {
+  return apiFetch("/api/documents/stats", documentStatsSchema);
 }

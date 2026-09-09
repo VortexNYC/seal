@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { count, eq, and, desc, asc } from "drizzle-orm";
+import { count, eq, and, desc, asc, gte, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { documents, recipients, signatures } from "../global/schema.js";
@@ -168,6 +168,77 @@ app.openapi(listRouteDef, async (c) => {
     .orderBy(desc(documents.createdAt));
 
   return c.json(rows.map(documentResponse));
+});
+
+const DocumentStatsSchema = z
+  .object({
+    total: z.number().int(),
+    pending: z.number().int(),
+    sent: z.number().int(),
+    inProgress: z.number().int(),
+    completed: z.number().int(),
+    completionRate: z.number(),
+    createdThisMonth: z.number().int(),
+    completedThisMonth: z.number().int(),
+  })
+  .openapi("DocumentStats");
+
+const statsRouteDef = createRoute({
+  method: "get",
+  path: "/stats",
+  responses: {
+    200: {
+      content: { "application/json": { schema: DocumentStatsSchema } },
+      description: "Document statistics for the active organization",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(statsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+
+  const db = createD1(c.env.D1);
+
+  const countDocuments = async (...conditions: SQL[]) => {
+    const result = await db
+      .select({ value: count() })
+      .from(documents)
+      .where(and(eq(documents.organizationId, organizationId), ...conditions));
+    return result[0]?.value ?? 0;
+  };
+
+  const total = await countDocuments();
+  const completed = await countDocuments(eq(documents.status, "completed"));
+  const sent = await countDocuments(eq(documents.status, "sent"));
+  const inProgress = await countDocuments(eq(documents.status, "in_progress"));
+
+  const now = new Date();
+  const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+
+  const createdThisMonth = await countDocuments(
+    gte(documents.createdAt, new Date(monthStart))
+  );
+
+  const completedThisMonth = await countDocuments(
+    eq(documents.status, "completed"),
+    gte(documents.updatedAt, new Date(monthStart))
+  );
+
+  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return c.json({
+    total,
+    pending: total - completed,
+    sent,
+    inProgress,
+    completed,
+    completionRate,
+    createdThisMonth,
+    completedThisMonth,
+  });
 });
 
 const getRouteDef = createRoute({
