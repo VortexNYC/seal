@@ -138,15 +138,23 @@ app.use("/*", async (c, next) => {
   return next();
 });
 
+const createDocumentBodySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  fileSize: z.number().int().optional(),
+  contentType: z.string().optional(),
+  pageCount: z.number().int().optional(),
+  thumbnailDataUrl: z.string().optional(),
+  folderId: z.string().optional(),
+});
+
 const createRouteDef = createRoute({
   method: "post",
   path: "/",
   request: {
     body: {
       content: {
-        "application/json": {
-          schema: z.object({ name: z.string().min(1) }),
-        },
+        "application/json": { schema: createDocumentBodySchema },
       },
     },
   },
@@ -157,13 +165,14 @@ const createRouteDef = createRoute({
     },
     401: { description: "Unauthorized" },
     403: { description: "No active organization" },
+    404: { description: "Folder not found" },
   },
 });
 
 app.openapi(createRouteDef, async (c) => {
   const user = c.get("user");
   const organizationId = user!.session!.activeOrganizationId!;
-  const { name } = c.req.valid("json");
+  const input = c.req.valid("json");
 
   const db = createD1(c.env.D1);
   const publicId = generatePublicId();
@@ -171,15 +180,40 @@ app.openapi(createRouteDef, async (c) => {
 
   const documentId = crypto.randomUUID();
 
+  let folderInternalId: string | null = null;
+  if (input.folderId) {
+    const folderRows = await db
+      .select({ id: folders.id })
+      .from(folders)
+      .where(
+        and(
+          eq(folders.publicId, input.folderId),
+          eq(folders.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const folder = folderRows[0];
+    if (!folder) {
+      return c.json({ error: "Folder not found" }, 404);
+    }
+    folderInternalId = folder.id;
+  }
+
   await db.insert(documents).values({
     id: documentId,
     publicId,
     organizationId,
     ownerId: user!.user.id,
-    name,
+    folderId: folderInternalId,
+    name: input.name,
+    description: input.description ?? null,
     status: "draft",
     documentStatus: "active",
     sharingMode: "private",
+    size: input.fileSize ?? null,
+    contentType: input.contentType ?? null,
+    pageCount: input.pageCount ?? null,
+    thumbnailDataUrl: input.thumbnailDataUrl ?? null,
     createdAt: now,
     updatedAt: now,
   });
@@ -189,7 +223,7 @@ app.openapi(createRouteDef, async (c) => {
     organizationId,
     action: "document.created",
     actorName: user!.user.name ?? user!.user.email ?? "Unknown",
-    targetName: name,
+    targetName: input.name,
     metadata: JSON.stringify({ documentId, publicId }),
     createdAt: now,
   });
