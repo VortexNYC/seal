@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // -----------------------------------------------------------------------------
 // Better Auth core tables
@@ -413,6 +413,108 @@ export const signatures = sqliteTable(
   (table) => [
     index("signatures_recipientId_idx").on(table.recipientId),
     index("signatures_documentId_idx").on(table.documentId),
+  ]
+);
+
+export const signatureFields = sqliteTable(
+  "signature_fields",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    recipientId: text("recipient_id").references(() => recipients.id, {
+      onDelete: "set null",
+    }),
+    templateFieldId: text("template_field_id"),
+    fieldType: text("field_type").notNull(),
+    label: text("label").notNull(),
+    isRequired: integer("is_required", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    isMainSignature: integer("is_main_signature", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    x: real("x").notNull(),
+    y: real("y").notNull(),
+    width: real("width").notNull(),
+    height: real("height").notNull(),
+    page: integer("page").notNull(),
+    properties: text("properties"),
+    validationRules: text("validation_rules"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("signatureFields_documentId_idx").on(table.documentId),
+    index("signatureFields_recipientId_idx").on(table.recipientId),
+    index("signatureFields_documentPage_idx").on(table.documentId, table.page),
+    index("signatureFields_documentRecipient_idx").on(
+      table.documentId,
+      table.recipientId
+    ),
+  ]
+);
+
+export const paymentFieldConfigs = sqliteTable(
+  "payment_field_configs",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    fieldId: text("field_id")
+      .notNull()
+      .references(() => signatureFields.id, { onDelete: "cascade" }),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    paymentType: text("payment_type").notNull(),
+    items: text("items").notNull(),
+    currency: text("currency").notNull(),
+    dueDateTerms: text("due_date_terms").notNull(),
+    customDueDays: integer("custom_due_days"),
+    customDueDate: text("custom_due_date"),
+    lateFees: text("late_fees"),
+    recurringConfig: text("recurring_config"),
+    installmentsConfig: text("installments_config"),
+    depositBalanceConfig: text("deposit_balance_config"),
+    allowedPaymentMethods: text("allowed_payment_methods").notNull(),
+    feeHandling: text("fee_handling").notNull(),
+    taxEnabled: integer("tax_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    taxBehavior: text("tax_behavior"),
+    totalAmountCents: integer("total_amount_cents").notNull(),
+    providerInvoiceId: text("provider_invoice_id"),
+    providerSubscriptionId: text("provider_subscription_id"),
+    providerPaymentIntentId: text("provider_payment_intent_id"),
+    hostedInvoiceUrl: text("hosted_invoice_url"),
+    vortexPayableId: text("vortex_payable_id"),
+    vortexDepositBalancePayableId: text("vortex_deposit_balance_payable_id"),
+    vortexInstallmentPayableId: text("vortex_installment_payable_id"),
+    vortexRecurringPayableId: text("vortex_recurring_payable_id"),
+    vortexPaymentRequestId: text("vortex_payment_request_id"),
+    paymentStatus: text("payment_status"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("paymentFieldConfigs_fieldId_idx").on(table.fieldId),
+    index("paymentFieldConfigs_documentId_idx").on(table.documentId),
+    index("paymentFieldConfigs_organizationId_idx").on(table.organizationId),
   ]
 );
 
