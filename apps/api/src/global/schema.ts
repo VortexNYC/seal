@@ -270,6 +270,8 @@ export const documents = sqliteTable(
     name: text("name").notNull(),
     status: text("status").notNull().default("draft"),
     storageKey: text("storage_key"),
+    contentType: text("content_type"),
+    size: integer("size"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
