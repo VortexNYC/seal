@@ -34,6 +34,7 @@ const folderSchema = z.object({
   publicId: z.string(),
   name: z.string(),
   type: z.string(),
+  parentId: z.string().nullable().optional(),
 });
 
 const folderListSchema = z.array(folderSchema);
@@ -156,5 +157,96 @@ describe("folders API", () => {
     expect(breadcrumbs[1]?.name).toBe("Parent");
     expect(breadcrumbs[2]?.name).toBe("Child");
     expect(breadcrumbs[0]?.id).toBe(grandparentPublicId);
+  });
+
+  it("creates a folder", async () => {
+    const app = createApp("org_1");
+
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "New Folder", type: "document" }),
+      }),
+      env
+    );
+    const folder = folderSchema.parse(await parseJson(response));
+    expect(folder.name).toBe("New Folder");
+    expect(folder.type).toBe("document");
+  });
+
+  it("creates a nested folder", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const parentPublicId = crypto.randomUUID();
+    await db.insert(folders).values({
+      id: crypto.randomUUID(),
+      publicId: parentPublicId,
+      organizationId: "org_1",
+      name: "Parent",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Child",
+          type: "document",
+          parentId: parentPublicId,
+        }),
+      }),
+      env
+    );
+    const folder = folderSchema.parse(await parseJson(response));
+    expect(folder.name).toBe("Child");
+    expect(folder.parentId).toBe(parentPublicId);
+  });
+
+  it("returns all folders flat with parent public ids", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const parentPublicId = crypto.randomUUID();
+    const parentId = crypto.randomUUID();
+    await db.insert(folders).values({
+      id: parentId,
+      publicId: parentPublicId,
+      organizationId: "org_1",
+      name: "Parent",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(folders).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      organizationId: "org_1",
+      parentId,
+      name: "Child",
+      type: "document",
+      visibility: "everyone",
+      createdBy: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/folders/all?type=document"),
+      env
+    );
+    const all = folderListSchema.parse(await parseJson(response));
+    expect(all.length).toBe(2);
+    const child = all.find((f) => f.name === "Child");
+    expect(child?.parentId).toBe(parentPublicId);
   });
 });
