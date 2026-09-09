@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { documents, folders, member, organization, user } from "../global/schema.js";
+import { documents, folders, member, organization, paymentFieldConfigs, signatureFields, user } from "../global/schema.js";
 import type { SessionUser } from "../platform/session.js";
 import documentsRoute from "./documents.js";
 
@@ -525,5 +525,148 @@ describe("documents API", () => {
     expect(sharing.sharedWith.length).toBe(1);
     expect(sharing.sharedWith[0]?.userId).toBe("user_2");
     expect(sharing.sharedWith[0]?.permissionLevel).toBe("view");
+  });
+
+  it("lists signature fields for a document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Field Doc",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const fieldId = crypto.randomUUID();
+    await db.insert(signatureFields).values({
+      id: fieldId,
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      fieldType: "signature",
+      label: "Sign here",
+      isRequired: true,
+      isMainSignature: true,
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.4,
+      page: 1,
+      properties: JSON.stringify({ placeholder: "tap to sign" }),
+      validationRules: JSON.stringify({ required: true }),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/signature-fields`
+      ),
+      env
+    );
+    const fields = z
+      .array(
+        z.object({
+          id: z.string(),
+          fieldType: z.string(),
+          label: z.string(),
+          page: z.number(),
+          properties: z
+            .object({ placeholder: z.string().optional() })
+            .nullable(),
+        })
+      )
+      .parse(await parseJson(response));
+    expect(fields.length).toBe(1);
+    expect(fields[0]?.fieldType).toBe("signature");
+    expect(fields[0]?.properties?.placeholder).toBe("tap to sign");
+  });
+
+  it("lists payment configs for a document", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Payment Doc",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const fieldId = crypto.randomUUID();
+    await db.insert(signatureFields).values({
+      id: fieldId,
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      fieldType: "payment",
+      label: "Pay here",
+      isRequired: true,
+      isMainSignature: false,
+      x: 0.5,
+      y: 0.6,
+      width: 0.2,
+      height: 0.1,
+      page: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(paymentFieldConfigs).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      fieldId,
+      documentId: docId,
+      organizationId: "org_1",
+      paymentType: "one_time",
+      items: JSON.stringify([
+        { id: "item-1", description: "Service", quantity: 1, unitPrice: 10000 },
+      ]),
+      currency: "usd",
+      dueDateTerms: "on_receipt",
+      allowedPaymentMethods: JSON.stringify(["card"]),
+      feeHandling: "absorb",
+      taxEnabled: false,
+      totalAmountCents: 10000,
+      paymentStatus: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/payment-configs`
+      ),
+      env
+    );
+    const configs = z
+      .array(
+        z.object({
+          fieldId: z.string(),
+          paymentType: z.string(),
+          totalAmountCents: z.number(),
+          currency: z.string(),
+          paymentStatus: z.string().nullable(),
+        })
+      )
+      .parse(await parseJson(response));
+    expect(configs.length).toBe(1);
+    expect(configs[0]?.totalAmountCents).toBe(10000);
+    expect(configs[0]?.paymentStatus).toBe("pending");
   });
 });

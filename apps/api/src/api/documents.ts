@@ -20,7 +20,9 @@ import {
   documents,
   folders,
   member,
+  paymentFieldConfigs,
   recipients,
+  signatureFields,
   signatures,
   user as userTable,
 } from "../global/schema.js";
@@ -1089,6 +1091,240 @@ app.openapi(listRecipientsRouteDef, async (c) => {
     .orderBy(asc(recipients.order), asc(recipients.createdAt));
 
   return c.json(rows.map(recipientResponse));
+});
+
+const FieldPropertiesSchema = z
+  .object({
+    placeholder: z.string().optional(),
+    defaultValue: z.string().optional(),
+    options: z.array(z.string()).optional(),
+    maxLength: z.number().optional(),
+    minLength: z.number().optional(),
+    pattern: z.string().optional(),
+    helpText: z.string().optional(),
+  })
+  .partial()
+  .passthrough()
+  .nullable();
+
+const FieldValidationRulesSchema = z
+  .object({
+    required: z.boolean().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    pattern: z.string().optional(),
+    customMessage: z.string().optional(),
+  })
+  .partial()
+  .passthrough()
+  .nullable();
+
+const SignatureFieldSchema = z
+  .object({
+    id: z.string(),
+    publicId: z.string(),
+    documentId: z.string(),
+    recipientId: z.string().nullable().optional(),
+    templateFieldId: z.string().nullable().optional(),
+    fieldType: z.string(),
+    label: z.string(),
+    isRequired: z.boolean(),
+    isMainSignature: z.boolean(),
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+    page: z.number().int(),
+    properties: FieldPropertiesSchema,
+    validationRules: FieldValidationRulesSchema,
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .openapi("SignatureField");
+
+function signatureFieldResponse(field: {
+  id: string;
+  publicId: string;
+  documentId: string;
+  recipientId: string | null;
+  templateFieldId: string | null;
+  fieldType: string;
+  label: string;
+  isRequired: boolean;
+  isMainSignature: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  page: number;
+  properties: string | null;
+  validationRules: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: field.id,
+    publicId: field.publicId,
+    documentId: field.documentId,
+    recipientId: field.recipientId,
+    templateFieldId: field.templateFieldId,
+    fieldType: field.fieldType,
+    label: field.label,
+    isRequired: field.isRequired,
+    isMainSignature: field.isMainSignature,
+    x: field.x,
+    y: field.y,
+    width: field.width,
+    height: field.height,
+    page: field.page,
+    properties: field.properties
+      ? FieldPropertiesSchema.parse(JSON.parse(field.properties))
+      : null,
+    validationRules: field.validationRules
+      ? FieldValidationRulesSchema.parse(JSON.parse(field.validationRules))
+      : null,
+    createdAt: field.createdAt.getTime(),
+    updatedAt: field.updatedAt.getTime(),
+  };
+}
+
+const listSignatureFieldsRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/signature-fields",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(SignatureFieldSchema) },
+      },
+      description: "Signature fields for the document",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(listSignatureFieldsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const rows = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, doc.id))
+    .orderBy(asc(signatureFields.page), asc(signatureFields.createdAt));
+
+  return c.json(rows.map(signatureFieldResponse));
+});
+
+const PaymentConfigSummarySchema = z
+  .object({
+    id: z.string(),
+    publicId: z.string(),
+    fieldId: z.string(),
+    documentId: z.string(),
+    paymentType: z.string(),
+    totalAmountCents: z.number().int(),
+    currency: z.string(),
+    paymentStatus: z.string().nullable().optional(),
+  })
+  .openapi("PaymentConfigSummary");
+
+function paymentConfigSummaryResponse(config: {
+  id: string;
+  publicId: string;
+  fieldId: string;
+  documentId: string;
+  paymentType: string;
+  totalAmountCents: number;
+  currency: string;
+  paymentStatus: string | null;
+}) {
+  return {
+    id: config.id,
+    publicId: config.publicId,
+    fieldId: config.fieldId,
+    documentId: config.documentId,
+    paymentType: config.paymentType,
+    totalAmountCents: config.totalAmountCents,
+    currency: config.currency,
+    paymentStatus: config.paymentStatus,
+  };
+}
+
+const listPaymentConfigsRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/payment-configs",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(PaymentConfigSummarySchema) },
+      },
+      description: "Payment configs for the document",
+    },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(listPaymentConfigsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const rows = await db
+    .select({
+      id: paymentFieldConfigs.id,
+      publicId: paymentFieldConfigs.publicId,
+      fieldId: paymentFieldConfigs.fieldId,
+      documentId: paymentFieldConfigs.documentId,
+      paymentType: paymentFieldConfigs.paymentType,
+      totalAmountCents: paymentFieldConfigs.totalAmountCents,
+      currency: paymentFieldConfigs.currency,
+      paymentStatus: paymentFieldConfigs.paymentStatus,
+    })
+    .from(paymentFieldConfigs)
+    .where(eq(paymentFieldConfigs.documentId, doc.id));
+
+  return c.json(rows.map(paymentConfigSummaryResponse));
 });
 
 const SignatureSchema = z
