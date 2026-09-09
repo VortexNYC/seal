@@ -8,17 +8,16 @@
 
 ## OVERVIEW
 
-Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
+Vortex Sign is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
 
 ## STRUCTURE
 
 ```text
-seal/
-├── apps/               # web, landing, backend, mcp-server
+vortex-sign/
+├── apps/               # web, landing, backend, mcp-worker
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
-├── docs/               # planning, architecture, design notes (mostly archival)
-└── .mcp.json           # MCP server config
+└── docs/               # planning, architecture, design notes (mostly archival)
 ```
 
 ## WHERE TO LOOK
@@ -35,7 +34,7 @@ seal/
 | Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
 | Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
 | API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |
-| MCP tools/resources    | `apps/mcp-server/src/tools/`, `apps/mcp-server/src/resources/` | MCP server surface                              |
+| MCP tools/resources    | `apps/mcp-worker/src/tools/`, `apps/mcp-worker/src/resources/` | MCP worker surface                              |
 | Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
 | React SDK              | `packages/react-sdk/src/`                                      | Embeddable signing components                   |
 | Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
@@ -46,7 +45,7 @@ seal/
 - `apps/web/AGENTS.md`
 - `apps/landing/AGENTS.md`
 - `apps/backend/convex/AGENTS.md`
-- `apps/mcp-server/AGENTS.md`
+- `apps/mcp-worker/AGENTS.md`
 - `packages/transactional/AGENTS.md`
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
