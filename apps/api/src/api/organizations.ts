@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { invitation, member, organization } from "../global/schema.js";
+import { invitation, member, organization, user as userTable } from "../global/schema.js";
 
 const OrganizationSchema = z
   .object({
@@ -193,6 +193,53 @@ app.openapi(teamRouteDef, async (c) => {
     pending,
     byRole,
   });
+});
+
+const TeamMemberSchema = z.object({
+  userId: z.string(),
+  name: z.string().nullable(),
+  email: z.string(),
+  role: z.string(),
+});
+
+const membersRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/members",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: z.array(TeamMemberSchema) } },
+      description: "Organization members",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(membersRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const db = createD1(c.env.D1);
+
+  const rows = await db
+    .select({
+      userId: member.userId,
+      name: userTable.name,
+      email: userTable.email,
+      role: member.role,
+    })
+    .from(member)
+    .innerJoin(userTable, eq(member.userId, userTable.id))
+    .where(eq(member.organizationId, org.id))
+    .orderBy(userTable.name);
+
+  return c.json(rows);
 });
 
 declare module "hono" {

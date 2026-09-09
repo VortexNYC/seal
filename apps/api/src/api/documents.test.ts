@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { documents, folders, organization } from "../global/schema.js";
+import { documents, folders, member, organization, user } from "../global/schema.js";
 import type { SessionUser } from "../platform/session.js";
 import documentsRoute from "./documents.js";
 
@@ -46,6 +46,8 @@ describe("documents API", () => {
     const db = createD1(env.D1);
     await db.delete(documents);
     await db.delete(folders);
+    await db.delete(member);
+    await db.delete(user);
     await db.delete(organization);
 
     await db.insert(organization).values({
@@ -57,6 +59,21 @@ describe("documents API", () => {
       id: "org_2",
       name: "Other Org",
       slug: "other-org",
+    });
+    await db.insert(user).values({
+      id: "user_1",
+      name: "Test User",
+      email: "test@example.com",
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_1",
+      userId: "user_1",
+      role: "owner",
+      createdAt: new Date(),
     });
   });
 
@@ -382,5 +399,60 @@ describe("documents API", () => {
       .from(documents)
       .where(eq(documents.publicId, publicId));
     expect(rows[0]?.folderId).toBe(folderId);
+  });
+
+  it("transfers document ownership", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    await db.insert(user).values({
+      id: "user_2",
+      name: "New Owner",
+      email: "new@example.com",
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_1",
+      userId: "user_2",
+      role: "member",
+      createdAt: new Date(),
+    });
+
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Transfer Me",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/transfer`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ newOwnerId: "user_2" }),
+        }
+      ),
+      env
+    );
+    const result = documentSchema.parse(await parseJson(response));
+    expect(result.ownerId).toBe("user_2");
+
+    const rows = await db
+      .select({ ownerId: documents.ownerId })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(rows[0]?.ownerId).toBe("user_2");
   });
 });

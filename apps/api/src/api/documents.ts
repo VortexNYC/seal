@@ -19,6 +19,7 @@ import {
   documentAccess,
   documents,
   folders,
+  member,
   recipients,
   signatures,
 } from "../global/schema.js";
@@ -1589,6 +1590,87 @@ app.openapi(updateThumbnailRouteDef, async (c) => {
   await db
     .update(documents)
     .set({ thumbnailDataUrl, updatedAt: new Date() })
+    .where(eq(documents.id, ownerCheck.docId));
+
+  const rows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, ownerCheck.docId))
+    .limit(1);
+
+  const updated = rows[0];
+  if (!updated) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  return c.json(documentResponse(updated));
+});
+
+const transferOwnershipBodySchema = z.object({
+  newOwnerId: z.string(),
+});
+
+const transferOwnershipRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/transfer",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: transferOwnershipBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: DocumentSchema } },
+      description: "Ownership transferred",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+    422: { description: "New owner is not an organization member" },
+  },
+});
+
+app.openapi(transferOwnershipRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const { newOwnerId } = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const ownerCheck = await requireDocumentOwner(
+    db,
+    publicId,
+    organizationId,
+    userId
+  );
+  if (!ownerCheck.ok) {
+    return c.json({ error: ownerCheck.error }, ownerCheck.status);
+  }
+
+  const membership = await db
+    .select()
+    .from(member)
+    .where(
+      and(
+        eq(member.organizationId, organizationId),
+        eq(member.userId, newOwnerId)
+      )
+    )
+    .limit(1);
+  if (!membership[0]) {
+    return c.json(
+      { error: "New owner is not an organization member" },
+      422
+    );
+  }
+
+  await db
+    .update(documents)
+    .set({ ownerId: newOwnerId, updatedAt: new Date() })
     .where(eq(documents.id, ownerCheck.docId));
 
   const rows = await db
