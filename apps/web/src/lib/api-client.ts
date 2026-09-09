@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  toWorkflowStatus,
+  type DocumentWorkflowStatus,
+} from "@/lib/document-status";
+
 const organizationSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -43,6 +48,16 @@ const documentStatsSchema = z.object({
   completedThisMonth: z.number().int(),
 });
 
+const recentDocumentSchema = z.object({
+  _id: z.string(),
+  name: z.string(),
+  updatedAt: z.number(),
+  signedCount: z.number().int(),
+  recipientCount: z.number().int(),
+  status: z.string(),
+  thumbnailDataUrl: z.string().nullable().optional(),
+});
+
 const activitySchema = z.object({
   id: z.string(),
   organizationId: z.string(),
@@ -57,6 +72,15 @@ export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
+export type ApiRecentDocument = {
+  _id: string;
+  name: string;
+  updatedAt: number;
+  signedCount: number;
+  recipientCount: number;
+  workflowStatus: DocumentWorkflowStatus;
+  thumbnailDataUrl: string | null | undefined;
+};
 export type ApiActivity = z.infer<typeof activitySchema>;
 
 function getBaseUrl(): string {
@@ -126,4 +150,23 @@ export async function getRecentActivity(limit = 10): Promise<ApiActivity[]> {
     `/api/activity?limit=${encodeURIComponent(limit)}`,
     z.array(activitySchema)
   );
+}
+
+export async function getRecentDocuments(
+  limit = 5
+): Promise<ApiRecentDocument[]> {
+  const rows = await apiFetch(
+    `/api/documents/recent?limit=${encodeURIComponent(limit)}`,
+    z.array(recentDocumentSchema)
+  );
+
+  return rows.map((row) => ({
+    _id: row._id,
+    name: row.name,
+    updatedAt: row.updatedAt,
+    signedCount: row.signedCount,
+    recipientCount: row.recipientCount,
+    workflowStatus: toWorkflowStatus(row.status),
+    thumbnailDataUrl: row.thumbnailDataUrl,
+  }));
 }

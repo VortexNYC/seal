@@ -5,8 +5,6 @@
  * and relative timestamps. Uses proper Link elements for accessibility.
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowRightIcon, FileTextIcon } from "lucide-react";
@@ -20,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getRecentDocuments } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 
 interface RecentDocumentsProps {
@@ -31,9 +30,10 @@ export function RecentDocuments({
 }: RecentDocumentsProps): React.ReactElement {
   const router = useRouter();
 
-  const { data: recentDocs } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getRecentDocuments, { limit: 5 })
-  );
+  const { data: recentDocs } = useSuspenseQuery({
+    queryKey: ["api", "documents", "recent"],
+    queryFn: () => getRecentDocuments(5),
+  });
 
   return (
     <Card

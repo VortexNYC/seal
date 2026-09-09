@@ -1,16 +1,9 @@
+import type { DocumentWorkflowStatus } from "@/lib/document-status";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";
 
-export type DocumentWorkflowStatus =
-  | "draft"
-  | "sent"
-  | "in_progress"
-  | "waiting_for_payment"
-  | "completed"
-  | "cancelled"
-  | "declined"
-  | "expired";
+export type { DocumentWorkflowStatus };
 
 interface WorkflowStatusBadgeProps {
   status: DocumentWorkflowStatus | undefined;

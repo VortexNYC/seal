@@ -1,5 +1,15 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { count, eq, and, desc, asc, gte, lt, type SQL } from "drizzle-orm";
+import {
+  count,
+  eq,
+  and,
+  desc,
+  asc,
+  gte,
+  lt,
+  inArray,
+  type SQL,
+} from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -353,6 +363,89 @@ app.openapi(trendsRouteDef, async (c) => {
     created: createdRows[index]?.[0]?.value ?? 0,
     completed: completedRows[index]?.[0]?.value ?? 0,
   }));
+
+  return c.json(results);
+});
+
+const RecentDocumentSchema = z
+  .object({
+    _id: z.string(),
+    name: z.string(),
+    updatedAt: z.number(),
+    signedCount: z.number().int(),
+    recipientCount: z.number().int(),
+    status: z.string(),
+    thumbnailDataUrl: z.string().nullable().optional(),
+  })
+  .openapi("RecentDocument");
+
+const recentRouteDef = createRoute({
+  method: "get",
+  path: "/recent",
+  request: {
+    query: z.object({
+      limit: z.coerce.number().int().min(1).max(50).default(5),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(RecentDocumentSchema) },
+      },
+      description: "Recent documents for the active organization",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(recentRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { limit } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+  const docs = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.organizationId, organizationId))
+    .orderBy(desc(documents.createdAt))
+    .limit(limit);
+
+  const docIds = docs.map((doc) => doc.id);
+  const recipientRows =
+    docIds.length > 0
+      ? await db
+          .select()
+          .from(recipients)
+          .where(inArray(recipients.documentId, docIds))
+      : [];
+
+  const recipientCounts = new Map<string, { total: number; signed: number }>();
+  for (const recipient of recipientRows) {
+    const existing = recipientCounts.get(recipient.documentId) ?? {
+      total: 0,
+      signed: 0,
+    };
+    existing.total += 1;
+    if (recipient.status === "signed") {
+      existing.signed += 1;
+    }
+    recipientCounts.set(recipient.documentId, existing);
+  }
+
+  const results = docs.map((doc) => {
+    const counts = recipientCounts.get(doc.id) ?? { total: 0, signed: 0 };
+    return {
+      _id: doc.publicId,
+      name: doc.name,
+      updatedAt: doc.updatedAt.getTime(),
+      signedCount: counts.signed,
+      recipientCount: counts.total,
+      status: doc.status,
+      thumbnailDataUrl: null,
+    };
+  });
 
   return c.json(results);
 });
