@@ -23,7 +23,6 @@ allowBuilds:
   core-js: true
   core-js-pure: true
   esbuild: true
-  lefthook: true
   onnxruntime-node: true
   protobufjs: true
   sharp: true
@@ -35,7 +34,6 @@ onlyBuiltDependencies:
   - core-js
   - core-js-pure
   - esbuild
-  - lefthook
   - onnxruntime-node
   - protobufjs
   - sharp
