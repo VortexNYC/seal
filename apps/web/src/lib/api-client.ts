@@ -283,6 +283,21 @@ export async function getAnalyticsStats(
   );
 }
 
+export async function getAnalyticsTrends(
+  input: { days: number; scope: "personal" | "team" } | { startDate: number; endDate: number; scope: "personal" | "team" }
+): Promise<ApiDocumentTrend[]> {
+  if ("days" in input) {
+    return apiFetch(
+      `/api/analytics/trends?days=${encodeURIComponent(input.days)}&scope=${encodeURIComponent(input.scope)}`,
+      z.array(documentTrendSchema)
+    );
+  }
+  return apiFetch(
+    `/api/analytics/trends?startDate=${encodeURIComponent(input.startDate)}&endDate=${encodeURIComponent(input.endDate)}&scope=${encodeURIComponent(input.scope)}`,
+    z.array(documentTrendSchema)
+  );
+}
+
 export async function getDocumentTrends(
   days = 30
 ): Promise<ApiDocumentTrend[]> {

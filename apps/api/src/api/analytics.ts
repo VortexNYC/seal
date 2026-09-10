@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, count, eq, type SQL } from "drizzle-orm";
+import { and, count, eq, gte, lt, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { documents, member } from "../global/schema.js";
@@ -143,6 +143,143 @@ app.openapi(statsRouteDef, async (c) => {
     avgSigningTimeMs,
     isAdmin,
   });
+});
+
+const analyticsTrendsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).optional(),
+  startDate: z.coerce.number().int().optional(),
+  endDate: z.coerce.number().int().optional(),
+  scope: z
+    .union([z.literal("personal"), z.literal("team")])
+    .optional()
+    .default("team"),
+});
+
+const analyticsTrendSchema = z
+  .object({
+    date: z.string(),
+    created: z.number().int(),
+    completed: z.number().int(),
+  })
+  .openapi("AnalyticsTrend");
+
+const trendsRouteDef = createRoute({
+  method: "get",
+  path: "/trends",
+  request: {
+    query: analyticsTrendsQuerySchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(analyticsTrendSchema) },
+      },
+      description: "Daily document creation and completion trends",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(trendsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { days, startDate, endDate, scope: requestedScope } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+
+  const membership = await db
+    .select()
+    .from(member)
+    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .limit(1);
+
+  const role = membership[0]?.role ?? "member";
+  const isAdmin = role === "owner" || role === "admin";
+  const scope = isAdmin ? requestedScope : "personal";
+
+  const now = new Date();
+  let startMs: number;
+  let endMs: number;
+  if (startDate !== undefined && endDate !== undefined) {
+    startMs = startDate;
+    endMs = endDate;
+  } else {
+    const dayCount = days ?? 30;
+    startMs = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - (dayCount - 1)
+    );
+    endMs = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
+  }
+
+  const startDay = new Date(startMs);
+  const endDay = new Date(endMs);
+
+  const dayRanges: { day: Date; nextDay: Date }[] = [];
+  const current = new Date(
+    Date.UTC(
+      startDay.getUTCFullYear(),
+      startDay.getUTCMonth(),
+      startDay.getUTCDate()
+    )
+  );
+  while (current.getTime() <= endDay.getTime()) {
+    const next = new Date(
+      Date.UTC(
+        current.getUTCFullYear(),
+        current.getUTCMonth(),
+        current.getUTCDate() + 1
+      )
+    );
+    dayRanges.push({ day: new Date(current), nextDay: next });
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  const countForDay = async (day: Date, nextDay: Date, status: string | null) => {
+    const conditions: SQL[] = [
+      eq(documents.organizationId, organizationId),
+      eq(documents.documentStatus, "active"),
+      gte(status ? documents.updatedAt : documents.createdAt, day),
+      lt(status ? documents.updatedAt : documents.createdAt, nextDay),
+    ];
+    if (status) {
+      conditions.push(eq(documents.status, status));
+    }
+    if (scope === "personal") {
+      conditions.push(eq(documents.ownerId, userId));
+    }
+
+    const result = await db
+      .select({ value: count() })
+      .from(documents)
+      .where(and(...conditions));
+    return result[0]?.value ?? 0;
+  };
+
+  const createdPromises = dayRanges.map(({ day, nextDay }) =>
+    countForDay(day, nextDay, null)
+  );
+  const completedPromises = dayRanges.map(({ day, nextDay }) =>
+    countForDay(day, nextDay, "completed")
+  );
+
+  const createdRows = await Promise.all(createdPromises);
+  const completedRows = await Promise.all(completedPromises);
+
+  const results = dayRanges.map(({ day }, index) => ({
+    date: day.toISOString().slice(0, 10),
+    created: createdRows[index] ?? 0,
+    completed: completedRows[index] ?? 0,
+  }));
+
+  return c.json(results);
 });
 
 export default app;

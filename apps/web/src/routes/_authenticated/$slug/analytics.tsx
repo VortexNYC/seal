@@ -77,7 +77,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { getAnalyticsStats } from "@/lib/api-client";
+import { getAnalyticsStats, getAnalyticsTrends } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -484,9 +484,10 @@ function TrendChart({
     return { days: Number(preset), scope };
   }, [preset, customRange, scope]);
 
-  const { data: trends } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentTrends, queryArgs)
-  );
+  const { data: trends } = useSuspenseQuery({
+    queryKey: ["analytics", "trends", queryArgs],
+    queryFn: () => getAnalyticsTrends(queryArgs),
+  });
 
   const chartData = useMemo(() => {
     return trends.map((item) => ({
