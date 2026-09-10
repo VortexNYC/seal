@@ -58,7 +58,6 @@ import type * as crons from "../crons.js";
 import type * as crypto_encryption from "../crypto/encryption.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
 import type * as documents_ai_document_state from "../documents/ai_document_state.js";
-import type * as documents_certificate_of_completion from "../documents/certificate_of_completion.js";
 import type * as documents_document_reads from "../documents/document_reads.js";
 import type * as documents_download_tokens from "../documents/download_tokens.js";
 import type * as documents_expiration from "../documents/expiration.js";
@@ -217,7 +216,6 @@ declare const fullApi: ApiFromModules<{
   "crypto/encryption": typeof crypto_encryption;
   "crypto/helpers": typeof crypto_helpers;
   "documents/ai_document_state": typeof documents_ai_document_state;
-  "documents/certificate_of_completion": typeof documents_certificate_of_completion;
   "documents/document_reads": typeof documents_document_reads;
   "documents/download_tokens": typeof documents_download_tokens;
   "documents/expiration": typeof documents_expiration;
