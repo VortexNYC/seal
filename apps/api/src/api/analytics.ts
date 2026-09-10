@@ -282,4 +282,109 @@ app.openapi(trendsRouteDef, async (c) => {
   return c.json(results);
 });
 
+const analyticsPeriodStatsQuerySchema = z.object({
+  period: z.union([
+    z.literal("today"),
+    z.literal("week"),
+    z.literal("month"),
+    z.literal("year"),
+  ]),
+  scope: z
+    .union([z.literal("personal"), z.literal("team")])
+    .optional()
+    .default("team"),
+});
+
+const analyticsPeriodStatsResponseSchema = z
+  .object({
+    created: z.number().int(),
+    completed: z.number().int(),
+    period: z.string(),
+  })
+  .openapi("AnalyticsPeriodStats");
+
+const periodStatsRouteDef = createRoute({
+  method: "get",
+  path: "/period-stats",
+  request: {
+    query: analyticsPeriodStatsQuerySchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: analyticsPeriodStatsResponseSchema },
+      },
+      description: "Document counts for a period",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(periodStatsRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { period, scope: requestedScope } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+
+  const membership = await db
+    .select()
+    .from(member)
+    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .limit(1);
+
+  const role = membership[0]?.role ?? "member";
+  const isAdmin = role === "owner" || role === "admin";
+  const scope = isAdmin ? requestedScope : "personal";
+
+  const now = Date.now();
+  let startMs: number;
+  switch (period) {
+    case "today":
+      startMs = new Date().setHours(0, 0, 0, 0);
+      break;
+    case "week":
+      startMs = now - 7 * 24 * 60 * 60 * 1000;
+      break;
+    case "month":
+      startMs = now - 30 * 24 * 60 * 60 * 1000;
+      break;
+    case "year":
+      startMs = now - 365 * 24 * 60 * 60 * 1000;
+      break;
+  }
+
+  const baseConditions: SQL[] = [
+    eq(documents.organizationId, organizationId),
+    eq(documents.documentStatus, "active"),
+  ];
+  if (scope === "personal") {
+    baseConditions.push(eq(documents.ownerId, userId));
+  }
+
+  const createdResult = await db
+    .select({ value: count() })
+    .from(documents)
+    .where(and(...baseConditions, gte(documents.createdAt, new Date(startMs))));
+
+  const completedResult = await db
+    .select({ value: count() })
+    .from(documents)
+    .where(
+      and(
+        ...baseConditions,
+        eq(documents.status, "completed"),
+        gte(documents.updatedAt, new Date(startMs))
+      )
+    );
+
+  return c.json({
+    created: createdResult[0]?.value ?? 0,
+    completed: completedResult[0]?.value ?? 0,
+    period,
+  });
+});
+
 export default app;

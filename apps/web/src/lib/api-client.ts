@@ -284,7 +284,9 @@ export async function getAnalyticsStats(
 }
 
 export async function getAnalyticsTrends(
-  input: { days: number; scope: "personal" | "team" } | { startDate: number; endDate: number; scope: "personal" | "team" }
+  input:
+    | { days: number; scope: "personal" | "team" }
+    | { startDate: number; endDate: number; scope: "personal" | "team" }
 ): Promise<ApiDocumentTrend[]> {
   if ("days" in input) {
     return apiFetch(
@@ -295,6 +297,24 @@ export async function getAnalyticsTrends(
   return apiFetch(
     `/api/analytics/trends?startDate=${encodeURIComponent(input.startDate)}&endDate=${encodeURIComponent(input.endDate)}&scope=${encodeURIComponent(input.scope)}`,
     z.array(documentTrendSchema)
+  );
+}
+
+const analyticsPeriodStatsSchema = z.object({
+  created: z.number().int(),
+  completed: z.number().int(),
+  period: z.string(),
+});
+
+export type ApiAnalyticsPeriodStats = z.infer<typeof analyticsPeriodStatsSchema>;
+
+export async function getAnalyticsPeriodStats(
+  period: "today" | "week" | "month" | "year",
+  scope: "personal" | "team"
+): Promise<ApiAnalyticsPeriodStats> {
+  return apiFetch(
+    `/api/analytics/period-stats?period=${encodeURIComponent(period)}&scope=${encodeURIComponent(scope)}`,
+    analyticsPeriodStatsSchema
   );
 }
 

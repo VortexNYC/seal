@@ -78,6 +78,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
+  getAnalyticsPeriodStats,
   getAnalyticsStats,
   getAnalyticsTrends,
   getRecentActivity,
@@ -303,13 +304,13 @@ function OverviewStats({
   };
   scope: AnalyticsScope;
 }) {
-  const weekStats = useConvexQuery(api.dashboard.queries.getPeriodStats, {
-    period: "week",
-    scope,
+  const { data: weekStats } = useQuery({
+    queryKey: ["analytics", "period", "week", scope],
+    queryFn: () => getAnalyticsPeriodStats("week", scope),
   });
-  const monthStats = useConvexQuery(api.dashboard.queries.getPeriodStats, {
-    period: "month",
-    scope,
+  const { data: monthStats } = useQuery({
+    queryKey: ["analytics", "period", "month", scope],
+    queryFn: () => getAnalyticsPeriodStats("month", scope),
   });
 
   return (
