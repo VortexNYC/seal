@@ -3,6 +3,7 @@
  * document access/sharing mode, bulk send, and bulk void.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
 import {
   type ApiDocumentAccess,
   type BulkOperationSummary,
@@ -14,8 +15,7 @@ import {
   getDocumentAccessSchema,
   type UpdateDocumentAccessInput,
   updateDocumentAccessSchema,
-} from "@seal/backend/convex/validations/api";
-
+} from "../api-contracts";
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 

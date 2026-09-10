@@ -2,14 +2,14 @@
  * @fileoverview Team member tools for the Seal MCP server.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
 import {
   type ApiMember,
   type GetMemberInput,
   getMemberSchema,
   type ListMembersInput,
   listMembersSchema,
-} from "@seal/backend/convex/validations/api";
-
+} from "../api-contracts";
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 

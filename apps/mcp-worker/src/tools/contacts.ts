@@ -2,6 +2,7 @@
  * @fileoverview Contact directory tools for the Seal MCP server.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
 import {
   type ApiContact,
   type CreateContactInput,
@@ -12,8 +13,7 @@ import {
   getContactSchema,
   type ListContactsInput,
   listContactsSchema,
-} from "@seal/backend/convex/validations/api";
-
+} from "../api-contracts";
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 

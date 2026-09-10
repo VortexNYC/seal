@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@seal/backend": "workspace:*",
     "agents": "^0.13.3",
     "zod": "^4.3.6"
   },
