@@ -5,7 +5,7 @@
  * Route: /{slug}/settings/profile/notifications
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Card,
@@ -22,12 +22,15 @@ import {
   Separator,
   Switch,
 } from "@vortexnyc/ui";
-import { useMutation, useQuery } from "convex/react";
 import { Bell, Clock, Mail, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
+import {
+  getUserNotificationPreferences,
+  updateUserNotificationPreferences,
+} from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 
 export const Route = createFileRoute(
@@ -60,10 +63,13 @@ const DEFAULT_EMAIL_PREFERENCES: EmailPreferences = {
 };
 
 function NotificationSettings() {
-  const userProfile = useQuery(api.user_profiles.queries.getCurrentUserProfile);
-  const updateNotificationPreferences = useMutation(
-    api.user_profiles.mutations.updateNotificationPreferences
-  );
+  const { data: userProfile } = useQuery({
+    queryKey: ["api", "users", "me", "notification-preferences"],
+    queryFn: getUserNotificationPreferences,
+  });
+  const updateNotificationPreferences = useMutation({
+    mutationFn: updateUserNotificationPreferences,
+  });
 
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -79,26 +85,13 @@ function NotificationSettings() {
 
   // Initialize from profile
   useEffect(() => {
-    if (userProfile?.notificationPreferences) {
-      const prefs = userProfile.notificationPreferences;
-
-      if (prefs.email) {
-        setEmailPrefs(prefs.email);
-      }
-
-      if (prefs.inApp !== undefined) {
-        setInAppEnabled(prefs.inApp);
-      }
-
-      if (prefs.desktop !== undefined) {
-        setDesktopEnabled(prefs.desktop);
-      }
-
-      if (prefs.frequency) {
-        setFrequency(prefs.frequency);
-      }
+    if (userProfile) {
+      setEmailPrefs(userProfile.email);
+      setInAppEnabled(userProfile.inApp);
+      setDesktopEnabled(userProfile.desktop);
+      setFrequency(userProfile.frequency);
     }
-  }, [userProfile?.notificationPreferences]);
+  }, [userProfile]);
 
   const handleEmailToggle = async (
     key: keyof EmailPreferences,
@@ -161,7 +154,7 @@ function NotificationSettings() {
   }) => {
     setIsUpdating(true);
     try {
-      await updateNotificationPreferences(updates);
+      await updateNotificationPreferences.mutateAsync(updates);
       toast.success("Notification preferences updated");
     } catch (error) {
       toast.error(

@@ -9,6 +9,7 @@ import folders from "./api/folders.js";
 import notifications from "./api/notifications.js";
 import organizations from "./api/organizations.js";
 import publicApi from "./api/public.js";
+import users from "./api/users.js";
 import { createAuth } from "./platform/auth.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
 
@@ -65,5 +66,6 @@ app.route("/api/folders", folders);
 app.route("/api/notifications", notifications);
 app.route("/api/organizations", organizations);
 app.route("/api/public", publicApi);
+app.route("/api/users", users);
 
 export default app;

@@ -381,6 +381,44 @@ export async function moveTemplateToFolder(
   );
 }
 
+const emailPreferencesSchema = z.object({
+  enabled: z.boolean(),
+  documentEvents: z.boolean(),
+  reminders: z.boolean(),
+  weeklyDigest: z.boolean(),
+});
+
+const notificationPreferencesSchema = z.object({
+  email: emailPreferencesSchema,
+  inApp: z.boolean(),
+  desktop: z.boolean(),
+  frequency: z.enum(["instant", "daily", "weekly"]),
+});
+
+export type ApiNotificationPreferences = z.infer<
+  typeof notificationPreferencesSchema
+>;
+
+export async function getUserNotificationPreferences(): Promise<ApiNotificationPreferences> {
+  return apiFetch(
+    "/api/users/me/notification-preferences",
+    notificationPreferencesSchema
+  );
+}
+
+export async function updateUserNotificationPreferences(
+  input: Partial<ApiNotificationPreferences>
+): Promise<ApiNotificationPreferences> {
+  return apiFetch(
+    "/api/users/me/notification-preferences",
+    notificationPreferencesSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const aiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiAutoAnalyze: z.boolean(),
