@@ -13,39 +13,6 @@ import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
 
-// Expose Convex client on `window` in dev/test/staging/preview so E2E tests
-// (and agent-browser sessions) can call mutations/queries directly.
-// Kept behind a dynamic import so it does not ship in production builds.
-const isPreviewDeployment =
-  typeof window !== "undefined" &&
-  window.location.hostname.includes("vercel.app");
-const isStagingDomain =
-  typeof window !== "undefined" && window.location.hostname.includes("staging");
-const shouldExposeConvexApi =
-  import.meta.env.DEV ||
-  import.meta.env.MODE === "test" ||
-  isStagingDomain ||
-  (import.meta.env.VITE_EXPOSE_CONVEX_API === "true" && isPreviewDeployment);
-
-if (typeof window !== "undefined" && shouldExposeConvexApi) {
-  void (async () => {
-    const RAW_CONVEX_URL: unknown = import.meta.env.VITE_CONVEX_URL;
-    if (typeof RAW_CONVEX_URL !== "string" || RAW_CONVEX_URL === "") {
-      return;
-    }
-
-    const [{ ConvexReactClient }, { api }] = await Promise.all([
-      import("convex/react"),
-      import("@seal/backend/convex/_generated/api"),
-    ]);
-
-    const convex = new ConvexReactClient(RAW_CONVEX_URL);
-    (window as Window & { __convexClient?: typeof convex }).__convexClient =
-      convex;
-    (window as Window & { __convexApi?: typeof api }).__convexApi = api;
-  })();
-}
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -37,15 +37,13 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
 }
 
 /**
- * Sign in (or sign up + onboard) the Better-Auth test user, then verify Convex
- * authentication is ready before the caller saves storage state.
+ * Sign in (or sign up + onboard) the Better-Auth test user.
  *
  * Better-Auth:
  * 1. Try the email+password sign-in form.
  * 2. If sign-in does not land authenticated (account does not exist yet), sign
  *    up via the sign-up form.
  * 3. If routed to onboarding, create the personal workspace.
- * 4. Land on a `/{slug}/home` route and poll Convex auth until ready.
  */
 export async function signInTestUser(page: Page): Promise<void> {
   const config = getTestWorkspaceConfig();
@@ -125,7 +123,7 @@ async function completeOnboardingIfPresent(
 
 /**
  * Re-enter the authenticated app bootstrap flow and only return once the page
- * has landed on a workspace home route with a working Convex auth token.
+ * has landed on a workspace home route.
  */
 export async function ensureAuthenticatedWorkspaceHome(
   page: Page,
@@ -217,96 +215,23 @@ export function isAuthenticatedUrl(url: string): boolean {
 }
 
 /**
- * Ensure the Convex client is authenticated by polling window.__convexClient.
- * Auth-mechanism agnostic: confirms the Better-Auth session token has propagated
- * into the Convex client. No mutations, no org creation.
+ * Wait for a Better-Auth session cookie to be present. This is a lightweight
+ * proxy for "the sign-in handshake has finished" without requiring a Convex
+ * client on the page.
  */
 export async function ensureConvexAuth(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () =>
-      window.__convexClient !== undefined && window.__convexApi !== undefined,
-    { timeout: 8000 }
-  );
-
-  const maxAttempts = 20;
-  const delayMs = 500;
-
-  const attemptAuth = async (attempt: number): Promise<boolean> => {
-    if (attempt >= maxAttempts) return false;
-    const authenticated = await page.evaluate(async () => {
-      try {
-        const client = window.__convexClient;
-        const api = window.__convexApi;
-
-        if (!client || !api) return false;
-
-        const result = await client.query(
-          api.check_membership.hasOrganization,
-          {}
-        );
-        return result !== undefined && result !== null;
-      } catch {
-        return false;
-      }
-    });
-
-    if (authenticated) return true;
-    await page.waitForTimeout(delayMs);
-    return attemptAuth(attempt + 1);
-  };
-
-  if (!(await attemptAuth(0))) {
-    throw new Error(
-      "[E2E] Timed out waiting for Convex authentication. " +
-        "Ensure Better-Auth sign-in completes and the Convex client receives a token."
-    );
-  }
+  await page.waitForFunction(() => document.cookie.length > 0, {
+    timeout: 10000,
+  });
 }
 
 /**
  * Ensure workspace exists — called AFTER auth is saved, never blocks auth setup.
- * Wrapped in Promise.race with timeout so it never fails the test. Onboarding
- * already creates the workspace via the UI; this is a belt-and-suspenders path.
+ * Onboarding already creates the workspace via the UI; this function no longer
+ * needs to drive Convex directly.
  */
-export async function ensureWorkspace(page: Page): Promise<void> {
-  const workspace = getTestWorkspaceConfig();
-
-  await Promise.race([
-    (async () => {
-      try {
-        await page.waitForFunction(
-          () =>
-            window.__convexClient !== undefined &&
-            window.__convexApi !== undefined,
-          { timeout: 10000 }
-        );
-
-        await page.evaluate(
-          async ({ orgName, orgSlug }) => {
-            const client = window.__convexClient;
-            const api = window.__convexApi;
-
-            if (!client || !api) throw new Error("Convex not ready");
-
-            await client.mutation(
-              api.organizations.mutations.ensurePersonalOrganization,
-              {
-                organizationName: orgName,
-                organizationSlug: orgSlug,
-              }
-            );
-          },
-          {
-            orgName: workspace.organizationName,
-            orgSlug: workspace.organizationSlug,
-          }
-        );
-      } catch {
-        // Org may already exist or Convex not ready — both acceptable
-      }
-    })(),
-    new Promise<void>((resolve) => setTimeout(resolve, 15000)),
-  ]);
+export async function ensureWorkspace(_page: Page): Promise<void> {
+  // Better-Auth onboarding creates the workspace during sign-in setup.
 }
 
 function buildDefaultOrganizationSlug(email: string): string {
