@@ -61,7 +61,7 @@ export async function signInTestUser(page: Page): Promise<void> {
 
   page.setDefaultTimeout(5000);
 
-  await ensureConvexAuth(page);
+  await ensureAuthenticated(page);
 }
 
 async function signInWithPassword(
@@ -189,7 +189,7 @@ export async function ensureAuthenticatedWorkspaceHome(
     }
 
     if (page.url().match(/\/[\w-]+\/home/)) {
-      await ensureConvexAuth(page);
+      await ensureAuthenticated(page);
       return;
     }
 
@@ -219,7 +219,7 @@ export function isAuthenticatedUrl(url: string): boolean {
  * proxy for "the sign-in handshake has finished" without requiring a Convex
  * client on the page.
  */
-export async function ensureConvexAuth(page: Page): Promise<void> {
+export async function ensureAuthenticated(page: Page): Promise<void> {
   await page.waitForFunction(() => document.cookie.length > 0, {
     timeout: 10000,
   });

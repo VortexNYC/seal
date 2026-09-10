@@ -4,8 +4,8 @@ import { resolve } from "node:path";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import {
+  ensureAuthenticated,
   ensureAuthenticatedWorkspaceHome,
-  ensureConvexAuth,
 } from "../../fixtures/auth-helpers";
 import { pollUntil } from "../../fixtures/poll";
 
@@ -47,7 +47,7 @@ export class DocumentsListPage {
   async goto(slug: string): Promise<void> {
     const targetUrl = `/${slug}/documents`;
 
-    await ensureConvexAuth(this.page).catch(async () => {
+    await ensureAuthenticated(this.page).catch(async () => {
       await ensureAuthenticatedWorkspaceHome(this.page);
     });
 
