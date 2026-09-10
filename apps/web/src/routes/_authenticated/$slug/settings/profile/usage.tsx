@@ -5,9 +5,8 @@
  * Route: /{slug}/settings/profile/usage
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -22,6 +21,7 @@ import {
 import { FormSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getUserUsageStatistics } from "@/lib/api-client";
 import {
   Card,
   CardContent,
@@ -50,7 +50,10 @@ function formatBytes(bytes: number): string {
 
 function UsageSettings() {
   const { slug } = Route.useParams();
-  const stats = useQuery(api.user_profiles.queries.getUsageStatistics);
+  const { data: stats } = useQuery({
+    queryKey: ["api", "users", "me", "usage"],
+    queryFn: getUserUsageStatistics,
+  });
 
   if (!stats) {
     return <FormSkeleton />;

@@ -1,8 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { user } from "../global/schema.js";
+import {
+  documents as documentsTable,
+  organization as organizationTable,
+  user,
+} from "../global/schema.js";
 
 const emailPreferencesSchema = z.object({
   enabled: z.boolean().default(true),
@@ -148,6 +152,167 @@ app.openapi(patchRouteDef, async (c) => {
     .where(eq(user.id, sessionUser!.user.id));
 
   return c.json(notificationPreferencesSchema.parse(next));
+});
+
+const planLimits = {
+  free: { documentsPerMonth: 10, storageBytes: 100 * 1024 * 1024 },
+  pro: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
+  enterprise: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
+} as const;
+
+function getPlanFromMetadata(
+  metadata: string | null
+): keyof typeof planLimits {
+  const parsed = safeParseMetadata(metadata);
+  if (!parsed) return "free";
+  const plan =
+    typeof parsed.plan === "string" ? parsed.plan.toLowerCase() : "free";
+  return (plan in planLimits ? plan : "free") as keyof typeof planLimits;
+}
+
+const usageResponseSchema = z.object({
+  totalDocuments: z.number().int(),
+  workflowCounts: z.object({
+    draft: z.number().int(),
+    sent: z.number().int(),
+    in_progress: z.number().int(),
+    completed: z.number().int(),
+    cancelled: z.number().int(),
+    declined: z.number().int(),
+  }),
+  documentsThisMonth: z.number().int(),
+  sentThisMonth: z.number().int(),
+  completedThisMonth: z.number().int(),
+  storageUsedBytes: z.number().int(),
+  storageLimitBytes: z.number().int(),
+  storagePercentUsed: z.number(),
+  plan: z.string(),
+  documentsLimit: z.number().int(),
+  documentsPercentUsed: z.number(),
+  completionRate: z.number().int(),
+});
+
+const usageRouteDef = createRoute({
+  method: "get",
+  path: "/me/usage",
+  responses: {
+    200: {
+      content: { "application/json": { schema: usageResponseSchema } },
+      description: "User usage statistics",
+    },
+    401: { description: "Unauthorized" },
+  },
+});
+
+app.openapi(usageRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const db = createD1(c.env.D1);
+
+  const userId = sessionUser!.user.id;
+  const organizationId = sessionUser!.session?.activeOrganizationId;
+
+  const docs = await db
+    .select({
+      status: documentsTable.status,
+      size: documentsTable.size,
+      createdAt: documentsTable.createdAt,
+    })
+    .from(documentsTable)
+    .where(
+      and(
+        eq(documentsTable.ownerId, userId),
+        ne(documentsTable.documentStatus, "deleted")
+      )
+    );
+
+  const workflowCounts = {
+    draft: 0,
+    sent: 0,
+    in_progress: 0,
+    completed: 0,
+    cancelled: 0,
+    declined: 0,
+  };
+
+  let totalStorageBytes = 0;
+
+  for (const doc of docs) {
+    const size = doc.size ?? 0;
+    totalStorageBytes += size;
+
+    switch (doc.status) {
+      case "draft":
+      case "sent":
+      case "completed":
+      case "cancelled":
+      case "declined":
+        workflowCounts[doc.status]++;
+        break;
+      case "active":
+      case "in_progress":
+        workflowCounts.in_progress++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+  const documentsThisMonth = docs.filter(
+    (doc) => doc.createdAt.getTime() >= startOfMonth
+  );
+
+  const completedThisMonth = documentsThisMonth.filter(
+    (doc) => doc.status === "completed"
+  );
+  const sentThisMonth = documentsThisMonth.filter(
+    (doc) =>
+      doc.status === "sent" ||
+      doc.status === "active" ||
+      doc.status === "in_progress" ||
+      doc.status === "completed"
+  );
+
+  let plan: keyof typeof planLimits = "free";
+  if (organizationId) {
+    const orgRows = await db
+      .select({ metadata: organizationTable.metadata })
+      .from(organizationTable)
+      .where(eq(organizationTable.id, organizationId))
+      .limit(1);
+    plan = getPlanFromMetadata(orgRows[0]?.metadata ?? null);
+  }
+
+  const limits = planLimits[plan] ?? planLimits.free;
+
+  const totalSent =
+    workflowCounts.sent + workflowCounts.in_progress + workflowCounts.completed;
+
+  return c.json({
+    totalDocuments: docs.length,
+    workflowCounts,
+    documentsThisMonth: documentsThisMonth.length,
+    sentThisMonth: sentThisMonth.length,
+    completedThisMonth: completedThisMonth.length,
+    storageUsedBytes: totalStorageBytes,
+    storageLimitBytes: limits.storageBytes,
+    storagePercentUsed: Math.min(
+      100,
+      (totalStorageBytes / limits.storageBytes) * 100
+    ),
+    plan,
+    documentsLimit: limits.documentsPerMonth,
+    documentsPercentUsed: Math.min(
+      100,
+      (documentsThisMonth.length / limits.documentsPerMonth) * 100
+    ),
+    completionRate:
+      totalSent > 0
+        ? Math.round((completedThisMonth.length / totalSent) * 100)
+        : 0,
+  });
 });
 
 export default app;

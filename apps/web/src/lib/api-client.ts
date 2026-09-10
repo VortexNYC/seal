@@ -419,6 +419,34 @@ export async function updateUserNotificationPreferences(
   );
 }
 
+const usageStatisticsSchema = z.object({
+  totalDocuments: z.number().int(),
+  workflowCounts: z.object({
+    draft: z.number().int(),
+    sent: z.number().int(),
+    in_progress: z.number().int(),
+    completed: z.number().int(),
+    cancelled: z.number().int(),
+    declined: z.number().int(),
+  }),
+  documentsThisMonth: z.number().int(),
+  sentThisMonth: z.number().int(),
+  completedThisMonth: z.number().int(),
+  storageUsedBytes: z.number().int(),
+  storageLimitBytes: z.number().int(),
+  storagePercentUsed: z.number(),
+  plan: z.string(),
+  documentsLimit: z.number().int(),
+  documentsPercentUsed: z.number(),
+  completionRate: z.number().int(),
+});
+
+export type ApiUsageStatistics = z.infer<typeof usageStatisticsSchema>;
+
+export async function getUserUsageStatistics(): Promise<ApiUsageStatistics> {
+  return apiFetch("/api/users/me/usage", usageStatisticsSchema);
+}
+
 const aiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiAutoAnalyze: z.boolean(),
