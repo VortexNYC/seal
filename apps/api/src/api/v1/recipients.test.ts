@@ -80,6 +80,26 @@ async function seedOrgAndUser() {
   return { userId, orgId, db };
 }
 
+async function seedDocument(
+  db: ReturnType<typeof createD1>,
+  { userId, orgId }: { userId: string; orgId: string }
+) {
+  const docId = crypto.randomUUID();
+  await db.insert(documents).values({
+    id: docId,
+    publicId: crypto.randomUUID(),
+    organizationId: orgId,
+    ownerId: userId,
+    name: "Doc",
+    status: "draft",
+    documentStatus: "active",
+    sharingMode: "private",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  return docId;
+}
+
 const listResponseSchema = z.object({
   recipients: z.array(
     z.object({
@@ -94,6 +114,7 @@ const listResponseSchema = z.object({
 const getResponseSchema = z.object({
   id: z.string(),
   email: z.string(),
+  name: z.string(),
   status: z.string(),
   role: z.string(),
 });
@@ -228,5 +249,98 @@ describe("GET /api/v1/recipients", () => {
       status: "viewed",
       role: "viewer",
     });
+  });
+
+  it("creates, updates, deletes, and reminds a recipient", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+    const docId = await seedDocument(db, { userId, orgId });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const createResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docId,
+          email: "signer@example.com",
+          name: "Signer",
+          role: "signer",
+        }),
+      }),
+      env
+    );
+    expect(createResponse.status).toBe(200);
+    const created = getResponseSchema.parse(await createResponse.json());
+    expect(created.email).toBe("signer@example.com");
+
+    const updateResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients/update", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docId,
+          id: created.id,
+          name: "Signer Updated",
+        }),
+      }),
+      env
+    );
+    expect(updateResponse.status).toBe(200);
+    const updated = getResponseSchema.parse(await updateResponse.json());
+    expect(updated.name).toBe("Signer Updated");
+
+    const remindResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients/remind", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docId,
+          id: created.id,
+        }),
+      }),
+      env
+    );
+    expect(remindResponse.status).toBe(200);
+    const remindBody = z
+      .object({ success: z.boolean() })
+      .parse(await remindResponse.json());
+    expect(remindBody.success).toBe(true);
+
+    const deleteResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients/delete", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docId,
+          id: created.id,
+        }),
+      }),
+      env
+    );
+    expect(deleteResponse.status).toBe(200);
+    const deleteBody = z
+      .object({ success: z.boolean() })
+      .parse(await deleteResponse.json());
+    expect(deleteBody.success).toBe(true);
   });
 });

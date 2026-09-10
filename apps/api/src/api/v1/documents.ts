@@ -11,6 +11,7 @@ import {
   or,
   type SQL,
 } from "drizzle-orm";
+import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
@@ -326,6 +327,322 @@ app.get("/get", async (c) => {
   }
 
   return c.json(response);
+});
+
+const createDocumentSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  storage_id: z.string().min(1),
+  file_size: z.number().int().nonnegative().optional(),
+  file_type: z.string().optional(),
+  page_count: z.number().int().nonnegative().optional(),
+  deadline: z.string().datetime().optional(),
+});
+
+app.post("/", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = createDocumentSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { title, description, storage_id, file_size, file_type, page_count, deadline } =
+    parsed.data;
+
+  const head = await c.env.DOCUMENTS_BUCKET.head(storage_id);
+  if (!head) {
+    return c.json({ error: "storage_id_not_found" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docId = crypto.randomUUID();
+  const inserted = await db
+    .insert(documents)
+    .values({
+      id: docId,
+      publicId: crypto.randomUUID(),
+      organizationId,
+      ownerId: mcp.sub,
+      name: title,
+      description,
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      storageKey: storage_id,
+      contentType: file_type ?? head.httpMetadata?.contentType ?? "application/octet-stream",
+      size: file_size ?? head.size,
+      pageCount: page_count,
+      deadline: deadline ? new Date(deadline) : undefined,
+    })
+    .returning({
+      id: documents.id,
+      publicId: documents.publicId,
+      name: documents.name,
+      description: documents.description,
+      status: documents.status,
+      createdAt: documents.createdAt,
+      updatedAt: documents.updatedAt,
+      deadline: documents.deadline,
+      storageKey: documents.storageKey,
+      documentStatus: documents.documentStatus,
+    });
+
+  const row = inserted[0];
+  if (!row) {
+    return c.json({ error: "server_error" }, 500);
+  }
+
+  return c.json(toApiDocument(row, { total: 0, signed: 0 }));
+});
+
+const updateDocumentSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  deadline: z.string().datetime().optional(),
+});
+
+app.post("/update", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = updateDocumentSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { id, title, description, deadline } = parsed.data;
+
+  const db = createD1(c.env.D1);
+  const updateValues: {
+    name?: string;
+    description?: string | null;
+    deadline?: Date | null;
+  } = {};
+  if (title !== undefined) updateValues.name = title;
+  if (description !== undefined) updateValues.description = description ?? null;
+  if (deadline !== undefined) updateValues.deadline = deadline ? new Date(deadline) : null;
+
+  await db
+    .update(documents)
+    .set(updateValues)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    );
+
+  const rows = await db
+    .select({
+      id: documents.id,
+      publicId: documents.publicId,
+      name: documents.name,
+      description: documents.description,
+      status: documents.status,
+      createdAt: documents.createdAt,
+      updatedAt: documents.updatedAt,
+      deadline: documents.deadline,
+      storageKey: documents.storageKey,
+      documentStatus: documents.documentStatus,
+    })
+    .from(documents)
+    .where(and(eq(documents.id, id), eq(documents.organizationId, organizationId)))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.documentStatus === "deleted") {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const counts = await recipientCountsForDocument(db, row.id);
+  return c.json(toApiDocument(row, counts));
+});
+
+const documentIdSchema = z.object({
+  id: z.string(),
+});
+
+app.post("/delete", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = documentIdSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { id } = parsed.data;
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({ status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (row.status !== "draft") {
+    return c.json({ error: "only_draft_documents_can_be_deleted" }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({ documentStatus: "deleted" })
+    .where(
+      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+    );
+
+  return c.json({ success: true });
+});
+
+app.post("/send", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = documentIdSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { id } = parsed.data;
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: documents.id,
+      status: documents.status,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (row.status !== "draft") {
+    return c.json({ error: "document_not_in_draft_status" }, 400);
+  }
+
+  const recipientRows = await db
+    .select({ id: recipients.id })
+    .from(recipients)
+    .where(eq(recipients.documentId, id));
+  if (recipientRows.length === 0) {
+    return c.json({ error: "document_has_no_recipients" }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({ status: "sent", sentAt: new Date() })
+    .where(
+      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+    );
+
+  return c.json({ success: true });
+});
+
+const voidDocumentSchema = z.object({
+  id: z.string(),
+  reason: z.string().min(1),
+});
+
+app.post("/void", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = voidDocumentSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { id } = parsed.data;
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({ status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (row.status !== "sent") {
+    return c.json({ error: "document_not_sent" }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({ status: "voided" })
+    .where(
+      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+    );
+
+  return c.json({ success: true });
 });
 
 export default app;

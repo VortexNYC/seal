@@ -275,4 +275,132 @@ describe("GET /api/v1/documents", () => {
     const body = z.object({ error: z.string() }).parse(await response.json());
     expect(body.error).toBe("insufficient_scope");
   });
+
+  it("creates, updates, sends, and voids a document", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId } = await seedOrgAndUser();
+
+    const storageId = "uploads/test-pdf";
+    await env.DOCUMENTS_BUCKET.put(
+      storageId,
+      new TextEncoder().encode("%PDF-1.4 test"),
+      {
+        httpMetadata: { contentType: "application/pdf" },
+      }
+    );
+
+    const writeToken = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const readToken = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:read",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const createResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/documents", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${writeToken}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "New Doc",
+          storage_id: storageId,
+          file_type: "application/pdf",
+        }),
+      }),
+      env
+    );
+
+    expect(createResponse.status).toBe(200);
+    const createdDoc = getResponseSchema.parse(await createResponse.json());
+    expect(createdDoc.title).toBe("New Doc");
+
+    const updateResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/documents/update", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${writeToken}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          id: createdDoc.id,
+          description: "Updated description",
+        }),
+      }),
+      env
+    );
+
+    expect(updateResponse.status).toBe(200);
+    const updatedDoc = getResponseSchema.parse(await updateResponse.json());
+    expect(updatedDoc.description).toBe("Updated description");
+
+    const addRecipientResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${writeToken}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: createdDoc.id,
+          email: "signer@example.com",
+          name: "Signer",
+          role: "signer",
+        }),
+      }),
+      env
+    );
+    expect(addRecipientResponse.status).toBe(200);
+
+    const sendResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/documents/send", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${writeToken}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ id: createdDoc.id }),
+      }),
+      env
+    );
+    expect(sendResponse.status).toBe(200);
+    const sendBody = z.object({ success: z.boolean() }).parse(await sendResponse.json());
+    expect(sendBody.success).toBe(true);
+
+    const sentDoc = await indexApp.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/documents/get?id=${createdDoc.id}`,
+        { headers: { authorization: `Bearer ${readToken}` } }
+      ),
+      env
+    );
+    expect(sentDoc.status).toBe(200);
+    const sentDocBody = getResponseSchema.parse(await sentDoc.json());
+    expect(sentDocBody.status).toBe("sent");
+
+    const voidResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/documents/void", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${writeToken}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ id: createdDoc.id, reason: "No longer needed" }),
+      }),
+      env
+    );
+    expect(voidResponse.status).toBe(200);
+    const voidBody = z.object({ success: z.boolean() }).parse(await voidResponse.json());
+    expect(voidBody.success).toBe(true);
+  });
 });

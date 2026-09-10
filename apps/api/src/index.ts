@@ -21,8 +21,12 @@ import accountV1 from "./api/v1/account.js";
 import contactsV1 from "./api/v1/contacts.js";
 import documentsV1 from "./api/v1/documents.js";
 import recipientsV1 from "./api/v1/recipients.js";
+import uploadsV1 from "./api/v1/uploads.js";
 import { createAuth } from "./platform/auth.js";
-import { mcpAuth, type McpAccessToken } from "./platform/mcp-auth.js";
+import {
+  verifyMcpAccessToken,
+  type McpAccessToken,
+} from "./platform/mcp-auth.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
 
 type Variables = {
@@ -128,11 +132,30 @@ app.route("/api/public", publicApi);
 app.route("/api/saved-signatures", savedSignatures);
 app.route("/api/users", users);
 
-app.use("/api/v1/*", mcpAuth);
+app.use("/api/v1/*", async (c, next) => {
+  if (c.req.path === "/api/v1/uploads" && c.req.method === "POST") {
+    return next();
+  }
+
+  const header = c.req.header("authorization");
+  if (!header?.startsWith("Bearer ")) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const token = header.slice("Bearer ".length).trim();
+  const payload = await verifyMcpAccessToken(c.env, token);
+  if (!payload) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  c.set("mcp", payload);
+  return next();
+});
 app.route("/api/v1/account", accountV1);
 app.route("/api/v1/contacts", contactsV1);
 app.route("/api/v1/documents", documentsV1);
 app.route("/api/v1/recipients", recipientsV1);
+app.route("/api/v1/uploads", uploadsV1);
 
 export { SealChatAgent };
 
