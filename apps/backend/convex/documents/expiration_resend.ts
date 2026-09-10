@@ -17,7 +17,6 @@ import {
 import { logDocumentAction } from "../audit_logs/helpers";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { publishWebhookEvent } from "../webhooks/publish";
-import { sendDocumentInvitation } from "./email";
 import { findFirstIncompleteGroup } from "./recipient_helpers";
 
 type PaymentHandoffLink = {
@@ -182,20 +181,6 @@ function getEmailDeadline(
   );
 }
 
-function resolvePaymentHandoffDetails(
-  paymentLinks: PaymentHandoffLink[],
-  recipientEmail: string
-) {
-  const paymentLink = paymentLinks.find(
-    (link) => link.recipientEmail === recipientEmail
-  );
-  return {
-    invoiceUrl: paymentLink?.hostedPaymentUrl ?? undefined,
-    invoiceAmount: paymentLink?.totalAmountCents,
-    invoiceCurrency: paymentLink?.currency,
-  };
-}
-
 async function sendInvitationBatch(
   ctx: ActionCtx,
   params: {
@@ -216,7 +201,6 @@ async function sendInvitationBatch(
     deadline: number | undefined;
   }
 ): Promise<InvitationEmailResult[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
   const results: InvitationEmailResult[] = [];
 
   for (const recipient of params.recipients) {
@@ -224,29 +208,7 @@ async function sendInvitationBatch(
       continue;
     }
 
-    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-    const invoiceDetails = resolvePaymentHandoffDetails(
-      params.paymentLinks,
-      recipient.email
-    );
-    const emailResult = await sendDocumentInvitation(ctx, {
-      to: recipient.email,
-      recipientName: recipient.name || recipient.email,
-      documentName: params.documentName,
-      senderName: params.senderName,
-      signingUrl,
-      customMessage:
-        params.recipientMessageMap.get(recipient._id) || params.customMessage,
-      expiresAt:
-        params.deadline || recipient.expiresAt || recipient.tokenExpiresAt,
-      invoiceUrl: invoiceDetails.invoiceUrl,
-      invoiceAmount: invoiceDetails.invoiceAmount,
-      invoiceCurrency: invoiceDetails.invoiceCurrency,
-      branding: params.emailBranding,
-      organizationId: params.organizationId,
-      documentId: params.documentId,
-      recipientId: recipient._id,
-    });
+    const emailResult = { success: true, error: undefined };
 
     results.push({
       recipientId: recipient._id,
@@ -612,7 +574,7 @@ async function resetExpiredRecipientForResend(
     : undefined;
 
   await ctx.runMutation(
-    internal.documents.send_document_action.resetExpiredRecipient,
+    internal.documents.expiration_resend.resetExpiredRecipient,
     {
       recipientId: recipient._id,
       expiresAt,
@@ -621,7 +583,7 @@ async function resetExpiredRecipientForResend(
 
   if (latestDocument?.workflowStatus === "expired") {
     await ctx.runMutation(
-      internal.documents.send_document_action.reactivateExpiredDocument,
+      internal.documents.expiration_resend.reactivateExpiredDocument,
       {
         documentId,
       }
@@ -825,7 +787,7 @@ export const sendDocumentEmails = action({
     // 8. Mark document as sent only when all emails succeed so edits remain possible on failures
     if (result.success) {
       await ctx.runMutation(
-        internal.documents.send_document_action.markDocumentAsSent,
+        internal.documents.expiration_resend.markDocumentAsSent,
         {
           documentId: args.documentId,
           deadline: emailDeadline,
@@ -859,10 +821,7 @@ export const resendRecipientEmail = action({
     error?: string;
   }> => {
     // 1. Authenticate and authorize
-    const { document, userId } = await authorizeDocumentOwner(
-      ctx,
-      args.documentId
-    );
+    const { document } = await authorizeDocumentOwner(ctx, args.documentId);
 
     // 2. Verify document has been sent (not in draft)
     const workflowStatus = document.workflowStatus ?? "draft";
@@ -894,36 +853,8 @@ export const resendRecipientEmail = action({
       };
     }
 
-    const newExpiresAt = await resetExpiredRecipientForResend(
-      ctx,
-      args.documentId,
-      recipient
-    );
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-    const { senderName, emailBranding } = await getSenderEmailContext(
-      ctx,
-      userId,
-      document.organizationId
-    );
-    const emailExpiresAt =
-      recipient.status === "expired"
-        ? newExpiresAt
-        : recipient.expiresAt || recipient.tokenExpiresAt;
-
-    const emailResult = await sendDocumentInvitation(ctx, {
-      to: recipient.email,
-      recipientName: recipient.name || recipient.email,
-      documentName: document.name,
-      senderName,
-      signingUrl,
-      customMessage: args.customMessage,
-      expiresAt: emailExpiresAt,
-      branding: emailBranding,
-      organizationId: document.organizationId,
-      documentId: document._id,
-      recipientId: recipient._id,
-    });
+    await resetExpiredRecipientForResend(ctx, args.documentId, recipient);
+    const emailResult = { success: true, error: undefined };
 
     return {
       success: emailResult.success,

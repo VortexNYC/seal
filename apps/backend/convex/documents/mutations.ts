@@ -15,7 +15,7 @@ import { authMutation, permissionMutation } from "../auth";
 import { isAccountValid } from "../auth.utils";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { retrier } from "../retrier";
-import { expirationPeriodToMs } from "./send_document_action";
+import { expirationPeriodToMs } from "./expiration_resend";
 import { validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
 import {

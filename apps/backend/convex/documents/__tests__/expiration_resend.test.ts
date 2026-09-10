@@ -30,21 +30,21 @@ describe("expirationPeriodToMs", () => {
   const MS_PER_DAY = 86_400_000;
 
   test("converts days correctly", async () => {
-    const { expirationPeriodToMs } = await import("../send_document_action");
+    const { expirationPeriodToMs } = await import("../expiration_resend");
     expect(expirationPeriodToMs(1, "day")).toBe(MS_PER_DAY);
     expect(expirationPeriodToMs(7, "day")).toBe(7 * MS_PER_DAY);
     expect(expirationPeriodToMs(30, "day")).toBe(30 * MS_PER_DAY);
   });
 
   test("converts weeks correctly", async () => {
-    const { expirationPeriodToMs } = await import("../send_document_action");
+    const { expirationPeriodToMs } = await import("../expiration_resend");
     expect(expirationPeriodToMs(1, "week")).toBe(7 * MS_PER_DAY);
     expect(expirationPeriodToMs(2, "week")).toBe(14 * MS_PER_DAY);
     expect(expirationPeriodToMs(4, "week")).toBe(28 * MS_PER_DAY);
   });
 
   test("converts months correctly (30-day months)", async () => {
-    const { expirationPeriodToMs } = await import("../send_document_action");
+    const { expirationPeriodToMs } = await import("../expiration_resend");
     expect(expirationPeriodToMs(1, "month")).toBe(30 * MS_PER_DAY);
     expect(expirationPeriodToMs(3, "month")).toBe(90 * MS_PER_DAY);
     expect(expirationPeriodToMs(12, "month")).toBe(360 * MS_PER_DAY);
@@ -127,7 +127,7 @@ describe("resetExpiredRecipient", () => {
 
     const newExpiresAt = Date.now() + 7 * ONE_DAY;
     await t.mutation(
-      internal.documents.send_document_action.resetExpiredRecipient,
+      internal.documents.expiration_resend.resetExpiredRecipient,
       {
         recipientId,
         expiresAt: newExpiresAt,
@@ -163,7 +163,7 @@ describe("resetExpiredRecipient", () => {
     });
 
     await t.mutation(
-      internal.documents.send_document_action.resetExpiredRecipient,
+      internal.documents.expiration_resend.resetExpiredRecipient,
       {
         recipientId,
       }
@@ -235,7 +235,7 @@ describe("reactivateExpiredDocument", () => {
     });
 
     await t.mutation(
-      internal.documents.send_document_action.reactivateExpiredDocument,
+      internal.documents.expiration_resend.reactivateExpiredDocument,
       {
         documentId,
       }
@@ -274,7 +274,7 @@ describe("reactivateExpiredDocument", () => {
     });
 
     await t.mutation(
-      internal.documents.send_document_action.reactivateExpiredDocument,
+      internal.documents.expiration_resend.reactivateExpiredDocument,
       {
         documentId,
       }
@@ -364,13 +364,10 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       });
     });
 
-    await t.mutation(
-      internal.documents.send_document_action.markDocumentAsSent,
-      {
-        documentId,
-        expirationPeriod: { amount: 14, unit: "day" },
-      }
-    );
+    await t.mutation(internal.documents.expiration_resend.markDocumentAsSent, {
+      documentId,
+      expirationPeriod: { amount: 14, unit: "day" },
+    });
 
     const recipient = await t.run(async (ctx) => {
       return await ctx.db.get(recipientId);
@@ -420,13 +417,10 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       });
     });
 
-    await t.mutation(
-      internal.documents.send_document_action.markDocumentAsSent,
-      {
-        documentId,
-        expirationPeriod: { amount: 7, unit: "day" },
-      }
-    );
+    await t.mutation(internal.documents.expiration_resend.markDocumentAsSent, {
+      documentId,
+      expirationPeriod: { amount: 7, unit: "day" },
+    });
 
     const doc = await t.run(async (ctx) => {
       return await ctx.db.get(documentId);
@@ -489,13 +483,10 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       return [expired, signed] as const;
     });
 
-    await t.mutation(
-      internal.documents.send_document_action.markDocumentAsSent,
-      {
-        documentId,
-        expirationPeriod: { amount: 7, unit: "day" },
-      }
-    );
+    await t.mutation(internal.documents.expiration_resend.markDocumentAsSent, {
+      documentId,
+      expirationPeriod: { amount: 7, unit: "day" },
+    });
 
     const [expired, signed] = await t.run(async (ctx) => {
       return [await ctx.db.get(expiredId), await ctx.db.get(signedId)] as const;
