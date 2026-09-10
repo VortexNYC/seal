@@ -1199,6 +1199,82 @@ app.openapi(dictateRouteDef, async (c) => {
   return c.json({ success: true });
 });
 
+const attachmentUploadBodySchema = z.object({
+  contentBase64: z.string().min(1),
+  contentType: z.string().optional(),
+});
+
+const attachmentUploadResponseSchema = z
+  .object({
+    storageKey: z.string(),
+    contentType: z.string(),
+    size: z.number().int(),
+  })
+  .openapi("AttachmentUploadResponse");
+
+const attachmentUploadRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/attachments",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: attachmentUploadBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: attachmentUploadResponseSchema },
+      },
+      description: "Attachment uploaded",
+    },
+    400: { description: "Invalid or expired token" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(attachmentUploadRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "Object storage not configured" }, 503);
+  }
+
+  const bytes = base64ToBytes(input.contentBase64);
+  const contentType = input.contentType || "application/octet-stream";
+  const key = `attachments/${recipient.documentId}/${crypto.randomUUID()}`;
+
+  await bucket.put(key, bytes, { httpMetadata: { contentType } });
+
+  return c.json({ storageKey: key, contentType, size: bytes.length });
+});
+
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  return new Uint8Array(Array.from(binary, (char) => char.charCodeAt(0)));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

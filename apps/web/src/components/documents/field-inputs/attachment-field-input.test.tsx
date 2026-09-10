@@ -3,10 +3,6 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 const mockMutateAsync = vi.fn();
 
-vi.mock("@convex-dev/react-query", () => ({
-  useConvexMutation: () => vi.fn(),
-}));
-
 vi.mock("@tanstack/react-query", () => ({
   useMutation: () => ({ mutateAsync: mockMutateAsync }),
 }));

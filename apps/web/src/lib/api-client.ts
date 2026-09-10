@@ -2446,3 +2446,32 @@ export async function getClientIp(): Promise<string> {
   const { ip } = await apiFetch("/api/public/ip", z.object({ ip: z.string() }));
   return ip;
 }
+
+function base64FromArrayBuffer(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+export async function uploadAttachment(
+  token: string,
+  file: File
+): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const { storageKey } = await apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/attachments`,
+    z.object({ storageKey: z.string() }),
+    {
+      method: "POST",
+      body: JSON.stringify({
+        contentBase64: base64FromArrayBuffer(buffer),
+        contentType: file.type || "application/octet-stream",
+      }),
+    }
+  );
+  return storageKey;
+}
