@@ -150,7 +150,7 @@ export default {
             health: "/health",
             oauth_protected_resource: PROTECTED_RESOURCE_METADATA_PATH,
           },
-          documentation: "https://docs.seal.app/api/mcp",
+          documentation: "https://docs.seal.nyc/api/mcp",
         })
       );
     }

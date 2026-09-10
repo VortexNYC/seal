@@ -58,7 +58,7 @@ describe("ApiError", () => {
       const response = error.toResponse();
 
       expect(response).toEqual({
-        type: "https://api.seal.app/errors/document-not-found",
+        type: "https://api.seal.nyc/errors/document-not-found",
         title: "Not Found",
         status: 404,
         detail: "Document not found",
@@ -81,7 +81,7 @@ describe("ApiError", () => {
     it("converts error code to kebab-case URI", () => {
       const error = new ApiError(401, "Bad key", "INVALID_API_KEY");
       expect(error.toResponse().type).toBe(
-        "https://api.seal.app/errors/invalid-api-key"
+        "https://api.seal.nyc/errors/invalid-api-key"
       );
     });
   });

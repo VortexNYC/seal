@@ -62,7 +62,7 @@ describe("ApiError", () => {
     const response = error.toResponse();
 
     expect(response).toStrictEqual({
-      type: "https://api.seal.app/errors/document-not-found",
+      type: "https://api.seal.nyc/errors/document-not-found",
       title: "Not Found",
       status: 404,
       detail: "Document not found",
@@ -108,7 +108,7 @@ describe("apiErrorResponse", () => {
     );
     const body = await jsonBody(res);
 
-    expect(body.type).toBe("https://api.seal.app/errors/insufficient-scope");
+    expect(body.type).toBe("https://api.seal.nyc/errors/insufficient-scope");
     expect(body.title).toBe("Forbidden");
     expect(body.status).toBe(403);
     expect(body.detail).toBe("Insufficient scope");

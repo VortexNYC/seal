@@ -196,7 +196,7 @@ interface ApiError {
 async function sendDocument(documentId: string, message: string) {
   try {
     const response = await fetch(
-      `https://seal.convex.site/api/v1/documents/${documentId}/send`,
+      `https://api.seal.nyc/api/v1/documents/${documentId}/send`,
       {
         method: "POST",
         headers: {

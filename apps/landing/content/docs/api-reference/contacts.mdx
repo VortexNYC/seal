@@ -85,7 +85,7 @@ GET /api/v1/contacts
 ```typescript
 // Search for active contacts at a specific company
 const response = await fetch(
-  "https://seal.convex.site/api/v1/contacts?status=active&search=acme&limit=50",
+  "https://api.seal.nyc/api/v1/contacts?status=active&search=acme&limit=50",
   {
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
@@ -99,7 +99,7 @@ const { contacts, has_more, next_cursor } = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET "https://seal.convex.site/api/v1/contacts?status=active&limit=20" \
+curl -X GET "https://api.seal.nyc/api/v1/contacts?status=active&limit=20" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -150,7 +150,7 @@ GET /api/v1/contacts/get?id={id}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/contacts/get?id=con_abc123",
+  "https://api.seal.nyc/api/v1/contacts/get?id=con_abc123",
   {
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
@@ -164,7 +164,7 @@ const contact = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET "https://seal.convex.site/api/v1/contacts/get?id=con_abc123" \
+curl -X GET "https://api.seal.nyc/api/v1/contacts/get?id=con_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -199,7 +199,7 @@ POST /api/v1/contacts
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/contacts", {
+const response = await fetch("https://api.seal.nyc/api/v1/contacts", {
   method: "POST",
   headers: {
     Authorization: "Bearer ak_your_api_key_here",
@@ -221,7 +221,7 @@ const { id } = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST "https://seal.convex.site/api/v1/contacts" \
+curl -X POST "https://api.seal.nyc/api/v1/contacts" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -265,7 +265,7 @@ DELETE /api/v1/contacts/delete?id={id}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123",
+  "https://api.seal.nyc/api/v1/contacts/delete?id=con_abc123",
   {
     method: "DELETE",
     headers: {
@@ -281,7 +281,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X DELETE "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123" \
+curl -X DELETE "https://api.seal.nyc/api/v1/contacts/delete?id=con_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 

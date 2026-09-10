@@ -87,7 +87,7 @@ GET /api/v1/settings
 ### TypeScript Example
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/settings", {
+const response = await fetch("https://api.seal.nyc/api/v1/settings", {
   headers: {
     Authorization: "Bearer ak_your_api_key_here",
   },
@@ -100,7 +100,7 @@ console.log(settings.signing.default_deadline_days); // 30
 ### cURL Example
 
 ```bash
-curl -X GET "https://seal.convex.site/api/v1/settings" \
+curl -X GET "https://api.seal.nyc/api/v1/settings" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -180,7 +180,7 @@ All fields are optional. Include only the categories and fields you want to chan
 
 ```typescript
 // Update only signing settings — everything else is preserved
-const response = await fetch("https://seal.convex.site/api/v1/settings", {
+const response = await fetch("https://api.seal.nyc/api/v1/settings", {
   method: "PATCH",
   headers: {
     Authorization: "Bearer ak_your_api_key_here",
@@ -201,7 +201,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X PATCH "https://seal.convex.site/api/v1/settings" \
+curl -X PATCH "https://api.seal.nyc/api/v1/settings" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{

@@ -12,7 +12,7 @@ The Seal API is organized around REST principles. Our API has predictable resour
 All API requests should be made to:
 
 ```
-https://seal.convex.site/api/v1
+https://api.seal.nyc/api/v1
 ```
 
 ## Authentication
@@ -100,7 +100,7 @@ All POST and PUT requests must include a `Content-Type: application/json` header
 ### Example Request
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/documents", {
+const response = await fetch("https://api.seal.nyc/api/v1/documents", {
   method: "POST",
   headers: {
     Authorization: "Bearer ak_your_api_key_here",
@@ -198,13 +198,13 @@ List endpoints support cursor-based pagination:
 
 ```typescript
 // First page
-const page1 = await fetch("https://seal.convex.site/api/v1/documents?limit=20");
+const page1 = await fetch("https://api.seal.nyc/api/v1/documents?limit=20");
 const { data, has_more, next_cursor } = await page1.json();
 
 // Next page
 if (has_more) {
   const page2 = await fetch(
-    `https://seal.convex.site/api/v1/documents?limit=20&cursor=${next_cursor}`
+    `https://api.seal.nyc/api/v1/documents?limit=20&cursor=${next_cursor}`
   );
 }
 ```
@@ -222,7 +222,7 @@ All timestamps are returned in ISO 8601 format with UTC timezone:
 POST requests that create resources support idempotency keys to safely retry requests without creating duplicate resources. Include an `Idempotency-Key` header with a unique value:
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents', {
+const response = await fetch('https://api.seal.nyc/api/v1/documents', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here',

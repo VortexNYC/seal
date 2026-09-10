@@ -225,7 +225,7 @@ describe("Payment field mutations", () => {
           totalAmountCents: 4200,
           paymentStatus: "awaiting",
           hostedInvoiceUrl:
-            "https://notable-leopard-969.convex.site/pay/pay_test",
+            "https://api.seal.nyc/pay/pay_test",
           vortexPayableId: "payable_test",
           vortexDepositBalancePayableId: "installment_payable_test",
           vortexInstallmentPayableId: "installment_payable_test",

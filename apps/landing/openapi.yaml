@@ -8,10 +8,10 @@ info:
   version: 1.0.0
   contact:
     name: Seal Support
-    url: https://seal.app
+    url: https://seal.nyc
 
 servers:
-  - url: https://api.seal.app/api/v1
+  - url: https://api.seal.nyc/api/v1
     description: Production
 
 security:

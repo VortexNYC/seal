@@ -7,10 +7,10 @@
  * @example
  * ```
  * // Request with version header
- * curl -H "X-API-Version: 2025-01-01" https://api.seal.app/v1/documents
+ * curl -H "X-API-Version: 2025-01-01" https://api.seal.nyc/api/v1/documents
  *
  * // Without version header, defaults to latest stable
- * curl https://api.seal.app/v1/documents
+ * curl https://api.seal.nyc/api/v1/documents
  * ```
  */
 

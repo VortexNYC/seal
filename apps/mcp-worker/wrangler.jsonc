@@ -5,7 +5,7 @@
   "compatibility_date": "2026-05-24",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "SEAL_API_BASE_URL": "https://compassionate-robin-742.convex.site/api/v1",
+    "SEAL_API_BASE_URL": "https://api.seal.nyc/api/v1",
     "SEAL_AUTH_SERVER_ORIGIN": "https://api.seal.nyc",
   },
   // Custom domain — replaces the Vercel deployment that previously held this
