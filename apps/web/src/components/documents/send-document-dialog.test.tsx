@@ -2,13 +2,11 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-// Mock convex/react — must be hoisted before importing the component
-const mockUseAction = vi.fn();
-const mockUseQuery = vi.fn();
+// Mock TanStack Query — must be hoisted before importing the component
+const mockUseMutation = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useAction: () => mockUseAction,
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+vi.mock("@tanstack/react-query", () => ({
+  useMutation: () => ({ mutateAsync: mockUseMutation }),
 }));
 
 vi.mock("sonner", () => ({
@@ -18,7 +16,8 @@ vi.mock("sonner", () => ({
 import { parseId } from "../../lib/convex-ids";
 import { SendDocumentDialog } from "./send-document-dialog";
 
-const FAKE_DOC_ID = parseId("documents", "fake_doc");
+const FAKE_FIELD_ID_1 = parseId("signature_fields", "field_1");
+const FAKE_FIELD_ID_2 = parseId("signature_fields", "field_2");
 const FAKE_RECIPIENT_ID = parseId("document_recipients", "fake_recip");
 const FAKE_RECIPIENT_ID_2 = parseId("document_recipients", "fake_recip_2");
 
@@ -27,23 +26,31 @@ interface BuildPropsOptions {
   signatureFieldCount?: number;
   recipients?: Array<{
     _id: Id<"document_recipients">;
+    publicId: string;
     name?: string;
     email: string;
     role: "signer" | "viewer" | "approver";
     status: "pending" | "viewed" | "signed" | "approved" | "declined";
   }>;
   fieldCountsByRecipient?: Map<string, number>;
+  paymentConfigs?: Array<{
+    fieldId: Id<"signature_fields">;
+    totalAmountCents: number;
+    currency: string;
+    paymentType: string;
+  }>;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
 function buildProps(overrides: BuildPropsOptions = {}) {
   return {
-    documentId: FAKE_DOC_ID,
+    documentPublicId: "fake_doc",
     documentName: "Test Document",
     recipients: [
       {
         _id: FAKE_RECIPIENT_ID,
+        publicId: "fake_recip",
         name: "Alice Smith",
         email: "alice@example.com",
         role: "signer" as const,
@@ -51,6 +58,12 @@ function buildProps(overrides: BuildPropsOptions = {}) {
       },
     ],
     signatureFieldCount: 2,
+    paymentConfigs: [] as Array<{
+      fieldId: Id<"signature_fields">;
+      totalAmountCents: number;
+      currency: string;
+      paymentType: string;
+    }>,
     open: true,
     onOpenChange: vi.fn(),
     onSuccess: vi.fn(),
@@ -62,10 +75,7 @@ describe("SendDocumentDialog", () => {
   afterEach(cleanup);
 
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseAction.mockReset();
-    // Default: no payment configs
-    mockUseQuery.mockReturnValue([]);
+    mockUseMutation.mockReset();
   });
 
   test("does not render dialog content when open is false", () => {
@@ -134,61 +144,70 @@ describe("SendDocumentDialog", () => {
   });
 
   test("shows payment summary when paymentConfigs has items", () => {
-    mockUseQuery.mockReturnValue([
-      {
-        _id: parseId("payment_field_configs", "cfg_1"),
-        currency: "usd",
-        totalAmountCents: 5000,
-      },
-    ]);
-
-    render(<SendDocumentDialog {...buildProps()} />);
+    render(
+      <SendDocumentDialog
+        {...buildProps({
+          paymentConfigs: [
+            {
+              fieldId: FAKE_FIELD_ID_1,
+              currency: "usd",
+              totalAmountCents: 5000,
+              paymentType: "one-time",
+            },
+          ],
+        })}
+      />
+    );
     expect(screen.getByText("Payment will be included")).toBeInTheDocument();
   });
 
   test("shows correct singular payment text for a single payment config", () => {
-    mockUseQuery.mockReturnValue([
-      {
-        _id: parseId("payment_field_configs", "cfg_1"),
-        currency: "usd",
-        totalAmountCents: 10000,
-      },
-    ]);
-
-    render(<SendDocumentDialog {...buildProps()} />);
+    render(
+      <SendDocumentDialog
+        {...buildProps({
+          paymentConfigs: [
+            {
+              fieldId: FAKE_FIELD_ID_1,
+              currency: "usd",
+              totalAmountCents: 10000,
+              paymentType: "one-time",
+            },
+          ],
+        })}
+      />
+    );
     expect(screen.getByText("Payment will be included")).toBeInTheDocument();
     // $100.00 USD formatted
     expect(screen.getByText("$100.00 USD")).toBeInTheDocument();
   });
 
   test("shows correct plural payment text for multiple payment configs", () => {
-    mockUseQuery.mockReturnValue([
-      {
-        _id: parseId("payment_field_configs", "cfg_1"),
-        currency: "usd",
-        totalAmountCents: 5000,
-      },
-      {
-        _id: parseId("payment_field_configs", "cfg_2"),
-        currency: "usd",
-        totalAmountCents: 2500,
-      },
-    ]);
-
-    render(<SendDocumentDialog {...buildProps()} />);
-    expect(screen.getByText("2 payments will be included")).toBeInTheDocument();
+    render(
+      <SendDocumentDialog
+        {...buildProps({
+          paymentConfigs: [
+            {
+              fieldId: FAKE_FIELD_ID_1,
+              currency: "usd",
+              totalAmountCents: 5000,
+              paymentType: "one-time",
+            },
+            {
+              fieldId: FAKE_FIELD_ID_2,
+              currency: "usd",
+              totalAmountCents: 2500,
+              paymentType: "one-time",
+            },
+          ],
+        })}
+      />
+    );
+    expect(
+      screen.getByText("2 payments will be included")
+    ).toBeInTheDocument();
   });
 
   test("does not show payment summary when paymentConfigs is empty", () => {
-    mockUseQuery.mockReturnValue([]);
-
-    render(<SendDocumentDialog {...buildProps()} />);
-    expect(screen.queryByText(/payment.*included/i)).not.toBeInTheDocument();
-  });
-
-  test("does not show payment summary when paymentConfigs is undefined (loading)", () => {
-    mockUseQuery.mockReturnValue(undefined);
-
     render(<SendDocumentDialog {...buildProps()} />);
     expect(screen.queryByText(/payment.*included/i)).not.toBeInTheDocument();
   });
@@ -197,6 +216,7 @@ describe("SendDocumentDialog", () => {
     const recipients: BuildPropsOptions["recipients"] = [
       {
         _id: FAKE_RECIPIENT_ID,
+        publicId: "fake_recip",
         name: "Pending User",
         email: "pending@example.com",
         role: "signer",
@@ -204,6 +224,7 @@ describe("SendDocumentDialog", () => {
       },
       {
         _id: FAKE_RECIPIENT_ID_2,
+        publicId: "fake_recip_2",
         name: "Signed User",
         email: "signed@example.com",
         role: "signer",
@@ -223,6 +244,7 @@ describe("SendDocumentDialog", () => {
     const recipients: BuildPropsOptions["recipients"] = [
       {
         _id: FAKE_RECIPIENT_ID,
+        publicId: "fake_recip",
         name: "Pending User",
         email: "pending@example.com",
         role: "signer",
@@ -230,6 +252,7 @@ describe("SendDocumentDialog", () => {
       },
       {
         _id: FAKE_RECIPIENT_ID_2,
+        publicId: "fake_recip_2",
         name: "Approved User",
         email: "approved@example.com",
         role: "approver",
@@ -247,6 +270,7 @@ describe("SendDocumentDialog", () => {
     const recipients: BuildPropsOptions["recipients"] = [
       {
         _id: FAKE_RECIPIENT_ID,
+        publicId: "fake_recip",
         name: "Pending User",
         email: "pending@example.com",
         role: "signer",
@@ -254,6 +278,7 @@ describe("SendDocumentDialog", () => {
       },
       {
         _id: FAKE_RECIPIENT_ID_2,
+        publicId: "fake_recip_2",
         name: "Declined User",
         email: "declined@example.com",
         role: "signer",
@@ -271,6 +296,7 @@ describe("SendDocumentDialog", () => {
     const recipients: BuildPropsOptions["recipients"] = [
       {
         _id: FAKE_RECIPIENT_ID,
+        publicId: "fake_recip",
         name: "Viewed User",
         email: "viewed@example.com",
         role: "signer",
@@ -291,12 +317,14 @@ describe("SendDocumentDialog", () => {
     const recipients: BuildPropsOptions["recipients"] = [
       {
         _id: FAKE_RECIPIENT_ID,
+        publicId: "fake_recip",
         email: "a@example.com",
         role: "signer",
         status: "pending",
       },
       {
         _id: FAKE_RECIPIENT_ID_2,
+        publicId: "fake_recip_2",
         email: "b@example.com",
         role: "signer",
         status: "signed",

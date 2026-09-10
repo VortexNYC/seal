@@ -999,11 +999,12 @@ function DocumentDetailPage() {
         />
 
         <SendDocumentDialog
-          documentId={typedDocumentId}
+          documentPublicId={documentPublicId}
           documentName={documentData.name}
           recipients={recipients}
           signatureFieldCount={signatureFieldCount}
           fieldCountsByRecipient={fieldCountsByRecipient}
+          paymentConfigs={paymentConfigs}
           open={docState.sendDocumentOpen}
           onOpenChange={docState.setSendDocumentOpen}
           defaultDeadlineDays={signingSettings?.defaultDeadlineDays}
