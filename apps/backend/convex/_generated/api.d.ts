@@ -165,7 +165,6 @@ import type * as signature_fields_queries from "../signature_fields/queries.js";
 import type * as subscription_price_resolver from "../subscription_price_resolver.js";
 import type * as testVortexAuth from "../testVortexAuth.js";
 import type * as users from "../users.js";
-import type * as validations_api from "../validations/api.js";
 import type * as validations_organizations from "../validations/organizations.js";
 import type * as vortex_billing_catalog_mutations from "../vortex_billing/catalog_mutations.js";
 import type * as vortex_billing_catalog_queries from "../vortex_billing/catalog_queries.js";
@@ -351,7 +350,6 @@ declare const fullApi: ApiFromModules<{
   subscription_price_resolver: typeof subscription_price_resolver;
   testVortexAuth: typeof testVortexAuth;
   users: typeof users;
-  "validations/api": typeof validations_api;
   "validations/organizations": typeof validations_organizations;
   "vortex_billing/catalog_mutations": typeof vortex_billing_catalog_mutations;
   "vortex_billing/catalog_queries": typeof vortex_billing_catalog_queries;
