@@ -2,17 +2,17 @@
  * Authenticated layout: protects product routes behind sign-in and enforces an
  * active organization before opening Seal workspace paths.
  */
-import { useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   Navigate,
   Outlet,
   useLocation,
 } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
 
+import { api } from "@seal/backend/convex/_generated/api";
 import Loader from "@/components/loader";
 import { useAppAuth } from "@/lib/auth-runtime.better-auth";
-import { listUserOrganizations } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -23,10 +23,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const { isLoaded, isSignedIn } = useAppAuth();
-  const { data: organizations } = useQuery({
-    queryKey: ["api", "auth", "organization", "list"],
-    queryFn: listUserOrganizations,
-  });
+  const organizations = useQuery(api.check_membership.listUserOrganizations);
   const { pathname } = useLocation();
 
   if (!isLoaded || organizations === undefined) {

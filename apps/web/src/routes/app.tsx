@@ -1,13 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
+import { api } from "@seal/backend/convex/_generated/api";
 import Loader from "@/components/loader";
 import { useAppAuth } from "@/lib/auth-runtime.better-auth";
-import {
-  listUserOrganizations,
-  setActiveOrganization,
-} from "@/lib/api-client";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute("/app")({
@@ -35,12 +32,13 @@ function AppRedirect() {
 function AuthenticatedRedirect() {
   const [isFixing, setIsFixing] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
-  const { data: organizations } = useQuery({
-    queryKey: ["api", "auth", "organization", "list"],
-    queryFn: listUserOrganizations,
-  });
+  const organizations = useQuery(api.check_membership.listUserOrganizations);
+  const setActiveOrganization = useMutation(
+    api.check_membership.setActiveOrganizationBySlug
+  );
 
-  const activeOrganizationSlug = fixedSlug ?? organizations?.[0]?.slug ?? null;
+  const activeOrganizationSlug =
+    fixedSlug ?? (organizations && organizations[0]?.organizationSlug) ?? null;
 
   useEffect(() => {
     if (
@@ -55,21 +53,27 @@ function AuthenticatedRedirect() {
     const first = organizations[0];
     if (!first) return;
     setIsFixing(true);
-    setActiveOrganization(first.slug)
+    setActiveOrganization({ organizationSlug: first.organizationSlug })
       .then(() => {
-        setFixedSlug(first.slug);
+        setFixedSlug(first.organizationSlug);
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error("Failed to set active organization:", error);
       })
       .finally(() => {
         setIsFixing(false);
       });
-  }, [organizations, isFixing, fixedSlug, activeOrganizationSlug]);
+  }, [
+    organizations,
+    isFixing,
+    fixedSlug,
+    activeOrganizationSlug,
+    setActiveOrganization,
+  ]);
 
   const isLoading =
     organizations === undefined ||
-    (organizations.length > 0 && !activeOrganizationSlug && isFixing);
+    ((organizations?.length ?? 0) > 0 && !activeOrganizationSlug && isFixing);
 
   if (isLoading) {
     return (
