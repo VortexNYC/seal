@@ -140,6 +140,12 @@ app.use("/api/v1/*", async (c, next) => {
   if (c.req.path === "/api/v1/uploads" && c.req.method === "POST") {
     return next();
   }
+  if (
+    c.req.path === "/api/v1/documents/download-file" &&
+    c.req.method === "GET"
+  ) {
+    return next();
+  }
 
   const header = c.req.header("authorization");
   if (!header?.startsWith("Bearer ")) {

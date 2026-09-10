@@ -17,6 +17,7 @@ import { z } from "zod";
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -951,6 +952,91 @@ app.post("/bulk-send", async (c) => {
     total_requested: results.length,
     results,
   });
+});
+
+app.get("/download", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      storageKey: documents.storageKey,
+      status: documents.status,
+      documentStatus: documents.documentStatus,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || !row.storageKey) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const token = await createDownloadToken(c.env, {
+    userId: mcp.sub,
+    organizationId,
+    storageKey: row.storageKey,
+    documentName: row.name ?? "document.pdf",
+  });
+
+  if (!token) {
+    return c.json({ error: "token_generation_failed" }, 500);
+  }
+
+  const origin = new URL(c.req.url).origin;
+  const url = `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`;
+
+  return c.json({ url });
+});
+
+app.get("/download-file", async (c) => {
+  const token = c.req.query("token");
+  if (!token) {
+    return c.json({ error: "missing_token" }, 400);
+  }
+
+  const payload = await verifyDownloadToken(c.env, token);
+  if (!payload) {
+    return c.json({ error: "invalid_token" }, 401);
+  }
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(payload.storageKey);
+  if (!object) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set(
+    "content-type",
+    object.httpMetadata?.contentType ?? "application/pdf"
+  );
+  const safeName = payload.documentName.replace(/"/g, "'");
+  headers.set("content-disposition", `attachment; filename="${safeName}"`);
+
+  return c.body(object.body, { headers });
 });
 
 export default app;
