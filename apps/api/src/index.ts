@@ -18,6 +18,7 @@ import publicApi from "./api/public.js";
 import savedSignatures from "./api/saved-signatures.js";
 import users from "./api/users.js";
 import accountV1 from "./api/v1/account.js";
+import contactsV1 from "./api/v1/contacts.js";
 import documentsV1 from "./api/v1/documents.js";
 import recipientsV1 from "./api/v1/recipients.js";
 import { createAuth } from "./platform/auth.js";
@@ -129,6 +130,7 @@ app.route("/api/users", users);
 
 app.use("/api/v1/*", mcpAuth);
 app.route("/api/v1/account", accountV1);
+app.route("/api/v1/contacts", contactsV1);
 app.route("/api/v1/documents", documentsV1);
 app.route("/api/v1/recipients", recipientsV1);
 
