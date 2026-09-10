@@ -1015,3 +1015,85 @@ export const feedback = sqliteTable(
   },
   (table) => [index("feedback_organizationId_idx").on(table.organizationId)]
 );
+
+// -----------------------------------------------------------------------------
+// MCP OAuth tables
+// -----------------------------------------------------------------------------
+
+export const mcpOAuthClients = sqliteTable(
+  "mcp_oauth_clients",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    redirectUris: text("redirect_uris").notNull(),
+    allowedScopes: text("allowed_scopes").notNull().default("mcp"),
+    tokenEndpointAuthMethod: text("token_endpoint_auth_method")
+      .notNull()
+      .default("none"),
+    grantTypes: text("grant_types").notNull().default("authorization_code"),
+    responseTypes: text("response_types").notNull().default("code"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("mcpOAuthClients_name_idx").on(table.name)]
+);
+
+export const mcpOAuthAuthorizationCodes = sqliteTable(
+  "mcp_oauth_authorization_codes",
+  {
+    code: text("code").primaryKey(),
+    clientId: text("client_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+    scopes: text("scopes"),
+    redirectUri: text("redirect_uri").notNull(),
+    codeChallenge: text("code_challenge").notNull(),
+    codeChallengeMethod: text("code_challenge_method").notNull(),
+    state: text("state"),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    consumedAt: integer("consumed_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("mcpOAuthAuthorizationCodes_clientId_idx").on(table.clientId),
+    index("mcpOAuthAuthorizationCodes_userId_idx").on(table.userId),
+    index("mcpOAuthAuthorizationCodes_expiresAt_idx").on(table.expiresAt),
+  ]
+);
+
+export const mcpOAuthRefreshTokens = sqliteTable(
+  "mcp_oauth_refresh_tokens",
+  {
+    id: text("id").primaryKey(),
+    tokenHash: text("token_hash").notNull().unique(),
+    clientId: text("client_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+    scopes: text("scopes"),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    consumedAt: integer("consumed_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("mcpOAuthRefreshTokens_tokenHash_idx").on(table.tokenHash),
+    index("mcpOAuthRefreshTokens_userId_idx").on(table.userId),
+    index("mcpOAuthRefreshTokens_clientId_idx").on(table.clientId),
+  ]
+);
