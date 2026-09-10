@@ -5,14 +5,12 @@
  * ownership transfer. Org MFA + session timeout are Core (VOR-183 / SEA-604) —
  * dead toggles removed from this UI.
  *
- * Also: Core VortexSecurityAuditList. Product document audit → audit-log.
+ * Product document audit → audit-log.
  * Route: /{slug}/settings/security
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { VortexSecurityAuditList } from "@vortexnyc/auth/react";
 import {
   Button,
   Card,
@@ -23,9 +21,8 @@ import {
   Label,
   Switch,
 } from "@vortexnyc/ui";
-import { useQuery as useConvexQuery } from "convex/react";
 import { ArrowRightLeft, Save, Shield } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -67,26 +64,11 @@ function SecuritySettings() {
     ipAllowlistText: "",
     allowApiAccess: true,
   });
-  const [auditRange, setAuditRange] = useState<"7" | "30" | "90">("30");
-
-  const auditFrom = useMemo(
-    () => Date.now() - Number(auditRange) * 24 * 60 * 60 * 1000,
-    [auditRange]
-  );
 
   const isOwner = organization?.userRole === "owner";
   const isAdmin =
     organization?.userRole === "admin" || organization?.userRole === "owner";
 
-  const securityAuditLogs = useConvexQuery(
-    api.organizations.vortex_security_audit.listRecent,
-    isAdmin
-      ? {
-          limit: 100,
-          from: auditFrom,
-        }
-      : "skip"
-  );
   useEffect(() => {
     if (securitySettings) {
       setFormData({
@@ -296,53 +278,25 @@ function SecuritySettings() {
 
       {isAdmin ? (
         <Card className="mt-6">
-          <CardHeader className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle>Access &amp; security events</CardTitle>
-              <CardDescription>
-                Member, organization, and login events for this workspace. For
-                document and signing activity, use the{" "}
-                <Link
-                  className="underline underline-offset-4"
-                  params={{ slug }}
-                  to="/$slug/settings/audit-log"
-                >
-                  Audit log
-                </Link>
-                .
-              </CardDescription>
-            </div>
-            <div className="space-y-1">
-              <Label
-                className="text-muted-foreground text-xs"
-                htmlFor="audit-window"
+          <CardHeader>
+            <CardTitle>Access &amp; security events</CardTitle>
+            <CardDescription>
+              Member, organization, and login events are managed in Vortex Auth.
+              For document and signing activity, use the{" "}
+              <Link
+                className="underline underline-offset-4"
+                params={{ slug }}
+                to="/$slug/settings/audit-log"
               >
-                Window
-              </Label>
-              <select
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-                id="audit-window"
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (value === "7" || value === "30" || value === "90") {
-                    setAuditRange(value);
-                  }
-                }}
-                value={auditRange}
-              >
-                <option value="7">Last 7 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="90">Last 90 days</option>
-              </select>
-            </div>
+                Audit log
+              </Link>
+              .
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <VortexSecurityAuditList
-              copy={{
-                emptyMessage: "No matching access or security events.",
-              }}
-              logs={securityAuditLogs}
-            />
+            <p className="text-muted-foreground text-sm">
+              Security audit history is not available in this workspace view.
+            </p>
           </CardContent>
         </Card>
       ) : null}
