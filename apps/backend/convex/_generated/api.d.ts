@@ -38,13 +38,9 @@ import type * as ai_tools_search_documents from "../ai/tools/search_documents.js
 import type * as ai_types from "../ai/types.js";
 import type * as ai_usage from "../ai/usage.js";
 import type * as ai_workpool from "../ai/workpool.js";
-import type * as api_api_rate_limiter from "../api/api_rate_limiter.js";
 import type * as api_context from "../api/context.js";
 import type * as api_errors from "../api/errors.js";
 import type * as api_helpers from "../api/helpers.js";
-import type * as api_index from "../api/index.js";
-import type * as api_middleware from "../api/middleware.js";
-import type * as api_versioning from "../api/versioning.js";
 import type * as apiAuth from "../apiAuth.js";
 import type * as api_keys_index from "../api_keys/index.js";
 import type * as api_keys_keys from "../api_keys/keys.js";
@@ -250,13 +246,9 @@ declare const fullApi: ApiFromModules<{
   "ai/types": typeof ai_types;
   "ai/usage": typeof ai_usage;
   "ai/workpool": typeof ai_workpool;
-  "api/api_rate_limiter": typeof api_api_rate_limiter;
   "api/context": typeof api_context;
   "api/errors": typeof api_errors;
   "api/helpers": typeof api_helpers;
-  "api/index": typeof api_index;
-  "api/middleware": typeof api_middleware;
-  "api/versioning": typeof api_versioning;
   apiAuth: typeof apiAuth;
   "api_keys/index": typeof api_keys_index;
   "api_keys/keys": typeof api_keys_keys;
