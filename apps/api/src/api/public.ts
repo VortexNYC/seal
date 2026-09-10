@@ -634,6 +634,19 @@ app.openapi(submitRouteDef, async (c) => {
     .where(eq(recipients.id, recipient.id));
 
   if (input.status === "signed" || input.status === "approved") {
+    await db.insert(activity).values({
+      id: crypto.randomUUID(),
+      organizationId: doc.organizationId,
+      action: "recipient.signed",
+      actorName: recipient.name ?? recipient.email,
+      targetName: doc.name,
+      metadata: JSON.stringify({
+        documentId: doc.id,
+        publicId: doc.publicId,
+        recipientId: recipient.id,
+      }),
+      createdAt: nowDate,
+    });
     if (doc.allowDictateNextSigner) {
       const placeholderRows = await db
         .select()
@@ -677,6 +690,19 @@ app.openapi(submitRouteDef, async (c) => {
           updatedAt: nowDate,
         })
         .where(eq(documents.id, doc.id));
+
+      await db.insert(activity).values({
+        id: crypto.randomUUID(),
+        organizationId: doc.organizationId,
+        action: "document.completed",
+        actorName: recipient.name ?? recipient.email,
+        targetName: doc.name,
+        metadata: JSON.stringify({
+          documentId: doc.id,
+          publicId: doc.publicId,
+        }),
+        createdAt: nowDate,
+      });
     }
   }
 
