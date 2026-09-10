@@ -5,11 +5,8 @@
  * Route: /{slug}/analytics
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery as useConvexQuery } from "convex/react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -86,6 +83,7 @@ import {
   getMemberActivity,
   getRecentActivity,
   getRecipientTimingStats,
+  getTemplatePerformance,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
@@ -254,8 +252,8 @@ function AnalyticsContent({
 
         <TabsContent value="status" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <StatusPieChart />
-            <StatusBarChart />
+            <StatusPieChart scope={effectiveScope} />
+            <StatusBarChart scope={effectiveScope} />
           </div>
         </TabsContent>
 
@@ -620,10 +618,11 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "var(--expired)",
 };
 
-function StatusPieChart() {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {})
-  );
+function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["analytics", "stats", scope],
+    queryFn: () => getAnalyticsStats(scope),
+  });
 
   const pieData = useMemo(() => {
     const items = [
@@ -719,10 +718,11 @@ function StatusPieChart() {
   );
 }
 
-function StatusBarChart() {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {})
-  );
+function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["analytics", "stats", scope],
+    queryFn: () => getAnalyticsStats(scope),
+  });
 
   const barData = useMemo(
     () => [
@@ -1615,10 +1615,10 @@ function RecipientTimingTab() {
 
 function TemplatePerformanceTab() {
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
-  const templates = useConvexQuery(
-    api.dashboard.analytics_queries.getTemplatePerformance,
-    { days: 90 }
-  );
+  const { data: templates } = useQuery({
+    queryKey: ["analytics", "template-performance", 90],
+    queryFn: () => getTemplatePerformance(90),
+  });
 
   if (!templates || isLoadingPlan) {
     return <AnalyticsTabSkeleton />;

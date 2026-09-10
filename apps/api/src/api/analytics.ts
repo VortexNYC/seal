@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, member, notifications, recipients, user } from "../global/schema.js";
+import { documents, member, notifications, recipients, templates, user } from "../global/schema.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -826,6 +826,67 @@ app.openapi(recipientTimingRouteDef, async (c) => {
       turnaroundCount > 0 ? Math.round(totalTurnaround / turnaroundCount) : null,
     distribution,
   });
+});
+
+const templatePerformanceSchema = z
+  .object({
+    templateId: z.string(),
+    templateName: z.string(),
+    docsSent: z.number().int(),
+    completionRate: z.number().int(),
+    avgTurnaround: z.number().int().nullable(),
+    declineRate: z.number().int(),
+  })
+  .openapi("TemplatePerformance");
+
+const templatePerformanceQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(90),
+});
+
+const templatePerformanceRouteDef = createRoute({
+  method: "get",
+  path: "/template-performance",
+  request: {
+    query: templatePerformanceQuerySchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(templatePerformanceSchema) },
+      },
+      description: "Template performance summary",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(templatePerformanceRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+
+  const db = createD1(c.env.D1);
+
+  const rows = await db
+    .select({
+      id: templates.id,
+      name: templates.name,
+      useCount: templates.useCount,
+    })
+    .from(templates)
+    .where(and(eq(templates.organizationId, organizationId), eq(templates.status, "active")))
+    .orderBy(templates.useCount);
+
+  const results = rows.map((t) => ({
+    templateId: t.id,
+    templateName: t.name,
+    docsSent: t.useCount,
+    completionRate: 0,
+    avgTurnaround: null,
+    declineRate: 0,
+  }));
+
+  return c.json(results);
 });
 
 export default app;

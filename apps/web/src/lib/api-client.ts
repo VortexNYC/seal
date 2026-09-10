@@ -348,6 +348,26 @@ const recipientTimingSchema = z.object({
 
 export type ApiRecipientTiming = z.infer<typeof recipientTimingSchema>;
 
+const templatePerformanceSchema = z.object({
+  templateId: z.string(),
+  templateName: z.string(),
+  docsSent: z.number().int(),
+  completionRate: z.number().int(),
+  avgTurnaround: z.number().int().nullable(),
+  declineRate: z.number().int(),
+});
+
+export type ApiTemplatePerformance = z.infer<typeof templatePerformanceSchema>;
+
+export async function getTemplatePerformance(
+  days = 90
+): Promise<ApiTemplatePerformance[]> {
+  return apiFetch(
+    `/api/analytics/template-performance?days=${encodeURIComponent(days)}`,
+    z.array(templatePerformanceSchema)
+  );
+}
+
 export async function getRecipientTimingStats(
   days = 30
 ): Promise<ApiRecipientTiming> {
