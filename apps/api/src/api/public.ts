@@ -5,6 +5,7 @@ import { createD1 } from "../global/db.js";
 import {
   documents,
   organization,
+  paymentFieldConfigs,
   recipients,
   signatureFields,
   signatures,
@@ -196,8 +197,8 @@ const signingFieldSchema = z
     width: z.number(),
     height: z.number(),
     page: z.number().int(),
-    properties: z.record(z.string(), z.unknown()).nullable().optional(),
-    validationRules: z.record(z.string(), z.unknown()).nullable().optional(),
+    properties: z.unknown().nullable().optional(),
+    validationRules: z.unknown().nullable().optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
     currentValue: z.string().nullable().optional(),
@@ -315,10 +316,8 @@ app.openapi(signingFieldsRouteDef, async (c) => {
       width: field.width,
       height: field.height,
       page: field.page,
-      properties: safeParseJson<Record<string, unknown>>(field.properties),
-      validationRules: safeParseJson<Record<string, unknown>>(
-        field.validationRules
-      ),
+      properties: safeParseJson(field.properties),
+      validationRules: safeParseJson(field.validationRules),
       createdAt: field.createdAt.getTime(),
       updatedAt: field.updatedAt.getTime(),
       currentValue: sig?.value ?? null,
@@ -641,6 +640,85 @@ app.openapi(pdfRouteDef, async (c) => {
   if (object.size) headers["content-length"] = String(object.size);
 
   return c.body(object.body, { headers });
+});
+
+const paymentConfigSummarySchema = z
+  .object({
+    id: z.string(),
+    publicId: z.string(),
+    fieldId: z.string(),
+    documentId: z.string(),
+    paymentType: z.string(),
+    totalAmountCents: z.number().int(),
+    currency: z.string(),
+    paymentStatus: z.string().nullable().optional(),
+  })
+  .openapi("PublicPaymentConfigSummary");
+
+const signingPaymentConfigsRouteDef = createRoute({
+  method: "get",
+  path: "/signing/{token}/payment-configs",
+  request: {
+    params: tokenParamsSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(paymentConfigSummarySchema) },
+      },
+      description: "Payment configs for the document",
+    },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(signingPaymentConfigsRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const rows = await db
+    .select({
+      id: paymentFieldConfigs.id,
+      publicId: paymentFieldConfigs.publicId,
+      fieldId: paymentFieldConfigs.fieldId,
+      documentId: paymentFieldConfigs.documentId,
+      paymentType: paymentFieldConfigs.paymentType,
+      totalAmountCents: paymentFieldConfigs.totalAmountCents,
+      currency: paymentFieldConfigs.currency,
+      paymentStatus: paymentFieldConfigs.paymentStatus,
+    })
+    .from(paymentFieldConfigs)
+    .where(eq(paymentFieldConfigs.documentId, doc.id));
+
+  return c.json(rows);
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {

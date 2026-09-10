@@ -1483,8 +1483,8 @@ const publicSigningFieldSchema = z.object({
   width: z.number(),
   height: z.number(),
   page: z.number().int(),
-  properties: z.record(z.string(), z.unknown()).nullable().optional(),
-  validationRules: z.record(z.string(), z.unknown()).nullable().optional(),
+  properties: z.unknown().nullable().optional(),
+  validationRules: z.unknown().nullable().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
   currentValue: z.string().nullable().optional(),
@@ -1550,6 +1550,30 @@ export async function submitPublicSigning(
       method: "POST",
       body: JSON.stringify(input),
     }
+  );
+}
+
+const publicPaymentConfigSummarySchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  fieldId: z.string(),
+  documentId: z.string(),
+  paymentType: z.string(),
+  totalAmountCents: z.number().int(),
+  currency: z.string(),
+  paymentStatus: z.string().nullable().optional(),
+});
+
+export type PublicPaymentConfigSummary = z.infer<
+  typeof publicPaymentConfigSummarySchema
+>;
+
+export async function getPublicSigningPaymentConfigs(
+  token: string
+): Promise<PublicPaymentConfigSummary[]> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/payment-configs`,
+    z.array(publicPaymentConfigSummarySchema)
   );
 }
 
