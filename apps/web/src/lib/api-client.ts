@@ -1634,6 +1634,10 @@ export async function recordPublicSigningOptOut(
   );
 }
 
+export function getPublicSigningSignedPdfUrl(token: string): string {
+  return `/api/public/signing/${encodeURIComponent(token)}/signed-pdf`;
+}
+
 export async function dictatePublicSigningNextSigner(
   token: string,
   input: { nextName: string; nextEmail: string }

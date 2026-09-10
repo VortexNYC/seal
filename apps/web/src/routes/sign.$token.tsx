@@ -6,13 +6,11 @@
  * This is an unauthenticated route - no login required.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   Link,
-  useRouteContext,
 } from "@tanstack/react-router";
 import { ConvexError } from "convex/values";
 import {
@@ -89,6 +87,7 @@ import { pageSEO } from "@/lib/seo";
 import {
   getPublicSigningPaymentConfigs,
   getPublicSigningPdf,
+  getPublicSigningSignedPdfUrl,
   getSigningByToken,
   getSigningFields,
   recordPublicSigningConsent,
@@ -323,7 +322,6 @@ function getStatusBadge(status: string): {
 
 function SigningPage() {
   const { token } = Route.useParams();
-  const { convexClient } = useRouteContext({ from: "__root__" });
   const { track } = useAnalytics();
   const { isEmbedded, embedParams } = useEmbeddedSigning(token);
 
@@ -704,16 +702,12 @@ function SigningPage() {
   };
 
   // Download signed PDF handler
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setIsDownloading(true);
     try {
-      const { url, documentName } = await convexClient.action(
-        api.documents.sign_pdf_action.generateAndGetSignedPdfByToken,
-        { signingToken: token }
-      );
       const link = document.createElement("a");
-      link.href = url;
-      link.download = `${documentName || "document"}.pdf`;
+      link.href = getPublicSigningSignedPdfUrl(token);
+      link.download = `${doc.name || "document"}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -720,6 +720,72 @@ app.openapi(pdfRouteDef, async (c) => {
   return c.body(object.body, { headers });
 });
 
+const signedPdfRouteDef = createRoute({
+  method: "get",
+  path: "/signing/{token}/signed-pdf",
+  request: {
+    params: tokenParamsSchema,
+  },
+  responses: {
+    200: { description: "Signed PDF document as attachment" },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document or PDF not found" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(signedPdfRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || !doc.storageKey) {
+    return c.json({ error: "Document or file not found" }, 404);
+  }
+
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "Object storage not configured" }, 503);
+  }
+
+  const object = await bucket.get(doc.storageKey);
+  if (!object || !object.body) {
+    return c.json({ error: "Document or file not found" }, 404);
+  }
+
+  const filename = `${doc.name || "document"}.pdf`;
+
+  const headers: Record<string, string> = {
+    "content-type": object.httpMetadata?.contentType || "application/pdf",
+    "content-disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  };
+  if (object.size) headers["content-length"] = String(object.size);
+
+  return c.body(object.body, { headers });
+});
+
 const paymentConfigSummarySchema = z
   .object({
     _id: z.string(),
