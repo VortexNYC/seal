@@ -51,6 +51,9 @@ const DocumentSchema = z
     fileSize: z.number().int().nullable().optional(),
     pageCount: z.number().int().nullable().optional(),
     thumbnailDataUrl: z.string().nullable().optional(),
+    qrToken: z.string().nullable().optional(),
+    documentHash: z.string().nullable().optional(),
+    completedAt: z.number().nullable().optional(),
     redirectUrl: z.string().nullable().optional(),
     allowDictateNextSigner: z.boolean(),
     sentAt: z.number().nullable().optional(),
@@ -86,6 +89,9 @@ function documentResponse(doc: {
   size: number | null;
   pageCount: number | null;
   thumbnailDataUrl: string | null;
+  qrToken: string | null;
+  documentHash: string | null;
+  completedAt: Date | null;
   redirectUrl: string | null;
   allowDictateNextSigner: boolean;
   sentAt: Date | null;
@@ -113,6 +119,9 @@ function documentResponse(doc: {
     fileSize: doc.size,
     pageCount: doc.pageCount,
     thumbnailDataUrl: doc.thumbnailDataUrl,
+    qrToken: doc.qrToken,
+    documentHash: doc.documentHash,
+    completedAt: doc.completedAt ? doc.completedAt.getTime() : null,
     redirectUrl: doc.redirectUrl,
     allowDictateNextSigner: doc.allowDictateNextSigner,
     sentAt: doc.sentAt ? doc.sentAt.getTime() : null,
@@ -285,6 +294,7 @@ app.openapi(createRouteDef, async (c) => {
     contentType: input.contentType ?? null,
     pageCount: input.pageCount ?? null,
     thumbnailDataUrl: input.thumbnailDataUrl ?? null,
+    qrToken: crypto.randomUUID(),
     createdAt: now,
     updatedAt: now,
   });
@@ -3534,7 +3544,12 @@ app.openapi(signRouteDef, async (c) => {
     if (pendingCount === 0) {
       await db
         .update(documents)
-        .set({ status: "completed", updatedAt: now })
+        .set({
+          status: "completed",
+          completedAt: now,
+          documentHash: input.documentHashAtSigning ?? doc.documentHash ?? null,
+          updatedAt: now,
+        })
         .where(eq(documents.id, doc.id));
     }
   }

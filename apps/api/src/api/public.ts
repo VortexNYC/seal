@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -655,6 +655,29 @@ app.openapi(submitRouteDef, async (c) => {
           .where(eq(recipients.id, recipient.id));
       }
     }
+
+    const pendingSigners = await db
+      .select({ value: count() })
+      .from(recipients)
+      .where(
+        and(
+          eq(recipients.documentId, doc.id),
+          eq(recipients.role, "signer"),
+          eq(recipients.status, "pending")
+        )
+      );
+
+    const pendingCount = pendingSigners[0]?.value ?? 0;
+    if (pendingCount === 0) {
+      await db
+        .update(documents)
+        .set({
+          status: "completed",
+          completedAt: nowDate,
+          updatedAt: nowDate,
+        })
+        .where(eq(documents.id, doc.id));
+    }
   }
 
   return c.json({ success: true });
@@ -1274,6 +1297,108 @@ function base64ToBytes(value: string) {
   const binary = atob(value);
   return new Uint8Array(Array.from(binary, (char) => char.charCodeAt(0)));
 }
+
+function maskEmail(email: string): string {
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0) return email;
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex);
+  if (local.length <= 1) return `*${domain}`;
+  return `${local[0]}${"*".repeat(Math.min(local.length - 1, 5))}${domain}`;
+}
+
+const qrTokenParamsSchema = z.object({
+  qrToken: z.string(),
+});
+
+const signerSchema = z.object({
+  name: z.string(),
+  maskedEmail: z.string(),
+  role: z.string(),
+  signedAt: z.number().nullable(),
+});
+
+const verifyResultSchema = z
+  .object({
+    verified: z.boolean(),
+    documentName: z.string(),
+    completedAt: z.number().nullable(),
+    signerCount: z.number().int(),
+    signers: z.array(signerSchema),
+    documentHash: z.string().nullable(),
+    createdAt: z.number(),
+  })
+  .openapi("VerifyResult");
+
+const verifyResponseSchema = verifyResultSchema.nullable();
+
+const verifyRouteDef = createRoute({
+  method: "get",
+  path: "/verify/{qrToken}",
+  request: {
+    params: qrTokenParamsSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: verifyResponseSchema },
+      },
+      description: "Public document verification result",
+    },
+    400: { description: "Invalid token" },
+  },
+});
+
+app.openapi(verifyRouteDef, async (c) => {
+  const { qrToken } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.qrToken, qrToken))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status !== "completed" || doc.documentStatus === "deleted") {
+    return c.json(null, 200);
+  }
+
+  type PublicSigner = {
+    name: string;
+    maskedEmail: string;
+    role: string;
+    signedAt: number | null;
+  };
+
+  const signers: PublicSigner[] = [];
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+
+  for (const r of recipientRows) {
+    if (r.status !== "signed" && r.status !== "approved") {
+      continue;
+    }
+    signers.push({
+      name: r.name ?? r.email,
+      maskedEmail: maskEmail(r.email),
+      role: r.role,
+      signedAt: r.signedAt?.getTime() ?? r.approvedAt?.getTime() ?? null,
+    });
+  }
+
+  return c.json({
+    verified: true,
+    documentName: doc.name,
+    completedAt: doc.completedAt ? doc.completedAt.getTime() : null,
+    signerCount: signers.length,
+    signers,
+    documentHash: doc.documentHash ?? null,
+    createdAt: doc.createdAt.getTime(),
+  });
+});
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

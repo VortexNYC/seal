@@ -99,4 +99,92 @@ describe("public API", () => {
     expect(stored?.size).toBe(16);
     expect(stored?.httpMetadata?.contentType).toBe("text/plain");
   });
+
+  it("verifies a completed document by qr token", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_verify",
+      name: "Verify Org",
+      slug: "verify-org",
+    });
+
+    const qrToken = "qr-token-123";
+    const completedAt = new Date();
+    await db.insert(documents).values({
+      id: "doc_verify",
+      publicId: "doc_pub_verify",
+      organizationId: "org_verify",
+      name: "Verified Document",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      qrToken,
+      completedAt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const signedAt = new Date();
+    await db.insert(recipients).values({
+      id: "rec_verify",
+      publicId: "rec_pub_verify",
+      documentId: "doc_verify",
+      name: "Alice Signer",
+      email: "alice@example.com",
+      role: "signer",
+      status: "signed",
+      signedAt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/public/verify/${encodeURIComponent(qrToken)}`
+      ),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    const result = z
+      .object({
+        verified: z.literal(true),
+        documentName: z.string(),
+        completedAt: z.number().nullable(),
+        signerCount: z.number(),
+        signers: z.array(
+          z.object({
+            name: z.string(),
+            maskedEmail: z.string(),
+            role: z.string(),
+            signedAt: z.number().nullable(),
+          })
+        ),
+        documentHash: z.null(),
+        createdAt: z.number(),
+      })
+      .parse(await response.json());
+
+    expect(result.documentName).toBe("Verified Document");
+    expect(result.signerCount).toBe(1);
+    const signer = result.signers[0];
+    expect(signer).toBeDefined();
+    if (signer) {
+      expect(signer.name).toBe("Alice Signer");
+      expect(signer.maskedEmail).toBe("a****@example.com");
+    }
+  });
+
+  it("returns null for an unknown qr token", async () => {
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify/unknown-qr-token"),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toBeNull();
+  });
 });

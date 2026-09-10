@@ -2475,3 +2475,31 @@ export async function uploadAttachment(
   );
   return storageKey;
 }
+
+const publicSignerSchema = z.object({
+  name: z.string(),
+  maskedEmail: z.string(),
+  role: z.string(),
+  signedAt: z.number().nullable(),
+});
+
+export const verifyDocumentResultSchema = z.object({
+  verified: z.boolean(),
+  documentName: z.string(),
+  completedAt: z.number().nullable(),
+  signerCount: z.number(),
+  signers: z.array(publicSignerSchema),
+  documentHash: z.string().nullable(),
+  createdAt: z.number(),
+});
+
+export type VerifyDocumentResult = z.infer<typeof verifyDocumentResultSchema>;
+
+export async function verifyDocumentByQrToken(
+  qrToken: string
+): Promise<VerifyDocumentResult | null> {
+  return apiFetch(
+    `/api/public/verify/${encodeURIComponent(qrToken)}`,
+    verifyDocumentResultSchema.nullable()
+  );
+}
