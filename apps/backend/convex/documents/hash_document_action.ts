@@ -76,10 +76,13 @@ export const hashDocument = internalAction({
     const hash = await generateSHA256Hash(pdfArrayBuffer);
 
     // Store the hash in the document record
-    await ctx.runMutation(internal.documents.mutations.updateDocumentHash, {
-      documentId: args.documentId,
-      documentHash: hash,
-    });
+    await ctx.runMutation(
+      internal.documents.ai_document_state.updateDocumentHash,
+      {
+        documentId: args.documentId,
+        documentHash: hash,
+      }
+    );
 
     return { hash };
   },

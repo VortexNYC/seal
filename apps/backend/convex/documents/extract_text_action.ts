@@ -56,10 +56,13 @@ export const extractDocumentText = internalAction({
       extractedText = extractedText.slice(0, MAX_TEXT_LENGTH);
     }
 
-    await ctx.runMutation(internal.documents.mutations.updateExtractedText, {
-      documentId: args.documentId,
-      extractedText,
-    });
+    await ctx.runMutation(
+      internal.documents.ai_document_state.updateExtractedText,
+      {
+        documentId: args.documentId,
+        extractedText,
+      }
+    );
 
     return { charCount: extractedText.length };
   },
