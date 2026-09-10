@@ -82,6 +82,7 @@ import {
   getAnalyticsPeriodStats,
   getAnalyticsStats,
   getAnalyticsTrends,
+  getEmailEngagementStats,
   getMemberActivity,
   getRecentActivity,
 } from "@/lib/api-client";
@@ -1349,12 +1350,10 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
-  const engagement = useConvexQuery(
-    api.dashboard.analytics_queries.getEmailEngagementStats,
-    {
-      days: 30,
-    }
-  );
+  const { data: engagement } = useQuery({
+    queryKey: ["analytics", "email-engagement", 30],
+    queryFn: () => getEmailEngagementStats(30),
+  });
 
   if (!engagement) {
     return <AnalyticsTabSkeleton />;

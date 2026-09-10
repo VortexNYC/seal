@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, member, recipients, user } from "../global/schema.js";
+import { documents, member, notifications, recipients, user } from "../global/schema.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -624,6 +624,77 @@ app.openapi(exportDocumentsRouteDef, async (c) => {
   });
 
   return c.json(results);
+});
+
+const emailEngagementQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+const emailEngagementSchema = z
+  .object({
+    total: z.number().int(),
+    deliveryRate: z.number().int(),
+    openRate: z.number().int(),
+    clickRate: z.number().int(),
+    bounceRate: z.number().int(),
+    avgTimeToOpen: z.number().int().nullable(),
+  })
+  .openapi("EmailEngagement");
+
+const emailEngagementRouteDef = createRoute({
+  method: "get",
+  path: "/email-engagement",
+  request: {
+    query: emailEngagementQuerySchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: emailEngagementSchema },
+      },
+      description: "Email engagement stats for the active organization",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(emailEngagementRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const { days } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+
+  const startMs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const start = new Date(startMs);
+
+  const allRows = await db
+    .select({ emailStatus: notifications.emailStatus, lastEmailError: notifications.lastEmailError })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.organizationId, organizationId),
+        gte(notifications.emailSentAt, start)
+      )
+    );
+
+  const total = allRows.length;
+  const bounced = allRows.filter((r) => r.lastEmailError !== null && r.lastEmailError !== "")
+    .length;
+  const delivered = total - bounced;
+
+  const deliveryRate = total > 0 ? Math.round((delivered / total) * 100) : 100;
+  const bounceRate = total > 0 ? Math.round((bounced / total) * 100) : 0;
+
+  return c.json({
+    total,
+    deliveryRate,
+    openRate: 0,
+    clickRate: 0,
+    bounceRate,
+    avgTimeToOpen: null,
+  });
 });
 
 export default app;

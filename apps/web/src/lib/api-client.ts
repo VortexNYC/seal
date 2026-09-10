@@ -322,6 +322,26 @@ const memberActivitySchema = z.object({
 
 export type ApiMemberActivity = z.infer<typeof memberActivitySchema>;
 
+const emailEngagementSchema = z.object({
+  total: z.number().int(),
+  deliveryRate: z.number().int(),
+  openRate: z.number().int(),
+  clickRate: z.number().int(),
+  bounceRate: z.number().int(),
+  avgTimeToOpen: z.number().int().nullable(),
+});
+
+export type ApiEmailEngagement = z.infer<typeof emailEngagementSchema>;
+
+export async function getEmailEngagementStats(
+  days = 30
+): Promise<ApiEmailEngagement> {
+  return apiFetch(
+    `/api/analytics/email-engagement?days=${encodeURIComponent(days)}`,
+    emailEngagementSchema
+  );
+}
+
 const exportDocumentSchema = z.object({
   id: z.string(),
   name: z.string(),
