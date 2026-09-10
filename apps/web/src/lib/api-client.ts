@@ -1434,6 +1434,7 @@ const publicSigningRecipientSchema = z.object({
 const publicSigningDocumentSchema = z.object({
   publicId: z.string(),
   name: z.string(),
+  status: z.string(),
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),

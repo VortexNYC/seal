@@ -33,6 +33,7 @@ const signingRecipientSchema = z.object({
 const signingDocumentSchema = z.object({
   publicId: z.string(),
   name: z.string(),
+  status: z.string(),
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
@@ -159,6 +160,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
       document: {
         publicId: doc.publicId,
         name: doc.name,
+        status: doc.status,
         description: doc.description,
         ownerName: owner?.name || owner?.email,
         pageCount: doc.pageCount,
