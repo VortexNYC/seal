@@ -53,7 +53,7 @@ export async function sendEmail(
     text,
     from,
   }: {
-    to: string;
+    to: string | string[];
     subject: string;
     html: string;
     text?: string;

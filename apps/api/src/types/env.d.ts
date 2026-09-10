@@ -20,5 +20,6 @@ declare interface CloudflareBindings {
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
   APP_URL: string;
+  INTERNAL_API_KEY: string;
   TEST_MIGRATIONS?: D1Migration[];
 }

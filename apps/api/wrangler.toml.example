@@ -4,6 +4,7 @@ compatibility_date = "2026-07-30"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
+INTERNAL_API_KEY = "REPLACE_WITH_A_RANDOM_SECRET"
 BETTER_AUTH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
 BETTER_AUTH_URL = "https://vortex-sign-api.example.workers.dev"
 TOKEN_HASH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"

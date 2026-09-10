@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { routeAgentRequest } from "agents";
 import { cors } from "hono/cors";
+import { z } from "zod";
 
 import { authenticateAgentConnection } from "./agents/auth.js";
 import { SealChatAgent } from "./agents/seal-chat-agent.js";
@@ -30,6 +31,7 @@ import templatesV1 from "./api/v1/templates.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import webhooksV1 from "./api/v1/webhooks.js";
 import { createAuth } from "./platform/auth.js";
+import { sendEmail } from "./platform/email.js";
 import {
   verifyMcpAccessToken,
   type McpAccessToken,
@@ -112,6 +114,33 @@ app.doc("/openapi.json", {
     version: "0.0.1",
     description: "Agent-native e-signature platform on Cloudflare Workers.",
   },
+});
+
+const sendEmailBody = z.object({
+  from: z.string().email().optional(),
+  to: z.union([z.string().email(), z.array(z.string().email())]),
+  subject: z.string().min(1),
+  html: z.string().min(1),
+  text: z.string().optional(),
+});
+
+app.post("/internal/send-email", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const body = sendEmailBody.safeParse(await c.req.json());
+  if (!body.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const result = await sendEmail(c.env, body.data);
+  if (!result.success) {
+    return c.json({ error: result.error ?? "send failed" }, 502);
+  }
+
+  return c.json({ success: true, id: crypto.randomUUID() });
 });
 
 app.get("/health", (c) => c.json({ status: "ok" }));
