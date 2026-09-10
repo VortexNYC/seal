@@ -11,6 +11,7 @@ import {
   or,
   type SQL,
 } from "drizzle-orm";
+import type { Context } from "hono";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
@@ -329,6 +330,17 @@ app.get("/get", async (c) => {
   return c.json(response);
 });
 
+const deadlineSchema = z.union([
+  z.string().datetime(),
+  z.number().int().nonnegative(),
+]);
+
+function parseDeadline(value: string | number | undefined): Date | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === "number") return new Date(value);
+  return new Date(value);
+}
+
 const createDocumentSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
@@ -336,7 +348,7 @@ const createDocumentSchema = z.object({
   file_size: z.number().int().nonnegative().optional(),
   file_type: z.string().optional(),
   page_count: z.number().int().nonnegative().optional(),
-  deadline: z.string().datetime().optional(),
+  deadline: deadlineSchema.optional(),
 });
 
 app.post("/", async (c) => {
@@ -356,8 +368,15 @@ app.post("/", async (c) => {
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { title, description, storage_id, file_size, file_type, page_count, deadline } =
-    parsed.data;
+  const {
+    title,
+    description,
+    storage_id,
+    file_size,
+    file_type,
+    page_count,
+    deadline,
+  } = parsed.data;
 
   const head = await c.env.DOCUMENTS_BUCKET.head(storage_id);
   if (!head) {
@@ -379,10 +398,13 @@ app.post("/", async (c) => {
       documentStatus: "active",
       sharingMode: "private",
       storageKey: storage_id,
-      contentType: file_type ?? head.httpMetadata?.contentType ?? "application/octet-stream",
+      contentType:
+        file_type ??
+        head.httpMetadata?.contentType ??
+        "application/octet-stream",
       size: file_size ?? head.size,
       pageCount: page_count,
-      deadline: deadline ? new Date(deadline) : undefined,
+      deadline: parseDeadline(deadline),
     })
     .returning({
       id: documents.id,
@@ -406,13 +428,17 @@ app.post("/", async (c) => {
 });
 
 const updateDocumentSchema = z.object({
-  id: z.string(),
   title: z.string().min(1).optional(),
   description: z.string().optional(),
-  deadline: z.string().datetime().optional(),
+  deadline: deadlineSchema.optional(),
 });
 
-app.post("/update", async (c) => {
+async function handleUpdateDocument(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -423,13 +449,26 @@ app.post("/update", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
+  const query = c.req.query();
   const rawBody: unknown = await c.req.json();
+
+  const id =
+    (typeof query.id === "string" && query.id.length > 0
+      ? query.id
+      : undefined) ??
+    (isRecord(rawBody) && typeof rawBody.id === "string"
+      ? rawBody.id
+      : undefined);
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
   const parsed = updateDocumentSchema.safeParse(rawBody);
   if (!parsed.success) {
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { id, title, description, deadline } = parsed.data;
+  const { title, description, deadline } = parsed.data;
 
   const db = createD1(c.env.D1);
   const updateValues: {
@@ -439,7 +478,7 @@ app.post("/update", async (c) => {
   } = {};
   if (title !== undefined) updateValues.name = title;
   if (description !== undefined) updateValues.description = description ?? null;
-  if (deadline !== undefined) updateValues.deadline = deadline ? new Date(deadline) : null;
+  if (deadline !== undefined) updateValues.deadline = parseDeadline(deadline);
 
   await db
     .update(documents)
@@ -466,7 +505,9 @@ app.post("/update", async (c) => {
       documentStatus: documents.documentStatus,
     })
     .from(documents)
-    .where(and(eq(documents.id, id), eq(documents.organizationId, organizationId)))
+    .where(
+      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+    )
     .limit(1);
 
   const row = rows[0];
@@ -476,13 +517,40 @@ app.post("/update", async (c) => {
 
   const counts = await recipientCountsForDocument(db, row.id);
   return c.json(toApiDocument(row, counts));
-});
+}
 
-const documentIdSchema = z.object({
-  id: z.string(),
-});
+app.post("/update", async (c) => handleUpdateDocument(c));
+app.put("/update", async (c) => handleUpdateDocument(c));
 
-app.post("/delete", async (c) => {
+async function resolveDocumentId(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+): Promise<string | null> {
+  const query = c.req.query();
+  if (typeof query.id === "string" && query.id.length > 0) {
+    return query.id;
+  }
+  if (c.req.method !== "GET" && c.req.method !== "DELETE") {
+    try {
+      const rawBody: unknown = await c.req.json();
+      if (isRecord(rawBody) && typeof rawBody.id === "string") {
+        return rawBody.id;
+      }
+    } catch {
+      // ignore empty body
+    }
+  }
+  return null;
+}
+
+async function handleDeleteDocument(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -493,13 +561,11 @@ app.post("/delete", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const rawBody: unknown = await c.req.json();
-  const parsed = documentIdSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return c.json({ error: "validation_error" }, 400);
+  const id = await resolveDocumentId(c);
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
   }
 
-  const { id } = parsed.data;
   const db = createD1(c.env.D1);
   const rows = await db
     .select({ status: documents.status })
@@ -529,9 +595,17 @@ app.post("/delete", async (c) => {
     );
 
   return c.json({ success: true });
-});
+}
 
-app.post("/send", async (c) => {
+app.post("/delete", async (c) => handleDeleteDocument(c));
+app.delete("/delete", async (c) => handleDeleteDocument(c));
+
+async function handleSendDocument(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -542,13 +616,11 @@ app.post("/send", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const rawBody: unknown = await c.req.json();
-  const parsed = documentIdSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return c.json({ error: "validation_error" }, 400);
+  const id = await resolveDocumentId(c);
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
   }
 
-  const { id } = parsed.data;
   const db = createD1(c.env.D1);
   const rows = await db
     .select({
@@ -589,14 +661,16 @@ app.post("/send", async (c) => {
     );
 
   return c.json({ success: true });
-});
+}
 
-const voidDocumentSchema = z.object({
-  id: z.string(),
-  reason: z.string().min(1),
-});
+app.post("/send", async (c) => handleSendDocument(c));
 
-app.post("/void", async (c) => {
+async function handleVoidDocument(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -607,13 +681,11 @@ app.post("/void", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const rawBody: unknown = await c.req.json();
-  const parsed = voidDocumentSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return c.json({ error: "validation_error" }, 400);
+  const id = await resolveDocumentId(c);
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
   }
 
-  const { id } = parsed.data;
   const db = createD1(c.env.D1);
   const rows = await db
     .select({ status: documents.status })
@@ -643,6 +715,8 @@ app.post("/void", async (c) => {
     );
 
   return c.json({ success: true });
-});
+}
+
+app.post("/void", async (c) => handleVoidDocument(c));
 
 export default app;

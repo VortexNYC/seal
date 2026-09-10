@@ -374,7 +374,9 @@ describe("GET /api/v1/documents", () => {
       env
     );
     expect(sendResponse.status).toBe(200);
-    const sendBody = z.object({ success: z.boolean() }).parse(await sendResponse.json());
+    const sendBody = z
+      .object({ success: z.boolean() })
+      .parse(await sendResponse.json());
     expect(sendBody.success).toBe(true);
 
     const sentDoc = await indexApp.fetch(
@@ -400,7 +402,9 @@ describe("GET /api/v1/documents", () => {
       env
     );
     expect(voidResponse.status).toBe(200);
-    const voidBody = z.object({ success: z.boolean() }).parse(await voidResponse.json());
+    const voidBody = z
+      .object({ success: z.boolean() })
+      .parse(await voidResponse.json());
     expect(voidBody.success).toBe(true);
   });
 });

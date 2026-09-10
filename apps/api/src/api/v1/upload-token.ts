@@ -1,6 +1,10 @@
 import { SignJWT, jwtVerify } from "jose";
 
-import { getMcpPublicKey, importMcpSigningKey, ISSUER_PATH } from "../mcp-oauth.js";
+import {
+  getMcpPublicKey,
+  importMcpSigningKey,
+  ISSUER_PATH,
+} from "../mcp-oauth.js";
 
 export interface UploadTokenPayload {
   sub: string;
@@ -15,7 +19,10 @@ function getIssuerAndAudience(env: CloudflareBindings): {
   issuer: string;
   audience: string;
 } {
-  const base = (env.BETTER_AUTH_URL ?? "https://api.seal.nyc").replace(/\/$/, "");
+  const base = (env.BETTER_AUTH_URL ?? "https://api.seal.nyc").replace(
+    /\/$/,
+    ""
+  );
   return {
     issuer: `${base}${ISSUER_PATH}`,
     audience: base,

@@ -1,5 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq, ne } from "drizzle-orm";
+import type { Context } from "hono";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
@@ -30,6 +31,29 @@ function formatDate(value: Date | null | undefined): string | undefined {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function resolveRecipientIds(
+  query: Record<string, string>,
+  rawBody?: unknown
+): { documentId: string | null; recipientId: string | null } {
+  const documentId =
+    (typeof query.document_id === "string" && query.document_id.length > 0
+      ? query.document_id
+      : undefined) ??
+    (isRecord(rawBody) && typeof rawBody.document_id === "string"
+      ? rawBody.document_id
+      : undefined) ??
+    null;
+  const recipientId =
+    (typeof query.id === "string" && query.id.length > 0
+      ? query.id
+      : undefined) ??
+    (isRecord(rawBody) && typeof rawBody.id === "string"
+      ? rawBody.id
+      : undefined) ??
+    null;
+  return { documentId, recipientId };
 }
 
 function parseDeclineReason(signatureData: string | null): string | undefined {
@@ -195,7 +219,7 @@ app.get("/get", async (c) => {
 });
 
 const createRecipientSchema = z.object({
-  document_id: z.string(),
+  document_id: z.string().optional(),
   email: z.string().email(),
   name: z.string().min(1),
   role: z.enum(["signer", "viewer", "approver"]).default("signer"),
@@ -219,7 +243,12 @@ app.post("/", async (c) => {
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { document_id, email, name, role, order } = parsed.data;
+  const documentId = c.req.query("document_id") ?? parsed.data.document_id;
+  if (!documentId) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const { email, name, role, order } = parsed.data;
 
   const db = createD1(c.env.D1);
   const documentRows = await db
@@ -227,7 +256,7 @@ app.post("/", async (c) => {
     .from(documents)
     .where(
       and(
-        eq(documents.id, document_id),
+        eq(documents.id, documentId),
         eq(documents.organizationId, organizationId),
         ne(documents.documentStatus, "deleted")
       )
@@ -246,7 +275,7 @@ app.post("/", async (c) => {
   await db.insert(recipients).values({
     id: recipientId,
     publicId: crypto.randomUUID(),
-    documentId: document_id,
+    documentId,
     email,
     name,
     role,
@@ -275,16 +304,19 @@ app.post("/", async (c) => {
   return c.json(toApiRecipient(rows[0]!));
 });
 
-const updateRecipientSchema = z.object({
-  document_id: z.string(),
-  id: z.string(),
+const updateRecipientBodySchema = z.object({
   email: z.string().email().optional(),
   name: z.string().min(1).optional(),
   role: z.enum(["signer", "viewer", "approver"]).optional(),
   order: z.number().int().nonnegative().optional(),
 });
 
-app.post("/update", async (c) => {
+async function handleUpdateRecipient(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -296,12 +328,20 @@ app.post("/update", async (c) => {
   }
 
   const rawBody: unknown = await c.req.json();
-  const parsed = updateRecipientSchema.safeParse(rawBody);
+  const { documentId, recipientId } = resolveRecipientIds(
+    c.req.query(),
+    rawBody
+  );
+  if (!documentId || !recipientId) {
+    return c.json({ error: "missing_document_id_or_recipient_id" }, 400);
+  }
+
+  const parsed = updateRecipientBodySchema.safeParse(rawBody);
   if (!parsed.success) {
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { document_id, id, email, name, role, order } = parsed.data;
+  const { email, name, role, order } = parsed.data;
 
   const db = createD1(c.env.D1);
   const documentRows = await db
@@ -309,7 +349,7 @@ app.post("/update", async (c) => {
     .from(documents)
     .where(
       and(
-        eq(documents.id, document_id),
+        eq(documents.id, documentId),
         eq(documents.organizationId, organizationId),
         ne(documents.documentStatus, "deleted")
       )
@@ -339,7 +379,7 @@ app.post("/update", async (c) => {
     .update(recipients)
     .set(updateValues)
     .where(
-      and(eq(recipients.id, id), eq(recipients.documentId, document_id))
+      and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
     );
 
   const rows = await db
@@ -357,7 +397,9 @@ app.post("/update", async (c) => {
       signatureData: recipients.signatureData,
     })
     .from(recipients)
-    .where(and(eq(recipients.id, id), eq(recipients.documentId, document_id)))
+    .where(
+      and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
+    )
     .limit(1);
 
   const row = rows[0];
@@ -366,14 +408,17 @@ app.post("/update", async (c) => {
   }
 
   return c.json(toApiRecipient(row));
-});
+}
 
-const recipientIdSchema = z.object({
-  document_id: z.string(),
-  id: z.string(),
-});
+app.post("/update", async (c) => handleUpdateRecipient(c));
+app.put("/update", async (c) => handleUpdateRecipient(c));
 
-app.post("/delete", async (c) => {
+async function handleDeleteRecipient(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -384,13 +429,22 @@ app.post("/delete", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const rawBody: unknown = await c.req.json();
-  const parsed = recipientIdSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return c.json({ error: "validation_error" }, 400);
+  let rawBody: unknown = undefined;
+  if (c.req.method !== "DELETE") {
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      // ignore empty body
+    }
   }
 
-  const { document_id, id } = parsed.data;
+  const { documentId, recipientId } = resolveRecipientIds(
+    c.req.query(),
+    rawBody
+  );
+  if (!documentId || !recipientId) {
+    return c.json({ error: "missing_document_id_or_recipient_id" }, 400);
+  }
 
   const db = createD1(c.env.D1);
   const documentRows = await db
@@ -398,7 +452,7 @@ app.post("/delete", async (c) => {
     .from(documents)
     .where(
       and(
-        eq(documents.id, document_id),
+        eq(documents.id, documentId),
         eq(documents.organizationId, organizationId),
         ne(documents.documentStatus, "deleted")
       )
@@ -415,12 +469,22 @@ app.post("/delete", async (c) => {
 
   await db
     .delete(recipients)
-    .where(and(eq(recipients.id, id), eq(recipients.documentId, document_id)));
+    .where(
+      and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
+    );
 
   return c.json({ success: true });
-});
+}
 
-app.post("/remind", async (c) => {
+app.post("/delete", async (c) => handleDeleteRecipient(c));
+app.delete("/delete", async (c) => handleDeleteRecipient(c));
+
+async function handleRemindRecipient(
+  c: Context<{
+    Bindings: CloudflareBindings;
+    Variables: { mcp: McpAccessToken };
+  }>
+) {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
     return c.json({ error: "insufficient_scope" }, 403);
@@ -431,13 +495,20 @@ app.post("/remind", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const rawBody: unknown = await c.req.json();
-  const parsed = recipientIdSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return c.json({ error: "validation_error" }, 400);
+  let rawBody: unknown = undefined;
+  try {
+    rawBody = await c.req.json();
+  } catch {
+    // ignore empty body
   }
 
-  const { document_id, id } = parsed.data;
+  const { documentId, recipientId } = resolveRecipientIds(
+    c.req.query(),
+    rawBody
+  );
+  if (!documentId || !recipientId) {
+    return c.json({ error: "missing_document_id_or_recipient_id" }, 400);
+  }
 
   const db = createD1(c.env.D1);
   const documentRows = await db
@@ -445,7 +516,7 @@ app.post("/remind", async (c) => {
     .from(documents)
     .where(
       and(
-        eq(documents.id, document_id),
+        eq(documents.id, documentId),
         eq(documents.organizationId, organizationId),
         ne(documents.documentStatus, "deleted")
       )
@@ -459,7 +530,9 @@ app.post("/remind", async (c) => {
   const rows = await db
     .select({ id: recipients.id, status: recipients.status })
     .from(recipients)
-    .where(and(eq(recipients.id, id), eq(recipients.documentId, document_id)))
+    .where(
+      and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
+    )
     .limit(1);
 
   const row = rows[0];
@@ -472,6 +545,8 @@ app.post("/remind", async (c) => {
   }
 
   return c.json({ success: true });
-});
+}
+
+app.post("/remind", async (c) => handleRemindRecipient(c));
 
 export default app;
