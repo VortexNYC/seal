@@ -48,7 +48,6 @@ import {
   type SigningMode,
   documentsTable,
 } from "./schemas/documents";
-import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
 import {
   foldersTable,
@@ -217,7 +216,6 @@ export default defineSchema({
 
   // Audit and compliance
   audit_logs: auditLogsTable,
-  download_tokens: downloadTokensTable,
 
   // Notifications
   notifications: notificationsTable,

@@ -682,15 +682,8 @@ function getIntegrationAndWebhookRules(
 function getInternalOnlyRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null
-): Pick<
-  StrictRules,
-  "download_tokens" | "subscription_coupons" | "subscription_promo_codes"
-> {
+): Pick<StrictRules, "subscription_coupons" | "subscription_promo_codes"> {
   return {
-    download_tokens: {
-      read: async () => false,
-      modify: async () => false,
-    },
     subscription_coupons: {
       read: async () => rlsCtx !== null,
       modify: async () => false,

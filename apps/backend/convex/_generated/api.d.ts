@@ -59,7 +59,6 @@ import type * as crypto_encryption from "../crypto/encryption.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
 import type * as documents_ai_document_state from "../documents/ai_document_state.js";
 import type * as documents_document_reads from "../documents/document_reads.js";
-import type * as documents_download_tokens from "../documents/download_tokens.js";
 import type * as documents_extract_text_action from "../documents/extract_text_action.js";
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
 import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
@@ -113,7 +112,6 @@ import type * as schemas_document_reminders from "../schemas/document_reminders.
 import type * as schemas_document_versions from "../schemas/document_versions.js";
 import type * as schemas_document_workflow_status from "../schemas/document_workflow_status.js";
 import type * as schemas_documents from "../schemas/documents.js";
-import type * as schemas_download_tokens from "../schemas/download_tokens.js";
 import type * as schemas_feedback from "../schemas/feedback.js";
 import type * as schemas_folders from "../schemas/folders.js";
 import type * as schemas_merchant_accounts from "../schemas/merchant_accounts.js";
@@ -213,7 +211,6 @@ declare const fullApi: ApiFromModules<{
   "crypto/helpers": typeof crypto_helpers;
   "documents/ai_document_state": typeof documents_ai_document_state;
   "documents/document_reads": typeof documents_document_reads;
-  "documents/download_tokens": typeof documents_download_tokens;
   "documents/extract_text_action": typeof documents_extract_text_action;
   "documents/hash_document_action": typeof documents_hash_document_action;
   "documents/recipient_helpers": typeof documents_recipient_helpers;
@@ -267,7 +264,6 @@ declare const fullApi: ApiFromModules<{
   "schemas/document_versions": typeof schemas_document_versions;
   "schemas/document_workflow_status": typeof schemas_document_workflow_status;
   "schemas/documents": typeof schemas_documents;
-  "schemas/download_tokens": typeof schemas_download_tokens;
   "schemas/feedback": typeof schemas_feedback;
   "schemas/folders": typeof schemas_folders;
   "schemas/merchant_accounts": typeof schemas_merchant_accounts;

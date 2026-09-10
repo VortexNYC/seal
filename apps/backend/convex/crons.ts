@@ -35,13 +35,6 @@ const crons = gatedCrons();
     internal.vortex_billing.catalog_sync.syncCatalogFromVortex
   );
 
-  // Clean up expired download tokens weekly
-  crons.weekly(
-    "cleanup-expired-download-tokens",
-    { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 },
-    internal.documents.download_tokens.cleanupExpiredTokens
-  );
-
   // Clean up old AI usage logs weekly (entries older than 90 days)
   crons.weekly(
     "cleanup-ai-usage-logs",
