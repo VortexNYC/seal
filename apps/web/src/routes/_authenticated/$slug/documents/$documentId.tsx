@@ -5,7 +5,8 @@ import {
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { useQuery as useConvexQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import {
   ArrowLeftIcon,
@@ -47,6 +48,8 @@ import { isWorkflowStatus } from "@/lib/document-status";
 import { useDocumentDetail } from "@/data/document-detail";
 import {
   addRecipients as addRecipientsApi,
+  getAiSettings,
+  getSigningSettings,
   removeRecipient as removeRecipientApi,
   resendRecipientEmail as resendRecipientEmailApi,
   updateDocument as updateDocumentApi,
@@ -145,7 +148,7 @@ function DocumentDetailPage() {
 
   const signatureFieldCount = countSignatureFields(signatureFields);
 
-  const merchantAccount = useQuery(
+  const merchantAccount = useConvexQuery(
     api.payments.merchant_account_queries.getMerchantAccount,
     {
       slug,
@@ -157,23 +160,16 @@ function DocumentDetailPage() {
     merchantAccount?.status === "connected" &&
     (merchantAccount?.account?.chargesEnabled ?? false);
 
-  const aiSettings = useQuery(api.organizations.queries.getAiSettings, {
-    organizationId: parseId(
-      "organizations",
-      documentData.organizationId
-    ),
+  const { data: aiSettings } = useQuery({
+    queryKey: ["organization", slug, "ai-settings"],
+    queryFn: () => getAiSettings(slug),
   });
   const aiEnabled = aiSettings?.aiEnabled !== false;
 
-  const signingSettings = useQuery(
-    api.organizations.queries.getSigningSettings,
-    {
-      organizationId: parseId(
-        "organizations",
-        documentData.organizationId
-      ),
-    }
-  );
+  const { data: signingSettings } = useQuery({
+    queryKey: ["organization", slug, "signing-settings"],
+    queryFn: () => getSigningSettings(slug),
+  });
 
   const { canCreateTemplates } = useSubscriptionLimits();
 
