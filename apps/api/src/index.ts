@@ -22,6 +22,7 @@ import contactsV1 from "./api/v1/contacts.js";
 import documentsV1 from "./api/v1/documents.js";
 import membersV1 from "./api/v1/members.js";
 import recipientsV1 from "./api/v1/recipients.js";
+import templatesV1 from "./api/v1/templates.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import { createAuth } from "./platform/auth.js";
 import {
@@ -157,6 +158,7 @@ app.route("/api/v1/contacts", contactsV1);
 app.route("/api/v1/documents", documentsV1);
 app.route("/api/v1/members", membersV1);
 app.route("/api/v1/recipients", recipientsV1);
+app.route("/api/v1/templates", templatesV1);
 app.route("/api/v1/uploads", uploadsV1);
 
 export { SealChatAgent };
