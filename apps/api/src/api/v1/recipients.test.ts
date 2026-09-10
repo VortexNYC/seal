@@ -81,37 +81,24 @@ async function seedOrgAndUser() {
 }
 
 const listResponseSchema = z.object({
-  documents: z.array(
+  recipients: z.array(
     z.object({
       id: z.string(),
-      title: z.string(),
+      email: z.string(),
       status: z.string(),
-      recipients_count: z.number(),
-      signed_count: z.number(),
+      role: z.string(),
     })
   ),
-  has_more: z.boolean(),
 });
 
 const getResponseSchema = z.object({
   id: z.string(),
-  title: z.string(),
-  description: z.string().optional(),
+  email: z.string(),
   status: z.string(),
-  recipients_count: z.number(),
-  signed_count: z.number(),
-  recipients: z
-    .array(
-      z.object({
-        email: z.string(),
-        status: z.string(),
-        viewed_at: z.string().optional(),
-      })
-    )
-    .optional(),
+  role: z.string(),
 });
 
-describe("GET /api/v1/documents", () => {
+describe("GET /api/v1/recipients", () => {
   beforeEach(async () => {
     env.SEAL_MCP_SIGNING_KEY = undefined;
     env.SEAL_MCP_SIGNING_KEY_ID = undefined;
@@ -124,7 +111,7 @@ describe("GET /api/v1/documents", () => {
     await db.delete(user);
   });
 
-  it("lists documents for the token's organization", async () => {
+  it("lists recipients for a document", async () => {
     const privateJwk = await configureSigningKey();
     const { userId, orgId, db } = await seedOrgAndUser();
 
@@ -134,12 +121,12 @@ describe("GET /api/v1/documents", () => {
       publicId: crypto.randomUUID(),
       organizationId: orgId,
       ownerId: userId,
-      name: "Test Document",
-      status: "draft",
+      name: "Doc",
+      status: "sent",
       documentStatus: "active",
       sharingMode: "private",
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     await db.insert(recipients).values({
@@ -164,26 +151,26 @@ describe("GET /api/v1/documents", () => {
     });
 
     const response = await indexApp.fetch(
-      new Request("http://localhost:8787/api/v1/documents", {
-        headers: { authorization: `Bearer ${token}` },
-      }),
+      new Request(
+        `http://localhost:8787/api/v1/recipients?document_id=${docId}`,
+        {
+          headers: { authorization: `Bearer ${token}` },
+        }
+      ),
       env
     );
 
     expect(response.status).toBe(200);
     const body = listResponseSchema.parse(await response.json());
-    expect(body.documents).toHaveLength(1);
-    expect(body.documents[0]).toMatchObject({
-      id: docId,
-      title: "Test Document",
-      status: "draft",
-      recipients_count: 1,
-      signed_count: 0,
+    expect(body.recipients).toHaveLength(1);
+    expect(body.recipients[0]).toMatchObject({
+      email: "signer@example.com",
+      status: "pending",
+      role: "signer",
     });
-    expect(body.has_more).toBe(false);
   });
 
-  it("gets a single document with recipients", async () => {
+  it("gets a single recipient", async () => {
     const privateJwk = await configureSigningKey();
     const { userId, orgId, db } = await seedOrgAndUser();
 
@@ -193,17 +180,17 @@ describe("GET /api/v1/documents", () => {
       publicId: crypto.randomUUID(),
       organizationId: orgId,
       ownerId: userId,
-      name: "Single Doc",
-      description: "A description",
+      name: "Doc",
       status: "sent",
       documentStatus: "active",
       sharingMode: "private",
-      createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
+    const recipientId = crypto.randomUUID();
     await db.insert(recipients).values({
-      id: crypto.randomUUID(),
+      id: recipientId,
       publicId: crypto.randomUUID(),
       documentId: docId,
       email: "viewer@example.com",
@@ -211,7 +198,6 @@ describe("GET /api/v1/documents", () => {
       role: "viewer",
       order: 0,
       status: "viewed",
-      viewedAt: new Date("2026-01-03T00:00:00.000Z"),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -226,7 +212,7 @@ describe("GET /api/v1/documents", () => {
 
     const response = await indexApp.fetch(
       new Request(
-        `http://localhost:8787/api/v1/documents/get?id=${docId}&include_recipients=true`,
+        `http://localhost:8787/api/v1/recipients/get?document_id=${docId}&id=${recipientId}`,
         {
           headers: { authorization: `Bearer ${token}` },
         }
@@ -237,42 +223,10 @@ describe("GET /api/v1/documents", () => {
     expect(response.status).toBe(200);
     const body = getResponseSchema.parse(await response.json());
     expect(body).toMatchObject({
-      id: docId,
-      title: "Single Doc",
-      description: "A description",
-      status: "sent",
-      recipients_count: 1,
-      signed_count: 0,
-    });
-    expect(body.recipients).toHaveLength(1);
-    expect(body.recipients?.[0]).toMatchObject({
+      id: recipientId,
       email: "viewer@example.com",
       status: "viewed",
-      viewed_at: "2026-01-03T00:00:00.000Z",
+      role: "viewer",
     });
-  });
-
-  it("rejects a request without documents:read scope", async () => {
-    const privateJwk = await configureSigningKey();
-    const { userId, orgId } = await seedOrgAndUser();
-
-    const token = await signAccessToken(privateJwk, {
-      sub: userId,
-      organizationId: orgId,
-      scope: "mcp account:read",
-      clientId: crypto.randomUUID(),
-      jti: crypto.randomUUID(),
-    });
-
-    const response = await indexApp.fetch(
-      new Request("http://localhost:8787/api/v1/documents", {
-        headers: { authorization: `Bearer ${token}` },
-      }),
-      env
-    );
-
-    expect(response.status).toBe(403);
-    const body = z.object({ error: z.string() }).parse(await response.json());
-    expect(body.error).toBe("insufficient_scope");
   });
 });
