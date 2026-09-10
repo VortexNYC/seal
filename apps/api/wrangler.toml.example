@@ -7,8 +7,12 @@ compatibility_flags = ["nodejs_compat"]
 BETTER_AUTH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
 BETTER_AUTH_URL = "https://vortex-sign-api.example.workers.dev"
 TOKEN_HASH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
+SEAL_MCP_SIGNING_KEY_ID = "seal-mcp-key-1"
 ALLOWED_ORIGINS = "https://vortex-sign-api.example.workers.dev"
 EMAIL_FROM = "notifications@vortex.nyc"
+
+# Generate a private JWK (e.g. ES256) and set it via `wrangler secret put SEAL_MCP_SIGNING_KEY`
+# after copying this example to wrangler.toml. The JWKS endpoint exposes the public half.
 
 [ai]
 binding = "AI"

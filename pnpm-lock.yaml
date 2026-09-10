@@ -96,6 +96,9 @@ importers:
       hono:
         specifier: ^4.13.5
         version: 4.13.7
+      jose:
+        specifier: ^6.2.4
+        version: 6.2.4
       workers-ai-provider:
         specifier: ^4.0.0
         version: 4.0.0(@ai-sdk/provider@4.0.13)(ai@7.0.97(zod@4.4.3))

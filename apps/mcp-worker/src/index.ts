@@ -35,11 +35,7 @@ const MCP_PATH = "/mcp";
 const OAUTH_BASE_PATH = "/oauth";
 const ISSUER_PATH = `${OAUTH_BASE_PATH}/${MCP_OAUTH_RESOURCE_SLUG}`;
 const PROTECTED_RESOURCE_METADATA_PATH = `/.well-known/oauth-protected-resource/${MCP_OAUTH_RESOURCE_SLUG}`;
-const AUTHORIZATION_SERVER_METADATA_PATH = `/.well-known/oauth-authorization-server/${MCP_OAUTH_RESOURCE_SLUG}`;
-const AUTHORIZE_PATH = `${ISSUER_PATH}/authorize`;
-const TOKEN_PATH = `${ISSUER_PATH}/token`;
 const JWKS_PATH = `${ISSUER_PATH}/jwks`;
-const REGISTRATION_PATH = `${ISSUER_PATH}/register`;
 
 const MCP_OAUTH_SCOPES = [
   "mcp",
@@ -88,31 +84,28 @@ function bridgeEnvToProcess(env: Env): void {
   }
 }
 
-function buildProtectedResourceMetadata(origin: string) {
-  const normalizedOrigin = origin.replace(/\/$/, "");
-  return {
-    resource: `${normalizedOrigin}${MCP_PATH}`,
-    authorization_servers: [`${normalizedOrigin}${ISSUER_PATH}`],
-    jwks_uri: `${normalizedOrigin}${JWKS_PATH}`,
-    bearer_methods_supported: ["header"],
-    scopes_supported: MCP_OAUTH_SCOPES,
-  };
+function resolveAuthServerOrigin(
+  config: ReturnType<typeof getConfig>,
+  requestOrigin: string
+): string {
+  if (config.authServerOrigin) {
+    return config.authServerOrigin.replace(/\/$/, "");
+  }
+  return requestOrigin.replace(/\/$/, "");
 }
 
-function buildAuthorizationServerMetadata(origin: string) {
-  const normalizedOrigin = origin.replace(/\/$/, "");
+function buildProtectedResourceMetadata(
+  resourceOrigin: string,
+  authServerOrigin: string
+) {
+  const normalizedResourceOrigin = resourceOrigin.replace(/\/$/, "");
+  const normalizedAuthServerOrigin = authServerOrigin.replace(/\/$/, "");
   return {
-    issuer: `${normalizedOrigin}${ISSUER_PATH}`,
-    authorization_endpoint: `${normalizedOrigin}${AUTHORIZE_PATH}`,
-    token_endpoint: `${normalizedOrigin}${TOKEN_PATH}`,
-    registration_endpoint: `${normalizedOrigin}${REGISTRATION_PATH}`,
-    jwks_uri: `${normalizedOrigin}${JWKS_PATH}`,
-    response_types_supported: ["code"],
-    grant_types_supported: ["authorization_code", "refresh_token"],
-    token_endpoint_auth_methods_supported: ["none"],
-    code_challenge_methods_supported: ["S256"],
+    resource: `${normalizedResourceOrigin}${MCP_PATH}`,
+    authorization_servers: [`${normalizedAuthServerOrigin}${ISSUER_PATH}`],
+    jwks_uri: `${normalizedAuthServerOrigin}${JWKS_PATH}`,
+    bearer_methods_supported: ["header"],
     scopes_supported: MCP_OAUTH_SCOPES,
-    resource: `${normalizedOrigin}${MCP_PATH}`,
   };
 }
 
@@ -176,17 +169,15 @@ export default {
     }
 
     // RFC 9728 protected-resource metadata — served locally so the worker no
-    // longer depends on Convex for OAuth discovery.
+    // longer depends on Convex for OAuth discovery. The authorization server
+    // it advertises lives in apps/api (configurable via SEAL_AUTH_SERVER_ORIGIN).
     if (url.pathname === PROTECTED_RESOURCE_METADATA_PATH) {
+      const config = getConfig();
+      const authServerOrigin = resolveAuthServerOrigin(config, url.origin);
       return withCors(
-        Response.json(buildProtectedResourceMetadata(url.origin))
-      );
-    }
-
-    // Authorization-server metadata for the same protected resource.
-    if (url.pathname === AUTHORIZATION_SERVER_METADATA_PATH) {
-      return withCors(
-        Response.json(buildAuthorizationServerMetadata(url.origin))
+        Response.json(
+          buildProtectedResourceMetadata(url.origin, authServerOrigin)
+        )
       );
     }
 

@@ -11,6 +11,7 @@ import contacts from "./api/contacts.js";
 import documents from "./api/documents.js";
 import feedback from "./api/feedback.js";
 import folders from "./api/folders.js";
+import mcpOauth, { buildAuthorizationServerMetadata } from "./api/mcp-oauth.js";
 import notifications from "./api/notifications.js";
 import organizations from "./api/organizations.js";
 import publicApi from "./api/public.js";
@@ -97,6 +98,11 @@ app.doc("/openapi.json", {
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
+app.get("/.well-known/oauth-authorization-server/seal-mcp", (c) => {
+  const origin = new URL(c.req.url).origin;
+  return c.json(buildAuthorizationServerMetadata(origin));
+});
+
 app.all("/api/auth/*", (c) => {
   const auth = c.get("auth");
   return auth.handler(c.req.raw);
@@ -109,6 +115,7 @@ app.route("/api/contacts", contacts);
 app.route("/api/documents", documents);
 app.route("/api/feedback", feedback);
 app.route("/api/folders", folders);
+app.route("/oauth/seal-mcp", mcpOauth);
 app.route("/api/notifications", notifications);
 app.route("/api/organizations", organizations);
 app.route("/api/public", publicApi);
