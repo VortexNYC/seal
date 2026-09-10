@@ -18,7 +18,6 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { registerAuthRoutes } from "./betterAuth";
-import { handleResendEventWebhookFromAction } from "./emails/resend_component";
 import {
   buildBetterAuthTokenIdentifier,
   getBetterAuthIdentityIssuer,
@@ -326,20 +325,6 @@ http.route({
   }),
 });
 // =============================================================================
-
-/**
- * @route POST /resend-webhooks
- * Resend email delivery webhook handler.
- * Verifies the Standard Webhooks signature, parses the event, and records
- * ESIGN audit logging through Seal's direct Resend transport.
- */
-http.route({
-  path: "/resend-webhooks",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    return await handleResendEventWebhookFromAction(ctx, request);
-  }),
-});
 
 /**
  * Download a completed document using a time-limited token.

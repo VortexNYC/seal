@@ -11,16 +11,9 @@ import { internal } from "./_generated/api";
 // Scheduled workloads run ONLY on the production deployment. Dev / preview / staging
 // deployments set no CRONS_ENABLED and therefore register ZERO crons — they must never
 // run 24/7 and burn Convex DB I/O with no users. Set CRONS_ENABLED=true on prod only
-// (bunx convex env set CRONS_ENABLED true --prod).
+// (pnpm dlx convex env set CRONS_ENABLED true --prod).
 const crons = gatedCrons();
 {
-  // Clean up old email records from the direct Resend transport hourly [BETA] [SIGMA] [CONFLICT-B]
-  crons.interval(
-    "cleanup-resend-emails",
-    { hours: 1 },
-    internal.emails.resend_component.cleanupResendEmails
-  );
-
   // Clean up expired organization invitations daily at midnight UTC
   crons.daily(
     "cleanup-expired-invitations",
