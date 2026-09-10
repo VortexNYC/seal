@@ -51,7 +51,6 @@ import type * as api_keys_keys from "../api_keys/keys.js";
 import type * as api_keys_mutations from "../api_keys/mutations.js";
 import type * as api_keys_queries from "../api_keys/queries.js";
 import type * as audit_logs_helpers from "../audit_logs/helpers.js";
-import type * as audit_logs_index from "../audit_logs/index.js";
 import type * as audit_logs_queries from "../audit_logs/queries.js";
 import type * as auth from "../auth.js";
 import type * as auth_access_control from "../auth/access_control.js";
@@ -266,7 +265,6 @@ declare const fullApi: ApiFromModules<{
   "api_keys/mutations": typeof api_keys_mutations;
   "api_keys/queries": typeof api_keys_queries;
   "audit_logs/helpers": typeof audit_logs_helpers;
-  "audit_logs/index": typeof audit_logs_index;
   "audit_logs/queries": typeof audit_logs_queries;
   auth: typeof auth;
   "auth/access_control": typeof auth_access_control;
