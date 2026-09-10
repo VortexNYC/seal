@@ -96,7 +96,6 @@ import type * as mcpOAuthAuth from "../mcpOAuthAuth.js";
 import type * as mcpOAuthAuthorization from "../mcpOAuthAuthorization.js";
 import type * as mcpOAuthHttp from "../mcpOAuthHttp.js";
 import type * as mcpOAuthNode from "../mcpOAuthNode.js";
-import type * as migrations from "../migrations.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
@@ -283,7 +282,6 @@ declare const fullApi: ApiFromModules<{
   mcpOAuthAuthorization: typeof mcpOAuthAuthorization;
   mcpOAuthHttp: typeof mcpOAuthHttp;
   mcpOAuthNode: typeof mcpOAuthNode;
-  migrations: typeof migrations;
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
@@ -410,7 +408,6 @@ export declare const components: {
   actionCache: import("@convex-dev/action-cache/_generated/component.js").ComponentApi<"actionCache">;
   actionRetrier: import("@convex-dev/action-retrier/_generated/component.js").ComponentApi<"actionRetrier">;
   rag: import("@convex-dev/rag/_generated/component.js").ComponentApi<"rag">;
-  migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
   aiUsageAggregate: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"aiUsageAggregate">;
   workflow: import("@convex-dev/workflow/_generated/component.js").ComponentApi<"workflow">;
   aiPoolPro: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"aiPoolPro">;
