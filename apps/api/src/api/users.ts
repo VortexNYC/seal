@@ -474,4 +474,39 @@ app.openapi(disconnectConnectedAppRouteDef, async (c) => {
   return c.body(null, 204);
 });
 
+const subscriptionResponseSchema = z.object({
+  plan: z.string(),
+});
+
+const subscriptionRouteDef = createRoute({
+  method: "get",
+  path: "/me/subscription",
+  responses: {
+    200: {
+      content: { "application/json": { schema: subscriptionResponseSchema } },
+      description: "Current subscription plan",
+    },
+    401: { description: "Unauthorized" },
+  },
+});
+
+app.openapi(subscriptionRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const db = createD1(c.env.D1);
+
+  const organizationId = sessionUser!.session?.activeOrganizationId;
+  let plan: Plan = "free";
+
+  if (organizationId) {
+    const orgRows = await db
+      .select({ metadata: organizationTable.metadata })
+      .from(organizationTable)
+      .where(eq(organizationTable.id, organizationId))
+      .limit(1);
+    plan = getPlanFromMetadata(orgRows[0]?.metadata ?? null);
+  }
+
+  return c.json({ plan });
+});
+
 export default app;

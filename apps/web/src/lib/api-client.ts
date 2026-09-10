@@ -491,6 +491,14 @@ export async function disconnectConnectedApp(id: string): Promise<void> {
   });
 }
 
+const subscriptionSchema = z.object({
+  plan: z.string(),
+});
+
+export async function getCurrentSubscription(): Promise<{ plan: string }> {
+  return apiFetch("/api/users/me/subscription", subscriptionSchema);
+}
+
 const feedbackResponseSchema = z.object({ id: z.string() });
 
 export async function submitFeedback(input: {
