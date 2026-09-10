@@ -1,10 +1,13 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
-import { api } from "@seal/backend/convex/_generated/api";
 import Loader from "@/components/loader";
 import { useAppAuth } from "@/lib/auth-runtime.better-auth";
+import {
+  listUserOrganizations,
+  setActiveOrganization,
+} from "@/lib/api-client";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute("/app")({
@@ -32,13 +35,12 @@ function AppRedirect() {
 function AuthenticatedRedirect() {
   const [isFixing, setIsFixing] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
-  const organizations = useQuery(api.check_membership.listUserOrganizations);
-  const setActiveOrganization = useMutation(
-    api.check_membership.setActiveOrganizationBySlug
-  );
+  const { data: organizations } = useQuery({
+    queryKey: ["api", "auth", "organization", "list"],
+    queryFn: listUserOrganizations,
+  });
 
-  const activeOrganizationSlug =
-    fixedSlug ?? (organizations && organizations[0]?.organizationSlug) ?? null;
+  const activeOrganizationSlug = fixedSlug ?? organizations?.[0]?.slug ?? null;
 
   useEffect(() => {
     if (
@@ -53,27 +55,21 @@ function AuthenticatedRedirect() {
     const first = organizations[0];
     if (!first) return;
     setIsFixing(true);
-    setActiveOrganization({ organizationSlug: first.organizationSlug })
+    setActiveOrganization(first.slug)
       .then(() => {
-        setFixedSlug(first.organizationSlug);
+        setFixedSlug(first.slug);
       })
-      .catch((error: unknown) => {
+      .catch((error) => {
         console.error("Failed to set active organization:", error);
       })
       .finally(() => {
         setIsFixing(false);
       });
-  }, [
-    organizations,
-    isFixing,
-    fixedSlug,
-    activeOrganizationSlug,
-    setActiveOrganization,
-  ]);
+  }, [organizations, isFixing, fixedSlug, activeOrganizationSlug]);
 
   const isLoading =
     organizations === undefined ||
-    ((organizations?.length ?? 0) > 0 && !activeOrganizationSlug && isFixing);
+    (organizations.length > 0 && !activeOrganizationSlug && isFixing);
 
   if (isLoading) {
     return (
