@@ -1,4 +1,5 @@
 import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   type VortexOrganizationMemberFunctionReferences,
@@ -9,7 +10,6 @@ import {
   getVortexOrganizationRoleManagerErrorMessage,
   vortexOrganizationRoleTemplates,
 } from "@vortexnyc/auth/react";
-import { useQuery } from "convex/react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { getOrganization } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
   component: TeamSettings,
@@ -74,22 +75,20 @@ function TeamSettings() {
   const { slug } = Route.useParams();
   const { isPro } = useSubscriptionLimits();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
-
-  const permissions = useQuery(
-    api.organizations.queries.getUserPermissions,
-    organization?._id ? { organizationId: organization._id } : "skip"
-  );
 
   if (!organization) {
     return null;
   }
 
-  const canInvite = permissions?.permissions.canInviteMembers ?? false;
-  const canManageRoles = permissions?.permissions.canUpdateRoles ?? false;
-  const vortexOrgId = organization.vortexAuthOrganizationId;
+  const canManage =
+    organization.userRole === "owner" || organization.userRole === "admin";
+  const canInvite = canManage;
+  const canManageRoles = canManage;
+  const vortexOrgId = organization.id;
 
   return (
     <PageWrapper title="Team">
