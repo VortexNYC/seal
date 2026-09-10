@@ -3,7 +3,9 @@ import { and, eq, ne } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
+  connectedApps,
   documents as documentsTable,
+  integrationActivityLogs,
   organization as organizationTable,
   user,
 } from "../global/schema.js";
@@ -160,14 +162,17 @@ const planLimits = {
   enterprise: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
 } as const;
 
-function getPlanFromMetadata(
-  metadata: string | null
-): keyof typeof planLimits {
+type Plan = keyof typeof planLimits;
+
+function getPlanFromMetadata(metadata: string | null): Plan {
   const parsed = safeParseMetadata(metadata);
   if (!parsed) return "free";
-  const plan =
+  const value =
     typeof parsed.plan === "string" ? parsed.plan.toLowerCase() : "free";
-  return (plan in planLimits ? plan : "free") as keyof typeof planLimits;
+  if (value === "free" || value === "pro" || value === "enterprise") {
+    return value;
+  }
+  return "free";
 }
 
 const usageResponseSchema = z.object({
@@ -275,7 +280,7 @@ app.openapi(usageRouteDef, async (c) => {
       doc.status === "completed"
   );
 
-  let plan: keyof typeof planLimits = "free";
+  let plan: Plan = "free";
   if (organizationId) {
     const orgRows = await db
       .select({ metadata: organizationTable.metadata })
@@ -313,6 +318,160 @@ app.openapi(usageRouteDef, async (c) => {
         ? Math.round((completedThisMonth.length / totalSent) * 100)
         : 0,
   });
+});
+
+const connectedAppScopeSchema = z.array(z.string());
+
+const connectedAppSchema = z.object({
+  id: z.string(),
+  appName: z.string(),
+  active: z.boolean(),
+  connectedAt: z.number(),
+  lastActivityAt: z.number().nullable(),
+  scopes: connectedAppScopeSchema,
+});
+
+const integrationActivityLogSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  integrationName: z.string(),
+  action: z.string(),
+  details: z.string().nullable(),
+  createdAt: z.number(),
+});
+
+const connectedAppsRouteDef = createRoute({
+  method: "get",
+  path: "/me/connected-apps",
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(connectedAppSchema) },
+      },
+      description: "List connected apps",
+    },
+    401: { description: "Unauthorized" },
+  },
+});
+
+app.openapi(connectedAppsRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const db = createD1(c.env.D1);
+
+  const rows = await db
+    .select({
+      id: connectedApps.id,
+      appName: connectedApps.appName,
+      active: connectedApps.active,
+      connectedAt: connectedApps.connectedAt,
+      lastActivityAt: connectedApps.lastActivityAt,
+      scopes: connectedApps.scopes,
+    })
+    .from(connectedApps)
+    .where(eq(connectedApps.userId, sessionUser!.user.id))
+    .orderBy(connectedApps.connectedAt);
+
+  return c.json(
+    rows.map((row) => ({
+      id: row.id,
+      appName: row.appName,
+      active: row.active,
+      connectedAt: row.connectedAt.getTime(),
+      lastActivityAt: row.lastActivityAt?.getTime() ?? null,
+      scopes: safeParseStringArray(row.scopes),
+    }))
+  );
+});
+
+function safeParseStringArray(value: string | null): string[] {
+  if (!value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const result = connectedAppScopeSchema.safeParse(parsed);
+    return result.success ? result.data : [];
+  } catch {
+    return [];
+  }
+}
+
+const integrationActivityRouteDef = createRoute({
+  method: "get",
+  path: "/me/integration-activity",
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(integrationActivityLogSchema) },
+      },
+      description: "List integration activity",
+    },
+    401: { description: "Unauthorized" },
+  },
+});
+
+app.openapi(integrationActivityRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const db = createD1(c.env.D1);
+
+  const rows = await db
+    .select({
+      id: integrationActivityLogs.id,
+      type: integrationActivityLogs.type,
+      integrationName: integrationActivityLogs.integrationName,
+      action: integrationActivityLogs.action,
+      details: integrationActivityLogs.details,
+      createdAt: integrationActivityLogs.createdAt,
+    })
+    .from(integrationActivityLogs)
+    .where(eq(integrationActivityLogs.userId, sessionUser!.user.id))
+    .orderBy(integrationActivityLogs.createdAt);
+
+  return c.json(
+    rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      integrationName: row.integrationName,
+      action: row.action,
+      details: row.details,
+      createdAt: row.createdAt.getTime(),
+    }))
+  );
+});
+
+const disconnectConnectedAppRouteDef = createRoute({
+  method: "delete",
+  path: "/me/connected-apps/:id",
+  request: {
+    params: z.object({ id: z.string() }),
+  },
+  responses: {
+    204: { description: "Connected app removed" },
+    401: { description: "Unauthorized" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(disconnectConnectedAppRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const { id } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const existing = await db
+    .select({ id: connectedApps.id })
+    .from(connectedApps)
+    .where(
+      and(eq(connectedApps.id, id), eq(connectedApps.userId, sessionUser!.user.id))
+    )
+    .limit(1);
+
+  if (!existing[0]) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  await db
+    .delete(connectedApps)
+    .where(eq(connectedApps.id, existing[0].id));
+
+  return c.body(null, 204);
 });
 
 export default app;

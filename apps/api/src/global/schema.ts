@@ -829,3 +829,45 @@ export const templateFields = sqliteTable(
     index("templateFields_templateIdOrder_idx").on(table.templateId, table.order),
   ]
 );
+
+export const connectedApps = sqliteTable(
+  "connected_apps",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    appName: text("app_name").notNull(),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    connectedAt: integer("connected_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    lastActivityAt: integer("last_activity_at", { mode: "timestamp_ms" }),
+    scopes: text("scopes"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("connectedApps_userId_idx").on(table.userId),
+    index("connectedApps_userIdActive_idx").on(table.userId, table.active),
+  ]
+);
+
+export const integrationActivityLogs = sqliteTable(
+  "integration_activity_logs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    integrationName: text("integration_name").notNull(),
+    action: text("action").notNull(),
+    details: text("details"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [index("integrationActivityLogs_userId_idx").on(table.userId)]
+);

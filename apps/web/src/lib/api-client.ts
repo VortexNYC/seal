@@ -447,6 +447,49 @@ export async function getUserUsageStatistics(): Promise<ApiUsageStatistics> {
   return apiFetch("/api/users/me/usage", usageStatisticsSchema);
 }
 
+const connectedAppSchema = z.object({
+  id: z.string(),
+  appName: z.string(),
+  active: z.boolean(),
+  connectedAt: z.number(),
+  lastActivityAt: z.number().nullable(),
+  scopes: z.array(z.string()),
+});
+
+export type ApiConnectedApp = z.infer<typeof connectedAppSchema>;
+
+const integrationActivityLogSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  integrationName: z.string(),
+  action: z.string(),
+  details: z.string().nullable(),
+  createdAt: z.number(),
+});
+
+export type ApiIntegrationActivityLog = z.infer<
+  typeof integrationActivityLogSchema
+>;
+
+export async function getConnectedApps(): Promise<ApiConnectedApp[]> {
+  return apiFetch("/api/users/me/connected-apps", z.array(connectedAppSchema));
+}
+
+export async function getIntegrationActivity(): Promise<
+  ApiIntegrationActivityLog[]
+> {
+  return apiFetch(
+    "/api/users/me/integration-activity",
+    z.array(integrationActivityLogSchema)
+  );
+}
+
+export async function disconnectConnectedApp(id: string): Promise<void> {
+  return apiFetch(`/api/users/me/connected-apps/${id}`, z.void(), {
+    method: "DELETE",
+  });
+}
+
 const aiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiAutoAnalyze: z.boolean(),

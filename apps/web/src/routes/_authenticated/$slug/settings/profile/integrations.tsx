@@ -1,11 +1,16 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { Activity, Clock, Link2, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
+import {
+  disconnectConnectedApp,
+  getConnectedApps,
+  getIntegrationActivity,
+  type ApiConnectedApp,
+  type ApiIntegrationActivityLog,
+} from "@/lib/api-client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,8 +62,14 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 function IntegrationsSettings() {
-  const connectedApps = useQuery(api.api_keys.queries.listConnectedApps);
-  const activityLogs = useQuery(api.api_keys.queries.listIntegrationActivity);
+  const { data: connectedApps } = useQuery({
+    queryKey: ["api", "users", "me", "connected-apps"],
+    queryFn: getConnectedApps,
+  });
+  const { data: activityLogs } = useQuery({
+    queryKey: ["api", "users", "me", "integration-activity"],
+    queryFn: getIntegrationActivity,
+  });
 
   if (!connectedApps || !activityLogs) {
     return <FormSkeleton />;
@@ -72,12 +83,14 @@ function IntegrationsSettings() {
   );
 }
 
-function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
-  const disconnectApp = useMutation(api.api_keys.mutations.disconnectApp);
+function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
+  const disconnectApp = useMutation({
+    mutationFn: disconnectConnectedApp,
+  });
 
-  const handleDisconnect = async (appId: Doc<"connected_apps">["_id"]) => {
+  const handleDisconnect = async (appId: string) => {
     try {
-      await disconnectApp({ appId });
+      await disconnectApp.mutateAsync(appId);
       toast.success("App disconnected");
     } catch (error) {
       toast.error(
@@ -112,7 +125,7 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
           <div className="space-y-4">
             {apps.map((app) => (
               <div
-                key={app._id}
+                key={app.id}
                 className="flex flex-col justify-between gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
               >
                 <div className="min-w-0 flex-1 space-y-1">
@@ -171,7 +184,7 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => handleDisconnect(app._id)}
+                        onClick={() => handleDisconnect(app.id)}
                       >
                         Disconnect
                       </AlertDialogAction>
@@ -190,7 +203,7 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 function ActivityLogsSection({
   logs,
 }: {
-  logs: Doc<"integration_activity_logs">[];
+  logs: ApiIntegrationActivityLog[];
 }) {
   return (
     <Card>
@@ -218,7 +231,7 @@ function ActivityLogsSection({
           <div className="space-y-3">
             {logs.map((log) => (
               <div
-                key={log._id}
+                key={log.id}
                 className="flex items-start justify-between border-b pb-3 last:border-0"
               >
                 <div className="space-y-1">

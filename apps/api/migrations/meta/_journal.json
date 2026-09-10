@@ -99,6 +99,13 @@
       "when": 1789005719412,
       "tag": "0014_melodic_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1789005719412,
+      "tag": "0015_add_connected_apps_and_logs",
+      "breakpoints": true
     }
   ]
 }
