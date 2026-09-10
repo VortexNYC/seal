@@ -18,6 +18,7 @@ import publicApi from "./api/public.js";
 import savedSignatures from "./api/saved-signatures.js";
 import users from "./api/users.js";
 import accountV1 from "./api/v1/account.js";
+import documentsV1 from "./api/v1/documents.js";
 import { createAuth } from "./platform/auth.js";
 import { mcpAuth, type McpAccessToken } from "./platform/mcp-auth.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
@@ -127,6 +128,7 @@ app.route("/api/users", users);
 
 app.use("/api/v1/*", mcpAuth);
 app.route("/api/v1/account", accountV1);
+app.route("/api/v1/documents", documentsV1);
 
 export { SealChatAgent };
 

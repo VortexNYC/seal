@@ -30,6 +30,10 @@ function getIssuerAndAudience(env: CloudflareBindings): {
   };
 }
 
+export function mcpHasScope(token: McpAccessToken, required: string): boolean {
+  return token.scope.split(/\s+/).includes(required);
+}
+
 export async function verifyMcpAccessToken(
   env: CloudflareBindings,
   token: string
