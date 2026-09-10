@@ -17,12 +17,15 @@ import organizations from "./api/organizations.js";
 import publicApi from "./api/public.js";
 import savedSignatures from "./api/saved-signatures.js";
 import users from "./api/users.js";
+import accountV1 from "./api/v1/account.js";
 import { createAuth } from "./platform/auth.js";
+import { mcpAuth, type McpAccessToken } from "./platform/mcp-auth.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
 
 type Variables = {
   auth: ReturnType<typeof createAuth>;
   user: SessionUser | null;
+  mcp?: McpAccessToken;
 };
 
 interface Env extends CloudflareBindings {
@@ -121,6 +124,9 @@ app.route("/api/organizations", organizations);
 app.route("/api/public", publicApi);
 app.route("/api/saved-signatures", savedSignatures);
 app.route("/api/users", users);
+
+app.use("/api/v1/*", mcpAuth);
+app.route("/api/v1/account", accountV1);
 
 export { SealChatAgent };
 

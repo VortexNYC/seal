@@ -19,7 +19,7 @@ const app = new OpenAPIHono<{
 }>();
 
 const MCP_PATH = "/mcp";
-const ISSUER_PATH = "/oauth/seal-mcp";
+export const ISSUER_PATH = "/oauth/seal-mcp";
 const AUTHORIZE_PATH = `${ISSUER_PATH}/authorize`;
 const TOKEN_PATH = `${ISSUER_PATH}/token`;
 const JWKS_PATH = `${ISSUER_PATH}/jwks`;
@@ -146,6 +146,24 @@ export function getMcpKeyId(env: CloudflareBindings): string {
   return parsed
     ? getKeyId(parsed, env)
     : (env.SEAL_MCP_SIGNING_KEY_ID ?? "seal-mcp-key-1");
+}
+
+export async function getMcpPublicKey(
+  env: CloudflareBindings
+): Promise<CryptoKey | null> {
+  const jwk = await loadSigningJwk(env);
+  if (!jwk) return null;
+  const publicJwk = await publicJwkFromPrivate(jwk);
+  if (!publicJwk) return null;
+  const alg = typeof jwk.alg === "string" ? jwk.alg : "ES256";
+  publicJwk.kid = getKeyId(jwk, env);
+  publicJwk.alg = alg;
+  try {
+    const key = await importJWK(publicJwk, alg);
+    return key instanceof CryptoKey ? key : null;
+  } catch {
+    return null;
+  }
 }
 
 function base64UrlEncode(bytes: Uint8Array): string {
