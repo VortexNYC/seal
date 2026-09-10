@@ -8,7 +8,6 @@
  * This component doesn't render any UI - it only manages PostHog identity.
  */
 
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useEffect } from "react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -16,7 +15,7 @@ import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 
 interface PostHogIdentifyProps {
   organization: {
-    _id: Id<"organizations">;
+    id: string;
     name: string;
     slug: string;
   };
@@ -38,15 +37,15 @@ export function PostHogIdentify({ organization }: PostHogIdentifyProps) {
   }, [isLoaded, user, identify]);
 
   useEffect(() => {
-    if (!organization._id) return;
+    if (!organization.id) return;
 
     // Associate user with organization group for B2B analytics
     group({
-      organizationId: organization._id,
+      organizationId: organization.id,
       name: organization.name,
       slug: organization.slug,
     });
-  }, [organization._id, organization.name, organization.slug, group]);
+  }, [organization.id, organization.name, organization.slug, group]);
 
   // This component doesn't render anything
   return null;

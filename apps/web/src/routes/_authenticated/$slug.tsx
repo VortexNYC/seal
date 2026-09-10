@@ -6,14 +6,12 @@
  * Route: /{slug}/*
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   Outlet,
 } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import { ConvexError } from "convex/values";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -28,6 +26,7 @@ import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
+import { getOrganization } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -38,11 +37,7 @@ export const Route = createFileRoute("/_authenticated/$slug")({
 
 function WorkspaceErrorComponent(props: ErrorComponentProps) {
   const message =
-    props.error instanceof ConvexError
-      ? String(props.error.data)
-      : props.error instanceof Error
-        ? props.error.message
-        : "";
+    props.error instanceof Error ? props.error.message : String(props.error);
 
   const isNotFound =
     message.includes("not found") ||
@@ -61,31 +56,21 @@ function WorkspaceLayout() {
   const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
   useJamMetadata();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["api", "organizations", slug],
+    queryFn: () => getOrganization(slug),
   });
 
-  const orgId = organization?._id;
-
-  const permissions = useQuery(
-    api.organizations.queries.getUserPermissions,
-    orgId ? { organizationId: orgId } : "skip"
-  );
-
-  // Still loading — pendingComponent handles initial load, but useQuery
-  // returns undefined while the subscription is establishing
   if (organization === undefined) {
     return null;
   }
 
-  // Organization not found or user has no access — Convex threw an error
-  // that was caught, or the query returned null
-  if (!organization || !orgId) {
+  if (!organization) {
     return <NotFoundPage />;
   }
 
   const orgData = {
-    _id: orgId,
+    id: organization.id,
     name: organization.name,
     slug: organization.slug,
   };
@@ -95,11 +80,7 @@ function WorkspaceLayout() {
       <PostHogIdentify organization={orgData} />
       <DotPattern className="fixed inset-0 z-0" />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
-        <AppSidebar
-          slug={slug}
-          organization={orgData}
-          permissions={permissions}
-        />
+        <AppSidebar slug={slug} organization={orgData} permissions={undefined} />
         <main className="h-full min-h-0 flex-1 overflow-hidden">
           <Outlet />
         </main>

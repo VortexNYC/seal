@@ -42,6 +42,7 @@ import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 
 type SidebarOrganization = {
+  id: string;
   name: string;
   slug: string;
 };
