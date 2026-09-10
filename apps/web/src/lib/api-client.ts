@@ -7,11 +7,20 @@ import {
 } from "@/lib/document-status";
 
 const organizationSchema = z.object({
+  _id: z.string(),
   id: z.string(),
   name: z.string(),
   slug: z.string(),
   logo: z.string().nullable().optional(),
   metadata: z.string().nullable().optional(),
+  status: z.string(),
+  userRole: z.string(),
+  suiteBrand: z.record(z.string(), z.unknown()),
+  suiteSecurity: z.record(z.string(), z.unknown()),
+  brandingSettings: z.record(z.string(), z.unknown()).nullable().optional(),
+  timezone: z.string(),
+  currency: z.string(),
+  currencyKind: z.string(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
@@ -258,6 +267,28 @@ export async function getOrganization(slug: string): Promise<ApiOrganization> {
   return apiFetch(
     `/api/organizations/${encodeURIComponent(slug)}`,
     organizationSchema
+  );
+}
+
+export async function updateWorkspace(
+  slug: string,
+  input: {
+    name?: string;
+    logo?: string | null;
+    brand?: Record<string, unknown>;
+    security?: Record<string, unknown>;
+    timezone?: string;
+    currency?: string;
+    currencyKind?: string;
+  }
+): Promise<ApiOrganization> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/workspace`,
+    organizationSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
   );
 }
 
