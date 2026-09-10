@@ -6,6 +6,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -904,8 +905,8 @@ function DocumentDetailPage() {
 
         {/* ── Dialogs ─────────────────────────────────────────────────────── */}
         <AddRecipientDialog
-          documentId={typedDocumentId}
-          organizationId={parseId("organizations", documentData.organizationId)}
+          documentPublicId={documentPublicId}
+          slug={slug}
           open={docState.addRecipientOpen}
           onOpenChange={docState.setAddRecipientOpen}
           onSuccess={() => refetchRecipients()}

@@ -1,12 +1,12 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { CheckIcon, Loader2Icon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { cn, getErrorMessage } from "@/lib/utils";
+import { addRecipients, getContacts, getOrganizationMembers } from "@/lib/api-client";
 
 import { parseSelectValue } from "../../lib/select-values";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -38,8 +38,8 @@ const outsiderSchema = z.object({
 });
 
 interface AddRecipientDialogProps {
-  documentId: Id<"documents">;
-  organizationId: Id<"organizations">;
+  documentPublicId: string;
+  slug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -57,8 +57,8 @@ function getInitials(name: string | null | undefined): string {
 }
 
 export function AddRecipientDialog({
-  documentId,
-  organizationId,
+  documentPublicId,
+  slug,
   open,
   onOpenChange,
   onSuccess,
@@ -78,17 +78,17 @@ export function AddRecipientDialog({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
 
-  const members = useQuery(
-    api.organizations.queries.getOrganizationMembers,
-    open ? { organizationId } : "skip"
-  );
+  const { data: members } = useQuery({
+    queryKey: ["organizations", slug, "members"],
+    queryFn: () => getOrganizationMembers(slug),
+    enabled: open,
+  });
 
-  const contactSuggestions = useQuery(
-    api.contacts.queries.suggestForRecipient,
-    activeTab === "outsider" && email.length >= 2
-      ? { searchTerm: email }
-      : "skip"
-  );
+  const { data: contactSuggestions } = useQuery({
+    queryKey: ["contacts", "suggest", email],
+    queryFn: () => getContacts({ search: email }),
+    enabled: activeTab === "outsider" && email.length >= 2,
+  });
 
   // Filter out contacts whose emails are already added as recipients
   const filteredSuggestions = contactSuggestions?.filter(
@@ -98,9 +98,13 @@ export function AddRecipientDialog({
       )
   );
 
-  const addRecipients = useMutation(
-    api.documents.recipients_mutations.addRecipients
-  );
+  const addRecipient = useMutation({
+    mutationFn: (input: {
+      email: string;
+      name?: string;
+      role: "signer" | "viewer" | "approver";
+    }) => addRecipients(documentPublicId, [input]),
+  });
 
   // Filter out current user and already-added recipients
   const eligibleMembers = members?.filter((member) => {
@@ -148,15 +152,10 @@ export function AddRecipientDialog({
     setLoading(true);
 
     try {
-      await addRecipients({
-        documentId,
-        recipients: [
-          {
-            email: recipientEmail,
-            name: recipientName,
-            role,
-          },
-        ],
+      await addRecipient.mutateAsync({
+        email: recipientEmail,
+        name: recipientName,
+        role,
       });
 
       toast.success("Recipient added successfully");
@@ -214,18 +213,18 @@ export function AddRecipientDialog({
                 <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border p-2">
                   {eligibleMembers.map((member) => (
                     <button
-                      key={member.id}
+                      key={member.userId}
                       type="button"
                       onClick={() =>
                         setSelectedMember({
-                          id: member.id,
+                          id: member.userId,
                           email: member.email,
                           name: member.name ?? null,
                         })
                       }
                       className={cn(
                         "hover:bg-accent flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors",
-                        selectedMember?.id === member.id && "bg-accent"
+                        selectedMember?.id === member.userId && "bg-accent"
                       )}
                     >
                       <Avatar className="h-8 w-8">
@@ -242,7 +241,7 @@ export function AddRecipientDialog({
                           {member.email}
                         </p>
                       </div>
-                      {selectedMember?.id === member.id && (
+                      {selectedMember?.id === member.userId && (
                         <CheckIcon className="text-primary h-4 w-4 shrink-0" />
                       )}
                     </button>

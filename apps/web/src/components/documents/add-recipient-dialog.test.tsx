@@ -5,34 +5,35 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mockUseMutation = vi.fn();
 const mockUseQuery = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useMutation: () => mockUseMutation,
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (...args: unknown[]) => ({ data: mockUseQuery(...args) }),
+  useMutation: () => ({ mutateAsync: mockUseMutation }),
 }));
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { parseId } from "../../lib/convex-ids";
 import { AddRecipientDialog } from "./add-recipient-dialog";
 
-const FAKE_DOC_ID = parseId("documents", "fake_doc");
-const FAKE_ORG_ID = parseId("organizations", "fake_org");
+const FAKE_DOC_ID = "fake_doc";
+const FAKE_SLUG = "fake_org";
 
 type Member = {
-  id: string;
+  userId: string;
   email: string;
-  name: string | undefined;
+  name: string | null;
+  role: string;
   avatarUrl: string | null;
   status: string;
 };
 
 function makeMembers(overrides: Partial<Member>[] = []): Member[] {
   return overrides.map((o, i) => ({
-    id: `member_${i}`,
+    userId: `member_${i}`,
     email: `member${i}@example.com`,
     name: `Member ${i}`,
+    role: "member",
     avatarUrl: null,
     status: "active",
     ...o,
@@ -49,8 +50,8 @@ interface RenderOptions {
 
 function renderDialog(overrides: RenderOptions = {}) {
   const props = {
-    documentId: FAKE_DOC_ID,
-    organizationId: FAKE_ORG_ID,
+    documentPublicId: FAKE_DOC_ID,
+    slug: FAKE_SLUG,
     open: true,
     onOpenChange: vi.fn<(open: boolean) => void>(),
     onSuccess: vi.fn<() => void>(),
@@ -358,18 +359,11 @@ describe("AddRecipientDialog", () => {
       await user.click(screen.getByRole("button", { name: /Alice Smith/i }));
       await user.click(screen.getByRole("button", { name: "Add Recipient" }));
 
-      expect(mockUseMutation).toHaveBeenCalledWith(
-        expect.objectContaining({
-          documentId: FAKE_DOC_ID,
-          recipients: [
-            expect.objectContaining({
-              email: "alice@example.com",
-              name: "Alice Smith",
-              role: "signer",
-            }),
-          ],
-        })
-      );
+      expect(mockUseMutation).toHaveBeenCalledWith({
+        email: "alice@example.com",
+        name: "Alice Smith",
+        role: "signer",
+      });
     });
 
     test("calls onSuccess after successful submission", async () => {
@@ -420,18 +414,11 @@ describe("AddRecipientDialog", () => {
       await user.type(screen.getByLabelText("Name (Optional)"), "Jane Doe");
       await user.click(screen.getByRole("button", { name: "Add Recipient" }));
 
-      expect(mockUseMutation).toHaveBeenCalledWith(
-        expect.objectContaining({
-          documentId: FAKE_DOC_ID,
-          recipients: [
-            expect.objectContaining({
-              email: "external@example.com",
-              name: "Jane Doe",
-              role: "signer",
-            }),
-          ],
-        })
-      );
+      expect(mockUseMutation).toHaveBeenCalledWith({
+        email: "external@example.com",
+        name: "Jane Doe",
+        role: "signer",
+      });
     });
   });
 

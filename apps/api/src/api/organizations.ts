@@ -200,6 +200,8 @@ const TeamMemberSchema = z.object({
   name: z.string().nullable(),
   email: z.string(),
   role: z.string(),
+  avatarUrl: z.string().nullable(),
+  status: z.string(),
 });
 
 const membersRouteDef = createRoute({
@@ -233,13 +235,14 @@ app.openapi(membersRouteDef, async (c) => {
       name: userTable.name,
       email: userTable.email,
       role: member.role,
+      avatarUrl: userTable.image,
     })
     .from(member)
     .innerJoin(userTable, eq(member.userId, userTable.id))
     .where(eq(member.organizationId, org.id))
     .orderBy(userTable.name);
 
-  return c.json(rows);
+  return c.json(rows.map((r) => Object.assign(r, { status: "active" })));
 });
 
 declare module "hono" {

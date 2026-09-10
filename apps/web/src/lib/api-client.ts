@@ -529,6 +529,8 @@ const teamMemberSchema = z.object({
   name: z.string().nullable(),
   email: z.string(),
   role: z.string(),
+  avatarUrl: z.string().nullable(),
+  status: z.string(),
 });
 
 export type ApiTeamMember = z.infer<typeof teamMemberSchema>;
