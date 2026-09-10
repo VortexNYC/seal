@@ -21,7 +21,7 @@ import { z } from "zod";
 
 import { type DocumentDetailPaymentConfig } from "@/data/document-detail";
 import { sendDocument } from "@/lib/api-client";
-import { type Id } from "@/lib/convex-ids";
+import { type Id } from "@/lib/ids";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";

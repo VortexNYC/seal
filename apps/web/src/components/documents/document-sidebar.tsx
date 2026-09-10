@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { parseId } from "@/lib/convex-ids";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   formatDate,
@@ -24,6 +23,7 @@ import {
   formatRelativeTime,
   getInitials,
 } from "@/lib/formatting";
+import { parseId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";

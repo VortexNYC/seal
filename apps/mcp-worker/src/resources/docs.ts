@@ -138,7 +138,7 @@ Fields are placed on document pages to collect information from recipients.
 | \`checkbox\` | One or more checkboxes — supports multi-select | JSON array of selected values |
 | \`dropdown\` | Single selection from a list of options | String |
 | \`radio\` | Single selection from mutually exclusive options | String |
-| \`attachment\` | File upload by the recipient (e.g. ID document) | Convex storage ID |
+| \`attachment\` | File upload by the recipient (e.g. ID document) | R2 storage key |
 
 ## Field Properties
 

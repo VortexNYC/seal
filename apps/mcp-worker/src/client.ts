@@ -393,10 +393,10 @@ export class SealApiClient {
   }
 
   /**
-   * Uploads a file buffer to a Convex storage URL.
+   * Uploads a file buffer to a Seal API signed upload URL.
    * Returns the storageId from the response.
    *
-   * @param uploadUrl - The temporary upload URL from Convex
+   * @param uploadUrl - The temporary upload URL from the Seal API
    * @param fileBuffer - The file content as a Buffer
    * @param contentType - The MIME type of the file
    * @param timeout - Optional timeout in ms (defaults to 60000ms for uploads)
@@ -464,10 +464,10 @@ export class SealApiClient {
   }
 
   /**
-   * Uploads a file stream to a Convex storage URL.
+   * Uploads a file stream to a Seal API signed upload URL.
    * Returns the storageId from the response.
    *
-   * @param uploadUrl - The temporary upload URL from Convex
+   * @param uploadUrl - The temporary upload URL from the Seal API
    * @param fileStream - The file content as a Readable stream
    * @param contentType - The MIME type of the file
    * @param contentLength - Optional content length for progress tracking

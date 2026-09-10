@@ -20,7 +20,7 @@ import {
   type ApiSignature,
   type ApiPaymentConfig,
 } from "@/lib/api-client";
-import { type Id, parseId } from "@/lib/convex-ids";
+import { type Id, parseId } from "@/lib/ids";
 import { parseSelectValue } from "@/lib/select-values";
 
 export type DocumentDetailRecipient = {

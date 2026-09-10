@@ -1,11 +1,11 @@
 /**
  * @fileoverview Authentication utilities for the Seal MCP server (Worker edition).
  *
- * The worker delegates auth to Seal Convex: it does not verify tokens, it just
- * forwards the inbound bearer to Seal's `/api/v1` resource server (which
- * validates it via `resolveMcpApiAuth`). The fetch handler (src/index.ts) puts
- * the bearer into the Agents SDK `McpAuthContext.props`; tool handlers read it
- * back here via `getMcpAuthContext()` and pass it through to the API client.
+ * The worker does not verify tokens locally; it forwards the inbound bearer to
+ * the Seal `/api/v1` resource server for validation. The fetch handler
+ * (src/index.ts) puts the bearer into the Agents SDK `McpAuthContext.props`;
+ * tool handlers read it back here via `getMcpAuthContext()` and pass it through
+ * to the API client.
  */
 import { getMcpAuthContext } from "agents/mcp";
 

@@ -1,4 +1,4 @@
-import { type Doc } from "@/lib/convex-ids";
+import { type Doc } from "@/lib/ids";
 
 /**
  * Counts only true signature fields, excluding other fillable field types.

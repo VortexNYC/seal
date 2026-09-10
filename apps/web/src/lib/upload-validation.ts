@@ -1,6 +1,6 @@
 /**
  * Frontend file upload validation
- * Mirrors backend validation in convex/documents/upload_config.ts
+ * Mirrors backend validation in apps/api/src/api/documents.ts
  */
 
 /**

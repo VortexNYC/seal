@@ -1,8 +1,7 @@
 /**
- * Lightweight identity helpers for Vortex document/recipient/field ids.
+ * Lightweight identity helpers for Seal document/recipient/field ids.
  *
- * These used to brand strings as Convex `Id<TableName>` values. The web app now
- * treats ids as plain strings, so `parseId` is retained only for source-
+ * Ids are treated as plain strings. `parseId` is retained for source
  * compatibility and returns its input unchanged.
  */
 

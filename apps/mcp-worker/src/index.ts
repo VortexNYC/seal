@@ -5,15 +5,12 @@
  * tools/list / tools/call) via the Agents SDK `createMcpHandler`, and each tool
  * forwards to the Seal API.
  *
- * Auth is being migrated from Seal Convex into this worker. The worker now
- * serves its own OAuth protected-resource and authorization-server metadata;
- * the authorize/token/JWKS endpoints will be added next. Until then, the `/mcp`
- * tool calls still forward to the legacy Convex API base configured by
- * `SEAL_API_BASE_URL`.
+ * Auth is handled by the OAuth endpoints in apps/api. The worker serves its own
+ * OAuth protected-resource metadata and forwards MCP tool calls to
+ * `SEAL_API_BASE_URL` (the Seal API).
  *
  * Env vars (wrangler.jsonc vars or secrets):
- *   SEAL_API_BASE_URL — Seal backend API base, e.g.
- *     https://<deployment>.convex.site/api/v1
+ *   SEAL_API_BASE_URL — Seal API base, e.g. https://api.seal.nyc/api/v1
  *   SEAL_API_KEY — optional server-to-server fallback credential
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -168,9 +165,8 @@ export default {
       );
     }
 
-    // RFC 9728 protected-resource metadata — served locally so the worker no
-    // longer depends on Convex for OAuth discovery. The authorization server
-    // it advertises lives in apps/api (configurable via SEAL_AUTH_SERVER_ORIGIN).
+    // RFC 9728 protected-resource metadata — served locally. The authorization
+    // server it advertises lives in apps/api (configurable via SEAL_AUTH_SERVER_ORIGIN).
     if (url.pathname === PROTECTED_RESOURCE_METADATA_PATH) {
       const config = getConfig();
       const authServerOrigin = resolveAuthServerOrigin(config, url.origin);
@@ -201,9 +197,7 @@ export default {
       }
 
       // Per-request server + tools/resources/prompts. The bearer is forwarded
-      // to the Seal API; Convex currently validates it. Once the OAuth/token
-      // endpoints are implemented in this worker, the data plane will move to
-      // apps/api and validation will happen there.
+      // to the Seal API for validation.
       const config = getConfig();
       const apiClient = new SealApiClient(config);
       const server = new McpServer({

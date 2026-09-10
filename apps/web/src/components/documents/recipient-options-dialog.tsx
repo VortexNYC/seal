@@ -1,7 +1,7 @@
 import { LinkIcon, MailIcon, TrashIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { type Id } from "@/lib/convex-ids";
+import { type Id } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";
