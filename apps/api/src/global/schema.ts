@@ -1097,3 +1097,35 @@ export const mcpOAuthRefreshTokens = sqliteTable(
     index("mcpOAuthRefreshTokens_clientId_idx").on(table.clientId),
   ]
 );
+
+export const webhooks = sqliteTable(
+  "webhooks",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    events: text("events").notNull().default("[]"),
+    description: text("description"),
+    secret: text("secret").notNull(),
+    status: text("status").notNull().default("active"),
+    totalDeliveries: integer("total_deliveries").notNull().default(0),
+    successfulDeliveries: integer("successful_deliveries").notNull().default(0),
+    failedDeliveries: integer("failed_deliveries").notNull().default(0),
+    lastDeliveryAt: integer("last_delivery_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("webhooks_organizationId_idx").on(table.organizationId),
+    index("webhooks_status_idx").on(table.status),
+  ]
+);

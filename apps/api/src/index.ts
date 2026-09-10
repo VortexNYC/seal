@@ -28,6 +28,7 @@ import settingsV1 from "./api/v1/settings.js";
 import signaturesV1 from "./api/v1/signatures.js";
 import templatesV1 from "./api/v1/templates.js";
 import uploadsV1 from "./api/v1/uploads.js";
+import webhooksV1 from "./api/v1/webhooks.js";
 import { createAuth } from "./platform/auth.js";
 import {
   verifyMcpAccessToken,
@@ -174,6 +175,7 @@ app.route("/api/v1/settings", settingsV1);
 app.route("/api/v1/signatures", signaturesV1);
 app.route("/api/v1/templates", templatesV1);
 app.route("/api/v1/uploads", uploadsV1);
+app.route("/api/v1/webhooks", webhooksV1);
 
 export { SealChatAgent };
 
