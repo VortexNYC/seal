@@ -7,6 +7,7 @@ import documents from "./api/documents.js";
 import folders from "./api/folders.js";
 import notifications from "./api/notifications.js";
 import organizations from "./api/organizations.js";
+import publicApi from "./api/public.js";
 import { createAuth } from "./platform/auth.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
 
@@ -61,5 +62,6 @@ app.route("/api/documents", documents);
 app.route("/api/folders", folders);
 app.route("/api/notifications", notifications);
 app.route("/api/organizations", organizations);
+app.route("/api/public", publicApi);
 
 export default app;
