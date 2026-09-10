@@ -1,4 +1,7 @@
-import { organizationClient } from "better-auth/client/plugins";
+import {
+  organizationClient,
+  twoFactorClient,
+} from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 const betterAuthBaseUrlValue = import.meta.env.VITE_BETTER_AUTH_URL;
@@ -12,6 +15,8 @@ export const betterAuthClient =
         fetchOptions: {
           credentials: "include",
         },
-        plugins: [organizationClient()],
+        plugins: [organizationClient(), twoFactorClient()],
       })
     : null;
+
+export const authClient = betterAuthClient;

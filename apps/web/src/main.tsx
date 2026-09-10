@@ -1,13 +1,9 @@
-// VAL-REAL-1776573534487
-import { api } from "@seal/backend/convex/_generated/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import ReactDOM from "react-dom/client";
-// Pipeline edit proof — T2-SEAL-1776571434447
 
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
@@ -17,17 +13,9 @@ import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
 
-const RAW_CONVEX_URL: unknown = import.meta.env.VITE_CONVEX_URL;
-
-if (typeof RAW_CONVEX_URL !== "string" || RAW_CONVEX_URL === "") {
-  throw new Error("missing VITE_CONVEX_URL envar");
-}
-const CONVEX_URL = RAW_CONVEX_URL;
-
-const convex = new ConvexReactClient(CONVEX_URL);
-
 // Expose Convex client on `window` in dev/test/staging/preview so E2E tests
 // (and agent-browser sessions) can call mutations/queries directly.
+// Kept behind a dynamic import so it does not ship in production builds.
 const isPreviewDeployment =
   typeof window !== "undefined" &&
   window.location.hostname.includes("vercel.app");
@@ -39,10 +27,23 @@ const shouldExposeConvexApi =
   isStagingDomain ||
   (import.meta.env.VITE_EXPOSE_CONVEX_API === "true" && isPreviewDeployment);
 
-if (shouldExposeConvexApi) {
-  (window as Window & { __convexClient?: typeof convex }).__convexClient =
-    convex;
-  (window as Window & { __convexApi?: typeof api }).__convexApi = api;
+if (typeof window !== "undefined" && shouldExposeConvexApi) {
+  void (async () => {
+    const RAW_CONVEX_URL: unknown = import.meta.env.VITE_CONVEX_URL;
+    if (typeof RAW_CONVEX_URL !== "string" || RAW_CONVEX_URL === "") {
+      return;
+    }
+
+    const [{ ConvexReactClient }, { api }] = await Promise.all([
+      import("convex/react"),
+      import("@seal/backend/convex/_generated/api"),
+    ]);
+
+    const convex = new ConvexReactClient(RAW_CONVEX_URL);
+    (window as Window & { __convexClient?: typeof convex }).__convexClient =
+      convex;
+    (window as Window & { __convexApi?: typeof api }).__convexApi = api;
+  })();
 }
 
 const queryClient = new QueryClient({
@@ -54,7 +55,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Create a new router instance
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",
@@ -68,11 +68,9 @@ const router = createRouter({
   Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
     return (
       <ThemeProvider>
-        <ConvexProvider client={convex}>
-          <QueryClientProvider client={queryClient}>
-            {children}
-          </QueryClientProvider>
-        </ConvexProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
       </ThemeProvider>
     );
   },

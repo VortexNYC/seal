@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { UploadDialog } from "./upload-dialog";
 
@@ -55,13 +55,8 @@ function renderDialog(
 }
 
 describe("UploadDialog", () => {
-  beforeEach(() => {
-    vi.stubEnv("VITE_CONVEX_URL", "https://local.convex.cloud");
-  });
-
   afterEach(() => {
     cleanup();
-    vi.unstubAllEnvs();
     queryClient.clear();
   });
 

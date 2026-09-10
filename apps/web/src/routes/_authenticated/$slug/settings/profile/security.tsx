@@ -19,7 +19,7 @@ import {
 } from "@vortexnyc/ui";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/auth-runtime.better-auth";
+import { authClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"

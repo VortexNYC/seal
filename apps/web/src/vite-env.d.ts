@@ -3,6 +3,7 @@
 
 import type { api } from "@seal/backend/convex/_generated/api";
 import type { ConvexReactClient } from "convex/react";
+import type * as React from "react";
 
 // Extend Window interface for E2E testing support
 declare global {
@@ -22,4 +23,7 @@ declare module "react" {
 
 interface ImportMetaEnv {
   readonly VITE_API_URL: string;
+  readonly VITE_BETTER_AUTH_URL: string;
+  readonly VITE_APP_URL: string;
+  readonly VITE_CONVEX_URL?: string;
 }
