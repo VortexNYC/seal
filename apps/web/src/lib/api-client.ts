@@ -2319,3 +2319,72 @@ export async function dictatePublicSigningNextSigner(
     }
   );
 }
+
+const savedSignatureSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  signatureImageUrl: z.string(),
+  signatureType: z.enum(["drawn", "typed", "uploaded"]),
+  fontFamily: z.string().nullable().optional(),
+  isDefault: z.boolean(),
+  usageCount: z.number().int(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+
+export type ApiSavedSignature = z.infer<typeof savedSignatureSchema>;
+
+export async function listSavedSignatures(): Promise<ApiSavedSignature[]> {
+  return apiFetch("/api/saved-signatures", z.array(savedSignatureSchema));
+}
+
+export async function createSavedSignature(input: {
+  name: string;
+  signatureImageUrl: string;
+  signatureType: "drawn" | "typed" | "uploaded";
+  fontFamily?: string;
+  setAsDefault?: boolean;
+}): Promise<ApiSavedSignature> {
+  return apiFetch(
+    "/api/saved-signatures",
+    savedSignatureSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function updateSavedSignature(
+  id: string,
+  input: { name?: string; isDefault?: boolean }
+): Promise<ApiSavedSignature> {
+  return apiFetch(
+    `/api/saved-signatures/${encodeURIComponent(id)}`,
+    savedSignatureSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function deleteSavedSignature(
+  id: string
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/saved-signatures/${encodeURIComponent(id)}`,
+    z.object({ success: z.boolean() }),
+    { method: "DELETE" }
+  );
+}
+
+export async function incrementSavedSignatureUsage(
+  id: string
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/saved-signatures/${encodeURIComponent(id)}/use`,
+    z.object({ success: z.boolean() }),
+    { method: "POST" }
+  );
+}

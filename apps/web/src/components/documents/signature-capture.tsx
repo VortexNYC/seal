@@ -10,11 +10,16 @@
  * SEA-104/105/106/107: Signature Capture Interface
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
-import { useQuery } from "@tanstack/react-query";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import {
+  createSavedSignature,
+  deleteSavedSignature,
+  incrementSavedSignatureUsage,
+  listSavedSignatures,
+  updateSavedSignature,
+  type ApiSavedSignature,
+} from "@/lib/api-client";
 import {
   BookmarkIcon,
   CheckIcon,
@@ -172,8 +177,9 @@ export function SignatureCapture({
   const [signatureHistory, setSignatureHistory] = useState<string[]>([]);
 
   // Selected saved signature
-  const [selectedSavedSignature, setSelectedSavedSignature] =
-    useState<Id<"saved_signatures"> | null>(null);
+  const [selectedSavedSignature, setSelectedSavedSignature] = useState<
+    string | null
+  >(null);
 
   // Save signature dialog
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -184,24 +190,37 @@ export function SignatureCapture({
     type: SignatureType;
   } | null>(null);
 
+  const queryClient = useQueryClient();
+
   // Signature library queries and mutations (only if showLibrary is true)
   const { data: savedSignatures = [] } = useQuery({
-    ...convexQuery(api.saved_signatures.queries.getUserSignatures, {}),
+    queryKey: ["saved-signatures"],
+    queryFn: listSavedSignatures,
     enabled: showLibrary,
   });
 
-  const saveSignatureMutation = useMutation(
-    api.saved_signatures.mutations.saveSignature
-  );
-  const deleteSignatureMutation = useMutation(
-    api.saved_signatures.mutations.deleteSignature
-  );
-  const setDefaultMutation = useMutation(
-    api.saved_signatures.mutations.updateSignature
-  );
-  const incrementUsageMutation = useMutation(
-    api.saved_signatures.mutations.incrementUsageCount
-  );
+  const saveSignatureMutation = useMutation({
+    mutationFn: createSavedSignature,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["saved-signatures"] });
+    },
+  });
+  const deleteSignatureMutation = useMutation({
+    mutationFn: deleteSavedSignature,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["saved-signatures"] });
+    },
+  });
+  const setDefaultMutation = useMutation({
+    mutationFn: (args: { id: string; isDefault: boolean }) =>
+      updateSavedSignature(args.id, { isDefault: args.isDefault }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["saved-signatures"] });
+    },
+  });
+  const incrementUsageMutation = useMutation({
+    mutationFn: incrementSavedSignatureUsage,
+  });
 
   // Get the current font's CSS family
   const currentFontFamily =
@@ -329,7 +348,7 @@ export function SignatureCapture({
     }
 
     const signature = savedSignatures.find(
-      (s: Doc<"saved_signatures">) => s._id === selectedSavedSignature
+      (s: ApiSavedSignature) => s.id === selectedSavedSignature
     );
     if (!signature) {
       toast.error("Selected signature not found");
@@ -338,7 +357,9 @@ export function SignatureCapture({
 
     // Increment usage count
     try {
-      await incrementUsageMutation({ signatureId: selectedSavedSignature });
+      if (selectedSavedSignature) {
+        await incrementUsageMutation.mutateAsync(selectedSavedSignature);
+      }
     } catch {
       // Non-critical error, don't block the signature
     }
@@ -356,7 +377,7 @@ export function SignatureCapture({
     }
 
     try {
-      await saveSignatureMutation({
+      await saveSignatureMutation.mutateAsync({
         name: saveSignatureName.trim(),
         signatureImageUrl: pendingSignatureData.data,
         signatureType: pendingSignatureData.type,
@@ -381,10 +402,10 @@ export function SignatureCapture({
 
   // Handle deleting a saved signature
   const handleDeleteSavedSignature = async (
-    signatureId: Id<"saved_signatures">
+    signatureId: string
   ) => {
     try {
-      await deleteSignatureMutation({ signatureId });
+      await deleteSignatureMutation.mutateAsync(signatureId);
       toast.success("Signature deleted");
       if (selectedSavedSignature === signatureId) {
         setSelectedSavedSignature(null);
@@ -397,9 +418,9 @@ export function SignatureCapture({
   };
 
   // Handle setting a signature as default
-  const handleSetDefault = async (signatureId: Id<"saved_signatures">) => {
+  const handleSetDefault = async (signatureId: string) => {
     try {
-      await setDefaultMutation({ signatureId, isDefault: true });
+      await setDefaultMutation.mutateAsync({ id: signatureId, isDefault: true });
       toast.success("Default signature updated");
     } catch (error) {
       toast.error("Failed to update default signature", {
@@ -528,24 +549,24 @@ export function SignatureCapture({
                   role="listbox"
                   aria-label="Saved signatures"
                 >
-                  {savedSignatures.map((sig: Doc<"saved_signatures">) => (
+                  {savedSignatures.map((sig: ApiSavedSignature) => (
                     <div
-                      key={sig._id}
+                      key={sig.id}
                       role="option"
-                      aria-selected={selectedSavedSignature === sig._id}
+                      aria-selected={selectedSavedSignature === sig.id}
                       tabIndex={0}
                       className={cn(
                         "relative cursor-pointer rounded-lg border-2 p-3 transition-colors",
-                        selectedSavedSignature === sig._id
+                        selectedSavedSignature === sig.id
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-border"
                       )}
-                      onClick={() => setSelectedSavedSignature(sig._id)}
+                      onClick={() => setSelectedSavedSignature(sig.id)}
                       onKeyDown={(event) => {
                         if (event.target !== event.currentTarget) return;
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          setSelectedSavedSignature(sig._id);
+                          setSelectedSavedSignature(sig.id);
                         }
                       }}
                       aria-label={`Select ${sig.name} signature`}
@@ -579,7 +600,7 @@ export function SignatureCapture({
                               aria-label={`Set ${sig.name} as default signature`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void handleSetDefault(sig._id);
+                                void handleSetDefault(sig.id);
                               }}
                               title="Set as default"
                             >
@@ -593,7 +614,7 @@ export function SignatureCapture({
                             aria-label={`Delete saved signature ${sig.name}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              void handleDeleteSavedSignature(sig._id);
+                              void handleDeleteSavedSignature(sig.id);
                             }}
                             title="Delete signature"
                           >

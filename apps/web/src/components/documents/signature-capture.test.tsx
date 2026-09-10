@@ -2,16 +2,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@convex-dev/react-query", () => ({
-  convexQuery: () => ({}),
-}));
-
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: [] }),
-}));
-
-vi.mock("convex/react", () => ({
-  useMutation: () => vi.fn(),
+  useMutation: () => ({ mutateAsync: vi.fn() }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
 vi.mock("sonner", () => ({

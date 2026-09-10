@@ -462,6 +462,38 @@ export const signatures = sqliteTable(
   ]
 );
 
+export const savedSignatures = sqliteTable(
+  "saved_signatures",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    signatureImageUrl: text("signature_image_url").notNull(),
+    signatureType: text("signature_type").notNull(),
+    fontFamily: text("font_family"),
+    isDefault: integer("is_default", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    usageCount: integer("usage_count").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("savedSignatures_userId_idx").on(table.userId),
+    index("savedSignatures_organizationId_idx").on(table.organizationId),
+  ]
+);
+
 export const signatureFields = sqliteTable(
   "signature_fields",
   {

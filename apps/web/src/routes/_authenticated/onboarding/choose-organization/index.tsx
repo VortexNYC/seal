@@ -36,7 +36,7 @@ function RouteComponent() {
 
   const sorted = useMemo(() => {
     if (!organizations) return [];
-    return [...organizations].sort((a, b) => a.name.localeCompare(b.name));
+    return organizations.toSorted((a, b) => a.name.localeCompare(b.name));
   }, [organizations]);
 
   if (isPending || organizations === undefined) {
