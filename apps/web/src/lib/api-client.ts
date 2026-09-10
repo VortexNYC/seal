@@ -284,6 +284,72 @@ export async function getBrandingSettings(
   );
 }
 
+const templateListItemSchema = z.object({
+  _id: z.string(),
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  pageCount: z.number().int().nullable().optional(),
+  fileSize: z.number().int(),
+  thumbnailDataUrl: z.string().nullable().optional(),
+  useCount: z.number().int(),
+  status: z.string(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type ApiTemplateListItem = z.infer<typeof templateListItemSchema>;
+
+export async function getOrganizationTemplates(
+  slug: string,
+  folderId?: string
+): Promise<ApiTemplateListItem[]> {
+  const url = new URL(
+    `/api/organizations/${encodeURIComponent(slug)}/templates`,
+    window.location.origin
+  );
+  if (folderId) {
+    url.searchParams.set("folderId", folderId);
+  }
+  return apiFetch(
+    `${url.pathname}${url.search}`,
+    z.array(templateListItemSchema)
+  );
+}
+
+const templateFolderSchema = z.object({
+  _id: z.string(),
+  id: z.string(),
+  name: z.string(),
+  parentId: z.string().nullable().optional(),
+  type: z.string(),
+  pinned: z.boolean().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type ApiTemplateFolder = z.infer<typeof templateFolderSchema>;
+
+export async function listTemplateFolders(
+  slug: string,
+  options: { type?: string; parentId?: string } = {}
+): Promise<ApiTemplateFolder[]> {
+  const url = new URL(
+    `/api/organizations/${encodeURIComponent(slug)}/folders`,
+    window.location.origin
+  );
+  if (options.type) {
+    url.searchParams.set("type", options.type);
+  }
+  if (options.parentId) {
+    url.searchParams.set("parentId", options.parentId);
+  }
+  return apiFetch(
+    `${url.pathname}${url.search}`,
+    z.array(templateFolderSchema)
+  );
+}
+
 const aiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiAutoAnalyze: z.boolean(),

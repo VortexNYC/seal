@@ -1,8 +1,16 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { invitation, member, organization, user as userTable } from "../global/schema.js";
+import {
+  documents as documentsTable,
+  folders as foldersTable,
+  invitation,
+  member,
+  organization,
+  templates as templatesTable,
+  user as userTable,
+} from "../global/schema.js";
 
 const OrganizationSchema = z
   .object({
@@ -25,6 +33,35 @@ const OrganizationSchema = z
     updatedAt: z.number(),
   })
   .openapi("Organization");
+
+const TemplateListItemSchema = z
+  .object({
+    _id: z.string(),
+    id: z.string(),
+    name: z.string(),
+    description: z.string().nullable().optional(),
+    pageCount: z.number().int().nullable().optional(),
+    fileSize: z.number().int(),
+    thumbnailDataUrl: z.string().nullable().optional(),
+    useCount: z.number().int(),
+    status: z.string(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .openapi("TemplateListItem");
+
+const FolderSchema = z
+  .object({
+    _id: z.string(),
+    id: z.string(),
+    name: z.string(),
+    parentId: z.string().nullable().optional(),
+    type: z.string(),
+    pinned: z.boolean().optional(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .openapi("Folder");
 
 const TeamSummarySchema = z
   .object({
@@ -1076,6 +1113,150 @@ app.openapi(updateAiRouteDef, async (c) => {
     .where(eq(organization.id, org.id));
 
   return c.json(nextAi);
+});
+
+const listTemplatesRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/templates",
+  request: {
+    params: z.object({ slug: z.string() }),
+    query: z.object({
+      folderId: z.string().optional().openapi({
+        param: { name: "folderId", in: "query" },
+      }),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(TemplateListItemSchema) },
+      },
+      description: "Organization templates",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(listTemplatesRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const { folderId } = c.req.valid("query");
+  const db = createD1(c.env.D1);
+
+  const where: Array<ReturnType<typeof eq>> = [
+    eq(templatesTable.organizationId, org.id),
+    eq(templatesTable.status, "active"),
+  ];
+
+  if (folderId) {
+    where.push(eq(templatesTable.folderId, folderId));
+  } else {
+    where.push(isNull(templatesTable.folderId));
+  }
+
+  const rows = await db
+    .select({
+      template: templatesTable,
+      source: {
+        pageCount: documentsTable.pageCount,
+        thumbnailDataUrl: documentsTable.thumbnailDataUrl,
+      },
+    })
+    .from(templatesTable)
+    .leftJoin(
+      documentsTable,
+      eq(templatesTable.sourceDocumentId, documentsTable.id)
+    )
+    .where(and(...where))
+    .orderBy(templatesTable.name);
+
+  return c.json(
+    rows.map(({ template, source }) => ({
+      _id: template.id,
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      pageCount: source?.pageCount ?? null,
+      fileSize: template.size,
+      thumbnailDataUrl: source?.thumbnailDataUrl ?? null,
+      useCount: template.useCount,
+      status: template.status,
+      createdAt: template.createdAt.getTime(),
+      updatedAt: template.updatedAt.getTime(),
+    }))
+  );
+});
+
+const listFoldersRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/folders",
+  request: {
+    params: z.object({ slug: z.string() }),
+    query: z.object({
+      type: z.string().optional().openapi({
+        param: { name: "type", in: "query" },
+      }),
+      parentId: z.string().optional().openapi({
+        param: { name: "parentId", in: "query" },
+      }),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(FolderSchema) },
+      },
+      description: "Organization folders",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(listFoldersRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const { type = "template", parentId } = c.req.valid("query");
+  const db = createD1(c.env.D1);
+
+  const where: Array<ReturnType<typeof eq>> = [
+    eq(foldersTable.organizationId, org.id),
+    eq(foldersTable.type, type),
+  ];
+
+  if (parentId) {
+    where.push(eq(foldersTable.parentId, parentId));
+  } else {
+    where.push(isNull(foldersTable.parentId));
+  }
+
+  const rows = await db
+    .select()
+    .from(foldersTable)
+    .where(and(...where))
+    .orderBy(foldersTable.name);
+
+  return c.json(
+    rows.map((f) => ({
+      _id: f.id,
+      id: f.id,
+      name: f.name,
+      parentId: f.parentId,
+      type: f.type,
+      pinned: f.pinned,
+      createdAt: f.createdAt.getTime(),
+      updatedAt: f.updatedAt.getTime(),
+    }))
+  );
 });
 
 declare module "hono" {
