@@ -59,7 +59,7 @@ import type * as crypto_encryption from "../crypto/encryption.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
 import type * as documents_certificate_of_completion from "../documents/certificate_of_completion.js";
 import type * as documents_download_tokens from "../documents/download_tokens.js";
-import type * as documents_expiration_resend from "../documents/expiration_resend.js";
+import type * as documents_expiration from "../documents/expiration.js";
 import type * as documents_extract_text_action from "../documents/extract_text_action.js";
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
 import type * as documents_mutations from "../documents/mutations.js";
@@ -219,7 +219,7 @@ declare const fullApi: ApiFromModules<{
   "crypto/helpers": typeof crypto_helpers;
   "documents/certificate_of_completion": typeof documents_certificate_of_completion;
   "documents/download_tokens": typeof documents_download_tokens;
-  "documents/expiration_resend": typeof documents_expiration_resend;
+  "documents/expiration": typeof documents_expiration;
   "documents/extract_text_action": typeof documents_extract_text_action;
   "documents/hash_document_action": typeof documents_hash_document_action;
   "documents/mutations": typeof documents_mutations;
