@@ -1,8 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, count, eq, gte, lt, type SQL } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, member, user } from "../global/schema.js";
+import { documents, member, recipients, user } from "../global/schema.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -490,6 +490,136 @@ app.openapi(memberActivityRouteDef, async (c) => {
       pending,
       completionRate: created > 0 ? Math.round((completed / created) * 100) : 0,
       avgSigningTimeMs,
+    };
+  });
+
+  return c.json(results);
+});
+
+const exportDocumentSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    status: z.string(),
+    ownerName: z.string(),
+    ownerEmail: z.string(),
+    createdAt: z.number(),
+    sentAt: z.number().nullable(),
+    completedAt: z.number().nullable(),
+    deadline: z.number().nullable(),
+    recipientCount: z.number().int(),
+    signedCount: z.number().int(),
+    pendingCount: z.number().int(),
+  })
+  .openapi("ExportDocument");
+
+const exportDocumentsQuerySchema = z.object({
+  workflowStatus: z.string().optional(),
+  startDate: z.coerce.number().int().optional(),
+  endDate: z.coerce.number().int().optional(),
+});
+
+const exportDocumentsRouteDef = createRoute({
+  method: "get",
+  path: "/documents/export",
+  request: {
+    query: exportDocumentsQuerySchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(exportDocumentSchema) },
+      },
+      description: "Documents for CSV/PDF export",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+app.openapi(exportDocumentsRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+
+  const { workflowStatus, startDate, endDate } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+
+  const conditions: SQL[] = [
+    eq(documents.organizationId, organizationId),
+    eq(documents.documentStatus, "active"),
+  ];
+  if (workflowStatus) {
+    conditions.push(eq(documents.status, workflowStatus));
+  }
+  if (startDate !== undefined) {
+    conditions.push(gte(documents.createdAt, new Date(startDate)));
+  }
+  if (endDate !== undefined) {
+    conditions.push(lte(documents.createdAt, new Date(endDate)));
+  }
+
+  const rows = await db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      status: documents.status,
+      ownerId: documents.ownerId,
+      createdAt: documents.createdAt,
+      sentAt: documents.sentAt,
+      updatedAt: documents.updatedAt,
+      deadline: documents.deadline,
+      ownerName: user.name,
+      ownerEmail: user.email,
+    })
+    .from(documents)
+    .leftJoin(user, eq(documents.ownerId, user.id))
+    .where(and(...conditions))
+    .orderBy(documents.createdAt);
+
+  const documentIds = rows.map((r) => r.id);
+  const recipientRows =
+    documentIds.length > 0
+      ? await db
+          .select({
+            documentId: recipients.documentId,
+            status: recipients.status,
+          })
+          .from(recipients)
+          .where(inArray(recipients.documentId, documentIds))
+      : [];
+
+  const recipientsByDoc = new Map<string, typeof recipientRows>();
+  for (const r of recipientRows) {
+    const list = recipientsByDoc.get(r.documentId);
+    if (list) {
+      list.push(r);
+    } else {
+      recipientsByDoc.set(r.documentId, [r]);
+    }
+  }
+
+  const results = rows.map((row) => {
+    const docRecipients = recipientsByDoc.get(row.id) ?? [];
+    const recipientCount = docRecipients.length;
+    const signedCount = docRecipients.filter(
+      (r) => r.status === "signed" || r.status === "approved"
+    ).length;
+    const pendingCount = docRecipients.filter((r) => r.status === "pending").length;
+
+    return {
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      ownerName: row.ownerName ?? "Unknown",
+      ownerEmail: row.ownerEmail ?? "",
+      createdAt: row.createdAt.getTime(),
+      sentAt: row.sentAt ? row.sentAt.getTime() : null,
+      completedAt: row.status === "completed" ? row.updatedAt?.getTime() ?? null : null,
+      deadline: row.deadline ? row.deadline.getTime() : null,
+      recipientCount,
+      signedCount,
+      pendingCount,
     };
   });
 

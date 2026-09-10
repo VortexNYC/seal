@@ -322,6 +322,41 @@ const memberActivitySchema = z.object({
 
 export type ApiMemberActivity = z.infer<typeof memberActivitySchema>;
 
+const exportDocumentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  ownerName: z.string(),
+  ownerEmail: z.string(),
+  createdAt: z.number(),
+  sentAt: z.number().nullable(),
+  completedAt: z.number().nullable(),
+  deadline: z.number().nullable(),
+  recipientCount: z.number().int(),
+  signedCount: z.number().int(),
+  pendingCount: z.number().int(),
+});
+
+export type ApiExportDocument = z.infer<typeof exportDocumentSchema>;
+
+export async function getAnalyticsDocumentsForExport(
+  args: {
+    workflowStatus?: string;
+    startDate?: number;
+    endDate?: number;
+  } = {}
+): Promise<ApiExportDocument[]> {
+  const params = new URLSearchParams();
+  if (args.workflowStatus) params.set("workflowStatus", args.workflowStatus);
+  if (args.startDate !== undefined) params.set("startDate", String(args.startDate));
+  if (args.endDate !== undefined) params.set("endDate", String(args.endDate));
+  const query = params.toString();
+  return apiFetch(
+    `/api/analytics/documents/export${query ? `?${query}` : ""}`,
+    z.array(exportDocumentSchema)
+  );
+}
+
 export async function getMemberActivity(): Promise<ApiMemberActivity[]> {
   return apiFetch("/api/analytics/member-activity", z.array(memberActivitySchema));
 }

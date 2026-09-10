@@ -78,6 +78,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
+  getAnalyticsDocumentsForExport,
   getAnalyticsPeriodStats,
   getAnalyticsStats,
   getAnalyticsTrends,
@@ -1117,10 +1118,10 @@ function ExportPanel() {
     return args;
   }, [statusFilter, periodFilter]);
 
-  const exportData = useConvexQuery(
-    api.dashboard.queries.getDocumentsForExport,
-    queryArgs
-  );
+  const { data: exportData } = useQuery({
+    queryKey: ["analytics", "documents", "export", queryArgs],
+    queryFn: () => getAnalyticsDocumentsForExport(queryArgs),
+  });
 
   const handleExportCsv = useCallback(() => {
     if (!exportData || exportData.length === 0) return;
