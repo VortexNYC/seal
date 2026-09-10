@@ -9,7 +9,10 @@ BETTER_AUTH_URL = "https://vortex-sign-api.example.workers.dev"
 TOKEN_HASH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
 ALLOWED_ORIGINS = "https://vortex-sign-api.example.workers.dev"
 EMAIL_FROM = "notifications@vortex.nyc"
-AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1/ai"
+
+[ai]
+binding = "AI"
+remote = true
 
 [[d1_databases]]
 binding = "D1"

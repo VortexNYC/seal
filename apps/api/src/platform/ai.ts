@@ -1,15 +1,9 @@
-import { createGateway } from "ai";
+import { createWorkersAI } from "workers-ai-provider";
 
-export type AIModelEnv = Pick<
-  CloudflareBindings,
-  "AI_GATEWAY_API_KEY" | "AI_GATEWAY_BASE_URL"
->;
+export type AIModelEnv = Pick<CloudflareBindings, "AI">;
 
 export function getModelProvider(env: AIModelEnv) {
-  return createGateway({
-    apiKey: env.AI_GATEWAY_API_KEY,
-    baseURL: env.AI_GATEWAY_BASE_URL,
-  });
+  return createWorkersAI({ binding: env.AI });
 }
 
-export const DEFAULT_CHAT_MODEL = "google/gemini-3-flash" as const;
+export const DEFAULT_CHAT_MODEL = "@cf/meta/llama-3.1-8b-instruct" as const;
