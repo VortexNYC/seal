@@ -1083,6 +1083,7 @@ export async function updateSignatureField(
   input: {
     label?: string;
     isRequired?: boolean;
+    recipientId?: string | null;
     properties?: Record<string, unknown> | null;
     validationRules?: Record<string, unknown> | null;
   }

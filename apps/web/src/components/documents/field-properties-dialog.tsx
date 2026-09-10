@@ -12,6 +12,7 @@ import type { FieldType } from "./field-toolbar";
 
 interface FieldData {
   _id: Id<"signature_fields">;
+  publicId: string;
   fieldType: FieldType;
   label: string;
   isRequired: boolean;
@@ -36,11 +37,13 @@ interface FieldData {
 
 interface Recipient {
   _id: Id<"document_recipients">;
+  publicId: string;
   name?: string;
   email: string;
 }
 
 interface FieldPropertiesDialogProps {
+  documentPublicId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   field: FieldData | null;
@@ -50,6 +53,7 @@ interface FieldPropertiesDialogProps {
 }
 
 export function FieldPropertiesDialog({
+  documentPublicId,
   open,
   onOpenChange,
   field,
@@ -69,6 +73,7 @@ export function FieldPropertiesDialog({
           </DialogDescription>
         </DialogHeader>
         <FieldPropertiesPanel
+          documentPublicId={documentPublicId}
           field={field}
           recipients={recipients}
           onClose={() => onOpenChange(false)}

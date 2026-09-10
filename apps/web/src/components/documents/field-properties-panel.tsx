@@ -6,9 +6,8 @@
  * and validation rules for signature fields.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useMutation } from "@tanstack/react-query";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import {
   AlertCircleIcon,
   AlertTriangleIcon,
@@ -25,8 +24,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-
-import { parseId } from "../../lib/convex-ids";
+import { updateSignatureField } from "@/lib/api-client";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -60,6 +58,7 @@ const VALIDATION_PATTERNS: ValidationPatternOption[] = [
 
 interface FieldData {
   _id: Id<"signature_fields">;
+  publicId: string;
   fieldType: FieldType;
   label: string;
   isRequired: boolean;
@@ -84,11 +83,13 @@ interface FieldData {
 
 interface Recipient {
   _id: Id<"document_recipients">;
+  publicId: string;
   name?: string;
   email: string;
 }
 
 interface FieldPropertiesPanelProps {
+  documentPublicId: string;
   field: FieldData;
   recipients: Recipient[];
   onClose: () => void;
@@ -130,7 +131,16 @@ function getFieldVisibility(fieldType: FieldType) {
   };
 }
 
-function useFieldPropertiesState(field: FieldData) {
+function recipientPublicId(
+  recipientId: Id<"document_recipients"> | undefined,
+  recipients: Recipient[]
+): string {
+  if (!recipientId) return "unassigned";
+  const found = recipients.find((r) => r._id === recipientId);
+  return found?.publicId ?? "unassigned";
+}
+
+function useFieldPropertiesState(field: FieldData, recipients: Recipient[]) {
   const initialPattern = resolveValidationPattern(field.properties?.pattern);
   const [label, setLabel] = useState(field.label);
   const [isRequired, setIsRequired] = useState(field.isRequired);
@@ -159,7 +169,7 @@ function useFieldPropertiesState(field: FieldData) {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string>(
-    field.recipientId ?? "unassigned"
+    recipientPublicId(field.recipientId, recipients)
   );
 
   useEffect(() => {
@@ -175,8 +185,8 @@ function useFieldPropertiesState(field: FieldData) {
     setCustomMessage(field.validationRules?.customMessage ?? "");
     setMinValue(field.validationRules?.min);
     setMaxValue(field.validationRules?.max);
-    setSelectedRecipientId(field.recipientId ?? "unassigned");
-  }, [field]);
+    setSelectedRecipientId(recipientPublicId(field.recipientId, recipients));
+  }, [field, recipients]);
 
   return {
     label,
@@ -209,33 +219,38 @@ function useFieldPropertiesState(field: FieldData) {
 }
 
 function useFieldPropertiesActions({
+  documentPublicId,
   field,
+  recipients,
   state,
   onSave,
   onClose,
 }: {
+  documentPublicId: string;
   field: FieldData;
+  recipients: Recipient[];
   state: ReturnType<typeof useFieldPropertiesState>;
   onSave?: () => void;
   onClose: () => void;
 }) {
-  const updateField = useMutation(api.signature_fields.mutations.updateField);
-  const assignField = useMutation(
-    api.signature_fields.mutations.assignFieldToRecipient
-  );
+  const updateField = useMutation({
+    mutationFn: (input: Parameters<typeof updateSignatureField>[2]) =>
+      updateSignatureField(documentPublicId, field.publicId, input),
+  });
 
   const handleRecipientChange = async (value: string) => {
     if (value === "unassigned" || value === state.selectedRecipientId) return;
     state.setSelectedRecipientId(value);
     try {
-      await assignField({
-        fieldId: field._id,
-        recipientId: parseId("document_recipients", value),
+      await updateField.mutateAsync({
+        recipientId: value,
       });
       toast.success("Field assigned to recipient");
       onSave?.();
     } catch (error) {
-      state.setSelectedRecipientId(field.recipientId ?? "unassigned");
+      state.setSelectedRecipientId(
+        recipientPublicId(field.recipientId, recipients)
+      );
       toast.error(
         error instanceof Error ? error.message : "Failed to assign field"
       );
@@ -249,10 +264,13 @@ function useFieldPropertiesActions({
       state.customPattern
     );
     try {
-      await updateField({
-        fieldId: field._id,
+      await updateField.mutateAsync({
         label: state.label,
         isRequired: state.isRequired,
+        recipientId:
+          state.selectedRecipientId === "unassigned"
+            ? null
+            : state.selectedRecipientId,
         properties: {
           placeholder: state.placeholder || undefined,
           helpText: state.helpText || undefined,
@@ -286,16 +304,27 @@ function useFieldPropertiesActions({
 }
 
 function useFieldPropertiesForm({
+  documentPublicId,
   field,
+  recipients,
   onSave,
   onClose,
 }: {
+  documentPublicId: string;
   field: FieldData;
+  recipients: Recipient[];
   onSave?: () => void;
   onClose: () => void;
 }) {
-  const state = useFieldPropertiesState(field);
-  const actions = useFieldPropertiesActions({ field, state, onSave, onClose });
+  const state = useFieldPropertiesState(field, recipients);
+  const actions = useFieldPropertiesActions({
+    documentPublicId,
+    field,
+    recipients,
+    state,
+    onSave,
+    onClose,
+  });
 
   return {
     ...state,
@@ -370,7 +399,7 @@ function RecipientAssignmentSection({
               Unassigned
             </SelectItem>
             {recipients.map((recipient) => (
-              <SelectItem key={recipient._id} value={recipient._id}>
+              <SelectItem key={recipient.publicId} value={recipient.publicId}>
                 {recipient.name
                   ? `${recipient.name} (${recipient.email})`
                   : recipient.email}
@@ -699,13 +728,20 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 };
 
 export function FieldPropertiesPanel({
+  documentPublicId,
   field,
   recipients,
   onClose,
   onSave,
   onConfigurePayment,
 }: FieldPropertiesPanelProps) {
-  const form = useFieldPropertiesForm({ field, onSave, onClose });
+  const form = useFieldPropertiesForm({
+    documentPublicId,
+    field,
+    recipients,
+    onSave,
+    onClose,
+  });
 
   return (
     <div className="field-properties-panel bg-background flex h-full flex-col">

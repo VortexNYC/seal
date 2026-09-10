@@ -962,6 +962,7 @@ function DocumentDetailPage() {
           )}
 
         <FieldPropertiesDialog
+          documentPublicId={documentPublicId}
           open={fieldPlacement.showFieldProperties}
           onOpenChange={(open) => {
             fieldPlacement.setShowFieldProperties(open);

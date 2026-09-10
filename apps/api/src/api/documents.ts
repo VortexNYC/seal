@@ -2156,6 +2156,7 @@ app.openapi(createSignatureFieldRouteDef, async (c) => {
 const updateSignatureFieldBodySchema = z.object({
   label: z.string().min(1).optional(),
   isRequired: z.boolean().optional(),
+  recipientId: z.string().optional(),
   properties: FieldPropertiesSchema.optional(),
   validationRules: FieldValidationRulesSchema.optional(),
 });
@@ -2246,6 +2247,7 @@ app.openapi(updateSignatureFieldRouteDef, async (c) => {
   const updateData: {
     label?: string;
     isRequired?: boolean;
+    recipientId?: string | null;
     properties?: string | null;
     validationRules?: string | null;
     updatedAt?: Date;
@@ -2256,6 +2258,9 @@ app.openapi(updateSignatureFieldRouteDef, async (c) => {
   }
   if (input.isRequired !== undefined) {
     updateData.isRequired = input.isRequired;
+  }
+  if (input.recipientId !== undefined) {
+    updateData.recipientId = input.recipientId ?? null;
   }
   if (input.properties !== undefined) {
     updateData.properties = JSON.stringify(input.properties);
