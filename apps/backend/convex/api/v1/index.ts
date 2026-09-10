@@ -14,9 +14,6 @@ export * as analytics from "./analytics";
 // Audit log
 export * as audit from "./audit";
 
-// Contact directory
-export * as contacts from "./contacts";
-
 // Documents API internal queries/mutations
 export * as documents from "./documents";
 
