@@ -8,9 +8,6 @@
 // Account & organization info
 export * as account from "./account";
 
-// Analytics & reporting
-export * as analytics from "./analytics";
-
 // Audit log
 export * as audit from "./audit";
 

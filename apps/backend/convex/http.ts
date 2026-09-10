@@ -2228,36 +2228,6 @@ http.route({
 });
 
 // =============================================================================
-// ANALYTICS
-// =============================================================================
-
-/**
- * Get Analytics
- *
- * @route GET /api/v1/analytics
- * @scope seal:documents:read
- */
-http.route({
-  path: "/api/v1/analytics",
-  method: "GET",
-  handler: apiHttpAction(
-    async ({ ctx, auth, query }) => {
-      const analytics = await ctx.runQuery(
-        internal.api.v1.analytics.getAnalytics,
-        {
-          userId: auth.userId,
-          organizationId: auth.organizationId,
-          from: query.from ? new Date(query.from).getTime() : undefined,
-          to: query.to ? new Date(query.to).getTime() : undefined,
-        }
-      );
-      return apiResponse(200, analytics);
-    },
-    { scope: API_SCOPES.DOCUMENTS_READ }
-  ),
-});
-
-// =============================================================================
 // PUBLIC DOWNLOAD (Token-Based)
 // =============================================================================
 
