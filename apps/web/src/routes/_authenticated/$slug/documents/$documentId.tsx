@@ -165,7 +165,7 @@ function DocumentDetailPage() {
       }
     >();
     for (const config of paymentConfigs) {
-      map.set(String(config.fieldId), {
+      map.set(config.fieldId, {
         totalAmountCents: config.totalAmountCents,
         currency: config.currency,
         paymentType: config.paymentType,
@@ -186,7 +186,7 @@ function DocumentDetailPage() {
         documentSignatures.map((signature) => {
           const signer = recipientsById.get(signature.recipientId);
           return [
-            signature.fieldId ? String(signature.fieldId) : "",
+            signature.fieldId ? signature.fieldId : "",
             {
               signatureImageUrl: signature.signatureImageUrl,
               value: signature.value,

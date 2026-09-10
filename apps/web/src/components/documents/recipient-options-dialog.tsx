@@ -1,7 +1,7 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { LinkIcon, MailIcon, TrashIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { type Id } from "@/lib/convex-ids";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";

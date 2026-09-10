@@ -6,7 +6,6 @@
  * and validation rules for signature fields.
  */
 
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircleIcon,
@@ -24,6 +23,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { updateSignatureField } from "@/lib/api-client";
+import { type Id } from "@/lib/convex-ids";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";

@@ -1,4 +1,4 @@
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
+import { type Doc } from "@/lib/convex-ids";
 
 /**
  * Counts only true signature fields, excluding other fillable field types.

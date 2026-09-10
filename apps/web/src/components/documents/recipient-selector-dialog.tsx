@@ -1,9 +1,8 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useEffect, useState } from "react";
 
+import { type Id, parseId } from "@/lib/convex-ids";
 import { cn } from "@/lib/utils";
 
-import { parseId } from "../../lib/convex-ids";
 import { Button } from "../ui/button";
 import {
   Dialog,

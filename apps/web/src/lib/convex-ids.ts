@@ -1,15 +1,18 @@
-import type { Id, TableNames } from "@seal/backend/convex/_generated/dataModel";
-import { parse } from "@vortexnyc/convex/helpers";
-import { v } from "convex/values";
-
 /**
- * Brand a runtime string as a typed Convex document id without a type
- * assertion. Validation is Core's `parse` over `v.id`, so the narrowing is
- * performed by a validator rather than an `as` cast.
+ * Lightweight identity helpers for Vortex document/recipient/field ids.
+ *
+ * These used to brand strings as Convex `Id<TableName>` values. The web app now
+ * treats ids as plain strings, so `parseId` is retained only for source-
+ * compatibility and returns its input unchanged.
  */
-export function parseId<TableName extends TableNames | "_storage">(
-  table: TableName,
+
+export type Id<_TableName extends string = string> = string;
+
+export type Doc<_TableName extends string = string> = Record<string, unknown>;
+
+export function parseId<_TableName extends string>(
+  _table: _TableName,
   value: string
-): Id<TableName> {
-  return parse(v.id(table), value);
+): Id<_TableName> {
+  return value;
 }

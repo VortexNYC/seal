@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +8,7 @@ import {
   deleteSignatureField as deleteSignatureFieldApi,
   repositionSignatureField as repositionSignatureFieldApi,
 } from "@/lib/api-client";
-import { parseId } from "@/lib/convex-ids";
+import { type Id, parseId } from "@/lib/convex-ids";
 
 import { parseSelectValue } from "../../../lib/select-values";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";

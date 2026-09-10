@@ -1,4 +1,4 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { type Id } from "@/lib/convex-ids";
 
 import {
   Dialog,

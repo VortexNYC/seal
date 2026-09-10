@@ -4,7 +4,6 @@
  * and optional expiration period
  */
 
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "@tanstack/react-query";
 import { formatMoney, money } from "@vortexnyc/money";
 import {
@@ -22,6 +21,7 @@ import { z } from "zod";
 
 import { type DocumentDetailPaymentConfig } from "@/data/document-detail";
 import { sendDocument } from "@/lib/api-client";
+import { type Id } from "@/lib/convex-ids";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";

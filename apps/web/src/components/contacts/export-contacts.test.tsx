@@ -1,7 +1,8 @@
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+import { type ApiContact } from "@/lib/api-client";
 
 import { parseId } from "../../lib/convex-ids";
 import { ExportContacts } from "./export-contacts";
@@ -15,9 +16,7 @@ function sealAssertPresent<T>(
   return value;
 }
 
-function makeContact(
-  overrides: Partial<Doc<"contacts">> = {}
-): Doc<"contacts"> {
+function makeContact(overrides: Partial<ApiContact> = {}): ApiContact {
   return {
     _id: parseId("contacts", "contact_1"),
     _creationTime: 1700000000000,
@@ -31,7 +30,7 @@ function makeContact(
     createdAt: 1700000000000,
     updatedAt: 1700000000000,
     ...overrides,
-  };
+  } as ApiContact;
 }
 
 describe("ExportContacts", () => {

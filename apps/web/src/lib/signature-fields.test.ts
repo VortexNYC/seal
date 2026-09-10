@@ -1,11 +1,12 @@
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { describe, expect, it } from "vitest";
+
+import { type Doc } from "@/lib/convex-ids";
 
 import { parseId } from "./convex-ids";
 import { countSignatureFields } from "./signature-fields";
 
 const buildField = (
-  fieldType: Doc<"signature_fields">["fieldType"],
+  fieldType: string,
   idSuffix: string
 ): Doc<"signature_fields"> => ({
   _id: parseId("signature_fields", `field-${idSuffix}`),

@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -21,7 +20,7 @@ import {
   type ApiSignature,
   type ApiPaymentConfig,
 } from "@/lib/api-client";
-import { parseId } from "@/lib/convex-ids";
+import { type Id, parseId } from "@/lib/convex-ids";
 import { parseSelectValue } from "@/lib/select-values";
 
 export type DocumentDetailRecipient = {

@@ -1,6 +1,7 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+import { type Id, parseId } from "@/lib/convex-ids";
 
 // Mock TanStack Query — must be hoisted before importing the component
 const mockUseMutation = vi.fn();
@@ -13,7 +14,6 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { parseId } from "../../lib/convex-ids";
 import { SendDocumentDialog } from "./send-document-dialog";
 
 const FAKE_FIELD_ID_1 = parseId("signature_fields", "field_1");
