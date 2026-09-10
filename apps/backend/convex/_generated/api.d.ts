@@ -71,7 +71,6 @@ import type * as documents_automated_reminders from "../documents/automated_remi
 import type * as documents_cancellation_email_action from "../documents/cancellation_email_action.js";
 import type * as documents_certificate_of_completion from "../documents/certificate_of_completion.js";
 import type * as documents_cleanup from "../documents/cleanup.js";
-import type * as documents_document_shared_action from "../documents/document_shared_action.js";
 import type * as documents_download_tokens from "../documents/download_tokens.js";
 import type * as documents_email from "../documents/email.js";
 import type * as documents_expiration_alerts from "../documents/expiration_alerts.js";
@@ -110,7 +109,6 @@ import type * as mcpOAuthAuthorization from "../mcpOAuthAuthorization.js";
 import type * as mcpOAuthHttp from "../mcpOAuthHttp.js";
 import type * as mcpOAuthNode from "../mcpOAuthNode.js";
 import type * as migrations from "../migrations.js";
-import type * as notifications_index from "../notifications/index.js";
 import type * as organization_roles_helpers from "../organization_roles/helpers.js";
 import type * as organization_roles_migrations from "../organization_roles/migrations.js";
 import type * as organization_roles_mutations from "../organization_roles/mutations.js";
@@ -285,7 +283,6 @@ declare const fullApi: ApiFromModules<{
   "documents/cancellation_email_action": typeof documents_cancellation_email_action;
   "documents/certificate_of_completion": typeof documents_certificate_of_completion;
   "documents/cleanup": typeof documents_cleanup;
-  "documents/document_shared_action": typeof documents_document_shared_action;
   "documents/download_tokens": typeof documents_download_tokens;
   "documents/email": typeof documents_email;
   "documents/expiration_alerts": typeof documents_expiration_alerts;
@@ -324,7 +321,6 @@ declare const fullApi: ApiFromModules<{
   mcpOAuthHttp: typeof mcpOAuthHttp;
   mcpOAuthNode: typeof mcpOAuthNode;
   migrations: typeof migrations;
-  "notifications/index": typeof notifications_index;
   "organization_roles/helpers": typeof organization_roles_helpers;
   "organization_roles/migrations": typeof organization_roles_migrations;
   "organization_roles/mutations": typeof organization_roles_mutations;
