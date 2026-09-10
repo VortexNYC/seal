@@ -10,9 +10,8 @@ import {
   useLocation,
 } from "@tanstack/react-router";
 
+import { betterAuthClient } from "@/lib/better-auth";
 import Loader from "@/components/loader";
-import { useAppAuth } from "@/lib/auth-runtime.better-auth";
-import { listUserOrganizations } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -22,14 +21,32 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { isLoaded, isSignedIn } = useAppAuth();
-  const { data: organizations } = useQuery({
-    queryKey: ["api", "auth", "organization", "list"],
-    queryFn: listUserOrganizations,
+  if (betterAuthClient === null) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
+  return <AuthenticatedLayoutLoaded />;
+}
+
+function AuthenticatedLayoutLoaded() {
+  const { data: sessionData, isPending: isSessionPending } =
+    betterAuthClient!.useSession();
+  const { data: organizations, isPending: isListPending } = useQuery({
+    queryKey: ["auth", "organization", "list"],
+    queryFn: async () => {
+      const result = await betterAuthClient!.organization.list();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
   const { pathname } = useLocation();
 
-  if (!isLoaded || organizations === undefined) {
+  if (isSessionPending || isListPending) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader />
@@ -37,7 +54,7 @@ function AuthenticatedLayout() {
     );
   }
 
-  if (!isSignedIn) {
+  if (!sessionData) {
     return <Navigate to="/sign-in" replace />;
   }
 

@@ -1,13 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { betterAuthClient } from "@/lib/better-auth";
 import Loader from "@/components/loader";
-import { useAppAuth } from "@/lib/auth-runtime.better-auth";
-import {
-  listUserOrganizations,
-  setActiveOrganization,
-} from "@/lib/api-client";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute("/app")({
@@ -15,32 +11,49 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppRedirect() {
-  const { isLoaded, isSignedIn } = useAppAuth();
-
-  if (!isLoaded) {
+  if (betterAuthClient === null) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader />
       </div>
     );
   }
-
-  if (!isSignedIn) {
-    return <Navigate to="/sign-in" replace />;
-  }
-
   return <AuthenticatedRedirect />;
 }
 
 function AuthenticatedRedirect() {
   const [isFixing, setIsFixing] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
-  const { data: organizations } = useQuery({
-    queryKey: ["api", "auth", "organization", "list"],
-    queryFn: listUserOrganizations,
+  const { data: sessionData, isPending: isSessionPending } =
+    betterAuthClient!.useSession();
+  const {
+    data: organizations,
+    isPending: isListPending,
+    isError: isListError,
+  } = useQuery({
+    queryKey: ["auth", "organization", "list"],
+    queryFn: async () => {
+      const result = await betterAuthClient!.organization.list();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
+  });
+  const setActive = useMutation({
+    mutationFn: async (slug: string) => {
+      const result = await betterAuthClient!.organization.setActive({
+        organizationSlug: slug,
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
 
-  const activeOrganizationSlug = fixedSlug ?? organizations?.[0]?.slug ?? null;
+  const activeOrganizationSlug =
+    fixedSlug ?? (organizations && organizations[0]?.slug) ?? null;
 
   useEffect(() => {
     if (
@@ -55,21 +68,23 @@ function AuthenticatedRedirect() {
     const first = organizations[0];
     if (!first) return;
     setIsFixing(true);
-    setActiveOrganization(first.slug)
-      .then(() => {
+    setActive.mutate(first.slug, {
+      onSuccess: () => {
         setFixedSlug(first.slug);
-      })
-      .catch((error) => {
+      },
+      onError: (error: unknown) => {
         console.error("Failed to set active organization:", error);
-      })
-      .finally(() => {
+      },
+      onSettled: () => {
         setIsFixing(false);
-      });
-  }, [organizations, isFixing, fixedSlug, activeOrganizationSlug]);
+      },
+    });
+  }, [organizations, isFixing, fixedSlug, activeOrganizationSlug, setActive]);
 
   const isLoading =
-    organizations === undefined ||
-    (organizations.length > 0 && !activeOrganizationSlug && isFixing);
+    isSessionPending ||
+    isListPending ||
+    (organizations && organizations.length > 0 && !activeOrganizationSlug && isFixing);
 
   if (isLoading) {
     return (
@@ -84,14 +99,18 @@ function AuthenticatedRedirect() {
     );
   }
 
-  if (activeOrganizationSlug) {
-    return (
-      <Navigate
-        to={buildOrganizationPath(activeOrganizationSlug, "/home")}
-        replace
-      />
-    );
+  if (!sessionData) {
+    return <Navigate to="/sign-in" replace />;
   }
 
-  return <Navigate to="/onboarding/choose-organization" replace />;
+  if (isListError || activeOrganizationSlug === null) {
+    return <Navigate to="/onboarding/choose-organization" replace />;
+  }
+
+  return (
+    <Navigate
+      to={buildOrganizationPath(activeOrganizationSlug, "/home")}
+      replace
+    />
+  );
 }
