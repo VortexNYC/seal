@@ -8,7 +8,7 @@ import {
   resolveVortexBillingConfig,
   resolveVortexBillingPortalConfig,
   selectSaasBillingProvider,
-} from "./vortex_billing_processor";
+} from "./vortex_billing_processor.helpers";
 
 const checkoutArgs = {
   organizationId: "org_seal_123",

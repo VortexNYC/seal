@@ -92,7 +92,6 @@ import type * as lib_vortexAuthOrganizations from "../lib/vortexAuthOrganization
 import type * as mcpOAuth from "../mcpOAuth.js";
 import type * as mcpOAuthAuth from "../mcpOAuthAuth.js";
 import type * as mcpOAuthAuthorization from "../mcpOAuthAuthorization.js";
-import type * as mcpOAuthHttp from "../mcpOAuthHttp.js";
 import type * as mcpOAuthNode from "../mcpOAuthNode.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
@@ -107,7 +106,6 @@ import type * as payments_merchant_account_validators from "../payments/merchant
 import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_saas_billing_provider from "../payments/saas_billing_provider.js";
 import type * as payments_subscription_actions from "../payments/subscription_actions.js";
-import type * as payments_vortex_billing_processor from "../payments/vortex_billing_processor.js";
 import type * as payments_vortex_merchant_actions from "../payments/vortex_merchant_actions.js";
 import type * as payments_vortex_merchant_queries from "../payments/vortex_merchant_queries.js";
 import type * as retrier from "../retrier.js";
@@ -167,7 +165,6 @@ import type * as vortex_billing_proof_actions from "../vortex_billing/proof_acti
 import type * as vortex_billing_webhook_handlers from "../vortex_billing/webhook_handlers.js";
 import type * as vortex_billing_webhook_signature from "../vortex_billing/webhook_signature.js";
 import type * as webhooks_delivery from "../webhooks/delivery.js";
-import type * as webhooks_index from "../webhooks/index.js";
 import type * as webhooks_mutations from "../webhooks/mutations.js";
 import type * as webhooks_publish from "../webhooks/publish.js";
 import type * as webhooks_queries from "../webhooks/queries.js";
@@ -268,7 +265,6 @@ declare const fullApi: ApiFromModules<{
   mcpOAuth: typeof mcpOAuth;
   mcpOAuthAuth: typeof mcpOAuthAuth;
   mcpOAuthAuthorization: typeof mcpOAuthAuthorization;
-  mcpOAuthHttp: typeof mcpOAuthHttp;
   mcpOAuthNode: typeof mcpOAuthNode;
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
@@ -283,7 +279,6 @@ declare const fullApi: ApiFromModules<{
   "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/saas_billing_provider": typeof payments_saas_billing_provider;
   "payments/subscription_actions": typeof payments_subscription_actions;
-  "payments/vortex_billing_processor": typeof payments_vortex_billing_processor;
   "payments/vortex_merchant_actions": typeof payments_vortex_merchant_actions;
   "payments/vortex_merchant_queries": typeof payments_vortex_merchant_queries;
   retrier: typeof retrier;
@@ -343,7 +338,6 @@ declare const fullApi: ApiFromModules<{
   "vortex_billing/webhook_handlers": typeof vortex_billing_webhook_handlers;
   "vortex_billing/webhook_signature": typeof vortex_billing_webhook_signature;
   "webhooks/delivery": typeof webhooks_delivery;
-  "webhooks/index": typeof webhooks_index;
   "webhooks/mutations": typeof webhooks_mutations;
   "webhooks/publish": typeof webhooks_publish;
   "webhooks/queries": typeof webhooks_queries;
