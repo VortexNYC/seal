@@ -1,5 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
+import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { contacts } from "../../global/schema.js";
@@ -225,5 +226,122 @@ app.get("/get", async (c) => {
 
   return c.json(toApiContact(row));
 });
+
+const createContactSchema = z.object({
+  first_name: z.string().min(1),
+  last_name: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  title: z.string().optional(),
+  status: z.enum(["active", "inactive", "lead"]).optional(),
+  notes: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+app.post("/", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "contacts:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = createContactSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const {
+    first_name,
+    last_name,
+    email,
+    phone,
+    company,
+    title,
+    status,
+    notes,
+    tags,
+  } = parsed.data;
+
+  const db = createD1(c.env.D1);
+  const contactId = crypto.randomUUID();
+  await db.insert(contacts).values({
+    id: contactId,
+    publicId: crypto.randomUUID(),
+    organizationId,
+    firstName: first_name,
+    lastName: last_name,
+    fullName: `${first_name} ${last_name}`,
+    email,
+    phone,
+    company,
+    title,
+    status: status ?? "active",
+    notes,
+    tags: tags ? JSON.stringify(tags) : undefined,
+    createdBy: mcp.sub,
+  });
+
+  return c.json({ id: contactId });
+});
+
+async function handleDeleteContact(c: {
+  get: (key: "mcp") => McpAccessToken;
+  json: (body: unknown, status?: number) => Response;
+  req: {
+    query: () => Record<string, string>;
+    json: () => Promise<unknown>;
+    method: string;
+  };
+  env: CloudflareBindings;
+}) {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "contacts:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const query = c.req.query();
+  let id = query.id;
+  if (!id && c.req.method !== "DELETE") {
+    try {
+      const rawBody: unknown = await c.req.json();
+      if (isRecord(rawBody) && typeof rawBody.id === "string") {
+        id = rawBody.id;
+      }
+    } catch {
+      // ignore empty body
+    }
+  }
+
+  if (!id) {
+    return c.json({ error: "missing_contact_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  await db
+    .delete(contacts)
+    .where(
+      and(eq(contacts.id, id), eq(contacts.organizationId, organizationId))
+    );
+
+  return c.json({ success: true });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+app.post("/delete", async (c) => handleDeleteContact(c));
+app.delete("/delete", async (c) => handleDeleteContact(c));
 
 export default app;
