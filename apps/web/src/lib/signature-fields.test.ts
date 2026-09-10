@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { type Doc } from "@/lib/convex-ids";
+import { type Doc } from "@/lib/ids";
 
-import { parseId } from "./convex-ids";
+import { parseId } from "./ids";
 import { countSignatureFields } from "./signature-fields";
 
 const buildField = (

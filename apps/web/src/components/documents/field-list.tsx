@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 
-import { type Id } from "@/lib/convex-ids";
+import { type Id } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";

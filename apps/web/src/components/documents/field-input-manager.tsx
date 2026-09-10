@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { parseId } from "@/lib/convex-ids";
+import { parseId } from "@/lib/ids";
 import { getErrorMessage } from "@/lib/utils";
 
 import { Button } from "../ui/button";

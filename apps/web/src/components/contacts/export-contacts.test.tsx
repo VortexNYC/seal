@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { type ApiContact } from "@/lib/api-client";
 
-import { parseId } from "../../lib/convex-ids";
+import { parseId } from "../../lib/ids";
 import { ExportContacts } from "./export-contacts";
 function sealAssertPresent<T>(
   value: T | null | undefined,

@@ -1,4 +1,4 @@
-import { type Id } from "@/lib/convex-ids";
+import { type Id } from "@/lib/ids";
 
 import {
   Dialog,

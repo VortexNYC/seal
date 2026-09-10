@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { type Id, parseId } from "@/lib/convex-ids";
+import { type Id, parseId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";

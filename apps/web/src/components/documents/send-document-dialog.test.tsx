@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { type Id, parseId } from "@/lib/convex-ids";
+import { type Id, parseId } from "@/lib/ids";
 
 // Mock TanStack Query — must be hoisted before importing the component
 const mockUseMutation = vi.fn();

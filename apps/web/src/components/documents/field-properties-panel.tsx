@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { updateSignatureField } from "@/lib/api-client";
-import { type Id } from "@/lib/convex-ids";
+import { type Id } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";

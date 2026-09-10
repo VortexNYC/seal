@@ -7,10 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Error handling utilities for Convex mutations/actions
+ * Error handling utilities for API mutations/actions
  */
 
-export type ConvexErrorType =
+export type ApiErrorType =
   | "permission"
   | "not_found"
   | "validation"
@@ -18,22 +18,21 @@ export type ConvexErrorType =
   | "unknown";
 
 interface ParsedError {
-  type: ConvexErrorType;
+  type: ApiErrorType;
   message: string;
   userFriendlyMessage: string;
 }
 
 /**
- * Parse a Convex error and return a user-friendly message
+ * Parse an API error and return a user-friendly message
  */
-export function parseConvexError(error: unknown): ParsedError {
+export function parseApiError(error: unknown): ParsedError {
   const rawMessage = error instanceof Error ? error.message : String(error);
-  // Strip the "[CONVEX M(...)] Server Error Uncaught ConvexError: ... at <stack>" prefix
-  // to get just the human-readable message for all error types.
-  const convexMatch = rawMessage.match(
-    /ConvexError:\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s
+  // Strip common server error prefixes to get just the human-readable message.
+  const apiMatch = rawMessage.match(
+    /(?:ConvexError|Error):\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s
   );
-  const message = convexMatch ? convexMatch[1].trim() : rawMessage;
+  const message = apiMatch ? apiMatch[1].trim() : rawMessage;
   const lowerMessage = message.toLowerCase();
 
   // Permission errors
@@ -103,10 +102,10 @@ export function parseConvexError(error: unknown): ParsedError {
 }
 
 /**
- * Get a user-friendly error message from a Convex error
+ * Get a user-friendly error message from an API error
  */
 export function getErrorMessage(error: unknown): string {
-  return parseConvexError(error).userFriendlyMessage;
+  return parseApiError(error).userFriendlyMessage;
 }
 
 /**

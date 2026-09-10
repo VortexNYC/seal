@@ -8,7 +8,7 @@ import {
   deleteSignatureField as deleteSignatureFieldApi,
   repositionSignatureField as repositionSignatureFieldApi,
 } from "@/lib/api-client";
-import { type Id, parseId } from "@/lib/convex-ids";
+import { type Id, parseId } from "@/lib/ids";
 
 import { parseSelectValue } from "../../../lib/select-values";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";

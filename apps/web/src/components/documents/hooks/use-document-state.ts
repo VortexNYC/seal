@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { type Id } from "@/lib/convex-ids";
+import { type Id } from "@/lib/ids";
 
 type RecipientToRemove = {
   id: Id<"document_recipients">;

@@ -27,7 +27,7 @@ describe("shouldWaitForOrganizationSync", () => {
     ).toBe(false);
   });
 
-  test("returns true when auth has an active organization but Convex has not synced it yet", () => {
+  test("returns true when auth has an active organization but the app has not synced it yet", () => {
     expect(
       shouldWaitForOrganizationSync({
         isAuthLoaded: true,
@@ -51,7 +51,7 @@ describe("shouldWaitForOrganizationSync", () => {
     ).toBe(true);
   });
 
-  test("returns false once Convex has the active organization slug", () => {
+  test("returns false once the app has the active organization slug", () => {
     expect(
       shouldWaitForOrganizationSync({
         isAuthLoaded: true,

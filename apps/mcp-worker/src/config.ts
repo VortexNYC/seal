@@ -8,14 +8,10 @@ const configSchema = z.object({
   /** Optional API key for server-to-server auth (fallback when no user token) */
   apiKey: z.string().min(1).optional(),
   /** Base URL for the Seal API */
-  baseUrl: z
-    .string()
-    .url()
-    .default("https://compassionate-robin-742.convex.site/api/v1"),
+  baseUrl: z.string().url().default("https://api.seal.nyc/api/v1"),
   /**
    * Origin of the OAuth authorization server that issues MCP access tokens.
-   * Defaults to this worker's origin; will be repointed to apps/api once the
-   * token endpoint is live there.
+   * Defaults to this worker's origin.
    */
   authServerOrigin: z.string().url().optional(),
   /** Request timeout in milliseconds */
