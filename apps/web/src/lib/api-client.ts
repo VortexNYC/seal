@@ -333,6 +333,30 @@ const emailEngagementSchema = z.object({
 
 export type ApiEmailEngagement = z.infer<typeof emailEngagementSchema>;
 
+const timingBucketSchema = z.object({
+  bucket: z.string(),
+  count: z.number().int(),
+});
+
+const recipientTimingSchema = z.object({
+  sampleSize: z.number().int(),
+  avgTimeToView: z.number().int().nullable(),
+  avgTimeToSign: z.number().int().nullable(),
+  avgTotalTurnaround: z.number().int().nullable(),
+  distribution: z.array(timingBucketSchema),
+});
+
+export type ApiRecipientTiming = z.infer<typeof recipientTimingSchema>;
+
+export async function getRecipientTimingStats(
+  days = 30
+): Promise<ApiRecipientTiming> {
+  return apiFetch(
+    `/api/analytics/recipient-timing?days=${encodeURIComponent(days)}`,
+    recipientTimingSchema
+  );
+}
+
 export async function getEmailEngagementStats(
   days = 30
 ): Promise<ApiEmailEngagement> {

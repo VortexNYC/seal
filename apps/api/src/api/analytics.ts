@@ -697,4 +697,135 @@ app.openapi(emailEngagementRouteDef, async (c) => {
   });
 });
 
+const timingBucketSchema = z
+  .object({
+    bucket: z.string(),
+    count: z.number().int(),
+  })
+  .openapi("TimingBucket");
+
+const recipientTimingResponseSchema = z
+  .object({
+    sampleSize: z.number().int(),
+    avgTimeToView: z.number().int().nullable(),
+    avgTimeToSign: z.number().int().nullable(),
+    avgTotalTurnaround: z.number().int().nullable(),
+    distribution: z.array(timingBucketSchema),
+  })
+  .openapi("RecipientTiming");
+
+const recipientTimingQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+const recipientTimingRouteDef = createRoute({
+  method: "get",
+  path: "/recipient-timing",
+  request: {
+    query: recipientTimingQuerySchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: recipientTimingResponseSchema },
+      },
+      description: "Recipient signing timing distribution",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization" },
+  },
+});
+
+function bucketForMs(ms: number): string {
+  const hours = ms / (60 * 60 * 1000);
+  if (hours < 1) return "<1h";
+  if (hours < 6) return "1-6h";
+  if (hours < 24) return "6-24h";
+  const days = hours / 24;
+  if (days < 3) return "1-3d";
+  if (days < 7) return "3-7d";
+  return "7d+";
+}
+
+app.openapi(recipientTimingRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const { days } = c.req.valid("query");
+
+  const db = createD1(c.env.D1);
+
+  const startMs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const start = new Date(startMs);
+
+  const rows = await db
+    .select({
+      signedAt: recipients.signedAt,
+      viewedAt: recipients.viewedAt,
+      sentAt: documents.sentAt,
+    })
+    .from(recipients)
+    .innerJoin(documents, eq(recipients.documentId, documents.id))
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        eq(documents.documentStatus, "active"),
+        gte(recipients.signedAt, start)
+      )
+    );
+
+  let totalView = 0;
+  let viewCount = 0;
+  let totalSign = 0;
+  let signCount = 0;
+  let totalTurnaround = 0;
+  let turnaroundCount = 0;
+
+  const buckets = new Map<string, number>();
+  for (const row of rows) {
+    const signedAt = row.signedAt?.getTime();
+    const sentAt = row.sentAt?.getTime();
+    const viewedAt = row.viewedAt?.getTime();
+
+    if (signedAt && sentAt) {
+      const turnaround = signedAt - sentAt;
+      totalTurnaround += turnaround;
+      turnaroundCount++;
+
+      const bucket = bucketForMs(turnaround);
+      buckets.set(bucket, (buckets.get(bucket) ?? 0) + 1);
+    }
+
+    if (viewedAt && sentAt) {
+      totalView += viewedAt - sentAt;
+      viewCount++;
+    }
+
+    if (signedAt && viewedAt) {
+      totalSign += signedAt - viewedAt;
+      signCount++;
+    }
+  }
+
+  const distribution = [
+    "<1h",
+    "1-6h",
+    "6-24h",
+    "1-3d",
+    "3-7d",
+    "7d+",
+  ].map((bucket) => ({
+    bucket,
+    count: buckets.get(bucket) ?? 0,
+  }));
+
+  return c.json({
+    sampleSize: rows.length,
+    avgTimeToView: viewCount > 0 ? Math.round(totalView / viewCount) : null,
+    avgTimeToSign: signCount > 0 ? Math.round(totalSign / signCount) : null,
+    avgTotalTurnaround:
+      turnaroundCount > 0 ? Math.round(totalTurnaround / turnaroundCount) : null,
+    distribution,
+  });
+});
+
 export default app;

@@ -85,6 +85,7 @@ import {
   getEmailEngagementStats,
   getMemberActivity,
   getRecentActivity,
+  getRecipientTimingStats,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
@@ -1494,10 +1495,10 @@ const TIMING_BUCKET_COLORS: Record<string, string> = {
 };
 
 function RecipientTimingTab() {
-  const timing = useConvexQuery(
-    api.dashboard.analytics_queries.getRecipientTimingStats,
-    { days: 30 }
-  );
+  const { data: timing } = useQuery({
+    queryKey: ["analytics", "recipient-timing", 30],
+    queryFn: () => getRecipientTimingStats(30),
+  });
 
   if (!timing) {
     return <AnalyticsTabSkeleton />;
