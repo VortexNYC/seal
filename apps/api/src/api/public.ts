@@ -21,6 +21,7 @@ const tokenParamsSchema = z.object({
 });
 
 const signingRecipientSchema = z.object({
+  _id: z.string(),
   publicId: z.string(),
   name: z.string().nullable().optional(),
   email: z.string(),
@@ -29,12 +30,19 @@ const signingRecipientSchema = z.object({
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
   awaitingDictation: z.boolean(),
+  expiresAt: z.number().nullable().optional(),
+  viewedAt: z.number().nullable().optional(),
+  signedAt: z.number().nullable().optional(),
+  approvedAt: z.number().nullable().optional(),
+  declinedAt: z.number().nullable().optional(),
 });
 
 const signingDocumentSchema = z.object({
+  _id: z.string(),
   publicId: z.string(),
   name: z.string(),
   status: z.string(),
+  workflowStatus: z.string(),
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
@@ -46,6 +54,7 @@ const sequentialProgressSchema = z.object({
   completed: z.number().int(),
   percentComplete: z.number(),
   currentGroup: z.number().int(),
+  totalGroups: z.number().int(),
   isWaitingForPreviousGroup: z.boolean(),
 });
 
@@ -56,7 +65,13 @@ const signingTokenResponseSchema = z
     waitingForPreviousGroup: z.boolean(),
     sequentialProgress: sequentialProgressSchema,
     branding: z
-      .object({ logoUrl: z.string().nullable().optional() })
+      .object({
+        _id: z.string().optional(),
+        logoUrl: z.string().nullable().optional(),
+        brandColor: z.string().nullable().optional(),
+        hideSealBranding: z.boolean().optional(),
+        customFooterText: z.string().nullable().optional(),
+      })
       .optional(),
     signingSettings: z.record(z.string(), z.string()).optional(),
   })
@@ -119,11 +134,27 @@ app.openapi(signingTokenRouteDef, async (c) => {
   const owner = ownerRows[0];
 
   const orgRows = await db
-    .select({ logo: organization.logo })
+    .select({
+      id: organization.id,
+      logo: organization.logo,
+      metadata: organization.metadata,
+    })
     .from(organization)
     .where(eq(organization.id, doc.organizationId))
     .limit(1);
   const org = orgRows[0];
+
+  const orgMetadata = safeParseJson(org?.metadata);
+  const brandColor =
+    typeof orgMetadata?.brandColor === "string" ? orgMetadata.brandColor : null;
+  const hideSealBranding =
+    typeof orgMetadata?.hideSealBranding === "boolean"
+      ? orgMetadata.hideSealBranding
+      : false;
+  const customFooterText =
+    typeof orgMetadata?.customFooterText === "string"
+      ? orgMetadata.customFooterText
+      : null;
 
   const allRecipients = await db
     .select()
@@ -151,6 +182,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
   return c.json(
     {
       recipient: {
+        _id: recipient.publicId,
         publicId: recipient.publicId,
         name: recipient.name,
         email: recipient.email,
@@ -159,11 +191,18 @@ app.openapi(signingTokenRouteDef, async (c) => {
         status: recipient.status,
         esignConsentAt: undefined,
         awaitingDictation: false,
+        expiresAt: recipient.tokenExpiresAt?.getTime() ?? null,
+        viewedAt: recipient.viewedAt?.getTime() ?? null,
+        signedAt: recipient.signedAt?.getTime() ?? null,
+        approvedAt: recipient.approvedAt?.getTime() ?? null,
+        declinedAt: recipient.declinedAt?.getTime() ?? null,
       },
       document: {
+        _id: doc.publicId,
         publicId: doc.publicId,
         name: doc.name,
         status: doc.status,
+        workflowStatus: doc.status,
         description: doc.description,
         ownerName: owner?.name || owner?.email,
         pageCount: doc.pageCount,
@@ -178,9 +217,16 @@ app.openapi(signingTokenRouteDef, async (c) => {
             ? 0
             : Math.round((completedCount / allRecipients.length) * 100),
         currentGroup,
+        totalGroups: new Set(allRecipients.map((r) => r.order)).size,
         isWaitingForPreviousGroup: waitingForPreviousGroup,
       },
-      branding: { logoUrl: org?.logo },
+      branding: {
+        _id: org?.id,
+        logoUrl: org?.logo,
+        brandColor,
+        hideSealBranding,
+        customFooterText,
+      },
       signingSettings: undefined,
     },
     200
@@ -189,6 +235,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
 
 const signingFieldSchema = z
   .object({
+    _id: z.string(),
     id: z.string(),
     publicId: z.string(),
     documentId: z.string(),
@@ -213,11 +260,10 @@ const signingFieldSchema = z
     signatureDetails: z
       .object({
         signedAt: z.number(),
-        signerName: z.string().nullable().optional(),
-        signerEmail: z.string().nullable().optional(),
-        signatureMethod: z.string().nullable().optional(),
+        signerName: z.string().optional(),
+        signerEmail: z.string().optional(),
+        signatureMethod: z.string().optional(),
       })
-      .nullable()
       .optional(),
   })
   .openapi("SigningField");
@@ -308,6 +354,7 @@ app.openapi(signingFieldsRouteDef, async (c) => {
   const withValues = fields.map((field) => {
     const sig = field.id ? byFieldId.get(field.id) : undefined;
     return {
+      _id: field.publicId,
       id: field.id,
       publicId: field.publicId,
       documentId: field.documentId,
@@ -332,11 +379,11 @@ app.openapi(signingFieldsRouteDef, async (c) => {
       signatureDetails: sig
         ? {
             signedAt: sig.signedAt?.getTime() ?? Date.now(),
-            signerName: recipient.name,
+            signerName: recipient.name ?? undefined,
             signerEmail: recipient.email,
-            signatureMethod: sig.signatureMethod,
+            signatureMethod: sig.signatureMethod ?? undefined,
           }
-        : null,
+        : undefined,
     };
   });
 
@@ -650,6 +697,7 @@ app.openapi(pdfRouteDef, async (c) => {
 
 const paymentConfigSummarySchema = z
   .object({
+    _id: z.string(),
     id: z.string(),
     publicId: z.string(),
     fieldId: z.string(),
@@ -712,9 +760,10 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
 
   const rows = await db
     .select({
+      _id: paymentFieldConfigs.publicId,
       id: paymentFieldConfigs.id,
       publicId: paymentFieldConfigs.publicId,
-      fieldId: paymentFieldConfigs.fieldId,
+      fieldId: signatureFields.publicId,
       documentId: paymentFieldConfigs.documentId,
       paymentType: paymentFieldConfigs.paymentType,
       totalAmountCents: paymentFieldConfigs.totalAmountCents,
@@ -722,6 +771,10 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
       paymentStatus: paymentFieldConfigs.paymentStatus,
     })
     .from(paymentFieldConfigs)
+    .leftJoin(
+      signatureFields,
+      eq(paymentFieldConfigs.fieldId, signatureFields.id)
+    )
     .where(eq(paymentFieldConfigs.documentId, doc.id));
 
   return c.json(rows);

@@ -1422,6 +1422,7 @@ export async function getOrCreateThread(publicId: string): Promise<{ threadId: s
 }
 
 const publicSigningRecipientSchema = z.object({
+  _id: z.string(),
   publicId: z.string(),
   name: z.string().nullable().optional(),
   email: z.string(),
@@ -1430,12 +1431,19 @@ const publicSigningRecipientSchema = z.object({
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
   awaitingDictation: z.boolean(),
+  expiresAt: z.number().nullable().optional(),
+  viewedAt: z.number().nullable().optional(),
+  signedAt: z.number().nullable().optional(),
+  approvedAt: z.number().nullable().optional(),
+  declinedAt: z.number().nullable().optional(),
 });
 
 const publicSigningDocumentSchema = z.object({
+  _id: z.string(),
   publicId: z.string(),
   name: z.string(),
   status: z.string(),
+  workflowStatus: z.string(),
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
@@ -1447,6 +1455,7 @@ const publicSigningSequentialProgressSchema = z.object({
   completed: z.number().int(),
   percentComplete: z.number(),
   currentGroup: z.number().int(),
+  totalGroups: z.number().int(),
   isWaitingForPreviousGroup: z.boolean(),
 });
 
@@ -1456,7 +1465,13 @@ const publicSigningTokenResponseSchema = z.object({
   waitingForPreviousGroup: z.boolean(),
   sequentialProgress: publicSigningSequentialProgressSchema,
   branding: z
-    .object({ logoUrl: z.string().nullable().optional() })
+    .object({
+      _id: z.string().optional(),
+      logoUrl: z.string().nullable().optional(),
+      brandColor: z.string().nullable().optional(),
+      hideSealBranding: z.boolean().optional(),
+      customFooterText: z.string().nullable().optional(),
+    })
     .optional(),
   signingSettings: z.record(z.string(), z.string()).optional(),
 });
@@ -1472,6 +1487,7 @@ export async function getSigningByToken(
 }
 
 const publicSigningFieldSchema = z.object({
+  _id: z.string(),
   id: z.string(),
   publicId: z.string(),
   documentId: z.string(),
@@ -1496,11 +1512,10 @@ const publicSigningFieldSchema = z.object({
   signatureDetails: z
     .object({
       signedAt: z.number(),
-      signerName: z.string().nullable().optional(),
-      signerEmail: z.string().nullable().optional(),
-      signatureMethod: z.string().nullable().optional(),
+      signerName: z.string().optional(),
+      signerEmail: z.string().optional(),
+      signatureMethod: z.string().optional(),
     })
-    .nullable()
     .optional(),
 });
 
@@ -1557,6 +1572,7 @@ export async function submitPublicSigning(
 }
 
 const publicPaymentConfigSummarySchema = z.object({
+  _id: z.string(),
   id: z.string(),
   publicId: z.string(),
   fieldId: z.string(),
