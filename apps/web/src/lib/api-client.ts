@@ -270,6 +270,37 @@ export async function getOrganization(slug: string): Promise<ApiOrganization> {
   );
 }
 
+const brandingSettingsSchema = z.record(z.string(), z.unknown());
+
+export type ApiBrandingSettings = z.infer<typeof brandingSettingsSchema>;
+
+export async function getBrandingSettings(
+  slug: string
+): Promise<ApiBrandingSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/branding`,
+    brandingSettingsSchema
+  );
+}
+
+export async function updateBrandingSettings(
+  slug: string,
+  input: {
+    enabled?: boolean;
+    hideSealBranding?: boolean;
+    customFooterText?: string;
+  }
+): Promise<ApiBrandingSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/branding`,
+    brandingSettingsSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 export async function updateWorkspace(
   slug: string,
   input: {

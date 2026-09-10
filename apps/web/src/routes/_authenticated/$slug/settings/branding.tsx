@@ -9,7 +9,7 @@
  * Gating: Pro Sign SKU (`PLAN_LIMITS.*.branding`) — not a separate suite SKU.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Button,
@@ -22,7 +22,6 @@ import {
   Label,
   Switch,
 } from "@vortexnyc/ui";
-import { useMutation, useQuery } from "convex/react";
 import { PaletteIcon, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +29,7 @@ import { toast } from "sonner";
 import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
+import { getBrandingSettings, getOrganization, updateBrandingSettings } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
   {
@@ -41,18 +41,16 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
 function BrandingSettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
 
-  const brandingSettings = useQuery(
-    api.organizations.queries.getBrandingSettings,
-    organization ? { organizationId: organization._id } : "skip"
-  );
-
-  const updateBranding = useMutation(
-    api.organizations.mutations.updateBrandingSettings
-  );
+  const { data: brandingSettings } = useQuery({
+    queryKey: ["branding", slug],
+    queryFn: () => getBrandingSettings(slug),
+    enabled: !!organization,
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -64,9 +62,12 @@ function BrandingSettings() {
   useEffect(() => {
     if (brandingSettings) {
       setFormData({
-        enabled: brandingSettings.enabled,
-        hideSealBranding: brandingSettings.hideSealBranding ?? false,
-        customFooterText: brandingSettings.customFooterText ?? "",
+        enabled: brandingSettings.enabled === true,
+        hideSealBranding: brandingSettings.hideSealBranding === true,
+        customFooterText:
+          typeof brandingSettings.customFooterText === "string"
+            ? brandingSettings.customFooterText
+            : "",
       });
     }
   }, [brandingSettings]);
@@ -76,7 +77,7 @@ function BrandingSettings() {
     setIsSubmitting(true);
 
     try {
-      await updateBranding({
+      await updateBrandingSettings(slug, {
         enabled: formData.enabled,
         hideSealBranding: formData.hideSealBranding,
         customFooterText: formData.customFooterText || undefined,

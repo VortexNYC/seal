@@ -302,6 +302,16 @@ app.openapi(membersRouteDef, async (c) => {
   return c.json(rows.map((r) => Object.assign(r, { status: "active" })));
 });
 
+const BrandingSettingsSchema = z
+  .record(z.string(), z.unknown())
+  .openapi("BrandingSettings");
+
+const updateBrandingBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  hideSealBranding: z.boolean().optional(),
+  customFooterText: z.string().optional(),
+});
+
 const updateWorkspaceBodySchema = z.object({
   name: z.string().optional(),
   logo: z.string().nullable().optional(),
@@ -390,6 +400,104 @@ app.openapi(updateWorkspaceRouteDef, async (c) => {
   }
 
   return c.json(organizationResponse(updated, membership?.role));
+});
+
+const brandingRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/branding",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: BrandingSettingsSchema },
+      },
+      description: "Branding settings from organization metadata",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(brandingRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  const meta = parseMetadata(org.metadata);
+  return c.json(asRecord(meta.brandingSettings));
+});
+
+const updateBrandingRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/branding",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateBrandingBodySchema },
+      },
+      description: "Branding update fields",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: BrandingSettingsSchema },
+      },
+      description: "Updated branding settings",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(updateBrandingRouteDef, async (c) => {
+  const org = c.get("organization");
+  const membership = c.get("membership");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const role = membership?.role;
+  if (role !== "owner" && role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const body = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const meta = parseMetadata(org.metadata);
+  const branding = asRecord(meta.brandingSettings);
+
+  const nextBranding = {
+    ...branding,
+    ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+    ...(body.hideSealBranding !== undefined
+      ? { hideSealBranding: body.hideSealBranding }
+      : {}),
+    ...(body.customFooterText !== undefined
+      ? {
+          customFooterText:
+            body.customFooterText === "" ? null : body.customFooterText,
+        }
+      : {}),
+  };
+
+  const nextMetadata = { ...meta, brandingSettings: nextBranding };
+
+  await db
+    .update(organization)
+    .set({
+      metadata: JSON.stringify(nextMetadata),
+      updatedAt: new Date(),
+    })
+    .where(eq(organization.id, org.id));
+
+  return c.json(nextBranding);
 });
 
 declare module "hono" {
