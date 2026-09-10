@@ -1,17 +1,6 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Wait for Convex real-time updates to settle
- */
-export async function waitForConvexUpdate(
-  page: Page,
-  timeout = 3000
-): Promise<void> {
-  // Wait briefly for UI updates after Convex mutations.
-  await page.waitForLoadState("domcontentloaded", { timeout });
-}
-
-/**
  * Wait for specific text to appear on the page
  */
 export async function waitForText(
@@ -79,7 +68,31 @@ export async function waitForToast(
  */
 export async function isVisible(
   page: Page,
-  selector: string
+  selector: string,
+  options?: { timeout?: number }
 ): Promise<boolean> {
-  return await page.locator(selector).isVisible();
+  try {
+    await page.locator(selector).waitFor({
+      timeout: options?.timeout || 5000,
+      state: "visible",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Wait for element to have specific text content
+ */
+export async function waitForTextContent(
+  page: Page,
+  selector: string,
+  text: string,
+  options?: { timeout?: number }
+): Promise<void> {
+  await page
+    .locator(selector)
+    .filter({ hasText: text })
+    .waitFor({ timeout: options?.timeout || 10000 });
 }
