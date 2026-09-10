@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { waitForConvexMutation } from "../../fixtures/convex-helpers";
+import { waitForApiResponse } from "../../fixtures/api-helpers";
 import { pollUntil } from "../../fixtures/poll";
 
 type SharingMode = "private" | "workspace" | "specific";
@@ -187,7 +187,7 @@ export class ShareDialogPage {
       .click();
 
     await this.addButton.click();
-    await waitForConvexMutation(this.page, "grantAccess");
+    await waitForApiResponse(this.page, "/share");
   }
 
   async getAccessList(): Promise<string[]> {
@@ -220,7 +220,7 @@ export class ShareDialogPage {
     await this.page
       .getByRole("option", { name: new RegExp(newPermission, "i") })
       .click();
-    await waitForConvexMutation(this.page, "updateAccessLevel");
+    await waitForApiResponse(this.page, "/permission");
   }
 
   async revokeAccess(userName: string): Promise<void> {
@@ -231,7 +231,7 @@ export class ShareDialogPage {
       '[data-testid="revoke-access-button"]'
     );
     await revokeButton.click();
-    await waitForConvexMutation(this.page, "revokeAccess");
+    await waitForApiResponse(this.page, "/revoke");
   }
 
   async hasUserAccess(userName: string): Promise<boolean> {

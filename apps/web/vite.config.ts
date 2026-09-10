@@ -45,14 +45,6 @@ function manualChunks(moduleId: string): string | undefined {
   }
 
   if (
-    moduleId.includes("/convex/") &&
-    !moduleId.includes("_generated") &&
-    !moduleId.includes("convex-helpers")
-  ) {
-    return "vendor-convex";
-  }
-
-  if (
     moduleId.includes("@tanstack/react-query") ||
     moduleId.includes("@tanstack/query")
   ) {

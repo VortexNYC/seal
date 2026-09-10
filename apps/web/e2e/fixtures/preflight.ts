@@ -1,5 +1,3 @@
-import { describeConvexE2eTarget } from "./convex-test-api";
-
 let hasLoggedPreflight = false;
 
 function requireAnyEnv(primaryName: string, fallbackName: string): string {
@@ -33,7 +31,7 @@ function logResolvedEnvironment(scope: string): void {
     return;
   }
 
-  const convexTarget = describeConvexE2eTarget();
+  const apiUrl = process.env.VITE_API_URL || "<missing>";
   const testEmail =
     process.env.E2E_TEST_USER_EMAIL ||
     process.env.TEST_USER_EMAIL ||
@@ -41,9 +39,7 @@ function logResolvedEnvironment(scope: string): void {
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5180";
 
   console.info(`[setup:${scope}] Base URL: ${baseUrl}`);
-  console.info(
-    `[setup:${scope}] Convex target: ${convexTarget.deploymentName} (${convexTarget.convexUrl})`
-  );
+  console.info(`[setup:${scope}] API URL: ${apiUrl}`);
   console.info(`[setup:${scope}] Test user: ${testEmail}`);
 
   hasLoggedPreflight = true;
@@ -69,7 +65,6 @@ export function assertAuthEnv(): void {
 }
 
 export function assertBackendEnv(): void {
-  requireEnv("VITE_CONVEX_URL");
-  requireEnv("CONVEX_DEPLOY_KEY");
+  requireEnv("VITE_API_URL");
   logResolvedEnvironment("backend");
 }

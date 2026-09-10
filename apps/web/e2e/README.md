@@ -8,40 +8,40 @@ This directory contains end-to-end tests for the Seal application using Playwrig
 
 ```bash
 # Install dependencies (from project root)
-bun install
+pnpm install
 
 # Install Playwright browsers
 cd apps/web
-bunx playwright install chromium
+pnpm dlx playwright install chromium
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-bun run test:e2e
+pnpm run test:e2e
 
 # Run tests in UI mode (recommended for development)
-bun run test:e2e:ui
+pnpm run test:e2e:ui
 
 # Run tests in headed mode (see browser)
-bun run test:e2e:headed
+pnpm run test:e2e:headed
 
 # Run specific test file
-bun run test:e2e tests/auth.spec.ts
+pnpm run test:e2e tests/auth.e2e.ts
 
 # Debug tests
-bun run test:e2e:debug
+pnpm run test:e2e:debug
 
 # Generate tests using codegen
-bun run test:e2e:codegen
+pnpm run test:e2e:codegen
 ```
 
 ### View Test Reports
 
 ```bash
 # After tests run, view HTML report
-bun run test:e2e:report
+pnpm run test:e2e:report
 ```
 
 ## 📁 Directory Structure
@@ -49,17 +49,20 @@ bun run test:e2e:report
 ```
 e2e/
 ├── fixtures/           # Test fixtures and helpers
-│   ├── auth.ts        # Authentication fixtures
-│   └── convex-helpers.ts  # Convex backend helpers
+│   ├── auth.ts         # Authentication fixtures
+│   ├── api-test-client.ts  # Seal API test client
+│   ├── api-helpers.ts  # API response wait helpers
+│   └── backend-setup.ts # E2E backend seeding/cleanup
 ├── pages/             # Page Object Models
 │   ├── auth/
 │   ├── documents/
 │   ├── templates/
 │   └── settings/
 ├── tests/             # Test files
-│   ├── auth.spec.ts
-│   ├── documents.spec.ts
-│   └── templates.spec.ts
+│   ├── auth.setup.ts
+│   ├── auth.e2e.ts
+│   ├── documents.e2e.ts
+│   └── templates.e2e.ts
 ├── utils/             # Utility functions
 │   ├── test-helpers.ts
 │   └── test-data.ts
@@ -79,7 +82,7 @@ E2E_TEST_EMAIL_CODE=424242
 # Optional, for deterministic workspace recovery in setup:
 # E2E_TEST_ORGANIZATION_NAME="Seal E2E Workspace"
 # E2E_TEST_ORGANIZATION_SLUG=seal-e2e-test
-VITE_CONVEX_URL=https://test-deployment.convex.cloud
+VITE_API_URL=http://localhost:8787
 PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
 
@@ -170,7 +173,7 @@ See [DEBUG_WORKFLOWS.md](./DEBUG_WORKFLOWS.md) for detailed debugging workflows.
 
 ```bash
 # Run single test with debugger
-bun run test:e2e:debug tests/auth.spec.ts
+pnpm run test:e2e:debug tests/auth.e2e.ts
 
 # Add debug point in test
 await page.pause();  // Opens Playwright Inspector
@@ -178,13 +181,13 @@ await page.pause();  // Opens Playwright Inspector
 
 ## 🎯 Test Patterns
 
-### Waiting for Convex Updates
+### Waiting for API Updates
 
 ```typescript
-import { waitForConvexMutation } from "../fixtures/convex-helpers";
+import { waitForApiResponse } from "../fixtures/api-helpers";
 
-// After mutation
-await waitForConvexMutation(page, "createDocument");
+// After a document field is created
+await waitForApiResponse(page, "/signature-fields");
 ```
 
 ### Checking Toast Notifications
@@ -220,7 +223,7 @@ Configure these in GitHub repository settings:
 - `E2E_TEST_USER_EMAIL`
 - `E2E_TEST_USER_PASSWORD`
 - `E2E_TEST_EMAIL_CODE`
-- `VITE_CONVEX_URL_TEST`
+- `VITE_API_URL`
 
 ### Setup artifacts
 
@@ -228,7 +231,7 @@ Playwright setup writes shared artifacts under `apps/web/playwright/.auth/`:
 
 - `user.json` — authenticated Better-Auth storage state (session cookie)
 - `workspace-slug.txt` — resolved active workspace slug
-- `e2e-pdf-storage-id.txt` — cached Convex storage id for the sample PDF
+- `sample-document.pdf` — fixture PDF used for document creation
 
 ## 🎨 Best Practices
 
@@ -281,7 +284,7 @@ page.locator("div > span:nth-child(3)");
 ### Timing Issues
 
 - Use proper waits instead of `waitForTimeout`
-- Wait for network idle for Convex updates
+- Wait for API responses after mutating actions
 - Check for real-time update propagation
 
 ### Flaky Tests

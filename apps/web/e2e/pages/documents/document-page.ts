@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { waitForConvexMutation } from "../../fixtures/convex-helpers";
+import { waitForApiResponse } from "../../fixtures/api-helpers";
 
 export class DocumentPage {
   readonly page: Page;
@@ -106,7 +106,7 @@ export class DocumentPage {
     await this.placeFieldButton.click();
 
     // Wait for field to be created
-    await waitForConvexMutation(this.page, "createField");
+    await waitForApiResponse(this.page, "/signature-fields");
     await this.recipientSelectorDialog
       .waitFor({ state: "hidden", timeout: 5000 })
       .catch(() => {});
@@ -127,7 +127,7 @@ export class DocumentPage {
 
   async sendDocument(): Promise<void> {
     await this.sendButton.click();
-    await waitForConvexMutation(this.page, "sendDocument");
+    await waitForApiResponse(this.page, "/send");
   }
 
   async getDocumentTitle(): Promise<string> {

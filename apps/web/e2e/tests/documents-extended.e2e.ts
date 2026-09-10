@@ -4,10 +4,9 @@ import {
   createDocument,
   deleteDocument as deleteApiDocument,
 } from "../factories/document-factory";
+import { loadSamplePdf } from "../fixtures/api-test-client";
 import { expect, test } from "../fixtures/auth";
-import { ensurePdfStorageId } from "../fixtures/convex-test-api";
 import { sampleDocumentPath } from "../fixtures/paths";
-import { readCachedWorkspaceSlug } from "../fixtures/workspace-state";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 
@@ -26,35 +25,14 @@ async function createAndOpenApiDocument(args: {
   return doc;
 }
 
-async function resolveWorkspaceSlug(context: BrowserContext): Promise<string> {
-  const cachedSlug = readCachedWorkspaceSlug();
-  if (cachedSlug) {
-    return cachedSlug;
-  }
-
-  const page = await context.newPage();
-  try {
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await page.waitForURL(/\/([\w-]+)\/(home|onboarding)/, { timeout: 10000 });
-    const match = page.url().match(/\/([\w-]+)\/(home|onboarding)/);
-    if (!match?.[1]) {
-      throw new Error(`Unable to resolve workspace slug from ${page.url()}`);
-    }
-    return match[1];
-  } finally {
-    await page.close();
-  }
-}
-
 async function withSetupContext<T>(
   browser: Browser,
   storageState: string,
-  fn: (context: BrowserContext, organizationSlug: string) => Promise<T>
+  fn: (context: BrowserContext) => Promise<T>
 ): Promise<T> {
   const context = await browser.newContext({ storageState });
   try {
-    const organizationSlug = await resolveWorkspaceSlug(context);
-    return await fn(context, organizationSlug);
+    return await fn(context);
   } finally {
     await context.close();
   }
@@ -215,7 +193,7 @@ test.describe("Document Editor - Zoom Controls", () => {
   let zoomDocId = "";
 
   test.beforeAll(async ({ browser }, testInfo) => {
-    const storageId = await ensurePdfStorageId(sampleDocumentPath);
+    const pdfFile = await loadSamplePdf(sampleDocumentPath);
     const storageState = testInfo.project.use.storageState;
     if (typeof storageState !== "string") {
       throw new Error("Expected a file-based storageState for setup context");
@@ -224,16 +202,21 @@ test.describe("Document Editor - Zoom Controls", () => {
     zoomDocId = await withSetupContext(
       browser,
       storageState,
-      async (_context, organizationSlug) => {
-        const doc = await createDocument({ organizationSlug, storageId });
+      async (context) => {
+        const doc = await createDocument({
+          request: context.request,
+          pdfFile,
+        });
         return doc.id;
       }
     );
   });
 
-  test.afterAll(async () => {
+  test.afterAll(async ({ request }) => {
     if (zoomDocId) {
-      await deleteApiDocument(zoomDocId).catch(() => {});
+      await deleteApiDocument({ request, documentId: zoomDocId }).catch(
+        () => {}
+      );
     }
   });
 

@@ -339,7 +339,6 @@ const state =
   devtools__evaluate_script({
     function: `() => ({
     auth: document.cookie.includes("better-auth"),
-    convex: window.convex?.connectionState
   })`,
   });
 
@@ -357,8 +356,8 @@ E2E_TEST_USER_EMAIL=seal-e2e@seal.nyc
 E2E_TEST_USER_PASSWORD=your-test-user-password
 E2E_TEST_EMAIL_CODE=424242
 
-# Convex
-VITE_CONVEX_URL=https://test-deployment.convex.cloud
+# Seal API base URL used by E2E fixtures
+VITE_API_URL=http://localhost:8787
 
 # Playwright
 PLAYWRIGHT_BASE_URL=http://localhost:5180

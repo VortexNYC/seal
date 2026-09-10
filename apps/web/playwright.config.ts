@@ -75,6 +75,9 @@ export default defineConfig({
       name: "setup-backend",
       testMatch: "**/backend.setup.ts",
       dependencies: ["setup-app"],
+      use: {
+        storageState: authStatePath,
+      },
     },
     {
       name: "smoke-contract",

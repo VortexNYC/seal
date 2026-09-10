@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs";
 
+import { assertApiReachability } from "../fixtures/api-test-client";
 import { expect, test } from "../fixtures/auth";
-import { assertConvexE2eHelperAvailability } from "../fixtures/convex-test-api";
 import {
   authStatePath,
-  pdfStorageIdPath,
+  sampleDocumentPath,
   workspaceSlugPath,
 } from "../fixtures/paths";
 import { DocumentPage } from "../pages/documents/document-page";
@@ -14,15 +14,15 @@ test.describe("Smoke Contract", () => {
   test("setup artifacts exist before browser tests run", async () => {
     expect(existsSync(authStatePath)).toBe(true);
     expect(existsSync(workspaceSlugPath)).toBe(true);
-    expect(existsSync(pdfStorageIdPath)).toBe(true);
+    expect(existsSync(sampleDocumentPath)).toBe(true);
   });
 
-  test("convex test helpers are reachable", async () => {
+  test("api is reachable", async ({ request }) => {
     await expect
       .poll(
         async () => {
           try {
-            await assertConvexE2eHelperAvailability();
+            await assertApiReachability(request);
             return "ok";
           } catch (error) {
             return error instanceof Error ? error.message : String(error);
