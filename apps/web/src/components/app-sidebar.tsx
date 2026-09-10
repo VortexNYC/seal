@@ -32,12 +32,7 @@ import {
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
-import {
-  listUserOrganizations,
-  setActiveOrganization,
-  type ApiUserOrganization,
-} from "@/lib/api-client";
+import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 
@@ -91,14 +86,6 @@ function getInitials(value: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-}
-
-function formatRole(value: string | undefined) {
-  if (!value) {
-    return "Member";
-  }
-
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function isPathActive(
@@ -340,12 +327,19 @@ function buildNavSections({
     .filter((section): section is NavMainItem => section !== null);
 }
 
+type OrganizationListItem = {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string | null | undefined;
+};
+
 function buildTeamOptions({
   slug,
   organizations,
 }: {
   slug: string;
-  organizations: ApiUserOrganization[] | null | undefined;
+  organizations: OrganizationListItem[] | null | undefined;
 }) {
   if (!organizations) {
     return [];
@@ -374,7 +368,7 @@ function buildTeamOptions({
     return {
       id: organization.id,
       name: organization.name,
-      plan: formatRole(organization.role),
+      plan: "Member",
       slug: organization.slug,
       logo: Logo,
     };
@@ -390,22 +384,49 @@ export function AppSidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useCurrentUser();
-  const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
   const { data: organizations } = useQuery({
-    queryKey: ["api", "auth", "organization", "list"],
-    queryFn: listUserOrganizations,
+    queryKey: ["auth", "organization", "list"],
+    queryFn: async () => {
+      if (betterAuthClient === null) {
+        throw new Error("Better Auth is not configured");
+      }
+      const result = await betterAuthClient.organization.list();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
   const setActiveOrganizationMutation = useMutation({
-    mutationFn: setActiveOrganization,
+    mutationFn: async (organizationSlug: string) => {
+      if (betterAuthClient === null) {
+        throw new Error("Better Auth is not configured");
+      }
+      const result = await betterAuthClient.organization.setActive({
+        organizationSlug,
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
   const { isPro } = useSubscriptionLimits();
 
   // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
     resetAnalytics();
-    await signOut({ redirectUrl: "/sign-in" });
-  }, [resetAnalytics, signOut]);
+    if (betterAuthClient === null) {
+      return;
+    }
+    const result = await betterAuthClient.signOut();
+    if (result.error) {
+      console.error("Failed to sign out:", result.error);
+      return;
+    }
+    void navigate({ to: "/sign-in" });
+  }, [resetAnalytics, navigate]);
 
   const teamOptions = React.useMemo(
     () => buildTeamOptions({ slug, organizations }),

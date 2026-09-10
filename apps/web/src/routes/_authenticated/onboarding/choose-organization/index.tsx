@@ -3,16 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Building2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { betterAuthClient } from "@/lib/better-auth";
 import Loader from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  createOrganization,
-  listUserOrganizations,
-  setActiveOrganization,
-} from "@/lib/api-client";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute(
@@ -23,18 +19,27 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { data: organizations } = useQuery({
-    queryKey: ["api", "auth", "organization", "list"],
-    queryFn: listUserOrganizations,
+  const { data: organizations, isPending } = useQuery({
+    queryKey: ["auth", "organization", "list"],
+    queryFn: async () => {
+      if (betterAuthClient === null) {
+        throw new Error("Better Auth is not configured");
+      }
+      const result = await betterAuthClient.organization.list();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
   const [showCreate, setShowCreate] = useState(false);
 
   const sorted = useMemo(() => {
     if (!organizations) return [];
-    return organizations.toSorted((a, b) => a.name.localeCompare(b.name));
+    return [...organizations].sort((a, b) => a.name.localeCompare(b.name));
   }, [organizations]);
 
-  if (organizations === undefined) {
+  if (isPending || organizations === undefined) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader />
@@ -74,7 +79,6 @@ function RouteComponent() {
               key={org.slug}
               name={org.name}
               slug={org.slug}
-              role={org.role}
               onSelect={() => {
                 void navigate({
                   to: buildOrganizationPath(org.slug, "/home"),
@@ -101,16 +105,25 @@ function RouteComponent() {
 function OrganizationOption({
   name,
   slug,
-  role,
   onSelect,
 }: {
   name: string;
   slug: string;
-  role: string;
   onSelect: () => void;
 }) {
   const select = useMutation({
-    mutationFn: setActiveOrganization,
+    mutationFn: async (organizationSlug: string) => {
+      if (betterAuthClient === null) {
+        throw new Error("Better Auth is not configured");
+      }
+      const result = await betterAuthClient.organization.setActive({
+        organizationSlug,
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
 
   return (
@@ -130,9 +143,6 @@ function OrganizationOption({
         <p className="text-sm font-medium">{name}</p>
         <p className="text-muted-foreground text-xs">{slug}</p>
       </div>
-      <span className="text-muted-foreground ml-auto text-xs capitalize">
-        {role}
-      </span>
     </Button>
   );
 }
@@ -150,7 +160,19 @@ function CreateOrganizationCard({
   const [slug, setSlug] = useState("");
   const [error, setError] = useState<string | null>(null);
   const create = useMutation({
-    mutationFn: createOrganization,
+    mutationFn: async (input: { name: string; slug: string }) => {
+      if (betterAuthClient === null) {
+        throw new Error("Better Auth is not configured");
+      }
+      const result = await betterAuthClient.organization.create({
+        name: input.name,
+        slug: input.slug,
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
   });
 
   const handleCreate = () => {

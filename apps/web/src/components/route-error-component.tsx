@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
-import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
+import { betterAuthClient } from "@/lib/better-auth";
 
 import { Button } from "./ui/button";
 import {
@@ -32,7 +32,6 @@ import {
  */
 export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
-  const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
   const isDev = import.meta.env.DEV;
 
@@ -49,7 +48,15 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
 
   const handleSignOut = async () => {
     resetAnalytics();
-    await signOut({ redirectUrl: "/sign-in" });
+    if (betterAuthClient === null) {
+      return;
+    }
+    const result = await betterAuthClient.signOut();
+    if (result.error) {
+      console.error("Failed to sign out:", result.error);
+      return;
+    }
+    void router.navigate({ to: "/sign-in" });
   };
 
   return (

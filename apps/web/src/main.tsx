@@ -3,7 +3,7 @@ import { api } from "@seal/backend/convex/_generated/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
-import { ConvexReactClient } from "convex/react";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import ReactDOM from "react-dom/client";
@@ -13,7 +13,6 @@ import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
 import { NotFound } from "./components/not-found";
 import { ThemeProvider } from "./components/theme-provider";
-import { AuthRuntimeProvider } from "./lib/auth-runtime.better-auth";
 import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
@@ -69,11 +68,11 @@ const router = createRouter({
   Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
     return (
       <ThemeProvider>
-        <AuthRuntimeProvider convex={convex}>
+        <ConvexProvider client={convex}>
           <QueryClientProvider client={queryClient}>
             {children}
           </QueryClientProvider>
-        </AuthRuntimeProvider>
+        </ConvexProvider>
       </ThemeProvider>
     );
   },
