@@ -50,19 +50,6 @@ const TemplateListItemSchema = z
   })
   .openapi("TemplateListItem");
 
-const FolderSchema = z
-  .object({
-    _id: z.string(),
-    id: z.string(),
-    name: z.string(),
-    parentId: z.string().nullable().optional(),
-    type: z.string(),
-    pinned: z.boolean().optional(),
-    createdAt: z.number(),
-    updatedAt: z.number(),
-  })
-  .openapi("Folder");
-
 const TeamSummarySchema = z
   .object({
     total: z.number().int(),
@@ -1145,16 +1132,35 @@ app.openapi(listTemplatesRouteDef, async (c) => {
     return c.json({ error: "Organization not found" }, 404);
   }
 
-  const { folderId } = c.req.valid("query");
+  const { folderId: folderPublicId } = c.req.valid("query");
   const db = createD1(c.env.D1);
+
+  let internalFolderId: string | null = null;
+  if (folderPublicId) {
+    const folderRows = await db
+      .select({ id: foldersTable.id })
+      .from(foldersTable)
+      .where(
+        and(
+          eq(foldersTable.publicId, folderPublicId),
+          eq(foldersTable.organizationId, org.id)
+        )
+      )
+      .limit(1);
+    const folder = folderRows[0];
+    if (!folder) {
+      return c.json([]);
+    }
+    internalFolderId = folder.id;
+  }
 
   const where: Array<ReturnType<typeof eq>> = [
     eq(templatesTable.organizationId, org.id),
     eq(templatesTable.status, "active"),
   ];
 
-  if (folderId) {
-    where.push(eq(templatesTable.folderId, folderId));
+  if (internalFolderId) {
+    where.push(eq(templatesTable.folderId, internalFolderId));
   } else {
     where.push(isNull(templatesTable.folderId));
   }
@@ -1192,71 +1198,346 @@ app.openapi(listTemplatesRouteDef, async (c) => {
   );
 });
 
-const listFoldersRouteDef = createRoute({
-  method: "get",
-  path: "/{slug}/folders",
+const TemplateDetailSchema = z
+  .object({
+    _id: z.string(),
+    id: z.string(),
+    name: z.string(),
+    description: z.string().nullable().optional(),
+    pageCount: z.number().int().nullable().optional(),
+    fileSize: z.number().int(),
+    thumbnailDataUrl: z.string().nullable().optional(),
+    useCount: z.number().int(),
+    status: z.string(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .openapi("TemplateDetail");
+
+const updateTemplateBodySchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+});
+
+const useTemplateBodySchema = z.object({
+  documentName: z.string().optional(),
+});
+
+const useTemplateResponseSchema = z.object({
+  documentId: z.string(),
+});
+
+const moveTemplateBodySchema = z.object({
+  folderId: z.string().nullable().optional(),
+});
+
+const createFromTemplateRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/templates/{templateId}/use",
   request: {
-    params: z.object({ slug: z.string() }),
-    query: z.object({
-      type: z.string().optional().openapi({
-        param: { name: "type", in: "query" },
-      }),
-      parentId: z.string().optional().openapi({
-        param: { name: "parentId", in: "query" },
-      }),
-    }),
+    params: z.object({ slug: z.string(), templateId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: useTemplateBodySchema },
+      },
+      description: "Create a document from a template",
+    },
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": { schema: useTemplateResponseSchema },
+      },
+      description: "Document created",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Template not found" },
+  },
+});
+
+app.openapi(createFromTemplateRouteDef, async (c) => {
+  const org = c.get("organization");
+  const user = c.get("user");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const { templateId } = c.req.valid("param");
+  const { documentName } = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const templateRows = await db
+    .select()
+    .from(templatesTable)
+    .where(
+      and(
+        eq(templatesTable.id, templateId),
+        eq(templatesTable.organizationId, org.id)
+      )
+    )
+    .limit(1);
+
+  const template = templateRows[0];
+  if (!template) {
+    return c.json({ error: "Template not found" }, 404);
+  }
+
+  const now = new Date();
+  const id = crypto.randomUUID();
+  const publicId = crypto.randomUUID();
+
+  await db.insert(documentsTable).values({
+    id,
+    publicId,
+    organizationId: org.id,
+    ownerId: user?.user.id ?? template.createdBy,
+    name: documentName ?? template.name,
+    description: template.description,
+    status: "active",
+    documentStatus: "active",
+    sharingMode: "private",
+    storageKey: template.storageKey,
+    contentType: template.contentType,
+    size: template.size,
+    pageCount: template.pageCount,
+    thumbnailDataUrl: template.thumbnailDataUrl,
+    folderId: template.folderId,
+    allowDictateNextSigner: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  await db
+    .update(templatesTable)
+    .set({ useCount: template.useCount + 1, updatedAt: now })
+    .where(eq(templatesTable.id, template.id));
+
+  return c.json({ documentId: publicId }, 201);
+});
+
+const updateTemplateRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/templates/{templateId}",
+  request: {
+    params: z.object({ slug: z.string(), templateId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateTemplateBodySchema },
+      },
+      description: "Update template fields",
+    },
   },
   responses: {
     200: {
       content: {
-        "application/json": { schema: z.array(FolderSchema) },
+        "application/json": { schema: TemplateDetailSchema },
       },
-      description: "Organization folders",
+      description: "Template updated",
     },
     401: { description: "Unauthorized" },
     403: { description: "Forbidden" },
-    404: { description: "Organization not found" },
+    404: { description: "Template not found" },
   },
 });
 
-app.openapi(listFoldersRouteDef, async (c) => {
+app.openapi(updateTemplateRouteDef, async (c) => {
   const org = c.get("organization");
   if (!org) {
     return c.json({ error: "Organization not found" }, 404);
   }
 
-  const { type = "template", parentId } = c.req.valid("query");
+  const { templateId } = c.req.valid("param");
+  const body = c.req.valid("json");
   const db = createD1(c.env.D1);
 
-  const where: Array<ReturnType<typeof eq>> = [
-    eq(foldersTable.organizationId, org.id),
-    eq(foldersTable.type, type),
-  ];
+  const setName = body.name !== undefined ? body.name : undefined;
+  const setDescription =
+    body.description !== undefined ? body.description : undefined;
 
-  if (parentId) {
-    where.push(eq(foldersTable.parentId, parentId));
-  } else {
-    where.push(isNull(foldersTable.parentId));
+  const templateRows = await db
+    .select()
+    .from(templatesTable)
+    .where(
+      and(
+        eq(templatesTable.id, templateId),
+        eq(templatesTable.organizationId, org.id)
+      )
+    )
+    .limit(1);
+
+  if (!templateRows[0]) {
+    return c.json({ error: "Template not found" }, 404);
   }
 
-  const rows = await db
-    .select()
-    .from(foldersTable)
-    .where(and(...where))
-    .orderBy(foldersTable.name);
+  await db
+    .update(templatesTable)
+    .set({
+      name: setName,
+      description: setDescription,
+      updatedAt: new Date(),
+    })
+    .where(eq(templatesTable.id, templateId));
 
-  return c.json(
-    rows.map((f) => ({
-      _id: f.id,
-      id: f.id,
-      name: f.name,
-      parentId: f.parentId,
-      type: f.type,
-      pinned: f.pinned,
-      createdAt: f.createdAt.getTime(),
-      updatedAt: f.updatedAt.getTime(),
-    }))
-  );
+  const [template] = await db
+    .select({
+      template: templatesTable,
+      source: {
+        pageCount: documentsTable.pageCount,
+        thumbnailDataUrl: documentsTable.thumbnailDataUrl,
+      },
+    })
+    .from(templatesTable)
+    .leftJoin(
+      documentsTable,
+      eq(templatesTable.sourceDocumentId, documentsTable.id)
+    )
+    .where(
+      and(
+        eq(templatesTable.id, templateId),
+        eq(templatesTable.organizationId, org.id)
+      )
+    )
+    .limit(1);
+
+  if (!template) {
+    return c.json({ error: "Template not found" }, 404);
+  }
+
+  return c.json({
+    _id: template.template.id,
+    id: template.template.id,
+    name: template.template.name,
+    description: template.template.description,
+    pageCount: template.source?.pageCount ?? null,
+    fileSize: template.template.size,
+    thumbnailDataUrl: template.source?.thumbnailDataUrl ?? null,
+    useCount: template.template.useCount,
+    status: template.template.status,
+    createdAt: template.template.createdAt.getTime(),
+    updatedAt: template.template.updatedAt.getTime(),
+  });
+});
+
+const deleteTemplateRouteDef = createRoute({
+  method: "delete",
+  path: "/{slug}/templates/{templateId}",
+  request: {
+    params: z.object({ slug: z.string(), templateId: z.string() }),
+  },
+  responses: {
+    204: { description: "Template deleted" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Template not found" },
+  },
+});
+
+app.openapi(deleteTemplateRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const { templateId } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const template = await db
+    .select()
+    .from(templatesTable)
+    .where(
+      and(
+        eq(templatesTable.id, templateId),
+        eq(templatesTable.organizationId, org.id)
+      )
+    )
+    .limit(1);
+
+  if (!template[0]) {
+    return c.json({ error: "Template not found" }, 404);
+  }
+
+  await db
+    .update(templatesTable)
+    .set({ status: "deleted", updatedAt: new Date() })
+    .where(eq(templatesTable.id, templateId));
+
+  return c.body(null, 204);
+});
+
+const moveTemplateRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/templates/{templateId}/folder",
+  request: {
+    params: z.object({ slug: z.string(), templateId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: moveTemplateBodySchema },
+      },
+      description: "Move template to folder",
+    },
+  },
+  responses: {
+    204: { description: "Template moved" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Template or folder not found" },
+  },
+});
+
+app.openapi(moveTemplateRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const { templateId } = c.req.valid("param");
+  const { folderId: folderPublicId } = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  let targetFolderId: string | null = null;
+  if (folderPublicId) {
+    const folderRows = await db
+      .select({ id: foldersTable.id })
+      .from(foldersTable)
+      .where(
+        and(
+          eq(foldersTable.publicId, folderPublicId),
+          eq(foldersTable.organizationId, org.id)
+        )
+      )
+      .limit(1);
+    const folder = folderRows[0];
+    if (!folder) {
+      return c.json({ error: "Folder not found" }, 404);
+    }
+    targetFolderId = folder.id;
+  }
+
+  const template = await db
+    .select()
+    .from(templatesTable)
+    .where(
+      and(
+        eq(templatesTable.id, templateId),
+        eq(templatesTable.organizationId, org.id)
+      )
+    )
+    .limit(1);
+
+  if (!template[0]) {
+    return c.json({ error: "Template not found" }, 404);
+  }
+
+  await db
+    .update(templatesTable)
+    .set({
+      folderId: targetFolderId,
+      updatedAt: new Date(),
+    })
+    .where(eq(templatesTable.id, templateId));
+
+  return c.body(null, 204);
 });
 
 declare module "hono" {

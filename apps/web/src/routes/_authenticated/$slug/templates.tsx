@@ -7,16 +7,12 @@
  * Route: /{slug}/templates
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -88,8 +84,17 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { parseId } from "@/lib/convex-ids";
 import { pageSEO } from "@/lib/seo";
+import {
+  deleteTemplate as deleteTemplateApi,
+  getFolders,
+  getOrganization,
+  getOrganizationTemplates,
+  moveTemplateToFolder,
+  updateTemplate as updateTemplateApi,
+  useTemplate as useTemplateApi,
+  type ApiTemplateListItem,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
   component: TemplatesPage,
@@ -114,16 +119,15 @@ type SortField = "name" | "createdAt" | "useCount";
 type SortDirection = "asc" | "desc";
 
 interface TemplatesListProps {
-  organizationId: string;
   viewMode: ViewMode;
   sortField: SortField;
   sortDirection: SortDirection;
   searchQuery: string;
   folderId: string | undefined;
   onSortChange: (field: SortField) => void;
-  onUseTemplate: (template: Doc<"templates">) => void;
-  onEditTemplate: (template: Doc<"templates">) => void;
-  onDeleteTemplate: (template: Doc<"templates">) => void;
+  onUseTemplate: (template: ApiTemplateListItem) => void;
+  onEditTemplate: (template: ApiTemplateListItem) => void;
+  onDeleteTemplate: (template: ApiTemplateListItem) => void;
   onMoveToFolder: (templateId: string) => void;
   onFolderNavigate: (folderId?: string) => void;
 }
@@ -145,7 +149,6 @@ function formatBytes(bytes: number): string {
 }
 
 function TemplatesList({
-  organizationId,
   viewMode,
   sortField,
   sortDirection,
@@ -165,21 +168,15 @@ function TemplatesList({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  const convexFolderId = folderId ? parseId("folders", folderId) : undefined;
-  const convexOrganizationId = parseId("organizations", organizationId);
-
-  const { data: templates } = useSuspenseQuery(
-    convexQuery(api.templates.queries.getOrganizationTemplates, {
-      folderId: convexFolderId,
-      rootOnly: !folderId,
-    })
-  );
+  const { data: templates } = useSuspenseQuery({
+    queryKey: ["organization-templates", slug, folderId],
+    queryFn: () => getOrganizationTemplates(slug, folderId),
+  });
 
   // Query subfolders at the current level for inline folder rows
-  const subfolders = useQuery(api.folders.queries.listFolders, {
-    organizationId: convexOrganizationId,
-    type: "template" as const,
-    parentId: convexFolderId,
+  const { data: subfolders } = useQuery({
+    queryKey: ["api", "folders", "template", folderId],
+    queryFn: () => getFolders({ type: "template", parentId: folderId }),
   });
 
   // Filter by search query
@@ -301,9 +298,9 @@ function TemplatesList({
                   {!searchQuery.trim() &&
                     subfolders?.map((folder) => (
                       <TableRow
-                        key={folder._id}
+                        key={folder.id}
                         className="hover:bg-muted/50 cursor-pointer"
-                        onClick={() => onFolderNavigate(folder._id)}
+                        onClick={() => onFolderNavigate(folder.publicId)}
                       >
                         <TableCell>
                           <div className="bg-muted border-border flex h-20 w-16 items-center justify-center rounded border">
@@ -352,7 +349,7 @@ function TemplatesList({
                               {template.description}
                             </p>
                           )}
-                          {template.pageCount !== undefined &&
+                          {template.pageCount != null &&
                             template.pageCount > 0 && (
                               <p className="text-muted-foreground mt-1 text-xs">
                                 {template.pageCount}{" "}
@@ -427,9 +424,9 @@ function TemplatesList({
               {!searchQuery.trim() &&
                 subfolders?.map((folder) => (
                   <Card
-                    key={folder._id}
+                    key={folder.id}
                     className="hover:bg-secondary cursor-pointer transition-colors duration-200"
-                    onClick={() => onFolderNavigate(folder._id)}
+                    onClick={() => onFolderNavigate(folder.publicId)}
                   >
                     <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
                       <FolderIcon className="text-muted-foreground h-12 w-12" />
@@ -598,7 +595,7 @@ function TemplatesList({
 
 function TemplatesPage() {
   const { slug } = Route.useParams();
-  const { folderId: folderIdParam } = Route.useSearch();
+  const { folderId } = Route.useSearch();
   const router = useRouter();
   const navigate = useNavigate();
   const { track } = useAnalytics();
@@ -615,24 +612,19 @@ function TemplatesPage() {
   const [moveTemplateId, setMoveTemplateId] = useState<string | null>(
     null
   );
-  const moveItemsToFolder = useMutation(
-    api.folders.mutations.moveItemsToFolder
-  );
-
-  const folderId = folderIdParam ? parseId("folders", folderIdParam) : undefined;
 
   // Dialog states
   const [useTemplateDialog, setUseTemplateDialog] = useState<{
     open: boolean;
-    template: Doc<"templates"> | null;
+    template: ApiTemplateListItem | null;
   }>({ open: false, template: null });
   const [editTemplateDialog, setEditTemplateDialog] = useState<{
     open: boolean;
-    template: Doc<"templates"> | null;
+    template: ApiTemplateListItem | null;
   }>({ open: false, template: null });
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     open: boolean;
-    template: Doc<"templates"> | null;
+    template: ApiTemplateListItem | null;
   }>({ open: false, template: null });
 
   // Form state for use template
@@ -643,13 +635,6 @@ function TemplatesPage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-
-  // Mutations
-  const createFromTemplate = useMutation(
-    api.templates.mutations.createFromTemplate
-  );
-  const updateTemplate = useMutation(api.templates.mutations.updateTemplate);
-  const deleteTemplate = useMutation(api.templates.mutations.deleteTemplate);
 
   const handleSortChange = (field: SortField) => {
     if (sortField === field) {
@@ -676,13 +661,7 @@ function TemplatesPage() {
   const handleMoveConfirm = async (targetFolderId?: string) => {
     if (!moveTemplateId) return;
     try {
-      await moveItemsToFolder({
-        itemIds: [parseId("templates", moveTemplateId)],
-        itemType: "template",
-        targetFolderId: targetFolderId
-          ? parseId("folders", targetFolderId)
-          : undefined,
-      });
+      await moveTemplateToFolder(slug, moveTemplateId, targetFolderId);
       toast.success("Template moved successfully");
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
@@ -695,18 +674,18 @@ function TemplatesPage() {
     }
   };
 
-  const handleUseTemplate = (template: Doc<"templates">) => {
+  const handleUseTemplate = (template: ApiTemplateListItem) => {
     setNewDocumentName(`${template.name} - Copy`);
     setUseTemplateDialog({ open: true, template });
   };
 
-  const handleEditTemplate = (template: Doc<"templates">) => {
+  const handleEditTemplate = (template: ApiTemplateListItem) => {
     setEditName(template.name);
     setEditDescription(template.description ?? "");
     setEditTemplateDialog({ open: true, template });
   };
 
-  const handleDeleteTemplate = (template: Doc<"templates">) => {
+  const handleDeleteTemplate = (template: ApiTemplateListItem) => {
     setDeleteConfirmDialog({ open: true, template });
   };
 
@@ -715,8 +694,7 @@ function TemplatesPage() {
 
     setIsCreating(true);
     try {
-      const result = await createFromTemplate({
-        templateId: useTemplateDialog.template._id,
+      const result = await useTemplateApi(slug, useTemplateDialog.template._id, {
         documentName: newDocumentName || undefined,
       });
 
@@ -748,8 +726,7 @@ function TemplatesPage() {
 
     setIsEditing(true);
     try {
-      await updateTemplate({
-        templateId: editTemplateDialog.template._id,
+      await updateTemplateApi(slug, editTemplateDialog.template._id, {
         name: editName,
         description: editDescription || undefined,
       });
@@ -774,9 +751,7 @@ function TemplatesPage() {
     if (!deleteConfirmDialog.template) return;
 
     try {
-      await deleteTemplate({
-        templateId: deleteConfirmDialog.template._id,
-      });
+      await deleteTemplateApi(slug, deleteConfirmDialog.template._id);
 
       track.templateDeleted({
         templateId: deleteConfirmDialog.template._id,
@@ -792,9 +767,10 @@ function TemplatesPage() {
     }
   };
 
-  const { data: organization } = useSuspenseQuery(
-    convexQuery(api.organizations.queries.getOrganization, { slug })
-  );
+  const { data: organization } = useSuspenseQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
+  });
 
   return (
     <PageWrapper
@@ -888,7 +864,6 @@ function TemplatesPage() {
           }
         >
           <TemplatesList
-            organizationId={organization._id}
             viewMode={viewMode}
             sortField={sortField}
             sortDirection={sortDirection}
@@ -1030,7 +1005,7 @@ function TemplatesPage() {
       <MoveToFolderDialog
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
-        organizationId={organization._id}
+        organizationId={organization.id}
         type="template"
         onMove={handleMoveConfirm}
       />

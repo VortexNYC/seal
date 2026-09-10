@@ -317,36 +317,67 @@ export async function getOrganizationTemplates(
   );
 }
 
-const templateFolderSchema = z.object({
-  _id: z.string(),
-  id: z.string(),
-  name: z.string(),
-  parentId: z.string().nullable().optional(),
-  type: z.string(),
-  pinned: z.boolean().optional(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
+const useTemplateResponseSchema = z.object({
+  documentId: z.string(),
 });
 
-export type ApiTemplateFolder = z.infer<typeof templateFolderSchema>;
-
-export async function listTemplateFolders(
+export async function useTemplate(
   slug: string,
-  options: { type?: string; parentId?: string } = {}
-): Promise<ApiTemplateFolder[]> {
-  const url = new URL(
-    `/api/organizations/${encodeURIComponent(slug)}/folders`,
-    window.location.origin
-  );
-  if (options.type) {
-    url.searchParams.set("type", options.type);
-  }
-  if (options.parentId) {
-    url.searchParams.set("parentId", options.parentId);
-  }
+  templateId: string,
+  input: { documentName?: string }
+): Promise<{ documentId: string }> {
   return apiFetch(
-    `${url.pathname}${url.search}`,
-    z.array(templateFolderSchema)
+    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}/use`,
+    useTemplateResponseSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function updateTemplate(
+  slug: string,
+  templateId: string,
+  input: { name?: string; description?: string | null }
+): Promise<ApiTemplateListItem> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}`,
+    templateListItemSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function deleteTemplate(
+  slug: string,
+  templateId: string
+): Promise<void> {
+  await apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}`,
+    z.void(),
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export async function moveTemplateToFolder(
+  slug: string,
+  templateId: string,
+  folderId?: string
+): Promise<void> {
+  await apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}/folder`,
+    z.void(),
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        folderId: folderId ?? null,
+      }),
+    }
   );
 }
 
