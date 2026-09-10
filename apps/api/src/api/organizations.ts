@@ -333,6 +333,24 @@ const notificationSettingsRecordSchema = NotificationSettingsSchema.or(
   z.record(z.string(), z.unknown())
 );
 
+const AiSettingsSchema = z
+  .object({
+    aiEnabled: z.boolean(),
+    aiAutoAnalyze: z.boolean(),
+    aiShowRedlinesToSigners: z.boolean(),
+  })
+  .openapi("AiSettings");
+
+const aiSettingsRecordSchema = AiSettingsSchema.or(
+  z.record(z.string(), z.unknown())
+);
+
+const updateAiBodySchema = z.object({
+  aiEnabled: z.boolean().optional(),
+  aiAutoAnalyze: z.boolean().optional(),
+  aiShowRedlinesToSigners: z.boolean().optional(),
+});
+
 const updateNotificationBodySchema = z.object({
   reminderSchedule: z.array(z.number().int()).optional(),
   expirationAlertDays: z.number().int().optional(),
@@ -808,6 +826,117 @@ app.openapi(updateNotificationRouteDef, async (c) => {
     .where(eq(organization.id, org.id));
 
   return c.json(nextNotification);
+});
+
+const aiRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/ai",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: aiSettingsRecordSchema },
+      },
+      description: "AI settings from organization metadata",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+function defaultAiSettings() {
+  return {
+    aiEnabled: true,
+    aiAutoAnalyze: true,
+    aiShowRedlinesToSigners: false,
+  };
+}
+
+function toBoolean(v: unknown, fallback: boolean): boolean {
+  return typeof v === "boolean" ? v : fallback;
+}
+
+app.openapi(aiRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  const meta = parseMetadata(org.metadata);
+  const raw = asRecord(meta.aiSettings);
+
+  const result = AiSettingsSchema.safeParse({
+    aiEnabled: toBoolean(raw.aiEnabled, true),
+    aiAutoAnalyze: toBoolean(raw.aiAutoAnalyze, true),
+    aiShowRedlinesToSigners: toBoolean(raw.aiShowRedlinesToSigners, false),
+  });
+
+  return c.json(result.success ? result.data : defaultAiSettings());
+});
+
+const updateAiRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/ai",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateAiBodySchema },
+      },
+      description: "AI settings update fields",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: AiSettingsSchema },
+      },
+      description: "Updated AI settings",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(updateAiRouteDef, async (c) => {
+  const org = c.get("organization");
+  const membership = c.get("membership");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const role = membership?.role;
+  if (role !== "owner" && role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const body = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const meta = parseMetadata(org.metadata);
+  const ai = asRecord(meta.aiSettings);
+
+  const nextAi = {
+    aiEnabled: body.aiEnabled ?? toBoolean(ai.aiEnabled, true),
+    aiAutoAnalyze: body.aiAutoAnalyze ?? toBoolean(ai.aiAutoAnalyze, true),
+    aiShowRedlinesToSigners:
+      body.aiShowRedlinesToSigners ?? toBoolean(ai.aiShowRedlinesToSigners, false),
+  };
+
+  const nextMetadata = { ...meta, aiSettings: nextAi };
+
+  await db
+    .update(organization)
+    .set({
+      metadata: JSON.stringify(nextMetadata),
+      updatedAt: new Date(),
+    })
+    .where(eq(organization.id, org.id));
+
+  return c.json(nextAi);
 });
 
 declare module "hono" {

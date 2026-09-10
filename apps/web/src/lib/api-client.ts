@@ -283,6 +283,39 @@ export async function getBrandingSettings(
   );
 }
 
+const aiSettingsSchema = z.object({
+  aiEnabled: z.boolean(),
+  aiAutoAnalyze: z.boolean(),
+  aiShowRedlinesToSigners: z.boolean(),
+});
+
+export type ApiAiSettings = z.infer<typeof aiSettingsSchema>;
+
+export async function getAiSettings(slug: string): Promise<ApiAiSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/ai`,
+    aiSettingsSchema
+  );
+}
+
+export async function updateAiSettings(
+  slug: string,
+  input: {
+    aiEnabled?: boolean;
+    aiAutoAnalyze?: boolean;
+    aiShowRedlinesToSigners?: boolean;
+  }
+): Promise<ApiAiSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/ai`,
+    aiSettingsSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const notificationSettingsSchema = z.object({
   reminderSchedule: z.array(z.number().int()),
   expirationAlertDays: z.number().int(),
