@@ -1605,3 +1605,31 @@ export async function getPublicSigningPdf(token: string): Promise<Blob> {
   }
   return response.blob();
 }
+
+export async function recordPublicSigningConsent(
+  token: string,
+  input: { ipAddress: string; consentVersion?: string }
+): Promise<{ success: boolean; consentAt: number }> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/consent`,
+    z.object({ success: z.boolean(), consentAt: z.number() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function recordPublicSigningOptOut(
+  token: string,
+  input: { ipAddress: string; method?: string }
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/opt-out`,
+    z.object({ success: z.boolean() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}

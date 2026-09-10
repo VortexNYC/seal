@@ -91,6 +91,8 @@ import {
   getPublicSigningPdf,
   getSigningByToken,
   getSigningFields,
+  recordPublicSigningConsent,
+  recordPublicSigningOptOut,
   savePublicSigningFieldValue,
   submitPublicSigning,
 } from "@/lib/api-client";
@@ -430,14 +432,10 @@ function SigningPage() {
   const handleConsentAccept = useCallback(async () => {
     setIsConsentSubmitting(true);
     try {
-      await convexClient.mutation(
-        api.documents.recipients_mutations.recordEsignConsent,
-        {
-          signingToken: token,
-          ipAddress: clientIp,
-          consentVersion: "1.0",
-        }
-      );
+      await recordPublicSigningConsent(token, {
+        ipAddress: clientIp,
+        consentVersion: "1.0",
+      });
       setHasConsented(true);
       if (isEmbedded) {
         postSealEvent("seal:viewed", { token });
@@ -447,7 +445,7 @@ function SigningPage() {
     } finally {
       setIsConsentSubmitting(false);
     }
-  }, [convexClient, token, clientIp, isEmbedded]);
+  }, [token, clientIp, isEmbedded]);
 
   const handleConsentDecline = useCallback(() => {
     // The decline state is handled inside the consent dialog component.
@@ -457,19 +455,15 @@ function SigningPage() {
   const handleOptOut = useCallback(
     async (method: string) => {
       try {
-        await convexClient.mutation(
-          api.documents.recipients_mutations.recordEsignOptOut,
-          {
-            signingToken: token,
-            ipAddress: clientIp,
-            method,
-          }
-        );
+        await recordPublicSigningOptOut(token, {
+          ipAddress: clientIp,
+          method,
+        });
       } catch {
         // Opt-out logging is best-effort — don't block the user's action
       }
     },
-    [convexClient, token, clientIp]
+    [token, clientIp]
   );
 
   // Track online/offline status

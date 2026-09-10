@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
+  activity,
   documents,
   organization,
   paymentFieldConfigs,
@@ -189,7 +190,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         role: recipient.role,
         order: recipient.order,
         status: recipient.status,
-        esignConsentAt: undefined,
+        esignConsentAt: recipient.esignConsentAt?.getTime() ?? null,
         awaitingDictation: false,
         expiresAt: recipient.tokenExpiresAt?.getTime() ?? null,
         viewedAt: recipient.viewedAt?.getTime() ?? null,
@@ -778,6 +779,190 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
     .where(eq(paymentFieldConfigs.documentId, doc.id));
 
   return c.json(rows);
+});
+
+const consentInputSchema = z.object({
+  ipAddress: z.string().optional(),
+  consentVersion: z.string().optional(),
+});
+
+const consentResponseSchema = z
+  .object({
+    success: z.boolean(),
+    consentAt: z.number(),
+  })
+  .openapi("PublicSigningConsentResponse");
+
+const consentRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/consent",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: consentInputSchema },
+      },
+      description: "Consent record input",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: consentResponseSchema },
+      },
+      description: "Consent recorded",
+    },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(consentRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const consentAt = new Date(now);
+  const ipAddress = input.ipAddress ?? "unknown";
+  const consentVersion = input.consentVersion ?? "1.0";
+
+  await db
+    .update(recipients)
+    .set({
+      esignConsentAt: consentAt,
+      esignConsentIp: ipAddress,
+      esignConsentVersion: consentVersion,
+      updatedAt: consentAt,
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId: doc.organizationId,
+    action: "recipient.esign_consent",
+    actorName: recipient.name ?? recipient.email,
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      consentVersion,
+      ipAddress,
+      consentAt: now,
+    }),
+    createdAt: consentAt,
+  });
+
+  return c.json({ success: true, consentAt: now });
+});
+
+const optOutInputSchema = z.object({
+  ipAddress: z.string().optional(),
+  method: z.string().optional(),
+});
+
+const optOutResponseSchema = z
+  .object({ success: z.boolean() })
+  .openapi("PublicSigningOptOutResponse");
+
+const optOutRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/opt-out",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: optOutInputSchema },
+      },
+      description: "Opt-out record input",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: optOutResponseSchema },
+      },
+      description: "Opt-out recorded",
+    },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(optOutRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const ipAddress = input.ipAddress ?? "unknown";
+  const method = input.method ?? "paper_copy_request";
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId: doc.organizationId,
+    action: "recipient.esign_opt_out",
+    actorName: recipient.name ?? recipient.email,
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      method,
+      ipAddress,
+      optedOutAt: now,
+    }),
+    createdAt: new Date(now),
+  });
+
+  return c.json({ success: true });
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {

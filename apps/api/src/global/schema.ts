@@ -391,6 +391,9 @@ export const recipients = sqliteTable(
     signatureData: text("signature_data"),
     signatureType: text("signature_type"),
     authenticationData: text("authentication_data"),
+    esignConsentAt: integer("esign_consent_at", { mode: "timestamp_ms" }),
+    esignConsentIp: text("esign_consent_ip"),
+    esignConsentVersion: text("esign_consent_version"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
