@@ -1,9 +1,8 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { parseId } from "@/lib/convex-ids";
 import { getErrorMessage } from "@/lib/utils";
 
 import { Button } from "../ui/button";
@@ -30,8 +29,8 @@ import { SignatureCapture } from "./signature-capture";
 interface FieldInputManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fieldId: Id<"signature_fields">;
-  fieldType: FieldType;
+  fieldId: string;
+  fieldType: string;
   label: string;
   isRequired: boolean;
   currentValue?: string;
@@ -55,8 +54,8 @@ interface FieldInputManagerProps {
 }
 
 interface FieldInputContentProps {
-  fieldId: Id<"signature_fields">;
-  fieldType: FieldType;
+  fieldId: string;
+  fieldType: string;
   label: string;
   value: string;
   isRequired: boolean;
@@ -87,7 +86,7 @@ type FieldRendererProps = FieldInputContentProps & {
 };
 
 const FIELD_INPUT_RENDERERS: Record<
-  FieldType,
+  string,
   (props: FieldRendererProps) => ReactNode
 > = {
   text: ({ commonProps, properties }) => (
@@ -120,13 +119,18 @@ const FIELD_INPUT_RENDERERS: Record<
   attachment: ({ commonProps, signingToken }) => (
     <AttachmentFieldInput {...commonProps} signingToken={signingToken} />
   ),
-  payment: ({ fieldId, signingToken }) => (
-    <PaymentFieldSummary
-      fieldId={fieldId}
-      token={signingToken}
-      showInlinePayment={!!signingToken}
-    />
-  ),
+  payment: ({ fieldId, signingToken }) =>
+    signingToken ? (
+      <p className="text-muted-foreground text-sm">
+        Payment is required to complete this document.
+      </p>
+    ) : (
+      <PaymentFieldSummary
+        fieldId={parseId("signature_fields", fieldId)}
+        token={signingToken}
+        showInlinePayment={!!signingToken}
+      />
+    ),
   signature: ({ recipientName, onSignatureCapture, onCancelSignature }) => (
     <SignatureCapture
       recipientName={recipientName}
@@ -136,13 +140,13 @@ const FIELD_INPUT_RENDERERS: Record<
   ),
 };
 
-function getDialogClassName(fieldType: FieldType): string {
+function getDialogClassName(fieldType: string): string {
   if (fieldType === "signature") return "max-w-2xl";
   if (fieldType === "payment") return "max-w-lg";
   return "max-w-md";
 }
 
-function getDialogText(fieldType: FieldType, isRequired: boolean) {
+function getDialogText(fieldType: string, isRequired: boolean) {
   if (fieldType === "signature") {
     return {
       title: "Sign Here",
@@ -187,7 +191,8 @@ function FieldInputContent({
     onValidationChange,
   };
 
-  return FIELD_INPUT_RENDERERS[fieldType]({
+  const render = FIELD_INPUT_RENDERERS[fieldType] ?? FIELD_INPUT_RENDERERS.text;
+  return render({
     fieldId,
     fieldType,
     label,
@@ -206,7 +211,7 @@ function FieldInputContent({
 }
 
 interface FieldInputFooterProps {
-  fieldType: FieldType;
+  fieldType: string;
   isSaving: boolean;
   isValid: boolean;
   isRequired: boolean;

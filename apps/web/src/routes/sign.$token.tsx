@@ -8,7 +8,6 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
@@ -332,8 +331,7 @@ function SigningPage() {
   >(new Map());
 
   // Field input state
-  const [activeFieldId, setActiveFieldId] =
-    useState<Id<"signature_fields"> | null>(null);
+  const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [showFieldInput, setShowFieldInput] = useState(false);
 
   // Signature capture state
@@ -688,7 +686,7 @@ function SigningPage() {
   };
 
   // Field handling
-  const handleFieldClick = (fieldId: Id<"signature_fields">) => {
+  const handleFieldClick = (fieldId: string) => {
     setActiveFieldId(fieldId);
     setShowFieldInput(true);
   };
@@ -697,11 +695,11 @@ function SigningPage() {
     value?: string,
     signatureImageUrl?: string
   ) => {
-    if (!activeFieldId) return;
+    if (!activeFieldId || !activeField) return;
 
     await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
       signingToken: token,
-      fieldId: activeFieldId,
+      fieldId: activeField._id,
       value,
       signatureImageUrl,
       ipAddress: clientIp,
@@ -804,7 +802,7 @@ function SigningPage() {
   const unfilledFields = sortedFields.filter((f) => !f.isFilled);
 
   // Scroll to field function
-  const scrollToField = useCallback((fieldId: Id<"signature_fields">) => {
+  const scrollToField = useCallback((fieldId: string) => {
     const fieldElement = fieldRefs.current.get(fieldId);
     if (fieldElement && pdfContainerRef.current) {
       const container = pdfContainerRef.current;

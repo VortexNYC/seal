@@ -91,8 +91,7 @@ export function InAppSigningSection({
   onOpenChange,
   onFieldsRefetch,
 }: InAppSigningSectionProps) {
-  const [activeFieldId, setActiveFieldId] =
-    useState<Id<"signature_fields"> | null>(null);
+  const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [showSignatureCapture, setShowSignatureCapture] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,7 +126,7 @@ export function InAppSigningSection({
     recipient.status === "signed" || recipient.status === "approved";
   const isDeclined = recipient.status === "declined";
 
-  const handleFieldClick = (fieldId: Id<"signature_fields">) => {
+  const handleFieldClick = (fieldId: string) => {
     if (!canSign) return;
     setActiveFieldId(fieldId);
   };
@@ -136,7 +135,7 @@ export function InAppSigningSection({
     value?: string,
     signatureImageUrl?: string
   ) => {
-    if (!activeFieldId) return;
+    if (!activeFieldId || !activeField) return;
 
     // Determine signature method from the data
     let signatureMethod: "draw" | "type" | "upload" | undefined;
@@ -146,7 +145,7 @@ export function InAppSigningSection({
 
     await saveFieldValue({
       documentId,
-      fieldId: activeFieldId,
+      fieldId: activeField._id,
       value,
       signatureImageUrl,
       signatureMethod,

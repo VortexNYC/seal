@@ -1,5 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import { formatMoney, money } from "@vortexnyc/money";
 import {
   CalendarIcon,
@@ -31,8 +29,8 @@ interface PaymentInfo {
 }
 
 interface FillableFieldOverlayProps {
-  fieldId: Id<"signature_fields">;
-  fieldType: FieldType;
+  fieldId: string;
+  fieldType: string;
   label: string;
   isRequired: boolean;
   isMainSignature?: boolean;
@@ -49,10 +47,10 @@ interface FillableFieldOverlayProps {
   validationError?: string;
   signatureDetails?: SignatureDetails;
   paymentInfo?: PaymentInfo;
-  onClick: (fieldId: Id<"signature_fields">) => void;
+  onClick: (fieldId: string) => void;
 }
 
-function getFieldIcon(fieldType: FieldType) {
+function getFieldIcon(fieldType: string) {
   switch (fieldType) {
     case "signature":
       return <PenToolIcon className="h-3 w-3" />;
@@ -77,7 +75,7 @@ function getFieldIcon(fieldType: FieldType) {
   }
 }
 
-function getFieldTypeLabel(fieldType: FieldType): string {
+function getFieldTypeLabel(fieldType: string): string {
   switch (fieldType) {
     case "signature":
       return "Signature";
