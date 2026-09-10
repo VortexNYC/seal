@@ -4,6 +4,8 @@ import { desc, eq } from "drizzle-orm";
 import { createD1 } from "../global/db.js";
 import { activity } from "../global/schema.js";
 
+const ActivityMetadataSchema = z.record(z.string(), z.unknown()).nullable().optional();
+
 const ActivitySchema = z
   .object({
     id: z.string(),
@@ -11,10 +13,21 @@ const ActivitySchema = z
     action: z.string(),
     actorName: z.string(),
     targetName: z.string().nullable().optional(),
-    metadata: z.string().nullable().optional(),
+    metadata: ActivityMetadataSchema,
     timestamp: z.number(),
   })
   .openapi("Activity");
+
+function safeParseJson(value: string | null): Record<string, unknown> | null {
+  if (!value) return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const result = z.record(z.string(), z.unknown()).safeParse(parsed);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
 
 function activityResponse(row: {
   id: string;
@@ -31,7 +44,7 @@ function activityResponse(row: {
     action: row.action,
     actorName: row.actorName,
     targetName: row.targetName,
-    metadata: row.metadata,
+    metadata: safeParseJson(row.metadata),
     timestamp: row.createdAt.getTime(),
   };
 }

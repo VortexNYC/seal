@@ -77,7 +77,11 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { getAnalyticsStats, getAnalyticsTrends } from "@/lib/api-client";
+import {
+  getAnalyticsStats,
+  getAnalyticsTrends,
+  getRecentActivity,
+} from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -864,8 +868,9 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 function RecentActivityFeed() {
-  const activity = useConvexQuery(api.dashboard.queries.getRecentActivity, {
-    limit: 30,
+  const { data: activity } = useQuery({
+    queryKey: ["api", "activity", 30],
+    queryFn: () => getRecentActivity(30),
   });
 
   if (!activity) {
@@ -909,7 +914,7 @@ function RecentActivityFeed() {
               actionInfo?.label ?? item.action.replace(/\./g, " ");
 
             return (
-              <div key={item._id} className="flex items-start gap-3 py-1">
+              <div key={item.id} className="flex items-start gap-3 py-1">
                 <div className="text-muted-foreground mt-0.5 shrink-0">
                   {actionInfo?.icon ?? <BarChart3Icon className="h-3 w-3" />}
                 </div>
@@ -925,7 +930,7 @@ function RecentActivityFeed() {
                       {actionLabel}
                     </Badge>
                   </div>
-                  {item.metadata?.description && (
+                  {typeof item.metadata?.description === "string" && (
                     <p className="text-muted-foreground truncate text-xs">
                       {item.metadata.description}
                     </p>

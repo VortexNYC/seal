@@ -109,7 +109,7 @@ const activitySchema = z.object({
   action: z.string(),
   actorName: z.string(),
   targetName: z.string().nullable().optional(),
-  metadata: z.string().nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   timestamp: z.number(),
 });
 
