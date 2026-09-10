@@ -1429,6 +1429,7 @@ const publicSigningRecipientSchema = z.object({
   order: z.number().int(),
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
+  awaitingDictation: z.boolean(),
 });
 
 const publicSigningDocumentSchema = z.object({
@@ -1438,6 +1439,7 @@ const publicSigningDocumentSchema = z.object({
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
+  redirectUrl: z.string().nullable().optional(),
 });
 
 const publicSigningSequentialProgressSchema = z.object({

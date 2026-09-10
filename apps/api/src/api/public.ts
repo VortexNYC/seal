@@ -28,6 +28,7 @@ const signingRecipientSchema = z.object({
   order: z.number().int(),
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
+  awaitingDictation: z.boolean(),
 });
 
 const signingDocumentSchema = z.object({
@@ -37,6 +38,7 @@ const signingDocumentSchema = z.object({
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
+  redirectUrl: z.string().nullable().optional(),
 });
 
 const sequentialProgressSchema = z.object({
@@ -156,6 +158,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         order: recipient.order,
         status: recipient.status,
         esignConsentAt: undefined,
+        awaitingDictation: false,
       },
       document: {
         publicId: doc.publicId,
@@ -164,6 +167,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         description: doc.description,
         ownerName: owner?.name || owner?.email,
         pageCount: doc.pageCount,
+        redirectUrl: doc.redirectUrl,
       },
       waitingForPreviousGroup,
       sequentialProgress: {
