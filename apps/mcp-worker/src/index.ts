@@ -3,22 +3,17 @@
  *
  * Thin Streamable-HTTP MCP front for Seal. Speaks real MCP (initialize /
  * tools/list / tools/call) via the Agents SDK `createMcpHandler`, and each tool
- * forwards to Seal's `/api/v1` REST resource server (see ./tools + ./client).
+ * forwards to the Seal API.
  *
- * Auth is delegated entirely to Seal Convex (`@vortexnyc/vortex-auth` MCP OAuth
- * server + `resolveMcpApiAuth` at `/api/v1`). The worker does NOT verify tokens
- * itself: it requires a bearer to be present and passes it straight through;
- * Seal's `/api/v1` validates the Better-Auth MCP access token. The authorization
- * server, JWKS, and token validation all live in Seal Convex.
- *
- * Discovery: the worker advertises Seal Convex's protected-resource metadata
- * (proxied) so the MCP client discovers Seal's OAuth authorization server and
- * runs authorize/PKCE/token directly against the Convex site.
+ * Auth is being migrated from Seal Convex into this worker. The worker now
+ * serves its own OAuth protected-resource and authorization-server metadata;
+ * the authorize/token/JWKS endpoints will be added next. Until then, the `/mcp`
+ * tool calls still forward to the legacy Convex API base configured by
+ * `SEAL_API_BASE_URL`.
  *
  * Env vars (wrangler.jsonc vars or secrets):
  *   SEAL_API_BASE_URL — Seal backend API base, e.g.
- *     https://<deployment>.convex.site/api/v1 (the Convex site origin is
- *     derived from this to reach the OAuth metadata endpoints)
+ *     https://<deployment>.convex.site/api/v1
  *   SEAL_API_KEY — optional server-to-server fallback credential
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -35,11 +30,35 @@ interface Env {
   SEAL_API_KEY?: string;
 }
 
-// RFC 9728 protected-resource metadata, served by the worker for its own /mcp
-// resource and proxied from Seal Convex's seal-mcp document.
-const PROTECTED_RESOURCE_PATH = "/.well-known/oauth-protected-resource";
-const SEAL_PROTECTED_RESOURCE_PATH =
-  "/.well-known/oauth-protected-resource/seal-mcp";
+const MCP_OAUTH_RESOURCE_SLUG = "seal-mcp";
+const MCP_PATH = "/mcp";
+const OAUTH_BASE_PATH = "/oauth";
+const ISSUER_PATH = `${OAUTH_BASE_PATH}/${MCP_OAUTH_RESOURCE_SLUG}`;
+const PROTECTED_RESOURCE_METADATA_PATH = `/.well-known/oauth-protected-resource/${MCP_OAUTH_RESOURCE_SLUG}`;
+const AUTHORIZATION_SERVER_METADATA_PATH = `/.well-known/oauth-authorization-server/${MCP_OAUTH_RESOURCE_SLUG}`;
+const AUTHORIZE_PATH = `${ISSUER_PATH}/authorize`;
+const TOKEN_PATH = `${ISSUER_PATH}/token`;
+const JWKS_PATH = `${ISSUER_PATH}/jwks`;
+const REGISTRATION_PATH = `${ISSUER_PATH}/register`;
+
+const MCP_OAUTH_SCOPES = [
+  "mcp",
+  "account:read",
+  "account:write",
+  "documents:read",
+  "documents:write",
+  "contacts:read",
+  "contacts:write",
+  "templates:read",
+  "templates:write",
+  "webhooks:read",
+  "webhooks:write",
+  "analytics:read",
+  "settings:read",
+  "settings:write",
+  "signatures:read",
+  "signatures:write",
+];
 
 function withCors(resp: Response): Response {
   const h = new Headers(resp.headers);
@@ -60,11 +79,6 @@ function getBearerToken(request: Request): string | undefined {
   return token.length > 0 ? token : undefined;
 }
 
-/** Convex site origin (hosts the OAuth metadata) derived from the API base. */
-function getConvexSiteOrigin(env: Env): string {
-  return new URL(env.SEAL_API_BASE_URL).origin;
-}
-
 // Bridge the Worker's `env` arg into process.env so `getConfig()` and other
 // modules that read process.env keep working unchanged. The nodejs_compat
 // compatibility flag guarantees the process shim exists; we just populate it.
@@ -72,6 +86,34 @@ function bridgeEnvToProcess(env: Env): void {
   for (const [k, v] of Object.entries(env)) {
     if (typeof v === "string") process.env[k] = v;
   }
+}
+
+function buildProtectedResourceMetadata(origin: string) {
+  const normalizedOrigin = origin.replace(/\/$/, "");
+  return {
+    resource: `${normalizedOrigin}${MCP_PATH}`,
+    authorization_servers: [`${normalizedOrigin}${ISSUER_PATH}`],
+    jwks_uri: `${normalizedOrigin}${JWKS_PATH}`,
+    bearer_methods_supported: ["header"],
+    scopes_supported: MCP_OAUTH_SCOPES,
+  };
+}
+
+function buildAuthorizationServerMetadata(origin: string) {
+  const normalizedOrigin = origin.replace(/\/$/, "");
+  return {
+    issuer: `${normalizedOrigin}${ISSUER_PATH}`,
+    authorization_endpoint: `${normalizedOrigin}${AUTHORIZE_PATH}`,
+    token_endpoint: `${normalizedOrigin}${TOKEN_PATH}`,
+    registration_endpoint: `${normalizedOrigin}${REGISTRATION_PATH}`,
+    jwks_uri: `${normalizedOrigin}${JWKS_PATH}`,
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    token_endpoint_auth_methods_supported: ["none"],
+    code_challenge_methods_supported: ["S256"],
+    scopes_supported: MCP_OAUTH_SCOPES,
+    resource: `${normalizedOrigin}${MCP_PATH}`,
+  };
 }
 
 function unauthorized(url: URL): Response {
@@ -85,7 +127,7 @@ function unauthorized(url: URL): Response {
         status: 401,
         headers: {
           "content-type": "application/json",
-          "WWW-Authenticate": `Bearer resource_metadata="${url.origin}${PROTECTED_RESOURCE_PATH}"`,
+          "WWW-Authenticate": `Bearer resource_metadata="${url.origin}${PROTECTED_RESOURCE_METADATA_PATH}"`,
         },
       }
     )
@@ -114,9 +156,9 @@ export default {
           description:
             "Model Context Protocol server for Seal document management",
           endpoints: {
-            mcp: "/mcp",
+            mcp: MCP_PATH,
             health: "/health",
-            oauth_protected_resource: PROTECTED_RESOURCE_PATH,
+            oauth_protected_resource: PROTECTED_RESOURCE_METADATA_PATH,
           },
           documentation: "https://docs.seal.app/api/mcp",
         })
@@ -133,38 +175,22 @@ export default {
       );
     }
 
-    // RFC 9728 protected-resource metadata — proxied from Seal Convex's seal-mcp
-    // document so the client discovers Seal's OAuth authorization server.
-    if (
-      url.pathname === PROTECTED_RESOURCE_PATH ||
-      url.pathname === `${PROTECTED_RESOURCE_PATH}/mcp`
-    ) {
-      try {
-        const upstream = await fetch(
-          `${getConvexSiteOrigin(env)}${SEAL_PROTECTED_RESOURCE_PATH}`
-        );
-        const body = await upstream.text();
-        return withCors(
-          new Response(body, {
-            status: upstream.status,
-            headers: { "content-type": "application/json" },
-          })
-        );
-      } catch (error) {
-        return withCors(
-          Response.json(
-            {
-              error: "metadata_unavailable",
-              error_description:
-                error instanceof Error ? error.message : "Unknown error",
-            },
-            { status: 502 }
-          )
-        );
-      }
+    // RFC 9728 protected-resource metadata — served locally so the worker no
+    // longer depends on Convex for OAuth discovery.
+    if (url.pathname === PROTECTED_RESOURCE_METADATA_PATH) {
+      return withCors(
+        Response.json(buildProtectedResourceMetadata(url.origin))
+      );
     }
 
-    if (url.pathname === "/mcp") {
+    // Authorization-server metadata for the same protected resource.
+    if (url.pathname === AUTHORIZATION_SERVER_METADATA_PATH) {
+      return withCors(
+        Response.json(buildAuthorizationServerMetadata(url.origin))
+      );
+    }
+
+    if (url.pathname === MCP_PATH) {
       if (request.method !== "POST") {
         return withCors(
           Response.json(
@@ -183,9 +209,10 @@ export default {
         return unauthorized(url);
       }
 
-      // Per-request server + tools/resources/prompts. The verified bearer is
-      // passed through unchanged; Seal's /api/v1 (resolveMcpApiAuth) is the auth
-      // gate. Tools read the token via getMcpAuthContext().props (utils/auth.ts).
+      // Per-request server + tools/resources/prompts. The bearer is forwarded
+      // to the Seal API; Convex currently validates it. Once the OAuth/token
+      // endpoints are implemented in this worker, the data plane will move to
+      // apps/api and validation will happen there.
       const config = getConfig();
       const apiClient = new SealApiClient(config);
       const server = new McpServer({
