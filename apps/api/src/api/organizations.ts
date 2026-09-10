@@ -306,6 +306,28 @@ const BrandingSettingsSchema = z
   .record(z.string(), z.unknown())
   .openapi("BrandingSettings");
 
+const SigningSettingsSchema = z
+  .object({
+    allowedSignatureTypes: z.array(
+      z.union([z.literal("draw"), z.literal("type"), z.literal("upload")])
+    ),
+    esignConsentText: z.string().nullable().optional(),
+    defaultDeadlineDays: z.number().int(),
+  })
+  .openapi("SigningSettings");
+
+const signingSettingsRecordSchema = SigningSettingsSchema.or(
+  z.record(z.string(), z.unknown())
+);
+
+const updateSigningBodySchema = z.object({
+  allowedSignatureTypes: z
+    .array(z.union([z.literal("draw"), z.literal("type"), z.literal("upload")]))
+    .optional(),
+  esignConsentText: z.string().optional(),
+  defaultDeadlineDays: z.number().int().optional(),
+});
+
 const updateBrandingBodySchema = z.object({
   enabled: z.boolean().optional(),
   hideSealBranding: z.boolean().optional(),
@@ -498,6 +520,134 @@ app.openapi(updateBrandingRouteDef, async (c) => {
     .where(eq(organization.id, org.id));
 
   return c.json(nextBranding);
+});
+
+const signingRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/signing",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: signingSettingsRecordSchema },
+      },
+      description: "Signing settings from organization metadata",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(signingRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  const meta = parseMetadata(org.metadata);
+  const raw = asRecord(meta.signingSettings);
+
+  const result = SigningSettingsSchema.safeParse({
+    allowedSignatureTypes:
+      Array.isArray(raw.allowedSignatureTypes) &&
+      raw.allowedSignatureTypes.every(
+        (t) => typeof t === "string" && ["draw", "type", "upload"].includes(t)
+      )
+        ? raw.allowedSignatureTypes
+        : ["draw", "type", "upload"],
+    esignConsentText:
+      typeof raw.esignConsentText === "string"
+        ? raw.esignConsentText
+        : null,
+    defaultDeadlineDays:
+      typeof raw.defaultDeadlineDays === "number"
+        ? Math.round(raw.defaultDeadlineDays)
+        : 30,
+  });
+
+  return c.json(result.success ? result.data : raw);
+});
+
+const updateSigningRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/signing",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateSigningBodySchema },
+      },
+      description: "Signing settings update fields",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: SigningSettingsSchema },
+      },
+      description: "Updated signing settings",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(updateSigningRouteDef, async (c) => {
+  const org = c.get("organization");
+  const membership = c.get("membership");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const role = membership?.role;
+  if (role !== "owner" && role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const body = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const meta = parseMetadata(org.metadata);
+  const signing = asRecord(meta.signingSettings);
+
+  const currentAllowed =
+    Array.isArray(signing.allowedSignatureTypes) &&
+    signing.allowedSignatureTypes.every(
+      (t) => typeof t === "string" && ["draw", "type", "upload"].includes(t)
+    )
+      ? signing.allowedSignatureTypes
+      : ["draw", "type", "upload"];
+
+  const nextSigning = {
+    allowedSignatureTypes: body.allowedSignatureTypes ?? currentAllowed,
+    esignConsentText:
+      body.esignConsentText !== undefined
+        ? body.esignConsentText || null
+        : typeof signing.esignConsentText === "string"
+          ? signing.esignConsentText
+          : null,
+    defaultDeadlineDays:
+      body.defaultDeadlineDays !== undefined
+        ? body.defaultDeadlineDays
+        : typeof signing.defaultDeadlineDays === "number"
+          ? Math.round(signing.defaultDeadlineDays)
+          : 30,
+  };
+
+  const nextMetadata = { ...meta, signingSettings: nextSigning };
+
+  await db
+    .update(organization)
+    .set({
+      metadata: JSON.stringify(nextMetadata),
+      updatedAt: new Date(),
+    })
+    .where(eq(organization.id, org.id));
+
+  return c.json(nextSigning);
 });
 
 declare module "hono" {

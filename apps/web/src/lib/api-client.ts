@@ -283,6 +283,43 @@ export async function getBrandingSettings(
   );
 }
 
+const signingSettingsSchema = z.object({
+  allowedSignatureTypes: z.array(
+    z.union([z.literal("draw"), z.literal("type"), z.literal("upload")])
+  ),
+  esignConsentText: z.string().nullable().optional(),
+  defaultDeadlineDays: z.number().int(),
+});
+
+export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
+
+export async function getSigningSettings(
+  slug: string
+): Promise<ApiSigningSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/signing`,
+    signingSettingsSchema
+  );
+}
+
+export async function updateSigningSettings(
+  slug: string,
+  input: {
+    allowedSignatureTypes?: Array<"draw" | "type" | "upload">;
+    esignConsentText?: string;
+    defaultDeadlineDays?: number;
+  }
+): Promise<ApiSigningSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/signing`,
+    signingSettingsSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 export async function updateBrandingSettings(
   slug: string,
   input: {
