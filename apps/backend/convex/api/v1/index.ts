@@ -29,8 +29,5 @@ export * as signatures from "./signatures";
 // Organization settings
 export * as settings from "./settings";
 
-// Templates API internal queries/mutations
-export * as templates from "./templates";
-
 // Webhooks Management API internal queries/mutations
 export * as webhooks from "./webhooks";
