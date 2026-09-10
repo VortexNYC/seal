@@ -499,6 +499,39 @@ export async function getCurrentSubscription(): Promise<{ plan: string }> {
   return apiFetch("/api/users/me/subscription", subscriptionSchema);
 }
 
+const organizationListSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    role: z.string(),
+    logo: z.string().nullable().optional(),
+  })
+);
+
+export async function listUserOrganizations(): Promise<ApiUserOrganization[]> {
+  return apiFetch(
+    "/api/auth/organization/list",
+    organizationListSchema,
+    { method: "GET" }
+  );
+}
+
+export type ApiUserOrganization = z.infer<typeof organizationListSchema>[number];
+
+const setActiveOrganizationSchema = z.unknown().transform(() => undefined);
+
+export async function setActiveOrganization(slug: string): Promise<void> {
+  return apiFetch(
+    "/api/auth/organization/set-active",
+    setActiveOrganizationSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ organizationSlug: slug }),
+    }
+  );
+}
+
 const feedbackResponseSchema = z.object({ id: z.string() });
 
 export async function submitFeedback(input: {

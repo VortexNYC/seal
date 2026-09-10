@@ -1,9 +1,7 @@
 "use client";
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import {
   Code2,
   CreditCard,
@@ -35,11 +33,15 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
+import {
+  listUserOrganizations,
+  setActiveOrganization,
+  type ApiUserOrganization,
+} from "@/lib/api-client";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 
 type SidebarOrganization = {
-  _id: Id<"organizations">;
   name: string;
   slug: string;
 };
@@ -60,13 +62,6 @@ type PermissionSet = {
     canViewContacts?: boolean;
   };
 } | null;
-
-type OrganizationListEntry = {
-  organizationId: Id<"organizations">;
-  organizationName: string;
-  organizationSlug: string;
-  role: string;
-};
 
 type NavMainItem = {
   title: string;
@@ -133,13 +128,11 @@ function buildNavSections({
   slug,
   currentPath,
   permissions,
-  hasMerchantAccount,
   isPro,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
-  hasMerchantAccount: boolean;
   isPro: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
@@ -176,38 +169,38 @@ function buildNavSections({
     {
       title: "Overview",
       url: buildOrganizationPath(slug, "/payments"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
       exactMatch: true,
     },
     {
       title: "Subscriptions",
       url: buildOrganizationPath(slug, "/payments/subscriptions"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "History",
       url: buildOrganizationPath(slug, "/payments/history"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Payouts",
       url: buildOrganizationPath(slug, "/payments/payouts"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Balances",
       url: buildOrganizationPath(slug, "/payments/balances"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Disputes",
       url: buildOrganizationPath(slug, "/payments/disputes"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Tax Documents",
       url: buildOrganizationPath(slug, "/payments/tax"),
-      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
+      visible: isPro && canView(permissionFlags?.canViewSettings),
     },
   ].filter((item) => item.visible);
 
@@ -351,20 +344,20 @@ function buildTeamOptions({
   organizations,
 }: {
   slug: string;
-  organizations: OrganizationListEntry[] | null | undefined;
+  organizations: ApiUserOrganization[] | null | undefined;
 }) {
   if (!organizations) {
     return [];
   }
 
   const sorted = organizations.toSorted((a, b) => {
-    if (a.organizationSlug === slug) return -1;
-    if (b.organizationSlug === slug) return 1;
-    return a.organizationName.localeCompare(b.organizationName);
+    if (a.slug === slug) return -1;
+    if (b.slug === slug) return 1;
+    return a.name.localeCompare(b.name);
   });
 
   return sorted.map((organization) => {
-    const initials = getInitials(organization.organizationName);
+    const initials = getInitials(organization.name);
 
     const Logo = ({ className }: { className?: string }) => (
       <span
@@ -378,9 +371,10 @@ function buildTeamOptions({
     );
 
     return {
-      name: organization.organizationName,
+      id: organization.id,
+      name: organization.name,
       plan: formatRole(organization.role),
-      slug: organization.organizationSlug,
+      slug: organization.slug,
       logo: Logo,
     };
   });
@@ -397,20 +391,13 @@ export function AppSidebar({
   const { user } = useCurrentUser();
   const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
-  const organizationStatus = useQuery(api.check_membership.hasOrganization);
-  const organizations = useQuery(api.check_membership.listUserOrganizations);
-  const setActiveOrganization = useMutation(
-    api.check_membership.setActiveOrganizationBySlug
-  );
-  const merchantAccountSlug =
-    organizationStatus?.activeOrganizationSlug ?? slug;
-  const merchantAccount = useQuery(
-    api.payments.merchant_account_queries.getMerchantAccount,
-    {
-      slug: merchantAccountSlug,
-    }
-  );
-  const hasMerchantAccount = merchantAccount?.status === "connected";
+  const { data: organizations } = useQuery({
+    queryKey: ["api", "auth", "organization", "list"],
+    queryFn: listUserOrganizations,
+  });
+  const setActiveOrganizationMutation = useMutation({
+    mutationFn: setActiveOrganization,
+  });
   const { isPro } = useSubscriptionLimits();
 
   // Wrapper to reset PostHog identity before signing out
@@ -430,10 +417,9 @@ export function AppSidebar({
         slug,
         currentPath: location.pathname,
         permissions,
-        hasMerchantAccount,
         isPro,
       }),
-    [slug, location.pathname, permissions, hasMerchantAccount, isPro]
+    [slug, location.pathname, permissions, isPro]
   );
 
   const activeTeamSlug = slug;
@@ -477,7 +463,7 @@ export function AppSidebar({
       }
 
       try {
-        await setActiveOrganization({ organizationSlug: nextSlug });
+        await setActiveOrganizationMutation.mutateAsync(nextSlug);
 
         let relativePath = location.pathname;
         if (relativePath.startsWith(`/${slug}`)) {
@@ -494,7 +480,7 @@ export function AppSidebar({
         console.error("Failed to switch workspace:", error);
       }
     },
-    [location.pathname, navigate, setActiveOrganization, slug]
+    [location.pathname, navigate, setActiveOrganizationMutation, slug]
   );
 
   if (!organization) {

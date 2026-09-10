@@ -1,17 +1,34 @@
 "use client";
 
 import {
-  VortexOrganizationSwitcher,
-  type VortexOrgSwitcherOrganization,
-} from "@vortexnyc/auth/react";
-import { Building2 } from "lucide-react";
+  Building2,
+  Check,
+  ChevronDown,
+  Plus,
+} from "lucide-react";
 import * as React from "react";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+
+type Team = {
+  id?: string;
+  name: string;
+  slug: string;
+  logo: React.ElementType;
+  plan: string;
+};
 
 export function TeamSwitcher({
   teams,
@@ -19,75 +36,88 @@ export function TeamSwitcher({
   onTeamSelect,
   onCreateOrganization,
 }: {
-  teams: {
-    name: string;
-    logo: React.ElementType;
-    plan: string;
-    slug: string;
-    id?: string;
-  }[];
+  teams: Team[];
   activeSlug?: string;
   onTeamSelect?: (slug: string) => void;
   onCreateOrganization?: () => void;
 }) {
-  const organizations = React.useMemo<VortexOrgSwitcherOrganization[]>(
-    () =>
-      teams.map((team) => ({
-        _id: team.id ?? team.slug,
-        name: team.name,
-        slug: team.slug,
-        imageUrl: undefined,
-      })),
-    [teams]
+  const active = React.useMemo(
+    () => teams.find((team) => team.slug === activeSlug) ?? teams[0] ?? null,
+    [teams, activeSlug]
   );
 
-  const current = React.useMemo(() => {
-    if (activeSlug) {
-      return organizations.find((org) => org.slug === activeSlug) ?? null;
-    }
-    return organizations[0] ?? null;
-  }, [activeSlug, organizations]);
+  const ActiveLogo = active?.logo ?? Building2;
 
-  if (organizations.length === 0) {
+  if (teams.length === 0) {
     return null;
   }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <VortexOrganizationSwitcher
-          currentOrganization={current}
-          currentOrganizationId={current?._id}
-          onCreateOrganization={onCreateOrganization}
-          onSelectOrganization={(organizationId) => {
-            const selected = organizations.find(
-              (org) => org._id === organizationId
-            );
-            if (selected?.slug) {
-              onTeamSelect?.(selected.slug);
-            }
-          }}
-          organizations={organizations}
-          renderCustomTrigger={({ organization, onClick }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              onClick={onClick}
               size="lg"
             >
               <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <Building2 className="size-4" />
+                <ActiveLogo className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
-                  {organization?.name ?? "Workspace"}
+                  {active?.name ?? "Workspace"}
                 </span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {organization?.slug ?? ""}
+                  {active?.plan ?? ""}
                 </span>
               </div>
+              <ChevronDown className="ml-auto size-4" />
             </SidebarMenuButton>
-          )}
-        />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+            side="bottom"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+            {teams.map((team) => {
+              const Logo = team.logo;
+              const isActive = team.slug === active?.slug;
+              return (
+                <DropdownMenuItem
+                  key={team.slug}
+                  className="gap-2 p-2"
+                  onSelect={() => onTeamSelect?.(team.slug)}
+                >
+                  <div className="bg-muted flex size-6 items-center justify-center rounded-md">
+                    <Logo className="size-3.5" />
+                  </div>
+                  <div className="grid flex-1 leading-tight">
+                    <span className="truncate text-sm font-medium">{team.name}</span>
+                    <span className="text-muted-foreground text-xs">{team.plan}</span>
+                  </div>
+                  {isActive && <Check className="ml-auto size-4" />}
+                </DropdownMenuItem>
+              );
+            })}
+            {onCreateOrganization && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="gap-2 p-2"
+                  onSelect={onCreateOrganization}
+                >
+                  <div className="bg-muted flex size-6 items-center justify-center rounded-md">
+                    <Plus className="size-3.5" />
+                  </div>
+                  Create workspace
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
   );
