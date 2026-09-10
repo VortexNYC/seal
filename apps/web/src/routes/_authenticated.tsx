@@ -1,32 +1,18 @@
 /**
- * Authenticated layout: Core AuthAuthenticatedRouteGate for auth / org
- * membership, plus Seal WorkspaceSlugGuard for `/{slug}/…` product paths
- * (SEA-600 / SEA-606). Public recipient signing stays at `/sign/$token`.
+ * Authenticated layout: protects product routes behind sign-in and enforces an
+ * active organization before opening Seal workspace paths.
  */
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
-  Link,
   Navigate,
   Outlet,
   useLocation,
-  useNavigate,
 } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import type { ReactNode } from "react";
 
 import Loader from "@/components/loader";
-import {
-  authRoutePaths,
-  captureAuthEvent,
-  consumePendingAuthFlow,
-  runtime,
-  toSafeRedirectPath,
-} from "@/lib/auth-runtime.better-auth";
-import {
-  buildOrganizationPath,
-  isPathWithinOrganization,
-} from "@/lib/organization-path";
+import { useAppAuth } from "@/lib/auth-runtime.better-auth";
+import { listUserOrganizations } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -36,74 +22,14 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
+  const { isLoaded, isSignedIn } = useAppAuth();
+  const { data: organizations } = useQuery({
+    queryKey: ["api", "auth", "organization", "list"],
+    queryFn: listUserOrganizations,
+  });
   const { pathname } = useLocation();
-  const navigate = useNavigate();
 
-  return (
-    <runtime.AuthAuthenticatedRouteGate
-      captureAuthEvent={captureAuthEvent}
-      chooseOrganizationPath={authRoutePaths.chooseOrganizationPath}
-      consumePendingAuthFlow={consumePendingAuthFlow}
-      getDefaultOrganization={api.check_membership.getDefaultOrganization}
-      navigate={navigate}
-      pathname={pathname}
-      postSignUpPath={authRoutePaths.postSignUpPath}
-      renderLoading={() => (
-        <div className="flex min-h-dvh items-center justify-center">
-          <Loader />
-        </div>
-      )}
-      renderOrganizationRequired={({ chooseOrganizationPath }) => (
-        <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4">
-          <p className="text-muted-foreground text-center text-sm">
-            Pick an active Seal workspace before opening the product.
-          </p>
-          <Link
-            className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium"
-            to={chooseOrganizationPath}
-          >
-            Choose organization
-          </Link>
-        </div>
-      )}
-      renderRedirectingToSignIn={() => (
-        <div className="flex min-h-dvh items-center justify-center">
-          <Loader />
-        </div>
-      )}
-      signInPath={authRoutePaths.signInPath}
-      toSafeRedirectPath={toSafeRedirectPath}
-    >
-      {({ isPostSignUpRoute }) =>
-        isPostSignUpRoute ? (
-          <Outlet />
-        ) : (
-          <WorkspaceSlugGuard>
-            <Outlet />
-          </WorkspaceSlugGuard>
-        )
-      }
-    </runtime.AuthAuthenticatedRouteGate>
-  );
-}
-
-/**
- * Seal-only (SEA-606): keep product routes under `/{slug}/…` once Core has
- * confirmed an active organization. Does not re-check auth or membership —
- * that belongs to AuthAuthenticatedRouteGate.
- */
-function WorkspaceSlugGuard({ children }: { children: ReactNode }) {
-  const location = useLocation();
-  const organizationStatus = useQuery(api.check_membership.hasOrganization);
-
-  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
-  const isPublicRoute = location.pathname.startsWith("/docs");
-  const isChooseOrganizationRoute =
-    location.pathname === authRoutePaths.chooseOrganizationPath ||
-    location.pathname.startsWith(`${authRoutePaths.chooseOrganizationPath}/`);
-
-  // null = identity not attached yet; undefined = query loading.
-  if (organizationStatus === undefined || organizationStatus === null) {
+  if (!isLoaded || organizations === undefined) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader />
@@ -111,47 +37,29 @@ function WorkspaceSlugGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  const activeOrganizationSlug =
-    organizationStatus.activeOrganizationSlug ?? null;
-
-  if (isChooseOrganizationRoute || isPublicRoute) {
-    return <>{children}</>;
+  if (!isSignedIn) {
+    return <Navigate to="/sign-in" replace />;
   }
 
-  if (!activeOrganizationSlug) {
-    return <Navigate to={authRoutePaths.chooseOrganizationPath} replace />;
+  const isOnboardingRoute = pathname.startsWith("/onboarding");
+  const isChooseOrganizationRoute =
+    pathname === "/onboarding/choose-organization" ||
+    pathname.startsWith("/onboarding/choose-organization/");
+  const isPublicRoute = pathname.startsWith("/docs");
+
+  const hasOrganizations = (organizations?.length ?? 0) > 0;
+
+  if (isPublicRoute || isChooseOrganizationRoute) {
+    return <Outlet />;
+  }
+
+  if (!hasOrganizations) {
+    return <Navigate to="/onboarding/choose-organization" replace />;
   }
 
   if (isOnboardingRoute) {
-    const params = new URLSearchParams(location.search ?? "");
-    const returnTo = params.get("returnTo");
-    const target = returnTo
-      ? buildOrganizationPath(activeOrganizationSlug, returnTo)
-      : buildOrganizationPath(activeOrganizationSlug, "/home");
-
-    return <Navigate to={target} replace />;
+    return <Navigate to="/app" replace />;
   }
 
-  const isWithinOrg = isPathWithinOrganization(
-    activeOrganizationSlug,
-    location.pathname
-  );
-
-  if (!isWithinOrg) {
-    const segments = location.pathname.split("/").filter(Boolean);
-    const looksLikeOrgPath =
-      segments.length >= 1 && segments[0] !== activeOrganizationSlug;
-    if (looksLikeOrgPath) {
-      return <>{children}</>;
-    }
-
-    return (
-      <Navigate
-        replace
-        to={buildOrganizationPath(activeOrganizationSlug, "/home")}
-      />
-    );
-  }
-
-  return <>{children}</>;
+  return <Outlet />;
 }

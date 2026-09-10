@@ -532,6 +532,32 @@ export async function setActiveOrganization(slug: string): Promise<void> {
   );
 }
 
+const createOrganizationResponseSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+  })
+  .passthrough();
+
+export type CreatedOrganization = z.infer<
+  typeof createOrganizationResponseSchema
+>;
+
+export async function createOrganization(input: {
+  name: string;
+  slug: string;
+}): Promise<CreatedOrganization> {
+  return apiFetch(
+    "/api/auth/organization/create",
+    createOrganizationResponseSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const feedbackResponseSchema = z.object({ id: z.string() });
 
 export async function submitFeedback(input: {
