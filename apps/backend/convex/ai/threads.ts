@@ -61,7 +61,7 @@ async function getDocumentNameForPrompt(
   }
 
   const document = await ctx.runQuery(
-    internal.documents.queries.getDocumentInternal,
+    internal.documents.document_reads.getDocumentInternal,
     {
       documentId,
     }

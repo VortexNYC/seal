@@ -43,7 +43,7 @@ export const ocrExtractText = internalAction({
     args
   ): Promise<{ charCount: number; tokensUsed: number; durationMs: number }> => {
     const document = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
+      internal.documents.document_reads.getDocumentInternal,
       {
         documentId: args.documentId,
       }

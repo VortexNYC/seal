@@ -394,7 +394,7 @@ export const generateCertificate = internalAction({
   handler: async (ctx, args): Promise<{ storageId: string }> => {
     // 1. Get document
     const document = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
+      internal.documents.document_reads.getDocumentInternal,
       {
         documentId: args.documentId,
       }

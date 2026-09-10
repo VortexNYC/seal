@@ -43,7 +43,7 @@ export const hashDocument = internalAction({
   handler: async (ctx, args): Promise<{ hash: string }> => {
     // Get document using internal query
     const document: Doc<"documents"> | null = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
+      internal.documents.document_reads.getDocumentInternal,
       {
         documentId: args.documentId,
       }
@@ -106,7 +106,7 @@ export const verifyDocumentIntegrity = action({
   }> => {
     // Get document using internal query
     const document: Doc<"documents"> | null = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
+      internal.documents.document_reads.getDocumentInternal,
       {
         documentId: args.documentId,
       }

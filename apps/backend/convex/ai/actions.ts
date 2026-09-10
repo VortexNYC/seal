@@ -21,7 +21,7 @@ export const analyzeDocument = action({
     if (!identity) throw new ConvexError("Not authenticated");
 
     const document = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
+      internal.documents.document_reads.getDocumentInternal,
       {
         documentId: args.documentId,
       }
