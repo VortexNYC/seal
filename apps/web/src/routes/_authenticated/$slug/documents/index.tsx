@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import {
   createFileRoute,
   useNavigate,
@@ -30,13 +34,7 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react";
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -46,7 +44,6 @@ import { ShareDocumentDialog } from "@/components/documents/share-document-dialo
 import { TransferOwnershipDialog } from "@/components/documents/transfer-ownership-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
-import { toWorkflowStatus, type DocumentWorkflowStatus } from "@/lib/document-status";
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
@@ -99,7 +96,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { pageSEO } from "@/lib/seo";
 import {
   cancelDocument as cancelDocumentApi,
   deleteDocument as deleteDocumentApi,
@@ -112,6 +108,11 @@ import {
   type ApiDocument,
   type ApiFolder,
 } from "@/lib/api-client";
+import {
+  toWorkflowStatus,
+  type DocumentWorkflowStatus,
+} from "@/lib/document-status";
+import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
@@ -255,10 +256,7 @@ type DocumentListActions = {
   readonly sendDocument: (documentId: string) => void;
   readonly cancelDocument: (documentId: string) => void;
   readonly downloadDocument: (documentId: string) => void;
-  readonly shareDocument: (
-    documentId: string,
-    documentName: string
-  ) => void;
+  readonly shareDocument: (documentId: string, documentName: string) => void;
   readonly moveToFolder: (documentId: string) => void;
   readonly deleteDocument: (documentId: string) => void;
   readonly transferOwnership: (doc: {
@@ -283,10 +281,7 @@ type ConfirmDialogContent = {
 type DocumentsListData = {
   readonly currentPage: number;
   readonly hasFiltersOrSearch: boolean;
-  readonly matchesMap: Map<
-    string,
-    readonly FuseResultMatch[] | undefined
-  >;
+  readonly matchesMap: Map<string, readonly FuseResultMatch[] | undefined>;
   readonly paginatedDocuments: readonly DocumentListItem[];
   readonly setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   readonly sortedDocuments: readonly DocumentListItem[];
@@ -438,10 +433,7 @@ function buildMatchesMap(
     readonly matches?: readonly FuseResultMatch[];
   }[]
 ): Map<string, readonly FuseResultMatch[] | undefined> {
-  const map = new Map<
-    string,
-    readonly FuseResultMatch[] | undefined
-  >();
+  const map = new Map<string, readonly FuseResultMatch[] | undefined>();
   for (const result of searchResults) map.set(result.item._id, result.matches);
   return map;
 }
@@ -866,10 +858,7 @@ function useDocumentsListData({
   | "workflowStatusFilter"
 >): DocumentsListData & { readonly refetch: () => void } {
   const [currentPage, setCurrentPage] = useState(1);
-  const {
-    data: apiDocuments,
-    refetch: refetchDocuments,
-  } = useSuspenseQuery({
+  const { data: apiDocuments, refetch: refetchDocuments } = useSuspenseQuery({
     queryKey: ["api", "documents", filter, workflowStatusFilter, folderId],
     queryFn: () =>
       getDocuments({
@@ -1459,8 +1448,9 @@ function DocumentsPage() {
   const navigate = useNavigate();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] =
-    useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
   const [selectedDocumentName, setSelectedDocumentName] = useState("");
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [documentToTransfer, setDocumentToTransfer] = useState<{
@@ -1566,10 +1556,7 @@ function DocumentsPage() {
     setRefreshKey((prev) => prev + 1);
   };
 
-  const handleShareClick = (
-    documentId: string,
-    documentName: string
-  ) => {
+  const handleShareClick = (documentId: string, documentName: string) => {
     setSelectedDocumentId(documentId);
     setSelectedDocumentName(documentName);
     setShareDialogOpen(true);

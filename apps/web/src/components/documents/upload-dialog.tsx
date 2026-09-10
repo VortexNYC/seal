@@ -218,7 +218,12 @@ function useUploadController({
       publicId: string;
       contentBase64: string;
       contentType: string;
-    }) => uploadDocument(variables.publicId, variables.contentBase64, variables.contentType),
+    }) =>
+      uploadDocument(
+        variables.publicId,
+        variables.contentBase64,
+        variables.contentType
+      ),
   });
 
   const clearAndClose = () => {

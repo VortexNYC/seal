@@ -17,15 +17,6 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import {
-  applyFieldSuggestions as applyFieldSuggestionsApi,
-  dismissFieldSuggestions as dismissFieldSuggestionsApi,
-  getFieldSuggestions,
-  type ApiFieldSuggestions,
-} from "@/lib/api-client";
-import { parseSelectValue } from "@/lib/select-values";
-
-import { FIELD_TYPES, type FieldType } from "./field-toolbar";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,9 +27,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  applyFieldSuggestions as applyFieldSuggestionsApi,
+  dismissFieldSuggestions as dismissFieldSuggestionsApi,
+  getFieldSuggestions,
+  type ApiFieldSuggestions,
+} from "@/lib/api-client";
+import { parseSelectValue } from "@/lib/select-values";
 import { cn } from "@/lib/utils";
 
 import { Button } from "../ui/button";
+import { FIELD_TYPES, type FieldType } from "./field-toolbar";
 
 function getFieldIcon(fieldType: FieldType) {
   switch (fieldType) {
@@ -205,9 +204,7 @@ function toSuggestionWithFieldTypes(
   };
 }
 
-export function useAIFieldSuggestions(
-  documentPublicId: string
-): {
+export function useAIFieldSuggestions(documentPublicId: string): {
   suggestions: SuggestionsWithFieldTypes | null;
   selectedIndices: Set<number>;
   isApplying: boolean;
@@ -230,7 +227,11 @@ export function useAIFieldSuggestions(
       suggestionId: string;
       selectedFieldIndices?: number[];
     }) =>
-      applyFieldSuggestionsApi(documentPublicId, suggestionId, selectedFieldIndices),
+      applyFieldSuggestionsApi(
+        documentPublicId,
+        suggestionId,
+        selectedFieldIndices
+      ),
   });
   const dismissMutation = useMutation({
     mutationFn: () => dismissFieldSuggestionsApi(documentPublicId),

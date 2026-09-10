@@ -10,10 +10,6 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import {
-  dismissDocumentAnnotations,
-  getDocumentAnnotations,
-} from "@/lib/api-client";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,6 +25,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  dismissDocumentAnnotations,
+  getDocumentAnnotations,
+} from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------

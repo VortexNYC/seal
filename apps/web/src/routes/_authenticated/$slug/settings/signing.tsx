@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { getOrganization, getSigningSettings, updateSigningSettings } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,6 +25,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getOrganization,
+  getSigningSettings,
+  updateSigningSettings,
+} from "@/lib/api-client";
 
 type SignatureTypeOption = "draw" | "type" | "upload";
 

@@ -6,8 +6,8 @@
  * and validation rules for signature fields.
  */
 
-import { useMutation } from "@tanstack/react-query";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircleIcon,
   AlertTriangleIcon,
@@ -23,8 +23,9 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
 import { updateSignatureField } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
+
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";

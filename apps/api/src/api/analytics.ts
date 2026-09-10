@@ -2,7 +2,14 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, member, notifications, recipients, templates, user } from "../global/schema.js";
+import {
+  documents,
+  member,
+  notifications,
+  recipients,
+  templates,
+  user,
+} from "../global/schema.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -74,7 +81,9 @@ app.openapi(statsRouteDef, async (c) => {
   const membership = await db
     .select()
     .from(member)
-    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .where(
+      and(eq(member.organizationId, organizationId), eq(member.userId, userId))
+    )
     .limit(1);
 
   const role = membership[0]?.role ?? "member";
@@ -87,7 +96,9 @@ app.openapi(statsRouteDef, async (c) => {
   );
 
   const whereScope =
-    scope === "personal" ? and(whereBase, eq(documents.ownerId, userId)) : whereBase;
+    scope === "personal"
+      ? and(whereBase, eq(documents.ownerId, userId))
+      : whereBase;
 
   const countDocuments = async (...conditions: SQL[]) => {
     const result = await db
@@ -185,14 +196,21 @@ app.openapi(trendsRouteDef, async (c) => {
   const sessionUser = c.get("user");
   const organizationId = sessionUser!.session!.activeOrganizationId!;
   const userId = sessionUser!.user.id;
-  const { days, startDate, endDate, scope: requestedScope } = c.req.valid("query");
+  const {
+    days,
+    startDate,
+    endDate,
+    scope: requestedScope,
+  } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
 
   const membership = await db
     .select()
     .from(member)
-    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .where(
+      and(eq(member.organizationId, organizationId), eq(member.userId, userId))
+    )
     .limit(1);
 
   const role = membership[0]?.role ?? "member";
@@ -212,11 +230,7 @@ app.openapi(trendsRouteDef, async (c) => {
       now.getUTCMonth(),
       now.getUTCDate() - (dayCount - 1)
     );
-    endMs = Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate()
-    );
+    endMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   }
 
   const startDay = new Date(startMs);
@@ -242,7 +256,11 @@ app.openapi(trendsRouteDef, async (c) => {
     current.setUTCDate(current.getUTCDate() + 1);
   }
 
-  const countForDay = async (day: Date, nextDay: Date, status: string | null) => {
+  const countForDay = async (
+    day: Date,
+    nextDay: Date,
+    status: string | null
+  ) => {
     const conditions: SQL[] = [
       eq(documents.organizationId, organizationId),
       eq(documents.documentStatus, "active"),
@@ -332,7 +350,9 @@ app.openapi(periodStatsRouteDef, async (c) => {
   const membership = await db
     .select()
     .from(member)
-    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .where(
+      and(eq(member.organizationId, organizationId), eq(member.userId, userId))
+    )
     .limit(1);
 
   const role = membership[0]?.role ?? "member";
@@ -426,7 +446,9 @@ app.openapi(memberActivityRouteDef, async (c) => {
   const membership = await db
     .select()
     .from(member)
-    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .where(
+      and(eq(member.organizationId, organizationId), eq(member.userId, userId))
+    )
     .limit(1);
 
   const role = membership[0]?.role ?? "member";
@@ -605,7 +627,9 @@ app.openapi(exportDocumentsRouteDef, async (c) => {
     const signedCount = docRecipients.filter(
       (r) => r.status === "signed" || r.status === "approved"
     ).length;
-    const pendingCount = docRecipients.filter((r) => r.status === "pending").length;
+    const pendingCount = docRecipients.filter(
+      (r) => r.status === "pending"
+    ).length;
 
     return {
       id: row.id,
@@ -615,7 +639,8 @@ app.openapi(exportDocumentsRouteDef, async (c) => {
       ownerEmail: row.ownerEmail ?? "",
       createdAt: row.createdAt.getTime(),
       sentAt: row.sentAt ? row.sentAt.getTime() : null,
-      completedAt: row.status === "completed" ? row.updatedAt?.getTime() ?? null : null,
+      completedAt:
+        row.status === "completed" ? (row.updatedAt?.getTime() ?? null) : null,
       deadline: row.deadline ? row.deadline.getTime() : null,
       recipientCount,
       signedCount,
@@ -670,7 +695,10 @@ app.openapi(emailEngagementRouteDef, async (c) => {
   const start = new Date(startMs);
 
   const allRows = await db
-    .select({ emailStatus: notifications.emailStatus, lastEmailError: notifications.lastEmailError })
+    .select({
+      emailStatus: notifications.emailStatus,
+      lastEmailError: notifications.lastEmailError,
+    })
     .from(notifications)
     .where(
       and(
@@ -680,8 +708,9 @@ app.openapi(emailEngagementRouteDef, async (c) => {
     );
 
   const total = allRows.length;
-  const bounced = allRows.filter((r) => r.lastEmailError !== null && r.lastEmailError !== "")
-    .length;
+  const bounced = allRows.filter(
+    (r) => r.lastEmailError !== null && r.lastEmailError !== ""
+  ).length;
   const delivered = total - bounced;
 
   const deliveryRate = total > 0 ? Math.round((delivered / total) * 100) : 100;
@@ -806,24 +835,21 @@ app.openapi(recipientTimingRouteDef, async (c) => {
     }
   }
 
-  const distribution = [
-    "<1h",
-    "1-6h",
-    "6-24h",
-    "1-3d",
-    "3-7d",
-    "7d+",
-  ].map((bucket) => ({
-    bucket,
-    count: buckets.get(bucket) ?? 0,
-  }));
+  const distribution = ["<1h", "1-6h", "6-24h", "1-3d", "3-7d", "7d+"].map(
+    (bucket) => ({
+      bucket,
+      count: buckets.get(bucket) ?? 0,
+    })
+  );
 
   return c.json({
     sampleSize: rows.length,
     avgTimeToView: viewCount > 0 ? Math.round(totalView / viewCount) : null,
     avgTimeToSign: signCount > 0 ? Math.round(totalSign / signCount) : null,
     avgTotalTurnaround:
-      turnaroundCount > 0 ? Math.round(totalTurnaround / turnaroundCount) : null,
+      turnaroundCount > 0
+        ? Math.round(totalTurnaround / turnaroundCount)
+        : null,
     distribution,
   });
 });
@@ -874,7 +900,12 @@ app.openapi(templatePerformanceRouteDef, async (c) => {
       useCount: templates.useCount,
     })
     .from(templates)
-    .where(and(eq(templates.organizationId, organizationId), eq(templates.status, "active")))
+    .where(
+      and(
+        eq(templates.organizationId, organizationId),
+        eq(templates.status, "active")
+      )
+    )
     .orderBy(templates.useCount);
 
   const results = rows.map((t) => ({

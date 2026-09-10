@@ -1,11 +1,21 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
 import { env } from "cloudflare:test";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { documents, folders, member, organization, paymentFieldConfigs, recipients, signatureFields, signatures, user } from "../global/schema.js";
+import {
+  documents,
+  folders,
+  member,
+  organization,
+  paymentFieldConfigs,
+  recipients,
+  signatureFields,
+  signatures,
+  user,
+} from "../global/schema.js";
 import type { SessionUser } from "../platform/session.js";
 import documentsRoute from "./documents.js";
 
@@ -265,13 +275,14 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(
-        `http://localhost:8787/api/documents/${publicId}`,
-        { method: "DELETE" }
-      ),
+      new Request(`http://localhost:8787/api/documents/${publicId}`, {
+        method: "DELETE",
+      }),
       env
     );
-    const result = z.object({ success: z.boolean() }).parse(await parseJson(response));
+    const result = z
+      .object({ success: z.boolean() })
+      .parse(await parseJson(response));
     expect(result.success).toBe(true);
 
     const rows = await db
@@ -300,13 +311,14 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(
-        `http://localhost:8787/api/documents/${publicId}/send`,
-        { method: "POST" }
-      ),
+      new Request(`http://localhost:8787/api/documents/${publicId}/send`, {
+        method: "POST",
+      }),
       env
     );
-    const result = z.object({ success: z.boolean() }).parse(await parseJson(response));
+    const result = z
+      .object({ success: z.boolean() })
+      .parse(await parseJson(response));
     expect(result.success).toBe(true);
 
     const rows = await db
@@ -335,13 +347,14 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(
-        `http://localhost:8787/api/documents/${publicId}/cancel`,
-        { method: "POST" }
-      ),
+      new Request(`http://localhost:8787/api/documents/${publicId}/cancel`, {
+        method: "POST",
+      }),
       env
     );
-    const result = z.object({ success: z.boolean() }).parse(await parseJson(response));
+    const result = z
+      .object({ success: z.boolean() })
+      .parse(await parseJson(response));
     expect(result.success).toBe(true);
 
     const rows = await db
@@ -387,11 +400,16 @@ describe("documents API", () => {
       new Request("http://localhost:8787/api/documents/move", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentIds: [publicId], folderId: folderPublicId }),
+        body: JSON.stringify({
+          documentIds: [publicId],
+          folderId: folderPublicId,
+        }),
       }),
       env
     );
-    const result = z.object({ moved: z.number() }).parse(await parseJson(response));
+    const result = z
+      .object({ moved: z.number() })
+      .parse(await parseJson(response));
     expect(result.moved).toBe(1);
 
     const rows = await db
@@ -436,14 +454,11 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(
-        `http://localhost:8787/api/documents/${publicId}/transfer`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newOwnerId: "user_2" }),
-        }
-      ),
+      new Request(`http://localhost:8787/api/documents/${publicId}/transfer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newOwnerId: "user_2" }),
+      }),
       env
     );
     const result = documentSchema.parse(await parseJson(response));
@@ -491,22 +506,17 @@ describe("documents API", () => {
     });
 
     const shareResponse = await app.fetch(
-      new Request(
-        `http://localhost:8787/api/documents/${publicId}/share`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "user_2", permissionLevel: "view" }),
-        }
-      ),
+      new Request(`http://localhost:8787/api/documents/${publicId}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: "user_2", permissionLevel: "view" }),
+      }),
       env
     );
     expect(shareResponse.status).toBe(200);
 
     const sharingResponse = await app.fetch(
-      new Request(
-        `http://localhost:8787/api/documents/${publicId}/sharing`
-      ),
+      new Request(`http://localhost:8787/api/documents/${publicId}/sharing`),
       env
     );
     const sharing = z
@@ -780,7 +790,9 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/recipients/me`),
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/recipients/me`
+      ),
       env
     );
     const me = z
@@ -958,16 +970,19 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/recipients`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipients: [
-            { email: "a@example.com", name: "A" },
-            { email: "b@example.com", name: "B", role: "viewer" },
-          ],
-        }),
-      }),
+      new Request(
+        `http://localhost:8787/api/documents/${publicId}/recipients`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipients: [
+              { email: "a@example.com", name: "A" },
+              { email: "b@example.com", name: "B", role: "viewer" },
+            ],
+          }),
+        }
+      ),
       env
     );
     const result = z

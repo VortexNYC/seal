@@ -21,7 +21,6 @@ import {
 import { FormSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getUserUsageStatistics } from "@/lib/api-client";
 import {
   Card,
   CardContent,
@@ -31,6 +30,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { getUserUsageStatistics } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute(

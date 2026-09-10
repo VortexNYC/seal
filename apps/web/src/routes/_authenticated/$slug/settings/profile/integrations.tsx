@@ -5,13 +5,6 @@ import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
 import {
-  disconnectConnectedApp,
-  getConnectedApps,
-  getIntegrationActivity,
-  type ApiConnectedApp,
-  type ApiIntegrationActivityLog,
-} from "@/lib/api-client";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -31,6 +24,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  disconnectConnectedApp,
+  getConnectedApps,
+  getIntegrationActivity,
+  type ApiConnectedApp,
+  type ApiIntegrationActivityLog,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/integrations"
@@ -200,11 +200,7 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
   );
 }
 
-function ActivityLogsSection({
-  logs,
-}: {
-  logs: ApiIntegrationActivityLog[];
-}) {
+function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
   return (
     <Card>
       <CardHeader>

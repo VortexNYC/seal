@@ -31,8 +31,8 @@ export function ExportDataDialog() {
           <DialogTitle>Export Documents Data</DialogTitle>
           <DialogDescription>
             Document exports are being migrated to the Cloudflare Worker data
-            layer. Exporting will be available once the dashboard data
-            endpoints are ready.
+            layer. Exporting will be available once the dashboard data endpoints
+            are ready.
           </DialogDescription>
         </DialogHeader>
       </DialogContent>

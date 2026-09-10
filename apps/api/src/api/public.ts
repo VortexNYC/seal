@@ -628,7 +628,10 @@ app.openapi(submitRouteDef, async (c) => {
     update.declinedAt = nowDate;
   }
 
-  await db.update(recipients).set(update).where(eq(recipients.id, recipient.id));
+  await db
+    .update(recipients)
+    .set(update)
+    .where(eq(recipients.id, recipient.id));
 
   if (input.status === "signed" || input.status === "approved") {
     if (doc.allowDictateNextSigner) {
@@ -1140,10 +1143,7 @@ app.openapi(dictateRouteDef, async (c) => {
     .select()
     .from(recipients)
     .where(
-      and(
-        eq(recipients.documentId, doc.id),
-        eq(recipients.isPlaceholder, true)
-      )
+      and(eq(recipients.documentId, doc.id), eq(recipients.isPlaceholder, true))
     )
     .orderBy(recipients.order);
 
@@ -1203,7 +1203,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function safeParseJson(value: string | null | undefined): Record<string, unknown> | null {
+function safeParseJson(
+  value: string | null | undefined
+): Record<string, unknown> | null {
   if (!value) return null;
   try {
     const parsed: unknown = JSON.parse(value);

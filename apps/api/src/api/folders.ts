@@ -323,7 +323,12 @@ app.openapi(breadcrumbsRouteDef, async (c) => {
   const db = createD1(c.env.D1);
 
   const startRows = await db
-    .select({ id: folders.id, publicId: folders.publicId, name: folders.name, parentId: folders.parentId })
+    .select({
+      id: folders.id,
+      publicId: folders.publicId,
+      name: folders.name,
+      parentId: folders.parentId,
+    })
     .from(folders)
     .where(
       and(
@@ -339,7 +344,12 @@ app.openapi(breadcrumbsRouteDef, async (c) => {
   }
 
   const allFolders = await db
-    .select({ id: folders.id, publicId: folders.publicId, name: folders.name, parentId: folders.parentId })
+    .select({
+      id: folders.id,
+      publicId: folders.publicId,
+      name: folders.name,
+      parentId: folders.parentId,
+    })
     .from(folders)
     .where(eq(folders.organizationId, organizationId));
 

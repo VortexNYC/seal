@@ -1,9 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -32,15 +32,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDocumentDetail } from "@/data/document-detail";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { buildActivityEvents } from "@/lib/document-activity";
-import { parseSelectValue } from "@/lib/select-values";
-import { countSignatureFields } from "@/lib/signature-fields";
-import { cn } from "@/lib/utils";
-import { isWorkflowStatus } from "@/lib/document-status";
-
-import { useDocumentDetail } from "@/data/document-detail";
 import {
   addRecipients as addRecipientsApi,
   getAiSettings,
@@ -49,6 +43,11 @@ import {
   resendRecipientEmail as resendRecipientEmailApi,
   updateDocument as updateDocumentApi,
 } from "@/lib/api-client";
+import { buildActivityEvents } from "@/lib/document-activity";
+import { isWorkflowStatus } from "@/lib/document-status";
+import { parseSelectValue } from "@/lib/select-values";
+import { countSignatureFields } from "@/lib/signature-fields";
+import { cn } from "@/lib/utils";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
@@ -207,13 +206,20 @@ function DocumentDetailPage() {
     await removeRecipientApi(documentPublicId, recipientPublicId);
   };
   const addRecipients = async (
-    recipientsInput: { email: string; name?: string; role: "signer" | "viewer" | "approver" }[]
+    recipientsInput: {
+      email: string;
+      name?: string;
+      role: "signer" | "viewer" | "approver";
+    }[]
   ) => {
     await addRecipientsApi(documentPublicId, recipientsInput);
   };
-  const updateDocument = async (
-    input: { name?: string; description?: string | null; redirectUrl?: string | null; allowDictateNextSigner?: boolean }
-  ) => {
+  const updateDocument = async (input: {
+    name?: string;
+    description?: string | null;
+    redirectUrl?: string | null;
+    allowDictateNextSigner?: boolean;
+  }) => {
     await updateDocumentApi(documentPublicId, input);
   };
   const resendRecipientEmail = async (recipientPublicId: string) => {

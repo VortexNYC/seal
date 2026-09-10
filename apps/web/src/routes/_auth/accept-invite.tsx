@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { betterAuthClient } from "@/lib/better-auth";
 import Loader from "@/components/loader";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute("/_auth/accept-invite")({
   component: AcceptInviteRoute,
@@ -47,7 +47,7 @@ function AcceptInviteLoaded({ token }: { token: string }) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
         <Loader />
-        <p className="text-muted-foreground text-sm max-w-sm">
+        <p className="text-muted-foreground max-w-sm text-sm">
           Accepting your invitation…
         </p>
       </div>
@@ -57,7 +57,7 @@ function AcceptInviteLoaded({ token }: { token: string }) {
   if (!sessionData) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-muted-foreground text-sm max-w-sm">
+        <p className="text-muted-foreground max-w-sm text-sm">
           Sign in or create an account to accept this invitation.
         </p>
         <Link
@@ -77,7 +77,7 @@ function AcceptInviteLoaded({ token }: { token: string }) {
 
   return (
     <div className="flex h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
-      <p className="text-destructive text-sm max-w-sm">
+      <p className="text-destructive max-w-sm text-sm">
         {accept.error?.message ?? "This invitation could not be accepted."}
       </p>
       <Link

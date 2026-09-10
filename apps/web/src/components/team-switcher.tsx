@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  Check,
-  ChevronDown,
-  Plus,
-} from "lucide-react";
+import { Building2, Check, ChevronDown, Plus } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -95,8 +90,12 @@ export function TeamSwitcher({
                     <Logo className="size-3.5" />
                   </div>
                   <div className="grid flex-1 leading-tight">
-                    <span className="truncate text-sm font-medium">{team.name}</span>
-                    <span className="text-muted-foreground text-xs">{team.plan}</span>
+                    <span className="truncate text-sm font-medium">
+                      {team.name}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {team.plan}
+                    </span>
                   </div>
                   {isActive && <Check className="ml-auto size-4" />}
                 </DropdownMenuItem>

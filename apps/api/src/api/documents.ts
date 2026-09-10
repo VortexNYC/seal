@@ -13,7 +13,6 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import ai from "./ai.js";
 import { createD1 } from "../global/db.js";
 import {
   activity,
@@ -29,6 +28,7 @@ import {
   templates,
   user as userTable,
 } from "../global/schema.js";
+import ai from "./ai.js";
 
 const DocumentSchema = z
   .object({
@@ -1002,13 +1002,17 @@ app.openapi(updateRouteDef, async (c) => {
   }
 
   if (!(await hasEditDocumentAccess(db, doc, userId))) {
-    return c.json({ error: "You don't have permission to edit this document" }, 403);
+    return c.json(
+      { error: "You don't have permission to edit this document" },
+      403
+    );
   }
 
   try {
     validateRedirectUrl(input.redirectUrl);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Invalid redirect URL";
+    const message =
+      error instanceof Error ? error.message : "Invalid redirect URL";
     return c.json({ error: message }, 400);
   }
 
@@ -1033,10 +1037,7 @@ app.openapi(updateRouteDef, async (c) => {
     updateData.allowDictateNextSigner = input.allowDictateNextSigner;
   }
 
-  await db
-    .update(documents)
-    .set(updateData)
-    .where(eq(documents.id, doc.id));
+  await db.update(documents).set(updateData).where(eq(documents.id, doc.id));
 
   const updated = await db
     .select()
@@ -1353,7 +1354,12 @@ app.openapi(addRecipientsRouteDef, async (c) => {
   const rows = await db
     .select()
     .from(recipients)
-    .where(and(eq(recipients.documentId, doc.id), inArray(recipients.id, insertedIds)))
+    .where(
+      and(
+        eq(recipients.documentId, doc.id),
+        inArray(recipients.id, insertedIds)
+      )
+    )
     .orderBy(asc(recipients.order), asc(recipients.createdAt));
 
   await db.insert(activity).values({
@@ -1467,11 +1473,17 @@ app.openapi(removeRecipientRouteDef, async (c) => {
   }
 
   if (doc.ownerId !== userId) {
-    return c.json({ error: "Only the document owner can remove recipients" }, 403);
+    return c.json(
+      { error: "Only the document owner can remove recipients" },
+      403
+    );
   }
 
   if (doc.status === "deleted") {
-    return c.json({ error: "Cannot remove recipients from a deleted document" }, 400);
+    return c.json(
+      { error: "Cannot remove recipients from a deleted document" },
+      400
+    );
   }
 
   const recipientRows = await db
@@ -1895,10 +1907,7 @@ app.openapi(getSignatureFieldsForMeRouteDef, async (c) => {
       .from(signatures)
       .leftJoin(recipients, eq(recipients.id, signatures.recipientId))
       .where(
-        and(
-          eq(signatures.fieldId, field.id),
-          eq(signatures.documentId, doc.id)
-        )
+        and(eq(signatures.fieldId, field.id), eq(signatures.documentId, doc.id))
       )
       .limit(1)
   );
@@ -2030,7 +2039,10 @@ app.openapi(createSignatureFieldRouteDef, async (c) => {
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+    return c.json(
+      { error: "Fields can only be modified in draft status" },
+      400
+    );
   }
 
   const positionValidation = validateFieldPosition(
@@ -2214,7 +2226,10 @@ app.openapi(updateSignatureFieldRouteDef, async (c) => {
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+    return c.json(
+      { error: "Fields can only be modified in draft status" },
+      400
+    );
   }
 
   const fieldRows = await db
@@ -2349,7 +2364,10 @@ app.openapi(repositionSignatureFieldRouteDef, async (c) => {
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+    return c.json(
+      { error: "Fields can only be modified in draft status" },
+      400
+    );
   }
 
   const fieldRows = await db
@@ -2470,7 +2488,10 @@ app.openapi(assignSignatureFieldRouteDef, async (c) => {
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+    return c.json(
+      { error: "Fields can only be modified in draft status" },
+      400
+    );
   }
 
   const fieldRows = await db
@@ -2506,10 +2527,7 @@ app.openapi(assignSignatureFieldRouteDef, async (c) => {
   }
 
   let isMainSignature = field.isMainSignature;
-  if (
-    field.fieldType === "signature" &&
-    recipient.id !== field.recipientId
-  ) {
+  if (field.fieldType === "signature" && recipient.id !== field.recipientId) {
     const existingMain = await db
       .select({ value: count() })
       .from(signatureFields)
@@ -2555,7 +2573,9 @@ const deleteSignatureFieldRouteDef = createRoute({
   },
   responses: {
     200: {
-      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
       description: "Signature field deleted",
     },
     400: { description: "Cannot delete field or document not editable" },
@@ -2592,7 +2612,10 @@ app.openapi(deleteSignatureFieldRouteDef, async (c) => {
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Fields can only be modified in draft status" }, 400);
+    return c.json(
+      { error: "Fields can only be modified in draft status" },
+      400
+    );
   }
 
   const fieldRows = await db
@@ -2973,11 +2996,17 @@ app.openapi(upsertPaymentConfigRouteDef, async (c) => {
   }
 
   if (doc.ownerId !== userId) {
-    return c.json({ error: "Only the document owner can edit payment configs" }, 403);
+    return c.json(
+      { error: "Only the document owner can edit payment configs" },
+      403
+    );
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Payment configs can only be edited in draft status" }, 400);
+    return c.json(
+      { error: "Payment configs can only be edited in draft status" },
+      400
+    );
   }
 
   const fieldRows = await db
@@ -3123,9 +3152,18 @@ const RecipientProgressSchema = z
       expired: z.number().int(),
     }),
     byRole: z.object({
-      signer: z.object({ total: z.number().int(), completed: z.number().int() }),
-      viewer: z.object({ total: z.number().int(), completed: z.number().int() }),
-      approver: z.object({ total: z.number().int(), completed: z.number().int() }),
+      signer: z.object({
+        total: z.number().int(),
+        completed: z.number().int(),
+      }),
+      viewer: z.object({
+        total: z.number().int(),
+        completed: z.number().int(),
+      }),
+      approver: z.object({
+        total: z.number().int(),
+        completed: z.number().int(),
+      }),
     }),
   })
   .openapi("RecipientProgress");
@@ -3276,10 +3314,7 @@ app.openapi(recipientByMeRouteDef, async (c) => {
     .select()
     .from(recipients)
     .where(
-      and(
-        eq(recipients.documentId, doc.id),
-        eq(recipients.email, userEmail)
-      )
+      and(eq(recipients.documentId, doc.id), eq(recipients.email, userEmail))
     )
     .limit(1);
 
@@ -3567,10 +3602,7 @@ app.openapi(saveSignatureFieldRouteDef, async (c) => {
     .select()
     .from(recipients)
     .where(
-      and(
-        eq(recipients.documentId, doc.id),
-        eq(recipients.email, userEmail)
-      )
+      and(eq(recipients.documentId, doc.id), eq(recipients.email, userEmail))
     )
     .limit(1);
 
@@ -3600,9 +3632,7 @@ app.openapi(saveSignatureFieldRouteDef, async (c) => {
   }
 
   const ipAddress =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for") ??
-    null;
+    c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? null;
   const now = new Date();
 
   const existing = await db
@@ -3723,10 +3753,7 @@ app.openapi(submitSignatureRouteDef, async (c) => {
     .select()
     .from(recipients)
     .where(
-      and(
-        eq(recipients.documentId, doc.id),
-        eq(recipients.email, userEmail)
-      )
+      and(eq(recipients.documentId, doc.id), eq(recipients.email, userEmail))
     )
     .limit(1);
 
@@ -4059,7 +4086,11 @@ app.openapi(cancelRouteDef, async (c) => {
 
   const db = createD1(c.env.D1);
   const docRows = await db
-    .select({ id: documents.id, ownerId: documents.ownerId, status: documents.status })
+    .select({
+      id: documents.id,
+      ownerId: documents.ownerId,
+      status: documents.status,
+    })
     .from(documents)
     .where(
       and(
@@ -4290,10 +4321,7 @@ app.openapi(transferOwnershipRouteDef, async (c) => {
     )
     .limit(1);
   if (!membership[0]) {
-    return c.json(
-      { error: "New owner is not an organization member" },
-      422
-    );
+    return c.json({ error: "New owner is not an organization member" }, 422);
   }
 
   await db
@@ -4756,11 +4784,17 @@ app.openapi(saveAsTemplateRouteDef, async (c) => {
   }
 
   if (doc.ownerId !== userId) {
-    return c.json({ error: "Only the document owner can save as template" }, 403);
+    return c.json(
+      { error: "Only the document owner can save as template" },
+      403
+    );
   }
 
   if (doc.status !== "draft") {
-    return c.json({ error: "Only draft documents can be saved as templates" }, 400);
+    return c.json(
+      { error: "Only draft documents can be saved as templates" },
+      400
+    );
   }
 
   const fields = await db

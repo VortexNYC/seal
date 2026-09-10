@@ -20,10 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  getOrganizationMembers,
-  transferDocument,
-} from "@/lib/api-client";
+import { getOrganizationMembers, transferDocument } from "@/lib/api-client";
 
 interface TransferOwnershipDialogProps {
   open: boolean;

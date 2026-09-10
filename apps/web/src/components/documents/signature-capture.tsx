@@ -11,15 +11,6 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-import {
-  createSavedSignature,
-  deleteSavedSignature,
-  incrementSavedSignatureUsage,
-  listSavedSignatures,
-  updateSavedSignature,
-  type ApiSavedSignature,
-} from "@/lib/api-client";
 import {
   BookmarkIcon,
   CheckIcon,
@@ -63,6 +54,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  createSavedSignature,
+  deleteSavedSignature,
+  incrementSavedSignatureUsage,
+  listSavedSignatures,
+  updateSavedSignature,
+  type ApiSavedSignature,
+} from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { cn } from "@/lib/utils";
 
@@ -401,9 +400,7 @@ export function SignatureCapture({
   };
 
   // Handle deleting a saved signature
-  const handleDeleteSavedSignature = async (
-    signatureId: string
-  ) => {
+  const handleDeleteSavedSignature = async (signatureId: string) => {
     try {
       await deleteSignatureMutation.mutateAsync(signatureId);
       toast.success("Signature deleted");
@@ -420,7 +417,10 @@ export function SignatureCapture({
   // Handle setting a signature as default
   const handleSetDefault = async (signatureId: string) => {
     try {
-      await setDefaultMutation.mutateAsync({ id: signatureId, isDefault: true });
+      await setDefaultMutation.mutateAsync({
+        id: signatureId,
+        isDefault: true,
+      });
       toast.success("Default signature updated");
     } catch (error) {
       toast.error("Failed to update default signature", {

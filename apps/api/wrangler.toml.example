@@ -9,6 +9,7 @@ BETTER_AUTH_URL = "https://vortex-sign-api.example.workers.dev"
 TOKEN_HASH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
 ALLOWED_ORIGINS = "https://vortex-sign-api.example.workers.dev"
 EMAIL_FROM = "notifications@vortex.nyc"
+AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1/ai"
 
 [[d1_databases]]
 binding = "D1"
@@ -21,3 +22,11 @@ name = "EMAIL"
 [[r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "vortex-sign-documents"
+
+[[durable_objects.bindings]]
+name = "SealChatAgent"
+class_name = "SealChatAgent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SealChatAgent"]

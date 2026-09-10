@@ -80,7 +80,11 @@ function WorkspaceLayout() {
       <PostHogIdentify organization={orgData} />
       <DotPattern className="fixed inset-0 z-0" />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
-        <AppSidebar slug={slug} organization={orgData} permissions={undefined} />
+        <AppSidebar
+          slug={slug}
+          organization={orgData}
+          permissions={undefined}
+        />
         <main className="h-full min-h-0 flex-1 overflow-hidden">
           <Outlet />
         </main>

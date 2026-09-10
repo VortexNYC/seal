@@ -1,13 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Crown,
-  Mail,
-  Shield,
-  User,
-  Users,
-  Eye,
-} from "lucide-react";
+import { Crown, Mail, Shield, User, Users, Eye } from "lucide-react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";
@@ -56,32 +49,36 @@ function memberStatusBadgeVariant(
 
 function MemberRow({ member }: { member: ApiTeamMember }) {
   const Icon = ROLE_ICONS[member.role] ?? User;
-  const initials = member.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() ?? "?";
+  const initials =
+    member.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() ?? "?";
 
   return (
     <div className="flex items-center justify-between rounded-lg border p-3">
       <div className="flex items-center gap-3">
         <Avatar className="h-9 w-9 rounded-lg">
-          <AvatarImage src={member.avatarUrl ?? undefined} alt={member.name ?? ""} />
+          <AvatarImage
+            src={member.avatarUrl ?? undefined}
+            alt={member.name ?? ""}
+          />
           <AvatarFallback className="rounded-lg text-xs">
             {initials}
           </AvatarFallback>
         </Avatar>
         <div>
           <p className="text-sm font-medium">{member.name ?? member.email}</p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
             <Mail className="h-3 w-3" />
             {member.email}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-1 text-xs">
           <Icon className="h-3 w-3" />
           <span className="capitalize">{member.role}</span>
         </div>
@@ -149,7 +146,9 @@ function TeamSettings() {
               </p>
             )}
             {members?.length ? (
-              members.map((member) => <MemberRow key={member.userId} member={member} />)
+              members.map((member) => (
+                <MemberRow key={member.userId} member={member} />
+              ))
             ) : (
               <p className="text-muted-foreground text-sm">No members found.</p>
             )}
@@ -174,7 +173,7 @@ function TeamSettings() {
                     className="flex items-center justify-between rounded-md border p-3 text-sm"
                   >
                     <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <Icon className="text-muted-foreground h-4 w-4" />
                       <span className="font-medium capitalize">{role}</span>
                     </div>
                     <Badge variant="secondary">{count}</Badge>

@@ -80,7 +80,10 @@ function getExcludedSet(
 /**
  * Build a tree structure from a flat folder list, excluding specified folders.
  */
-function buildTree(folders: FlatFolder[], excludedSet: Set<string>): TreeNode[] {
+function buildTree(
+  folders: FlatFolder[],
+  excludedSet: Set<string>
+): TreeNode[] {
   const filtered = folders.filter((f) => !excludedSet.has(f._id));
   const childMap = new Map<string | undefined, FlatFolder[]>();
 
@@ -128,9 +131,9 @@ export function MoveToFolderDialog({
     [apiFolders]
   );
 
-  const [selectedFolderId, setSelectedFolderId] = useState<
-    string | undefined
-  >(undefined);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(
+    undefined
+  );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const excludedSet = useMemo(

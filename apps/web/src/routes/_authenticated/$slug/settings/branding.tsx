@@ -29,7 +29,11 @@ import { toast } from "sonner";
 import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { getBrandingSettings, getOrganization, updateBrandingSettings } from "@/lib/api-client";
+import {
+  getBrandingSettings,
+  getOrganization,
+  updateBrandingSettings,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
   {

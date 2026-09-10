@@ -9,6 +9,7 @@
  * @validation VAL-REAL-1776629332274
  */
 
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexOrganizationProfile,
@@ -32,7 +33,6 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { getOrganization, updateWorkspace } from "@/lib/api-client";
 import { pageSEO } from "@/lib/seo";
-import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
   component: GeneralSettings,

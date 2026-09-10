@@ -10,8 +10,8 @@ import {
   useLocation,
 } from "@tanstack/react-router";
 
-import { betterAuthClient } from "@/lib/better-auth";
 import Loader from "@/components/loader";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,

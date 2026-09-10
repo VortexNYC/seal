@@ -5,8 +5,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import {
+  addRecipients,
+  getContacts,
+  getOrganizationMembers,
+} from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
-import { addRecipients, getContacts, getOrganizationMembers } from "@/lib/api-client";
 
 import { parseSelectValue } from "../../lib/select-values";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";

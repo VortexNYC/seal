@@ -12,6 +12,7 @@ import {
   createFileRoute,
   Link,
 } from "@tanstack/react-router";
+import { formatMoney, money } from "@vortexnyc/money";
 import { ConvexError } from "convex/values";
 import {
   AlertCircle,
@@ -44,8 +45,6 @@ import {
 } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { toast } from "sonner";
-
-import { formatMoney, money } from "@vortexnyc/money";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
@@ -83,7 +82,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { pageSEO } from "@/lib/seo";
 import {
   getPublicSigningPaymentConfigs,
   getPublicSigningPdf,
@@ -95,6 +93,7 @@ import {
   savePublicSigningFieldValue,
   submitPublicSigning,
 } from "@/lib/api-client";
+import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -106,9 +105,7 @@ function sealAssertPresent<T>(
   return value;
 }
 
-function asFieldProperties(
-  value: unknown
-):
+function asFieldProperties(value: unknown):
   | {
       placeholder?: string;
       defaultValue?: string;
@@ -132,7 +129,8 @@ function asFieldProperties(
     typeof v.minLength === "number" ? Math.floor(v.minLength) : undefined;
   return {
     placeholder: typeof v.placeholder === "string" ? v.placeholder : undefined,
-    defaultValue: typeof v.defaultValue === "string" ? v.defaultValue : undefined,
+    defaultValue:
+      typeof v.defaultValue === "string" ? v.defaultValue : undefined,
     options,
     maxLength,
     minLength,

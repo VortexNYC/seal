@@ -1,5 +1,11 @@
 import { relations, sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 // -----------------------------------------------------------------------------
 // Better Auth core tables
@@ -396,7 +402,9 @@ export const recipients = sqliteTable(
     esignConsentVersion: text("esign_consent_version"),
     awaitingDictation: integer("awaiting_dictation", {
       mode: "boolean",
-    }).notNull().default(false),
+    })
+      .notNull()
+      .default(false),
     isPlaceholder: integer("is_placeholder", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -715,7 +723,10 @@ export const aiFieldSuggestions = sqliteTable(
   },
   (table) => [
     index("aiFieldSuggestions_documentId_idx").on(table.documentId),
-    index("aiFieldSuggestions_documentStatus_idx").on(table.documentId, table.status),
+    index("aiFieldSuggestions_documentStatus_idx").on(
+      table.documentId,
+      table.status
+    ),
     index("aiFieldSuggestions_organizationId_idx").on(table.organizationId),
   ]
 );
@@ -746,7 +757,10 @@ export const aiDocumentAnnotations = sqliteTable(
   },
   (table) => [
     index("aiDocumentAnnotations_documentId_idx").on(table.documentId),
-    index("aiDocumentAnnotations_documentStatus_idx").on(table.documentId, table.status),
+    index("aiDocumentAnnotations_documentStatus_idx").on(
+      table.documentId,
+      table.status
+    ),
     index("aiDocumentAnnotations_organizationId_idx").on(table.organizationId),
   ]
 );
@@ -776,7 +790,10 @@ export const aiThreads = sqliteTable(
   (table) => [
     index("aiThreads_threadId_idx").on(table.threadId),
     index("aiThreads_documentId_idx").on(table.documentId),
-    index("aiThreads_organizationUser_idx").on(table.organizationId, table.userId),
+    index("aiThreads_organizationUser_idx").on(
+      table.organizationId,
+      table.userId
+    ),
   ]
 );
 
@@ -855,9 +872,12 @@ export const templates = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
-    sourceDocumentId: text("source_document_id").references(() => documents.id, {
-      onDelete: "set null",
-    }),
+    sourceDocumentId: text("source_document_id").references(
+      () => documents.id,
+      {
+        onDelete: "set null",
+      }
+    ),
     folderId: text("folder_id").references(() => folders.id, {
       onDelete: "set null",
     }),
@@ -920,7 +940,10 @@ export const templateFields = sqliteTable(
   (table) => [
     index("templateFields_templateId_idx").on(table.templateId),
     index("templateFields_templateIdPage_idx").on(table.templateId, table.page),
-    index("templateFields_templateIdOrder_idx").on(table.templateId, table.order),
+    index("templateFields_templateIdOrder_idx").on(
+      table.templateId,
+      table.order
+    ),
   ]
 );
 
@@ -928,7 +951,9 @@ export const connectedApps = sqliteTable(
   "connected_apps",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     appName: text("app_name").notNull(),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     connectedAt: integer("connected_at", { mode: "timestamp_ms" })
@@ -954,7 +979,9 @@ export const integrationActivityLogs = sqliteTable(
   "integration_activity_logs",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     integrationName: text("integration_name").notNull(),
     action: text("action").notNull(),
@@ -970,8 +997,12 @@ export const feedback = sqliteTable(
   "feedback",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id").notNull().references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     message: text("message").notNull(),
     route: text("route"),

@@ -3,14 +3,15 @@ import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { type FieldProperties } from "@/data/document-detail";
 import {
   createSignatureField as createSignatureFieldApi,
   deleteSignatureField as deleteSignatureFieldApi,
   repositionSignatureField as repositionSignatureFieldApi,
 } from "@/lib/api-client";
 import { parseId } from "@/lib/convex-ids";
+
 import { parseSelectValue } from "../../../lib/select-values";
-import { type FieldProperties } from "@/data/document-detail";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";
 import { type FieldOptionsConfig } from "../field-options-dialog";
 import { FIELD_TYPES, type FieldType } from "../field-toolbar";
@@ -144,8 +145,9 @@ export function useFieldPlacement({
 
   // Payment config modal
   const [showPaymentConfigModal, setShowPaymentConfigModal] = useState(false);
-  const [paymentConfigFieldId, setPaymentConfigFieldId] =
-    useState<string | null>(null);
+  const [paymentConfigFieldId, setPaymentConfigFieldId] = useState<
+    string | null
+  >(null);
 
   const createField = useMutation({
     mutationFn: ({
@@ -428,7 +430,9 @@ export function useFieldPlacement({
       )
     );
 
-    const field = signatureFields.find((f) => f._id === parseId("signature_fields", fieldId));
+    const field = signatureFields.find(
+      (f) => f._id === parseId("signature_fields", fieldId)
+    );
     if (!field) return;
 
     try {
@@ -446,9 +450,7 @@ export function useFieldPlacement({
   };
 
   const handleFieldSelect = (fieldId: string | null) => {
-    setSelectedFieldId(
-      fieldId ? parseId("signature_fields", fieldId) : null
-    );
+    setSelectedFieldId(fieldId ? parseId("signature_fields", fieldId) : null);
   };
 
   const handleFieldDelete = useCallback(async () => {

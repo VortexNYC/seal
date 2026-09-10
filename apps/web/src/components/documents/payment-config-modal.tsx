@@ -1,6 +1,4 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { ApiPaymentConfigDetail } from "@/lib/api-client";
-import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
 import {
   allocate,
   applyRate,
@@ -20,6 +18,8 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import type { ApiPaymentConfigDetail } from "@/lib/api-client";
+import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -232,12 +232,7 @@ export function PaymentConfigModal({
   fieldPublicId,
 }: PaymentConfigModalProps) {
   const { data: existingConfig, isLoading: existingConfigLoading } = useQuery({
-    queryKey: [
-      "documents",
-      documentPublicId,
-      "payment-configs",
-      fieldPublicId,
-    ],
+    queryKey: ["documents", documentPublicId, "payment-configs", fieldPublicId],
     queryFn: async () => {
       if (!fieldPublicId) return null;
       try {

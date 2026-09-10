@@ -7,10 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { FileIcon, Loader2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  downloadDocument,
-  updateDocumentThumbnail,
-} from "@/lib/api-client";
+import { downloadDocument, updateDocumentThumbnail } from "@/lib/api-client";
 import { generateThumbnailFromUrl } from "@/lib/pdf-utils";
 import { cn } from "@/lib/utils";
 
@@ -35,10 +32,8 @@ export function DocumentThumbnail({
   const hasAttemptedGeneration = useRef(false);
 
   const updateThumbnail = useMutation({
-    mutationFn: (variables: {
-      publicId: string;
-      thumbnailDataUrl: string;
-    }) => updateDocumentThumbnail(variables.publicId, variables.thumbnailDataUrl),
+    mutationFn: (variables: { publicId: string; thumbnailDataUrl: string }) =>
+      updateDocumentThumbnail(variables.publicId, variables.thumbnailDataUrl),
   });
 
   useEffect(() => {
@@ -77,7 +72,13 @@ export function DocumentThumbnail({
     };
 
     void generateThumbnail();
-  }, [publicId, thumbnailDataUrl, localThumbnail, generationFailed, updateThumbnail]);
+  }, [
+    publicId,
+    thumbnailDataUrl,
+    localThumbnail,
+    generationFailed,
+    updateThumbnail,
+  ]);
 
   useEffect(() => {
     if (thumbnailDataUrl && !localThumbnail) {

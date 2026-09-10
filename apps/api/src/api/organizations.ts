@@ -69,7 +69,9 @@ function parseMetadata(metadata: string | null): Record<string, unknown> {
   if (!metadata) return {};
   try {
     const parsed = JSON.parse(metadata);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+    return typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
       ? parsed
       : {};
   } catch {
@@ -78,9 +80,7 @@ function parseMetadata(metadata: string | null): Record<string, unknown> {
 }
 
 const recordSchema = z.record(z.string(), z.unknown());
-const nullableRecordSchema = z
-  .record(z.string(), z.unknown())
-  .nullable();
+const nullableRecordSchema = z.record(z.string(), z.unknown()).nullable();
 
 function asRecord(v: unknown): Record<string, unknown> {
   const result = recordSchema.safeParse(v);
@@ -100,11 +100,11 @@ function organizationResponse(
   userRole: string | undefined
 ) {
   const meta = parseMetadata(org.metadata);
-  const status =
-    typeof meta.status === "string" ? meta.status : "active";
+  const status = typeof meta.status === "string" ? meta.status : "active";
 
-  const brandingSettingsResult =
-    nullableRecordSchema.safeParse(meta.brandingSettings);
+  const brandingSettingsResult = nullableRecordSchema.safeParse(
+    meta.brandingSettings
+  );
 
   return {
     _id: org.id,
@@ -124,14 +124,11 @@ function organizationResponse(
       typeof meta.delegateOwnership === "boolean"
         ? meta.delegateOwnership
         : false,
-    timezone:
-      typeof meta.timezone === "string" ? meta.timezone : "UTC",
-    currency:
-      typeof meta.currency === "string" ? meta.currency : "BRL",
+    timezone: typeof meta.timezone === "string" ? meta.timezone : "UTC",
+    currency: typeof meta.currency === "string" ? meta.currency : "BRL",
     currencyKind:
       typeof meta.currencyKind === "string" ? meta.currencyKind : "normal",
-    plan:
-      typeof meta.plan === "string" ? meta.plan : "free",
+    plan: typeof meta.plan === "string" ? meta.plan : "free",
     createdAt: org.createdAt.getTime(),
     updatedAt: org.updatedAt.getTime(),
   };
@@ -648,9 +645,7 @@ app.openapi(signingRouteDef, async (c) => {
         ? raw.allowedSignatureTypes
         : ["draw", "type", "upload"],
     esignConsentText:
-      typeof raw.esignConsentText === "string"
-        ? raw.esignConsentText
-        : null,
+      typeof raw.esignConsentText === "string" ? raw.esignConsentText : null,
     defaultDeadlineDays:
       typeof raw.defaultDeadlineDays === "number"
         ? Math.round(raw.defaultDeadlineDays)
@@ -919,7 +914,11 @@ app.openapi(securityRouteDef, async (c) => {
       typeof raw.allowApiAccess === "boolean" ? raw.allowApiAccess : true,
   });
 
-  return c.json(result.success ? result.data : { ipAllowlist: allowlist, allowApiAccess: true });
+  return c.json(
+    result.success
+      ? result.data
+      : { ipAllowlist: allowlist, allowApiAccess: true }
+  );
 });
 
 const updateSecurityRouteDef = createRoute({
@@ -1089,7 +1088,8 @@ app.openapi(updateAiRouteDef, async (c) => {
     aiEnabled: body.aiEnabled ?? toBoolean(ai.aiEnabled, true),
     aiAutoAnalyze: body.aiAutoAnalyze ?? toBoolean(ai.aiAutoAnalyze, true),
     aiShowRedlinesToSigners:
-      body.aiShowRedlinesToSigners ?? toBoolean(ai.aiShowRedlinesToSigners, false),
+      body.aiShowRedlinesToSigners ??
+      toBoolean(ai.aiShowRedlinesToSigners, false),
   };
 
   const nextMetadata = { ...meta, aiSettings: nextAi };
@@ -1111,9 +1111,12 @@ const listTemplatesRouteDef = createRoute({
   request: {
     params: z.object({ slug: z.string() }),
     query: z.object({
-      folderId: z.string().optional().openapi({
-        param: { name: "folderId", in: "query" },
-      }),
+      folderId: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: "folderId", in: "query" },
+        }),
     }),
   },
   responses: {

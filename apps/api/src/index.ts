@@ -1,7 +1,11 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { routeAgentRequest } from "agents";
 import { cors } from "hono/cors";
 
+import { authenticateAgentConnection } from "./agents/auth.js";
+import { SealChatAgent } from "./agents/seal-chat-agent.js";
 import activity from "./api/activity.js";
+import ai from "./api/ai.js";
 import analytics from "./api/analytics.js";
 import contacts from "./api/contacts.js";
 import documents from "./api/documents.js";
@@ -20,10 +24,48 @@ type Variables = {
   user: SessionUser | null;
 };
 
+interface Env extends CloudflareBindings {
+  SealChatAgent: DurableObjectNamespace<SealChatAgent>;
+}
+
 const app = new OpenAPIHono<{
-  Bindings: CloudflareBindings;
+  Bindings: Env;
   Variables: Variables;
 }>();
+
+// Agent WebSocket/HTTP routing runs before CORS and the auth middleware so
+// that `routeAgentRequest` can handle `/agents/...` upgrades directly.
+app.use("*", async (c, next) => {
+  if (!c.req.path.startsWith("/agents/")) {
+    return next();
+  }
+
+  const agentResponse = await routeAgentRequest(c.req.raw, c.env, {
+    prefix: "agents",
+    onBeforeConnect: async (req, lobby) => {
+      const authResult = await authenticateAgentConnection(
+        req,
+        lobby.name,
+        c.env
+      );
+      return authResult ?? req;
+    },
+    onBeforeRequest: async (req, lobby) => {
+      const authResult = await authenticateAgentConnection(
+        req,
+        lobby.name,
+        c.env
+      );
+      return authResult ?? req;
+    },
+  });
+
+  if (agentResponse) {
+    return agentResponse;
+  }
+
+  return next();
+});
 
 app.use(
   "*",
@@ -61,6 +103,7 @@ app.all("/api/auth/*", (c) => {
 });
 
 app.route("/api/activity", activity);
+app.route("/api/ai", ai);
 app.route("/api/analytics", analytics);
 app.route("/api/contacts", contacts);
 app.route("/api/documents", documents);
@@ -71,5 +114,7 @@ app.route("/api/organizations", organizations);
 app.route("/api/public", publicApi);
 app.route("/api/saved-signatures", savedSignatures);
 app.route("/api/users", users);
+
+export { SealChatAgent };
 
 export default app;

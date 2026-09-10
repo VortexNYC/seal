@@ -202,9 +202,7 @@ describe("SendDocumentDialog", () => {
         })}
       />
     );
-    expect(
-      screen.getByText("2 payments will be included")
-    ).toBeInTheDocument();
+    expect(screen.getByText("2 payments will be included")).toBeInTheDocument();
   });
 
   test("does not show payment summary when paymentConfigs is empty", () => {

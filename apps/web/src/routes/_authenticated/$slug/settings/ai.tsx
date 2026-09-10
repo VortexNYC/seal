@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { getAiSettings, getOrganization, updateAiSettings } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,6 +23,11 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  getAiSettings,
+  getOrganization,
+  updateAiSettings,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/ai")({
   component: AISettings,

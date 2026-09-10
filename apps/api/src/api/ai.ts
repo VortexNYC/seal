@@ -57,7 +57,7 @@ const fieldSuggestionSchema = z
 
 const getFieldSuggestionsRoute = createRoute({
   method: "get",
-  path: "/field-suggestions",
+  path: "/:publicId/field-suggestions",
   request: { params: z.object({ publicId: z.string() }) },
   responses: {
     200: {
@@ -65,7 +65,9 @@ const getFieldSuggestionsRoute = createRoute({
       description: "Pending field suggestions for the document",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -81,7 +83,12 @@ app.openapi(getFieldSuggestionsRoute, async (c) => {
   const docRows = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(and(eq(documents.publicId, publicId), eq(documents.organizationId, organizationId)))
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   const docRow = docRows[0];
@@ -94,7 +101,12 @@ app.openapi(getFieldSuggestionsRoute, async (c) => {
   const rows = await db
     .select()
     .from(aiFieldSuggestions)
-    .where(and(eq(aiFieldSuggestions.documentId, documentId), eq(aiFieldSuggestions.status, "pending")))
+    .where(
+      and(
+        eq(aiFieldSuggestions.documentId, documentId),
+        eq(aiFieldSuggestions.status, "pending")
+      )
+    )
     .orderBy(desc(aiFieldSuggestions.createdAt))
     .limit(1);
 
@@ -103,19 +115,22 @@ app.openapi(getFieldSuggestionsRoute, async (c) => {
     return c.json(null, 200);
   }
 
-  return c.json({
-    id: row.id,
-    publicId: row.publicId,
-    documentId: row.documentId,
-    organizationId: row.organizationId,
-    fields: JSON.parse(row.fields),
-    modelUsed: row.modelUsed,
-    tokensUsed: row.tokensUsed,
-    processingTimeMs: row.processingTimeMs,
-    status: row.status,
-    createdAt: row.createdAt.getTime(),
-    updatedAt: row.updatedAt.getTime(),
-  }, 200);
+  return c.json(
+    {
+      id: row.id,
+      publicId: row.publicId,
+      documentId: row.documentId,
+      organizationId: row.organizationId,
+      fields: JSON.parse(row.fields),
+      modelUsed: row.modelUsed,
+      tokensUsed: row.tokensUsed,
+      processingTimeMs: row.processingTimeMs,
+      status: row.status,
+      createdAt: row.createdAt.getTime(),
+      updatedAt: row.updatedAt.getTime(),
+    },
+    200
+  );
 });
 
 const annotationItemSchema = z.object({
@@ -149,7 +164,7 @@ const documentAnnotationsSchema = z
 
 const getAnnotationsRoute = createRoute({
   method: "get",
-  path: "/annotations",
+  path: "/:publicId/annotations",
   request: { params: z.object({ publicId: z.string() }) },
   responses: {
     200: {
@@ -157,7 +172,9 @@ const getAnnotationsRoute = createRoute({
       description: "Active annotations for the document",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -173,7 +190,12 @@ app.openapi(getAnnotationsRoute, async (c) => {
   const docRows = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(and(eq(documents.publicId, publicId), eq(documents.organizationId, organizationId)))
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   const docRow = docRows[0];
@@ -186,7 +208,12 @@ app.openapi(getAnnotationsRoute, async (c) => {
   const rows = await db
     .select()
     .from(aiDocumentAnnotations)
-    .where(and(eq(aiDocumentAnnotations.documentId, documentId), eq(aiDocumentAnnotations.status, "active")))
+    .where(
+      and(
+        eq(aiDocumentAnnotations.documentId, documentId),
+        eq(aiDocumentAnnotations.status, "active")
+      )
+    )
     .orderBy(desc(aiDocumentAnnotations.createdAt))
     .limit(1);
 
@@ -195,19 +222,22 @@ app.openapi(getAnnotationsRoute, async (c) => {
     return c.json(null, 200);
   }
 
-  return c.json({
-    id: row.id,
-    publicId: row.publicId,
-    documentId: row.documentId,
-    organizationId: row.organizationId,
-    annotations: JSON.parse(row.annotations),
-    modelUsed: row.modelUsed,
-    tokensUsed: row.tokensUsed,
-    processingTimeMs: row.processingTimeMs,
-    status: row.status,
-    createdAt: row.createdAt.getTime(),
-    updatedAt: row.updatedAt.getTime(),
-  }, 200);
+  return c.json(
+    {
+      id: row.id,
+      publicId: row.publicId,
+      documentId: row.documentId,
+      organizationId: row.organizationId,
+      annotations: JSON.parse(row.annotations),
+      modelUsed: row.modelUsed,
+      tokensUsed: row.tokensUsed,
+      processingTimeMs: row.processingTimeMs,
+      status: row.status,
+      createdAt: row.createdAt.getTime(),
+      updatedAt: row.updatedAt.getTime(),
+    },
+    200
+  );
 });
 
 const threadResponseSchema = z
@@ -218,7 +248,7 @@ const threadResponseSchema = z
 
 const getThreadRoute = createRoute({
   method: "get",
-  path: "/thread",
+  path: "/:publicId/thread",
   request: { params: z.object({ publicId: z.string() }) },
   responses: {
     200: {
@@ -226,7 +256,9 @@ const getThreadRoute = createRoute({
       description: "Thread for the document",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -243,7 +275,12 @@ app.openapi(getThreadRoute, async (c) => {
   const docRows = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(and(eq(documents.publicId, publicId), eq(documents.organizationId, organizationId)))
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   const docRow = docRows[0];
@@ -271,7 +308,7 @@ app.openapi(getThreadRoute, async (c) => {
 
 const getOrCreateThreadRoute = createRoute({
   method: "post",
-  path: "/thread",
+  path: "/:publicId/thread",
   request: { params: z.object({ publicId: z.string() }) },
   responses: {
     200: {
@@ -279,7 +316,9 @@ const getOrCreateThreadRoute = createRoute({
       description: "Created or existing thread",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -300,7 +339,12 @@ app.openapi(getOrCreateThreadRoute, async (c) => {
   const docRows = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(and(eq(documents.publicId, publicId), eq(documents.organizationId, organizationId)))
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   const docRow = docRows[0];
@@ -348,15 +392,19 @@ app.openapi(getOrCreateThreadRoute, async (c) => {
 
 const dismissAnnotationsRoute = createRoute({
   method: "post",
-  path: "/annotations/dismiss",
+  path: "/:publicId/annotations/dismiss",
   request: { params: z.object({ publicId: z.string() }) },
   responses: {
     200: {
-      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
       description: "Annotations dismissed",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -372,7 +420,12 @@ app.openapi(dismissAnnotationsRoute, async (c) => {
   const docRows = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(and(eq(documents.publicId, publicId), eq(documents.organizationId, organizationId)))
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   const docRow = docRows[0];
@@ -396,13 +449,15 @@ app.openapi(dismissAnnotationsRoute, async (c) => {
 
 const applyFieldSuggestionsRoute = createRoute({
   method: "post",
-  path: "/field-suggestions/:suggestionId/apply",
+  path: "/:publicId/field-suggestions/:suggestionId/apply",
   request: {
     params: z.object({ publicId: z.string(), suggestionId: z.string() }),
     body: {
       content: {
         "application/json": {
-          schema: z.object({ selectedFieldIndices: z.array(z.number().int()).optional() }),
+          schema: z.object({
+            selectedFieldIndices: z.array(z.number().int()).optional(),
+          }),
         },
       },
     },
@@ -410,12 +465,19 @@ const applyFieldSuggestionsRoute = createRoute({
   responses: {
     200: {
       content: {
-        "application/json": { schema: z.object({ fieldIds: z.array(z.string()), count: z.number().int() }) },
+        "application/json": {
+          schema: z.object({
+            fieldIds: z.array(z.string()),
+            count: z.number().int(),
+          }),
+        },
       },
       description: "Field suggestions applied",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -430,15 +492,19 @@ app.openapi(applyFieldSuggestionsRoute, async (c) => {
 
 const dismissFieldSuggestionsRoute = createRoute({
   method: "post",
-  path: "/field-suggestions/dismiss",
+  path: "/:publicId/field-suggestions/dismiss",
   request: { params: z.object({ publicId: z.string() }) },
   responses: {
     200: {
-      content: { "application/json": { schema: z.object({ success: z.boolean() }) } },
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
       description: "Field suggestions dismissed",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
   },
@@ -454,7 +520,12 @@ app.openapi(dismissFieldSuggestionsRoute, async (c) => {
   const docRows = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(and(eq(documents.publicId, publicId), eq(documents.organizationId, organizationId)))
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   const docRow = docRows[0];
@@ -508,11 +579,15 @@ const getProgressRoute = createRoute({
       description: "AI progress for the thread",
     },
     401: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Unauthorized",
     },
     403: {
-      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      content: {
+        "application/json": { schema: z.object({ error: z.string() }) },
+      },
       description: "Forbidden",
     },
   },

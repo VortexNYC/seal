@@ -84,7 +84,6 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { pageSEO } from "@/lib/seo";
 import {
   deleteTemplate as deleteTemplateApi,
   getFolders,
@@ -95,6 +94,7 @@ import {
   useTemplate as useTemplateApi,
   type ApiTemplateListItem,
 } from "@/lib/api-client";
+import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
   component: TemplatesPage,
@@ -609,9 +609,7 @@ function TemplatesPage() {
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveTemplateId, setMoveTemplateId] = useState<string | null>(
-    null
-  );
+  const [moveTemplateId, setMoveTemplateId] = useState<string | null>(null);
 
   // Dialog states
   const [useTemplateDialog, setUseTemplateDialog] = useState<{
@@ -694,9 +692,13 @@ function TemplatesPage() {
 
     setIsCreating(true);
     try {
-      const result = await useTemplateApi(slug, useTemplateDialog.template._id, {
-        documentName: newDocumentName || undefined,
-      });
+      const result = await useTemplateApi(
+        slug,
+        useTemplateDialog.template._id,
+        {
+          documentName: newDocumentName || undefined,
+        }
+      );
 
       track.templateUsed({
         templateId: useTemplateDialog.template._id,

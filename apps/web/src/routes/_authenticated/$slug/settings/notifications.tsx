@@ -25,7 +25,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { getNotificationSettings, getOrganization, updateNotificationSettings } from "@/lib/api-client";
+import {
+  getNotificationSettings,
+  getOrganization,
+  updateNotificationSettings,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/notifications"

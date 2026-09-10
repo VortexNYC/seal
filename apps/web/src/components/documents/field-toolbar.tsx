@@ -258,9 +258,7 @@ export function FieldToolbar({
       <div className="grid grid-cols-1 gap-2">
         {FIELD_TYPES.map((type) => {
           const isPayment = type === "payment";
-          const isDisabled =
-            disabled ||
-            (isPayment && true); // Payment fields disabled while Vortex Payments is rewired
+          const isDisabled = disabled || (isPayment && true); // Payment fields disabled while Vortex Payments is rewired
           const disabledReason = isPayment
             ? getPaymentDisabledReason(merchantPaymentsReady)
             : "Document fields are temporarily disabled while the field editor is migrated to the Worker backend.";

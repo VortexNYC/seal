@@ -4,7 +4,10 @@ import { desc, eq } from "drizzle-orm";
 import { createD1 } from "../global/db.js";
 import { activity } from "../global/schema.js";
 
-const ActivityMetadataSchema = z.record(z.string(), z.unknown()).nullable().optional();
+const ActivityMetadataSchema = z
+  .record(z.string(), z.unknown())
+  .nullable()
+  .optional();
 
 const ActivitySchema = z
   .object({

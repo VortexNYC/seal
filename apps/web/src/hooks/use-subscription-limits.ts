@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getCurrentSubscription } from "@/lib/api-client";
-import { parseSelectValue } from "@/lib/select-values";
-
 import { PLAN_LIMITS } from "@/lib/plan-limits";
+import { parseSelectValue } from "@/lib/select-values";
 
 const PLAN_TIERS = [
   "free",

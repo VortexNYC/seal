@@ -510,14 +510,14 @@ const organizationListSchema = z.array(
 );
 
 export async function listUserOrganizations(): Promise<ApiUserOrganization[]> {
-  return apiFetch(
-    "/api/auth/organization/list",
-    organizationListSchema,
-    { method: "GET" }
-  );
+  return apiFetch("/api/auth/organization/list", organizationListSchema, {
+    method: "GET",
+  });
 }
 
-export type ApiUserOrganization = z.infer<typeof organizationListSchema>[number];
+export type ApiUserOrganization = z.infer<
+  typeof organizationListSchema
+>[number];
 
 const setActiveOrganizationSchema = z.unknown().transform(() => undefined);
 
@@ -644,7 +644,9 @@ const notificationSettingsSchema = z.object({
   sendViewedNotification: z.boolean(),
 });
 
-export type ApiNotificationSettings = z.infer<typeof notificationSettingsSchema>;
+export type ApiNotificationSettings = z.infer<
+  typeof notificationSettingsSchema
+>;
 
 export async function getNotificationSettings(
   slug: string
@@ -797,7 +799,9 @@ const analyticsPeriodStatsSchema = z.object({
   period: z.string(),
 });
 
-export type ApiAnalyticsPeriodStats = z.infer<typeof analyticsPeriodStatsSchema>;
+export type ApiAnalyticsPeriodStats = z.infer<
+  typeof analyticsPeriodStatsSchema
+>;
 
 const memberActivitySchema = z.object({
   userId: z.string(),
@@ -903,7 +907,8 @@ export async function getAnalyticsDocumentsForExport(
 ): Promise<ApiExportDocument[]> {
   const params = new URLSearchParams();
   if (args.workflowStatus) params.set("workflowStatus", args.workflowStatus);
-  if (args.startDate !== undefined) params.set("startDate", String(args.startDate));
+  if (args.startDate !== undefined)
+    params.set("startDate", String(args.startDate));
   if (args.endDate !== undefined) params.set("endDate", String(args.endDate));
   const query = params.toString();
   return apiFetch(
@@ -913,7 +918,10 @@ export async function getAnalyticsDocumentsForExport(
 }
 
 export async function getMemberActivity(): Promise<ApiMemberActivity[]> {
-  return apiFetch("/api/analytics/member-activity", z.array(memberActivitySchema));
+  return apiFetch(
+    "/api/analytics/member-activity",
+    z.array(memberActivitySchema)
+  );
 }
 
 export async function getAnalyticsPeriodStats(
@@ -1203,12 +1211,14 @@ const teamMemberSchema = z.object({
 
 export type ApiTeamMember = z.infer<typeof teamMemberSchema>;
 
-export async function getDocuments(options: {
-  filter?: "all" | "owned" | "shared";
-  workflowStatus?: string;
-  folderId?: string;
-  rootOnly?: boolean;
-} = {}): Promise<ApiDocument[]> {
+export async function getDocuments(
+  options: {
+    filter?: "all" | "owned" | "shared";
+    workflowStatus?: string;
+    folderId?: string;
+    rootOnly?: boolean;
+  } = {}
+): Promise<ApiDocument[]> {
   const query = new URLSearchParams();
   if (options.filter && options.filter !== "all") {
     query.set("filter", options.filter);
@@ -1227,10 +1237,12 @@ export async function getDocuments(options: {
   return apiFetch(path, z.array(documentSchema));
 }
 
-export async function getFolders(options: {
-  type?: "document" | "template";
-  parentId?: string;
-} = {}): Promise<ApiFolder[]> {
+export async function getFolders(
+  options: {
+    type?: "document" | "template";
+    parentId?: string;
+  } = {}
+): Promise<ApiFolder[]> {
   const query = new URLSearchParams();
   query.set("type", options.type ?? "document");
   if (options.parentId) {
@@ -1287,7 +1299,8 @@ export async function uploadDocument(
   contentBase64: string,
   contentType: string
 ): Promise<{ storageKey: string; contentType: string; size: number }> {
-  return apiFetch(`/api/documents/${encodeURIComponent(publicId)}/upload`,
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/upload`,
     z.object({
       storageKey: z.string(),
       contentType: z.string(),
@@ -1347,10 +1360,14 @@ export async function moveDocumentsToFolder(options: {
   documentIds: string[];
   folderId?: string;
 }): Promise<{ moved: number }> {
-  return apiFetch("/api/documents/move", z.object({ moved: z.number().int() }), {
-    method: "POST",
-    body: JSON.stringify(options),
-  });
+  return apiFetch(
+    "/api/documents/move",
+    z.object({ moved: z.number().int() }),
+    {
+      method: "POST",
+      body: JSON.stringify(options),
+    }
+  );
 }
 
 export async function updateDocumentThumbnail(
@@ -1409,20 +1426,28 @@ export async function shareDocument(
   userId: string,
   permissionLevel: "view" | "edit" | "manage"
 ): Promise<void> {
-  await apiFetch(`/api/documents/${encodeURIComponent(publicId)}/share`, z.void(), {
-    method: "POST",
-    body: JSON.stringify({ userId, permissionLevel }),
-  });
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/share`,
+    z.void(),
+    {
+      method: "POST",
+      body: JSON.stringify({ userId, permissionLevel }),
+    }
+  );
 }
 
 export async function revokeDocumentAccess(
   publicId: string,
   userId: string
 ): Promise<void> {
-  await apiFetch(`/api/documents/${encodeURIComponent(publicId)}/revoke`, z.void(), {
-    method: "POST",
-    body: JSON.stringify({ userId }),
-  });
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/revoke`,
+    z.void(),
+    {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    }
+  );
 }
 
 export async function updateDocumentPermission(
@@ -1995,14 +2020,16 @@ export async function getDocumentAnnotations(
   publicId: string
 ): Promise<ApiDocumentAnnotations | null> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/annotations`,
+    `/api/ai/${encodeURIComponent(publicId)}/annotations`,
     annotationSchema.nullable()
   );
 }
 
-export async function dismissDocumentAnnotations(publicId: string): Promise<void> {
+export async function dismissDocumentAnnotations(
+  publicId: string
+): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/annotations/dismiss`,
+    `/api/ai/${encodeURIComponent(publicId)}/annotations/dismiss`,
     z.void(),
     { method: "POST" }
   );
@@ -2040,7 +2067,7 @@ export async function getFieldSuggestions(
   publicId: string
 ): Promise<ApiFieldSuggestions | null> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/field-suggestions`,
+    `/api/ai/${encodeURIComponent(publicId)}/field-suggestions`,
     fieldSuggestionSchema.nullable()
   );
 }
@@ -2051,7 +2078,7 @@ export async function applyFieldSuggestions(
   selectedFieldIndices?: number[]
 ): Promise<{ fieldIds: string[]; count: number }> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/field-suggestions/${encodeURIComponent(suggestionId)}/apply`,
+    `/api/ai/${encodeURIComponent(publicId)}/field-suggestions/${encodeURIComponent(suggestionId)}/apply`,
     z.object({ fieldIds: z.array(z.string()), count: z.number().int() }),
     {
       method: "POST",
@@ -2062,7 +2089,7 @@ export async function applyFieldSuggestions(
 
 export async function dismissFieldSuggestions(publicId: string): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/field-suggestions/dismiss`,
+    `/api/ai/${encodeURIComponent(publicId)}/field-suggestions/dismiss`,
     z.void(),
     { method: "POST" }
   );
@@ -2076,14 +2103,16 @@ export async function getThreadForDocument(
   publicId: string
 ): Promise<{ threadId: string | null }> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/thread`,
+    `/api/ai/${encodeURIComponent(publicId)}/thread`,
     threadResponseSchema
   );
 }
 
-export async function getOrCreateThread(publicId: string): Promise<{ threadId: string | null }> {
+export async function getOrCreateThread(
+  publicId: string
+): Promise<{ threadId: string | null }> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/ai/thread`,
+    `/api/ai/${encodeURIComponent(publicId)}/thread`,
     threadResponseSchema,
     { method: "POST" }
   );
@@ -2151,7 +2180,10 @@ export type PublicSigningTokenResponse = z.infer<
 export async function getSigningByToken(
   token: string
 ): Promise<PublicSigningTokenResponse> {
-  return apiFetch(`/api/public/signing/${encodeURIComponent(token)}`, publicSigningTokenResponseSchema);
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}`,
+    publicSigningTokenResponseSchema
+  );
 }
 
 const publicSigningFieldSchema = z.object({
@@ -2189,7 +2221,9 @@ const publicSigningFieldSchema = z.object({
 
 export type PublicSigningField = z.infer<typeof publicSigningFieldSchema>;
 
-export async function getSigningFields(token: string): Promise<PublicSigningField[]> {
+export async function getSigningFields(
+  token: string
+): Promise<PublicSigningField[]> {
   const response = await apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/fields`,
     z.object({ fields: z.array(publicSigningFieldSchema) })
@@ -2345,14 +2379,10 @@ export async function createSavedSignature(input: {
   fontFamily?: string;
   setAsDefault?: boolean;
 }): Promise<ApiSavedSignature> {
-  return apiFetch(
-    "/api/saved-signatures",
-    savedSignatureSchema,
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    }
-  );
+  return apiFetch("/api/saved-signatures", savedSignatureSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function updateSavedSignature(
@@ -2405,9 +2435,7 @@ const aiProgressSchema = z
 
 export type ApiAIProgress = z.infer<typeof aiProgressSchema>;
 
-export async function getAIProgress(
-  threadId: string
-): Promise<ApiAIProgress> {
+export async function getAIProgress(threadId: string): Promise<ApiAIProgress> {
   return apiFetch(
     `/api/ai/progress/${encodeURIComponent(threadId)}`,
     aiProgressSchema

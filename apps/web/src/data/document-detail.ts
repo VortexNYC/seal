@@ -1,10 +1,11 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
-import { FIELD_TYPES, type FieldType } from "@/components/documents/field-toolbar";
-import { parseId } from "@/lib/convex-ids";
-import { parseSelectValue } from "@/lib/select-values";
+import {
+  FIELD_TYPES,
+  type FieldType,
+} from "@/components/documents/field-toolbar";
 import {
   getDocument,
   getDocumentRecipients,
@@ -20,6 +21,8 @@ import {
   type ApiSignature,
   type ApiPaymentConfig,
 } from "@/lib/api-client";
+import { parseId } from "@/lib/convex-ids";
+import { parseSelectValue } from "@/lib/select-values";
 
 export type DocumentDetailRecipient = {
   _id: Id<"document_recipients">;
@@ -112,11 +115,11 @@ function toRecipient(r: ApiRecipient): DocumentDetailRecipient {
     documentId: parseId("documents", r.documentId),
     name: r.name ?? undefined,
     email: r.email,
-    role: parseSelectValue(r.role, ["signer", "viewer", "approver"] as const) ??
+    role:
+      parseSelectValue(r.role, ["signer", "viewer", "approver"] as const) ??
       "signer",
     status:
-      parseSelectValue(r.status, RECIPIENT_STATUSES) ??
-      ("pending" as const),
+      parseSelectValue(r.status, RECIPIENT_STATUSES) ?? ("pending" as const),
     order: r.order,
     signingToken: r.signingToken ?? undefined,
     tokenExpiresAt: r.tokenExpiresAt,
@@ -265,10 +268,12 @@ export function useDocumentDetail(documentPublicId: string) {
       }
     : null;
 
-  const { data: apiSignatureFields, refetch: refetchFields } = useSuspenseQuery({
-    queryKey: ["documents", documentPublicId, "signature-fields"],
-    queryFn: () => getDocumentSignatureFields(documentPublicId),
-  });
+  const { data: apiSignatureFields, refetch: refetchFields } = useSuspenseQuery(
+    {
+      queryKey: ["documents", documentPublicId, "signature-fields"],
+      queryFn: () => getDocumentSignatureFields(documentPublicId),
+    }
+  );
 
   const { data: apiSignatures } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "signatures"],
@@ -297,7 +302,9 @@ export function useDocumentDetail(documentPublicId: string) {
   const currentUserRecipient = apiCurrentUserRecipient
     ? toRecipient(apiCurrentUserRecipient)
     : null;
-  const currentUserFields = (apiCurrentUserFields ?? []).map(toCurrentUserField);
+  const currentUserFields = (apiCurrentUserFields ?? []).map(
+    toCurrentUserField
+  );
 
   const recipients = useMemo(
     () => (apiRecipients ?? []).map(toRecipient),

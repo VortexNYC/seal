@@ -96,7 +96,9 @@ app.openapi(getRouteDef, async (c) => {
   const raw = metadata.notificationPreferences;
 
   const parsed = notificationPreferencesSchema.safeParse(raw);
-  return c.json(parsed.success ? parsed.data : notificationPreferencesSchema.parse({}));
+  return c.json(
+    parsed.success ? parsed.data : notificationPreferencesSchema.parse({})
+  );
 });
 
 const patchRouteDef = createRoute({
@@ -459,7 +461,10 @@ app.openapi(disconnectConnectedAppRouteDef, async (c) => {
     .select({ id: connectedApps.id })
     .from(connectedApps)
     .where(
-      and(eq(connectedApps.id, id), eq(connectedApps.userId, sessionUser!.user.id))
+      and(
+        eq(connectedApps.id, id),
+        eq(connectedApps.userId, sessionUser!.user.id)
+      )
     )
     .limit(1);
 
@@ -467,9 +472,7 @@ app.openapi(disconnectConnectedAppRouteDef, async (c) => {
     return c.json({ error: "Not found" }, 404);
   }
 
-  await db
-    .delete(connectedApps)
-    .where(eq(connectedApps.id, existing[0].id));
+  await db.delete(connectedApps).where(eq(connectedApps.id, existing[0].id));
 
   return c.body(null, 204);
 });

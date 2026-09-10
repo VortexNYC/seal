@@ -16,5 +16,7 @@ declare interface CloudflareBindings {
   TOKEN_HASH_SECRET: string;
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
+  AI_GATEWAY_API_KEY: string;
+  AI_GATEWAY_BASE_URL?: string;
   TEST_MIGRATIONS?: D1Migration[];
 }

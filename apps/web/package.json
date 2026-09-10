@@ -30,7 +30,8 @@
     "cf:types": "pnpm run cf:types:mkdir && wrangler types .wrangler/types/cloudflare-env.d.ts --include-runtime false"
   },
   "dependencies": {
-    "@convex-dev/agent": "^0.6.3",
+    "@ai-sdk/react": "4.0.100",
+    "@cloudflare/ai-chat": "0.11.0",
     "@convex-dev/presence": "^0.3.0",
     "@convex-dev/react-query": "0.1.0",
     "@hookform/resolvers": "^5.2.2",
@@ -67,6 +68,8 @@
     "@vortexnyc/observability": "0.2.0",
     "@vortexnyc/payments-react": "0.1.0",
     "@vortexnyc/ui": "0.5.0",
+    "agents": "0.20.1",
+    "ai": "^7.0.97",
     "better-auth": "1.6.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

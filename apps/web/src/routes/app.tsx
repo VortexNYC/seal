@@ -2,8 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { betterAuthClient } from "@/lib/better-auth";
 import Loader from "@/components/loader";
+import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute("/app")({
@@ -84,7 +84,10 @@ function AuthenticatedRedirect() {
   const isLoading =
     isSessionPending ||
     isListPending ||
-    (organizations && organizations.length > 0 && !activeOrganizationSlug && isFixing);
+    (organizations &&
+      organizations.length > 0 &&
+      !activeOrganizationSlug &&
+      isFixing);
 
   if (isLoading) {
     return (

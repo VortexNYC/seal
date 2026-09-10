@@ -4,8 +4,8 @@
  * and optional expiration period
  */
 
-import { useMutation } from "@tanstack/react-query";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation } from "@tanstack/react-query";
 import { formatMoney, money } from "@vortexnyc/money";
 import {
   ChevronDownIcon,
@@ -20,9 +20,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { cn, getErrorMessage } from "@/lib/utils";
-import { sendDocument } from "@/lib/api-client";
 import { type DocumentDetailPaymentConfig } from "@/data/document-detail";
+import { sendDocument } from "@/lib/api-client";
+import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
 import { Button } from "../ui/button";

@@ -13,6 +13,14 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  getDocumentSharing,
+  getOrganizationMembers,
+  revokeDocumentAccess,
+  shareDocument,
+  updateDocumentPermission,
+  updateDocumentSharing,
+} from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
@@ -26,14 +34,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
-import {
-  getDocumentSharing,
-  getOrganizationMembers,
-  revokeDocumentAccess,
-  shareDocument,
-  updateDocumentPermission,
-  updateDocumentSharing,
-} from "@/lib/api-client";
 
 interface ShareDocumentDialogProps {
   open: boolean;
@@ -96,9 +96,7 @@ export function ShareDocumentDialog({
   slug,
 }: ShareDocumentDialogProps) {
   const queryClient = useQueryClient();
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(
-    null
-  );
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedPermission, setSelectedPermission] =
     useState<PermissionLevel>("view");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -150,7 +148,10 @@ export function ShareDocumentDialog({
   const handleSharingModeChange = async (mode: SharingMode) => {
     setIsUpdating(true);
     try {
-      await updateSharingMode.mutateAsync({ publicId: documentId, sharingMode: mode });
+      await updateSharingMode.mutateAsync({
+        publicId: documentId,
+        sharingMode: mode,
+      });
       toast.success("Sharing settings updated");
       void queryClient.invalidateQueries({
         queryKey: ["api", "documents", documentId, "sharing"],
@@ -234,9 +235,7 @@ export function ShareDocumentDialog({
     documentAccess?.sharedWith.map((access) => access.userId) ?? []
   );
   const availableMembers =
-    organizationMembers?.filter(
-      (m) => !sharedUserIds.has(m.userId)
-    ) ?? [];
+    organizationMembers?.filter((m) => !sharedUserIds.has(m.userId)) ?? [];
 
   const sharingModeDescription =
     documentAccess &&

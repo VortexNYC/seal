@@ -178,9 +178,8 @@ export function InAppSigningSection({
         {canSign && (
           <div className="mt-4 space-y-2">
             <p className="text-muted-foreground text-sm">
-              In-app signing is being migrated to the Cloudflare Worker
-              backend. For now, recipients sign through the secure public
-              signing link.
+              In-app signing is being migrated to the Cloudflare Worker backend.
+              For now, recipients sign through the secure public signing link.
             </p>
             <Button
               disabled

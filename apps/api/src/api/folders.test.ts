@@ -149,9 +149,9 @@ describe("folders API", () => {
       ),
       env
     );
-    const breadcrumbs = z.array(z.object({ id: z.string(), name: z.string() })).parse(
-      await parseJson(response)
-    );
+    const breadcrumbs = z
+      .array(z.object({ id: z.string(), name: z.string() }))
+      .parse(await parseJson(response));
     expect(breadcrumbs.length).toBe(3);
     expect(breadcrumbs[0]?.name).toBe("Grandparent");
     expect(breadcrumbs[1]?.name).toBe("Parent");
