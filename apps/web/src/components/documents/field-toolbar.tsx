@@ -1,6 +1,3 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -11,11 +8,9 @@ import {
   HashIcon,
   PaperclipIcon,
   PenToolIcon,
-  Redo2Icon,
   TypeIcon,
-  Undo2Icon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -49,7 +44,7 @@ interface FieldToolbarProps {
   onFieldDragEnd?: () => void;
   disabled?: boolean;
   merchantPaymentsReady?: boolean;
-  documentId?: Id<"documents">;
+  documentId?: string;
 }
 
 interface FieldButtonProps {
@@ -108,6 +103,18 @@ const FIELD_CONFIG: Record<
     label: "Payment",
     accentColor: "var(--field-payment)",
   },
+};
+
+const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
+  signature: <PenToolIcon className="h-4 w-4" />,
+  text: <TypeIcon className="h-4 w-4" />,
+  number: <HashIcon className="h-4 w-4" />,
+  date: <CalendarIcon className="h-4 w-4" />,
+  checkbox: <CheckSquareIcon className="h-4 w-4" />,
+  dropdown: <ChevronDownSquareIcon className="h-4 w-4" />,
+  radio: <CircleDotIcon className="h-4 w-4" />,
+  attachment: <PaperclipIcon className="h-4 w-4" />,
+  payment: <CreditCardIcon className="h-4 w-4" />,
 };
 
 /**
@@ -215,6 +222,12 @@ function FieldButton({
   );
 }
 
+function getPaymentDisabledReason(merchantPaymentsReady: boolean): string {
+  return merchantPaymentsReady
+    ? "Payment fields are temporarily disabled while payments are migrated to the Worker backend."
+    : "Connect a merchant account to add payment fields.";
+}
+
 /**
  * Field toolbar - Provides draggable field types for document annotation
  */
@@ -225,6 +238,8 @@ export function FieldToolbar({
   merchantPaymentsReady = false,
   documentId,
 }: FieldToolbarProps) {
+  void documentId;
+
   const handleDragStart = (fieldType: FieldType) => {
     onFieldDragStart?.(fieldType);
   };
@@ -233,184 +248,36 @@ export function FieldToolbar({
     onFieldDragEnd?.();
   };
 
-  const undoFields = useMutation(
-    api.signature_fields.timeline_mutations.undoFields
-  );
-  const redoFields = useMutation(
-    api.signature_fields.timeline_mutations.redoFields
-  );
-  const timelineStatus = useQuery(
-    api.signature_fields.timeline_mutations.fieldTimelineStatus,
-    documentId ? { documentId } : "skip"
-  );
-
-  const canUndo = timelineStatus?.canUndo ?? false;
-  const canRedo = timelineStatus?.canRedo ?? false;
-  const isDraft = !disabled;
-
-  const handleUndo = useCallback(async () => {
-    if (!documentId || !canUndo || !isDraft) return;
-    await undoFields({ documentId });
-  }, [documentId, canUndo, isDraft, undoFields]);
-
-  const handleRedo = useCallback(async () => {
-    if (!documentId || !canRedo || !isDraft) return;
-    await redoFields({ documentId });
-  }, [documentId, canRedo, isDraft, redoFields]);
-
-  // Keyboard shortcuts: Ctrl+Z / Cmd+Z for undo, Ctrl+Shift+Z / Cmd+Shift+Z for redo
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const isModKey = e.metaKey || e.ctrlKey;
-      if (!isModKey || e.key.toLowerCase() !== "z") return;
-
-      // Don't capture if user is typing in an input
-      const target = e.target;
-      if (
-        target instanceof HTMLElement &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-
-      e.preventDefault();
-      if (e.shiftKey) {
-        void handleRedo();
-      } else {
-        void handleUndo();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [handleUndo, handleRedo]);
-
   return (
     <div className="bg-muted border-border rounded-xl border p-4">
       <div className="border-border mb-3 flex items-baseline justify-between border-b border-dashed pb-2.5">
         <span className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
           Fields
         </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => void handleUndo()}
-            disabled={!canUndo || !isDraft}
-            title="Undo (Ctrl+Z)"
-            className={cn(
-              "rounded p-1 transition-colors",
-              canUndo && isDraft
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed"
-            )}
-          >
-            <Undo2Icon className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleRedo()}
-            disabled={!canRedo || !isDraft}
-            title="Redo (Ctrl+Shift+Z)"
-            className={cn(
-              "rounded p-1 transition-colors",
-              canRedo && isDraft
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed"
-            )}
-          >
-            <Redo2Icon className="h-3.5 w-3.5" />
-          </button>
-        </div>
       </div>
+      <div className="grid grid-cols-1 gap-2">
+        {FIELD_TYPES.map((type) => {
+          const isPayment = type === "payment";
+          const isDisabled =
+            disabled ||
+            (isPayment && true); // Payment fields disabled while Vortex Payments is rewired
+          const disabledReason = isPayment
+            ? getPaymentDisabledReason(merchantPaymentsReady)
+            : "Document fields are temporarily disabled while the field editor is migrated to the Worker backend.";
 
-      <div className="grid grid-cols-2 gap-2">
-        <FieldButton
-          type="signature"
-          icon={<PenToolIcon className="h-4 w-4" />}
-          label="Signature"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="text"
-          icon={<TypeIcon className="h-4 w-4" />}
-          label="Text"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="number"
-          icon={<HashIcon className="h-4 w-4" />}
-          label="Number"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="date"
-          icon={<CalendarIcon className="h-4 w-4" />}
-          label="Date"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="payment"
-          icon={<CreditCardIcon className="h-4 w-4" />}
-          label="Payment"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled || !merchantPaymentsReady}
-          disabledReason={
-            disabled
-              ? undefined
-              : "Connect Vortex merchant payments before placing payment fields."
-          }
-        />
-
-        <FieldButton
-          type="checkbox"
-          icon={<CheckSquareIcon className="h-4 w-4" />}
-          label="Checkbox"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="dropdown"
-          icon={<ChevronDownSquareIcon className="h-4 w-4" />}
-          label="Select"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="radio"
-          icon={<CircleDotIcon className="h-4 w-4" />}
-          label="Choice"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
-
-        <FieldButton
-          type="attachment"
-          icon={<PaperclipIcon className="h-4 w-4" />}
-          label="File"
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          disabled={disabled}
-        />
+          return (
+            <FieldButton
+              key={type}
+              type={type}
+              icon={FIELD_ICONS[type]}
+              label={FIELD_CONFIG[type].label}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              disabled={isDisabled}
+              disabledReason={disabledReason}
+            />
+          );
+        })}
       </div>
     </div>
   );
