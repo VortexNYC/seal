@@ -107,6 +107,50 @@ function pickIdempotencyKey(
 export async function sendResendEmail(
   options: ResendEmailPayload
 ): Promise<ResendEmailResult> {
+  const workerUrl = process.env.SIGN_API_EMAIL_URL;
+  const workerKey = process.env.SIGN_API_EMAIL_KEY;
+  if (workerUrl && workerKey) {
+    const response = await fetch(`${workerUrl}/internal/send-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-api-key": workerKey,
+      },
+      body: JSON.stringify({
+        from: options.from,
+        to: options.to,
+        subject: options.subject,
+        html: "html" in options ? options.html : undefined,
+        text: "text" in options ? options.text : undefined,
+      }),
+    });
+
+    const raw = await response.text();
+    const result = parse(
+      v.optional(v.object({ success: v.boolean(), id: v.string() })),
+      (() => {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return null;
+        }
+      })()
+    );
+
+    if (result?.success && result.id) {
+      return { data: { id: result.id }, error: null };
+    }
+
+    return {
+      data: null,
+      error: {
+        message: result ? "Worker send failed" : "Worker returned invalid JSON",
+        statusCode: response.status,
+        name: "worker_email_error",
+      },
+    };
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
