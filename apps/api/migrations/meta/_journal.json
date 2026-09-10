@@ -120,6 +120,13 @@
       "when": 1789018790189,
       "tag": "0017_add_saved_signatures",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1789019308504,
+      "tag": "0018_add_ai_progress_and_messages",
+      "breakpoints": true
     }
   ]
 }

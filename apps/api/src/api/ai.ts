@@ -5,6 +5,7 @@ import { createD1 } from "../global/db.js";
 import {
   aiDocumentAnnotations,
   aiFieldSuggestions,
+  aiProgress,
   aiThreads,
   documents,
 } from "../global/schema.js";
@@ -473,6 +474,98 @@ app.openapi(dismissFieldSuggestionsRoute, async (c) => {
     );
 
   return c.json({ success: true }, 200);
+});
+
+const aiProgressStatusSchema = z.enum([
+  "in_progress",
+  "completed",
+  "failed",
+  "aborted",
+]);
+
+const progressSchema = z
+  .object({
+    threadId: z.string(),
+    step: z.number().int(),
+    totalSteps: z.number().int().nullable().optional(),
+    completedTools: z.array(z.string()),
+    tokensUsed: z.number().int(),
+    status: aiProgressStatusSchema,
+    error: z.string().nullable().optional(),
+    createdAt: z.number().int(),
+    updatedAt: z.number().int(),
+  })
+  .nullable()
+  .openapi("AIProgress");
+
+const getProgressRoute = createRoute({
+  method: "get",
+  path: "/progress/:threadId",
+  request: { params: z.object({ threadId: z.string() }) },
+  responses: {
+    200: {
+      content: { "application/json": { schema: progressSchema } },
+      description: "AI progress for the thread",
+    },
+    401: {
+      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      description: "Unauthorized",
+    },
+    403: {
+      content: { "application/json": { schema: z.object({ error: z.string() }) } },
+      description: "Forbidden",
+    },
+  },
+});
+
+app.openapi(getProgressRoute, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { threadId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+
+  const threadRows = await db
+    .select({ id: aiThreads.id })
+    .from(aiThreads)
+    .where(
+      and(
+        eq(aiThreads.threadId, threadId),
+        eq(aiThreads.organizationId, organizationId),
+        eq(aiThreads.userId, user!.user.id)
+      )
+    )
+    .limit(1);
+
+  if (threadRows.length === 0) {
+    return c.json(null, 200);
+  }
+
+  const rows = await db
+    .select()
+    .from(aiProgress)
+    .where(eq(aiProgress.threadId, threadId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json(null, 200);
+  }
+
+  return c.json(
+    {
+      threadId: row.threadId,
+      step: row.step,
+      totalSteps: row.totalSteps,
+      completedTools: JSON.parse(row.completedTools),
+      tokensUsed: row.tokensUsed,
+      status: aiProgressStatusSchema.parse(row.status),
+      error: row.error,
+      createdAt: row.createdAt.getTime(),
+      updatedAt: row.updatedAt.getTime(),
+    },
+    200
+  );
 });
 
 export default app;

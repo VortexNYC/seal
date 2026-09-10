@@ -780,6 +780,68 @@ export const aiThreads = sqliteTable(
   ]
 );
 
+export const aiProgress = sqliteTable(
+  "ai_progress",
+  {
+    id: text("id").primaryKey(),
+    threadId: text("thread_id")
+      .notNull()
+      .unique()
+      .references(() => aiThreads.threadId, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    step: integer("step").notNull().default(0),
+    totalSteps: integer("total_steps"),
+    completedTools: text("completed_tools").notNull().default("[]"),
+    tokensUsed: integer("tokens_used").notNull().default(0),
+    status: text("status").notNull().default("in_progress"),
+    error: text("error"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("aiProgress_threadId_idx").on(table.threadId)]
+);
+
+export const aiMessages = sqliteTable(
+  "ai_messages",
+  {
+    id: text("id").primaryKey(),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => aiThreads.threadId, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    status: text("status").notNull().default("success"),
+    name: text("name"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("aiMessages_threadId_idx").on(table.threadId),
+    index("aiMessages_createdAt_idx").on(table.createdAt),
+  ]
+);
+
 export const templates = sqliteTable(
   "templates",
   {

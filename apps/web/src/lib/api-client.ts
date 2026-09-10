@@ -2388,3 +2388,28 @@ export async function incrementSavedSignatureUsage(
     { method: "POST" }
   );
 }
+
+const aiProgressSchema = z
+  .object({
+    threadId: z.string(),
+    step: z.number().int(),
+    totalSteps: z.number().int().nullable().optional(),
+    completedTools: z.array(z.string()),
+    tokensUsed: z.number().int(),
+    status: z.enum(["in_progress", "completed", "failed", "aborted"]),
+    error: z.string().nullable().optional(),
+    createdAt: z.number().int(),
+    updatedAt: z.number().int(),
+  })
+  .nullable();
+
+export type ApiAIProgress = z.infer<typeof aiProgressSchema>;
+
+export async function getAIProgress(
+  threadId: string
+): Promise<ApiAIProgress> {
+  return apiFetch(
+    `/api/ai/progress/${encodeURIComponent(threadId)}`,
+    aiProgressSchema
+  );
+}
