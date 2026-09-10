@@ -20,15 +20,13 @@ export async function waitForApiResponse(
     if (urlIncludes) {
       await page.waitForResponse(
         (response) =>
-          isApiRequest(response.url()) &&
-          response.url().includes(urlIncludes),
+          isApiRequest(response.url()) && response.url().includes(urlIncludes),
         { timeout: timeout * 0.6 }
       );
     } else {
-      await page.waitForResponse(
-        (response) => isApiRequest(response.url()),
-        { timeout }
-      );
+      await page.waitForResponse((response) => isApiRequest(response.url()), {
+        timeout,
+      });
     }
   } catch {
     // If the API doesn't emit a matching request (for example local no-op

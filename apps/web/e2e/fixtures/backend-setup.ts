@@ -50,7 +50,7 @@ export async function purgeE2eDocuments(
 /**
  * No-op for the Cloudflare API path.
  *
- * The Convex backend used to seed a fake Pro subscription for the E2E
+ * The legacy backend used to seed a fake Pro subscription for the E2E
  * workspace. The Seal API currently derives limits from the organization
  * subscription record set up by the auth/app setup flows.
  */

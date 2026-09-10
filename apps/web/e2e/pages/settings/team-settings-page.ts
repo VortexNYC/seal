@@ -20,7 +20,7 @@ export class TeamSettingsPage {
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/settings/team`);
     await this.page.waitForLoadState("domcontentloaded");
-    // Wait for the page heading to appear (Convex data must resolve first)
+    // Wait for the page heading to appear (API data must resolve first)
     await this.heading.waitFor({ state: "visible", timeout: 10000 });
   }
 
@@ -37,7 +37,7 @@ export class TeamSettingsPage {
 
     await this.page.getByRole("button", { name: /send|invite/i }).click();
 
-    // Wait for the dialog to close (Convex mutation succeeded and dialog dismissed)
+    // Wait for the dialog to close (API mutation succeeded and dialog dismissed)
     await this.page
       .getByRole("dialog")
       .waitFor({ state: "hidden", timeout: 10000 })

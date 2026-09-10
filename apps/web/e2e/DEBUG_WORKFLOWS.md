@@ -65,7 +65,6 @@ When a test fails, use Chrome DevTools MCP to:
     function: `() => {
     return {
       hasAuthCookie: document.cookie.includes("better-auth"),
-      convexState: window.convex?.connectionState,
       reactVersion: React.version
     };
   }`,
@@ -119,8 +118,7 @@ an HTTP cookie — there is **no** global window auth object to inspect.
     return {
       // Better-Auth session cookie present?
       hasAuthCookie: document.cookie.includes("better-auth"),
-      cookies: document.cookie,
-      convexState: window.convex?.connectionState
+      cookies: document.cookie
     };
   }`,
   });
@@ -135,33 +133,18 @@ an HTTP cookie — there is **no** global window auth object to inspect.
     pageSize: 50,
   });
 
-// Filter for the Better-Auth endpoints (e.g. /api/auth/* or the Convex auth HTTP routes) in the results
+// Filter for the Better-Auth endpoints (e.g. /api/auth/*) in the results
 ```
 
-### 4. Debugging Convex Real-Time Updates
+### 4. Debugging Real-Time Updates
 
-**Check WebSocket connections:**
+**Check API network calls:**
 
 ```typescript
 (await mcp__chrome) -
   devtools__list_network_requests({
-    resourceTypes: ["websocket"],
-    pageSize: 20,
-  });
-```
-
-**Inspect Convex client state:**
-
-```typescript
-(await mcp__chrome) -
-  devtools__evaluate_script({
-    function: `() => {
-    return {
-      connectionState: window.convex?.connectionState,
-      queryResults: window.convex?._queryResults?.size,
-      activeQueries: Array.from(window.convex?._queries?.keys() || [])
-    };
-  }`,
+    resourceTypes: ["fetch"],
+    pageSize: 50,
   });
 ```
 
