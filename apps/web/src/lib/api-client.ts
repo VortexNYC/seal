@@ -22,6 +22,7 @@ const organizationSchema = z.object({
   timezone: z.string(),
   currency: z.string(),
   currencyKind: z.string(),
+  plan: z.string(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

@@ -1,6 +1,5 @@
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import {
   ChevronsUpDown,
   CreditCard,
@@ -20,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getOrganization } from "@/lib/api-client";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -43,14 +43,13 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
-  const subscription = useQuery(
-    api.payments.billing_queries.getSubscriptionDetails
-  );
-  const isActiveSubscription = subscription?.status === "active";
-  const planName = isActiveSubscription
-    ? (subscription?.planName ?? "Free")
-    : "Free";
-  const isPro = isActiveSubscription && subscription?.tier === "pro";
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
+  });
+  const plan = organization?.plan ?? "free";
+  const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
+  const isPro = plan === "pro";
 
   return (
     <SidebarMenu>

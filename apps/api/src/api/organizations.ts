@@ -29,6 +29,7 @@ const OrganizationSchema = z
     timezone: z.string().default("UTC"),
     currency: z.string().default("BRL"),
     currencyKind: z.string().default("normal"),
+    plan: z.string().default("free"),
     createdAt: z.number(),
     updatedAt: z.number(),
   })
@@ -129,6 +130,8 @@ function organizationResponse(
       typeof meta.currency === "string" ? meta.currency : "BRL",
     currencyKind:
       typeof meta.currencyKind === "string" ? meta.currencyKind : "normal",
+    plan:
+      typeof meta.plan === "string" ? meta.plan : "free",
     createdAt: org.createdAt.getTime(),
     updatedAt: org.updatedAt.getTime(),
   };
