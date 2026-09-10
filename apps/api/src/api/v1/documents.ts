@@ -703,8 +703,8 @@ async function handleVoidDocument(
   if (!row) {
     return c.json({ error: "not_found" }, 404);
   }
-  if (row.status !== "sent") {
-    return c.json({ error: "document_not_sent" }, 400);
+  if (row.status === "completed" || row.status === "voided") {
+    return c.json({ error: "document_cannot_be_voided" }, 400);
   }
 
   await db
@@ -718,5 +718,239 @@ async function handleVoidDocument(
 }
 
 app.post("/void", async (c) => handleVoidDocument(c));
+
+const sharingModeSchema = z.enum(["private", "workspace", "specific"]);
+
+app.get("/access", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({ sharingMode: documents.sharingMode })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  return c.json({ sharing_mode: row.sharingMode ?? "private" });
+});
+
+app.put("/access", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = z
+    .object({ sharing_mode: sharingModeSchema })
+    .safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  await db
+    .update(documents)
+    .set({ sharingMode: parsed.data.sharing_mode })
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    );
+
+  return c.json({ success: true });
+});
+
+const bulkDocumentIdsSchema = z.object({
+  document_ids: z.array(z.string()).max(50),
+  reason: z.string().min(1),
+});
+
+app.post("/bulk-void", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = bulkDocumentIdsSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { document_ids } = parsed.data;
+  const db = createD1(c.env.D1);
+
+  const results = await Promise.all(
+    document_ids.map(async (id) => {
+      const rows = await db
+        .select({ status: documents.status })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.id, id),
+            eq(documents.organizationId, organizationId),
+            ne(documents.documentStatus, "deleted")
+          )
+        )
+        .limit(1);
+
+      const row = rows[0];
+      if (!row) {
+        return { id, success: false, error: "Document not found" };
+      }
+      if (row.status === "completed" || row.status === "voided") {
+        return {
+          id,
+          success: false,
+          error: `Cannot void document with status: ${row.status}`,
+        };
+      }
+
+      await db
+        .update(documents)
+        .set({ status: "voided" })
+        .where(
+          and(
+            eq(documents.id, id),
+            eq(documents.organizationId, organizationId)
+          )
+        );
+
+      return { id, success: true };
+    })
+  );
+
+  const succeeded = results.filter((r) => r.success).length;
+  return c.json({
+    succeeded,
+    failed: results.length - succeeded,
+    total_requested: results.length,
+    results,
+  });
+});
+
+const bulkSendSchema = z.object({
+  document_ids: z.array(z.string()).max(50),
+  message: z.string().optional(),
+});
+
+app.post("/bulk-send", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = bulkSendSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { document_ids } = parsed.data;
+  const db = createD1(c.env.D1);
+
+  const results = await Promise.all(
+    document_ids.map(async (id) => {
+      const rows = await db
+        .select({ status: documents.status })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.id, id),
+            eq(documents.organizationId, organizationId),
+            ne(documents.documentStatus, "deleted")
+          )
+        )
+        .limit(1);
+
+      const row = rows[0];
+      if (!row) {
+        return { id, success: false, error: "Document not found" };
+      }
+      if (row.status !== "draft") {
+        return {
+          id,
+          success: false,
+          error: `Document is not in draft status (current: ${row.status})`,
+        };
+      }
+
+      const recipientRows = await db
+        .select({ id: recipients.id })
+        .from(recipients)
+        .where(eq(recipients.documentId, id));
+      if (recipientRows.length === 0) {
+        return { id, success: false, error: "Document has no recipients" };
+      }
+
+      await db
+        .update(documents)
+        .set({ status: "sent", sentAt: new Date() })
+        .where(
+          and(
+            eq(documents.id, id),
+            eq(documents.organizationId, organizationId)
+          )
+        );
+
+      return { id, success: true };
+    })
+  );
+
+  const succeeded = results.filter((r) => r.success).length;
+  return c.json({
+    succeeded,
+    failed: results.length - succeeded,
+    total_requested: results.length,
+    results,
+  });
+});
 
 export default app;
