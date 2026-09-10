@@ -614,6 +614,67 @@ export const paymentFieldConfigs = sqliteTable(
   ]
 );
 
+export const documentInvoices = sqliteTable(
+  "document_invoices",
+  {
+    id: text("id").primaryKey(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    provider: text("provider").default("vortex_billing"),
+    providerAccountId: text("provider_account_id"),
+    providerInvoiceId: text("provider_invoice_id"),
+    providerCustomerId: text("provider_customer_id"),
+    providerSubscriptionId: text("provider_subscription_id"),
+    vortexPayableId: text("vortex_payable_id"),
+    vortexPaymentRequestId: text("vortex_payment_request_id"),
+    status: text("status").notNull().default("draft"),
+    customerEmail: text("customer_email").notNull(),
+    customerName: text("customer_name"),
+    amountDue: integer("amount_due").notNull(),
+    currency: text("currency").notNull(),
+    hostedInvoiceUrl: text("hosted_invoice_url"),
+    invoicePdf: text("invoice_pdf"),
+    finalizedAt: integer("finalized_at", { mode: "timestamp_ms" }),
+    paidAt: integer("paid_at", { mode: "timestamp_ms" }),
+    voidedAt: integer("voided_at", { mode: "timestamp_ms" }),
+    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+    dunningStatus: text("dunning_status").notNull().default("none"),
+    dunningStep: integer("dunning_step").notNull().default(0),
+    dunningStartedAt: integer("dunning_started_at", { mode: "timestamp_ms" }),
+    lastDunningEmailAt: integer("last_dunning_email_at", {
+      mode: "timestamp_ms",
+    }),
+    nextDunningAt: integer("next_dunning_at", { mode: "timestamp_ms" }),
+    dunningCompletedAt: integer("dunning_completed_at", {
+      mode: "timestamp_ms",
+    }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("documentInvoices_documentId_idx").on(table.documentId),
+    index("documentInvoices_providerInvoiceId_idx").on(table.providerInvoiceId),
+    index("documentInvoices_vortexPayableId_idx").on(table.vortexPayableId),
+    index("documentInvoices_organizationId_idx").on(table.organizationId),
+    index("documentInvoices_providerSubscriptionId_idx").on(
+      table.providerSubscriptionId
+    ),
+    index("documentInvoices_dunningStatus_nextDunningAt_idx").on(
+      table.dunningStatus,
+      table.nextDunningAt
+    ),
+  ]
+);
+
 export const activity = sqliteTable(
   "activity",
   {
