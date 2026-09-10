@@ -7,9 +7,9 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery as useConvexQuery } from "convex/react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -77,6 +77,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { getAnalyticsStats } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -101,7 +102,10 @@ function AnalyticsPage() {
   );
 
   // Use useQuery (not useSuspenseQuery) so real-time updates don't trigger Suspense remounts
-  const stats = useQuery(api.dashboard.queries.getDocumentStats, { scope });
+  const { data: stats } = useQuery({
+    queryKey: ["analytics", "stats", scope],
+    queryFn: () => getAnalyticsStats(scope),
+  });
   const isAdmin = stats?.isAdmin ?? false;
 
   // Auto-switch admins to team scope on first data load
@@ -295,11 +299,11 @@ function OverviewStats({
   };
   scope: AnalyticsScope;
 }) {
-  const weekStats = useQuery(api.dashboard.queries.getPeriodStats, {
+  const weekStats = useConvexQuery(api.dashboard.queries.getPeriodStats, {
     period: "week",
     scope,
   });
-  const monthStats = useQuery(api.dashboard.queries.getPeriodStats, {
+  const monthStats = useConvexQuery(api.dashboard.queries.getPeriodStats, {
     period: "month",
     scope,
   });
@@ -859,7 +863,7 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 function RecentActivityFeed() {
-  const activity = useQuery(api.dashboard.queries.getRecentActivity, {
+  const activity = useConvexQuery(api.dashboard.queries.getRecentActivity, {
     limit: 30,
   });
 
@@ -939,7 +943,7 @@ function RecentActivityFeed() {
 }
 
 function MemberActivityTable() {
-  const memberActivity = useQuery(api.dashboard.queries.getMemberActivity, {});
+  const memberActivity = useConvexQuery(api.dashboard.queries.getMemberActivity, {});
 
   if (!memberActivity) {
     return (
@@ -1102,7 +1106,7 @@ function ExportPanel() {
     return args;
   }, [statusFilter, periodFilter]);
 
-  const exportData = useQuery(
+  const exportData = useConvexQuery(
     api.dashboard.queries.getDocumentsForExport,
     queryArgs
   );
@@ -1333,7 +1337,7 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
-  const engagement = useQuery(
+  const engagement = useConvexQuery(
     api.dashboard.analytics_queries.getEmailEngagementStats,
     {
       days: 30,
@@ -1479,7 +1483,7 @@ const TIMING_BUCKET_COLORS: Record<string, string> = {
 };
 
 function RecipientTimingTab() {
-  const timing = useQuery(
+  const timing = useConvexQuery(
     api.dashboard.analytics_queries.getRecipientTimingStats,
     { days: 30 }
   );
@@ -1599,7 +1603,7 @@ function RecipientTimingTab() {
 
 function TemplatePerformanceTab() {
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
-  const templates = useQuery(
+  const templates = useConvexQuery(
     api.dashboard.analytics_queries.getTemplatePerformance,
     { days: 90 }
   );
