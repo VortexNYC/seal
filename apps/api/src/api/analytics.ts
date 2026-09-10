@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq, gte, lt, type SQL } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { documents, member } from "../global/schema.js";
+import { documents, member, user } from "../global/schema.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -10,11 +10,11 @@ const app = new OpenAPIHono<{
 }>();
 
 app.use("/*", async (c, next) => {
-  const user = c.get("user");
-  if (!user) {
+  const sessionUser = c.get("user");
+  if (!sessionUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = user.session?.activeOrganizationId;
+  const activeOrganizationId = sessionUser.session?.activeOrganizationId;
   if (!activeOrganizationId) {
     return c.json({ error: "No active organization" }, 403);
   }
@@ -64,9 +64,9 @@ const statsRouteDef = createRoute({
 });
 
 app.openapi(statsRouteDef, async (c) => {
-  const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
-  const userId = user!.user.id;
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const userId = sessionUser!.user.id;
   const { scope: requestedScope } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -182,9 +182,9 @@ const trendsRouteDef = createRoute({
 });
 
 app.openapi(trendsRouteDef, async (c) => {
-  const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
-  const userId = user!.user.id;
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const userId = sessionUser!.user.id;
   const { days, startDate, endDate, scope: requestedScope } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -322,9 +322,9 @@ const periodStatsRouteDef = createRoute({
 });
 
 app.openapi(periodStatsRouteDef, async (c) => {
-  const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
-  const userId = user!.user.id;
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const userId = sessionUser!.user.id;
   const { period, scope: requestedScope } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -385,6 +385,115 @@ app.openapi(periodStatsRouteDef, async (c) => {
     completed: completedResult[0]?.value ?? 0,
     period,
   });
+});
+
+const memberActivitySchema = z
+  .object({
+    userId: z.string(),
+    name: z.string(),
+    email: z.string(),
+    role: z.string(),
+    created: z.number().int(),
+    completed: z.number().int(),
+    pending: z.number().int(),
+    completionRate: z.number().int(),
+    avgSigningTimeMs: z.number().int().nullable(),
+  })
+  .openapi("MemberActivity");
+
+const memberActivityRouteDef = createRoute({
+  method: "get",
+  path: "/member-activity",
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.array(memberActivitySchema) },
+      },
+      description: "Per-member document activity",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "No active organization or not admin" },
+  },
+});
+
+app.openapi(memberActivityRouteDef, async (c) => {
+  const sessionUser = c.get("user");
+  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const userId = sessionUser!.user.id;
+
+  const db = createD1(c.env.D1);
+
+  const membership = await db
+    .select()
+    .from(member)
+    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)))
+    .limit(1);
+
+  const role = membership[0]?.role ?? "member";
+  const isAdmin = role === "owner" || role === "admin";
+  if (!isAdmin) {
+    return c.json([]);
+  }
+
+  const membersRows = await db
+    .select({
+      userId: member.userId,
+      role: member.role,
+      name: user.name,
+      email: user.email,
+    })
+    .from(member)
+    .innerJoin(user, eq(member.userId, user.id))
+    .where(eq(member.organizationId, organizationId));
+
+  const memberDocs = await db
+    .select({
+      ownerId: documents.ownerId,
+      status: documents.status,
+      sentAt: documents.sentAt,
+      updatedAt: documents.updatedAt,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        eq(documents.documentStatus, "active")
+      )
+    );
+
+  const results = membersRows.map((m) => {
+    const owned = memberDocs.filter((d) => d.ownerId === m.userId);
+    const created = owned.length;
+    const completed = owned.filter((d) => d.status === "completed").length;
+    const pending = owned.filter(
+      (d) => d.status === "sent" || d.status === "in_progress"
+    ).length;
+
+    let totalMs = 0;
+    let completedCount = 0;
+    for (const doc of owned) {
+      if (doc.status === "completed" && doc.sentAt && doc.updatedAt) {
+        totalMs += doc.updatedAt.getTime() - doc.sentAt.getTime();
+        completedCount++;
+      }
+    }
+    const avgSigningTimeMs =
+      completedCount > 0 ? Math.round(totalMs / completedCount) : null;
+
+    return {
+      userId: m.userId,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      created,
+      completed,
+      pending,
+      completionRate: created > 0 ? Math.round((completed / created) * 100) : 0,
+      avgSigningTimeMs,
+    };
+  });
+
+  return c.json(results);
 });
 
 export default app;

@@ -308,6 +308,24 @@ const analyticsPeriodStatsSchema = z.object({
 
 export type ApiAnalyticsPeriodStats = z.infer<typeof analyticsPeriodStatsSchema>;
 
+const memberActivitySchema = z.object({
+  userId: z.string(),
+  name: z.string(),
+  email: z.string(),
+  role: z.string(),
+  created: z.number().int(),
+  completed: z.number().int(),
+  pending: z.number().int(),
+  completionRate: z.number().int(),
+  avgSigningTimeMs: z.number().int().nullable(),
+});
+
+export type ApiMemberActivity = z.infer<typeof memberActivitySchema>;
+
+export async function getMemberActivity(): Promise<ApiMemberActivity[]> {
+  return apiFetch("/api/analytics/member-activity", z.array(memberActivitySchema));
+}
+
 export async function getAnalyticsPeriodStats(
   period: "today" | "week" | "month" | "year",
   scope: "personal" | "team"

@@ -81,6 +81,7 @@ import {
   getAnalyticsPeriodStats,
   getAnalyticsStats,
   getAnalyticsTrends,
+  getMemberActivity,
   getRecentActivity,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
@@ -950,7 +951,10 @@ function RecentActivityFeed() {
 }
 
 function MemberActivityTable() {
-  const memberActivity = useConvexQuery(api.dashboard.queries.getMemberActivity, {});
+  const { data: memberActivity } = useQuery({
+    queryKey: ["analytics", "member-activity"],
+    queryFn: () => getMemberActivity(),
+  });
 
   if (!memberActivity) {
     return (
