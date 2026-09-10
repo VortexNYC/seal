@@ -499,65 +499,6 @@ export async function getCurrentSubscription(): Promise<{ plan: string }> {
   return apiFetch("/api/users/me/subscription", subscriptionSchema);
 }
 
-const organizationListSchema = z.array(
-  z.object({
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-    role: z.string(),
-    logo: z.string().nullable().optional(),
-  })
-);
-
-export async function listUserOrganizations(): Promise<ApiUserOrganization[]> {
-  return apiFetch("/api/auth/organization/list", organizationListSchema, {
-    method: "GET",
-  });
-}
-
-export type ApiUserOrganization = z.infer<
-  typeof organizationListSchema
->[number];
-
-const setActiveOrganizationSchema = z.unknown().transform(() => undefined);
-
-export async function setActiveOrganization(slug: string): Promise<void> {
-  return apiFetch(
-    "/api/auth/organization/set-active",
-    setActiveOrganizationSchema,
-    {
-      method: "POST",
-      body: JSON.stringify({ organizationSlug: slug }),
-    }
-  );
-}
-
-const createOrganizationResponseSchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-  })
-  .passthrough();
-
-export type CreatedOrganization = z.infer<
-  typeof createOrganizationResponseSchema
->;
-
-export async function createOrganization(input: {
-  name: string;
-  slug: string;
-}): Promise<CreatedOrganization> {
-  return apiFetch(
-    "/api/auth/organization/create",
-    createOrganizationResponseSchema,
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    }
-  );
-}
-
 const feedbackResponseSchema = z.object({ id: z.string() });
 
 export async function submitFeedback(input: {
@@ -1919,21 +1860,6 @@ export async function repositionSignatureField(
   );
 }
 
-export async function assignSignatureField(
-  publicId: string,
-  fieldPublicId: string,
-  recipientPublicId: string
-): Promise<ApiSignatureField> {
-  return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/assign`,
-    signatureFieldSchema,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ recipientPublicId }),
-    }
-  );
-}
-
 export async function deleteSignatureField(
   publicId: string,
   fieldPublicId: string
@@ -1942,45 +1868,6 @@ export async function deleteSignatureField(
     `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
     z.object({ success: z.boolean() }),
     { method: "DELETE" }
-  );
-}
-
-export async function saveSignatureField(
-  publicId: string,
-  fieldPublicId: string,
-  input: {
-    value?: string;
-    signatureImageUrl?: string;
-    signatureMethod?: string;
-    userAgent?: string;
-  }
-): Promise<ApiSignature> {
-  return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/save`,
-    signatureSchema,
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    }
-  );
-}
-
-export async function submitSignature(
-  publicId: string,
-  input: {
-    status: "signed" | "approved" | "declined";
-    signatureData?: string;
-    signatureType?: string;
-    declineReason?: string;
-  }
-): Promise<{ success: boolean }> {
-  return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/submit`,
-    z.object({ success: z.boolean() }),
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    }
   );
 }
 

@@ -29,5 +29,3 @@ export const PLAN_LIMITS = {
     sso: true,
   },
 } as const;
-
-export type TierPlan = "free" | "pro" | "enterprise";
