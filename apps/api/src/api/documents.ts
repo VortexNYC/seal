@@ -28,6 +28,10 @@ import {
   templates,
   user as userTable,
 } from "../global/schema.js";
+import {
+  type EmailSendResult,
+  sendDocumentInvitationEmail,
+} from "../platform/email.js";
 import ai from "./ai.js";
 
 const DocumentSchema = z
@@ -1557,6 +1561,7 @@ app.openapi(resendRecipientRouteDef, async (c) => {
   const organizationId = user!.session!.activeOrganizationId!;
   const userId = user!.user.id;
   const { publicId, recipientPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
 
   const db = createD1(c.env.D1);
   const docRows = await db
@@ -1621,6 +1626,22 @@ app.openapi(resendRecipientRouteDef, async (c) => {
       updatedAt: now,
     })
     .where(eq(recipients.id, recipient.id));
+
+  if (recipient.email) {
+    const senderName = user!.user.name ?? user!.user.email ?? "Unknown";
+    const emailResult = await sendDocumentInvitationEmail(c.env, {
+      to: recipient.email,
+      recipientName: recipient.name ?? recipient.email,
+      senderName,
+      documentName: doc.name,
+      signingToken: newToken,
+      customMessage: input.customMessage,
+      expiresAt: newExpiration.getTime(),
+    });
+    if (!emailResult.success) {
+      console.error("[documents/resend] invitation email failed:", emailResult);
+    }
+  }
 
   await db.insert(activity).values({
     id: crypto.randomUUID(),
@@ -4053,8 +4074,47 @@ app.openapi(sendRouteDef, async (c) => {
 
   await db
     .update(documents)
-    .set({ status: "sent", sentAt: now, updatedAt: now })
+    .set({
+      status: "sent",
+      sentAt: now,
+      deadline: tokenExpiresAt,
+      updatedAt: now,
+    })
     .where(eq(documents.id, doc.id));
+
+  const senderName = user!.user.name ?? user!.user.email ?? "Unknown";
+
+  const emailPromises: Promise<EmailSendResult>[] = [];
+  for (const update of recipientUpdates) {
+    const recipient = recipientRows.find((r) => r.id === update.id);
+    if (!recipient || !recipient.email) {
+      emailPromises.push(
+        Promise.resolve({ success: false, error: "missing recipient email" })
+      );
+      continue;
+    }
+    const customMessage = input.recipientMessages?.[recipient.publicId];
+    emailPromises.push(
+      sendDocumentInvitationEmail(c.env, {
+        to: recipient.email,
+        recipientName: recipient.name ?? recipient.email,
+        senderName,
+        documentName: doc.name,
+        signingToken: update.signingToken,
+        customMessage,
+        expiresAt: tokenExpiresAt.getTime(),
+      })
+    );
+  }
+  const emailResults = await Promise.all(emailPromises);
+
+  const failedEmails = emailResults.filter((r) => !r.success);
+  if (failedEmails.length > 0) {
+    console.error(
+      "[documents/send] some invitation emails failed:",
+      failedEmails
+    );
+  }
 
   await db.insert(activity).values({
     id: crypto.randomUUID(),

@@ -19,5 +19,6 @@ declare interface CloudflareBindings {
   SEAL_MCP_SIGNING_KEY_ID?: string;
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
+  APP_URL: string;
   TEST_MIGRATIONS?: D1Migration[];
 }

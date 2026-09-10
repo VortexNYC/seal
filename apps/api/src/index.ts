@@ -34,6 +34,7 @@ import {
   verifyMcpAccessToken,
   type McpAccessToken,
 } from "./platform/mcp-auth.js";
+import { runExpiredDocumentSweep } from "./platform/scheduled.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
 
 type Variables = {
@@ -180,3 +181,11 @@ app.route("/api/v1/webhooks", webhooksV1);
 export { SealChatAgent };
 
 export default app;
+
+export const scheduled: ExportedHandlerScheduledHandler<Env> = async (
+  _event,
+  env,
+  _ctx
+) => {
+  await runExpiredDocumentSweep(env);
+};

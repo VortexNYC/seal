@@ -24,6 +24,7 @@ export default defineConfig({
           BETTER_AUTH_URL: "http://localhost:8787",
           ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173",
           EMAIL_FROM: "test@example.com",
+          APP_URL: "http://localhost:3000",
         },
       },
     }),
