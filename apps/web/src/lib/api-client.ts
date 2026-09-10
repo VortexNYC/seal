@@ -1041,12 +1041,96 @@ export async function getDocumentSignatures(
   );
 }
 
+const paymentConfigDetailSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  fieldId: z.string(),
+  documentId: z.string(),
+  paymentType: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      description: z.string(),
+      quantity: z.number().int(),
+      unitPrice: z.number().int(),
+    })
+  ),
+  currency: z.string(),
+  dueDateTerms: z.string(),
+  customDueDays: z.number().int().nullable().optional(),
+  customDueDate: z.string().nullable().optional(),
+  lateFees: z
+    .object({
+      enabled: z.boolean(),
+      type: z.string(),
+      amount: z.number().int(),
+      gracePeriodDays: z.number().int(),
+    })
+    .nullable()
+    .optional(),
+  recurringConfig: z
+    .object({
+      interval: z.string(),
+      intervalCount: z.number().int(),
+      endCondition: z.string(),
+      endAfterCount: z.number().int().optional(),
+    })
+    .nullable()
+    .optional(),
+  installmentsConfig: z
+    .object({
+      count: z.number().int(),
+      interval: z.string(),
+    })
+    .nullable()
+    .optional(),
+  depositBalanceConfig: z
+    .object({
+      depositPercent: z.number(),
+      balanceDueDays: z.number().int(),
+    })
+    .nullable()
+    .optional(),
+  allowedPaymentMethods: z.array(z.string()),
+  feeHandling: z.string(),
+  taxEnabled: z.boolean(),
+  taxBehavior: z.string().nullable().optional(),
+  totalAmountCents: z.number().int(),
+  paymentStatus: z.string().nullable().optional(),
+});
+
+export type ApiPaymentConfigDetail = z.infer<typeof paymentConfigDetailSchema>;
+
 export async function getDocumentPaymentConfigs(
   publicId: string
 ): Promise<ApiPaymentConfig[]> {
   return apiFetch(
     `/api/documents/${encodeURIComponent(publicId)}/payment-configs`,
     z.array(paymentConfigSchema)
+  );
+}
+
+export async function getPaymentConfig(
+  publicId: string,
+  fieldPublicId: string
+): Promise<ApiPaymentConfigDetail> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/payment-configs/${encodeURIComponent(fieldPublicId)}`,
+    paymentConfigDetailSchema
+  );
+}
+
+export async function upsertPaymentConfig(
+  publicId: string,
+  input: Omit<ApiPaymentConfigDetail, "id" | "publicId" | "documentId" | "paymentStatus" | "createdAt" | "updatedAt">
+): Promise<ApiPaymentConfigDetail> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/payment-configs`,
+    paymentConfigDetailSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
   );
 }
 

@@ -2714,6 +2714,359 @@ app.openapi(listPaymentConfigsRouteDef, async (c) => {
   return c.json(rows.map(paymentConfigSummaryResponse));
 });
 
+const PaymentLineItemSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  quantity: z.number().int(),
+  unitPrice: z.number().int(),
+});
+
+const PaymentLateFeesSchema = z.object({
+  enabled: z.boolean(),
+  type: z.enum(["percentage", "fixed"]),
+  amount: z.number().int(),
+  gracePeriodDays: z.number().int(),
+});
+
+const PaymentRecurringConfigSchema = z.object({
+  interval: z.enum(["week", "month", "year"]),
+  intervalCount: z.number().int(),
+  endCondition: z.enum(["never", "after_count", "on_date"]),
+  endAfterCount: z.number().int().optional(),
+});
+
+const PaymentInstallmentsConfigSchema = z.object({
+  count: z.number().int(),
+  interval: z.enum(["week", "month"]),
+});
+
+const PaymentDepositBalanceConfigSchema = z.object({
+  depositPercent: z.number(),
+  balanceDueDays: z.number().int(),
+});
+
+const PaymentConfigSchema = z
+  .object({
+    id: z.string(),
+    publicId: z.string(),
+    fieldId: z.string(),
+    documentId: z.string(),
+    paymentType: z.string(),
+    items: z.array(PaymentLineItemSchema),
+    currency: z.string(),
+    dueDateTerms: z.string(),
+    customDueDays: z.number().int().optional(),
+    customDueDate: z.string().optional(),
+    lateFees: PaymentLateFeesSchema.optional(),
+    recurringConfig: PaymentRecurringConfigSchema.optional(),
+    installmentsConfig: PaymentInstallmentsConfigSchema.optional(),
+    depositBalanceConfig: PaymentDepositBalanceConfigSchema.optional(),
+    allowedPaymentMethods: z.array(z.string()),
+    feeHandling: z.string(),
+    taxEnabled: z.boolean(),
+    taxBehavior: z.string().optional(),
+    totalAmountCents: z.number().int(),
+    paymentStatus: z.string().nullable().optional(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .openapi("PaymentConfig");
+
+function paymentConfigResponse(config: {
+  id: string;
+  publicId: string;
+  fieldId: string;
+  documentId: string;
+  paymentType: string;
+  items: string;
+  currency: string;
+  dueDateTerms: string;
+  customDueDays: number | null;
+  customDueDate: string | null;
+  lateFees: string | null;
+  recurringConfig: string | null;
+  installmentsConfig: string | null;
+  depositBalanceConfig: string | null;
+  allowedPaymentMethods: string;
+  feeHandling: string;
+  taxEnabled: boolean;
+  taxBehavior: string | null;
+  totalAmountCents: number;
+  paymentStatus: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: config.id,
+    publicId: config.publicId,
+    fieldId: config.fieldId,
+    documentId: config.documentId,
+    paymentType: config.paymentType,
+    items: z.array(PaymentLineItemSchema).parse(JSON.parse(config.items)),
+    currency: config.currency,
+    dueDateTerms: config.dueDateTerms,
+    customDueDays: config.customDueDays ?? undefined,
+    customDueDate: config.customDueDate ?? undefined,
+    lateFees: config.lateFees
+      ? PaymentLateFeesSchema.parse(JSON.parse(config.lateFees))
+      : undefined,
+    recurringConfig: config.recurringConfig
+      ? PaymentRecurringConfigSchema.parse(JSON.parse(config.recurringConfig))
+      : undefined,
+    installmentsConfig: config.installmentsConfig
+      ? PaymentInstallmentsConfigSchema.parse(
+          JSON.parse(config.installmentsConfig)
+        )
+      : undefined,
+    depositBalanceConfig: config.depositBalanceConfig
+      ? PaymentDepositBalanceConfigSchema.parse(
+          JSON.parse(config.depositBalanceConfig)
+        )
+      : undefined,
+    allowedPaymentMethods: z
+      .array(z.string())
+      .parse(JSON.parse(config.allowedPaymentMethods)),
+    feeHandling: config.feeHandling,
+    taxEnabled: config.taxEnabled,
+    taxBehavior: config.taxBehavior ?? undefined,
+    totalAmountCents: config.totalAmountCents,
+    paymentStatus: config.paymentStatus ?? undefined,
+    createdAt: config.createdAt.getTime(),
+    updatedAt: config.updatedAt.getTime(),
+  };
+}
+
+const getPaymentConfigRouteDef = createRoute({
+  method: "get",
+  path: "/{publicId}/payment-configs/{fieldPublicId}",
+  request: {
+    params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: PaymentConfigSchema },
+      },
+      description: "Payment config for the field",
+    },
+    404: { description: "Document or field not found" },
+  },
+});
+
+app.openapi(getPaymentConfigRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const { publicId, fieldPublicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, fieldPublicId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  const rows = await db
+    .select()
+    .from(paymentFieldConfigs)
+    .where(eq(paymentFieldConfigs.fieldId, field.id))
+    .limit(1);
+
+  if (!rows[0]) {
+    return c.json({ error: "Payment config not found" }, 404);
+  }
+
+  return c.json(paymentConfigResponse(rows[0]));
+});
+
+const upsertPaymentConfigBodySchema = z.object({
+  fieldId: z.string(),
+  paymentType: z.string(),
+  items: z.array(PaymentLineItemSchema),
+  currency: z.string(),
+  dueDateTerms: z.string(),
+  customDueDays: z.number().int().optional(),
+  customDueDate: z.string().optional(),
+  lateFees: PaymentLateFeesSchema.optional(),
+  recurringConfig: PaymentRecurringConfigSchema.optional(),
+  installmentsConfig: PaymentInstallmentsConfigSchema.optional(),
+  depositBalanceConfig: PaymentDepositBalanceConfigSchema.optional(),
+  allowedPaymentMethods: z.array(z.string()),
+  feeHandling: z.string(),
+  taxEnabled: z.boolean(),
+  taxBehavior: z.string().optional(),
+});
+
+const upsertPaymentConfigRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/payment-configs",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: upsertPaymentConfigBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: PaymentConfigSchema },
+      },
+      description: "Payment config upserted",
+    },
+    400: { description: "Invalid payment config" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or field not found" },
+  },
+});
+
+app.openapi(upsertPaymentConfigRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can edit payment configs" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Payment configs can only be edited in draft status" }, 400);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.publicId, input.fieldId),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "Field not found" }, 404);
+  }
+
+  const totalAmountCents = input.items.reduce(
+    (sum, item) => sum + item.quantity * item.unitPrice,
+    0
+  );
+
+  const now = new Date();
+  const values = {
+    paymentType: input.paymentType,
+    items: JSON.stringify(input.items),
+    currency: input.currency,
+    dueDateTerms: input.dueDateTerms,
+    customDueDays: input.customDueDays ?? null,
+    customDueDate: input.customDueDate ?? null,
+    lateFees: input.lateFees ? JSON.stringify(input.lateFees) : null,
+    recurringConfig: input.recurringConfig
+      ? JSON.stringify(input.recurringConfig)
+      : null,
+    installmentsConfig: input.installmentsConfig
+      ? JSON.stringify(input.installmentsConfig)
+      : null,
+    depositBalanceConfig: input.depositBalanceConfig
+      ? JSON.stringify(input.depositBalanceConfig)
+      : null,
+    allowedPaymentMethods: JSON.stringify(input.allowedPaymentMethods),
+    feeHandling: input.feeHandling,
+    taxEnabled: input.taxEnabled,
+    taxBehavior: input.taxBehavior ?? null,
+    totalAmountCents,
+    updatedAt: now,
+  };
+
+  const existingRows = await db
+    .select({ id: paymentFieldConfigs.id })
+    .from(paymentFieldConfigs)
+    .where(eq(paymentFieldConfigs.fieldId, field.id))
+    .limit(1);
+
+  let row: typeof paymentFieldConfigs.$inferSelect;
+  if (existingRows[0]) {
+    await db
+      .update(paymentFieldConfigs)
+      .set(values)
+      .where(eq(paymentFieldConfigs.id, existingRows[0].id));
+    const updated = await db
+      .select()
+      .from(paymentFieldConfigs)
+      .where(eq(paymentFieldConfigs.id, existingRows[0].id))
+      .limit(1);
+    row = updated[0]!;
+  } else {
+    const newPublicId = crypto.randomUUID();
+    const newId = crypto.randomUUID();
+    await db.insert(paymentFieldConfigs).values({
+      id: newId,
+      publicId: newPublicId,
+      fieldId: field.id,
+      documentId: doc.id,
+      organizationId,
+      ...values,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const inserted = await db
+      .select()
+      .from(paymentFieldConfigs)
+      .where(eq(paymentFieldConfigs.id, newId))
+      .limit(1);
+    row = inserted[0]!;
+  }
+
+  return c.json(paymentConfigResponse(row));
+});
+
 type RecipientStatus =
   | "pending"
   | "viewed"
