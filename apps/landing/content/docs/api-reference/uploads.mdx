@@ -243,22 +243,19 @@ async function uploadAndCreateDocument(file: File, title: string) {
     const { storageId } = await uploadResponse.json();
 
     // Step 3: Create document
-    const docResponse = await fetch(
-      "https://api.seal.nyc/api/v1/documents",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          storage_id: storageId,
-          file_size: file.size,
-          file_type: file.type,
-        }),
-      }
-    );
+    const docResponse = await fetch("https://api.seal.nyc/api/v1/documents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        storage_id: storageId,
+        file_size: file.size,
+        file_type: file.type,
+      }),
+    });
 
     if (!docResponse.ok) {
       throw new Error("Document creation failed");

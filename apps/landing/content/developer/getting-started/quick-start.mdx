@@ -93,23 +93,20 @@ Create a document record, then add recipients separately via the Recipients API:
 #### TypeScript
 
 ```typescript
-const documentResponse = await fetch(
-  "https://api.seal.nyc/api/v1/documents",
-  {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      title: "Service Agreement",
-      description: "Annual service contract for review and signature",
-      storage_id: storageId, // from Step 2
-      file_size: fileBlob.size,
-      file_type: "application/pdf",
-    }),
-  }
-);
+const documentResponse = await fetch("https://api.seal.nyc/api/v1/documents", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "Service Agreement",
+    description: "Annual service contract for review and signature",
+    storage_id: storageId, // from Step 2
+    file_size: fileBlob.size,
+    file_type: "application/pdf",
+  }),
+});
 
 const document = await documentResponse.json();
 console.log("Document created:", document.id);

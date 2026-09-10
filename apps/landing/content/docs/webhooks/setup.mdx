@@ -202,20 +202,17 @@ const webhooks = await response.json();
 ### Update Webhook
 
 ```typescript
-const response = await fetch(
-  "https://api.seal.nyc/api/v1/webhooks/wh_abc123",
-  {
-    method: "PATCH",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      events: ["document.sent", "document.completed", "recipient.signed"],
-      status: "active",
-    }),
-  }
-);
+const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
+  method: "PATCH",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    events: ["document.sent", "document.completed", "recipient.signed"],
+    status: "active",
+  }),
+});
 ```
 
 ### Pause Webhook
@@ -223,33 +220,27 @@ const response = await fetch(
 Temporarily stop receiving events without deleting the endpoint:
 
 ```typescript
-const response = await fetch(
-  "https://api.seal.nyc/api/v1/webhooks/wh_abc123",
-  {
-    method: "PATCH",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      status: "paused",
-    }),
-  }
-);
+const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
+  method: "PATCH",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    status: "paused",
+  }),
+});
 ```
 
 ### Delete Webhook
 
 ```typescript
-const response = await fetch(
-  "https://api.seal.nyc/api/v1/webhooks/wh_abc123",
-  {
-    method: "DELETE",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-    },
-  }
-);
+const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
+  method: "DELETE",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
 ```
 
 ## Webhook Status States

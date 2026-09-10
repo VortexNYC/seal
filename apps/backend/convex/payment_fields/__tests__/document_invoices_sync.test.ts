@@ -160,8 +160,7 @@ describe("document_invoices sync via storeProviderPaymentIds and updatePaymentSt
         customerName: "Vortex Buyer",
         amountDue: 4200,
         currency: "usd",
-        hostedInvoiceUrl:
-          "https://api.seal.nyc/pay/pay_test",
+        hostedInvoiceUrl: "https://api.seal.nyc/pay/pay_test",
         vortexPayableId: "payable_test",
         vortexPaymentRequestId: "preq_test",
         dunningStatus: "none",

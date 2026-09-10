@@ -224,8 +224,7 @@ describe("Payment field mutations", () => {
           taxEnabled: false,
           totalAmountCents: 4200,
           paymentStatus: "awaiting",
-          hostedInvoiceUrl:
-            "https://api.seal.nyc/pay/pay_test",
+          hostedInvoiceUrl: "https://api.seal.nyc/pay/pay_test",
           vortexPayableId: "payable_test",
           vortexDepositBalancePayableId: "installment_payable_test",
           vortexInstallmentPayableId: "installment_payable_test",
