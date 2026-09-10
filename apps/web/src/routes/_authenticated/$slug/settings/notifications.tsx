@@ -5,9 +5,8 @@
  * Route: /{slug}/settings/notifications
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { Bell, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -26,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { getNotificationSettings, getOrganization, updateNotificationSettings } from "@/lib/api-client";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/notifications"
@@ -37,18 +37,16 @@ export const Route = createFileRoute(
 function NotificationSettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
 
-  const notificationSettings = useQuery(
-    api.organizations.queries.getNotificationSettings,
-    organization ? { organizationId: organization._id } : "skip"
-  );
-
-  const updateNotificationSettings = useMutation(
-    api.organizations.mutations.updateNotificationSettings
-  );
+  const { data: notificationSettings } = useQuery({
+    queryKey: ["notifications", slug],
+    queryFn: () => getNotificationSettings(slug),
+    enabled: !!organization,
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newReminderDay, setNewReminderDay] = useState("");
@@ -105,7 +103,7 @@ function NotificationSettings() {
     setIsSubmitting(true);
 
     try {
-      await updateNotificationSettings({
+      await updateNotificationSettings(slug, {
         reminderSchedule: formData.reminderSchedule,
         expirationAlertDays: formData.expirationAlertDays,
         sendCompletionEmail: formData.sendCompletionEmail,

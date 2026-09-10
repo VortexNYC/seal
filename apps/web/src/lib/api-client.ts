@@ -283,6 +283,43 @@ export async function getBrandingSettings(
   );
 }
 
+const notificationSettingsSchema = z.object({
+  reminderSchedule: z.array(z.number().int()),
+  expirationAlertDays: z.number().int(),
+  sendCompletionEmail: z.boolean(),
+  sendViewedNotification: z.boolean(),
+});
+
+export type ApiNotificationSettings = z.infer<typeof notificationSettingsSchema>;
+
+export async function getNotificationSettings(
+  slug: string
+): Promise<ApiNotificationSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/notifications`,
+    notificationSettingsSchema
+  );
+}
+
+export async function updateNotificationSettings(
+  slug: string,
+  input: {
+    reminderSchedule?: number[];
+    expirationAlertDays?: number;
+    sendCompletionEmail?: boolean;
+    sendViewedNotification?: boolean;
+  }
+): Promise<ApiNotificationSettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/notifications`,
+    notificationSettingsSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const signingSettingsSchema = z.object({
   allowedSignatureTypes: z.array(
     z.union([z.literal("draw"), z.literal("type"), z.literal("upload")])

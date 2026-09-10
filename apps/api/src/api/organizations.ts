@@ -320,6 +320,26 @@ const signingSettingsRecordSchema = SigningSettingsSchema.or(
   z.record(z.string(), z.unknown())
 );
 
+const NotificationSettingsSchema = z
+  .object({
+    reminderSchedule: z.array(z.number().int()),
+    expirationAlertDays: z.number().int(),
+    sendCompletionEmail: z.boolean(),
+    sendViewedNotification: z.boolean(),
+  })
+  .openapi("NotificationSettings");
+
+const notificationSettingsRecordSchema = NotificationSettingsSchema.or(
+  z.record(z.string(), z.unknown())
+);
+
+const updateNotificationBodySchema = z.object({
+  reminderSchedule: z.array(z.number().int()).optional(),
+  expirationAlertDays: z.number().int().optional(),
+  sendCompletionEmail: z.boolean().optional(),
+  sendViewedNotification: z.boolean().optional(),
+});
+
 const updateSigningBodySchema = z.object({
   allowedSignatureTypes: z
     .array(z.union([z.literal("draw"), z.literal("type"), z.literal("upload")]))
@@ -648,6 +668,146 @@ app.openapi(updateSigningRouteDef, async (c) => {
     .where(eq(organization.id, org.id));
 
   return c.json(nextSigning);
+});
+
+const notificationRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/notifications",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: notificationSettingsRecordSchema },
+      },
+      description: "Notification settings from organization metadata",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(notificationRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  const meta = parseMetadata(org.metadata);
+  const raw = asRecord(meta.notificationSettings);
+
+  const result = NotificationSettingsSchema.safeParse({
+    reminderSchedule:
+      Array.isArray(raw.reminderSchedule) &&
+      raw.reminderSchedule.every(
+        (d) => typeof d === "number" && Number.isInteger(d)
+      )
+        ? raw.reminderSchedule
+        : [3, 7, 14],
+    expirationAlertDays:
+      typeof raw.expirationAlertDays === "number" &&
+      Number.isInteger(raw.expirationAlertDays)
+        ? raw.expirationAlertDays
+        : 3,
+    sendCompletionEmail:
+      typeof raw.sendCompletionEmail === "boolean"
+        ? raw.sendCompletionEmail
+        : true,
+    sendViewedNotification:
+      typeof raw.sendViewedNotification === "boolean"
+        ? raw.sendViewedNotification
+        : true,
+  });
+
+  return c.json(result.success ? result.data : raw);
+});
+
+const updateNotificationRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/notifications",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateNotificationBodySchema },
+      },
+      description: "Notification settings update fields",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: NotificationSettingsSchema },
+      },
+      description: "Updated notification settings",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(updateNotificationRouteDef, async (c) => {
+  const org = c.get("organization");
+  const membership = c.get("membership");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const role = membership?.role;
+  if (role !== "owner" && role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const body = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const meta = parseMetadata(org.metadata);
+  const notification = asRecord(meta.notificationSettings);
+
+  const currentSchedule =
+    Array.isArray(notification.reminderSchedule) &&
+    notification.reminderSchedule.every(
+      (d) => typeof d === "number" && Number.isInteger(d)
+    )
+      ? notification.reminderSchedule
+      : [3, 7, 14];
+
+  const nextNotification = {
+    reminderSchedule: body.reminderSchedule ?? currentSchedule,
+    expirationAlertDays:
+      body.expirationAlertDays !== undefined
+        ? body.expirationAlertDays
+        : typeof notification.expirationAlertDays === "number" &&
+            Number.isInteger(notification.expirationAlertDays)
+          ? notification.expirationAlertDays
+          : 3,
+    sendCompletionEmail:
+      body.sendCompletionEmail !== undefined
+        ? body.sendCompletionEmail
+        : typeof notification.sendCompletionEmail === "boolean"
+          ? notification.sendCompletionEmail
+          : true,
+    sendViewedNotification:
+      body.sendViewedNotification !== undefined
+        ? body.sendViewedNotification
+        : typeof notification.sendViewedNotification === "boolean"
+          ? notification.sendViewedNotification
+          : true,
+  };
+
+  const nextMetadata = { ...meta, notificationSettings: nextNotification };
+
+  await db
+    .update(organization)
+    .set({
+      metadata: JSON.stringify(nextMetadata),
+      updatedAt: new Date(),
+    })
+    .where(eq(organization.id, org.id));
+
+  return c.json(nextNotification);
 });
 
 declare module "hono" {
