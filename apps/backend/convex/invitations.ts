@@ -18,7 +18,7 @@ import {
 } from "./_generated/server";
 import { getAuthContext } from "./auth";
 import { ensureSeatLimit } from "./auth/subscription_guards";
-import { sendAuthEmailDraft } from "./emails/resend_component";
+import { sendAuthEmailDraft } from "./emails/worker_email";
 import {
   getComponentInvitationById,
   getComponentInvitationByTokenHash,

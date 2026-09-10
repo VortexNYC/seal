@@ -64,7 +64,7 @@ import type * as documents_extract_text_action from "../documents/extract_text_a
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
 import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
 import type * as documents_recipients_queries from "../documents/recipients_queries.js";
-import type * as emails_resend_component from "../emails/resend_component.js";
+import type * as emails_worker_email from "../emails/worker_email.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_authIdentities from "../lib/authIdentities.js";
@@ -218,7 +218,7 @@ declare const fullApi: ApiFromModules<{
   "documents/hash_document_action": typeof documents_hash_document_action;
   "documents/recipient_helpers": typeof documents_recipient_helpers;
   "documents/recipients_queries": typeof documents_recipients_queries;
-  "emails/resend_component": typeof emails_resend_component;
+  "emails/worker_email": typeof emails_worker_email;
   http: typeof http;
   invitations: typeof invitations;
   "lib/authIdentities": typeof lib_authIdentities;

@@ -52,9 +52,9 @@ export type SendEmailManualOptions = {
   headers?: EmailHeader[] | Record<string, string>;
 };
 
-export type ResendEmailPayload = SendEmailOptions;
+export type WorkerEmailPayload = SendEmailOptions;
 
-export type ResendEmailResult = {
+export type WorkerEmailResult = {
   data: { id: string } | null;
   error: { message?: string; name?: string; statusCode?: number | null } | null;
 };
@@ -71,9 +71,9 @@ function normalizeHeaders(
   return headers;
 }
 
-export async function sendResendEmail(
-  options: ResendEmailPayload
-): Promise<ResendEmailResult> {
+export async function sendWorkerEmail(
+  options: WorkerEmailPayload
+): Promise<WorkerEmailResult> {
   const workerUrl = process.env.SIGN_API_EMAIL_URL;
   const workerKey = process.env.SIGN_API_EMAIL_KEY;
   if (!workerUrl || !workerKey) {
@@ -178,7 +178,7 @@ export async function sendEmailFromAction(
       headers: options.headers,
     },
     async (idempotencyKey) => {
-      const { data, error } = await sendResendEmail({
+      const { data, error } = await sendWorkerEmail({
         ...options,
         headers: {
           ...normalizeHeaders(options.headers),

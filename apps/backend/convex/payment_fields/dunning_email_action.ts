@@ -13,8 +13,8 @@ import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalQuery } from "../_generated/server";
 import {
   sendEmailManuallyFromAction,
-  sendResendEmail,
-} from "../emails/resend_component";
+  sendWorkerEmail,
+} from "../emails/worker_email";
 function sealAssertPresent<T>(
   value: T | null | undefined,
   message = "Expected value to be present."
@@ -187,7 +187,7 @@ export const sendDunningEmail = internalAction({
           subject: content.subject,
         },
         async (idempotencyKey: string) => {
-          const { data, error } = await sendResendEmail({
+          const { data, error } = await sendWorkerEmail({
             from: FROM_EMAIL,
             to: [invoice.customerEmail],
             subject: content.subject,
