@@ -15,7 +15,6 @@ import {
   renderDocumentShared,
   renderDocumentViewed,
   renderSigningComplete,
-  renderTeamInvitation,
 } from "@seal/transactional";
 
 import { internal } from "../_generated/api";
@@ -392,72 +391,6 @@ export async function sendReminder(
     return { success: true, messageId: emailId };
   } catch (error) {
     console.error("Error sending reminder email:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
-
-export interface SendTeamInvitationParams {
-  to: string;
-  inviterName: string;
-  inviterEmail: string;
-  organizationName: string;
-  role: string;
-  inviteUrl: string;
-  expiresAt?: number;
-}
-
-/**
- * Send team invitation email
- */
-export async function sendTeamInvitation(
-  ctx: ActionCtx,
-  params: SendTeamInvitationParams
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    const {
-      to,
-      inviterName,
-      inviterEmail,
-      organizationName,
-      role,
-      inviteUrl,
-      expiresAt,
-    } = params;
-
-    const html = await renderTeamInvitation({
-      inviteeEmail: to,
-      inviterName,
-      inviterEmail,
-      organizationName,
-      role,
-      inviteUrl,
-      expiresAt,
-    });
-
-    const subject = `${inviterName} invited you to join ${organizationName} on Seal`;
-
-    const emailId = await sendEmailManuallyFromAction(
-      ctx,
-      { from: FROM_EMAIL, to: [to], subject },
-      async (idempotencyKey: string) => {
-        const { data, error } = await sendResendEmail({
-          from: FROM_EMAIL,
-          to: [to],
-          subject,
-          html,
-          headers: { "Idempotency-Key": idempotencyKey },
-        });
-        if (error) throw new Error(error.message ?? "Resend request failed");
-        return sealAssertPresent(data).id;
-      }
-    );
-
-    return { success: true, messageId: emailId };
-  } catch (error) {
-    console.error("Error sending team invitation email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
