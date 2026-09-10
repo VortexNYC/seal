@@ -51,7 +51,9 @@ const signingTokenResponseSchema = z
     document: signingDocumentSchema,
     waitingForPreviousGroup: z.boolean(),
     sequentialProgress: sequentialProgressSchema,
-    branding: z.object({ logoUrl: z.string().nullable().optional() }).optional(),
+    branding: z
+      .object({ logoUrl: z.string().nullable().optional() })
+      .optional(),
     signingSettings: z.record(z.string(), z.string()).optional(),
   })
   .openapi("SigningTokenResponse");
@@ -70,7 +72,7 @@ const signingTokenRouteDef = createRoute({
       description: "Token lookup result",
     },
     400: { description: "Invalid or expired token" },
-    404: { description: "Token not found" },
+    404: { description: "Document not found" },
   },
 });
 
@@ -97,7 +99,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
   const docRows = await db
     .select()
     .from(documents)
-    .where(and(eq(documents.id, recipient.documentId)))
+    .where(eq(documents.id, recipient.documentId))
     .limit(1);
 
   const doc = docRows[0];
@@ -136,7 +138,10 @@ app.openapi(signingTokenRouteDef, async (c) => {
     doc.signingMode === "sequential" &&
     recipient.order > currentGroup &&
     allRecipients.some(
-      (r) => r.order < recipient.order && r.status !== "signed" && r.status !== "approved"
+      (r) =>
+        r.order < recipient.order &&
+        r.status !== "signed" &&
+        r.status !== "approved"
     );
 
   return c.json(
@@ -173,6 +178,164 @@ app.openapi(signingTokenRouteDef, async (c) => {
     },
     200
   );
+});
+
+const signingFieldSchema = z
+  .object({
+    id: z.string(),
+    publicId: z.string(),
+    documentId: z.string(),
+    recipientId: z.string().nullable().optional(),
+    templateFieldId: z.string().nullable().optional(),
+    fieldType: z.string(),
+    label: z.string(),
+    isRequired: z.boolean(),
+    isMainSignature: z.boolean(),
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+    page: z.number().int(),
+    properties: z.record(z.string(), z.unknown()).nullable().optional(),
+    validationRules: z.record(z.string(), z.unknown()).nullable().optional(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+    currentValue: z.string().nullable().optional(),
+    currentSignatureImageUrl: z.string().nullable().optional(),
+    isFilled: z.boolean(),
+    signatureDetails: z
+      .object({
+        signedAt: z.number(),
+        signerName: z.string().nullable().optional(),
+        signerEmail: z.string().nullable().optional(),
+        signatureMethod: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+  })
+  .openapi("SigningField");
+
+const signingFieldsResponseSchema = z
+  .object({
+    fields: z.array(signingFieldSchema),
+  })
+  .openapi("SigningFieldsResponse");
+
+const signingFieldsRouteDef = createRoute({
+  method: "get",
+  path: "/signing/{token}/fields",
+  request: {
+    params: tokenParamsSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: signingFieldsResponseSchema },
+      },
+      description: "Fields for the token recipient",
+    },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(signingFieldsRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const fields = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.documentId, doc.id),
+        eq(signatureFields.recipientId, recipient.id)
+      )
+    )
+    .orderBy(signatureFields.page, signatureFields.createdAt);
+
+  const signatureRows = await db
+    .select()
+    .from(signatures)
+    .where(
+      and(
+        eq(signatures.documentId, doc.id),
+        eq(signatures.recipientId, recipient.id)
+      )
+    );
+
+  const byFieldId = new Map<string, (typeof signatureRows)[0]>();
+  for (const sig of signatureRows) {
+    if (sig.fieldId && !byFieldId.has(sig.fieldId)) {
+      byFieldId.set(sig.fieldId, sig);
+    }
+  }
+
+  const withValues = fields.map((field) => {
+    const sig = field.id ? byFieldId.get(field.id) : undefined;
+    return {
+      id: field.id,
+      publicId: field.publicId,
+      documentId: field.documentId,
+      recipientId: field.recipientId,
+      templateFieldId: field.templateFieldId,
+      fieldType: field.fieldType,
+      label: field.label,
+      isRequired: field.isRequired,
+      isMainSignature: field.isMainSignature,
+      x: field.x,
+      y: field.y,
+      width: field.width,
+      height: field.height,
+      page: field.page,
+      properties: safeParseJson<Record<string, unknown>>(field.properties),
+      validationRules: safeParseJson<Record<string, unknown>>(
+        field.validationRules
+      ),
+      createdAt: field.createdAt.getTime(),
+      updatedAt: field.updatedAt.getTime(),
+      currentValue: sig?.value ?? null,
+      currentSignatureImageUrl: sig?.signatureImageUrl ?? null,
+      isFilled: !!sig,
+      signatureDetails: sig
+        ? {
+            signedAt: sig.signedAt?.getTime() ?? Date.now(),
+            signerName: recipient.name,
+            signerEmail: recipient.email,
+            signatureMethod: sig.signatureMethod,
+          }
+        : null,
+    };
+  });
+
+  return c.json({ fields: withValues }, 200);
 });
 
 const fieldParamsSchema = z.object({
@@ -256,7 +419,10 @@ app.openapi(saveFieldValueRouteDef, async (c) => {
   }
 
   if (field.recipientId !== recipient.id) {
-    return c.json({ error: "This field is not assigned to this recipient" }, 403);
+    return c.json(
+      { error: "This field is not assigned to this recipient" },
+      403
+    );
   }
 
   const existing = await db
@@ -311,5 +477,184 @@ app.openapi(saveFieldValueRouteDef, async (c) => {
 
   return c.json({ success: true });
 });
+
+const submitBodySchema = z.object({
+  status: z.enum(["viewed", "signed", "approved", "declined"]),
+  signatureData: z.string().optional(),
+  signatureType: z.enum(["draw", "type", "upload"]).optional(),
+  declineReason: z.string().optional(),
+  ipAddress: z.string(),
+  userAgent: z.string(),
+});
+
+const submitResponseSchema = z
+  .object({
+    success: z.boolean(),
+  })
+  .openapi("SubmitSigningResponse");
+
+const submitRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/submit",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: submitBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: submitResponseSchema },
+      },
+      description: "Recipient status submitted",
+    },
+    400: { description: "Invalid or expired token" },
+    403: { description: "Already completed" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(submitRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.status === "completed") {
+    return c.json({ error: "Document is already completed" }, 400);
+  }
+
+  if (["signed", "approved", "declined"].includes(recipient.status)) {
+    return c.json({ error: "Recipient has already completed" }, 403);
+  }
+
+  const nowDate = new Date();
+  const update: Partial<typeof recipients.$inferInsert> = {
+    status: input.status,
+    updatedAt: nowDate,
+  };
+
+  if (input.status === "viewed") {
+    update.viewedAt = nowDate;
+  } else if (input.status === "signed" || input.status === "approved") {
+    update.signedAt = nowDate;
+    if (input.signatureData) {
+      update.signatureData = input.signatureData;
+      update.signatureType = input.signatureType;
+    }
+  } else if (input.status === "declined") {
+    update.declinedAt = nowDate;
+  }
+
+  await db.update(recipients).set(update).where(eq(recipients.id, recipient.id));
+
+  return c.json({ success: true });
+});
+
+const pdfRouteDef = createRoute({
+  method: "get",
+  path: "/signing/{token}/pdf",
+  request: {
+    params: tokenParamsSchema,
+  },
+  responses: {
+    200: { description: "PDF document" },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document or PDF not found" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(pdfRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || !doc.storageKey) {
+    return c.json({ error: "Document or file not found" }, 404);
+  }
+
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "Object storage not configured" }, 503);
+  }
+
+  const object = await bucket.get(doc.storageKey);
+  if (!object || !object.body) {
+    return c.json({ error: "Document or file not found" }, 404);
+  }
+
+  const headers: Record<string, string> = {
+    "content-type": object.httpMetadata?.contentType || "application/pdf",
+  };
+  if (object.size) headers["content-length"] = String(object.size);
+
+  return c.body(object.body, { headers });
+});
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function safeParseJson(value: string | null | undefined): Record<string, unknown> | null {
+  if (!value) return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return isRecord(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 export default app;

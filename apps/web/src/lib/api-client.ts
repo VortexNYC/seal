@@ -1420,3 +1420,145 @@ export async function getOrCreateThread(publicId: string): Promise<{ threadId: s
     { method: "POST" }
   );
 }
+
+const publicSigningRecipientSchema = z.object({
+  publicId: z.string(),
+  name: z.string().nullable().optional(),
+  email: z.string(),
+  role: z.string(),
+  order: z.number().int(),
+  status: z.string(),
+  esignConsentAt: z.number().nullable().optional(),
+});
+
+const publicSigningDocumentSchema = z.object({
+  publicId: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  ownerName: z.string().nullable().optional(),
+  pageCount: z.number().int().nullable().optional(),
+});
+
+const publicSigningSequentialProgressSchema = z.object({
+  total: z.number().int(),
+  completed: z.number().int(),
+  percentComplete: z.number(),
+  currentGroup: z.number().int(),
+  isWaitingForPreviousGroup: z.boolean(),
+});
+
+const publicSigningTokenResponseSchema = z.object({
+  recipient: publicSigningRecipientSchema,
+  document: publicSigningDocumentSchema,
+  waitingForPreviousGroup: z.boolean(),
+  sequentialProgress: publicSigningSequentialProgressSchema,
+  branding: z
+    .object({ logoUrl: z.string().nullable().optional() })
+    .optional(),
+  signingSettings: z.record(z.string(), z.string()).optional(),
+});
+
+export type PublicSigningTokenResponse = z.infer<
+  typeof publicSigningTokenResponseSchema
+>;
+
+export async function getSigningByToken(
+  token: string
+): Promise<PublicSigningTokenResponse> {
+  return apiFetch(`/api/public/signing/${encodeURIComponent(token)}`, publicSigningTokenResponseSchema);
+}
+
+const publicSigningFieldSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  documentId: z.string(),
+  recipientId: z.string().nullable().optional(),
+  templateFieldId: z.string().nullable().optional(),
+  fieldType: z.string(),
+  label: z.string(),
+  isRequired: z.boolean(),
+  isMainSignature: z.boolean(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  page: z.number().int(),
+  properties: z.record(z.string(), z.unknown()).nullable().optional(),
+  validationRules: z.record(z.string(), z.unknown()).nullable().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  currentValue: z.string().nullable().optional(),
+  currentSignatureImageUrl: z.string().nullable().optional(),
+  isFilled: z.boolean(),
+  signatureDetails: z
+    .object({
+      signedAt: z.number(),
+      signerName: z.string().nullable().optional(),
+      signerEmail: z.string().nullable().optional(),
+      signatureMethod: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export type PublicSigningField = z.infer<typeof publicSigningFieldSchema>;
+
+export async function getSigningFields(token: string): Promise<PublicSigningField[]> {
+  const response = await apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/fields`,
+    z.object({ fields: z.array(publicSigningFieldSchema) })
+  );
+  return response.fields;
+}
+
+export async function savePublicSigningFieldValue(
+  token: string,
+  fieldPublicId: string,
+  input: {
+    value?: string;
+    signatureImageUrl?: string;
+    signatureMethod?: "draw" | "type" | "upload";
+    ipAddress: string;
+    userAgent: string;
+  }
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/fields/${encodeURIComponent(fieldPublicId)}/save`,
+    z.object({ success: z.boolean() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function submitPublicSigning(
+  token: string,
+  input: {
+    status: "viewed" | "signed" | "approved" | "declined";
+    signatureData?: string;
+    signatureType?: "draw" | "type" | "upload";
+    declineReason?: string;
+    ipAddress: string;
+    userAgent: string;
+  }
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/submit`,
+    z.object({ success: z.boolean() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function getPublicSigningPdf(token: string): Promise<Blob> {
+  const response = await fetch(
+    `/api/public/signing/${encodeURIComponent(token)}/pdf`
+  );
+  if (!response.ok) {
+    throw new Error("Failed to load PDF");
+  }
+  return response.blob();
+}
