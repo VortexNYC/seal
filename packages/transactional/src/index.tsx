@@ -36,11 +36,6 @@ import {
   SigningComplete,
   type SigningCompleteProps,
 } from "./emails/signing-complete.js";
-import {
-  TeamInvitation,
-  type TeamInvitationProps,
-} from "./emails/team-invitation.js";
-import { Welcome, type WelcomeProps } from "./emails/welcome.js";
 
 // Re-export components for direct use
 export {
@@ -52,8 +47,6 @@ export {
   DocumentShared,
   DocumentViewed,
   SigningComplete,
-  TeamInvitation,
-  Welcome,
   OwnershipTransferred,
 };
 
@@ -67,8 +60,6 @@ export type {
   DocumentReminderProps,
   DocumentSharedProps,
   DocumentViewedProps,
-  TeamInvitationProps,
-  WelcomeProps,
   OwnershipTransferredProps,
 };
 
@@ -106,22 +97,6 @@ export async function renderDocumentReminder(
   props: DocumentReminderProps
 ): Promise<string> {
   return renderEmail(<DocumentReminder {...props} />);
-}
-
-/**
- * Render Welcome email to HTML string
- */
-export async function renderWelcome(props: WelcomeProps): Promise<string> {
-  return renderEmail(<Welcome {...props} />);
-}
-
-/**
- * Render TeamInvitation email to HTML string
- */
-export async function renderTeamInvitation(
-  props: TeamInvitationProps
-): Promise<string> {
-  return renderEmail(<TeamInvitation {...props} />);
 }
 
 /**
