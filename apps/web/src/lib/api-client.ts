@@ -1633,3 +1633,17 @@ export async function recordPublicSigningOptOut(
     }
   );
 }
+
+export async function dictatePublicSigningNextSigner(
+  token: string,
+  input: { nextName: string; nextEmail: string }
+): Promise<{ success: boolean }> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/dictate`,
+    z.object({ success: z.boolean() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}

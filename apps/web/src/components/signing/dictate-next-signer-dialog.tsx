@@ -1,5 +1,3 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
 import { UserPlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { dictatePublicSigningNextSigner } from "@/lib/api-client";
 
 interface DictateNextSignerDialogProps {
   open: boolean;
@@ -32,17 +31,13 @@ export function DictateNextSignerDialog({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const dictateNextRecipient = useMutation(
-    api.documents.recipients_mutations.dictateNextRecipient
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
     setIsSubmitting(true);
     try {
-      await dictateNextRecipient({
-        signingToken,
+      await dictatePublicSigningNextSigner(signingToken, {
         nextName: name.trim(),
         nextEmail: email.trim().toLowerCase(),
       });

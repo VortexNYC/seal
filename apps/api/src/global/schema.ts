@@ -394,6 +394,15 @@ export const recipients = sqliteTable(
     esignConsentAt: integer("esign_consent_at", { mode: "timestamp_ms" }),
     esignConsentIp: text("esign_consent_ip"),
     esignConsentVersion: text("esign_consent_version"),
+    awaitingDictation: integer("awaiting_dictation", {
+      mode: "boolean",
+    }).notNull().default(false),
+    isPlaceholder: integer("is_placeholder", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    dictatedBy: text("dictated_by"),
+    dictatedAt: integer("dictated_at", { mode: "timestamp_ms" }),
+    tokenHash: text("token_hash"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),

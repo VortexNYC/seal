@@ -191,7 +191,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         order: recipient.order,
         status: recipient.status,
         esignConsentAt: recipient.esignConsentAt?.getTime() ?? null,
-        awaitingDictation: false,
+        awaitingDictation: recipient.awaitingDictation,
         expiresAt: recipient.tokenExpiresAt?.getTime() ?? null,
         viewedAt: recipient.viewedAt?.getTime() ?? null,
         signedAt: recipient.signedAt?.getTime() ?? null,
@@ -630,6 +630,30 @@ app.openapi(submitRouteDef, async (c) => {
 
   await db.update(recipients).set(update).where(eq(recipients.id, recipient.id));
 
+  if (input.status === "signed" || input.status === "approved") {
+    if (doc.allowDictateNextSigner) {
+      const placeholderRows = await db
+        .select()
+        .from(recipients)
+        .where(
+          and(
+            eq(recipients.documentId, doc.id),
+            eq(recipients.isPlaceholder, true)
+          )
+        )
+        .orderBy(recipients.order);
+      const nextPlaceholder = placeholderRows.find(
+        (r) => r.order > recipient.order
+      );
+      if (nextPlaceholder) {
+        await db
+          .update(recipients)
+          .set({ awaitingDictation: true, updatedAt: nowDate })
+          .where(eq(recipients.id, recipient.id));
+      }
+    }
+  }
+
   return c.json({ success: true });
 });
 
@@ -960,6 +984,150 @@ app.openapi(optOutRouteDef, async (c) => {
       optedOutAt: now,
     }),
     createdAt: new Date(now),
+  });
+
+  return c.json({ success: true });
+});
+
+const dictateBodySchema = z.object({
+  nextName: z.string(),
+  nextEmail: z.string().email(),
+});
+
+const dictateResponseSchema = z
+  .object({ success: z.boolean() })
+  .openapi("PublicSigningDictateResponse");
+
+const dictateRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/dictate",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: dictateBodySchema },
+      },
+      description: "Next signer designation input",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: dictateResponseSchema },
+      },
+      description: "Next signer designated",
+    },
+    400: { description: "Invalid or expired token" },
+    403: { description: "Not allowed to dictate" },
+    404: { description: "Document or placeholder not found" },
+  },
+});
+
+app.openapi(dictateRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  if (recipient.status !== "signed" && recipient.status !== "approved") {
+    return c.json(
+      { error: "Only completed signers can designate the next recipient" },
+      403
+    );
+  }
+
+  if (!recipient.awaitingDictation) {
+    return c.json({ error: "No dictation required for this recipient" }, 403);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (!doc.allowDictateNextSigner) {
+    return c.json({ error: "This document does not support dictation" }, 403);
+  }
+
+  const placeholderRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.documentId, doc.id),
+        eq(recipients.isPlaceholder, true)
+      )
+    )
+    .orderBy(recipients.order);
+
+  const nextPlaceholder = placeholderRows.find(
+    (r) => r.order > recipient.order
+  );
+  if (!nextPlaceholder) {
+    return c.json(
+      { error: "No placeholder recipient found in the next signing group" },
+      404
+    );
+  }
+
+  const newToken = crypto.randomUUID();
+  const tokenExpiration = new Date(now + 30 * 24 * 60 * 60 * 1000);
+  const nowDate = new Date(now);
+
+  await db
+    .update(recipients)
+    .set({
+      name: input.nextName.trim(),
+      email: input.nextEmail.trim().toLowerCase(),
+      isPlaceholder: false,
+      dictatedBy: recipient.id,
+      dictatedAt: nowDate,
+      signingToken: newToken,
+      tokenHash: newToken,
+      tokenExpiresAt: tokenExpiration,
+      updatedAt: nowDate,
+    })
+    .where(eq(recipients.id, nextPlaceholder.id));
+
+  await db
+    .update(recipients)
+    .set({ awaitingDictation: false, updatedAt: nowDate })
+    .where(eq(recipients.id, recipient.id));
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId: doc.organizationId,
+    action: "recipient.dictated",
+    actorName: recipient.name ?? recipient.email,
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      nextRecipientId: nextPlaceholder.id,
+      nextName: input.nextName,
+      nextEmail: input.nextEmail,
+      dictatedAt: now,
+    }),
+    createdAt: nowDate,
   });
 
   return c.json({ success: true });
