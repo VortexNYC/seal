@@ -151,9 +151,6 @@ importers:
       '@convex-dev/migrations':
         specifier: ^0.3.3
         version: 0.3.5(convex-helpers@0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))
-      '@convex-dev/presence':
-        specifier: ^0.3.0
-        version: 0.3.2(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react-native@0.86.2(@babel/core@8.0.1)(@react-native/metro-config@0.86.2(@babel/core@8.0.1))(@types/react@19.2.17)(react@19.2.8))(react@19.2.8)
       '@convex-dev/rag':
         specifier: ^0.7.5
         version: 0.7.5(convex-helpers@0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(zod@4.4.3)
@@ -166,9 +163,6 @@ importers:
       '@convex-dev/workpool':
         specifier: ^0.4.7
         version: 0.4.8(convex-helpers@0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))
-      '@posthog/convex':
-        specifier: ^2.0.28
-        version: 2.0.33(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(rxjs@7.8.2)
       '@seal/transactional':
         specifier: workspace:*
         version: link:../../packages/transactional
@@ -187,9 +181,6 @@ importers:
       '@vortexnyc/money':
         specifier: 0.2.2
         version: 0.2.2
-      '@vortexnyc/observability':
-        specifier: 0.2.0
-        version: 0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@8.0.1)(@react-native/metro-config@0.86.2(@babel/core@8.0.1))(@types/react@19.2.17)(react@19.2.8))))(rxjs@7.8.2)
       '@vortexnyc/payments-sdk':
         specifier: 0.2.0
         version: 0.2.0
@@ -208,9 +199,6 @@ importers:
       convex-helpers:
         specifier: ^0.1.114
         version: 0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3)
-      convex-timeline:
-        specifier: ^0.1.2
-        version: 0.1.2(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))
       nanoid:
         specifier: ^5.1.7
         version: 5.1.16
@@ -262,7 +250,7 @@ importers:
         version: 1.171.16
       '@vortexnyc/observability':
         specifier: 0.2.0
-        version: 0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))
+        version: 0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))(rxjs@7.8.2)
       '@vortexnyc/ui':
         specifier: 0.5.0
         version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1689,20 +1677,6 @@ packages:
     peerDependencies:
       convex: ^1.35.0
       convex-helpers: ^0.1.115
-
-  '@convex-dev/presence@0.3.2':
-    resolution: {integrity: sha512-3Q4LOHW4hSDFWG8XZZv/xYya8WGbpFNEkyvxBYM6NLXTWSxc2ifw/8URRQziIhRx97v1VnSjrExntgXMGn4vLg==}
-    peerDependencies:
-      convex: ^1.24.8
-      expo-crypto: '>=14.1.0'
-      react: ~18.3.1 || ^19.0.0
-      react-dom: ~18.3.1 || ^19.0.0
-      react-native: '>=0.79.0'
-    peerDependenciesMeta:
-      expo-crypto:
-        optional: true
-      react-native:
-        optional: true
 
   '@convex-dev/rag@0.7.5':
     resolution: {integrity: sha512-u48NNcYdnBpGaAYq9GAbqEsCgFlKbaTj3Fc3cA+mNFis1flpy3Zz4eP2XdDavuyf/cNYE1dbxbnU20OcTvekOA==}
@@ -7118,11 +7092,6 @@ packages:
     resolution: {integrity: sha512-Me4BqUUyJEKI2COvwCBKqnByNT0AZq6eKs9aTjpPX7mz3PSdmvRRP+Kt8VrWT4kCJ168X+hAEGKHPeH98ncSmg==}
     peerDependencies:
       convex: ^1.32.0
-
-  convex-timeline@0.1.2:
-    resolution: {integrity: sha512-xT6dh1ohVUsDb/aepAKcvN9bcYGwu3tZ4Hxk1MrnzrcltHyId7EnhDij6piVA8JJRvBE1v9u8Rl6ugi9XKU+3A==}
-    peerDependencies:
-      convex: ^1.31.0
 
   convex@1.42.3:
     resolution: {integrity: sha512-7Tz/lH6UlZdiqzLPF/zrlH6Rlo/DOp836dL+GZkUMEQ2jaGGNnBIiIDcOOiEqtfSehuQ65r/rdNMnb4LupowaA==}
@@ -13375,14 +13344,6 @@ snapshots:
       convex: 1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       convex-helpers: 0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3)
 
-  '@convex-dev/presence@0.3.2(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react-native@0.86.2(@babel/core@8.0.1)(@react-native/metro-config@0.86.2(@babel/core@8.0.1))(@types/react@19.2.17)(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      convex: 1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
-      react: 19.2.8
-      react-dom: 19.2.8(react@19.2.8)
-    optionalDependencies:
-      react-native: 0.86.2(@babel/core@8.0.1)(@react-native/metro-config@0.86.2(@babel/core@8.0.1))(@types/react@19.2.17)(react@19.2.8)
-
   '@convex-dev/rag@0.7.5(convex-helpers@0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(zod@4.4.3)':
     dependencies:
       '@convex-dev/workpool': 0.4.8(convex-helpers@0.1.120(@standard-schema/spec@1.1.0)(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(hono@4.13.7)(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))
@@ -18293,7 +18254,7 @@ snapshots:
 
   '@vortexnyc/money@0.2.2': {}
 
-  '@vortexnyc/observability@0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))':
+  '@vortexnyc/observability@0.2.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(posthog-js@1.407.2)(posthog-react-native@4.61.4(expo-file-system@57.0.1(expo@57.0.9)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.8))))(rxjs@7.8.2)':
     dependencies:
       '@posthog/convex': 2.0.33(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(rxjs@7.8.2)
       convex: 1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
@@ -19251,10 +19212,6 @@ snapshots:
       zod: 4.4.3
 
   convex-test@0.0.46(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)):
-    dependencies:
-      convex: 1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
-
-  convex-timeline@0.1.2(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)):
     dependencies:
       convex: 1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
 
