@@ -1,5 +1,4 @@
 // VAL-REAL-1776573534487
-import { ConvexQueryClient } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
@@ -27,10 +26,9 @@ if (typeof RAW_CONVEX_URL !== "string" || RAW_CONVEX_URL === "") {
 const CONVEX_URL = RAW_CONVEX_URL;
 
 const convex = new ConvexReactClient(CONVEX_URL);
-const convexQueryClient = new ConvexQueryClient(convex);
 
-// Expose Convex client & API on `window` in dev/test/staging/preview so E2E
-// tests (and agent-browser sessions) can call mutations/queries directly.
+// Expose Convex client on `window` in dev/test/staging/preview so E2E tests
+// (and agent-browser sessions) can call mutations/queries directly.
 const isPreviewDeployment =
   typeof window !== "undefined" &&
   window.location.hostname.includes("vercel.app");
@@ -51,12 +49,11 @@ if (shouldExposeConvexApi) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryKeyHashFn: convexQueryClient.hashFn(),
-      queryFn: convexQueryClient.queryFn(),
+      staleTime: 0,
+      refetchOnWindowFocus: false,
     },
   },
 });
-convexQueryClient.connect(queryClient);
 
 // Create a new router instance
 const router = createRouter({
@@ -68,7 +65,7 @@ const router = createRouter({
   scrollRestoration: true,
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
-  context: { queryClient, convexClient: convex, convexQueryClient },
+  context: { queryClient },
   Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
     return (
       <ThemeProvider>
