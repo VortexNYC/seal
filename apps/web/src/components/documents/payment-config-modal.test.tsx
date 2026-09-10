@@ -4,13 +4,13 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-// Mock convex/react
+// Mock TanStack Query
 const mockUseQuery = vi.fn();
-const mockMutate = vi.fn();
+const mockUseMutation = vi.fn();
 
-vi.mock("convex/react", () => ({
+vi.mock("@tanstack/react-query", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: () => mockMutate,
+  useMutation: (...args: unknown[]) => mockUseMutation(...args),
 }));
 
 // Mock sonner toast
@@ -18,37 +18,44 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { parseId } from "../../lib/convex-ids";
 import { PaymentConfigModal } from "./payment-config-modal";
 
-const FAKE_FIELD_ID = parseId("signature_fields", "fake_id");
+const FAKE_FIELD_ID = "fake_field";
+const FAKE_DOC_ID = "fake_doc";
 
 describe("PaymentConfigModal", () => {
   afterEach(cleanup);
 
   beforeEach(() => {
     mockUseQuery.mockReset();
-    mockMutate.mockReset();
+    mockUseMutation.mockReset();
+    mockUseMutation.mockReturnValue({ mutateAsync: vi.fn() });
   });
 
   test("does not render dialog content when closed", () => {
-    mockUseQuery.mockReturnValue(null);
+    mockUseQuery.mockReturnValue({ data: null, isLoading: false });
 
     render(
-      <PaymentConfigModal open={false} onOpenChange={vi.fn()} fieldId={null} />
+      <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
+        open={false}
+        onOpenChange={vi.fn()}
+        fieldPublicId={null}
+      />
     );
 
     expect(screen.queryByText("Configure Payment")).not.toBeInTheDocument();
   });
 
   test("renders loading spinner when config is loading", () => {
-    mockUseQuery.mockReturnValue(undefined);
+    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 
@@ -59,13 +66,14 @@ describe("PaymentConfigModal", () => {
   });
 
   test("renders full form when open with no existing config", () => {
-    mockUseQuery.mockReturnValue(null);
+    mockUseQuery.mockReturnValue({ data: null, isLoading: false });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 
@@ -85,22 +93,31 @@ describe("PaymentConfigModal", () => {
 
   test("shows total badge with correct amount from existing config", () => {
     mockUseQuery.mockReturnValue({
-      paymentType: "one_time",
-      items: [
-        { id: "1", description: "Consulting", quantity: 2, unitPrice: 7500 },
-      ],
-      dueDateTerms: "on_receipt",
-      currency: "usd",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
+      data: {
+        id: "cfg_1",
+        publicId: "cfg_pub_1",
+        fieldId: FAKE_FIELD_ID,
+        documentId: FAKE_DOC_ID,
+        paymentType: "one_time",
+        items: [
+          { id: "1", description: "Consulting", quantity: 2, unitPrice: 7500 },
+        ],
+        dueDateTerms: "on_receipt",
+        currency: "usd",
+        allowedPaymentMethods: ["card"],
+        feeHandling: "absorb",
+        taxEnabled: false,
+        totalAmountCents: 15000,
+      },
+      isLoading: false,
     });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 
@@ -110,28 +127,37 @@ describe("PaymentConfigModal", () => {
 
   test("renders without crashing when existing config has customDueDate", () => {
     mockUseQuery.mockReturnValue({
-      paymentType: "one_time",
-      items: [
-        {
-          id: "1",
-          description: "Design services",
-          quantity: 1,
-          unitPrice: 500000,
-        },
-      ],
-      dueDateTerms: "custom",
-      customDueDate: "2026-04-01",
-      currency: "usd",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
+      data: {
+        id: "cfg_1",
+        publicId: "cfg_pub_1",
+        fieldId: FAKE_FIELD_ID,
+        documentId: FAKE_DOC_ID,
+        paymentType: "one_time",
+        items: [
+          {
+            id: "1",
+            description: "Design services",
+            quantity: 1,
+            unitPrice: 500000,
+          },
+        ],
+        dueDateTerms: "custom",
+        customDueDate: "2026-04-01",
+        currency: "usd",
+        allowedPaymentMethods: ["card"],
+        feeHandling: "absorb",
+        taxEnabled: false,
+        totalAmountCents: 500000,
+      },
+      isLoading: false,
     });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 
@@ -142,23 +168,32 @@ describe("PaymentConfigModal", () => {
 
   test("when dueDateTerms is custom, both mode toggle buttons are in the DOM", async () => {
     mockUseQuery.mockReturnValue({
-      paymentType: "one_time",
-      items: [
-        { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
-      ],
-      dueDateTerms: "custom",
-      customDueDays: 45,
-      currency: "usd",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
+      data: {
+        id: "cfg_1",
+        publicId: "cfg_pub_1",
+        fieldId: FAKE_FIELD_ID,
+        documentId: FAKE_DOC_ID,
+        paymentType: "one_time",
+        items: [
+          { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
+        ],
+        dueDateTerms: "custom",
+        customDueDays: 45,
+        currency: "usd",
+        allowedPaymentMethods: ["card"],
+        feeHandling: "absorb",
+        taxEnabled: false,
+        totalAmountCents: 100000,
+      },
+      isLoading: false,
     });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 
@@ -175,23 +210,32 @@ describe("PaymentConfigModal", () => {
   test("when customDueDateMode is date, calendar trigger is shown instead of days input", async () => {
     // Config with customDueDate puts modal into "date" mode
     mockUseQuery.mockReturnValue({
-      paymentType: "one_time",
-      items: [
-        { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
-      ],
-      dueDateTerms: "custom",
-      customDueDate: "2026-06-15",
-      currency: "usd",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
+      data: {
+        id: "cfg_1",
+        publicId: "cfg_pub_1",
+        fieldId: FAKE_FIELD_ID,
+        documentId: FAKE_DOC_ID,
+        paymentType: "one_time",
+        items: [
+          { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
+        ],
+        dueDateTerms: "custom",
+        customDueDate: "2026-06-15",
+        currency: "usd",
+        allowedPaymentMethods: ["card"],
+        feeHandling: "absorb",
+        taxEnabled: false,
+        totalAmountCents: 100000,
+      },
+      isLoading: false,
     });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 
@@ -210,23 +254,32 @@ describe("PaymentConfigModal", () => {
 
   test("loads customDueDate from existing config and displays the formatted date", async () => {
     mockUseQuery.mockReturnValue({
-      paymentType: "one_time",
-      items: [
-        { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
-      ],
-      dueDateTerms: "custom",
-      customDueDate: "2026-04-01",
-      currency: "usd",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
+      data: {
+        id: "cfg_1",
+        publicId: "cfg_pub_1",
+        fieldId: FAKE_FIELD_ID,
+        documentId: FAKE_DOC_ID,
+        paymentType: "one_time",
+        items: [
+          { id: "1", description: "Service", quantity: 1, unitPrice: 100000 },
+        ],
+        dueDateTerms: "custom",
+        customDueDate: "2026-04-01",
+        currency: "usd",
+        allowedPaymentMethods: ["card"],
+        feeHandling: "absorb",
+        taxEnabled: false,
+        totalAmountCents: 100000,
+      },
+      isLoading: false,
     });
 
     render(
       <PaymentConfigModal
+        documentPublicId={FAKE_DOC_ID}
         open={true}
         onOpenChange={vi.fn()}
-        fieldId={FAKE_FIELD_ID}
+        fieldPublicId={FAKE_FIELD_ID}
       />
     );
 

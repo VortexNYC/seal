@@ -987,14 +987,17 @@ function DocumentDetailPage() {
         />
 
         <PaymentConfigModal
+          documentPublicId={documentPublicId}
           open={fieldPlacement.showPaymentConfigModal}
           onOpenChange={(open) => {
             fieldPlacement.setShowPaymentConfigModal(open);
             if (!open) fieldPlacement.setPaymentConfigFieldId(null);
           }}
-          fieldId={
+          fieldPublicId={
             fieldPlacement.paymentConfigFieldId
-              ? parseId("signature_fields", fieldPlacement.paymentConfigFieldId)
+              ? (signatureFields.find(
+                  (f) => f._id === fieldPlacement.paymentConfigFieldId
+                )?.publicId ?? null)
               : null
           }
         />

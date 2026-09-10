@@ -1122,7 +1122,16 @@ export async function getPaymentConfig(
 
 export async function upsertPaymentConfig(
   publicId: string,
-  input: Omit<ApiPaymentConfigDetail, "id" | "publicId" | "documentId" | "paymentStatus" | "createdAt" | "updatedAt">
+  input: Omit<
+    ApiPaymentConfigDetail,
+    | "id"
+    | "publicId"
+    | "documentId"
+    | "paymentStatus"
+    | "totalAmountCents"
+    | "createdAt"
+    | "updatedAt"
+  >
 ): Promise<ApiPaymentConfigDetail> {
   return apiFetch(
     `/api/documents/${encodeURIComponent(publicId)}/payment-configs`,
