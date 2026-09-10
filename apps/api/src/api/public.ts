@@ -1215,4 +1215,26 @@ function safeParseJson(
   }
 }
 
+const ipResponseSchema = z.object({
+  ip: z.string(),
+});
+
+const ipRouteDef = createRoute({
+  method: "get",
+  path: "/ip",
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: ipResponseSchema },
+      },
+      description: "Client IP address for audit trail",
+    },
+  },
+});
+
+app.openapi(ipRouteDef, (c) => {
+  const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
+  return c.json({ ip });
+});
+
 export default app;

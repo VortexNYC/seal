@@ -2441,3 +2441,8 @@ export async function getAIProgress(threadId: string): Promise<ApiAIProgress> {
     aiProgressSchema
   );
 }
+
+export async function getClientIp(): Promise<string> {
+  const { ip } = await apiFetch("/api/public/ip", z.object({ ip: z.string() }));
+  return ip;
+}

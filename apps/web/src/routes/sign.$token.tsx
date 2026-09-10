@@ -13,7 +13,6 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { formatMoney, money } from "@vortexnyc/money";
-import { ConvexError } from "convex/values";
 import {
   AlertCircle,
   ArrowDownIcon,
@@ -83,6 +82,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
+  getClientIp,
   getPublicSigningPaymentConfigs,
   getPublicSigningPdf,
   getPublicSigningSignedPdfUrl,
@@ -208,9 +208,8 @@ function useEmbeddedSigning(token: string) {
 
 function SigningErrorComponent({ error }: ErrorComponentProps) {
   const isInvalidToken =
-    error instanceof ConvexError ||
-    (error instanceof Error &&
-      /invalid.*token|token.*invalid|not found/i.test(error.message));
+    error instanceof Error &&
+    /invalid.*token|token.*invalid|not found/i.test(error.message);
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
@@ -410,15 +409,11 @@ function SigningPage() {
   const [showDictateDialog, setShowDictateDialog] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
 
-  // Client IP for audit trail (fetched from Convex HTTP endpoint)
+  // Client IP for audit trail (fetched from API)
   const [clientIp, setClientIp] = useState("unknown");
   useEffect(() => {
-    const convexUrl: unknown = import.meta.env.VITE_CONVEX_URL;
-    if (typeof convexUrl !== "string" || convexUrl === "") return;
-    const siteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
-    fetch(`${siteUrl}/api/v1/ip`)
-      .then((res) => res.json())
-      .then((ipPayload: { ip: string }) => setClientIp(ipPayload.ip))
+    getClientIp()
+      .then((ip) => setClientIp(ip))
       .catch(() => {
         // Silently fall back to "unknown" — IP is best-effort
       });
