@@ -20,6 +20,8 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -29,11 +31,8 @@ jobs:
         with:
           node-version: "24"
           cache: true
-
-      - name: Authenticate to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm config set "//npm.pkg.github.com/:_authToken" "$NODE_AUTH_TOKEN"
+          registry-url: https://npm.pkg.github.com
+          scope: "@vortexnyc"
 
       - name: Install
         run: pnpm install --frozen-lockfile
