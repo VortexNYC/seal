@@ -16,7 +16,6 @@ import {
   renderDocumentViewed,
   renderSigningComplete,
   renderTeamInvitation,
-  renderWelcome,
 } from "@seal/transactional";
 
 import { internal } from "../_generated/api";
@@ -393,57 +392,6 @@ export async function sendReminder(
     return { success: true, messageId: emailId };
   } catch (error) {
     console.error("Error sending reminder email:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
-
-export interface SendWelcomeParams {
-  to: string;
-  userName: string;
-  dashboardUrl?: string;
-}
-
-/**
- * Send welcome email to new user
- */
-export async function sendWelcome(
-  ctx: ActionCtx,
-  params: SendWelcomeParams
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    const { to, userName, dashboardUrl } = params;
-
-    const html = await renderWelcome({
-      userName,
-      userEmail: to,
-      dashboardUrl,
-    });
-
-    const subject =
-      "Welcome to Seal - Your document signing journey starts here";
-
-    const emailId = await sendEmailManuallyFromAction(
-      ctx,
-      { from: FROM_EMAIL, to: [to], subject },
-      async (idempotencyKey: string) => {
-        const { data, error } = await sendResendEmail({
-          from: FROM_EMAIL,
-          to: [to],
-          subject,
-          html,
-          headers: { "Idempotency-Key": idempotencyKey },
-        });
-        if (error) throw new Error(error.message ?? "Resend request failed");
-        return sealAssertPresent(data).id;
-      }
-    );
-
-    return { success: true, messageId: emailId };
-  } catch (error) {
-    console.error("Error sending welcome email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

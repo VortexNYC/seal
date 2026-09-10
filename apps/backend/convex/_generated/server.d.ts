@@ -22,16 +22,6 @@ import {
 import type { DataModel } from "./dataModel.js";
 
 /**
- * Typesafe environment variables declared in `convex.config.ts`.
- */
-type Env = {
-  readonly POSTHOG_FLAGS_POLLING_INTERVAL_SECONDS: string | undefined;
-  readonly POSTHOG_HOST: string | undefined;
-  readonly POSTHOG_PERSONAL_API_KEY: string | undefined;
-  readonly POSTHOG_PROJECT_TOKEN: string;
-};
-
-/**
  * Define a query in this Convex app's public API.
  *
  * This function will be allowed to read your Convex database and will be accessible from the client.
@@ -104,11 +94,6 @@ export declare const internalAction: ActionBuilder<DataModel, "internal">;
  * @returns The wrapped function. Import this function from `convex/http.js` and route it to hook it up.
  */
 export declare const httpAction: HttpActionBuilder;
-
-/**
- * Typesafe environment variables declared in `convex.config.ts`.
- */
-export declare const env: Env;
 
 /**
  * A set of services for use within Convex query functions.
