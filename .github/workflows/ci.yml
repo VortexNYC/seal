@@ -33,12 +33,13 @@ jobs:
           cache: true
           registry-url: https://npm.pkg.github.com
           scope: "@vortexnyc"
+          run-install: false
 
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: vp install --frozen-lockfile
 
       - name: Check
-        run: pnpm run check
+        run: vp run check
 
       - name: Knip
-        run: pnpm run knip
+        run: vp run knip
