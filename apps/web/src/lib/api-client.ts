@@ -18,6 +18,7 @@ const organizationSchema = z.object({
   suiteBrand: z.record(z.string(), z.unknown()),
   suiteSecurity: z.record(z.string(), z.unknown()),
   brandingSettings: z.record(z.string(), z.unknown()).nullable().optional(),
+  delegateOwnership: z.boolean(),
   timezone: z.string(),
   currency: z.string(),
   currencyKind: z.string(),
@@ -316,6 +317,39 @@ export async function updateAiSettings(
   );
 }
 
+const securitySettingsSchema = z.object({
+  ipAllowlist: z.array(z.string()),
+  allowApiAccess: z.boolean(),
+});
+
+export type ApiSecuritySettings = z.infer<typeof securitySettingsSchema>;
+
+export async function getSecuritySettings(
+  slug: string
+): Promise<ApiSecuritySettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/security`,
+    securitySettingsSchema
+  );
+}
+
+export async function updateSecuritySettings(
+  slug: string,
+  input: {
+    ipAllowlist?: string[];
+    allowApiAccess?: boolean;
+  }
+): Promise<ApiSecuritySettings> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(slug)}/security`,
+    securitySettingsSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const notificationSettingsSchema = z.object({
   reminderSchedule: z.array(z.number().int()),
   expirationAlertDays: z.number().int(),
@@ -415,6 +449,7 @@ export async function updateWorkspace(
     logo?: string | null;
     brand?: Record<string, unknown>;
     security?: Record<string, unknown>;
+    delegateOwnership?: boolean;
     timezone?: string;
     currency?: string;
     currencyKind?: string;

@@ -10,6 +10,7 @@
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { VortexSecurityAuditList } from "@vortexnyc/auth/react";
 import {
@@ -22,7 +23,7 @@ import {
   Label,
   Switch,
 } from "@vortexnyc/ui";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery as useConvexQuery } from "convex/react";
 import { ArrowRightLeft, Save, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +31,12 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getOrganization,
+  getSecuritySettings,
+  updateSecuritySettings,
+  updateWorkspace,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {
@@ -41,21 +48,16 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
 function SecuritySettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
 
-  const securitySettings = useQuery(
-    api.organizations.queries.getSecuritySettings,
-    organization ? { organizationId: organization._id } : "skip"
-  );
-
-  const updateSecuritySettings = useMutation(
-    api.organizations.mutations.updateSecuritySettings
-  );
-  const updateDelegateOwnership = useMutation(
-    api.organizations.mutations.updateDelegateOwnership
-  );
+  const { data: securitySettings } = useQuery({
+    queryKey: ["security", slug],
+    queryFn: () => getSecuritySettings(slug),
+    enabled: !!organization,
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDelegateOwnershipUpdating, setIsDelegateOwnershipUpdating] =
@@ -76,7 +78,7 @@ function SecuritySettings() {
   const isAdmin =
     organization?.userRole === "admin" || organization?.userRole === "owner";
 
-  const securityAuditLogs = useQuery(
+  const securityAuditLogs = useConvexQuery(
     api.organizations.vortex_security_audit.listRecent,
     isAdmin
       ? {
@@ -104,7 +106,7 @@ function SecuritySettings() {
     setIsDelegateOwnershipUpdating(true);
     try {
       setDelegateOwnership(checked);
-      await updateDelegateOwnership({ enabled: checked });
+      await updateWorkspace(slug, { delegateOwnership: checked });
       toast.success(
         checked ? "Ownership transfer enabled" : "Ownership transfer disabled"
       );
@@ -130,7 +132,7 @@ function SecuritySettings() {
         .map((line) => line.trim())
         .filter(Boolean);
 
-      await updateSecuritySettings({
+      await updateSecuritySettings(slug, {
         ipAllowlist: ipAllowlist.length > 0 ? ipAllowlist : undefined,
         allowApiAccess: formData.allowApiAccess,
       });

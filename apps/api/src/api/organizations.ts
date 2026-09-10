@@ -17,6 +17,7 @@ const OrganizationSchema = z
     suiteBrand: z.record(z.string(), z.unknown()),
     suiteSecurity: z.record(z.string(), z.unknown()),
     brandingSettings: z.record(z.string(), z.unknown()).nullable().optional(),
+    delegateOwnership: z.boolean(),
     timezone: z.string().default("UTC"),
     currency: z.string().default("BRL"),
     currencyKind: z.string().default("normal"),
@@ -94,6 +95,10 @@ function organizationResponse(
     brandingSettings: brandingSettingsResult.success
       ? brandingSettingsResult.data
       : null,
+    delegateOwnership:
+      typeof meta.delegateOwnership === "boolean"
+        ? meta.delegateOwnership
+        : false,
     timezone:
       typeof meta.timezone === "string" ? meta.timezone : "UTC",
     currency:
@@ -351,6 +356,22 @@ const updateAiBodySchema = z.object({
   aiShowRedlinesToSigners: z.boolean().optional(),
 });
 
+const SecuritySettingsSchema = z
+  .object({
+    ipAllowlist: z.array(z.string()),
+    allowApiAccess: z.boolean(),
+  })
+  .openapi("SecuritySettings");
+
+const securitySettingsRecordSchema = SecuritySettingsSchema.or(
+  z.record(z.string(), z.unknown())
+);
+
+const updateSecurityBodySchema = z.object({
+  ipAllowlist: z.array(z.string()).optional(),
+  allowApiAccess: z.boolean().optional(),
+});
+
 const updateNotificationBodySchema = z.object({
   reminderSchedule: z.array(z.number().int()).optional(),
   expirationAlertDays: z.number().int().optional(),
@@ -377,6 +398,7 @@ const updateWorkspaceBodySchema = z.object({
   logo: z.string().nullable().optional(),
   brand: z.record(z.string(), z.unknown()).optional(),
   security: z.record(z.string(), z.unknown()).optional(),
+  delegateOwnership: z.boolean().optional(),
   timezone: z.string().optional(),
   currency: z.string().optional(),
   currencyKind: z.string().optional(),
@@ -439,6 +461,9 @@ app.openapi(updateWorkspaceRouteDef, async (c) => {
   }
   if (body.currencyKind !== undefined) {
     nextMetadata.currencyKind = body.currencyKind;
+  }
+  if (body.delegateOwnership !== undefined) {
+    nextMetadata.delegateOwnership = body.delegateOwnership;
   }
 
   const setName = body.name !== undefined ? body.name : undefined;
@@ -826,6 +851,120 @@ app.openapi(updateNotificationRouteDef, async (c) => {
     .where(eq(organization.id, org.id));
 
   return c.json(nextNotification);
+});
+
+const securityRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/security",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: securitySettingsRecordSchema },
+      },
+      description: "Security settings from organization metadata",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(securityRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  const meta = parseMetadata(org.metadata);
+  const raw = asRecord(meta.securitySettings);
+
+  const allowlist =
+    Array.isArray(raw.ipAllowlist) &&
+    raw.ipAllowlist.every((v) => typeof v === "string")
+      ? raw.ipAllowlist
+      : [];
+
+  const result = SecuritySettingsSchema.safeParse({
+    ipAllowlist: allowlist,
+    allowApiAccess:
+      typeof raw.allowApiAccess === "boolean" ? raw.allowApiAccess : true,
+  });
+
+  return c.json(result.success ? result.data : { ipAllowlist: allowlist, allowApiAccess: true });
+});
+
+const updateSecurityRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/security",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: updateSecurityBodySchema },
+      },
+      description: "Security settings update fields",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: SecuritySettingsSchema },
+      },
+      description: "Updated security settings",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(updateSecurityRouteDef, async (c) => {
+  const org = c.get("organization");
+  const membership = c.get("membership");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const role = membership?.role;
+  if (role !== "owner" && role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const body = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const meta = parseMetadata(org.metadata);
+  const security = asRecord(meta.securitySettings);
+
+  const currentAllowlist =
+    Array.isArray(security.ipAllowlist) &&
+    security.ipAllowlist.every((v) => typeof v === "string")
+      ? security.ipAllowlist
+      : [];
+
+  const nextSecurity = {
+    ipAllowlist: body.ipAllowlist ?? currentAllowlist,
+    allowApiAccess:
+      body.allowApiAccess !== undefined
+        ? body.allowApiAccess
+        : typeof security.allowApiAccess === "boolean"
+          ? security.allowApiAccess
+          : true,
+  };
+
+  const nextMetadata = { ...meta, securitySettings: nextSecurity };
+
+  await db
+    .update(organization)
+    .set({
+      metadata: JSON.stringify(nextMetadata),
+      updatedAt: new Date(),
+    })
+    .where(eq(organization.id, org.id));
+
+  return c.json(nextSecurity);
 });
 
 const aiRouteDef = createRoute({
