@@ -55,13 +55,6 @@ const crons = gatedCrons();
     { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 30 },
     internal.ai.cleanup.cleanupDismissedAnnotations
   );
-
-  // Process dunning (payment recovery) emails daily at 11am UTC
-  crons.daily(
-    "process-dunning-emails",
-    { hourUTC: 11, minuteUTC: 0 },
-    internal.payment_fields.dunning.processDunningEmails
-  );
 }
 
 export default crons;

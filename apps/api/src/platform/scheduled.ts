@@ -7,6 +7,7 @@ import {
   recipients,
   user as userTable,
 } from "../global/schema.js";
+import { runDunningEmails } from "./dunning.js";
 import {
   sendDocumentExpiredEmail,
   sendDocumentExpirationAlertEmail,
@@ -235,4 +236,5 @@ export async function runScheduledTasks(
   await runExpiredDocumentSweep(env);
   await runDocumentReminders(env);
   await runExpirationAlerts(env);
+  await runDunningEmails(env);
 }
