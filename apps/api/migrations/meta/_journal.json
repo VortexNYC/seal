@@ -1,0 +1,153 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788978780765,
+      "tag": "0000_charming_the_fallen",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788979201362,
+      "tag": "0001_deep_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788979302266,
+      "tag": "0002_loving_glorian",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788980000000,
+      "tag": "0003_amber_viper",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788980100000,
+      "tag": "0004_silent_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788980200000,
+      "tag": "0005_marvelous_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788980300000,
+      "tag": "0006_weapons_grade_nostalgia",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788980400000,
+      "tag": "0007_crimson_carnage",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788980500000,
+      "tag": "0008_add_signature_and_payment_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788980600000,
+      "tag": "0009_expand_signing_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1788980700000,
+      "tag": "0010_add_ai_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1788999740000,
+      "tag": "0011_add_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1789005381435,
+      "tag": "0012_black_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1789005719412,
+      "tag": "0014_melodic_lifeguard",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1789005719412,
+      "tag": "0015_add_connected_apps_and_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1789005719412,
+      "tag": "0016_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1789018790189,
+      "tag": "0017_add_saved_signatures",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1789019308504,
+      "tag": "0018_add_ai_progress_and_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789056992339,
+      "tag": "0019_add_document_verification_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1789056992340,
+      "tag": "0020_add_mcp_oauth_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1789056992341,
+      "tag": "0021_add_webhooks_table",
+      "breakpoints": true
+    }
+  ]
+}

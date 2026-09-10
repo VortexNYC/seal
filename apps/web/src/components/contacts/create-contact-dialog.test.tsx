@@ -1,13 +1,15 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-const mockCreateContact = vi.fn();
-const mockUseQuery = vi.fn();
+import type { ApiContact } from "@/lib/api-client";
 
-vi.mock("convex/react", () => ({
-  useMutation: () => mockCreateContact,
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+const mockCreateContact = vi.hoisted(() => vi.fn());
+const mockGetContactByEmail = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/api-client", () => ({
+  createContact: mockCreateContact,
+  getContactByEmail: mockGetContactByEmail,
 }));
 
 vi.mock("sonner", () => ({
@@ -16,12 +18,33 @@ vi.mock("sonner", () => ({
 
 import { CreateContactDialog } from "./create-contact-dialog";
 
+function makeApiContact(overrides: Partial<ApiContact> = {}): ApiContact {
+  return {
+    _id: "contact_1",
+    firstName: "John",
+    lastName: "Doe",
+    fullName: "John Doe",
+    email: "john@test.com",
+    status: "active",
+    tags: [],
+    createdBy: "user_1",
+    createdAt: 1700000000000,
+    updatedAt: 1700000000000,
+    ...overrides,
+  };
+}
+
 function renderDialog(
-  overrides: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}
+  overrides: {
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    onCreated?: (contact: ApiContact) => void;
+  } = {}
 ) {
   const props = {
     open: true,
     onOpenChange: vi.fn(),
+    onCreated: vi.fn(),
     ...overrides,
   };
   return { ...render(<CreateContactDialog {...props} />), props };
@@ -31,7 +54,7 @@ describe("CreateContactDialog", () => {
   afterEach(() => {
     cleanup();
     mockCreateContact.mockReset();
-    mockUseQuery.mockReset();
+    mockGetContactByEmail.mockReset();
   });
 
   describe("rendering", () => {
@@ -72,7 +95,6 @@ describe("CreateContactDialog", () => {
 
     test("renders status select trigger", () => {
       renderDialog();
-      // Shadcn Select renders the value in a trigger button
       const statusTrigger = screen.getByRole("combobox", { name: /status/i });
       expect(statusTrigger).toBeDefined();
     });
@@ -123,7 +145,6 @@ describe("CreateContactDialog", () => {
 
       await user.type(screen.getByLabelText(/first name/i), "John");
       await user.type(screen.getByLabelText(/last name/i), "Doe");
-      // Leave email empty
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
       expect(
@@ -136,23 +157,18 @@ describe("CreateContactDialog", () => {
       const user = userEvent.setup();
       renderDialog();
 
-      // Submit with empty fields to trigger errors
       await user.click(screen.getByRole("button", { name: /create contact/i }));
       expect(screen.getByText("First name is required")).toBeDefined();
 
-      // Type in the field — error should clear
       await user.type(screen.getByLabelText(/first name/i), "J");
       expect(screen.queryByText("First name is required")).toBeNull();
     });
   });
 
   describe("form submission", () => {
-    test("calls createContact mutation with correct data", async () => {
+    test("calls createContact with correct data", async () => {
       const user = userEvent.setup();
-      mockCreateContact.mockResolvedValue({
-        _id: "contact_1",
-        isDuplicate: false,
-      });
+      mockCreateContact.mockResolvedValue(makeApiContact());
 
       renderDialog();
 
@@ -176,10 +192,7 @@ describe("CreateContactDialog", () => {
     test("calls onOpenChange(false) after successful submission", async () => {
       const user = userEvent.setup();
       const onOpenChange = vi.fn();
-      mockCreateContact.mockResolvedValue({
-        _id: "contact_1",
-        isDuplicate: false,
-      });
+      mockCreateContact.mockResolvedValue(makeApiContact());
 
       renderDialog({ onOpenChange });
 
@@ -194,10 +207,7 @@ describe("CreateContactDialog", () => {
     test("shows success toast on successful creation", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockCreateContact.mockResolvedValue({
-        _id: "contact_1",
-        isDuplicate: false,
-      });
+      mockCreateContact.mockResolvedValue(makeApiContact());
 
       renderDialog();
 
@@ -212,25 +222,33 @@ describe("CreateContactDialog", () => {
     test("shows warning toast when duplicate is created", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockCreateContact.mockResolvedValue({
-        _id: "contact_1",
-        isDuplicate: true,
-      });
+      mockGetContactByEmail.mockResolvedValue(makeApiContact());
+      mockCreateContact.mockResolvedValue(makeApiContact());
 
       renderDialog();
 
       await user.type(screen.getByLabelText(/first name/i), "John");
       await user.type(screen.getByLabelText(/last name/i), "Doe");
       await user.type(screen.getByLabelText(/email/i), "john@test.com");
+      await user.tab();
+
+      await waitFor(() =>
+        expect(
+          screen.getByText("A contact with this email already exists.")
+        ).toBeDefined()
+      );
+
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-      expect(toast.warning).toHaveBeenCalled();
+      expect(toast.warning).toHaveBeenCalledWith(
+        "A contact with this email already exists. A duplicate was created."
+      );
     });
 
-    test("shows error toast when mutation fails", async () => {
+    test("shows error toast when creation fails", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockCreateContact.mockRejectedValue(new Error("Server error"));
+      mockCreateContact.mockRejectedValue(new Error("Network error"));
 
       renderDialog();
 
@@ -239,7 +257,7 @@ describe("CreateContactDialog", () => {
       await user.type(screen.getByLabelText(/email/i), "john@test.com");
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-      expect(toast.error).toHaveBeenCalledWith("Server error");
+      expect(toast.error).toHaveBeenCalledWith("Network error");
     });
   });
 
@@ -250,7 +268,6 @@ describe("CreateContactDialog", () => {
       renderDialog({ onOpenChange });
 
       await user.click(screen.getByRole("button", { name: /cancel/i }));
-
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });

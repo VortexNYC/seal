@@ -108,7 +108,7 @@
 ║                                                                               ║
 ║    API Key                                                                    ║ [text-base font-semibold mb-2]
 ║    ╭─[API KEY DISPLAY]───────────────────────────────────────────────────────╮ ║
-║    │ sk_live_1234567890abcdef1234567890abcdef1234567890abc  ┏━Copy━┓ │ ║ [Card: p-4 bg-gray-100 font-mono text-sm]
+║    │ pk_test_REDACTED000000000000000000000000000000000000000 │ ║ [Card: p-4 bg-gray-100 font-mono text-sm]
 ║    ╰─────────────────────────────────────────────────────────────────────╯ ║ [Button: variant="outline" size="sm"]
 ║                                                                               ║
 ║    Key Details                                                                ║ [text-base font-semibold mb-2 mt-4]

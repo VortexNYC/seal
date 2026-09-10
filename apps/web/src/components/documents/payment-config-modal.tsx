@@ -1,5 +1,4 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   allocate,
   applyRate,
@@ -8,7 +7,6 @@ import {
   subtractMoney,
   toMajorNumber,
 } from "@vortexnyc/money";
-import { useMutation, useQuery } from "convex/react";
 import { format, parse } from "date-fns";
 import {
   CalendarIcon,
@@ -20,6 +18,8 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import type { ApiPaymentConfigDetail } from "@/lib/api-client";
+import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -121,12 +121,13 @@ interface LineItem {
 }
 
 interface PaymentConfigModalProps {
+  documentPublicId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fieldId: Id<"signature_fields"> | null;
+  fieldPublicId: string | null;
 }
 
-type PaymentFieldConfig = Doc<"payment_field_configs">;
+type PaymentFieldConfig = ApiPaymentConfigDetail;
 
 type PaymentConfigDraft = {
   readonly items: LineItem[];
@@ -174,12 +175,12 @@ type PaymentConfigForm = {
   ) => void;
 };
 
-type UpsertPaymentConfig = (
-  args: PaymentConfigMutationInput
-) => Promise<unknown>;
+type UpsertPaymentConfig = {
+  mutateAsync: (args: PaymentConfigMutationInput) => Promise<unknown>;
+};
 
 type PaymentConfigMutationInput = {
-  fieldId: Id<"signature_fields">;
+  fieldId: string;
   paymentType: PaymentType;
   items: LineItem[];
   currency: "usd";
@@ -225,17 +226,34 @@ function computeTotal(items: LineItem[]): number {
 // --- Component ---
 
 export function PaymentConfigModal({
+  documentPublicId,
   open,
   onOpenChange,
-  fieldId,
+  fieldPublicId,
 }: PaymentConfigModalProps) {
-  const existingConfig = useQuery(
-    api.payment_fields.queries.getPaymentConfigByField,
-    fieldId ? { fieldId } : "skip"
-  );
-  const upsertConfig = useMutation(
-    api.payment_fields.mutations.upsertPaymentConfig
-  );
+  const { data: existingConfig, isLoading: existingConfigLoading } = useQuery({
+    queryKey: ["documents", documentPublicId, "payment-configs", fieldPublicId],
+    queryFn: async () => {
+      if (!fieldPublicId) return null;
+      try {
+        return await getPaymentConfig(documentPublicId, fieldPublicId);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.includes("Payment config not found")
+        ) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    enabled: open && !!fieldPublicId,
+    retry: false,
+  });
+  const upsertConfig = useMutation({
+    mutationFn: (input: PaymentConfigMutationInput) =>
+      upsertPaymentConfig(documentPublicId, input),
+  });
   const form = usePaymentConfigForm(existingConfig);
   const [isSaving, setIsSaving] = useState(false);
   const total = computeTotal(form.draft.items);
@@ -243,14 +261,14 @@ export function PaymentConfigModal({
   const handleSave = async () => {
     await savePaymentConfig({
       draft: form.draft,
-      fieldId,
+      fieldPublicId,
       onOpenChange,
       setIsSaving,
       upsertConfig,
     });
   };
 
-  if (fieldId && existingConfig === undefined) {
+  if (fieldPublicId && existingConfigLoading) {
     return (
       <PaymentConfigLoadingDialog open={open} onOpenChange={onOpenChange} />
     );
@@ -1317,10 +1335,18 @@ function defaultPaymentConfigDraft(): PaymentConfigDraft {
   };
 }
 
+function isIn<T extends string>(
+  value: string,
+  allowed: readonly T[]
+): value is T {
+  return allowed.some((allowedValue) => allowedValue === value);
+}
+
 function paymentConfigDraftFromExisting(
   config: PaymentFieldConfig
 ): PaymentConfigDraft {
   const draft = defaultPaymentConfigDraft();
+  const taxBehavior = config.taxBehavior ?? draft.taxBehavior;
   return {
     ...draft,
     items: config.items.map((item) => ({
@@ -1329,17 +1355,23 @@ function paymentConfigDraftFromExisting(
       quantity: item.quantity,
       unitPrice: item.unitPrice,
     })),
-    paymentType: config.paymentType,
-    dueDateTerms: config.dueDateTerms,
+    paymentType: isIn(config.paymentType, PAYMENT_TYPES)
+      ? config.paymentType
+      : draft.paymentType,
+    dueDateTerms: isIn(config.dueDateTerms, DUE_DATE_TERMS)
+      ? config.dueDateTerms
+      : draft.dueDateTerms,
     ...customDueDateDraft(config),
     ...lateFeeDraft(config),
     ...recurringDraft(config),
     ...installmentsDraft(config),
     ...depositBalanceDraft(config),
     paymentMethods: paymentMethodsFromExisting(config.allowedPaymentMethods),
-    feeHandling: config.feeHandling,
+    feeHandling: isIn(config.feeHandling, FEE_HANDLING)
+      ? config.feeHandling
+      : draft.feeHandling,
     taxEnabled: config.taxEnabled,
-    taxBehavior: config.taxBehavior ?? draft.taxBehavior,
+    taxBehavior: isIn(taxBehavior, TAX_BEHAVIORS) ? taxBehavior : "exclusive",
   };
 }
 
@@ -1352,8 +1384,11 @@ function customDueDateDraft(
       customDueDate: parse(config.customDueDate, "yyyy-MM-dd", new Date()),
     };
   }
-  return config.customDueDays
-    ? { customDueDateMode: "days", customDueDays: config.customDueDays }
+  return config.customDueDays != null
+    ? {
+        customDueDateMode: "days",
+        customDueDays: config.customDueDays,
+      }
     : {};
 }
 
@@ -1361,7 +1396,9 @@ function lateFeeDraft(config: PaymentFieldConfig): Partial<PaymentConfigDraft> {
   if (!config.lateFees) return {};
   return {
     lateFeeEnabled: config.lateFees.enabled,
-    lateFeeType: config.lateFees.type,
+    lateFeeType: isIn(config.lateFees.type, LATE_FEE_TYPES)
+      ? config.lateFees.type
+      : "percentage",
     lateFeeAmount: config.lateFees.amount,
     lateFeeGraceDays: config.lateFees.gracePeriodDays,
   };
@@ -1372,9 +1409,19 @@ function recurringDraft(
 ): Partial<PaymentConfigDraft> {
   if (!config.recurringConfig) return {};
   return {
-    recurringInterval: config.recurringConfig.interval,
+    recurringInterval: isIn(
+      config.recurringConfig.interval,
+      RECURRING_INTERVALS
+    )
+      ? config.recurringConfig.interval
+      : "month",
     recurringIntervalCount: config.recurringConfig.intervalCount,
-    recurringEndCondition: config.recurringConfig.endCondition,
+    recurringEndCondition: isIn(
+      config.recurringConfig.endCondition,
+      RECURRING_END_CONDITIONS
+    )
+      ? config.recurringConfig.endCondition
+      : "never",
     recurringEndAfterCount: config.recurringConfig.endAfterCount ?? 12,
   };
 }
@@ -1385,7 +1432,12 @@ function installmentsDraft(
   if (!config.installmentsConfig) return {};
   return {
     installmentsCount: config.installmentsConfig.count,
-    installmentsInterval: config.installmentsConfig.interval,
+    installmentsInterval: isIn(
+      config.installmentsConfig.interval,
+      INSTALLMENT_INTERVALS
+    )
+      ? config.installmentsConfig.interval
+      : "month",
   };
 }
 
@@ -1415,14 +1467,14 @@ function isPaymentMethodKey(value: string): value is PaymentMethodKey {
 
 async function savePaymentConfig(input: {
   readonly draft: PaymentConfigDraft;
-  readonly fieldId: Id<"signature_fields"> | null;
+  readonly fieldPublicId: string | null;
   readonly onOpenChange: (open: boolean) => void;
   readonly setIsSaving: (isSaving: boolean) => void;
   readonly upsertConfig: UpsertPaymentConfig;
 }) {
   const validationError = validatePaymentConfigDraft(
     input.draft,
-    input.fieldId
+    input.fieldPublicId
   );
   if (validationError) {
     toast.error(validationError);
@@ -1431,8 +1483,8 @@ async function savePaymentConfig(input: {
 
   input.setIsSaving(true);
   try {
-    await input.upsertConfig(
-      buildPaymentConfigMutationInput(input.draft, input.fieldId)
+    await input.upsertConfig.mutateAsync(
+      buildPaymentConfigMutationInput(input.draft, input.fieldPublicId)
     );
     toast.success("Payment configuration saved");
     input.onOpenChange(false);
@@ -1447,9 +1499,9 @@ async function savePaymentConfig(input: {
 
 function validatePaymentConfigDraft(
   draft: PaymentConfigDraft,
-  fieldId: Id<"signature_fields"> | null
+  fieldPublicId: string | null
 ): string | null {
-  if (!fieldId) return "Payment field is missing";
+  if (!fieldPublicId) return "Payment field is missing";
   if (draft.items.some((item) => !item.description.trim())) {
     return "Each line item must have a description";
   }
@@ -1462,11 +1514,11 @@ function validatePaymentConfigDraft(
 
 function buildPaymentConfigMutationInput(
   draft: PaymentConfigDraft,
-  fieldId: Id<"signature_fields"> | null
+  fieldPublicId: string | null
 ): PaymentConfigMutationInput {
-  if (!fieldId) throw new Error("Payment field is missing");
+  if (!fieldPublicId) throw new Error("Payment field is missing");
   return {
-    fieldId,
+    fieldId: fieldPublicId,
     paymentType: draft.paymentType,
     items: draft.items.map(({ id, description, quantity, unitPrice }) => ({
       id,

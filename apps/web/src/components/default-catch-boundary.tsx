@@ -13,11 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   const router = useRouter();
-  const { signOut } = useAppAuthActions();
   const cardRef = useRef<HTMLDivElement>(null);
   const isRoot = useMatch({
     strict: false,
@@ -114,7 +113,15 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
           )}
 
           <Button
-            onClick={() => void signOut({ redirectUrl: "/sign-in" })}
+            onClick={async () => {
+              if (betterAuthClient === null) return;
+              const result = await betterAuthClient.signOut();
+              if (result.error) {
+                console.error("Failed to sign out:", result.error);
+                return;
+              }
+              void router.navigate({ to: "/sign-in" });
+            }}
             className="w-full sm:w-auto"
             variant="ghost"
           >

@@ -1,14 +1,13 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useRouteContext } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { downloadDocument } from "@/lib/api-client";
 
 /**
  * Manages PDF viewer state: loading the PDF URL, responsive width, page navigation,
  * and zoom tracking. Returns refs needed for the PDF container DOM elements.
  */
-export function usePdfViewer(documentId: Id<"documents">) {
+export function usePdfViewer(documentPublicId: string) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,25 +19,25 @@ export function usePdfViewer(documentId: Id<"documents">) {
   const pdfWrapperRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const { convexClient } = useRouteContext({ from: "__root__" });
-
-  // Fetch PDF download URL from Convex storage
+  // Fetch PDF download URL from Worker storage
   useEffect(() => {
     const fetchPdfUrl = async () => {
       try {
-        const url = await convexClient.query(
-          api.documents.queries.getDocumentUrl,
-          {
-            documentId,
-          }
-        );
+        const blob = await downloadDocument(documentPublicId);
+        const url = URL.createObjectURL(blob);
         setPdfUrl(url);
       } catch {
         toast.error("Failed to load PDF");
       }
     };
     void fetchPdfUrl();
-  }, [convexClient, documentId]);
+
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [documentPublicId]);
 
   // SEA-84: Keep PDF width in sync with container size on window resize
   useEffect(() => {

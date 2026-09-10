@@ -1,14 +1,13 @@
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { parseId } from "../../lib/convex-ids";
+import type { ApiContact } from "@/lib/api-client";
 
-const mockUpdateContact = vi.fn();
+const mockUpdateContact = vi.hoisted(() => vi.fn());
 
-vi.mock("convex/react", () => ({
-  useMutation: () => mockUpdateContact,
+vi.mock("@/lib/api-client", () => ({
+  updateContact: mockUpdateContact,
 }));
 
 vi.mock("sonner", () => ({
@@ -17,13 +16,9 @@ vi.mock("sonner", () => ({
 
 import { EditContactDialog } from "./edit-contact-dialog";
 
-function makeContact(
-  overrides: Partial<Doc<"contacts">> = {}
-): Doc<"contacts"> {
+function makeContact(overrides: Partial<ApiContact> = {}): ApiContact {
   return {
-    _id: parseId("contacts", "contact_1"),
-    _creationTime: 1700000000000,
-    organizationId: parseId("organizations", "org_1"),
+    _id: "contact_1",
     firstName: "Jane",
     lastName: "Smith",
     fullName: "Jane Smith",
@@ -33,7 +28,8 @@ function makeContact(
     title: "CTO",
     status: "active",
     notes: "Important client",
-    createdBy: parseId("users", "user_1"),
+    tags: [],
+    createdBy: "user_1",
     createdAt: 1700000000000,
     updatedAt: 1700000000000,
     ...overrides,
@@ -55,12 +51,14 @@ function renderDialog(
   overrides: {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
-    contact?: Doc<"contacts">;
+    onUpdated?: (contact: ApiContact) => void;
+    contact?: ApiContact;
   } = {}
 ) {
   const props = {
     open: true,
     onOpenChange: vi.fn(),
+    onUpdated: vi.fn(),
     contact: makeContact(),
     ...overrides,
   };
@@ -123,17 +121,10 @@ describe("EditContactDialog", () => {
 
     test("shows empty string for missing optional fields", () => {
       renderDialog({
-        contact: makeContact({
-          phone: undefined,
-          company: undefined,
-          title: undefined,
-          notes: undefined,
-        }),
+        contact: makeContact({ phone: undefined, company: undefined }),
       });
-      const phone = getFieldByLabel(/phone/i, HTMLInputElement);
-      const company = getFieldByLabel(/company/i, HTMLInputElement);
-      expect(phone.value).toBe("");
-      expect(company.value).toBe("");
+      expect(getFieldByLabel(/phone/i, HTMLInputElement).value).toBe("");
+      expect(getFieldByLabel(/company/i, HTMLInputElement).value).toBe("");
     });
 
     test("renders Save Changes button", () => {
@@ -149,7 +140,7 @@ describe("EditContactDialog", () => {
       const user = userEvent.setup();
       renderDialog();
 
-      const firstNameInput = screen.getByLabelText(/first name/i);
+      const firstNameInput = getFieldByLabel(/first name/i, HTMLInputElement);
       await user.clear(firstNameInput);
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -161,7 +152,7 @@ describe("EditContactDialog", () => {
       const user = userEvent.setup();
       renderDialog();
 
-      const emailInput = screen.getByLabelText(/email/i);
+      const emailInput = getFieldByLabel(/email/i, HTMLInputElement);
       await user.clear(emailInput);
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -173,23 +164,20 @@ describe("EditContactDialog", () => {
   describe("form submission", () => {
     test("calls updateContact with correct data", async () => {
       const user = userEvent.setup();
-      mockUpdateContact.mockResolvedValue(undefined);
       const contact = makeContact();
+      mockUpdateContact.mockResolvedValue(contact);
 
-      renderDialog({ contact });
+      renderDialog();
 
-      // Change the first name
-      const firstNameInput = screen.getByLabelText(/first name/i);
+      const firstNameInput = getFieldByLabel(/first name/i, HTMLInputElement);
       await user.clear(firstNameInput);
       await user.type(firstNameInput, "Janet");
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(mockUpdateContact).toHaveBeenCalledWith(
+        "contact_1",
         expect.objectContaining({
-          id: contact._id,
           firstName: "Janet",
-          lastName: "Smith",
-          email: "jane@example.com",
         })
       );
     });
@@ -197,10 +185,14 @@ describe("EditContactDialog", () => {
     test("calls onOpenChange(false) after successful update", async () => {
       const user = userEvent.setup();
       const onOpenChange = vi.fn();
-      mockUpdateContact.mockResolvedValue(undefined);
+      const contact = makeContact();
+      mockUpdateContact.mockResolvedValue(contact);
 
       renderDialog({ onOpenChange });
 
+      const firstNameInput = getFieldByLabel(/first name/i, HTMLInputElement);
+      await user.clear(firstNameInput);
+      await user.type(firstNameInput, "Janet");
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -209,10 +201,14 @@ describe("EditContactDialog", () => {
     test("shows success toast on update", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockUpdateContact.mockResolvedValue(undefined);
+      const contact = makeContact();
+      mockUpdateContact.mockResolvedValue(contact);
 
       renderDialog();
 
+      const firstNameInput = getFieldByLabel(/first name/i, HTMLInputElement);
+      await user.clear(firstNameInput);
+      await user.type(firstNameInput, "Janet");
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(toast.success).toHaveBeenCalledWith("Contact updated");
@@ -221,13 +217,16 @@ describe("EditContactDialog", () => {
     test("shows error toast when mutation fails", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockUpdateContact.mockRejectedValue(new Error("Update failed"));
+      mockUpdateContact.mockRejectedValue(new Error("Network error"));
 
       renderDialog();
 
+      const firstNameInput = getFieldByLabel(/first name/i, HTMLInputElement);
+      await user.clear(firstNameInput);
+      await user.type(firstNameInput, "Janet");
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
-      expect(toast.error).toHaveBeenCalledWith("Update failed");
+      expect(toast.error).toHaveBeenCalledWith("Network error");
     });
   });
 
@@ -235,10 +234,10 @@ describe("EditContactDialog", () => {
     test("calls onOpenChange(false) when Cancel is clicked", async () => {
       const user = userEvent.setup();
       const onOpenChange = vi.fn();
+
       renderDialog({ onOpenChange });
 
       await user.click(screen.getByRole("button", { name: /cancel/i }));
-
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });

@@ -1,15 +1,24 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+
+import { getAIProgress } from "@/lib/api-client";
 
 /**
  * Subscribes to AI progress for a given thread.
  * Returns step/tool tracking info and status.
  */
 export function useAIProgress(threadId: string | null) {
-  const progress = useQuery(
-    api.ai.progress.get,
-    threadId ? { threadId } : "skip"
-  );
+  const { data: progress } = useQuery({
+    queryKey: ["ai", "progress", threadId ?? "skip"],
+    queryFn: async () => {
+      if (threadId === null) {
+        return null;
+      }
+      return getAIProgress(threadId);
+    },
+    enabled: threadId !== null,
+    refetchInterval: 1000,
+  });
+
   const status = progress?.status ?? null;
 
   return {

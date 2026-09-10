@@ -5,32 +5,29 @@
  * role-based mini badges and a more editorial card design.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { UsersIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getOrganizationTeam } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 interface TeamOverviewProps {
+  slug: string;
   organizationName: string;
-  organizationId: Id<"organizations">;
 }
 
 export function TeamOverview({
+  slug,
   organizationName,
-  organizationId,
 }: TeamOverviewProps): React.ReactElement {
-  const memberCount = useQuery(
-    api.organizations.queries.getOrganizationMemberCount,
-    {
-      organizationId,
-    }
-  );
+  const { data: memberCount } = useSuspenseQuery({
+    queryKey: ["api", "organization", slug, "team"],
+    queryFn: () => getOrganizationTeam(slug),
+  });
 
-  const activeCount = memberCount?.active ?? 0;
-  const totalCount = memberCount?.total ?? 0;
+  const activeCount = memberCount.active;
+  const totalCount = memberCount.total;
   const pendingCount = totalCount - activeCount;
 
   return (
@@ -66,7 +63,7 @@ export function TeamOverview({
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {memberCount?.byRole && (
+          {memberCount.byRole && (
             <>
               {memberCount.byRole.owner > 0 && (
                 <RolePill

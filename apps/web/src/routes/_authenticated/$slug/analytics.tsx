@@ -5,11 +5,8 @@
  * Route: /{slug}/analytics
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -77,6 +74,17 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import {
+  getAnalyticsDocumentsForExport,
+  getAnalyticsPeriodStats,
+  getAnalyticsStats,
+  getAnalyticsTrends,
+  getEmailEngagementStats,
+  getMemberActivity,
+  getRecentActivity,
+  getRecipientTimingStats,
+  getTemplatePerformance,
+} from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -101,7 +109,10 @@ function AnalyticsPage() {
   );
 
   // Use useQuery (not useSuspenseQuery) so real-time updates don't trigger Suspense remounts
-  const stats = useQuery(api.dashboard.queries.getDocumentStats, { scope });
+  const { data: stats } = useQuery({
+    queryKey: ["analytics", "stats", scope],
+    queryFn: () => getAnalyticsStats(scope),
+  });
   const isAdmin = stats?.isAdmin ?? false;
 
   // Auto-switch admins to team scope on first data load
@@ -241,8 +252,8 @@ function AnalyticsContent({
 
         <TabsContent value="status" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <StatusPieChart />
-            <StatusBarChart />
+            <StatusPieChart scope={effectiveScope} />
+            <StatusBarChart scope={effectiveScope} />
           </div>
         </TabsContent>
 
@@ -295,13 +306,13 @@ function OverviewStats({
   };
   scope: AnalyticsScope;
 }) {
-  const weekStats = useQuery(api.dashboard.queries.getPeriodStats, {
-    period: "week",
-    scope,
+  const { data: weekStats } = useQuery({
+    queryKey: ["analytics", "period", "week", scope],
+    queryFn: () => getAnalyticsPeriodStats("week", scope),
   });
-  const monthStats = useQuery(api.dashboard.queries.getPeriodStats, {
-    period: "month",
-    scope,
+  const { data: monthStats } = useQuery({
+    queryKey: ["analytics", "period", "month", scope],
+    queryFn: () => getAnalyticsPeriodStats("month", scope),
   });
 
   return (
@@ -480,9 +491,10 @@ function TrendChart({
     return { days: Number(preset), scope };
   }, [preset, customRange, scope]);
 
-  const { data: trends } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentTrends, queryArgs)
-  );
+  const { data: trends } = useSuspenseQuery({
+    queryKey: ["analytics", "trends", queryArgs],
+    queryFn: () => getAnalyticsTrends(queryArgs),
+  });
 
   const chartData = useMemo(() => {
     return trends.map((item) => ({
@@ -606,10 +618,11 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "var(--expired)",
 };
 
-function StatusPieChart() {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {})
-  );
+function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["analytics", "stats", scope],
+    queryFn: () => getAnalyticsStats(scope),
+  });
 
   const pieData = useMemo(() => {
     const items = [
@@ -705,10 +718,11 @@ function StatusPieChart() {
   );
 }
 
-function StatusBarChart() {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {})
-  );
+function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["analytics", "stats", scope],
+    queryFn: () => getAnalyticsStats(scope),
+  });
 
   const barData = useMemo(
     () => [
@@ -859,8 +873,9 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 function RecentActivityFeed() {
-  const activity = useQuery(api.dashboard.queries.getRecentActivity, {
-    limit: 30,
+  const { data: activity } = useQuery({
+    queryKey: ["api", "activity", 30],
+    queryFn: () => getRecentActivity(30),
   });
 
   if (!activity) {
@@ -904,7 +919,7 @@ function RecentActivityFeed() {
               actionInfo?.label ?? item.action.replace(/\./g, " ");
 
             return (
-              <div key={item._id} className="flex items-start gap-3 py-1">
+              <div key={item.id} className="flex items-start gap-3 py-1">
                 <div className="text-muted-foreground mt-0.5 shrink-0">
                   {actionInfo?.icon ?? <BarChart3Icon className="h-3 w-3" />}
                 </div>
@@ -920,7 +935,7 @@ function RecentActivityFeed() {
                       {actionLabel}
                     </Badge>
                   </div>
-                  {item.metadata?.description && (
+                  {typeof item.metadata?.description === "string" && (
                     <p className="text-muted-foreground truncate text-xs">
                       {item.metadata.description}
                     </p>
@@ -939,7 +954,10 @@ function RecentActivityFeed() {
 }
 
 function MemberActivityTable() {
-  const memberActivity = useQuery(api.dashboard.queries.getMemberActivity, {});
+  const { data: memberActivity } = useQuery({
+    queryKey: ["analytics", "member-activity"],
+    queryFn: () => getMemberActivity(),
+  });
 
   if (!memberActivity) {
     return (
@@ -1102,10 +1120,10 @@ function ExportPanel() {
     return args;
   }, [statusFilter, periodFilter]);
 
-  const exportData = useQuery(
-    api.dashboard.queries.getDocumentsForExport,
-    queryArgs
-  );
+  const { data: exportData } = useQuery({
+    queryKey: ["analytics", "documents", "export", queryArgs],
+    queryFn: () => getAnalyticsDocumentsForExport(queryArgs),
+  });
 
   const handleExportCsv = useCallback(() => {
     if (!exportData || exportData.length === 0) return;
@@ -1333,12 +1351,10 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
-  const engagement = useQuery(
-    api.dashboard.analytics_queries.getEmailEngagementStats,
-    {
-      days: 30,
-    }
-  );
+  const { data: engagement } = useQuery({
+    queryKey: ["analytics", "email-engagement", 30],
+    queryFn: () => getEmailEngagementStats(30),
+  });
 
   if (!engagement) {
     return <AnalyticsTabSkeleton />;
@@ -1479,10 +1495,10 @@ const TIMING_BUCKET_COLORS: Record<string, string> = {
 };
 
 function RecipientTimingTab() {
-  const timing = useQuery(
-    api.dashboard.analytics_queries.getRecipientTimingStats,
-    { days: 30 }
-  );
+  const { data: timing } = useQuery({
+    queryKey: ["analytics", "recipient-timing", 30],
+    queryFn: () => getRecipientTimingStats(30),
+  });
 
   if (!timing) {
     return <AnalyticsTabSkeleton />;
@@ -1599,10 +1615,10 @@ function RecipientTimingTab() {
 
 function TemplatePerformanceTab() {
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
-  const templates = useQuery(
-    api.dashboard.analytics_queries.getTemplatePerformance,
-    { days: 90 }
-  );
+  const { data: templates } = useQuery({
+    queryKey: ["analytics", "template-performance", 90],
+    queryFn: () => getTemplatePerformance(90),
+  });
 
   if (!templates || isLoadingPlan) {
     return <AnalyticsTabSkeleton />;

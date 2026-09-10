@@ -3,6 +3,7 @@
  * Uses shared validation schemas from @seal/backend.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
 import {
   type ApiAuditEntry,
   type ApiSignature,
@@ -13,8 +14,7 @@ import {
   getSignatureSchema,
   type SignatureDocumentIdInput,
   signatureDocumentIdSchema,
-} from "@seal/backend/convex/validations/api";
-
+} from "../api-contracts";
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 

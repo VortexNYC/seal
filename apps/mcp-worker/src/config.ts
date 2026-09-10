@@ -12,6 +12,12 @@ const configSchema = z.object({
     .string()
     .url()
     .default("https://compassionate-robin-742.convex.site/api/v1"),
+  /**
+   * Origin of the OAuth authorization server that issues MCP access tokens.
+   * Defaults to this worker's origin; will be repointed to apps/api once the
+   * token endpoint is live there.
+   */
+  authServerOrigin: z.string().url().optional(),
   /** Request timeout in milliseconds */
   requestTimeout: z.coerce.number().default(30000),
   /** Enable debug logging */
@@ -30,6 +36,7 @@ function loadConfig(): Config {
   const result = configSchema.safeParse({
     apiKey: process.env.SEAL_API_KEY,
     baseUrl: process.env.SEAL_API_BASE_URL,
+    authServerOrigin: process.env.SEAL_AUTH_SERVER_ORIGIN,
     requestTimeout: process.env.SEAL_REQUEST_TIMEOUT,
     debug: process.env.SEAL_DEBUG,
     maxFileSize: process.env.SEAL_MAX_FILE_SIZE,

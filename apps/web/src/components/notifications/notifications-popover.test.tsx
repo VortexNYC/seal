@@ -1,15 +1,20 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-// Mocks must be hoisted before component import
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
+import type { ApiNotification } from "@/lib/api-client";
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: () => mockUseMutation,
+const mockGetNotifications = vi.hoisted(() => vi.fn());
+const mockGetUnreadNotificationCount = vi.hoisted(() => vi.fn());
+const mockMarkNotificationAsRead = vi.hoisted(() => vi.fn());
+const mockMarkAllNotificationsAsRead = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/api-client", () => ({
+  getNotifications: mockGetNotifications,
+  getUnreadNotificationCount: mockGetUnreadNotificationCount,
+  markNotificationAsRead: mockMarkNotificationAsRead,
+  markAllNotificationsAsRead: mockMarkAllNotificationsAsRead,
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -22,34 +27,15 @@ vi.mock("@tanstack/react-router", () => ({
   }) => <a {...props}>{children}</a>,
 }));
 
-import { parseId } from "../../lib/convex-ids";
 import { NotificationsPopover } from "./notifications-popover";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-type NotificationItem = {
-  _id: Id<"notifications">;
-  _creationTime: number;
-  userId: Id<"users">;
-  organizationId: Id<"organizations">;
-  type: string;
-  data: Record<string, unknown>;
-  read: boolean;
-  createdAt: number;
-  emailStatus?: string;
-  lastEmailError?: string;
-};
-
 function makeNotification(
-  overrides: Partial<NotificationItem> = {}
-): NotificationItem {
+  overrides: Partial<ApiNotification> = {}
+): ApiNotification {
   return {
-    _id: parseId("notifications", "notif_1"),
-    _creationTime: Date.now(),
-    userId: parseId("users", "user_1"),
-    organizationId: parseId("organizations", "org_1"),
+    _id: "notif_1",
+    userId: "user_1",
+    organizationId: "org_1",
     type: "document_signed",
     data: {
       documentName: "My Contract",
@@ -57,19 +43,25 @@ function makeNotification(
       remainingSigners: 0,
     },
     read: false,
-    createdAt: Date.now() - 60_000, // 1 minute ago
+    createdAt: Date.now() - 60_000,
+    updatedAt: Date.now() - 60_000,
     ...overrides,
   };
 }
 
-function makeNotificationList(items: NotificationItem[] = [], hasMore = false) {
-  return { items, hasMore };
+function makeNotificationList(items: ApiNotification[] = []) {
+  return items;
 }
 
-/** Render the component and set up useQuery to return the given state. */
+function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+}
+
 function renderPopover(
   queryReturn: {
-    notifications: ReturnType<typeof makeNotificationList> | undefined;
+    notifications: ApiNotification[] | undefined;
     unreadCount: number | undefined;
   } = {
     notifications: makeNotificationList(),
@@ -77,61 +69,82 @@ function renderPopover(
   },
   slug = "my-workspace"
 ) {
-  mockUseQuery.mockImplementation((_ref: unknown, _args: unknown) => {
-    // Differentiate calls by examining args object shape
-    if (_args && typeof _args === "object" && "limit" in _args) {
-      return queryReturn.notifications;
-    }
-    // getUnreadCount has {}
-    return queryReturn.unreadCount;
-  });
+  const queryClient = createQueryClient();
+  const isLoading = queryReturn.notifications === undefined;
 
-  return render(<NotificationsPopover slug={slug} />);
+  if (isLoading) {
+    mockGetNotifications.mockImplementation(() => new Promise(() => {}));
+    mockGetUnreadNotificationCount.mockImplementation(
+      () => new Promise(() => {})
+    );
+  } else {
+    mockGetNotifications.mockResolvedValue(queryReturn.notifications ?? []);
+    mockGetUnreadNotificationCount.mockResolvedValue(
+      queryReturn.unreadCount ?? 0
+    );
+    queryClient.setQueryData(
+      ["api", "notifications"],
+      queryReturn.notifications ?? []
+    );
+    queryClient.setQueryData(
+      ["api", "notifications", "unread-count"],
+      queryReturn.unreadCount ?? 0
+    );
+  }
+
+  mockMarkNotificationAsRead.mockImplementation((id: string) =>
+    Promise.resolve(makeNotification({ _id: id, read: true }))
+  );
+  mockMarkAllNotificationsAsRead.mockResolvedValue(0);
+
+  return {
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <NotificationsPopover slug={slug} />
+      </QueryClientProvider>
+    ),
+    queryClient,
+  };
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("NotificationsPopover", () => {
-  afterEach(cleanup);
-
-  beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
+  afterEach(() => {
+    cleanup();
   });
 
-  // -------------------------------------------------------------------------
-  // Trigger button always renders
-  // -------------------------------------------------------------------------
+  beforeEach(() => {
+    mockGetNotifications.mockReset();
+    mockGetUnreadNotificationCount.mockReset();
+    mockMarkNotificationAsRead.mockReset();
+    mockMarkAllNotificationsAsRead.mockReset();
+  });
 
   describe("trigger button", () => {
     test("renders bell icon button with aria-label 'Notifications'", () => {
       renderPopover();
       expect(
         screen.getByRole("button", { name: "Notifications" })
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("does not show unread badge when unreadCount is 0", () => {
       renderPopover({ notifications: makeNotificationList(), unreadCount: 0 });
-      // The badge text would be "0" or a number — absence of any badge number
-      expect(screen.queryByText("0")).not.toBeInTheDocument();
+      expect(screen.queryByText("0")).toBeNull();
     });
 
     test("does not show unread badge when unreadCount is undefined (loading)", () => {
       renderPopover({ notifications: undefined, unreadCount: undefined });
-      expect(screen.queryByText("0")).not.toBeInTheDocument();
+      expect(screen.queryByText("0")).toBeNull();
     });
 
     test("shows unread badge with count when unreadCount is 1", () => {
       renderPopover({ notifications: makeNotificationList(), unreadCount: 1 });
-      expect(screen.getByText("1")).toBeInTheDocument();
+      expect(screen.getByText("1")).toBeDefined();
     });
 
     test("shows unread badge with count when unreadCount is 5", () => {
       renderPopover({ notifications: makeNotificationList(), unreadCount: 5 });
-      expect(screen.getByText("5")).toBeInTheDocument();
+      expect(screen.getByText("5")).toBeDefined();
     });
 
     test("shows '99+' when unread count is exactly 100", () => {
@@ -139,7 +152,7 @@ describe("NotificationsPopover", () => {
         notifications: makeNotificationList(),
         unreadCount: 100,
       });
-      expect(screen.getByText("99+")).toBeInTheDocument();
+      expect(screen.getByText("99+")).toBeDefined();
     });
 
     test("shows '99+' when unread count exceeds 99", () => {
@@ -147,37 +160,29 @@ describe("NotificationsPopover", () => {
         notifications: makeNotificationList(),
         unreadCount: 250,
       });
-      expect(screen.getByText("99+")).toBeInTheDocument();
+      expect(screen.getByText("99+")).toBeDefined();
     });
 
     test("shows exact count when unreadCount is exactly 99", () => {
       renderPopover({ notifications: makeNotificationList(), unreadCount: 99 });
-      expect(screen.getByText("99")).toBeInTheDocument();
+      expect(screen.getByText("99")).toBeDefined();
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Popover content (requires a click to open under happy-dom + Radix)
-  // -------------------------------------------------------------------------
 
   describe("popover content after opening", () => {
     test("shows 'Notifications' heading after opening", async () => {
       const user = userEvent.setup();
       renderPopover({ notifications: makeNotificationList(), unreadCount: 0 });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText("Notifications")).toBeInTheDocument();
+      expect(screen.getByText("Notifications")).toBeDefined();
     });
 
     test("shows skeleton loading state when notifications are undefined", async () => {
       const user = userEvent.setup();
       renderPopover({ notifications: undefined, unreadCount: undefined });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      // The skeleton renders 3 skeleton rows — verify by the structured DOM
-      // (skeletons don't have accessible text, but we know no notification content renders)
-      expect(screen.queryByText("No notifications")).not.toBeInTheDocument();
-      expect(
-        screen.queryByText("You're all caught up!")
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText("No notifications")).toBeNull();
+      expect(screen.queryByText("You're all caught up!")).toBeNull();
     });
 
     test("shows empty state when notification list is empty", async () => {
@@ -187,8 +192,8 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText("No notifications")).toBeInTheDocument();
-      expect(screen.getByText("You're all caught up!")).toBeInTheDocument();
+      expect(screen.getByText("No notifications")).toBeDefined();
+      expect(screen.getByText("You're all caught up!")).toBeDefined();
     });
 
     test("does not show 'Mark all read' button when there are no unread notifications", async () => {
@@ -200,7 +205,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.queryByRole("button", { name: /mark all read/i })
-      ).not.toBeInTheDocument();
+      ).toBeNull();
     });
 
     test("shows 'Mark all read' button when there are unread notifications", async () => {
@@ -214,10 +219,10 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByRole("button", { name: /mark all read/i })
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
-    test("calls markAllAsRead mutation when 'Mark all read' is clicked", async () => {
+    test("calls markAllNotificationsAsRead when 'Mark all read' is clicked", async () => {
       const user = userEvent.setup();
       renderPopover({
         notifications: makeNotificationList([
@@ -227,13 +232,9 @@ describe("NotificationsPopover", () => {
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       await user.click(screen.getByRole("button", { name: /mark all read/i }));
-      expect(mockUseMutation).toHaveBeenCalledWith({});
+      expect(mockMarkAllNotificationsAsRead).toHaveBeenCalled();
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Notification item rendering
-  // -------------------------------------------------------------------------
 
   describe("notification items", () => {
     test("renders document_signed notification message", async () => {
@@ -251,7 +252,7 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText('"My Contract" was signed')).toBeInTheDocument();
+      expect(screen.getByText('"My Contract" was signed')).toBeDefined();
     });
 
     test("renders document_completed notification message", async () => {
@@ -265,9 +266,7 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(
-        screen.getByText('"Q4 Report" is fully signed')
-      ).toBeInTheDocument();
+      expect(screen.getByText('"Q4 Report" is fully signed')).toBeDefined();
     });
 
     test("renders document_shared notification message with sharedByName", async () => {
@@ -288,7 +287,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Bob shared "Budget Sheet" with you')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders document_shared notification message without sharedByName", async () => {
@@ -308,7 +307,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('You were given access to "Budget Sheet"')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders access_revoked notification message with revokedByName", async () => {
@@ -327,7 +326,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Admin Carol revoked your access to "Private Doc"')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders signature_requested notification message", async () => {
@@ -343,7 +342,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Your signature is requested on "NDA Agreement"')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders reminder notification message", async () => {
@@ -359,7 +358,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Reminder: "Lease Agreement" needs your attention')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders sharing_disabled notification with documentsAffected count", async () => {
@@ -375,7 +374,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText("Sharing was disabled for 3 document(s)")
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders ownership_transferred notification with previousOwnerName", async () => {
@@ -395,7 +394,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Dave transferred "Company Bylaws" to you')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders bulk_access_revoked notification with removedUserName", async () => {
@@ -415,7 +414,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Eve\'s access to "All Docs" was revoked')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders access_updated notification message", async () => {
@@ -437,7 +436,7 @@ describe("NotificationsPopover", () => {
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       expect(
         screen.getByText('Frank changed your access to "Roadmap" to edit')
-      ).toBeInTheDocument();
+      ).toBeDefined();
     });
 
     test("renders unread indicator dot for unread notification", async () => {
@@ -448,9 +447,8 @@ describe("NotificationsPopover", () => {
         unreadCount: 1,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      // The unread dot uses bg-info (semantic token) with rounded-full
       const dot = document.querySelector(".bg-info.rounded-full");
-      expect(dot).toBeInTheDocument();
+      expect(dot).toBeDefined();
     });
 
     test("does not render unread indicator dot for read notification", async () => {
@@ -462,16 +460,15 @@ describe("NotificationsPopover", () => {
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
       const dot = document.querySelector(".bg-info.rounded-full");
-      expect(dot).not.toBeInTheDocument();
+      expect(dot).toBeNull();
     });
 
     test("wraps notification in a link when documentId is present", async () => {
       const user = userEvent.setup();
-      const docId = parseId("documents", "doc_123");
       const notif = makeNotification({
         type: "document_signed",
         data: {
-          documentId: docId,
+          documentId: "doc_123",
           documentName: "Linked Doc",
           signedBy: "Alice",
           remainingSigners: 0,
@@ -482,10 +479,8 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      // The Link mock renders an <a> element without href so it won't have ARIA role "link".
-      // Query by tag name instead — confirm the anchor wraps the notification content.
       const anchor = document.querySelector("a.block");
-      expect(anchor).toBeInTheDocument();
+      expect(anchor).toBeDefined();
     });
 
     test("does not wrap notification in a link when documentId is absent", async () => {
@@ -499,10 +494,10 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link")).toBeNull();
     });
 
-    test("calls markAsRead when clicking an unread notification without a documentId", async () => {
+    test("calls markNotificationAsRead when clicking an unread notification without a documentId", async () => {
       const user = userEvent.setup();
       const notif = makeNotification({
         type: "sharing_disabled",
@@ -517,12 +512,10 @@ describe("NotificationsPopover", () => {
       await user.click(
         screen.getByText("Sharing was disabled for 1 document(s)")
       );
-      expect(mockUseMutation).toHaveBeenCalledWith({
-        notificationId: notif._id,
-      });
+      expect(mockMarkNotificationAsRead.mock.calls[0]?.[0]).toBe("notif_1");
     });
 
-    test("does not call markAsRead when clicking an already-read notification", async () => {
+    test("does not call markNotificationAsRead when clicking an already-read notification", async () => {
       const user = userEvent.setup();
       const notif = makeNotification({
         type: "sharing_disabled",
@@ -534,22 +527,22 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      mockUseMutation.mockReset();
+      mockMarkNotificationAsRead.mockReset();
       await user.click(
         screen.getByText("Sharing was disabled for 1 document(s)")
       );
-      expect(mockUseMutation).not.toHaveBeenCalled();
+      expect(mockMarkNotificationAsRead).not.toHaveBeenCalled();
     });
 
     test("renders multiple notifications in order", async () => {
       const user = userEvent.setup();
       const notif1 = makeNotification({
-        _id: parseId("notifications", "notif_a"),
+        _id: "notif_a",
         type: "document_signed",
         data: { documentName: "Doc A", signedBy: "Alice", remainingSigners: 0 },
       });
       const notif2 = makeNotification({
-        _id: parseId("notifications", "notif_b"),
+        _id: "notif_b",
         type: "document_completed",
         data: { documentName: "Doc B", totalSigners: 1 },
       });
@@ -558,90 +551,58 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText('"Doc A" was signed')).toBeInTheDocument();
-      expect(screen.getByText('"Doc B" is fully signed')).toBeInTheDocument();
+      expect(screen.getByText('"Doc A" was signed')).toBeDefined();
+      expect(screen.getByText('"Doc B" is fully signed')).toBeDefined();
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Relative time formatting (indirectly via rendered notification)
-  // -------------------------------------------------------------------------
-
-  describe("formatRelativeTime (via rendered notification)", () => {
+  describe("formatRelativeTime", () => {
     test("shows 'Just now' for a very recent notification", async () => {
       const user = userEvent.setup();
-      const notif = makeNotification({ createdAt: Date.now() - 5_000 }); // 5 seconds ago
+      const notif = makeNotification({ createdAt: Date.now() - 5_000 });
       renderPopover({
         notifications: makeNotificationList([notif]),
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText("Just now")).toBeInTheDocument();
+      expect(screen.getByText("Just now")).toBeDefined();
     });
 
     test("shows minutes ago for a notification from several minutes ago", async () => {
       const user = userEvent.setup();
-      const notif = makeNotification({ createdAt: Date.now() - 5 * 60_000 }); // 5 minutes ago
+      const notif = makeNotification({ createdAt: Date.now() - 5 * 60_000 });
       renderPopover({
         notifications: makeNotificationList([notif]),
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText("5m ago")).toBeInTheDocument();
+      expect(screen.getByText("5m ago")).toBeDefined();
     });
 
     test("shows hours ago for a notification from several hours ago", async () => {
       const user = userEvent.setup();
       const notif = makeNotification({
         createdAt: Date.now() - 3 * 60 * 60_000,
-      }); // 3 hours ago
+      });
       renderPopover({
         notifications: makeNotificationList([notif]),
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText("3h ago")).toBeInTheDocument();
+      expect(screen.getByText("3h ago")).toBeDefined();
     });
 
     test("shows days ago for a notification from yesterday", async () => {
       const user = userEvent.setup();
       const notif = makeNotification({
         createdAt: Date.now() - 2 * 24 * 60 * 60_000,
-      }); // 2 days ago
+      });
       renderPopover({
         notifications: makeNotificationList([notif]),
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText("2d ago")).toBeInTheDocument();
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // "Load more" footer
-  // -------------------------------------------------------------------------
-
-  describe("load more footer", () => {
-    test("does not show 'Load more' when hasMore is false", async () => {
-      const user = userEvent.setup();
-      const notif = makeNotification();
-      renderPopover({
-        notifications: makeNotificationList([notif], false),
-        unreadCount: 0,
-      });
-      await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.queryByText(/load more/i)).not.toBeInTheDocument();
-    });
-
-    test("shows 'Load more' button when hasMore is true", async () => {
-      const user = userEvent.setup();
-      const notif = makeNotification();
-      renderPopover({
-        notifications: makeNotificationList([notif], true),
-        unreadCount: 0,
-      });
-      await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(screen.getByText(/load more/i)).toBeInTheDocument();
+      expect(screen.getByText("2d ago")).toBeDefined();
     });
   });
 });

@@ -5,10 +5,6 @@
  * Calls api.contacts.mutations.update with the changed fields.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
-import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { updateContact, type ApiContact } from "@/lib/api-client";
+import type { ContactStatus } from "@/lib/contact-status";
 import { parseSelectValue } from "@/lib/select-values";
 
 const CONTACT_STATUSES = [
@@ -42,7 +40,8 @@ const CONTACT_STATUSES = [
 interface EditContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contact: Doc<"contacts">;
+  contact: ApiContact;
+  onUpdated?: (contact: ApiContact) => void;
 }
 
 interface FormErrors {
@@ -59,9 +58,8 @@ export function EditContactDialog({
   open,
   onOpenChange,
   contact,
+  onUpdated,
 }: EditContactDialogProps) {
-  const updateContact = useMutation(api.contacts.mutations.update);
-
   const [firstName, setFirstName] = useState(contact.firstName);
   const [lastName, setLastName] = useState(contact.lastName);
   const [email, setEmail] = useState(contact.email);
@@ -115,8 +113,7 @@ export function EditContactDialog({
     setIsSubmitting(true);
 
     try {
-      await updateContact({
-        id: contact._id,
+      const updated = await updateContact(contact._id, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -127,6 +124,7 @@ export function EditContactDialog({
         notes: notes.trim() || undefined,
       });
 
+      onUpdated?.(updated);
       toast.success("Contact updated");
       onOpenChange(false);
     } catch (error) {

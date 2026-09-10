@@ -1,10 +1,15 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { parseId } from "../../../lib/convex-ids";
+import { type FieldProperties } from "@/data/document-detail";
+import {
+  createSignatureField as createSignatureFieldApi,
+  deleteSignatureField as deleteSignatureFieldApi,
+  repositionSignatureField as repositionSignatureFieldApi,
+} from "@/lib/api-client";
+import { type Id, parseId } from "@/lib/convex-ids";
+
 import { parseSelectValue } from "../../../lib/select-values";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";
 import { type FieldOptionsConfig } from "../field-options-dialog";
@@ -12,23 +17,25 @@ import { FIELD_TYPES, type FieldType } from "../field-toolbar";
 
 type Recipient = {
   _id: Id<"document_recipients">;
+  publicId: string;
   role: "signer" | "viewer" | "approver";
 };
 
 type SignatureField = {
   _id: Id<"signature_fields">;
+  publicId: string;
   fieldType: FieldType;
   x: number;
   y: number;
   width: number;
   height: number;
   page: number;
-  recipientId?: Id<"document_recipients"> | null;
+  recipientId?: Id<"document_recipients">;
   label: string;
-  properties?: { options?: string[] } | null;
+  properties?: FieldProperties;
 };
 
-type SignatureData = {
+export type SignatureData = {
   signatureImageUrl?: string | null | undefined;
   value?: string | null | undefined;
   signedAt?: number;
@@ -45,7 +52,7 @@ type PaymentConfig = {
 };
 
 interface UseFieldPlacementOptions {
-  documentId: Id<"documents">;
+  documentPublicId: string;
   recipients: Recipient[];
   signatureFields: SignatureField[];
   currentPage: number;
@@ -91,7 +98,7 @@ function handleFieldDragOver(e: React.DragEvent): void {
  * selecting/deleting/repositioning fields, and keyboard shortcuts.
  */
 export function useFieldPlacement({
-  documentId,
+  documentPublicId,
   recipients,
   signatureFields,
   currentPage,
@@ -106,7 +113,8 @@ export function useFieldPlacement({
     null
   );
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedFieldId, setSelectedFieldId] =
+    useState<Id<"signature_fields"> | null>(null);
   const [showFieldDeleteDialog, setShowFieldDeleteDialog] = useState(false);
 
   // Recipient selector for field assignment after drop
@@ -136,40 +144,70 @@ export function useFieldPlacement({
 
   // Payment config modal
   const [showPaymentConfigModal, setShowPaymentConfigModal] = useState(false);
-  const [paymentConfigFieldId, setPaymentConfigFieldId] =
-    useState<Id<"signature_fields"> | null>(null);
+  const [paymentConfigFieldId, setPaymentConfigFieldId] = useState<
+    string | null
+  >(null);
 
-  const createField = useMutation(api.signature_fields.mutations.createField);
-  const repositionField = useMutation(
-    api.signature_fields.mutations.repositionField
-  );
-  const deleteField = useMutation(api.signature_fields.mutations.deleteField);
+  const createField = useMutation({
+    mutationFn: ({
+      publicId,
+      input,
+    }: {
+      publicId: string;
+      input: Parameters<typeof createSignatureFieldApi>[1];
+    }) => createSignatureFieldApi(publicId, input),
+  });
+  const repositionField = useMutation({
+    mutationFn: ({
+      publicId,
+      fieldPublicId,
+      input,
+    }: {
+      publicId: string;
+      fieldPublicId: string;
+      input: Parameters<typeof repositionSignatureFieldApi>[2];
+    }) => repositionSignatureFieldApi(publicId, fieldPublicId, input),
+  });
+  const deleteField = useMutation({
+    mutationFn: ({
+      publicId,
+      fieldPublicId,
+    }: {
+      publicId: string;
+      fieldPublicId: string;
+    }) => deleteSignatureFieldApi(publicId, fieldPublicId),
+  });
 
   // SEA-91: Sync database fields to local state, including signature and payment data
   useEffect(() => {
-    const fields: PlacedField[] = signatureFields.map((field) => ({
-      id: field._id,
-      fieldType: field.fieldType,
-      x: field.x,
-      y: field.y,
-      width: field.width,
-      height: field.height,
-      pageNumber: field.page,
-      recipientId: field.recipientId ?? undefined,
-      label: field.label,
-      properties: field.properties ?? undefined,
-      paymentTotalCents: paymentConfigByFieldId.get(field._id)
-        ?.totalAmountCents,
-      signatureData: (() => {
-        const sd = signaturesByFieldId.get(field._id);
-        if (!sd) return undefined;
-        return {
-          ...sd,
-          signatureImageUrl: sd.signatureImageUrl ?? undefined,
-          value: sd.value ?? undefined,
-        };
-      })(),
-    }));
+    const fields: PlacedField[] = signatureFields.map((field) => {
+      const fieldType =
+        parseSelectValue(field.fieldType, FIELD_TYPES) ??
+        ("text" as const satisfies FieldType);
+      const options = field.properties?.options?.map(String);
+      const sd = signaturesByFieldId.get(field._id);
+      return {
+        id: field._id,
+        fieldType,
+        x: field.x,
+        y: field.y,
+        width: field.width,
+        height: field.height,
+        pageNumber: field.page,
+        recipientId: field.recipientId ?? undefined,
+        label: field.label,
+        properties: options ? { options } : undefined,
+        paymentTotalCents: paymentConfigByFieldId.get(field._id)
+          ?.totalAmountCents,
+        signatureData: sd
+          ? {
+              ...sd,
+              signatureImageUrl: sd.signatureImageUrl ?? undefined,
+              value: sd.value ?? undefined,
+            }
+          : undefined,
+      };
+    });
     setPlacedFields(fields);
   }, [signatureFields, signaturesByFieldId, paymentConfigByFieldId]);
 
@@ -279,6 +317,12 @@ export function useFieldPlacement({
   ) => {
     if (!pendingFieldData || !selectedRecipientId) return;
 
+    const recipient = recipients.find((r) => r._id === selectedRecipientId);
+    if (!recipient) {
+      toast.error("Selected recipient not found");
+      return;
+    }
+
     try {
       let finalWidth = pendingFieldData.width;
       let finalHeight = pendingFieldData.height;
@@ -300,30 +344,30 @@ export function useFieldPlacement({
       const label =
         fieldName || formatFieldTypeLabel(pendingFieldData.fieldType);
 
-      const fieldId = await createField({
-        documentId,
-        recipientId: selectedRecipientId,
-        fieldType: pendingFieldData.fieldType,
-        label,
-        isRequired: true,
-        x: pendingFieldData.x,
-        y: pendingFieldData.y,
-        width: finalWidth,
-        height: finalHeight,
-        page: pendingFieldData.page,
-        ...(optionsConfig &&
-          optionsConfig.options.length > 0 && {
-            properties: {
-              options: optionsConfig.options.map((opt) => opt.label),
-            },
-          }),
+      const created = await createField.mutateAsync({
+        publicId: documentPublicId,
+        input: {
+          recipientPublicId: recipient.publicId,
+          fieldType: pendingFieldData.fieldType,
+          label,
+          isRequired: true,
+          x: pendingFieldData.x,
+          y: pendingFieldData.y,
+          width: finalWidth,
+          height: finalHeight,
+          page: pendingFieldData.page,
+          properties:
+            optionsConfig && optionsConfig.options.length > 0
+              ? { options: optionsConfig.options.map((opt) => opt.label) }
+              : null,
+        },
       });
 
-      setSelectedFieldId(fieldId);
+      setSelectedFieldId(parseId("signature_fields", created.id));
       setDraggingFieldType(null);
 
       if (pendingFieldData.fieldType === "payment") {
-        setPaymentConfigFieldId(fieldId);
+        setPaymentConfigFieldId(created.publicId);
         setShowPaymentConfigModal(true);
       }
 
@@ -385,13 +429,16 @@ export function useFieldPlacement({
       )
     );
 
+    const field = signatureFields.find(
+      (f) => f._id === parseId("signature_fields", fieldId)
+    );
+    if (!field) return;
+
     try {
-      await repositionField({
-        fieldId: parseId("signature_fields", fieldId),
-        x,
-        y,
-        width,
-        height,
+      await repositionField.mutateAsync({
+        publicId: documentPublicId,
+        fieldPublicId: field.publicId,
+        input: { x, y, width, height },
       });
     } catch (error) {
       const errorMessage =
@@ -402,15 +449,19 @@ export function useFieldPlacement({
   };
 
   const handleFieldSelect = (fieldId: string | null) => {
-    setSelectedFieldId(fieldId);
+    setSelectedFieldId(fieldId ? parseId("signature_fields", fieldId) : null);
   };
 
   const handleFieldDelete = useCallback(async () => {
     if (!selectedFieldId) return;
 
+    const field = signatureFields.find((f) => f._id === selectedFieldId);
+    if (!field) return;
+
     try {
-      await deleteField({
-        fieldId: parseId("signature_fields", selectedFieldId),
+      await deleteField.mutateAsync({
+        publicId: documentPublicId,
+        fieldPublicId: field.publicId,
       });
       setSelectedFieldId(null);
       await refetchFields();
@@ -420,7 +471,7 @@ export function useFieldPlacement({
         error instanceof Error ? error.message : "Failed to delete field";
       toast.error(errorMessage);
     }
-  }, [selectedFieldId, deleteField, refetchFields]);
+  }, [selectedFieldId, deleteField, refetchFields, signatureFields]);
 
   const handleFieldDeleteConfirm = useCallback(async () => {
     await handleFieldDelete();

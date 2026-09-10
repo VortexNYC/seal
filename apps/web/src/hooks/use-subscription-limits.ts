@@ -1,6 +1,7 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import { PLAN_LIMITS } from "@seal/backend/convex/auth/plan_limits";
+import { useQuery } from "@tanstack/react-query";
 
+import { getCurrentSubscription } from "@/lib/api-client";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { parseSelectValue } from "@/lib/select-values";
 
 const PLAN_TIERS = [
@@ -8,28 +9,24 @@ const PLAN_TIERS = [
   "pro",
   "enterprise",
 ] as const satisfies readonly (keyof typeof PLAN_LIMITS)[];
-import { useQuery } from "convex/react";
 
 /**
  * Hook for checking subscription plan limits in the UI.
  *
- * Wraps `getSubscriptionDetails` and provides convenient helpers
+ * Pulls the active organization plan from the Worker and provides helpers
  * for conditionally rendering tier-gated features.
  */
 export function useSubscriptionLimits() {
-  const subscription = useQuery(
-    api.payments.billing_queries.getSubscriptionDetails
-  );
-
-  const isLoading = subscription === undefined;
+  const { data: subscription, isLoading } = useQuery({
+    queryKey: ["api", "users", "me", "subscription"],
+    queryFn: getCurrentSubscription,
+  });
 
   const tier =
-    parseSelectValue(subscription?.tier ?? "free", PLAN_TIERS) ?? "free";
-  const isActive =
-    subscription?.status === "active" || subscription?.status === "trialing";
+    parseSelectValue(subscription?.plan ?? "free", PLAN_TIERS) ?? "free";
 
-  const isPro = isActive && (tier === "pro" || tier === "enterprise");
-  const isEnterprise = isActive && tier === "enterprise";
+  const isPro = tier === "pro" || tier === "enterprise";
+  const isEnterprise = tier === "enterprise";
 
   const features = PLAN_LIMITS[tier] ?? PLAN_LIMITS.free;
 

@@ -6,10 +6,7 @@
  * entrance animations for a refined editorial feel.
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useQuery } from "convex/react";
 import {
   CheckCircle2Icon,
   ClockIcon,
@@ -20,6 +17,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getDocumentStats } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -85,12 +83,9 @@ function StatCard({
 }
 
 export function StatsCards(): React.ReactElement {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {})
-  );
-
-  const monthStats = useQuery(api.dashboard.queries.getPeriodStats, {
-    period: "month",
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["api", "documents", "stats"],
+    queryFn: getDocumentStats,
   });
 
   return (
@@ -98,7 +93,7 @@ export function StatsCards(): React.ReactElement {
       <StatCard
         title="Total Documents"
         value={stats.total}
-        subtitle={`${monthStats?.created ?? 0} created this month`}
+        subtitle={`${stats.createdThisMonth} created this month`}
         icon={FileTextIcon}
         iconClassName="bg-secondary text-foreground/70"
         index={0}
@@ -116,7 +111,7 @@ export function StatsCards(): React.ReactElement {
       <StatCard
         title="Completed"
         value={stats.completed}
-        subtitle={`${monthStats?.completed ?? 0} completed this month`}
+        subtitle={`${stats.completedThisMonth} completed this month`}
         icon={CheckCircle2Icon}
         iconClassName="bg-success-surface text-success"
         index={2}

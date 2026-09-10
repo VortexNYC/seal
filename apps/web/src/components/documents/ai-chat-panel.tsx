@@ -1,8 +1,6 @@
-import { useUIMessages } from "@convex-dev/agent/react";
-import { optimisticallySendMessage } from "@convex-dev/agent/react";
-import { useSmoothText } from "@convex-dev/agent/react";
-import { api } from "@seal/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useAgentChat } from "@cloudflare/ai-chat/react";
+import { useAgent } from "agents/react";
+import type { UIMessage } from "ai";
 import {
   BotIcon,
   LoaderIcon,
@@ -12,7 +10,7 @@ import {
   UserIcon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -31,37 +29,27 @@ interface AIChatPanelProps {
   onClose: () => void;
 }
 
+interface TextPart {
+  type: "text";
+  text: string;
+}
+
 // ---------------------------------------------------------------------------
 // Message components
 // ---------------------------------------------------------------------------
 
-function StreamingText({
-  text,
-  isStreaming,
-}: {
-  text: string;
-  isStreaming: boolean;
-}) {
-  const [visibleText] = useSmoothText(text, {
-    startStreaming: isStreaming,
-  });
-
-  return <>{visibleText}</>;
-}
-
 function MessageBubble({
   role,
   text,
-  status,
+  isStreaming,
   slug,
 }: {
   role: string;
   text: string;
-  status: string;
+  isStreaming: boolean;
   slug: string;
 }) {
   const isUser = role === "user";
-  const isStreaming = status === "streaming";
 
   return (
     <div
@@ -89,13 +77,9 @@ function MessageBubble({
             : "bg-card text-card-foreground ring-border/60 ring-1"
         )}
       >
-        {isStreaming ? (
-          <StreamingText text={text} isStreaming />
-        ) : (
-          <span className="whitespace-pre-wrap">
-            {parseTextWithCitations(text, slug)}
-          </span>
-        )}
+        <span className="whitespace-pre-wrap">
+          {parseTextWithCitations(text, slug)}
+        </span>
         {isStreaming && (
           <span className="bg-ai-accent/50 ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm" />
         )}
@@ -162,68 +146,108 @@ function SuggestionChips({ onSelect }: { onSelect: (text: string) => void }) {
   );
 }
 
+function getMessageText(message: UIMessage): string {
+  if (Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part): part is TextPart => part.type === "text")
+      .map((part) => part.text)
+      .join("");
+  }
+
+  return "";
+}
+
 // ---------------------------------------------------------------------------
 // Main chat panel
 // ---------------------------------------------------------------------------
 
 export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
   const [input, setInput] = useState("");
+  const [isAgentReady, setIsAgentReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const sendMessageMutation = useMutation(
-    api.ai.threads.sendMessage
-  ).withOptimisticUpdate(
-    optimisticallySendMessage(api.ai.threads.listMessages)
-  );
+  const agent = useAgent({
+    agent: "seal-chat-agent",
+    name: threadId,
+  });
 
-  const abortMutation = useMutation(api.ai.threads.abortCurrentStream);
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    isStreaming,
+    isRecovering,
+    connectionError,
+  } = useAgentChat({
+    agent,
+    id: threadId,
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "An unexpected chat error occurred";
+      toast.error(message);
+    },
+  });
 
-  const { results: messages, status: paginationStatus } = useUIMessages(
-    api.ai.threads.listMessages,
-    { threadId },
-    { initialNumItems: 50, stream: true }
-  );
+  useEffect(() => {
+    void agent.ready
+      .then(() => setIsAgentReady(true))
+      .catch(() => setIsAgentReady(true));
+  }, [agent]);
 
-  const progress = useAIProgress(threadId);
+  useEffect(() => {
+    if (connectionError) {
+      toast.error(
+        connectionError.message || "Lost connection to the AI assistant"
+      );
+    }
+  }, [connectionError]);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  const progress = useAIProgress(threadId);
+
+  const isBusy =
+    status === "submitted" ||
+    isStreaming ||
+    isRecovering ||
+    progress.isTracking;
+
   const handleSend = useCallback(
     async (text?: string) => {
       const prompt = (text ?? input).trim();
-      if (!prompt) return;
+      if (!prompt || isBusy) return;
 
       setInput("");
 
       try {
-        await sendMessageMutation({ threadId, prompt });
+        await sendMessage({ text: prompt });
       } catch {
-        setInput(prompt); // Restore input on failure so user doesn't lose their message
+        setInput(prompt);
         toast.error("Failed to send message");
       }
 
-      // Re-focus input for quick follow-ups
       inputRef.current?.focus();
     },
-    [input, sendMessageMutation, threadId]
+    [input, isBusy, sendMessage]
   );
 
   const handleAbort = useCallback(async () => {
     try {
-      await abortMutation({ threadId });
+      await stop();
     } catch {
       toast.error("Failed to stop generation");
     }
-  }, [abortMutation, threadId]);
+  }, [stop]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -236,6 +260,13 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
   );
 
   const isEmpty = messages.length === 0;
+
+  const lastAssistantIndex = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i]?.role === "assistant") return i;
+    }
+    return -1;
+  }, [messages]);
 
   return (
     <div className="border-border bg-card flex h-full flex-col overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
@@ -270,7 +301,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
         role="log"
         aria-label="Chat messages"
       >
-        {paginationStatus === "LoadingFirstPage" ? (
+        {!isAgentReady && isEmpty ? (
           <div className="flex items-center justify-center py-8">
             <LoaderIcon className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
@@ -292,24 +323,22 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {messages.map((message) => {
-              const text =
-                message.parts
-                  ?.filter(
-                    (p): p is { type: "text"; text: string } =>
-                      p.type === "text"
-                  )
-                  .map((p) => p.text)
-                  .join("") ?? "";
-
+            {messages.map((message, index) => {
+              const text = getMessageText(message);
               if (!text) return null;
+
+              const isStreamingMessage =
+                isStreaming &&
+                !isRecovering &&
+                message.role === "assistant" &&
+                index === lastAssistantIndex;
 
               return (
                 <MessageBubble
                   key={message.id}
                   role={message.role}
                   text={text}
-                  status={message.status}
+                  isStreaming={isStreamingMessage}
                   slug={slug}
                 />
               );
@@ -322,7 +351,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
 
       {/* Input area */}
       <div className="border-border/50 border-t px-3 py-3">
-        {progress.isTracking ? (
+        {isBusy ? (
           <div className="flex items-center justify-center" aria-live="polite">
             <Button
               variant="ghost"

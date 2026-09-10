@@ -6,12 +6,15 @@
  * to verify the document is authentic. No login required.
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2Icon, CopyIcon, ShieldXIcon } from "lucide-react";
 import { useState } from "react";
+
+import {
+  verifyDocumentByQrToken,
+  type VerifyDocumentResult,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/verify/$qrToken")({
   component: VerifyPage,
@@ -19,9 +22,10 @@ export const Route = createFileRoute("/verify/$qrToken")({
 
 function VerifyPage() {
   const { qrToken } = Route.useParams();
-  const { data: result } = useSuspenseQuery(
-    convexQuery(api.documents.verification.getDocumentByQrToken, { qrToken })
-  );
+  const { data: result } = useSuspenseQuery({
+    queryKey: ["verify", qrToken],
+    queryFn: () => verifyDocumentByQrToken(qrToken),
+  });
 
   if (!result) {
     return <VerifyFailed />;
@@ -30,22 +34,7 @@ function VerifyPage() {
   return <VerifySuccess result={result} />;
 }
 
-interface VerifyResult {
-  verified: boolean;
-  documentName: string;
-  completedAt: number | null;
-  signerCount: number;
-  signers: {
-    name: string;
-    maskedEmail: string;
-    role: string;
-    signedAt: number | null;
-  }[];
-  documentHash: string | null;
-  createdAt: number;
-}
-
-function VerifySuccess({ result }: { result: VerifyResult }) {
+function VerifySuccess({ result }: { result: VerifyDocumentResult }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg">

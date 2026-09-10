@@ -17,7 +17,7 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { authClient } from "@/lib/auth-runtime.better-auth";
+import { authClient } from "@/lib/better-auth";
 
 function resolveAppOrigin(): string {
   const configured = import.meta.env.VITE_APP_URL;

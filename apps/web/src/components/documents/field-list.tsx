@@ -1,4 +1,3 @@
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { formatMoney, money } from "@vortexnyc/money";
 import {
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 
+import { type Id } from "@/lib/convex-ids";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";

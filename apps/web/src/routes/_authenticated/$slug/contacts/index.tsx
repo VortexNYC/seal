@@ -6,13 +6,8 @@
  * Route: /{slug}/contacts
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
 import {
   MoreVerticalIcon,
   PencilIcon,
@@ -59,6 +54,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  bulkDeleteContacts,
+  deleteContact,
+  getContacts,
+  type ApiContact,
+} from "@/lib/api-client";
+import type { ContactStatus } from "@/lib/contact-status";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/contacts/")({
@@ -128,11 +130,11 @@ function ContactsTableSkeleton() {
 // --- Contact table rendering (shared between search and list) ---
 
 interface ContactsTableContentProps {
-  contacts: Doc<"contacts">[];
+  contacts: ApiContact[];
   hasFilters: boolean;
   onCreateOpen: () => void;
-  selectedIds: Set<Id<"contacts">>;
-  onSelectionChange: (ids: Set<Id<"contacts">>) => void;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
 }
 
 function ContactsTableContent({
@@ -144,12 +146,11 @@ function ContactsTableContent({
 }: ContactsTableContentProps) {
   const { slug } = Route.useParams();
   const router = useRouter();
-  const deleteContact = useMutation(api.contacts.mutations.remove);
-  const bulkDeleteContacts = useMutation(api.contacts.mutations.bulkDelete);
+  const queryClient = useQueryClient();
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    contactId: Id<"contacts"> | null;
+    contactId: string | null;
     contactName: string;
   }>({
     open: false,
@@ -160,9 +161,9 @@ function ContactsTableContent({
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
-  const [editContact, setEditContact] = useState<Doc<"contacts"> | null>(null);
+  const [editContact, setEditContact] = useState<ApiContact | null>(null);
 
-  const handleDelete = (contactId: Id<"contacts">, contactName: string) => {
+  const handleDelete = (contactId: string, contactName: string) => {
     setDeleteDialog({ open: true, contactId, contactName });
   };
 
@@ -170,7 +171,8 @@ function ContactsTableContent({
     if (!deleteDialog.contactId) return;
 
     try {
-      await deleteContact({ id: deleteDialog.contactId });
+      await deleteContact(deleteDialog.contactId);
+      await queryClient.invalidateQueries({ queryKey: ["api", "contacts"] });
       toast.success("Contact deleted");
       // Remove from selection if selected
       if (selectedIds.has(deleteDialog.contactId)) {
@@ -191,7 +193,7 @@ function ContactsTableContent({
     setIsBulkDeleting(true);
     try {
       const ids = [...selectedIds];
-      const results = await bulkDeleteContacts({ ids });
+      const results = await bulkDeleteContacts(ids);
       const successCount = results.filter((r) => r.success).length;
       const failCount = results.length - successCount;
 
@@ -201,6 +203,7 @@ function ContactsTableContent({
         toast.success(`Deleted ${successCount} contacts`);
       }
       onSelectionChange(new Set());
+      await queryClient.invalidateQueries({ queryKey: ["api", "contacts"] });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete contacts";
@@ -211,13 +214,14 @@ function ContactsTableContent({
     }
   };
 
-  const handleOpenContact = (contactId: Id<"contacts">) => {
+  const handleOpenContact = (contactId: string) => {
     void router.navigate({
-      to: `/${slug}/contacts/${contactId}`,
+      to: "/$slug/contacts/$contactId",
+      params: { slug, contactId },
     });
   };
 
-  const toggleSelect = (id: Id<"contacts">) => {
+  const toggleSelect = (id: string) => {
     const next = new Set(selectedIds);
     if (next.has(id)) {
       next.delete(id);
@@ -445,6 +449,9 @@ function ContactsTableContent({
             if (!open) setEditContact(null);
           }}
           contact={editContact}
+          onUpdated={() =>
+            queryClient.invalidateQueries({ queryKey: ["api", "contacts"] })
+          }
         />
       )}
     </>
@@ -462,24 +469,25 @@ function ContactsListData({
 }: {
   statusFilter: StatusFilter;
   onCreateOpen: () => void;
-  selectedIds: Set<Id<"contacts">>;
-  onSelectionChange: (ids: Set<Id<"contacts">>) => void;
-  onContactsLoaded: (contacts: Doc<"contacts">[]) => void;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
+  onContactsLoaded: (contacts: ApiContact[]) => void;
 }) {
   const statusArg = statusFilter === "all" ? undefined : statusFilter;
 
-  const { data: contacts } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.list, { status: statusArg })
-  );
+  const { data: contacts } = useSuspenseQuery({
+    queryKey: ["api", "contacts", "list", statusArg ?? "all"],
+    queryFn: () => getContacts({ status: statusArg }),
+  });
 
   // Notify parent of loaded contacts for export
   useEffect(() => {
-    onContactsLoaded(contacts);
+    onContactsLoaded(contacts ?? []);
   }, [contacts, onContactsLoaded]);
 
   return (
     <ContactsTableContent
-      contacts={contacts}
+      contacts={contacts ?? []}
       hasFilters={statusFilter !== "all"}
       onCreateOpen={onCreateOpen}
       selectedIds={selectedIds}
@@ -499,23 +507,24 @@ function ContactsSearchData({
   query: string;
   statusFilter: StatusFilter;
   onCreateOpen: () => void;
-  selectedIds: Set<Id<"contacts">>;
-  onSelectionChange: (ids: Set<Id<"contacts">>) => void;
-  onContactsLoaded: (contacts: Doc<"contacts">[]) => void;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
+  onContactsLoaded: (contacts: ApiContact[]) => void;
 }) {
   const statusArg = statusFilter === "all" ? undefined : statusFilter;
 
-  const { data: contacts } = useSuspenseQuery(
-    convexQuery(api.contacts.queries.search, { query, status: statusArg })
-  );
+  const { data: contacts } = useSuspenseQuery({
+    queryKey: ["api", "contacts", "search", query, statusArg ?? "all"],
+    queryFn: () => getContacts({ search: query, status: statusArg }),
+  });
 
   useEffect(() => {
-    onContactsLoaded(contacts);
+    onContactsLoaded(contacts ?? []);
   }, [contacts, onContactsLoaded]);
 
   return (
     <ContactsTableContent
-      contacts={contacts}
+      contacts={contacts ?? []}
       hasFilters
       onCreateOpen={onCreateOpen}
       selectedIds={selectedIds}
@@ -527,14 +536,13 @@ function ContactsSearchData({
 // --- Page component ---
 
 function ContactsPage() {
+  const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<Id<"contacts">>>(
-    new Set()
-  );
-  const [loadedContacts, setLoadedContacts] = useState<Doc<"contacts">[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [loadedContacts, setLoadedContacts] = useState<ApiContact[]>([]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
@@ -548,7 +556,7 @@ function ContactsPage() {
 
   const handleCreateOpen = () => setCreateOpen(true);
 
-  const handleContactsLoaded = useCallback((contacts: Doc<"contacts">[]) => {
+  const handleContactsLoaded = useCallback((contacts: ApiContact[]) => {
     setLoadedContacts(contacts);
   }, []);
 
@@ -645,7 +653,13 @@ function ContactsPage() {
           )}
         </Suspense>
 
-        <CreateContactDialog open={createOpen} onOpenChange={setCreateOpen} />
+        <CreateContactDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={() =>
+            queryClient.invalidateQueries({ queryKey: ["api", "contacts"] })
+          }
+        />
       </div>
     </PageWrapper>
   );

@@ -1,15 +1,14 @@
-import { useConvexMutation } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
 import { useMutation } from "@tanstack/react-query";
 import { FileIcon, UploadIcon, XIcon } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { uploadAttachment } from "@/lib/api-client";
 
 interface AttachmentFieldInputProps {
   label: string;
-  value?: string; // storageId from Convex Storage
+  value?: string; // storage key from R2
   isRequired: boolean;
   helpText?: string;
   signingToken?: string;
@@ -31,10 +30,8 @@ export function AttachmentFieldInput({
   const [error, setError] = useState<string | undefined>();
   const [isUploading, setIsUploading] = useState(false);
 
-  const generateUploadUrl = useMutation({
-    mutationFn: useConvexMutation(
-      api.signature_fields.mutations.generateAttachmentUploadUrl
-    ),
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => uploadAttachment(signingToken!, file),
   });
 
   const validateValue = (
@@ -67,29 +64,12 @@ export function AttachmentFieldInput({
     setFileName(file.name);
 
     try {
-      // Step 1: Get a presigned upload URL from Convex
-      const uploadUrl = await generateUploadUrl.mutateAsync({
-        signingToken,
-      });
+      const newStorageKey = await uploadMutation.mutateAsync(file);
 
-      // Step 2: Upload the file to Convex Storage
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
+      setStorageId(newStorageKey);
+      onChange(newStorageKey);
 
-      if (!result.ok) {
-        throw new Error(`Upload failed: ${result.statusText}`);
-      }
-
-      const { storageId: newStorageId } = await result.json();
-
-      // Step 3: Store the storageId as the field value
-      setStorageId(newStorageId);
-      onChange(newStorageId);
-
-      const validation = validateValue(newStorageId);
+      const validation = validateValue(newStorageKey);
       setError(validation.error);
       onValidationChange(validation.isValid, validation.error);
     } catch {

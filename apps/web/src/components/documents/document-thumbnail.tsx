@@ -3,26 +3,23 @@
  * Displays a document thumbnail with lazy generation for documents without thumbnails
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
 import { FileIcon, Loader2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { downloadDocument, updateDocumentThumbnail } from "@/lib/api-client";
 import { generateThumbnailFromUrl } from "@/lib/pdf-utils";
 import { cn } from "@/lib/utils";
 
 interface DocumentThumbnailProps {
-  documentId: Id<"documents">;
-  storageId: string;
+  publicId: string;
   thumbnailDataUrl?: string | null;
   name: string;
   className?: string;
 }
 
 export function DocumentThumbnail({
-  documentId,
-  storageId,
+  publicId,
   thumbnailDataUrl,
   name,
   className = "w-12 h-16 sm:w-16 sm:h-20",
@@ -34,51 +31,32 @@ export function DocumentThumbnail({
   const [generationFailed, setGenerationFailed] = useState(false);
   const hasAttemptedGeneration = useRef(false);
 
-  // Get the storage URL for fetching PDF - only query if we need to generate
-  const shouldFetchUrl =
-    !thumbnailDataUrl && !localThumbnail && !generationFailed;
-  const storageUrl = useQuery(
-    api.documents.queries.getStorageUrl,
-    shouldFetchUrl ? { storageId } : "skip"
-  );
-
-  // Mutation to save the generated thumbnail
-  const updateThumbnail = useMutation(api.documents.mutations.updateThumbnail);
+  const updateThumbnail = useMutation({
+    mutationFn: (variables: { publicId: string; thumbnailDataUrl: string }) =>
+      updateDocumentThumbnail(variables.publicId, variables.thumbnailDataUrl),
+  });
 
   useEffect(() => {
-    // If we already have a thumbnail, no need to generate
-    if (thumbnailDataUrl || localThumbnail) {
+    if (thumbnailDataUrl || localThumbnail || generationFailed) {
       return;
     }
-
-    // Don't attempt generation multiple times
     if (hasAttemptedGeneration.current) {
       return;
     }
 
-    // Need storage URL to generate thumbnail
-    if (!storageUrl) {
-      return;
-    }
-
-    // Generate thumbnail
     const generateThumbnail = async () => {
       hasAttemptedGeneration.current = true;
       setIsGenerating(true);
+      let objectUrl: string | undefined;
 
       try {
-        const thumbnail = await generateThumbnailFromUrl(storageUrl);
+        const blob = await downloadDocument(publicId);
+        objectUrl = window.URL.createObjectURL(blob);
+        const thumbnail = await generateThumbnailFromUrl(objectUrl);
 
         if (thumbnail) {
           setLocalThumbnail(thumbnail);
-
-          // Save to database (fire and forget)
-          updateThumbnail({
-            documentId,
-            thumbnailDataUrl: thumbnail,
-          }).catch((error) => {
-            console.error("Failed to save thumbnail:", error);
-          });
+          updateThumbnail.mutate({ publicId, thumbnailDataUrl: thumbnail });
         } else {
           setGenerationFailed(true);
         }
@@ -86,20 +64,22 @@ export function DocumentThumbnail({
         console.error("Failed to generate thumbnail:", error);
         setGenerationFailed(true);
       } finally {
+        if (objectUrl) {
+          window.URL.revokeObjectURL(objectUrl);
+        }
         setIsGenerating(false);
       }
     };
 
     void generateThumbnail();
   }, [
-    storageUrl,
+    publicId,
     thumbnailDataUrl,
     localThumbnail,
-    documentId,
+    generationFailed,
     updateThumbnail,
   ]);
 
-  // Update local thumbnail if prop changes (e.g., from refetch)
   useEffect(() => {
     if (thumbnailDataUrl && !localThumbnail) {
       setLocalThumbnail(thumbnailDataUrl);

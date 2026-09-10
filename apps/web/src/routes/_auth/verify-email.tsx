@@ -6,7 +6,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { VortexVerifyEmailScreen } from "@vortexnyc/auth/react";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { authClient } from "@/lib/auth-runtime.better-auth";
+import { authClient } from "@/lib/better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/verify-email")({

@@ -166,7 +166,7 @@ agent-browser get text body
 curl -x http://proxy.example.com:8080 https://httpbin.org/ip
 
 # Check if proxy requires auth
-export HTTP_PROXY="http://user:pass@proxy.example.com:8080"
+export HTTP_PROXY="http://user:<password>@proxy.example.com:8080"
 ```
 
 ### SSL/TLS Errors Through Proxy

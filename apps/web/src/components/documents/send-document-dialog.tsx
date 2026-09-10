@@ -4,10 +4,8 @@
  * and optional expiration period
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation } from "@tanstack/react-query";
 import { formatMoney, money } from "@vortexnyc/money";
-import { useAction, useQuery } from "convex/react";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -21,6 +19,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { type DocumentDetailPaymentConfig } from "@/data/document-detail";
+import { sendDocument } from "@/lib/api-client";
+import { type Id } from "@/lib/convex-ids";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
@@ -73,10 +74,11 @@ const expirationSchema = z.object({
 });
 
 interface SendDocumentDialogProps {
-  documentId: Id<"documents">;
+  documentPublicId: string;
   documentName: string;
   recipients: Array<{
     _id: Id<"document_recipients">;
+    publicId: string;
     name?: string;
     email: string;
     role: "signer" | "viewer" | "approver";
@@ -92,6 +94,7 @@ interface SendDocumentDialogProps {
   signatureFieldCount: number;
   /** Map of recipientId to field count */
   fieldCountsByRecipient?: Map<string, number>;
+  paymentConfigs: DocumentDetailPaymentConfig[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -100,11 +103,12 @@ interface SendDocumentDialogProps {
 }
 
 export function SendDocumentDialog({
-  documentId,
+  documentPublicId,
   documentName,
   recipients,
   signatureFieldCount,
   fieldCountsByRecipient,
+  paymentConfigs,
   open,
   onOpenChange,
   onSuccess,
@@ -143,17 +147,13 @@ export function SendDocumentDialog({
     (r) => r.order !== undefined && r.order !== 0
   );
 
-  const sendDocumentEmails = useAction(
-    api.documents.send_document_action.sendDocumentEmails
-  );
-
-  // Query payment field configs for this document
-  const paymentConfigs = useQuery(
-    api.payment_fields.queries.getPaymentConfigsByDocument,
-    {
-      documentId,
-    }
-  );
+  const sendDocumentMutation = useMutation({
+    mutationFn: (input: {
+      customMessage?: string;
+      recipientMessages?: Record<string, string>;
+      expirationPeriod?: { amount: number; unit: "day" | "week" | "month" };
+    }) => sendDocument(documentPublicId, input),
+  });
 
   // Count pending recipients
   const pendingRecipients = recipients.filter(
@@ -214,46 +214,36 @@ export function SendDocumentDialog({
     setIsSending(true);
 
     try {
-      // SEA-119: Build per-recipient messages array
-      const perRecipientMessages = pendingRecipients
-        .filter((r) => recipientMessages[r._id]?.trim())
-        .map((r) => ({
-          recipientId: r._id,
-          message: recipientMessages[r._id].trim(),
-        }));
+      // SEA-119: Build per-recipient messages map
+      const perRecipientMessages = Object.fromEntries(
+        pendingRecipients
+          .filter((r) => recipientMessages[r._id]?.trim())
+          .map((r) => [r.publicId, recipientMessages[r._id].trim()])
+      );
 
-      const result = await sendDocumentEmails({
-        documentId,
+      await sendDocumentMutation.mutateAsync({
         customMessage: customMessage.trim() || undefined,
         recipientMessages:
-          perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
-        expirationPeriod,
-        signingMode: signingMode === "sequential" ? "sequential" : undefined,
-        allowDictateNextSigner:
-          signingMode === "sequential" && allowDictateNextSigner
-            ? true
+          Object.keys(perRecipientMessages).length > 0
+            ? perRecipientMessages
             : undefined,
+        expirationPeriod,
       });
 
-      if (result.success) {
-        toast.success(
-          `Document sent successfully to ${result.emailsSent} recipient${result.emailsSent !== 1 ? "s" : ""}`
-        );
-        onSuccess?.();
-        onOpenChange(false);
-        // Reset state
-        setCustomMessage("");
-        setRecipientMessages({});
-        setExpirationPreset("none");
-        setCustomAmount(defaultDeadlineDays ?? 30);
-        setCustomUnit("day");
-        setSigningMode("parallel");
-        setAllowDictateNextSigner(false);
-      } else {
-        toast.error(
-          `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`
-        );
-      }
+      const emailsSent = pendingRecipients.length;
+      toast.success(
+        `Document sent successfully to ${emailsSent} recipient${emailsSent !== 1 ? "s" : ""}`
+      );
+      onSuccess?.();
+      onOpenChange(false);
+      // Reset state
+      setCustomMessage("");
+      setRecipientMessages({});
+      setExpirationPreset("none");
+      setCustomAmount(defaultDeadlineDays ?? 30);
+      setCustomUnit("day");
+      setSigningMode("parallel");
+      setAllowDictateNextSigner(false);
     } catch (error) {
       toast.error("Failed to send document", {
         description: getErrorMessage(error),
@@ -291,7 +281,7 @@ export function SendDocumentDialog({
                   <div className="mt-1 space-y-0.5">
                     {paymentConfigs.map((config) => (
                       <p
-                        key={config._id}
+                        key={config.fieldId}
                         className="text-field-payment text-xs"
                       >
                         {formatMoney(

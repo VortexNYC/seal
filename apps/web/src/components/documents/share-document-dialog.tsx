@@ -1,7 +1,5 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangleIcon,
   CrownIcon,
@@ -15,9 +13,16 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  getDocumentSharing,
+  getOrganizationMembers,
+  revokeDocumentAccess,
+  shareDocument,
+  updateDocumentPermission,
+  updateDocumentSharing,
+} from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
 
-import { parseId } from "../../lib/convex-ids";
 import { parseSelectValue } from "../../lib/select-values";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
@@ -33,8 +38,9 @@ import { Skeleton } from "../ui/skeleton";
 interface ShareDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  documentId: Id<"documents">;
+  documentId: string;
   documentName: string;
+  slug: string;
 }
 
 type PermissionLevel = "view" | "edit" | "manage";
@@ -50,6 +56,10 @@ const SHARING_MODES = [
   "workspace",
   "specific",
 ] as const satisfies readonly SharingMode[];
+
+function isSharingMode(value: string): value is SharingMode {
+  return (SHARING_MODES as readonly string[]).includes(value);
+}
 
 const SHARING_MODE_INFO: Record<
   SharingMode,
@@ -83,35 +93,69 @@ export function ShareDocumentDialog({
   onOpenChange,
   documentId,
   documentName,
+  slug,
 }: ShareDocumentDialogProps) {
-  const [selectedMemberId, setSelectedMemberId] = useState<Id<"users"> | null>(
-    null
-  );
+  const queryClient = useQueryClient();
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedPermission, setSelectedPermission] =
     useState<PermissionLevel>("view");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const documentAccess = useQuery(api.documents.sharing.getDocumentAccess, {
-    documentId,
+  const { data: documentAccess } = useQuery({
+    queryKey: ["api", "documents", documentId, "sharing"],
+    queryFn: () => getDocumentSharing(documentId),
+    enabled: open,
   });
-  const shareableMembers = useQuery(api.documents.sharing.getShareableMembers, {
-    documentId,
+  const { data: organizationMembers } = useQuery({
+    queryKey: ["api", "organization", slug, "members"],
+    queryFn: () => getOrganizationMembers(slug),
+    enabled: open,
   });
 
-  const updateSharingMode = useMutation(
-    api.documents.sharing.updateSharingMode
-  );
-  const grantAccess = useMutation(api.documents.sharing.grantAccess);
-  const revokeAccess = useMutation(api.documents.sharing.revokeAccess);
-  const updateAccessLevel = useMutation(
-    api.documents.sharing.updateAccessLevel
-  );
+  const updateSharingMode = useMutation({
+    mutationFn: (variables: { publicId: string; sharingMode: SharingMode }) =>
+      updateDocumentSharing(variables.publicId, variables.sharingMode),
+  });
+  const grantAccess = useMutation({
+    mutationFn: (variables: {
+      publicId: string;
+      userId: string;
+      permissionLevel: PermissionLevel;
+    }) =>
+      shareDocument(
+        variables.publicId,
+        variables.userId,
+        variables.permissionLevel
+      ),
+  });
+  const revokeAccess = useMutation({
+    mutationFn: (variables: { publicId: string; userId: string }) =>
+      revokeDocumentAccess(variables.publicId, variables.userId),
+  });
+  const updateAccessLevel = useMutation({
+    mutationFn: (variables: {
+      publicId: string;
+      userId: string;
+      permissionLevel: PermissionLevel;
+    }) =>
+      updateDocumentPermission(
+        variables.publicId,
+        variables.userId,
+        variables.permissionLevel
+      ),
+  });
 
   const handleSharingModeChange = async (mode: SharingMode) => {
     setIsUpdating(true);
     try {
-      await updateSharingMode({ documentId, sharingMode: mode });
+      await updateSharingMode.mutateAsync({
+        publicId: documentId,
+        sharingMode: mode,
+      });
       toast.success("Sharing settings updated");
+      void queryClient.invalidateQueries({
+        queryKey: ["api", "documents", documentId, "sharing"],
+      });
     } catch (error) {
       toast.error("Failed to update sharing settings", {
         description: getErrorMessage(error),
@@ -126,13 +170,16 @@ export function ShareDocumentDialog({
 
     setIsUpdating(true);
     try {
-      await grantAccess({
-        documentId,
+      await grantAccess.mutateAsync({
+        publicId: documentId,
         userId: selectedMemberId,
         permissionLevel: selectedPermission,
       });
       toast.success("Access granted");
       setSelectedMemberId(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["api", "documents", documentId, "sharing"],
+      });
     } catch (error) {
       toast.error("Failed to grant access", {
         description: getErrorMessage(error),
@@ -142,11 +189,14 @@ export function ShareDocumentDialog({
     }
   };
 
-  const handleRevokeAccess = async (userId: Id<"users">) => {
+  const handleRevokeAccess = async (userId: string) => {
     setIsUpdating(true);
     try {
-      await revokeAccess({ documentId, userId });
+      await revokeAccess.mutateAsync({ publicId: documentId, userId });
       toast.success("Access revoked");
+      void queryClient.invalidateQueries({
+        queryKey: ["api", "documents", documentId, "sharing"],
+      });
     } catch (error) {
       toast.error("Failed to revoke access", {
         description: getErrorMessage(error),
@@ -157,17 +207,20 @@ export function ShareDocumentDialog({
   };
 
   const handleUpdatePermission = async (
-    userId: Id<"users">,
+    userId: string,
     newPermission: PermissionLevel
   ) => {
     setIsUpdating(true);
     try {
-      await updateAccessLevel({
-        documentId,
+      await updateAccessLevel.mutateAsync({
+        publicId: documentId,
         userId,
-        newPermissionLevel: newPermission,
+        permissionLevel: newPermission,
       });
       toast.success("Permission updated");
+      void queryClient.invalidateQueries({
+        queryKey: ["api", "documents", documentId, "sharing"],
+      });
     } catch (error) {
       toast.error("Failed to update permission", {
         description: getErrorMessage(error),
@@ -178,8 +231,20 @@ export function ShareDocumentDialog({
   };
 
   // Get members who don't have access yet (for the add member dropdown)
+  const sharedUserIds = new Set(
+    documentAccess?.sharedWith.map((access) => access.userId) ?? []
+  );
   const availableMembers =
-    shareableMembers?.filter((m) => !m.hasAccess && !m.isOwner) ?? [];
+    organizationMembers?.filter((m) => !sharedUserIds.has(m.userId)) ?? [];
+
+  const sharingModeDescription =
+    documentAccess &&
+    !documentAccess.canUseTeamSharing &&
+    documentAccess.sharingMode === "private"
+      ? "Upgrade to Professional to share with your team"
+      : documentAccess && isSharingMode(documentAccess.sharingMode)
+        ? SHARING_MODE_INFO[documentAccess.sharingMode].description
+        : "";
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -307,11 +372,7 @@ export function ShareDocumentDialog({
                       })}
                     </div>
                     <p className="text-muted-foreground text-xs">
-                      {!documentAccess.canUseTeamSharing &&
-                      documentAccess.sharingMode === "private"
-                        ? "Upgrade to Professional to share with your team"
-                        : SHARING_MODE_INFO[documentAccess.sharingMode]
-                            .description}
+                      {sharingModeDescription}
                     </p>
                   </div>
 
@@ -324,9 +385,7 @@ export function ShareDocumentDialog({
                       <div className="flex gap-2">
                         <Select
                           value={selectedMemberId ?? ""}
-                          onValueChange={(value) =>
-                            setSelectedMemberId(parseId("users", value))
-                          }
+                          onValueChange={(value) => setSelectedMemberId(value)}
                         >
                           <SelectTrigger
                             className="flex-1"
@@ -446,7 +505,7 @@ export function ShareDocumentDialog({
                       {/* Shared Users */}
                       {documentAccess.sharedWith.map((access) => (
                         <div
-                          key={access._id}
+                          key={access.id}
                           data-testid="shared-user"
                           className="bg-muted flex items-center justify-between rounded-xl p-3"
                         >

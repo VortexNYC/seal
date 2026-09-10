@@ -1,10 +1,9 @@
-import { api } from "@seal/backend/convex/_generated/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
 import Loader from "@/components/loader";
-import { useAppAuth } from "@/lib/auth-runtime.better-auth";
+import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute("/app")({
@@ -12,84 +11,109 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppRedirect() {
-  const { isLoaded, isSignedIn } = useAppAuth();
-
-  if (!isLoaded) {
+  if (betterAuthClient === null) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader />
       </div>
     );
   }
-
-  if (!isSignedIn) {
-    return <Navigate to="/sign-in" replace />;
-  }
-
   return <AuthenticatedRedirect />;
 }
 
 function AuthenticatedRedirect() {
-  const organizationStatus = useQuery(api.check_membership.hasOrganization);
-  const ensureActiveOrganization = useMutation(
-    api.check_membership.ensureActiveOrganization
-  );
-  const [isFixingOrg, setIsFixingOrg] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
+  const { data: sessionData, isPending: isSessionPending } =
+    betterAuthClient!.useSession();
+  const {
+    data: organizations,
+    isPending: isListPending,
+    isError: isListError,
+  } = useQuery({
+    queryKey: ["auth", "organization", "list"],
+    queryFn: async () => {
+      const result = await betterAuthClient!.organization.list();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
+  });
+  const setActive = useMutation({
+    mutationFn: async (slug: string) => {
+      const result = await betterAuthClient!.organization.setActive({
+        organizationSlug: slug,
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      return result.data;
+    },
+  });
 
-  // null = backend saw no identity yet (auth still attaching). Treat as loading.
-  const isLoading =
-    organizationStatus === undefined || organizationStatus === null;
   const activeOrganizationSlug =
-    fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
-  const needsActiveOrgFix = organizationStatus?.needsActiveOrgFix ?? false;
+    fixedSlug ?? (organizations && organizations[0]?.slug) ?? null;
 
-  // Auto-fix activeOrganizationId if user has membership but no active org set.
   useEffect(() => {
-    if (!isLoading && needsActiveOrgFix && !isFixingOrg && !fixedSlug) {
-      setIsFixingOrg(true);
-      ensureActiveOrganization({})
-        .then((result) => {
-          if (result.success && result.activeOrganizationSlug) {
-            setFixedSlug(result.activeOrganizationSlug);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fix active organization:", error);
-        })
-        .finally(() => {
-          setIsFixingOrg(false);
-        });
+    if (
+      !organizations ||
+      organizations.length === 0 ||
+      isFixing ||
+      fixedSlug ||
+      activeOrganizationSlug
+    ) {
+      return;
     }
-  }, [
-    isLoading,
-    needsActiveOrgFix,
-    isFixingOrg,
-    fixedSlug,
-    ensureActiveOrganization,
-  ]);
+    const first = organizations[0];
+    if (!first) return;
+    setIsFixing(true);
+    setActive.mutate(first.slug, {
+      onSuccess: () => {
+        setFixedSlug(first.slug);
+      },
+      onError: (error: unknown) => {
+        console.error("Failed to set active organization:", error);
+      },
+      onSettled: () => {
+        setIsFixing(false);
+      },
+    });
+  }, [organizations, isFixing, fixedSlug, activeOrganizationSlug, setActive]);
 
-  if (isLoading || isFixingOrg) {
+  const isLoading =
+    isSessionPending ||
+    isListPending ||
+    (organizations &&
+      organizations.length > 0 &&
+      !activeOrganizationSlug &&
+      isFixing);
+
+  if (isLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
           <Loader />
           <p className="text-muted-foreground mt-4">
-            {isFixingOrg ? "Setting up your workspace..." : "Loading..."}
+            {isFixing ? "Setting up your workspace..." : "Loading..."}
           </p>
         </div>
       </div>
     );
   }
 
-  if (activeOrganizationSlug) {
-    return (
-      <Navigate
-        to={buildOrganizationPath(activeOrganizationSlug, "/home")}
-        replace
-      />
-    );
+  if (!sessionData) {
+    return <Navigate to="/sign-in" replace />;
   }
 
-  return <Navigate to="/onboarding/choose-organization" replace />;
+  if (isListError || activeOrganizationSlug === null) {
+    return <Navigate to="/onboarding/choose-organization" replace />;
+  }
+
+  return (
+    <Navigate
+      to={buildOrganizationPath(activeOrganizationSlug, "/home")}
+      replace
+    />
+  );
 }

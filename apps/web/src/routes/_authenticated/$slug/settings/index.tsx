@@ -9,7 +9,7 @@
  * @validation VAL-REAL-1776629332274
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexOrganizationProfile,
@@ -25,13 +25,13 @@ import {
   Input,
   Label,
 } from "@vortexnyc/ui";
-import { useMutation, useQuery } from "convex/react";
 import { Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
+import { getOrganization, updateWorkspace } from "@/lib/api-client";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
@@ -48,13 +48,10 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/")({
 function GeneralSettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization, isPending } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
-
-  const updateWorkspace = useMutation(
-    api.organizations.mutations.updateWorkspace
-  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -73,11 +70,18 @@ function GeneralSettings() {
           ? organization.status
           : "active";
       const brand = organization.suiteBrand ?? {};
+      const logoFromBranding =
+        typeof organization.brandingSettings?.logoUrl === "string"
+          ? organization.brandingSettings.logoUrl
+          : undefined;
+      const imageUrl =
+        (typeof organization.logo === "string" && organization.logo) ||
+        logoFromBranding;
       return {
         _id: organization._id,
         name: organization.name,
         slug: organization.slug,
-        imageUrl: organization.logo ?? organization.brandingSettings?.logoUrl,
+        imageUrl,
         status,
         brand,
         security: organization.suiteSecurity,
@@ -103,7 +107,7 @@ function GeneralSettings() {
     setIsSubmitting(true);
 
     try {
-      await updateWorkspace({
+      await updateWorkspace(slug, {
         timezone: formData.timezone,
         currency: formData.currency,
         currencyKind: formData.currencyKind,
@@ -121,7 +125,7 @@ function GeneralSettings() {
     }
   };
 
-  if (!organization) {
+  if (isPending || !organization) {
     return null;
   }
 
@@ -131,10 +135,10 @@ function GeneralSettings() {
         <div className="md:col-span-2">
           <VortexOrganizationProfile
             isAdmin={isAdmin}
-            isLoading={organization === undefined}
+            isLoading={isPending}
             onUpdate={async (input) => {
               try {
-                await updateWorkspace({
+                await updateWorkspace(slug, {
                   ...(input.name !== undefined ? { name: input.name } : {}),
                   ...(input.imageUrl !== undefined
                     ? { logo: input.imageUrl ?? undefined }

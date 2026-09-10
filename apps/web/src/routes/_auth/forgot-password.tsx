@@ -5,7 +5,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { VortexForgotPasswordForm } from "@vortexnyc/auth/react";
 
-import { authClient } from "@/lib/auth-runtime.better-auth";
+import { authClient } from "@/lib/better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/forgot-password")({

@@ -6,17 +6,13 @@
  * This is an unauthenticated route - no login required.
  */
 
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   Link,
-  useRouteContext,
 } from "@tanstack/react-router";
-import { ConvexError } from "convex/values";
+import { formatMoney, money } from "@vortexnyc/money";
 import {
   AlertCircle,
   ArrowDownIcon,
@@ -51,7 +47,6 @@ import { toast } from "sonner";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
-import { PaymentFieldSummary } from "@/components/documents/field-inputs";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -86,6 +81,18 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
+import {
+  getClientIp,
+  getPublicSigningPaymentConfigs,
+  getPublicSigningPdf,
+  getPublicSigningSignedPdfUrl,
+  getSigningByToken,
+  getSigningFields,
+  recordPublicSigningConsent,
+  recordPublicSigningOptOut,
+  savePublicSigningFieldValue,
+  submitPublicSigning,
+} from "@/lib/api-client";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 function sealAssertPresent<T>(
@@ -96,6 +103,53 @@ function sealAssertPresent<T>(
     throw new Error(message);
   }
   return value;
+}
+
+function asFieldProperties(value: unknown):
+  | {
+      placeholder?: string;
+      defaultValue?: string;
+      options?: string[];
+      maxLength?: number;
+      minLength?: number;
+      pattern?: string;
+      helpText?: string;
+    }
+  | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  const v = Object.fromEntries(Object.entries(value));
+  const options = Array.isArray(v.options)
+    ? v.options.filter((o): o is string => typeof o === "string")
+    : undefined;
+  const maxLength =
+    typeof v.maxLength === "number" ? Math.floor(v.maxLength) : undefined;
+  const minLength =
+    typeof v.minLength === "number" ? Math.floor(v.minLength) : undefined;
+  return {
+    placeholder: typeof v.placeholder === "string" ? v.placeholder : undefined,
+    defaultValue:
+      typeof v.defaultValue === "string" ? v.defaultValue : undefined,
+    options,
+    maxLength,
+    minLength,
+    pattern: typeof v.pattern === "string" ? v.pattern : undefined,
+    helpText: typeof v.helpText === "string" ? v.helpText : undefined,
+  };
+}
+
+function asFieldValidationRules(
+  value: unknown
+): { min?: number; max?: number } | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  const v = Object.fromEntries(Object.entries(value));
+  const min = typeof v.min === "number" ? v.min : undefined;
+  const max = typeof v.max === "number" ? v.max : undefined;
+  if (min === undefined && max === undefined) return undefined;
+  return { min, max };
 }
 
 // Configure PDF.js worker
@@ -154,9 +208,8 @@ function useEmbeddedSigning(token: string) {
 
 function SigningErrorComponent({ error }: ErrorComponentProps) {
   const isInvalidToken =
-    error instanceof ConvexError ||
-    (error instanceof Error &&
-      /invalid.*token|token.*invalid|not found/i.test(error.message));
+    error instanceof Error &&
+    /invalid.*token|token.*invalid|not found/i.test(error.message);
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
@@ -266,16 +319,14 @@ function getStatusBadge(status: string): {
 
 function SigningPage() {
   const { token } = Route.useParams();
-  const { convexClient } = useRouteContext({ from: "__root__" });
   const { track } = useAnalytics();
   const { isEmbedded, embedParams } = useEmbeddedSigning(token);
 
   // Fetch recipient and document data using the signing token
-  const { data } = useSuspenseQuery(
-    convexQuery(api.documents.recipients_queries.getRecipientByToken, {
-      signingToken: token,
-    })
-  );
+  const { data } = useSuspenseQuery({
+    queryKey: ["public-signing", token],
+    queryFn: () => getSigningByToken(token),
+  });
 
   const {
     recipient,
@@ -291,18 +342,16 @@ function SigningPage() {
   const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
 
   // Fetch fields assigned to this recipient
-  const { data: fields, refetch: refetchFields } = useSuspenseQuery(
-    convexQuery(api.signature_fields.queries.getFieldsBySigningToken, {
-      signingToken: token,
-    })
-  );
+  const { data: fields, refetch: refetchFields } = useSuspenseQuery({
+    queryKey: ["public-signing", token, "fields"],
+    queryFn: () => getSigningFields(token),
+  });
 
   // Load payment configs for payment field overlays
-  const { data: paymentConfigs } = useSuspenseQuery(
-    convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
-      documentId: doc._id,
-    })
-  );
+  const { data: paymentConfigs } = useSuspenseQuery({
+    queryKey: ["public-signing", token, "payment-configs"],
+    queryFn: () => getPublicSigningPaymentConfigs(token),
+  });
 
   const paymentInfoByFieldId = useMemo(() => {
     const map = new Map<
@@ -313,7 +362,7 @@ function SigningPage() {
       map.set(config.fieldId, {
         totalAmountCents: config.totalAmountCents,
         currency: config.currency,
-        paymentStatus: config.paymentStatus,
+        paymentStatus: config.paymentStatus ?? undefined,
       });
     }
     return map;
@@ -332,8 +381,7 @@ function SigningPage() {
   >(new Map());
 
   // Field input state
-  const [activeFieldId, setActiveFieldId] =
-    useState<Id<"signature_fields"> | null>(null);
+  const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [showFieldInput, setShowFieldInput] = useState(false);
 
   // Signature capture state
@@ -361,15 +409,11 @@ function SigningPage() {
   const [showDictateDialog, setShowDictateDialog] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
 
-  // Client IP for audit trail (fetched from Convex HTTP endpoint)
+  // Client IP for audit trail (fetched from API)
   const [clientIp, setClientIp] = useState("unknown");
   useEffect(() => {
-    const convexUrl: unknown = import.meta.env.VITE_CONVEX_URL;
-    if (typeof convexUrl !== "string" || convexUrl === "") return;
-    const siteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
-    fetch(`${siteUrl}/api/v1/ip`)
-      .then((res) => res.json())
-      .then((ipPayload: { ip: string }) => setClientIp(ipPayload.ip))
+    getClientIp()
+      .then((ip) => setClientIp(ip))
       .catch(() => {
         // Silently fall back to "unknown" — IP is best-effort
       });
@@ -379,14 +423,10 @@ function SigningPage() {
   const handleConsentAccept = useCallback(async () => {
     setIsConsentSubmitting(true);
     try {
-      await convexClient.mutation(
-        api.documents.recipients_mutations.recordEsignConsent,
-        {
-          signingToken: token,
-          ipAddress: clientIp,
-          consentVersion: "1.0",
-        }
-      );
+      await recordPublicSigningConsent(token, {
+        ipAddress: clientIp,
+        consentVersion: "1.0",
+      });
       setHasConsented(true);
       if (isEmbedded) {
         postSealEvent("seal:viewed", { token });
@@ -396,7 +436,7 @@ function SigningPage() {
     } finally {
       setIsConsentSubmitting(false);
     }
-  }, [convexClient, token, clientIp, isEmbedded]);
+  }, [token, clientIp, isEmbedded]);
 
   const handleConsentDecline = useCallback(() => {
     // The decline state is handled inside the consent dialog component.
@@ -406,19 +446,15 @@ function SigningPage() {
   const handleOptOut = useCallback(
     async (method: string) => {
       try {
-        await convexClient.mutation(
-          api.documents.recipients_mutations.recordEsignOptOut,
-          {
-            signingToken: token,
-            ipAddress: clientIp,
-            method,
-          }
-        );
+        await recordPublicSigningOptOut(token, {
+          ipAddress: clientIp,
+          method,
+        });
       } catch {
         // Opt-out logging is best-effort — don't block the user's action
       }
     },
-    [convexClient, token, clientIp]
+    [token, clientIp]
   );
 
   // Track online/offline status
@@ -470,23 +506,18 @@ function SigningPage() {
     };
   }, []);
 
-  // Fetch PDF URL using signing token (no auth required)
+  // Fetch PDF using signing token (no auth required)
   useEffect(() => {
     const fetchPdfUrl = async () => {
       try {
-        const url = await convexClient.query(
-          api.documents.queries.getDocumentUrlByToken,
-          {
-            signingToken: token,
-          }
-        );
-        setPdfUrl(url);
+        const blob = await getPublicSigningPdf(token);
+        setPdfUrl(URL.createObjectURL(blob));
       } catch {
         toast.error("Failed to load PDF");
       }
     };
     void fetchPdfUrl();
-  }, [convexClient, token]);
+  }, [token]);
 
   // Track document view automatically when page loads (only if not already viewed)
   useEffect(() => {
@@ -494,21 +525,18 @@ function SigningPage() {
       // Only mark as viewed if status is still pending
       if (recipient.status === "pending") {
         try {
-          await convexClient.mutation(
-            api.documents.recipients_mutations.submitRecipientSignature,
-            {
-              signingToken: token,
-              status: "viewed",
-              ipAddress: clientIp,
-            }
-          );
+          await submitPublicSigning(token, {
+            status: "viewed",
+            ipAddress: clientIp,
+            userAgent: navigator.userAgent,
+          });
         } catch {
           // Silent failure - viewing tracking is not critical
         }
       }
     };
     void markAsViewed();
-  }, [convexClient, token, recipient.status, clientIp]);
+  }, [token, recipient.status, clientIp]);
 
   const onDocumentLoadSuccess = ({
     numPages: loadedPageCount,
@@ -535,16 +563,20 @@ function SigningPage() {
             ? "approved"
             : "viewed";
 
-      return await convexClient.mutation(
-        api.documents.recipients_mutations.submitRecipientSignature,
-        {
-          signingToken: token,
-          status,
-          signatureData: status === "signed" ? signatureData : undefined,
-          signatureType: status === "signed" ? signatureType : undefined,
-          ipAddress: clientIp,
-        }
-      );
+      const mappedSignatureType =
+        signatureType === "drawn"
+          ? "draw"
+          : signatureType === "typed"
+            ? "type"
+            : "upload";
+
+      return await submitPublicSigning(token, {
+        status,
+        signatureData: status === "signed" ? signatureData : undefined,
+        signatureType: status === "signed" ? mappedSignatureType : undefined,
+        ipAddress: clientIp,
+        userAgent: navigator.userAgent,
+      });
     },
     onSuccess: () => {
       track.signatureCompleted({
@@ -615,15 +647,12 @@ function SigningPage() {
   // Decline mutation
   const declineMutation = useMutation({
     mutationFn: async (reason: string) => {
-      return await convexClient.mutation(
-        api.documents.recipients_mutations.submitRecipientSignature,
-        {
-          signingToken: token,
-          status: "declined",
-          declineReason: reason,
-          ipAddress: clientIp,
-        }
-      );
+      return await submitPublicSigning(token, {
+        status: "declined",
+        declineReason: reason,
+        ipAddress: clientIp,
+        userAgent: navigator.userAgent,
+      });
     },
     onSuccess: () => {
       track.signatureDeclined({
@@ -666,16 +695,12 @@ function SigningPage() {
   };
 
   // Download signed PDF handler
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setIsDownloading(true);
     try {
-      const { url, documentName } = await convexClient.action(
-        api.documents.sign_pdf_action.generateAndGetSignedPdfByToken,
-        { signingToken: token }
-      );
       const link = document.createElement("a");
-      link.href = url;
-      link.download = `${documentName || "document"}.pdf`;
+      link.href = getPublicSigningSignedPdfUrl(token);
+      link.download = `${doc.name || "document"}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -688,7 +713,7 @@ function SigningPage() {
   };
 
   // Field handling
-  const handleFieldClick = (fieldId: Id<"signature_fields">) => {
+  const handleFieldClick = (fieldId: string) => {
     setActiveFieldId(fieldId);
     setShowFieldInput(true);
   };
@@ -697,13 +722,12 @@ function SigningPage() {
     value?: string,
     signatureImageUrl?: string
   ) => {
-    if (!activeFieldId) return;
+    if (!activeFieldId || !activeField) return;
 
-    await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
-      signingToken: token,
-      fieldId: activeFieldId,
+    await savePublicSigningFieldValue(token, activeField.publicId, {
       value,
       signatureImageUrl,
+      signatureMethod: signatureImageUrl ? "draw" : undefined,
       ipAddress: clientIp,
       userAgent: navigator.userAgent,
     });
@@ -723,7 +747,7 @@ function SigningPage() {
   const allRequiredFieldsFilled = fieldCompletionPercent === 100;
 
   // Check for main signature field
-  const mainSignatureField = fields.find((f) => f.isMainSignature === true);
+  const mainSignatureField = fields.find((f) => f.isMainSignature);
   const isMainSignatureFilled = mainSignatureField?.isFilled || false;
   const unfilledRequiredCount =
     requiredFields.length - filledRequiredFields.length;
@@ -804,7 +828,7 @@ function SigningPage() {
   const unfilledFields = sortedFields.filter((f) => !f.isFilled);
 
   // Scroll to field function
-  const scrollToField = useCallback((fieldId: Id<"signature_fields">) => {
+  const scrollToField = useCallback((fieldId: string) => {
     const fieldElement = fieldRefs.current.get(fieldId);
     if (fieldElement && pdfContainerRef.current) {
       const container = pdfContainerRef.current;
@@ -877,7 +901,7 @@ function SigningPage() {
 
   // Expiration gate — block access if recipient's deadline has passed
   if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
-    return <DocumentExpiredPage ownerName={data.ownerName} />;
+    return <DocumentExpiredPage ownerName={doc.ownerName || ""} />;
   }
 
   // Show waiting state for sequential signing when it's not this recipient's turn
@@ -1422,12 +1446,23 @@ function SigningPage() {
                         c.paymentStatus !== "cancelled"
                     )
                     .map((config) => (
-                      <PaymentFieldSummary
+                      <div
                         key={config._id}
-                        fieldId={config.fieldId}
-                        token={token}
-                        showInlinePayment
-                      />
+                        className="border-border/50 bg-muted/20 rounded-lg border p-3"
+                      >
+                        <p className="text-foreground text-sm font-medium">
+                          {config.paymentType}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          {formatMoney(
+                            money(
+                              config.totalAmountCents,
+                              (config.currency || "usd").toUpperCase()
+                            )
+                          )}{" "}
+                          - {config.paymentStatus || "pending"}
+                        </p>
+                      </div>
                     ))}
                 </div>
               </>
@@ -1461,12 +1496,23 @@ function SigningPage() {
                           c.paymentStatus !== "cancelled"
                       )
                       .map((config) => (
-                        <PaymentFieldSummary
+                        <div
                           key={config._id}
-                          fieldId={config.fieldId}
-                          token={token}
-                          showInlinePayment
-                        />
+                          className="border-border/50 bg-muted/20 rounded-lg border p-3"
+                        >
+                          <p className="text-foreground text-sm font-medium">
+                            {config.paymentType}
+                          </p>
+                          <p className="text-muted-foreground mt-0.5 text-xs">
+                            {formatMoney(
+                              money(
+                                config.totalAmountCents,
+                                (config.currency || "usd").toUpperCase()
+                              )
+                            )}{" "}
+                            - {config.paymentStatus || "pending"}
+                          </p>
+                        </div>
                       ))}
                   </div>
                 </>
@@ -1917,10 +1963,10 @@ function SigningPage() {
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
           <DialogTitle className="sr-only">Sign Document</DialogTitle>
           <SignatureCapture
-            recipientName={recipient.name}
+            recipientName={recipient.name || ""}
             onSignatureCapture={handleSignatureCapture}
             onCancel={handleCancelSignature}
-            allowedSignatureTypes={signingSettings?.allowedSignatureTypes}
+            allowedSignatureTypes={undefined}
           />
         </DialogContent>
       </Dialog>
@@ -1990,11 +2036,14 @@ function SigningPage() {
           fieldType={activeField.fieldType || "text"}
           label={capitalizeFieldLabel(activeField.label || "")}
           isRequired={activeField.isRequired || false}
-          currentValue={activeField.currentValue}
-          currentSignatureImageUrl={activeField.currentSignatureImageUrl}
-          properties={activeField.properties}
+          currentValue={activeField.currentValue ?? undefined}
+          currentSignatureImageUrl={
+            activeField.currentSignatureImageUrl ?? undefined
+          }
+          properties={asFieldProperties(activeField.properties)}
+          validationRules={asFieldValidationRules(activeField.validationRules)}
           onSave={handleFieldSave}
-          recipientName={recipient.name}
+          recipientName={recipient.name || recipient.email}
           signingToken={token}
         />
       )}

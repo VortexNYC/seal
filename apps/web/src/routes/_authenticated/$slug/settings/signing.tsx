@@ -5,9 +5,8 @@
  * Route: /{slug}/settings/signing
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { PenTool, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -26,6 +25,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getOrganization,
+  getSigningSettings,
+  updateSigningSettings,
+} from "@/lib/api-client";
 
 type SignatureTypeOption = "draw" | "type" | "upload";
 
@@ -43,18 +47,16 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/signing")({
 function SigningSettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
 
-  const signingSettings = useQuery(
-    api.organizations.queries.getSigningSettings,
-    organization ? { organizationId: organization._id } : "skip"
-  );
-
-  const updateSigningSettings = useMutation(
-    api.organizations.mutations.updateSigningSettings
-  );
+  const { data: signingSettings } = useQuery({
+    queryKey: ["signing", slug],
+    queryFn: () => getSigningSettings(slug),
+    enabled: !!organization,
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<{
@@ -108,7 +110,7 @@ function SigningSettings() {
     setIsSubmitting(true);
 
     try {
-      await updateSigningSettings({
+      await updateSigningSettings(slug, {
         allowedSignatureTypes: formData.allowedSignatureTypes,
         esignConsentText: formData.esignConsentText || undefined,
         defaultDeadlineDays: formData.defaultDeadlineDays,

@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { vi, describe, test, expect, beforeEach } from "vitest";
 
 const mockUseQuery = vi.fn();
-vi.mock("convex/react", () => ({
+vi.mock("@tanstack/react-query", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
 }));
 
@@ -13,8 +13,8 @@ describe("useSubscriptionLimits", () => {
     mockUseQuery.mockReset();
   });
 
-  test("returns isLoading: true when query returns undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  test("returns isLoading: true while loading", () => {
+    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -22,7 +22,7 @@ describe("useSubscriptionLimits", () => {
   });
 
   test('returns tier: "free" and isPro: false when no subscription', () => {
-    mockUseQuery.mockReturnValue(null);
+    mockUseQuery.mockReturnValue({ data: undefined, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -32,8 +32,8 @@ describe("useSubscriptionLimits", () => {
     expect(result.current.isEnterprise).toBe(false);
   });
 
-  test("returns isPro: true when status is active and tier is pro", () => {
-    mockUseQuery.mockReturnValue({ status: "active", tier: "pro" });
+  test("returns isPro: true when plan is pro", () => {
+    mockUseQuery.mockReturnValue({ data: { plan: "pro" }, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -43,8 +43,11 @@ describe("useSubscriptionLimits", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  test("returns isPro: true and isEnterprise: true for enterprise tier", () => {
-    mockUseQuery.mockReturnValue({ status: "active", tier: "enterprise" });
+  test("returns isPro: true and isEnterprise: true for enterprise plan", () => {
+    mockUseQuery.mockReturnValue({
+      data: { plan: "enterprise" },
+      isLoading: false,
+    });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -53,16 +56,16 @@ describe("useSubscriptionLimits", () => {
     expect(result.current.tier).toBe("enterprise");
   });
 
-  test("returns isPro: true for trialing subscription", () => {
-    mockUseQuery.mockReturnValue({ status: "trialing", tier: "pro" });
+  test('returns isPro: true for any "pro" plan string', () => {
+    mockUseQuery.mockReturnValue({ data: { plan: "pro" }, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
     expect(result.current.isPro).toBe(true);
   });
 
-  test("returns isPro: false when status is active but tier is free", () => {
-    mockUseQuery.mockReturnValue({ status: "active", tier: "free" });
+  test("returns isPro: false when plan is free", () => {
+    mockUseQuery.mockReturnValue({ data: { plan: "free" }, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -70,17 +73,8 @@ describe("useSubscriptionLimits", () => {
     expect(result.current.tier).toBe("free");
   });
 
-  test("returns isPro: false when tier is pro but status is not active", () => {
-    mockUseQuery.mockReturnValue({ status: "canceled", tier: "pro" });
-
-    const { result } = renderHook(() => useSubscriptionLimits());
-
-    expect(result.current.isPro).toBe(false);
-    expect(result.current.tier).toBe("pro");
-  });
-
   test("free tier feature flags are all false", () => {
-    mockUseQuery.mockReturnValue(null);
+    mockUseQuery.mockReturnValue({ data: { plan: "free" }, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -93,7 +87,7 @@ describe("useSubscriptionLimits", () => {
   });
 
   test("pro tier enables templates, branding, api, webhooks but not SSO", () => {
-    mockUseQuery.mockReturnValue({ status: "active", tier: "pro" });
+    mockUseQuery.mockReturnValue({ data: { plan: "pro" }, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
@@ -106,7 +100,10 @@ describe("useSubscriptionLimits", () => {
   });
 
   test("enterprise tier enables everything including SSO", () => {
-    mockUseQuery.mockReturnValue({ status: "active", tier: "enterprise" });
+    mockUseQuery.mockReturnValue({
+      data: { plan: "enterprise" },
+      isLoading: false,
+    });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 

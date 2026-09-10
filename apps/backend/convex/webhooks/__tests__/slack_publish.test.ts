@@ -58,7 +58,7 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
       return await ctx.db.insert("webhook_endpoints", {
         organizationId,
         name: overrides.name ?? "Slack Channel",
-        url: overrides.url ?? "https://hooks.slack.com/services/T123/B456/abc",
+        url: overrides.url ?? "https://hooks.slack.test/services/T123/B456/abc",
         secretHash: "hash123",
         secret: "whsec_slack_placeholder",
         secretPrefix: "whsec_slack_",
@@ -133,7 +133,7 @@ describe("publishWebhookEvent — Slack format endpoints", () => {
       name: "Slack Alerts",
       format: "slack",
       events: [],
-      url: "https://hooks.slack.com/services/T1/B1/x",
+      url: "https://hooks.slack.test/services/T1/B1/x",
     });
     await t.run(async (ctx) => {
       return await ctx.db.insert("webhook_endpoints", {

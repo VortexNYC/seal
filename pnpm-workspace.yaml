@@ -23,10 +23,10 @@ allowBuilds:
   core-js: true
   core-js-pure: true
   esbuild: true
-  lefthook: true
   onnxruntime-node: true
   protobufjs: true
   sharp: true
+  simple-git-hooks: true
   workerd: true
 
 onlyBuiltDependencies:
@@ -35,10 +35,10 @@ onlyBuiltDependencies:
   - core-js
   - core-js-pure
   - esbuild
-  - lefthook
   - onnxruntime-node
   - protobufjs
   - sharp
+  - simple-git-hooks
   - workerd
 
 minimumReleaseAgeExclude:
@@ -54,6 +54,12 @@ minimumReleaseAgeExclude:
   - '@vortexnyc/payments-sdk@0.2.0'
   - fumadocs-core@16.14.1
   - fumadocs-ui@16.14.1
+  - '@ai-sdk/gateway@4.0.78'
+  - '@ai-sdk/mcp@2.0.48'
+  - '@ai-sdk/provider-utils@5.0.39'
+  - '@ai-sdk/provider@4.0.13'
+  - '@ai-sdk/react@4.0.100'
+  - ai@7.0.97
 
 overrides:
   "@tanstack/router-core": "1.171.16"

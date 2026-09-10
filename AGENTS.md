@@ -8,17 +8,16 @@
 
 ## OVERVIEW
 
-Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
+Vortex Sign is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
 
 ## STRUCTURE
 
 ```text
-seal/
-├── apps/               # web, landing, backend, mcp-server
+vortex-sign/
+├── apps/               # web, landing, api, backend (legacy), mcp-worker
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
-├── docs/               # planning, architecture, design notes (mostly archival)
-└── .mcp.json           # MCP server config
+└── docs/               # planning, architecture, design notes (mostly archival)
 ```
 
 ## WHERE TO LOOK
@@ -27,15 +26,15 @@ seal/
 | ---------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
 | Architecture overview  | `docs/archive/root/DOCUMENTATION_INDEX.md`                     | Current index lives under `archive/root`        |
 | Permissions & roles    | `docs/archive/root/ROLES_AND_PERMISSIONS.md`                   | Historical reference; verify live auth code too |
-| Backend auth wrappers  | `apps/backend/convex/auth.ts`                                  | Always use wrappers                             |
-| Backend permissions    | `apps/backend/convex/auth.utils.ts`                            | Role hierarchy + permission helpers             |
-| REST API v1            | `apps/backend/convex/api/v1/`                                  | Public API endpoints                            |
+| Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend                 |
+| REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |
+| Legacy backend         | `apps/backend/convex/`                                         | Convex (being retired)                          |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
 | Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + Convex + Router setup             |
 | Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
 | Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
 | API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |
-| MCP tools/resources    | `apps/mcp-server/src/tools/`, `apps/mcp-server/src/resources/` | MCP server surface                              |
+| MCP tools/resources    | `apps/mcp-worker/src/tools/`, `apps/mcp-worker/src/resources/` | MCP worker surface                              |
 | Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
 | React SDK              | `packages/react-sdk/src/`                                      | Embeddable signing components                   |
 | Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
@@ -46,13 +45,14 @@ seal/
 - `apps/web/AGENTS.md`
 - `apps/landing/AGENTS.md`
 - `apps/backend/convex/AGENTS.md`
-- `apps/mcp-server/AGENTS.md`
+- `apps/mcp-worker/AGENTS.md`
 - `packages/transactional/AGENTS.md`
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
 
 - TypeScript strict: no `any`, `@ts-ignore`, `@ts-expect-error`, `as any`; exported functions have explicit return types.
-- Convex backend: use auth wrappers; commit `apps/backend/convex/_generated/`.
+- Cloudflare Worker backend (`apps/api`): use Hono + Drizzle + wrangler; native-first auth/storage.
+- Legacy Convex backend: use auth wrappers; commit `apps/backend/convex/_generated/`.
 - Routes: TanStack file-based; `apps/web/src/routeTree.gen.ts` and `apps/landing/src/routeTree.gen.ts` are generated.
 - Landing docs: `apps/landing/.source/*` and `apps/landing/content/docs/api-reference/*` are generated artifacts; regenerate from source instead of hand-editing.
 - E2E: Playwright page objects; prefer `data-testid` selectors.
@@ -79,9 +79,9 @@ seal/
 
 ```bash
 pnpm run dev
+pnpm --filter @vortex/sign-api run dev
 pnpm --filter @seal/web run dev
 pnpm --filter @seal/landing run dev
-pnpm --filter @seal/backend run dev
 pnpm --filter @seal/mcp-worker run dev
 pnpm --filter @seal/transactional run dev
 
@@ -92,19 +92,21 @@ pnpm run typecheck
 pnpm run verify
 pnpm run test
 
+pnpm --filter @vortex/sign-api run test
 pnpm --filter @seal/backend run test
 pnpm --filter @seal/web run test
 pnpm --dir apps/web run test:e2e
 pnpm --dir apps/landing run docs:generate:api
 ```
 
-`pnpm run dev` starts the main product stack: `@seal/backend`, `@seal/web`, and `@seal/landing`.
+`pnpm run dev` starts the main product stack: `@vortex/sign-api`, `@seal/web`, and `@seal/landing`.
 Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/landing` and `@seal/transactional` both default to port `3001`.
 
 ## NOTES
 
 - LSP codemap unavailable in this environment.
 - Complexity hotspots: `apps/backend/convex/http.ts`, `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx`, `apps/web/src/routes/sign.$token.tsx`.
+- D1 migrations: `drizzle-kit generate` can emit full-schema snapshots when `migrations/meta/_journal.json` is out of sync with existing `.sql` files. Use manual incremental `.sql` migrations and keep `_journal.json` aligned; `readD1Migrations` / `applyD1Migrations` in tests apply all `.sql` files in filename order.
 
 <!-- BEGIN VORTEX TOOLING MANAGED REVIEW GUIDELINES -->
 ## Review guidelines

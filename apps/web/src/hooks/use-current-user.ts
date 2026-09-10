@@ -1,18 +1,6 @@
-/**
- * Compatibility current-user adapter over vortex-auth's useAppUser (SEA-606).
- *
- * Prefer `useAppUser` from `@/lib/auth-runtime.better-auth` for new code.
- * This adapter maps legacy profile-shaped fields (firstName/lastName/
- * emailAddresses) so existing call sites stay a one-line import alias:
- *
- *   import { useCurrentUser as useUser } from "@/hooks/use-current-user";
- *
- * Fields not on Better-Auth identity (imageUrl, createdAt) stay undefined;
- * avatar UIs fall back to initials.
- */
 import { useMemo } from "react";
 
-import { useAppUser } from "@/lib/auth-runtime.better-auth";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export type CurrentUser = {
   id: string;
@@ -31,29 +19,33 @@ export function useCurrentUser(): {
   isLoaded: boolean;
   isSignedIn: boolean;
 } {
-  const { user, isLoaded, isSignedIn } = useAppUser();
+  if (betterAuthClient === null) {
+    return { user: null, isLoaded: false, isSignedIn: false };
+  }
+
+  const { data, isPending } = betterAuthClient.useSession();
 
   const mapped = useMemo<CurrentUser | null>(() => {
-    if (!user) {
+    if (!data?.user) {
       return null;
     }
-    const fullName = user.fullName;
+    const fullName = data.user.name ?? null;
     const [firstName, ...rest] = (fullName ?? "").trim().split(/\s+/);
-    const primaryEmail = user.primaryEmailAddress;
+    const primaryEmail = data.user.email
+      ? { emailAddress: data.user.email }
+      : null;
     return {
-      id: user.id,
-      username: user.username,
+      id: data.user.id,
+      username: primaryEmail ? primaryEmail.emailAddress.split("@")[0] : null,
       fullName,
       firstName: firstName || null,
       lastName: rest.length > 0 ? rest.join(" ") : null,
-      imageUrl: undefined,
+      imageUrl: data.user.image ?? undefined,
       createdAt: undefined,
       primaryEmailAddress: primaryEmail,
-      emailAddresses: primaryEmail
-        ? [{ emailAddress: primaryEmail.emailAddress }]
-        : [],
+      emailAddresses: primaryEmail ? [primaryEmail] : [],
     };
-  }, [user]);
+  }, [data]);
 
-  return { user: mapped, isLoaded, isSignedIn };
+  return { user: mapped, isLoaded: !isPending, isSignedIn: !!data };
 }

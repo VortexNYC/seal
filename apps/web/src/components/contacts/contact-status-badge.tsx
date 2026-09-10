@@ -1,6 +1,5 @@
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
-
 import { Badge } from "@/components/ui/badge";
+import type { ContactStatus } from "@/lib/contact-status";
 
 export function ContactStatusBadge({ status }: { status: ContactStatus }) {
   switch (status) {

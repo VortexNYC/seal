@@ -1,9 +1,9 @@
-import { api } from "@seal/backend/convex/_generated/api";
+import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
 import { Bug, Lightbulb, MessageSquare, X } from "lucide-react";
 import { useState } from "react";
 
+import { submitFeedback } from "@/lib/api-client";
 import { startJamRecording } from "@/lib/jam";
 
 import { Button } from "./ui/button";
@@ -17,7 +17,9 @@ export function FeedbackButton() {
   const [mode, setMode] = useState<Mode>("idle");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const submitFeedback = useMutation(api.feedback.mutations.submit);
+  const submitFeedbackMutation = useMutation({
+    mutationFn: submitFeedback,
+  });
   const location = useLocation();
 
   function handleReportBug() {
@@ -28,7 +30,7 @@ export function FeedbackButton() {
 
   async function handleSubmitSuggestion() {
     if (!message.trim()) return;
-    await submitFeedback({
+    await submitFeedbackMutation.mutateAsync({
       type: "suggestion",
       message: message.trim(),
       route: location.pathname,

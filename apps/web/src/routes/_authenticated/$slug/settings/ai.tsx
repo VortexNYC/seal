@@ -5,9 +5,8 @@
  * Route: /{slug}/settings/ai
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
 import { BotIcon, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,6 +23,11 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  getAiSettings,
+  getOrganization,
+  updateAiSettings,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/ai")({
   component: AISettings,
@@ -33,18 +37,16 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/ai")({
 function AISettings() {
   const { slug } = Route.useParams();
 
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    slug,
+  const { data: organization } = useQuery({
+    queryKey: ["organization", slug],
+    queryFn: () => getOrganization(slug),
   });
 
-  const aiSettings = useQuery(
-    api.organizations.queries.getAiSettings,
-    organization ? { organizationId: organization._id } : "skip"
-  );
-
-  const updateAiSettings = useMutation(
-    api.organizations.mutations.updateAiSettings
-  );
+  const { data: aiSettings } = useQuery({
+    queryKey: ["ai", slug],
+    queryFn: () => getAiSettings(slug),
+    enabled: !!organization,
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -68,7 +70,7 @@ function AISettings() {
     setIsSubmitting(true);
 
     try {
-      await updateAiSettings({
+      await updateAiSettings(slug, {
         aiEnabled: formData.aiEnabled,
         aiAutoAnalyze: formData.aiAutoAnalyze,
         aiShowRedlinesToSigners: formData.aiShowRedlinesToSigners,

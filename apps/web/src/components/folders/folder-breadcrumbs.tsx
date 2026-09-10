@@ -6,9 +6,7 @@
  * Intermediate folders are clickable; the last segment is the current page.
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { Home } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
@@ -20,12 +18,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { parseId } from "@/lib/convex-ids";
+import { getFolderBreadcrumbs } from "@/lib/api-client";
 
 interface FolderBreadcrumbsProps {
-  folderId?: Id<"folders">;
+  folderId?: string;
   type: "document" | "template";
-  onNavigate: (folderId?: Id<"folders">) => void;
+  onNavigate: (folderId?: string) => void;
 }
 
 export function FolderBreadcrumbs({
@@ -33,10 +31,11 @@ export function FolderBreadcrumbs({
   type,
   onNavigate,
 }: FolderBreadcrumbsProps) {
-  const breadcrumbs = useQuery(
-    api.folders.queries.getFolderBreadcrumbs,
-    folderId ? { folderId } : "skip"
-  );
+  const { data: breadcrumbs } = useQuery({
+    queryKey: ["api", "folders", "breadcrumbs", folderId],
+    queryFn: () => getFolderBreadcrumbs(folderId!),
+    enabled: Boolean(folderId),
+  });
 
   const rootLabel = type === "document" ? "All Documents" : "All Templates";
   const breadcrumbItems = breadcrumbs ?? [];
@@ -133,7 +132,7 @@ export function FolderBreadcrumbs({
                 ) : (
                   <BreadcrumbLink
                     className="max-w-32 cursor-pointer truncate sm:max-w-48"
-                    onClick={() => onNavigate(parseId("folders", crumb.id))}
+                    onClick={() => onNavigate(crumb.id)}
                   >
                     {crumb.name}
                   </BreadcrumbLink>

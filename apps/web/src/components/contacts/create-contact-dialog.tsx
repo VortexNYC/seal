@@ -6,8 +6,6 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { api } from "@seal/backend/convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -39,10 +37,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  createContact,
+  getContactByEmail,
+  type ApiContact,
+} from "@/lib/api-client";
 
 interface CreateContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreated?: (contact: ApiContact) => void;
 }
 
 const createContactSchema = z.object({
@@ -61,9 +65,12 @@ type CreateContactFormValues = z.infer<typeof createContactSchema>;
 export function CreateContactDialog({
   open,
   onOpenChange,
+  onCreated,
 }: CreateContactDialogProps) {
-  const createContact = useMutation(api.contacts.mutations.create);
   const [emailToCheck, setEmailToCheck] = useState("");
+  const [existingContact, setExistingContact] = useState<ApiContact | null>(
+    null
+  );
 
   const form = useForm<CreateContactFormValues>({
     resolver: zodResolver(createContactSchema),
@@ -79,11 +86,6 @@ export function CreateContactDialog({
     },
   });
 
-  const existingContact = useQuery(
-    api.contacts.queries.getByEmail,
-    emailToCheck ? { email: emailToCheck } : "skip"
-  );
-
   const duplicateWarning = emailToCheck && existingContact;
 
   // Reset form when dialog closes
@@ -91,12 +93,30 @@ export function CreateContactDialog({
     if (!open) {
       form.reset();
       setEmailToCheck("");
+      setExistingContact(null);
     }
   }, [open, form]);
 
+  const handleCheckEmail = async (email: string) => {
+    const trimmed = email.trim();
+    const valid = createContactSchema.shape.email.safeParse(trimmed).success;
+    if (!valid) {
+      setEmailToCheck("");
+      setExistingContact(null);
+      return;
+    }
+    setEmailToCheck(trimmed);
+    try {
+      const contact = await getContactByEmail(trimmed);
+      setExistingContact(contact);
+    } catch {
+      setExistingContact(null);
+    }
+  };
+
   const handleSubmit = async (values: CreateContactFormValues) => {
     try {
-      const result = await createContact({
+      const contact = await createContact({
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         email: values.email.trim(),
@@ -107,7 +127,9 @@ export function CreateContactDialog({
         notes: values.notes?.trim() || undefined,
       });
 
-      if (result.isDuplicate) {
+      onCreated?.(contact);
+
+      if (existingContact) {
         toast.warning(
           "A contact with this email already exists. A duplicate was created."
         );
@@ -187,12 +209,7 @@ export function CreateContactDialog({
                       {...field}
                       onBlur={(e) => {
                         field.onBlur();
-                        const trimmed = e.target.value.trim();
-                        const valid =
-                          createContactSchema.shape.email.safeParse(
-                            trimmed
-                          ).success;
-                        setEmailToCheck(valid ? trimmed : "");
+                        void handleCheckEmail(e.target.value);
                       }}
                     />
                   </FormControl>

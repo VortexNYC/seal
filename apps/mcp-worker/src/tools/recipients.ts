@@ -4,6 +4,8 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
 import {
   type AddRecipientInput,
   type ApiRecipient,
@@ -18,9 +20,7 @@ import {
   sendReminderSchema,
   type UpdateRecipientInput,
   updateRecipientSchema,
-} from "@seal/backend/convex/validations/api";
-import { z } from "zod";
-
+} from "../api-contracts";
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 import { logger } from "../utils/logger";

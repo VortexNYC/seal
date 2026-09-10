@@ -1,24 +1,23 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { parse } from "@vortexnyc/convex/helpers";
-import { v } from "convex/values";
 import { describe, expect, test } from "vitest";
+import { z } from "zod";
 
-const wranglerRouteValidator = v.object({
-  pattern: v.string(),
-  custom_domain: v.boolean(),
+const wranglerRouteValidator = z.object({
+  pattern: z.string(),
+  custom_domain: z.boolean(),
 });
 
-const wranglerConfigValidator = v.object({
-  name: v.string(),
-  routes: v.optional(v.array(wranglerRouteValidator)),
+const wranglerConfigValidator = z.object({
+  name: z.string(),
+  routes: z.array(wranglerRouteValidator).optional(),
 });
 
 /**
  * Parse the JSONC wrangler config tolerantly: strip `//` line comments and
  * trailing commas (oxfmt enforces trailing commas in this repo), then
- * JSON.parse + validator. Avoids depending on a dedicated JSONC parser package.
+ * JSON.parse + zod. Avoids depending on a dedicated JSONC parser package.
  */
 function loadWranglerConfig(): {
   name: string;
@@ -28,7 +27,7 @@ function loadWranglerConfig(): {
   const raw = readFileSync(configPath, "utf8");
   const stripped = raw.replace(/\/\/[^\n]*/g, "").replace(/,(\s*[}\]])/g, "$1");
   const parsed: unknown = JSON.parse(stripped);
-  return parse(wranglerConfigValidator, parsed);
+  return wranglerConfigValidator.parse(parsed);
 }
 
 describe("seal-web wrangler custom-domain routes", () => {

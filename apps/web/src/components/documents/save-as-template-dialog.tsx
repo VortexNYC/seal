@@ -6,13 +6,12 @@
  * Allows users to save a document as a reusable template
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
 import { FileTextIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { saveAsTemplate } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/utils";
 
 import { Button } from "../ui/button";
@@ -29,7 +28,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 
 interface SaveAsTemplateDialogProps {
-  documentId: Id<"documents">;
+  documentPublicId: string;
   documentName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,7 +36,7 @@ interface SaveAsTemplateDialogProps {
 }
 
 export function SaveAsTemplateDialog({
-  documentId,
+  documentPublicId,
   documentName,
   open,
   onOpenChange,
@@ -47,7 +46,10 @@ export function SaveAsTemplateDialog({
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const saveAsTemplate = useMutation(api.templates.mutations.saveAsTemplate);
+  const saveAsTemplateMutation = useMutation({
+    mutationFn: (input: { name: string; description?: string }) =>
+      saveAsTemplate(documentPublicId, input),
+  });
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -57,8 +59,7 @@ export function SaveAsTemplateDialog({
 
     setIsSaving(true);
     try {
-      const result = await saveAsTemplate({
-        documentId,
+      const result = await saveAsTemplateMutation.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
       });
