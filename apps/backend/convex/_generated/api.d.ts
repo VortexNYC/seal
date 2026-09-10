@@ -54,12 +54,9 @@ import type * as auth_subscription_helpers from "../auth/subscription_helpers.js
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as betterAuth from "../betterAuth.js";
 import type * as betterAuthClient from "../betterAuthClient.js";
-import type * as check_membership from "../check_membership.js";
 import type * as crons from "../crons.js";
 import type * as crypto_encryption from "../crypto/encryption.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
-import type * as crypto_index from "../crypto/index.js";
-import type * as crypto_node_helpers from "../crypto/node_helpers.js";
 import type * as documents_automated_reminders from "../documents/automated_reminders.js";
 import type * as documents_cancellation_email_action from "../documents/cancellation_email_action.js";
 import type * as documents_certificate_of_completion from "../documents/certificate_of_completion.js";
@@ -244,12 +241,9 @@ declare const fullApi: ApiFromModules<{
   "auth/wrappers": typeof auth_wrappers;
   betterAuth: typeof betterAuth;
   betterAuthClient: typeof betterAuthClient;
-  check_membership: typeof check_membership;
   crons: typeof crons;
   "crypto/encryption": typeof crypto_encryption;
   "crypto/helpers": typeof crypto_helpers;
-  "crypto/index": typeof crypto_index;
-  "crypto/node_helpers": typeof crypto_node_helpers;
   "documents/automated_reminders": typeof documents_automated_reminders;
   "documents/cancellation_email_action": typeof documents_cancellation_email_action;
   "documents/certificate_of_completion": typeof documents_certificate_of_completion;
