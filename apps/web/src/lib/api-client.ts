@@ -490,6 +490,19 @@ export async function disconnectConnectedApp(id: string): Promise<void> {
   });
 }
 
+const feedbackResponseSchema = z.object({ id: z.string() });
+
+export async function submitFeedback(input: {
+  type: "bug" | "suggestion";
+  message: string;
+  route?: string;
+}): Promise<{ id: string }> {
+  return apiFetch("/api/feedback", feedbackResponseSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 const aiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiAutoAnalyze: z.boolean(),

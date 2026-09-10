@@ -871,3 +871,19 @@ export const integrationActivityLogs = sqliteTable(
   },
   (table) => [index("integrationActivityLogs_userId_idx").on(table.userId)]
 );
+
+export const feedback = sqliteTable(
+  "feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id").notNull().references(() => organization.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    message: text("message").notNull(),
+    route: text("route"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [index("feedback_organizationId_idx").on(table.organizationId)]
+);
