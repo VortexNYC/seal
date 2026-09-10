@@ -148,6 +148,13 @@
       "when": 1789056992341,
       "tag": "0021_add_webhooks_table",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1789077313137,
+      "tag": "0021_faulty_skreet",
+      "breakpoints": true
     }
   ]
 }

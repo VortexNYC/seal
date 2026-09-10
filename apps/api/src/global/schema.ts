@@ -326,6 +326,9 @@ export const documents = sqliteTable(
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     sentAt: integer("sent_at", { mode: "timestamp_ms" }),
     deadline: integer("deadline", { mode: "timestamp_ms" }),
+    lastExpirationAlertAt: integer("last_expiration_alert_at", {
+      mode: "timestamp_ms",
+    }),
     redirectUrl: text("redirect_url"),
     allowDictateNextSigner: integer("allow_dictate_next_signer", {
       mode: "boolean",
@@ -397,6 +400,10 @@ export const recipients = sqliteTable(
     signedAt: integer("signed_at", { mode: "timestamp_ms" }),
     approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
     declinedAt: integer("declined_at", { mode: "timestamp_ms" }),
+    lastRemindedAt: integer("last_reminded_at", { mode: "timestamp_ms" }),
+    reminderCount: integer("reminder_count", { mode: "number" })
+      .notNull()
+      .default(0),
     signatureData: text("signature_data"),
     signatureType: text("signature_type"),
     authenticationData: text("authentication_data"),

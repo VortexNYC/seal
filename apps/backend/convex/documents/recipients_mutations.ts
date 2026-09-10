@@ -14,7 +14,6 @@ import {
 import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
-import { retrier } from "../retrier";
 import {
   isRecipientComplete,
   recipientRoleTuple,
@@ -51,8 +50,6 @@ async function generateSigningToken(): Promise<{
 }
 
 type RecipientDbCtx = Pick<MutationCtx, "db">;
-/** Structural ctx for ActionRetrier / WorkflowManager (runQuery + runMutation only). */
-type RecipientRetrierCtx = Pick<MutationCtx, "runQuery" | "runMutation">;
 type RecipientWorkflowCtx = Pick<MutationCtx, "runMutation">;
 
 type RecipientStatusChangeArgs = {
@@ -223,24 +220,6 @@ function getRecipientAuditAction(status: RecipientStatusChangeArgs["status"]) {
     return "recipient.viewed" as const;
   }
   return null;
-}
-
-async function maybeSendViewedNotification(
-  ctx: RecipientRetrierCtx,
-  recipient: Doc<"document_recipients">,
-  viewedAt: number | undefined
-): Promise<void> {
-  if (!recipient.viewedAt && viewedAt) {
-    await retrier.run(
-      ctx,
-      internal.documents.viewed_notification_action.sendViewedNotification,
-      {
-        recipientId: recipient._id,
-        documentId: recipient.documentId,
-        viewedAt,
-      }
-    );
-  }
 }
 
 export async function maybeStartPostSignatureWorkflow(
@@ -636,13 +615,12 @@ export const updateRecipientStatus = authMutation({
       args,
       `Cannot update status - recipient has already ${recipient.status}`
     );
-    const { updateData, viewedAt } = buildRecipientStatusUpdate(
+    const { updateData } = buildRecipientStatusUpdate(
       recipient,
       args,
       args.ipAddress
     );
     await ctx.db.patch("document_recipients", recipient._id, updateData);
-    await maybeSendViewedNotification(ctx, recipient, viewedAt);
     return { success: true, recipientId: recipient._id };
   },
 });
@@ -667,15 +645,9 @@ export const submitRecipientSignature = mutation({
       ctx,
       args.signingToken
     );
-    const viewedAt = await applyRecipientStatusChange(
-      ctx,
-      recipient,
-      document,
-      args
-    );
+    await applyRecipientStatusChange(ctx, recipient, document, args);
     await maybeMarkDocumentDeclined(ctx, document, recipient, args);
     await logRecipientStatusChange(ctx, document, recipient, args);
-    await maybeSendViewedNotification(ctx, recipient, viewedAt);
     await maybeStartPostSignatureWorkflow(ctx, recipient, args.status);
     await maybePublishRecipientWebhook(ctx, document, recipient, args);
 
@@ -750,7 +722,7 @@ export const submitSignatureAuthenticated = authMutation({
       args.status
     );
 
-    const { updateData, viewedAt } = buildRecipientStatusUpdate(
+    const { updateData } = buildRecipientStatusUpdate(
       recipient,
       args,
       "authenticated"
@@ -774,7 +746,6 @@ export const submitSignatureAuthenticated = authMutation({
       });
     }
 
-    await maybeSendViewedNotification(ctx, recipient, viewedAt);
     await maybeStartPostSignatureWorkflow(ctx, recipient, args.status);
 
     return { success: true, recipientId: recipient._id };

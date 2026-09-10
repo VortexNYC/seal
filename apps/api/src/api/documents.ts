@@ -20,6 +20,7 @@ import {
   documents,
   folders,
   member,
+  organization,
   paymentFieldConfigs,
   recipients,
   signatureFields,
@@ -31,6 +32,7 @@ import {
 import {
   type EmailSendResult,
   sendDocumentInvitationEmail,
+  sendOwnershipTransferredEmail,
 } from "../platform/email.js";
 import ai from "./ai.js";
 
@@ -4399,9 +4401,11 @@ app.openapi(transferOwnershipRouteDef, async (c) => {
     return c.json({ error: "New owner is not an organization member" }, 422);
   }
 
+  const now = new Date();
+
   await db
     .update(documents)
-    .set({ ownerId: newOwnerId, updatedAt: new Date() })
+    .set({ ownerId: newOwnerId, updatedAt: now })
     .where(eq(documents.id, ownerCheck.docId));
 
   const rows = await db
@@ -4413,6 +4417,31 @@ app.openapi(transferOwnershipRouteDef, async (c) => {
   const updated = rows[0];
   if (!updated) {
     return c.json({ error: "Document not found" }, 404);
+  }
+
+  const [newOwner] = await db
+    .select({ name: userTable.name, email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.id, newOwnerId))
+    .limit(1);
+  const [org] = await db
+    .select({ slug: organization.slug })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  if (newOwner?.email && org?.slug) {
+    const result = await sendOwnershipTransferredEmail(c.env, {
+      to: newOwner.email,
+      newOwnerName: newOwner.name ?? newOwner.email,
+      documentName: updated.name,
+      documentSlug: org.slug,
+      documentPublicId: publicId,
+      transferredAt: now.getTime(),
+    });
+    if (!result.success) {
+      console.error("[documents/transfer] transfer email failed:", result);
+    }
   }
 
   return c.json(documentResponse(updated));

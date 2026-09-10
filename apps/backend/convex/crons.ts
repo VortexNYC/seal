@@ -70,27 +70,6 @@ const crons = gatedCrons();
     internal.ai.cleanup.cleanupDismissedAnnotations
   );
 
-  // Process automated reminders daily at 9am UTC (based on org reminderSchedule)
-  crons.daily(
-    "process-automated-reminders",
-    { hourUTC: 9, minuteUTC: 0 },
-    internal.documents.automated_reminders.processAutomatedReminders
-  );
-
-  // Send expiration alerts daily at 10am UTC (based on org expirationAlertDays)
-  crons.daily(
-    "process-expiration-alerts",
-    { hourUTC: 10, minuteUTC: 0 },
-    internal.documents.expiration_alerts.processExpirationAlerts
-  );
-
-  // Sweep expired recipients every 15 minutes
-  crons.interval(
-    "sweep-expired-recipients",
-    { minutes: 15 },
-    internal.documents.expiration_sweep.sweepExpiredRecipients
-  );
-
   // Process dunning (payment recovery) emails daily at 11am UTC
   crons.daily(
     "process-dunning-emails",

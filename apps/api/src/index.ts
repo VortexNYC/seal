@@ -34,7 +34,7 @@ import {
   verifyMcpAccessToken,
   type McpAccessToken,
 } from "./platform/mcp-auth.js";
-import { runExpiredDocumentSweep } from "./platform/scheduled.js";
+import { runScheduledTasks } from "./platform/scheduled.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
 
 type Variables = {
@@ -187,5 +187,5 @@ export const scheduled: ExportedHandlerScheduledHandler<Env> = async (
   env,
   _ctx
 ) => {
-  await runExpiredDocumentSweep(env);
+  await runScheduledTasks(env);
 };

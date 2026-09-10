@@ -1,9 +1,11 @@
 import {
   renderDocumentCompleted,
   renderDocumentExpired,
+  renderDocumentExpirationAlert,
   renderDocumentInvitation,
   renderDocumentReminder,
   renderDocumentViewed,
+  renderOwnershipTransferred,
   renderSigningComplete,
 } from "@seal/transactional";
 
@@ -240,6 +242,66 @@ export async function sendDocumentExpiredEmail(
   return sendEmail(env, {
     to: params.to,
     subject: `Your document "${params.documentName}" has expired`,
+    html,
+  });
+}
+
+export async function sendDocumentExpirationAlertEmail(
+  env: EmailEnv,
+  params: {
+    to: string;
+    ownerName: string;
+    documentName: string;
+    documentSlug: string;
+    documentPublicId: string;
+    expiresAt: number;
+    daysRemaining: number;
+    pendingRecipients: Array<{ name: string; email: string }>;
+  }
+): Promise<EmailSendResult> {
+  const html = await renderDocumentExpirationAlert({
+    ownerName: params.ownerName,
+    documentName: params.documentName,
+    documentUrl: buildDocumentUrl(
+      env,
+      params.documentSlug,
+      params.documentPublicId
+    ),
+    expiresAt: params.expiresAt,
+    daysRemaining: params.daysRemaining,
+    pendingRecipients: params.pendingRecipients,
+  });
+  return sendEmail(env, {
+    to: params.to,
+    subject: `"${params.documentName}" expires in ${params.daysRemaining} day${params.daysRemaining === 1 ? "" : "s"}`,
+    html,
+  });
+}
+
+export async function sendOwnershipTransferredEmail(
+  env: EmailEnv,
+  params: {
+    to: string;
+    newOwnerName: string;
+    documentName: string;
+    documentSlug: string;
+    documentPublicId: string;
+    transferredAt: number;
+  }
+): Promise<EmailSendResult> {
+  const html = await renderOwnershipTransferred({
+    newOwnerName: params.newOwnerName,
+    documentName: params.documentName,
+    documentUrl: buildDocumentUrl(
+      env,
+      params.documentSlug,
+      params.documentPublicId
+    ),
+    transferredAt: params.transferredAt,
+  });
+  return sendEmail(env, {
+    to: params.to,
+    subject: `You are now the owner of "${params.documentName}"`,
     html,
   });
 }

@@ -340,18 +340,6 @@ export const deleteDocument = permissionMutation("documents:delete")({
       return { success: true, warning: "storage_already_deleted" };
     }
 
-    // 5. Schedule storage cleanup after 7 day grace period
-    // This allows document recovery if needed
-    const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-    await ctx.scheduler.runAfter(
-      GRACE_PERIOD_MS,
-      internal.documents?.cleanup.cleanupDocumentStorage,
-      {
-        storageId: document.storageId,
-        documentId: args.documentId,
-      }
-    );
-
     return { success: true };
   },
 });
@@ -1018,19 +1006,6 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
       description: `Ownership transferred to ${newOwner.name ?? newOwner.email}`,
       ipAddress: "unknown",
     });
-
-    // Notify the new owner via email
-    await ctx.scheduler.runAfter(
-      0,
-      internal.documents.ownership_transfer_action
-        .sendOwnershipTransferredEmail,
-      {
-        documentId: args.documentId,
-        newOwnerEmail: newOwner.email,
-        newOwnerName: newOwner.name ?? newOwner.email,
-        documentName: document.name,
-      }
-    );
 
     return { success: true };
   },
