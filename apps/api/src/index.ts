@@ -2,6 +2,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 
 import activity from "./api/activity.js";
+import analytics from "./api/analytics.js";
 import contacts from "./api/contacts.js";
 import documents from "./api/documents.js";
 import folders from "./api/folders.js";
@@ -57,6 +58,7 @@ app.all("/api/auth/*", (c) => {
 });
 
 app.route("/api/activity", activity);
+app.route("/api/analytics", analytics);
 app.route("/api/contacts", contacts);
 app.route("/api/documents", documents);
 app.route("/api/folders", folders);

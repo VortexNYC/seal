@@ -49,6 +49,21 @@ const documentStatsSchema = z.object({
   completedThisMonth: z.number().int(),
 });
 
+const analyticsStatsSchema = z.object({
+  total: z.number().int(),
+  draft: z.number().int(),
+  sent: z.number().int(),
+  inProgress: z.number().int(),
+  completed: z.number().int(),
+  cancelled: z.number().int(),
+  declined: z.number().int(),
+  expired: z.number().int(),
+  pending: z.number().int(),
+  completionRate: z.number().int(),
+  avgSigningTimeMs: z.number().int().nullable(),
+  isAdmin: z.boolean(),
+});
+
 const recentDocumentSchema = z.object({
   _id: z.string(),
   name: z.string(),
@@ -165,6 +180,7 @@ const notificationSchema = z.object({
 export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
+export type ApiAnalyticsStats = z.infer<typeof analyticsStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
 export type ApiRecentDocument = {
   _id: string;
@@ -256,6 +272,15 @@ export async function getOrganizationTeam(
 
 export async function getDocumentStats(): Promise<ApiDocumentStats> {
   return apiFetch("/api/documents/stats", documentStatsSchema);
+}
+
+export async function getAnalyticsStats(
+  scope: "personal" | "team" = "team"
+): Promise<ApiAnalyticsStats> {
+  return apiFetch(
+    `/api/analytics/stats?scope=${encodeURIComponent(scope)}`,
+    analyticsStatsSchema
+  );
 }
 
 export async function getDocumentTrends(
