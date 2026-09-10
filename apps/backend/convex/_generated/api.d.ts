@@ -65,7 +65,6 @@ import type * as documents_hash_document_action from "../documents/hash_document
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
-import type * as documents_recipients_mutations from "../documents/recipients_mutations.js";
 import type * as documents_recipients_queries from "../documents/recipients_queries.js";
 import type * as documents_upload_config from "../documents/upload_config.js";
 import type * as documents_version_helpers from "../documents/version_helpers.js";
@@ -225,7 +224,6 @@ declare const fullApi: ApiFromModules<{
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   "documents/recipient_helpers": typeof documents_recipient_helpers;
-  "documents/recipients_mutations": typeof documents_recipients_mutations;
   "documents/recipients_queries": typeof documents_recipients_queries;
   "documents/upload_config": typeof documents_upload_config;
   "documents/version_helpers": typeof documents_version_helpers;
