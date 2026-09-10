@@ -124,7 +124,6 @@ function DocumentErrorComponent(props: ErrorComponentProps) {
 function DocumentDetailPage() {
   const { slug, documentId } = Route.useParams();
   const documentPublicId = documentId;
-  const typedDocumentId = parseId("documents", documentId);
   const router = useRouter();
 
   // ── Worker queries ──────────────────────────────────────────────────────
@@ -1019,7 +1018,7 @@ function DocumentDetailPage() {
         />
 
         <SaveAsTemplateDialog
-          documentId={typedDocumentId}
+          documentPublicId={documentPublicId}
           documentName={documentData.name}
           open={docState.saveAsTemplateOpen}
           onOpenChange={docState.setSaveAsTemplateOpen}

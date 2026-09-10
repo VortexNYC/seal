@@ -941,6 +941,20 @@ export async function updateDocument(
   );
 }
 
+export async function saveAsTemplate(
+  publicId: string,
+  input: { name: string; description?: string }
+): Promise<{ publicId: string; fieldCount: number }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(publicId)}/save-as-template`,
+    z.object({ publicId: z.string(), fieldCount: z.number().int() }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 export async function getDocumentRecipients(
   publicId: string
 ): Promise<ApiRecipient[]> {

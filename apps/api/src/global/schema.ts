@@ -735,3 +735,85 @@ export const aiThreads = sqliteTable(
     index("aiThreads_organizationUser_idx").on(table.organizationId, table.userId),
   ]
 );
+
+export const templates = sqliteTable(
+  "templates",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    sourceDocumentId: text("source_document_id").references(() => documents.id, {
+      onDelete: "set null",
+    }),
+    folderId: text("folder_id").references(() => folders.id, {
+      onDelete: "set null",
+    }),
+    storageKey: text("storage_key").notNull(),
+    size: integer("size").notNull(),
+    contentType: text("content_type").notNull(),
+    pageCount: integer("page_count"),
+    thumbnailDataUrl: text("thumbnail_data_url"),
+    useCount: integer("use_count").notNull().default(0),
+    status: text("status").notNull().default("active"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("templates_organizationId_idx").on(table.organizationId),
+    index("templates_createdBy_idx").on(table.createdBy),
+    index("templates_status_idx").on(table.status),
+    index("templates_organizationStatus_idx").on(
+      table.organizationId,
+      table.status
+    ),
+    index("templates_useCount_idx").on(table.useCount),
+    index("templates_folderId_idx").on(table.folderId),
+  ]
+);
+
+export const templateFields = sqliteTable(
+  "template_fields",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    templateId: text("template_id")
+      .notNull()
+      .references(() => templates.id, { onDelete: "cascade" }),
+    fieldType: text("field_type").notNull(),
+    label: text("label"),
+    isRequired: integer("is_required", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    x: real("x").notNull(),
+    y: real("y").notNull(),
+    width: real("width").notNull(),
+    height: real("height").notNull(),
+    page: integer("page").notNull(),
+    properties: text("properties"),
+    order: integer("order").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("templateFields_templateId_idx").on(table.templateId),
+    index("templateFields_templateIdPage_idx").on(table.templateId, table.page),
+    index("templateFields_templateIdOrder_idx").on(table.templateId, table.order),
+  ]
+);

@@ -25,6 +25,8 @@ import {
   recipients,
   signatureFields,
   signatures,
+  templateFields,
+  templates,
   user as userTable,
 } from "../global/schema.js";
 
@@ -4691,6 +4693,129 @@ app.openapi(updatePermissionRouteDef, async (c) => {
     );
 
   return c.json({ success: true });
+});
+
+const saveAsTemplateBodySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+});
+
+const saveAsTemplateResponseSchema = z
+  .object({
+    publicId: z.string(),
+    fieldCount: z.number().int(),
+  })
+  .openapi("SaveAsTemplateResponse");
+
+const saveAsTemplateRouteDef = createRoute({
+  method: "post",
+  path: "/{publicId}/save-as-template",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: saveAsTemplateBodySchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": { schema: saveAsTemplateResponseSchema },
+      },
+      description: "Template created",
+    },
+    400: { description: "Invalid request" },
+    403: { description: "Forbidden" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(saveAsTemplateRouteDef, async (c) => {
+  const user = c.get("user");
+  const organizationId = user!.session!.activeOrganizationId!;
+  const userId = user!.user.id;
+  const { publicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Only the document owner can save as template" }, 403);
+  }
+
+  if (doc.status !== "draft") {
+    return c.json({ error: "Only draft documents can be saved as templates" }, 400);
+  }
+
+  const fields = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, doc.id))
+    .orderBy(asc(signatureFields.createdAt));
+
+  const now = new Date();
+  const templatePublicId = crypto.randomUUID();
+  const templateId = crypto.randomUUID();
+
+  await db.insert(templates).values({
+    id: templateId,
+    publicId: templatePublicId,
+    organizationId,
+    createdBy: userId,
+    name: input.name,
+    description: input.description ?? null,
+    sourceDocumentId: doc.id,
+    folderId: doc.folderId ?? null,
+    storageKey: doc.storageKey ?? "",
+    size: doc.size ?? 0,
+    contentType: doc.contentType ?? "application/pdf",
+    pageCount: doc.pageCount ?? null,
+    thumbnailDataUrl: doc.thumbnailDataUrl ?? null,
+    useCount: 0,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  await Promise.all(
+    fields.map((field, i) =>
+      db.insert(templateFields).values({
+        id: crypto.randomUUID(),
+        publicId: crypto.randomUUID(),
+        templateId,
+        fieldType: field.fieldType,
+        label: field.label,
+        isRequired: field.isRequired,
+        x: field.x,
+        y: field.y,
+        width: field.width,
+        height: field.height,
+        page: field.page,
+        properties: field.properties,
+        order: i,
+        createdAt: now,
+        updatedAt: now,
+      })
+    )
+  );
+
+  return c.json({ publicId: templatePublicId, fieldCount: fields.length }, 201);
 });
 
 app.route("/:publicId/ai", ai);
