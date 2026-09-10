@@ -64,7 +64,6 @@ import type * as documents_extract_text_action from "../documents/extract_text_a
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
-import type * as documents_recipient_email_action from "../documents/recipient_email_action.js";
 import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
 import type * as documents_recipients_mutations from "../documents/recipients_mutations.js";
 import type * as documents_recipients_queries from "../documents/recipients_queries.js";
@@ -161,8 +160,6 @@ import type * as vortex_billing_webhook_signature from "../vortex_billing/webhoo
 import type * as webhooks_delivery from "../webhooks/delivery.js";
 import type * as webhooks_publish from "../webhooks/publish.js";
 import type * as webhooks_slack_formatter from "../webhooks/slack_formatter.js";
-import type * as workflows_document_completion from "../workflows/document_completion.js";
-import type * as workflows_document_completion_steps from "../workflows/document_completion_steps.js";
 import type * as workflows_index from "../workflows/index.js";
 
 import type {
@@ -228,7 +225,6 @@ declare const fullApi: ApiFromModules<{
   "documents/hash_document_action": typeof documents_hash_document_action;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
-  "documents/recipient_email_action": typeof documents_recipient_email_action;
   "documents/recipient_helpers": typeof documents_recipient_helpers;
   "documents/recipients_mutations": typeof documents_recipients_mutations;
   "documents/recipients_queries": typeof documents_recipients_queries;
@@ -325,8 +321,6 @@ declare const fullApi: ApiFromModules<{
   "webhooks/delivery": typeof webhooks_delivery;
   "webhooks/publish": typeof webhooks_publish;
   "webhooks/slack_formatter": typeof webhooks_slack_formatter;
-  "workflows/document_completion": typeof workflows_document_completion;
-  "workflows/document_completion_steps": typeof workflows_document_completion_steps;
   "workflows/index": typeof workflows_index;
 }>;
 

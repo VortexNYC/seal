@@ -3,6 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { nanoid } from "nanoid";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
@@ -11,7 +12,7 @@ import {
   mutation,
   type MutationCtx,
 } from "../_generated/server";
-import { logRecipientAction } from "../audit_logs/helpers";
+import { logActionRequired, logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
 import {
@@ -24,7 +25,6 @@ import {
   isValidWorkflowTransition,
 } from "../schemas/document_workflow_status";
 import { publishWebhookEvent } from "../webhooks/publish";
-import { workflow } from "../workflows";
 import {
   findRecipientByToken,
   isRecipientGroupActive,
@@ -50,7 +50,6 @@ async function generateSigningToken(): Promise<{
 }
 
 type RecipientDbCtx = Pick<MutationCtx, "db">;
-type RecipientWorkflowCtx = Pick<MutationCtx, "runMutation">;
 
 type RecipientStatusChangeArgs = {
   status: Doc<"document_recipients">["status"];
@@ -223,21 +222,78 @@ function getRecipientAuditAction(status: RecipientStatusChangeArgs["status"]) {
 }
 
 export async function maybeStartPostSignatureWorkflow(
-  ctx: RecipientWorkflowCtx,
+  ctx: Pick<MutationCtx, "scheduler">,
   recipient: Doc<"document_recipients">,
   status: RecipientStatusChangeArgs["status"]
 ): Promise<void> {
-  if (isRecipientComplete(recipient.role, status)) {
-    await workflow.start(
-      ctx,
-      internal.workflows.document_completion.postSignatureWorkflow,
+  if (!isRecipientComplete(recipient.role, status)) {
+    return;
+  }
+
+  await ctx.scheduler.runAfter(
+    0,
+    internal.documents.recipients_mutations.markDocumentAsCompleted,
+    {
+      documentId: recipient.documentId,
+    }
+  );
+}
+
+export const markDocumentAsCompleted = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    const document = await ctx.db.get("documents", args.documentId);
+    if (!document || document.workflowStatus === "completed") {
+      return { success: false };
+    }
+
+    const allRecipients = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+
+    if (!allRecipients.every((r) => isRecipientComplete(r.role, r.status))) {
+      return { success: false };
+    }
+
+    const now = Date.now();
+    const SEVEN_YEARS_MS = 7 * 365.25 * 24 * 60 * 60 * 1000;
+    await ctx.db.patch("documents", document._id, {
+      workflowStatus: "completed",
+      completedAt: now,
+      updatedAt: now,
+      retainUntil: now + SEVEN_YEARS_MS,
+      qrToken: nanoid(24),
+      qrTokenGeneratedAt: now,
+    });
+
+    await logActionRequired(ctx, {
+      organizationId: document.organizationId,
+      actorType: "system",
+      actorId: "workflow:document_completion",
+      action: "document.completed",
+      resourceType: "document",
+      resourceId: document._id,
+      documentId: document._id,
+      oldValues: { workflowStatus: document.workflowStatus },
+      newValues: { workflowStatus: "completed", completedAt: now },
+      metadata: { source: "documentCompletionWorkflow" },
+      ipAddress: "system",
+    });
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.certificate_of_completion.generateCertificate,
       {
-        recipientId: recipient._id,
-        documentId: recipient.documentId,
+        documentId: document._id,
       }
     );
-  }
-}
+
+    return { success: true };
+  },
+});
 
 async function maybePublishRecipientWebhook(
   ctx: MutationCtx,
@@ -1131,16 +1187,6 @@ export const dictateNextRecipient = mutation({
       newValues: { name: args.nextName, email: args.nextEmail },
       ipAddress: "0.0.0.0",
     });
-
-    // 10. Schedule sending the invitation email to the new recipient
-    await ctx.scheduler.runAfter(
-      0,
-      internal.documents.recipient_email_action.sendNextRecipientInvitation,
-      {
-        documentId: recipient.documentId,
-        recipientId: placeholder._id,
-      }
-    );
 
     return { success: true };
   },
