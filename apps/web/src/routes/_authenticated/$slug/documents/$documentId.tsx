@@ -1,13 +1,9 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   type ErrorComponentProps,
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useQuery as useConvexQuery } from "convex/react";
-import { ConvexError } from "convex/values";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -38,7 +34,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { parseId } from "@/lib/convex-ids";
 import { buildActivityEvents } from "@/lib/document-activity";
 import { parseSelectValue } from "@/lib/select-values";
 import { countSignatureFields } from "@/lib/signature-fields";
@@ -106,11 +101,7 @@ export const Route = createFileRoute(
 
 function DocumentErrorComponent(props: ErrorComponentProps) {
   const message =
-    props.error instanceof ConvexError
-      ? String(props.error.data)
-      : props.error instanceof Error
-        ? props.error.message
-        : "";
+    props.error instanceof Error ? props.error.message : String(props.error);
 
   const isNotFound =
     message.includes("not found") ||
@@ -148,17 +139,7 @@ function DocumentDetailPage() {
 
   const signatureFieldCount = countSignatureFields(signatureFields);
 
-  const merchantAccount = useConvexQuery(
-    api.payments.merchant_account_queries.getMerchantAccount,
-    {
-      slug,
-    }
-  ) as
-    | { status: string; account: { chargesEnabled: boolean } | null }
-    | undefined;
-  const merchantPaymentsReady =
-    merchantAccount?.status === "connected" &&
-    (merchantAccount?.account?.chargesEnabled ?? false);
+  const merchantPaymentsReady = false;
 
   const { data: aiSettings } = useQuery({
     queryKey: ["organization", slug, "ai-settings"],
@@ -480,7 +461,7 @@ function DocumentDetailPage() {
   };
 
   const openRemoveRecipientDialog = (recipient: {
-    _id: Id<"document_recipients">;
+    _id: string;
     email: string;
     name?: string;
     role: string;
@@ -882,7 +863,7 @@ function DocumentDetailPage() {
                 const full = recipients.find((r) => r._id === recipient._id);
                 if (!full) return;
                 docState.setSelectedRecipientForOptions({
-                  _id: parseId("document_recipients", full._id),
+                  _id: full._id,
                   publicId: full.publicId,
                   email: full.email,
                   name: full.name ?? undefined,
