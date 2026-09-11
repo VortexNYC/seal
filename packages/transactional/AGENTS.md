@@ -4,9 +4,8 @@
 
 React Email templates for **Seal document / product** notifications. Shared
 shell, brand helpers, and `renderEmail` come from `@vortexnyc/email`. Auth
-verify / reset / org-invite HTML is owned by `@vortexnyc/auth/convex` drafts
-(wired in `apps/backend/convex/betterAuth.ts`) — do not add parallel auth
-templates here.
+verify / reset / org-invite HTML is owned by `@vortexnyc/auth` Better Auth drafts
+— do not add parallel auth templates here.
 
 ## STRUCTURE
 
@@ -24,8 +23,8 @@ packages/transactional/
 | Template list | `packages/transactional/src/emails/`   | Kebab-case files                           |
 | Layout shell  | `emails/email-layout.tsx`              | Thin adapter over `@vortexnyc/email`       |
 | Exports       | `packages/transactional/src/index.tsx` | Components + `renderX()` helpers           |
-| Auth emails   | `@vortexnyc/auth/convex`               | Not in this package                        |
-| Transport     | `apps/backend/convex/emails/resend_*`  | Seal Resend send seam (`sendAuthEmailDraft`). Transport is consumer-owned by design (Core email-transport-recipe). |
+| Auth emails   | `@vortexnyc/auth`                      | Not in this package                        |
+| Transport     | `apps/api/src/platform/email.ts`       | Worker `send_email` binding + Resend transport. |
 
 ## CONVENTIONS
 

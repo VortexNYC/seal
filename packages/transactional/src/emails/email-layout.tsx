@@ -5,7 +5,7 @@
  * CORE-FIRST: layout + brand theming come from `@vortexnyc/email`.
  * Seal only supplies product brand tokens and optional subtitle / footer
  * copy that document templates still pass. Auth mail (verify / reset /
- * org invite) is rendered by `@vortexnyc/auth/convex` drafts — not here.
+ * org invite) is rendered by `@vortexnyc/auth` Better Auth drafts — not here.
  */
 import {
   createEmailBrand,

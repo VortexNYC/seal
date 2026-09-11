@@ -32,7 +32,7 @@ apps/web/
 ## CONVENTIONS
 
 - Routes use TanStack file-based routing: `_` prefix for layouts, `$` for params.
-- Use `getErrorMessage()` / `parseConvexError()` from `apps/web/src/lib/utils.ts` for API error messages.
+- Use `getErrorMessage()` / `parseApiError()` from `apps/web/src/lib/utils.ts` for API error messages.
 - Use `buildOrganizationPath()` from `apps/web/src/lib/organization-path.ts` for org URLs.
 - Prefer `data-testid` for E2E selectors; use POM pattern in `apps/web/e2e/pages/`.
 

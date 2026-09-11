@@ -1,7 +1,6 @@
 /**
  * @fileoverview Zod validation schemas and response types for the Seal MCP worker.
- * Copied from the legacy Seal backend API validation contract to remove
- * the runtime dependency on the Convex backend package.
+ * These schemas mirror the Hono API contract served by `apps/api`.
  */
 
 import { z } from "zod";
@@ -107,7 +106,7 @@ export const createDocumentSchema = z.object({
   description: z.string().optional().describe("Document description"),
   storage_id: z
     .string()
-    .describe("Convex storage ID for the uploaded PDF file"),
+    .describe("Cloudflare R2 storage key for the uploaded PDF file"),
   file_size: z.number().describe("File size in bytes"),
   file_type: z
     .string()
