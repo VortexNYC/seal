@@ -19,7 +19,7 @@ export const subscriptionStatus = v.union(
 export type SubscriptionStatus = Infer<typeof subscriptionStatus>;
 
 export const subscriptionsTable = defineTable({
-  vortexAuthOrganizationId: v.optional(v.string()),
+  betterAuthOrganizationId: v.optional(v.string()),
   // TODO: Narrow back to v.id("organizations") and remove userId after backfill migration runs
   organizationId: v.optional(v.id("organizations")),
   userId: v.optional(v.id("users")), // Legacy field — remove after migration
@@ -49,10 +49,10 @@ export const subscriptionsTable = defineTable({
   createdAt: v.number(),
   updatedAt: v.number(),
 })
-  .index("by_vortex_auth_organization_id", ["vortexAuthOrganizationId"])
+  .index("by_better_auth_organization_id", ["betterAuthOrganizationId"])
   .index("by_organization_id", ["organizationId"])
-  .index("by_vortex_auth_organization_status", [
-    "vortexAuthOrganizationId",
+  .index("by_better_auth_organization_status", [
+    "betterAuthOrganizationId",
     "status",
   ])
   .index("by_organization_status", ["organizationId", "status"])

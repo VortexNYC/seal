@@ -334,12 +334,12 @@ export const getOrganizationMember = authQuery({
     // Get custom role if assigned
     let customRole: null | { id: string; name: string; permissions: string[] } =
       null;
-    if (organization.vortexAuthOrganizationId) {
+    if (organization.betterAuthOrganizationId) {
       const role = await ctx.runQuery(
-        components.vortexAuth.organizations.getRole,
+        components.betterAuthConsumer.organizations.getRole,
         {
           roleId: member.roleId,
-          organizationId: organization.vortexAuthOrganizationId,
+          organizationId: organization.betterAuthOrganizationId,
         }
       );
       customRole = role

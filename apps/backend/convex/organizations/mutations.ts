@@ -15,19 +15,19 @@ import {
 import { logAction } from "../audit_logs/helpers";
 import { adminAction, adminMutation, authMutation } from "../auth";
 import {
+  anchorNewOrganizationOwner,
+  ensureComponentRoleForTemplate,
+  upsertBetterAuthMember,
+} from "../lib/betterAuthOrganizations";
+import {
   getComponentMemberById,
   getComponentMemberRefForUserOrganization,
   listComponentMembersByOrganization,
 } from "../lib/componentOrgReads";
 import {
   mirrorBrandIntoBrandingSettings,
-  syncSuiteOrgDetailsToVortexAuth,
+  syncSuiteOrgDetailsToBetterAuth,
 } from "../lib/suiteOrgPolicy";
-import {
-  anchorNewOrganizationOwner,
-  ensureComponentRoleForTemplate,
-  upsertVortexAuthMember,
-} from "../lib/vortexAuthOrganizations";
 import { organizationBaseSchema } from "../validations/organizations";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -204,10 +204,13 @@ async function setComponentMemberStatus(
   memberId: string,
   status: ComponentMemberStatus
 ): Promise<void> {
-  await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
-    memberId,
-    status,
-  });
+  await ctx.runMutation(
+    components.betterAuthConsumer.organizations.setMemberStatus,
+    {
+      memberId,
+      status,
+    }
+  );
 }
 
 async function setComponentMemberRole(
@@ -215,22 +218,25 @@ async function setComponentMemberRole(
   organization: Doc<"organizations">,
   memberId: string,
   role: "owner" | "admin" | "member" | "viewer",
-  assignedByVortexAuthUserId?: string
+  assignedByBetterAuthUserId?: string
 ): Promise<void> {
-  if (!organization.vortexAuthOrganizationId) {
+  if (!organization.betterAuthOrganizationId) {
     throw new ConvexError("Organization is not anchored to Vortex Auth");
   }
   const roleId = await ensureComponentRoleForTemplate(
     ctx,
-    organization.vortexAuthOrganizationId,
+    organization.betterAuthOrganizationId,
     role
   );
-  await ctx.runMutation(components.vortexAuth.organizations.setMemberRole, {
-    memberId,
-    organizationId: organization.vortexAuthOrganizationId,
-    roleId,
-    assignedBy: assignedByVortexAuthUserId,
-  });
+  await ctx.runMutation(
+    components.betterAuthConsumer.organizations.setMemberRole,
+    {
+      memberId,
+      organizationId: organization.betterAuthOrganizationId,
+      roleId,
+      assignedBy: assignedByBetterAuthUserId,
+    }
+  );
 }
 
 async function resolveBrandingLogoState(
@@ -319,11 +325,11 @@ export const ensurePersonalOrganization = mutation({
 
     await clearOtherPrimaryMemberships(ctx, user._id, organization._id);
 
-    // Mirror the org + owner into the vortexAuth component immediately so
+    // Mirror the org + owner into the betterAuth component immediately so
     // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
     await anchorNewOrganizationOwner(ctx, {
       organizationId: organization._id,
-      ownerVortexAuthUserId: user.vortexAuthUserId,
+      ownerBetterAuthUserId: user.betterAuthUserId,
     });
 
     await ctx.db.patch("users", user._id, {
@@ -422,11 +428,11 @@ export const createWorkspace = authMutation({
       updatedAt: Date.now(),
     });
 
-    // Mirror the org + owner into the vortexAuth component immediately so
+    // Mirror the org + owner into the betterAuth component immediately so
     // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
     await anchorNewOrganizationOwner(ctx, {
       organizationId,
-      ownerVortexAuthUserId: user.vortexAuthUserId,
+      ownerBetterAuthUserId: user.betterAuthUserId,
     });
 
     return { id: organizationId };
@@ -497,7 +503,7 @@ export const updateWorkspace = adminMutation({
       args.brand !== undefined ||
       args.security !== undefined
     ) {
-      await syncSuiteOrgDetailsToVortexAuth(ctx, fresh, {
+      await syncSuiteOrgDetailsToBetterAuth(ctx, fresh, {
         ...(args.name !== undefined ? { name: args.name } : {}),
         ...(args.logo !== undefined ? { imageUrl: args.logo } : {}),
         ...(args.brand !== undefined ? { brand: args.brand } : {}),
@@ -531,11 +537,11 @@ export const deleteWorkspace = authMutation({
       );
     }
 
-    if (organization.vortexAuthOrganizationId) {
+    if (organization.betterAuthOrganizationId) {
       await ctx.runMutation(
-        components.vortexAuth.organizations.setOrganizationStatus,
+        components.betterAuthConsumer.organizations.setOrganizationStatus,
         {
-          organizationId: organization.vortexAuthOrganizationId,
+          organizationId: organization.betterAuthOrganizationId,
           status: "deleted",
         }
       );
@@ -554,14 +560,14 @@ export const addMemberCore = internalMutation({
     userId: v.id("users"),
     role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     userType: v.optional(v.union(v.literal("personal"), v.literal("business"))),
-    assignedByVortexAuthUserId: v.string(),
+    assignedByBetterAuthUserId: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new ConvexError("User not found");
     }
-    if (!user.vortexAuthUserId) {
+    if (!user.betterAuthUserId) {
       throw new ConvexError("User is missing vortex auth bridge id");
     }
 
@@ -569,7 +575,7 @@ export const addMemberCore = internalMutation({
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
-    if (!organization.vortexAuthOrganizationId) {
+    if (!organization.betterAuthOrganizationId) {
       throw new ConvexError("Organization is missing vortex auth bridge id");
     }
 
@@ -582,12 +588,12 @@ export const addMemberCore = internalMutation({
       throw new ConvexError("User is already a member of this organization");
     }
 
-    const membershipId = await upsertVortexAuthMember(ctx, {
-      vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
-      vortexAuthUserId: user.vortexAuthUserId,
+    const membershipId = await upsertBetterAuthMember(ctx, {
+      betterAuthOrganizationId: organization.betterAuthOrganizationId,
+      betterAuthUserId: user.betterAuthUserId,
       role: args.role,
       status: "active",
-      vortexAuthAssignedBy: args.assignedByVortexAuthUserId,
+      betterAuthAssignedBy: args.assignedByBetterAuthUserId,
     });
 
     return { id: membershipId };
@@ -615,7 +621,7 @@ export const addMember = adminAction({
         userId: args.userId,
         role: args.role,
         userType: args.userType,
-        assignedByVortexAuthUserId: ctx.auth.vortexAuthUserId,
+        assignedByBetterAuthUserId: ctx.auth.betterAuthUserId,
       }
     );
   },
@@ -663,7 +669,7 @@ export const updateMemberRole = adminMutation({
       organization,
       args.memberId,
       args.role,
-      currentUser.vortexAuthUserId
+      currentUser.betterAuthUserId
     );
 
     await logAction(ctx, {
@@ -816,7 +822,7 @@ export const activateMember = adminMutation({
       organization,
       args.memberId,
       args.role,
-      ctx.auth.vortexAuthUserId
+      ctx.auth.betterAuthUserId
     );
     await setComponentMemberStatus(ctx, args.memberId, "active");
 
@@ -918,7 +924,7 @@ export const bulkActivateMembers = adminMutation({
           organization,
           update.memberId,
           update.role,
-          ctx.auth.vortexAuthUserId
+          ctx.auth.betterAuthUserId
         );
         await setComponentMemberStatus(ctx, update.memberId, "active");
 

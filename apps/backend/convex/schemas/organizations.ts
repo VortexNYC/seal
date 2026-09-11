@@ -72,7 +72,7 @@ export const organizationsTable = defineTable({
 
   // vortex-auth component organization id (anchor bridge). Optional for
   // backwards compat with pre-migration rows; becomes the org truth in P2.
-  vortexAuthOrganizationId: v.optional(v.string()),
+  betterAuthOrganizationId: v.optional(v.string()),
 
   // Organization status for permission checks
   status: v.optional(organizationStatus), // Optional for backward compatibility
@@ -111,4 +111,4 @@ export const organizationsTable = defineTable({
   .index("by_active", ["isActive"])
   .index("by_billing_customer", ["billingCustomerId"])
   .index("by_status", ["status"])
-  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"]);
+  .index("by_better_auth_organization", ["betterAuthOrganizationId"]);

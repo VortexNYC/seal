@@ -2,8 +2,8 @@
  * Component write-helpers for Seal's vortex-auth migration (P2).
  *
  * These are the SOLE writers for org / role / member / invitation truth
- * once Seal routes through the vortexAuth component (mirrors crm's
- * lib/vortexAuthOrganizations.ts). P2a lands them additively — no call
+ * once Seal routes through the betterAuth component (mirrors crm's
+ * lib/betterAuthOrganizations.ts). P2a lands them additively — no call
  * site uses them yet; the org-creation / invitation paths are switched
  * to them in later P2 sub-steps.
  *
@@ -23,15 +23,15 @@ import { ROLE_PERMISSIONS } from "../auth.utils";
 import type { OrganizationMemberRole } from "../schema";
 import { buildUpsertMetadataJsonPreservingSuitePolicy } from "./suiteOrgPolicy";
 
-type VortexAuthMutationCtx = Pick<
+type BetterAuthMutationCtx = Pick<
   MutationCtx,
   "db" | "runMutation" | "runQuery"
 >;
 
-export async function ensureVortexAuthOrganization(
-  ctx: VortexAuthMutationCtx,
+export async function ensureBetterAuthOrganization(
+  ctx: BetterAuthMutationCtx,
   organizationId: Id<"organizations">,
-  createdByVortexAuthUserId?: string
+  createdByBetterAuthUserId?: string
 ) {
   const organization = await ctx.db.get("organizations", organizationId);
   if (organization === null) {
@@ -47,21 +47,21 @@ export async function ensureVortexAuthOrganization(
   );
 
   const result = await ctx.runMutation(
-    components.vortexAuth.organizations.upsertOrganization,
+    components.betterAuthConsumer.organizations.upsertOrganization,
     {
-      organizationId: organization.vortexAuthOrganizationId,
+      organizationId: organization.betterAuthOrganizationId,
       name: organization.name,
       slug: organization.slug,
       imageUrl: organization.logo ?? null,
       status: organization.status ?? "active",
-      createdBy: createdByVortexAuthUserId,
+      createdBy: createdByBetterAuthUserId,
       metadataJson,
     }
   );
 
-  if (organization.vortexAuthOrganizationId !== result.organizationId) {
+  if (organization.betterAuthOrganizationId !== result.organizationId) {
     await ctx.db.patch("organizations", organization._id, {
-      vortexAuthOrganizationId: result.organizationId,
+      betterAuthOrganizationId: result.organizationId,
       updatedAt: Date.now(),
     });
   }
@@ -77,36 +77,39 @@ type ComponentMemberStatus = "active" | "invited" | "suspended";
  * Idempotent: seeds the component with Seal's ROLE_PERMISSIONS catalog. The
  * local org row is anchored first so the component org id is resolvable.
  */
-export async function ensureVortexAuthSystemRoles(
-  ctx: VortexAuthMutationCtx,
-  vortexAuthOrganizationId: string
+export async function ensureBetterAuthSystemRoles(
+  ctx: BetterAuthMutationCtx,
+  betterAuthOrganizationId: string
 ) {
-  await ctx.runMutation(components.vortexAuth.organizations.seedDefaultRoles, {
-    organizationId: vortexAuthOrganizationId,
-    catalog: Object.entries(ROLE_PERMISSIONS).map(([name, permissions]) => ({
-      key: name,
-      name,
-      permissions: [...permissions],
-      isSystem: true,
-    })),
-  });
-  return vortexAuthOrganizationId;
+  await ctx.runMutation(
+    components.betterAuthConsumer.organizations.seedDefaultRoles,
+    {
+      organizationId: betterAuthOrganizationId,
+      catalog: Object.entries(ROLE_PERMISSIONS).map(([name, permissions]) => ({
+        key: name,
+        name,
+        permissions: [...permissions],
+        isSystem: true,
+      })),
+    }
+  );
+  return betterAuthOrganizationId;
 }
 
 /**
- * Ensure a single component role exists for `(vortexAuthOrganizationId, role)`,
+ * Ensure a single component role exists for `(betterAuthOrganizationId, role)`,
  * keeping its permission set in sync with Seal's ROLE_PERMISSIONS definition.
  * Takes the Vortex Auth organization id directly. Returns the component role id.
  */
 export async function ensureComponentRoleForTemplate(
-  ctx: VortexAuthMutationCtx,
-  vortexAuthOrganizationId: string,
+  ctx: BetterAuthMutationCtx,
+  betterAuthOrganizationId: string,
   role: OrganizationMemberRole
 ) {
   const result = await ctx.runMutation(
-    components.vortexAuth.organizations.ensureRole,
+    components.betterAuthConsumer.organizations.ensureRole,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
       key: role,
       name: role,
       permissions: [...ROLE_PERMISSIONS[role]],
@@ -117,38 +120,38 @@ export async function ensureComponentRoleForTemplate(
 }
 
 /**
- * Create or update a member in the component for `(vortexAuthOrganizationId,
- * vortexAuthUserId)` with the given Seal role + status. The role is ensured in
+ * Create or update a member in the component for `(betterAuthOrganizationId,
+ * betterAuthUserId)` with the given Seal role + status. The role is ensured in
  * the component first. Returns the component member id. SOLE writer for
  * membership once the local `organization_members` table is dropped (P7).
  */
-export async function upsertVortexAuthMember(
-  ctx: VortexAuthMutationCtx,
+export async function upsertBetterAuthMember(
+  ctx: BetterAuthMutationCtx,
   args: {
-    vortexAuthOrganizationId: string;
-    vortexAuthUserId: string;
+    betterAuthOrganizationId: string;
+    betterAuthUserId: string;
     role: OrganizationMemberRole;
     status: ComponentMemberStatus;
-    vortexAuthInvitedBy?: string;
-    vortexAuthAssignedBy?: string;
+    betterAuthInvitedBy?: string;
+    betterAuthAssignedBy?: string;
     acceptedAt?: number;
   }
 ) {
   const roleId = await ensureComponentRoleForTemplate(
     ctx,
-    args.vortexAuthOrganizationId,
+    args.betterAuthOrganizationId,
     args.role
   );
 
   const result = await ctx.runMutation(
-    components.vortexAuth.organizations.upsertMember,
+    components.betterAuthConsumer.organizations.upsertMember,
     {
-      organizationId: args.vortexAuthOrganizationId,
-      userId: args.vortexAuthUserId,
+      organizationId: args.betterAuthOrganizationId,
+      userId: args.betterAuthUserId,
       roleId,
       status: args.status,
-      invitedBy: args.vortexAuthInvitedBy,
-      assignedBy: args.vortexAuthAssignedBy,
+      invitedBy: args.betterAuthInvitedBy,
+      assignedBy: args.betterAuthAssignedBy,
       acceptedAt: args.acceptedAt,
     }
   );
@@ -156,7 +159,7 @@ export async function upsertVortexAuthMember(
 }
 
 /**
- * Anchor a newly-created organization and its owner into the vortexAuth
+ * Anchor a newly-created organization and its owner into the betterAuth
  * component AT CREATION TIME. Without this, an app-side org-create (onboarding /
  * `createWorkspace`) only writes the LOCAL org + membership, leaving the
  * component empty — so component-truth consumers (MCP OAuth, `/api/v1`) can't
@@ -165,26 +168,26 @@ export async function upsertVortexAuthMember(
  *
  * Idempotent. The org anchor + role catalog are identity-independent and always
  * run; the owner membership is mirrored only once the owner is bridged to a
- * component identity (`vortexAuthUserId`) — which it always is post-signup, but
+ * component identity (`betterAuthUserId`) — which it always is post-signup, but
  * we skip defensively otherwise and let the lazy mirror in `auth.ts` catch up.
  */
 export async function anchorNewOrganizationOwner(
-  ctx: VortexAuthMutationCtx,
+  ctx: BetterAuthMutationCtx,
   args: {
     organizationId: Id<"organizations">;
-    ownerVortexAuthUserId?: string;
+    ownerBetterAuthUserId?: string;
   }
 ): Promise<void> {
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
+  const betterAuthOrganizationId = await ensureBetterAuthOrganization(
     ctx,
     args.organizationId,
-    args.ownerVortexAuthUserId
+    args.ownerBetterAuthUserId
   );
-  await ensureVortexAuthSystemRoles(ctx, vortexAuthOrganizationId);
-  if (args.ownerVortexAuthUserId) {
-    await upsertVortexAuthMember(ctx, {
-      vortexAuthOrganizationId,
-      vortexAuthUserId: args.ownerVortexAuthUserId,
+  await ensureBetterAuthSystemRoles(ctx, betterAuthOrganizationId);
+  if (args.ownerBetterAuthUserId) {
+    await upsertBetterAuthMember(ctx, {
+      betterAuthOrganizationId,
+      betterAuthUserId: args.ownerBetterAuthUserId,
       role: "owner",
       status: "active",
     });
@@ -205,15 +208,15 @@ type ComponentInvitationEmailDeliveryStatus =
   | "failed";
 
 /**
- * Create (or, by tokenHash, update) an invitation in the vortexAuth COMPONENT —
+ * Create (or, by tokenHash, update) an invitation in the betterAuth COMPONENT —
  * the SOLE source of truth for invitations once the local
  * `organization_invitations` table is dropped (P7). Takes Vortex Auth ids
  * directly. Returns the COMPONENT invitation id (a string).
  */
-export async function createVortexAuthInvitation(
-  ctx: VortexAuthMutationCtx,
+export async function createBetterAuthInvitation(
+  ctx: BetterAuthMutationCtx,
   args: {
-    vortexAuthOrganizationId: string;
+    betterAuthOrganizationId: string;
     email: string;
     tokenHash: string;
     role: OrganizationMemberRole;
@@ -224,14 +227,14 @@ export async function createVortexAuthInvitation(
 ): Promise<string> {
   const roleId = await ensureComponentRoleForTemplate(
     ctx,
-    args.vortexAuthOrganizationId,
+    args.betterAuthOrganizationId,
     args.role
   );
 
   const result = await ctx.runMutation(
-    components.vortexAuth.organizations.upsertInvitation,
+    components.betterAuthConsumer.organizations.upsertInvitation,
     {
-      organizationId: args.vortexAuthOrganizationId,
+      organizationId: args.betterAuthOrganizationId,
       roleId,
       email: args.email,
       tokenHash: args.tokenHash,
@@ -247,23 +250,23 @@ export async function createVortexAuthInvitation(
  * Set the status of a COMPONENT invitation (accepted/revoked/expired).
  * Takes Vortex Auth ids directly.
  */
-export async function setVortexAuthInvitationStatus(
-  ctx: VortexAuthMutationCtx,
+export async function setBetterAuthInvitationStatus(
+  ctx: BetterAuthMutationCtx,
   args: {
-    vortexAuthOrganizationId: string;
+    betterAuthOrganizationId: string;
     invitationId: string;
     status: ComponentInvitationStatus;
-    acceptedByVortexAuthUserId?: string;
+    acceptedByBetterAuthUserId?: string;
     acceptedAt?: number;
   }
 ): Promise<void> {
   await ctx.runMutation(
-    components.vortexAuth.organizations.setInvitationStatus,
+    components.betterAuthConsumer.organizations.setInvitationStatus,
     {
       invitationId: args.invitationId,
-      organizationId: args.vortexAuthOrganizationId,
+      organizationId: args.betterAuthOrganizationId,
       status: args.status,
-      acceptedByUserId: args.acceptedByVortexAuthUserId,
+      acceptedByUserId: args.acceptedByBetterAuthUserId,
       acceptedAt: args.acceptedAt,
     }
   );
@@ -273,10 +276,10 @@ export async function setVortexAuthInvitationStatus(
  * Record the email-delivery state of a COMPONENT invitation so the component is
  * the sole writer + reader of invitation email delivery.
  */
-export async function recordVortexAuthInvitationEmailDelivery(
-  ctx: VortexAuthMutationCtx,
+export async function recordBetterAuthInvitationEmailDelivery(
+  ctx: BetterAuthMutationCtx,
   args: {
-    vortexAuthOrganizationId: string;
+    betterAuthOrganizationId: string;
     invitationId: string;
     emailId?: string | null;
     emailDeliveryStatus: ComponentInvitationEmailDeliveryStatus;
@@ -285,10 +288,10 @@ export async function recordVortexAuthInvitationEmailDelivery(
   }
 ): Promise<void> {
   await ctx.runMutation(
-    components.vortexAuth.organizations.recordInvitationEmailDelivery,
+    components.betterAuthConsumer.organizations.recordInvitationEmailDelivery,
     {
       invitationId: args.invitationId,
-      organizationId: args.vortexAuthOrganizationId,
+      organizationId: args.betterAuthOrganizationId,
       emailId: args.emailId ?? null,
       emailDeliveryStatus: args.emailDeliveryStatus,
       emailDeliveryEvent: args.emailDeliveryEvent ?? null,
@@ -301,16 +304,16 @@ export async function recordVortexAuthInvitationEmailDelivery(
 type ComponentApiKeyStatus = "active" | "revoked";
 
 /**
- * Create an API key in the vortexAuth COMPONENT — the source of truth for API
+ * Create an API key in the betterAuth COMPONENT — the source of truth for API
  * keys (P5; Seal has no local api_keys table). Takes Vortex Auth ids directly;
  * the caller must already have a resolved auth context. Returns the COMPONENT
  * apiKey id (a string).
  */
-export async function createVortexAuthApiKey(
-  ctx: VortexAuthMutationCtx,
+export async function createBetterAuthApiKey(
+  ctx: BetterAuthMutationCtx,
   args: {
-    vortexAuthOrganizationId: string;
-    vortexAuthUserId: string;
+    betterAuthOrganizationId: string;
+    betterAuthUserId: string;
     name: string;
     keyPrefix: string;
     keyHash: string;
@@ -321,10 +324,10 @@ export async function createVortexAuthApiKey(
   }
 ): Promise<string> {
   const result = await ctx.runMutation(
-    components.vortexAuth.apiKeys.upsertApiKey,
+    components.betterAuthConsumer.apiKeys.upsertApiKey,
     {
-      organizationId: args.vortexAuthOrganizationId,
-      userId: args.vortexAuthUserId,
+      organizationId: args.betterAuthOrganizationId,
+      userId: args.betterAuthUserId,
       name: args.name,
       keyPrefix: args.keyPrefix,
       keyHash: args.keyHash,
@@ -341,28 +344,31 @@ export async function createVortexAuthApiKey(
 }
 
 /** Revoke a COMPONENT apiKey (idempotent). `apiKeyId` is the COMPONENT id. */
-export async function revokeVortexAuthApiKey(
-  ctx: VortexAuthMutationCtx,
-  args: { apiKeyId: string; vortexAuthOrganizationId: string }
+export async function revokeBetterAuthApiKey(
+  ctx: BetterAuthMutationCtx,
+  args: { apiKeyId: string; betterAuthOrganizationId: string }
 ): Promise<void> {
-  await ctx.runMutation(components.vortexAuth.apiKeys.revokeApiKey, {
+  await ctx.runMutation(components.betterAuthConsumer.apiKeys.revokeApiKey, {
     apiKeyId: args.apiKeyId,
-    organizationId: args.vortexAuthOrganizationId,
+    organizationId: args.betterAuthOrganizationId,
   });
 }
 
 /** Record lastUsed timestamp/ip on a COMPONENT apiKey (hot auth path). */
-export async function touchVortexAuthApiKeyLastUsed(
-  ctx: VortexAuthMutationCtx,
+export async function touchBetterAuthApiKeyLastUsed(
+  ctx: BetterAuthMutationCtx,
   args: {
     apiKeyId: string;
-    vortexAuthOrganizationId: string;
+    betterAuthOrganizationId: string;
     ip?: string | null;
   }
 ): Promise<void> {
-  await ctx.runMutation(components.vortexAuth.apiKeys.touchApiKeyLastUsed, {
-    apiKeyId: args.apiKeyId,
-    organizationId: args.vortexAuthOrganizationId,
-    ip: args.ip ?? null,
-  });
+  await ctx.runMutation(
+    components.betterAuthConsumer.apiKeys.touchApiKeyLastUsed,
+    {
+      apiKeyId: args.apiKeyId,
+      organizationId: args.betterAuthOrganizationId,
+      ip: args.ip ?? null,
+    }
+  );
 }

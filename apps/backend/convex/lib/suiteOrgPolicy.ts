@@ -108,17 +108,17 @@ function parseSecurityFromMetadataJson(
   };
 }
 
-export async function loadVortexAuthOrganizationMetadataJson(
+export async function loadBetterAuthOrganizationMetadataJson(
   ctx: OrgCtx,
-  vortexAuthOrganizationId: string | undefined
+  betterAuthOrganizationId: string | undefined
 ): Promise<string | undefined> {
-  if (!vortexAuthOrganizationId) {
+  if (!betterAuthOrganizationId) {
     return undefined;
   }
   const org = await ctx.runQuery(
-    components.vortexAuth.organizations.getOrganization,
+    components.betterAuthConsumer.organizations.getOrganization,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
     }
   );
   return org?.metadataJson;
@@ -126,15 +126,15 @@ export async function loadVortexAuthOrganizationMetadataJson(
 
 export async function loadSuiteOrgBrandAndSecurity(
   ctx: OrgCtx,
-  organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">
+  organization: Pick<Doc<"organizations">, "betterAuthOrganizationId">
 ): Promise<{
   brand?: SuiteOrgBrand;
   security?: SuiteOrgSecurity;
   metadataJson?: string;
 }> {
-  const metadataJson = await loadVortexAuthOrganizationMetadataJson(
+  const metadataJson = await loadBetterAuthOrganizationMetadataJson(
     ctx,
-    organization.vortexAuthOrganizationId
+    organization.betterAuthOrganizationId
   );
   return {
     metadataJson,
@@ -143,7 +143,7 @@ export async function loadSuiteOrgBrandAndSecurity(
   };
 }
 
-export async function syncSuiteOrgDetailsToVortexAuth(
+export async function syncSuiteOrgDetailsToBetterAuth(
   ctx: OrgWriteCtx,
   organization: Doc<"organizations">,
   input: {
@@ -154,11 +154,11 @@ export async function syncSuiteOrgDetailsToVortexAuth(
     security?: SuiteOrgSecurityUpdate;
   }
 ): Promise<void> {
-  if (!organization.vortexAuthOrganizationId) {
+  if (!organization.betterAuthOrganizationId) {
     throw new ConvexError("Organization is not anchored to Vortex Auth");
   }
 
-  const organizationId = organization.vortexAuthOrganizationId;
+  const organizationId = organization.betterAuthOrganizationId;
 
   if (
     input.name !== undefined ||
@@ -166,7 +166,7 @@ export async function syncSuiteOrgDetailsToVortexAuth(
     input.imageUrl !== undefined
   ) {
     await ctx.runMutation(
-      components.vortexAuth.organizations.setOrganizationDetails,
+      components.betterAuthConsumer.organizations.setOrganizationDetails,
       {
         organizationId,
         ...(input.name !== undefined ? { name: input.name } : {}),
@@ -178,7 +178,7 @@ export async function syncSuiteOrgDetailsToVortexAuth(
 
   if (input.brand !== undefined) {
     await ctx.runMutation(
-      components.vortexAuth.organizations.setOrganizationDetails,
+      components.betterAuthConsumer.organizations.setOrganizationDetails,
       {
         organizationId,
         brand: input.brand,
@@ -188,7 +188,7 @@ export async function syncSuiteOrgDetailsToVortexAuth(
 
   if (input.security !== undefined) {
     await ctx.runMutation(
-      components.vortexAuth.organizations.setOrganizationDetails,
+      components.betterAuthConsumer.organizations.setOrganizationDetails,
       {
         organizationId,
         security: input.security,
@@ -241,7 +241,7 @@ export async function loadEffectiveBrandingSettings(
   ctx: OrgCtx,
   org: Pick<
     Doc<"organizations">,
-    "brandingSettings" | "logo" | "vortexAuthOrganizationId"
+    "brandingSettings" | "logo" | "betterAuthOrganizationId"
   >
 ): Promise<BrandingSettings> {
   const { brand } = await loadSuiteOrgBrandAndSecurity(ctx, org);
@@ -326,7 +326,7 @@ export async function lookupBetterAuthTwoFactorEnabled(
 export async function enforceActiveOrgSecurityPolicy(
   ctx: OrgCtx,
   args: {
-    organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">;
+    organization: Pick<Doc<"organizations">, "betterAuthOrganizationId">;
     betterAuthUserId: string;
     sessionCreatedAt?: number | null | (() => Promise<number | null>);
   }
@@ -362,19 +362,19 @@ export async function enforceActiveOrgSecurityPolicy(
   }
 }
 
-export async function setVortexAuthActiveOrganizationWithMfaGate(
+export async function setBetterAuthActiveOrganizationWithMfaGate(
   ctx: OrgWriteCtx,
   args: {
-    vortexAuthUserId: string;
-    vortexAuthOrganizationId: string;
+    betterAuthUserId: string;
+    betterAuthOrganizationId: string;
     twoFactorEnabled: boolean;
   }
 ): Promise<void> {
   await ctx.runMutation(
-    components.vortexAuth.organizations.setUserActiveOrganization,
+    components.betterAuthConsumer.organizations.setUserActiveOrganization,
     {
-      userId: args.vortexAuthUserId,
-      organizationId: args.vortexAuthOrganizationId,
+      userId: args.betterAuthUserId,
+      organizationId: args.betterAuthOrganizationId,
       twoFactorEnabled: args.twoFactorEnabled,
     }
   );
@@ -387,9 +387,9 @@ export async function buildUpsertMetadataJsonPreservingSuitePolicy(
   ctx: OrgCtx,
   organization: Doc<"organizations">
 ): Promise<string> {
-  const existing = await loadVortexAuthOrganizationMetadataJson(
+  const existing = await loadBetterAuthOrganizationMetadataJson(
     ctx,
-    organization.vortexAuthOrganizationId
+    organization.betterAuthOrganizationId
   );
   let base: Record<string, unknown> = {};
   if (existing && existing.trim() !== "") {

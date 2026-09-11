@@ -12,7 +12,7 @@ type ResolveCtx = QueryCtx | MutationCtx;
 
 type ResolvedAnchor = {
   _id: Id<"organizations">;
-  vortexAuthOrganizationId: string;
+  betterAuthOrganizationId: string;
 } | null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,15 +47,15 @@ async function resolveActiveOrganizationFromSession(
     return null;
   }
 
-  const vortexAuthOrganizationId = session["activeOrganizationId"];
-  if (typeof vortexAuthOrganizationId !== "string") {
+  const betterAuthOrganizationId = session["activeOrganizationId"];
+  if (typeof betterAuthOrganizationId !== "string") {
     return null;
   }
 
   const anchor = await ctx.db
     .query("organizations")
-    .withIndex("by_vortex_auth_organization", (q) =>
-      q.eq("vortexAuthOrganizationId", vortexAuthOrganizationId)
+    .withIndex("by_better_auth_organization", (q) =>
+      q.eq("betterAuthOrganizationId", betterAuthOrganizationId)
     )
     .unique();
 
@@ -63,7 +63,7 @@ async function resolveActiveOrganizationFromSession(
     return null;
   }
 
-  return { _id: anchor._id, vortexAuthOrganizationId };
+  return { _id: anchor._id, betterAuthOrganizationId };
 }
 
 async function getComponentOrganization(
@@ -74,7 +74,7 @@ async function getComponentOrganization(
   status: "active" | "suspended" | "deleted";
 } | null> {
   const org = await ctx.runQuery(
-    components.vortexAuth.organizations.getOrganization,
+    components.betterAuthConsumer.organizations.getOrganization,
     { organizationId }
   );
   if (org === null) {
@@ -99,39 +99,39 @@ export async function resolveActiveOrganization(
   user: Doc<"users">
 ): Promise<Pick<
   Doc<"organizations">,
-  "_id" | "vortexAuthOrganizationId" | "status" | "name"
+  "_id" | "betterAuthOrganizationId" | "status" | "name"
 > | null> {
   const sessionAnchor = await resolveActiveOrganizationFromSession(ctx);
   if (sessionAnchor !== null) {
     const componentOrg = await getComponentOrganization(
       ctx,
-      sessionAnchor.vortexAuthOrganizationId
+      sessionAnchor.betterAuthOrganizationId
     );
     if (componentOrg !== null) {
       return {
         _id: sessionAnchor._id,
-        vortexAuthOrganizationId: sessionAnchor.vortexAuthOrganizationId,
+        betterAuthOrganizationId: sessionAnchor.betterAuthOrganizationId,
         status: componentOrg.status,
         name: componentOrg.name,
       };
     }
   }
 
-  const vortexAuthOrgId = user.activeVortexAuthOrganizationId;
-  if (vortexAuthOrgId !== undefined) {
+  const betterAuthOrgId = user.activeBetterAuthOrganizationId;
+  if (betterAuthOrgId !== undefined) {
     const [anchor, componentOrg] = await Promise.all([
       ctx.db
         .query("organizations")
-        .withIndex("by_vortex_auth_organization", (q) =>
-          q.eq("vortexAuthOrganizationId", vortexAuthOrgId)
+        .withIndex("by_better_auth_organization", (q) =>
+          q.eq("betterAuthOrganizationId", betterAuthOrgId)
         )
         .unique(),
-      getComponentOrganization(ctx, vortexAuthOrgId),
+      getComponentOrganization(ctx, betterAuthOrgId),
     ]);
     if (anchor !== null && componentOrg !== null) {
       return {
         _id: anchor._id,
-        vortexAuthOrganizationId: vortexAuthOrgId,
+        betterAuthOrganizationId: betterAuthOrgId,
         status: componentOrg.status,
         name: componentOrg.name,
       };
@@ -143,13 +143,13 @@ export async function resolveActiveOrganization(
     const org = await ctx.db.get("organizations", legacyId);
     if (org !== null) {
       const componentOrg =
-        org.vortexAuthOrganizationId !== undefined
-          ? await getComponentOrganization(ctx, org.vortexAuthOrganizationId)
+        org.betterAuthOrganizationId !== undefined
+          ? await getComponentOrganization(ctx, org.betterAuthOrganizationId)
           : null;
       return {
         _id: org._id,
-        vortexAuthOrganizationId:
-          org.vortexAuthOrganizationId ?? legacyId.toString(),
+        betterAuthOrganizationId:
+          org.betterAuthOrganizationId ?? legacyId.toString(),
         status: componentOrg?.status ?? org.status ?? "active",
         name: componentOrg?.name ?? org.name,
       };
@@ -179,19 +179,19 @@ export function buildActiveOrganizationUserPatch<
 >(
   organization: {
     readonly _id: OrganizationId;
-    readonly vortexAuthOrganizationId?: string;
+    readonly betterAuthOrganizationId?: string;
   },
   now: number = Date.now()
 ): {
   activeOrganizationId: OrganizationId;
-  activeVortexAuthOrganizationId?: string;
+  activeBetterAuthOrganizationId?: string;
   updatedAt: number;
 } {
   return {
     activeOrganizationId: organization._id,
-    ...(organization.vortexAuthOrganizationId !== undefined
+    ...(organization.betterAuthOrganizationId !== undefined
       ? {
-          activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+          activeBetterAuthOrganizationId: organization.betterAuthOrganizationId,
         }
       : {}),
     updatedAt: now,

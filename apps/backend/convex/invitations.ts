@@ -1,5 +1,5 @@
 /**
- * Organization invitations on the vortexAuth component.
+ * Organization invitations on the betterAuth component.
  *
  * Invitation truth lives in the component; the raw token is shown once and
  * emailed, only its sha256 hash is stored. Acceptance materializes a
@@ -21,16 +21,16 @@ import {
 import { authAction, getAuthContext } from "./auth";
 import { sendAuthEmailDraft } from "./emails/worker_email";
 import {
+  createBetterAuthInvitation,
+  setBetterAuthInvitationStatus,
+  upsertBetterAuthMember,
+} from "./lib/betterAuthOrganizations";
+import {
   getComponentInvitationById,
   getComponentInvitationByTokenHash,
   getComponentMemberRefForUserOrganization,
   listComponentInvitationsByOrganization,
 } from "./lib/componentOrgReads";
-import {
-  createVortexAuthInvitation,
-  setVortexAuthInvitationStatus,
-  upsertVortexAuthMember,
-} from "./lib/vortexAuthOrganizations";
 
 const inviteRoleValidator = v.union(
   v.literal("admin"),
@@ -54,9 +54,9 @@ function appOrigin(): string {
 
 export const createInvitationCore = internalMutation({
   args: {
-    vortexAuthOrganizationId: v.string(),
+    betterAuthOrganizationId: v.string(),
     organizationName: v.string(),
-    invitedByVortexAuthUserId: v.string(),
+    invitedByBetterAuthUserId: v.string(),
     invitedByName: v.optional(v.string()),
     invitedByEmail: v.string(),
     email: v.string(),
@@ -71,14 +71,14 @@ export const createInvitationCore = internalMutation({
       throw new ConvexError("Invalid email address");
     }
 
-    const vortexAuthOrganization = {
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    const betterAuthOrganization = {
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
     };
 
     // Reject duplicate pending invitations for the same email.
     const existing = await listComponentInvitationsByOrganization(
       ctx,
-      vortexAuthOrganization,
+      betterAuthOrganization,
       "pending"
     );
     if (existing.some((inv) => inv.email.toLowerCase() === email)) {
@@ -91,13 +91,13 @@ export const createInvitationCore = internalMutation({
     const tokenHash = await sha256(token);
     const expiresAt = Date.now() + INVITE_TTL_MS;
 
-    const invitationId = await createVortexAuthInvitation(ctx, {
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    const invitationId = await createBetterAuthInvitation(ctx, {
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
       email,
       tokenHash,
       role: args.role,
       status: "pending",
-      invitedBy: args.invitedByVortexAuthUserId,
+      invitedBy: args.invitedByBetterAuthUserId,
       expiresAt,
     });
 
@@ -125,7 +125,7 @@ export const createInvitation = authAction({
   args: {
     email: v.string(),
     role: inviteRoleValidator,
-    expectedVortexAuthOrganizationId: v.optional(v.string()),
+    expectedBetterAuthOrganizationId: v.optional(v.string()),
   },
   handler: async (
     ctx,
@@ -146,9 +146,9 @@ export const createInvitation = authAction({
     });
 
     return await ctx.runMutation(internal.invitations.createInvitationCore, {
-      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
+      betterAuthOrganizationId: ctx.auth.betterAuthOrganizationId,
       organizationName: ctx.auth.organizationName,
-      invitedByVortexAuthUserId: ctx.auth.vortexAuthUserId,
+      invitedByBetterAuthUserId: ctx.auth.betterAuthUserId,
       invitedByName: ctx.auth.name,
       invitedByEmail: ctx.auth.email,
       email: args.email,
@@ -237,7 +237,7 @@ export const revokeInvitation = mutation({
     if (invitation.status !== "pending") {
       throw new ConvexError("Only pending invitations can be revoked");
     }
-    await setVortexAuthInvitationStatus(ctx, {
+    await setBetterAuthInvitationStatus(ctx, {
       organizationId: auth.organizationId,
       invitationId: args.invitationId,
       status: "revoked",
@@ -288,7 +288,7 @@ export const redeemInvitationPreflight = internalQuery({
       throw new ConvexError(`Invitation is ${invitation.status}`);
     }
     if (invitation.expiresAt < Date.now()) {
-      await setVortexAuthInvitationStatus(ctx, {
+      await setBetterAuthInvitationStatus(ctx, {
         organizationId: invitation.organizationId,
         invitationId: invitation._id,
         status: "expired",
@@ -314,7 +314,7 @@ export const redeemInvitationPreflight = internalQuery({
       userId: user._id,
       invitationId: invitation._id,
       organizationId: organization._id,
-      vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      betterAuthOrganizationId: organization.betterAuthOrganizationId,
       existingMembership: existingMembership?._id ?? null,
     };
   },
@@ -325,7 +325,7 @@ export const redeemInvitationCore = internalMutation({
     userId: v.id("users"),
     invitationId: v.string(),
     organizationId: v.id("organizations"),
-    vortexAuthOrganizationId: v.string(),
+    betterAuthOrganizationId: v.string(),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -342,36 +342,36 @@ export const redeemInvitationCore = internalMutation({
       throw new ConvexError(`Invitation is ${invitation.status}`);
     }
     if (invitation.expiresAt < Date.now()) {
-      await setVortexAuthInvitationStatus(ctx, {
-        vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      await setBetterAuthInvitationStatus(ctx, {
+        betterAuthOrganizationId: args.betterAuthOrganizationId,
         invitationId: invitation._id,
         status: "expired",
       });
       throw new ConvexError("Invitation has expired");
     }
-    if (!user.vortexAuthUserId) {
+    if (!user.betterAuthUserId) {
       throw new ConvexError("User is missing vortex auth bridge id");
     }
 
-    await upsertVortexAuthMember(ctx, {
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
-      vortexAuthUserId: user.vortexAuthUserId,
+    await upsertBetterAuthMember(ctx, {
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
+      betterAuthUserId: user.betterAuthUserId,
       role: invitation.role,
       status: "active",
-      vortexAuthInvitedBy: invitation.invitedBy,
+      betterAuthInvitedBy: invitation.invitedBy,
       acceptedAt: now,
     });
-    await setVortexAuthInvitationStatus(ctx, {
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    await setBetterAuthInvitationStatus(ctx, {
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
       invitationId: invitation._id,
       status: "accepted",
-      acceptedByVortexAuthUserId: user.vortexAuthUserId,
+      acceptedByBetterAuthUserId: user.betterAuthUserId,
       acceptedAt: now,
     });
 
     await ctx.db.patch("users", args.userId, {
       activeOrganizationId: args.organizationId,
-      activeVortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      activeBetterAuthOrganizationId: args.betterAuthOrganizationId,
       updatedAt: now,
     });
 
@@ -407,7 +407,7 @@ export const redeemInvitation = action({
       userId: preflight.userId,
       invitationId: preflight.invitationId,
       organizationId: preflight.organizationId,
-      vortexAuthOrganizationId: preflight.vortexAuthOrganizationId,
+      betterAuthOrganizationId: preflight.betterAuthOrganizationId,
     });
   },
 });

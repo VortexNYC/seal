@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
-import { seedTestOrganizationMember } from "../../testVortexAuth";
+import { seedTestOrganizationMember } from "../../testBetterAuth";
 
 describe("Organization settings", () => {
   let t: ReturnType<typeof createTestContext>;

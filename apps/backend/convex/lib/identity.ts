@@ -36,7 +36,7 @@ export async function findCurrentUserRow(
       : getBetterAuthIdentityIssuer();
 
   const componentIdentity = await ctx.runQuery(
-    components.vortexAuth.identity.getByIdentity,
+    components.betterAuthConsumer.identity.getByIdentity,
     {
       provider: getBetterAuthIdentityProvider(),
       issuer,
@@ -47,8 +47,8 @@ export async function findCurrentUserRow(
   const findByComponentUserId = async (componentUserId: string) =>
     await ctx.db
       .query("users")
-      .withIndex("by_vortex_auth_user", (q) =>
-        q.eq("vortexAuthUserId", componentUserId)
+      .withIndex("by_better_auth_user", (q) =>
+        q.eq("betterAuthUserId", componentUserId)
       )
       .unique();
 
@@ -93,7 +93,7 @@ export async function findCurrentUserRow(
   });
 
   const refreshed = await ctx.runQuery(
-    components.vortexAuth.identity.getByIdentity,
+    components.betterAuthConsumer.identity.getByIdentity,
     {
       provider: getBetterAuthIdentityProvider(),
       issuer,
@@ -121,7 +121,7 @@ export async function requireUser(ctx: IdentityCtx): Promise<Doc<"users">> {
 }
 
 /**
- * Resolve the authenticated viewer via createVortexAuthGlue.
+ * Resolve the authenticated viewer via createBetterAuthGlue.
  * Prefer getAuthContextWithPermissions for product handlers that need
  * Seal's permission catalog + subscription.
  */

@@ -25,8 +25,8 @@ type AuditMutationCtx = Pick<MutationCtx, "db">;
 
 interface AuditLogParams {
   organizationId: Id<"organizations">;
-  vortexAuthOrganizationId?: string;
-  vortexAuthUserId?: string;
+  betterAuthOrganizationId?: string;
+  betterAuthUserId?: string;
   userId?: string; // auth subject
   actorType: "user" | "recipient" | "system";
   actorId?: string;
@@ -54,14 +54,14 @@ export async function logAction(
   ctx: AuditMutationCtx,
   params: AuditLogParams
 ): Promise<Id<"audit_logs">> {
-  const vortexAuthOrganizationId =
-    params.vortexAuthOrganizationId ??
+  const betterAuthOrganizationId =
+    params.betterAuthOrganizationId ??
     (await ctx.db.get("organizations", params.organizationId))
-      ?.vortexAuthOrganizationId;
+      ?.betterAuthOrganizationId;
 
   const auditLogId = await ctx.db.insert("audit_logs", {
-    vortexAuthOrganizationId,
-    vortexAuthUserId: params.vortexAuthUserId ?? params.userId,
+    betterAuthOrganizationId,
+    betterAuthUserId: params.betterAuthUserId ?? params.userId,
     organizationId: params.organizationId,
     userId: params.userId,
     actorType: params.actorType,

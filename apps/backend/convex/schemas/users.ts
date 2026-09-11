@@ -15,7 +15,7 @@ export const usersTable = defineTable({
   authSubject: v.string(),
 
   // vortex-auth component opaque userId (NOT the raw JWT subject).
-  vortexAuthUserId: v.optional(v.string()),
+  betterAuthUserId: v.optional(v.string()),
 
   name: v.optional(v.string()),
   email: v.string(),
@@ -27,7 +27,7 @@ export const usersTable = defineTable({
   activeOrganizationId: v.optional(v.id("organizations")),
   // Canonical active-org pointer (component org id string) used by the
   // vortex-auth glue. Replaces activeOrganizationId post-migration.
-  activeVortexAuthOrganizationId: v.optional(v.string()),
+  activeBetterAuthOrganizationId: v.optional(v.string()),
   timezone: v.string(), // User's timezone
   locale: v.string(), // User's locale (en-US, pt-BR, etc.)
 
@@ -43,4 +43,4 @@ export const usersTable = defineTable({
   .index("by_auth_subject", ["authSubject"])
   .index("by_email", ["email"])
   .index("by_active_org", ["activeOrganizationId"])
-  .index("by_vortex_auth_user", ["vortexAuthUserId"]);
+  .index("by_better_auth_user", ["betterAuthUserId"]);

@@ -1,17 +1,17 @@
 /**
  * Canonical vortex-auth glue instance for Seal.
  *
- * P0 scaffold pass: builds `createVortexAuthGlue` with Seal-flavored
+ * P0 scaffold pass: builds `createBetterAuthGlue` with Seal-flavored
  * adapters wired against Seal's existing schema. NO call site uses this
  * yet — it lands alongside the existing auth path so we can run
  * behavior-equivalence checks before swapping the auth context to consume
  * the glue under the hood (P2).
  *
  * Seal-specific adapter translations (Seal schema shape → glue contract):
- *  - User resolution is a 2-hop: components.vortexAuth.identity.getByIdentity
- *    → componentUserId → users.by_vortex_auth_user (with lazy provision via
+ *  - User resolution is a 2-hop: components.betterAuthConsumer.identity.getByIdentity
+ *    → componentUserId → users.by_better_auth_user (with lazy provision via
  *    internal.users.upsertFromBetterAuth), matching crm.
- *  - `setActiveOrganization` writes the canonical `activeVortexAuthOrganizationId`
+ *  - `setActiveOrganization` writes the canonical `activeBetterAuthOrganizationId`
  *    column directly (new column, no legacy bridge needed).
  *  - `insertAnchor` composes Seal's required org columns (slug/type/timezone/
  *    isActive/updatedAt + status) using Seal defaults.
@@ -20,7 +20,7 @@
  */
 
 import {
-  createVortexAuthGlue,
+  createVortexAuthGlue as createBetterAuthGlue,
   type B2BModeAdapters,
   type GlueCtx,
 } from "@vortexnyc/auth/convex";
@@ -38,17 +38,17 @@ import {
 type QueryDatabase = QueryCtx["db"];
 type MutationDatabase = MutationCtx["db"];
 
-// The glue's `GlueUserMinimum` requires `activeVortexAuthOrganizationId?:
+// The glue's `GlueUserMinimum` requires `activeBetterAuthOrganizationId?:
 // string`, which Seal's schema now carries on the user doc.
 type GlueUser = Doc<"users"> & {
-  activeVortexAuthOrganizationId?: string;
+  activeBetterAuthOrganizationId?: string;
 };
 
 // Narrow the anchor type to assert the bridge column is set. Seal's schema
-// marks `vortexAuthOrganizationId` optional for backwards compat; the glue
+// marks `betterAuthOrganizationId` optional for backwards compat; the glue
 // contract requires a populated value.
-type GlueAnchor = Omit<Doc<"organizations">, "vortexAuthOrganizationId"> & {
-  vortexAuthOrganizationId: string;
+type GlueAnchor = Omit<Doc<"organizations">, "betterAuthOrganizationId"> & {
+  betterAuthOrganizationId: string;
 };
 
 function isQueryDatabase(db: unknown): db is QueryDatabase {
@@ -79,12 +79,12 @@ function isOrganizationMemberRole(
 }
 
 function asGlueAnchor(row: Doc<"organizations">): GlueAnchor | null {
-  if (row.vortexAuthOrganizationId === undefined) {
+  if (row.betterAuthOrganizationId === undefined) {
     return null;
   }
   return {
     ...row,
-    vortexAuthOrganizationId: row.vortexAuthOrganizationId,
+    betterAuthOrganizationId: row.betterAuthOrganizationId,
   };
 }
 
@@ -101,10 +101,10 @@ function slugifyName(input: string): string {
 }
 
 async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
-  // Seal's local `users.vortexAuthUserId` stores the COMPONENT'S opaque
+  // Seal's local `users.betterAuthUserId` stores the COMPONENT'S opaque
   // userId, NOT the raw JWT subject. Resolution is a 2-hop:
-  //   1. components.vortexAuth.identity.getByIdentity → componentUserId
-  //   2. local users.by_vortex_auth_user where vortexAuthUserId = componentUserId
+  //   1. components.betterAuthConsumer.identity.getByIdentity → componentUserId
+  //   2. local users.by_better_auth_user where betterAuthUserId = componentUserId
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) return null;
   if (!isQueryDatabase(ctx.db)) return null;
@@ -114,7 +114,7 @@ async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
       ? identity.issuer
       : getBetterAuthIdentityIssuer();
   const componentIdentity = await ctx.runQuery(
-    components.vortexAuth.identity.getByIdentity,
+    components.betterAuthConsumer.identity.getByIdentity,
     {
       provider: getBetterAuthIdentityProvider(),
       issuer,
@@ -125,8 +125,8 @@ async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
   const findByComponentUserId = async (componentUserId: string) =>
     await db
       .query("users")
-      .withIndex("by_vortex_auth_user", (q) =>
-        q.eq("vortexAuthUserId", componentUserId)
+      .withIndex("by_better_auth_user", (q) =>
+        q.eq("betterAuthUserId", componentUserId)
       )
       .unique();
 
@@ -157,7 +157,7 @@ async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
           : undefined,
   });
   const refreshed = await ctx.runQuery(
-    components.vortexAuth.identity.getByIdentity,
+    components.betterAuthConsumer.identity.getByIdentity,
     {
       provider: getBetterAuthIdentityProvider(),
       issuer,
@@ -169,21 +169,21 @@ async function findOrProvisionUser(ctx: GlueCtx): Promise<Doc<"users"> | null> {
 }
 
 const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
-  findUserByVortexAuthUserId: async (
+  findUserByBetterAuthUserId: async (
     ctx: GlueCtx
   ): Promise<GlueUser | null> => {
     const user = await findOrProvisionUser(ctx);
     return user;
   },
-  findAnchorByVortexAuthOrganizationId: async (
+  findAnchorByBetterAuthOrganizationId: async (
     ctx: GlueCtx,
     id: string
   ): Promise<GlueAnchor | null> => {
     if (!isQueryDatabase(ctx.db)) return null;
     const row = await ctx.db
       .query("organizations")
-      .withIndex("by_vortex_auth_organization", (q) =>
-        q.eq("vortexAuthOrganizationId", id)
+      .withIndex("by_better_auth_organization", (q) =>
+        q.eq("betterAuthOrganizationId", id)
       )
       .unique();
     if (row === null) return null;
@@ -192,9 +192,9 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
   insertAnchor: async (
     ctx: GlueCtx,
     args: {
-      vortexAuthOrganizationId: string;
+      betterAuthOrganizationId: string;
       name: string;
-      createdByVortexAuthUserId: string;
+      createdByBetterAuthUserId: string;
     }
   ): Promise<GlueAnchor> => {
     if (!isMutationDatabase(ctx.db)) {
@@ -211,7 +211,7 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
       timezone: "UTC",
       isActive: true,
       status: "active",
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
       updatedAt: now,
     });
     const row = await db.get("organizations", _id);
@@ -227,13 +227,13 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
   setActiveOrganization: async (
     ctx: GlueCtx,
     user: GlueUser,
-    vortexAuthOrganizationId: string
+    betterAuthOrganizationId: string
   ): Promise<void> => {
     if (!isMutationDatabase(ctx.db)) {
       return;
     }
     await ctx.db.patch("users", user._id, {
-      activeVortexAuthOrganizationId: vortexAuthOrganizationId,
+      activeBetterAuthOrganizationId: betterAuthOrganizationId,
     });
   },
   expandPermissions: (
@@ -249,13 +249,13 @@ const adapters: B2BModeAdapters<GlueUser, GlueAnchor> = {
   },
 };
 
-export const canonicalAuth = createVortexAuthGlue<GlueUser, GlueAnchor>({
+export const canonicalAuth = createBetterAuthGlue<GlueUser, GlueAnchor>({
   orgs: "enabled",
   // Seal is B2B SaaS: users land via invite-driven onboarding. Direct
   // signups without an invite do NOT get an auto-personal-org — they
   // surface a "no organization" UX state and create one explicitly.
   invitedUsersGetPersonalOrg: false,
   identityProvider: getBetterAuthIdentityProvider(),
-  component: components.vortexAuth,
+  component: components.betterAuthConsumer,
   adapters,
 });

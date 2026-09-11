@@ -21,8 +21,8 @@ export type SignatureType = "drawn" | "typed" | "uploaded";
 
 export const savedSignaturesTable = defineTable({
   // Owner - can be a user (for personal signatures) or organization (for shared)
-  vortexAuthUserId: v.optional(v.string()),
-  vortexAuthOrganizationId: v.optional(v.string()),
+  betterAuthUserId: v.optional(v.string()),
+  betterAuthOrganizationId: v.optional(v.string()),
   userId: v.id("users"), // The user who created this signature
   organizationId: v.optional(v.id("organizations")), // Optional: if shared across org
 
@@ -42,9 +42,9 @@ export const savedSignaturesTable = defineTable({
   createdAt: v.number(),
   updatedAt: v.number(),
 })
-  .index("by_vortex_auth_user", ["vortexAuthUserId"])
+  .index("by_better_auth_user", ["betterAuthUserId"])
   .index("by_user", ["userId"])
-  .index("by_vortex_auth_user_default", ["vortexAuthUserId", "isDefault"])
+  .index("by_better_auth_user_default", ["betterAuthUserId", "isDefault"])
   .index("by_user_default", ["userId", "isDefault"])
-  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
+  .index("by_better_auth_organization", ["betterAuthOrganizationId"])
   .index("by_organization", ["organizationId"]);

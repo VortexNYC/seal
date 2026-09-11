@@ -37,24 +37,24 @@ describe("account creation", () => {
       if (!organization) {
         throw new Error("Expected created organization");
       }
-      if (!user.vortexAuthUserId) {
+      if (!user.betterAuthUserId) {
         throw new Error("Expected user to be bridged to Vortex Auth");
       }
-      if (!organization.vortexAuthOrganizationId) {
+      if (!organization.betterAuthOrganizationId) {
         throw new Error("Expected organization to be anchored to Vortex Auth");
       }
 
       const memberships = await ctx.runQuery(
-        components.vortexAuth.organizations.listMembershipsByUser,
+        components.betterAuthConsumer.organizations.listMembershipsByUser,
         {
-          userId: user.vortexAuthUserId,
+          userId: user.betterAuthUserId,
           status: "active",
         }
       );
       const roles = await ctx.runQuery(
-        components.vortexAuth.organizations.listRolesByOrganization,
+        components.betterAuthConsumer.organizations.listRolesByOrganization,
         {
-          organizationId: organization.vortexAuthOrganizationId,
+          organizationId: organization.betterAuthOrganizationId,
         }
       );
 
@@ -88,9 +88,9 @@ describe("account creation", () => {
     const ownerMembership = proof.memberships.find(
       (membership) =>
         membership.organizationId ===
-        proof.organization.vortexAuthOrganizationId
+        proof.organization.betterAuthOrganizationId
     );
-    expect(ownerMembership?.userId).toBe(proof.user.vortexAuthUserId);
+    expect(ownerMembership?.userId).toBe(proof.user.betterAuthUserId);
     expect(ownerMembership?.status).toBe("active");
 
     const ownerRole = proof.roles.find((role) => role.key === "owner");

@@ -4,14 +4,14 @@
  * ADDITIVE: these internal queries feed the package's API-auth resolver
  * (`resolveLinkedBetterAuthMcpSession` / `resolveVerifiedUserBearerAuthContext`)
  * via the lookup adapter in `api/context.ts`. They resolve a Better-Auth user
- * (linked through the vortexAuth identity component) to a Seal `users._id`,
+ * (linked through the betterAuth identity component) to a Seal `users._id`,
  * the user's component-sourced memberships, and the selected organization.
  *
  * Mirrors crm's `convex/apiAuth.ts`, adapted to Seal's schema:
  *   - memberships come from `lib/componentOrgReads.resolveComponentMemberships`
- *     (vortexAuth component is the SOLE source of truth)
+ *     (betterAuth component is the SOLE source of truth)
  *   - role → permissions expansion uses Seal's `ROLE_PERMISSIONS`
- *   - active org bridges `users.activeVortexAuthOrganizationId` → local org id
+ *   - active org bridges `users.activeBetterAuthOrganizationId` → local org id
  */
 import {
   buildApiAuthOrganizationAccessResult,
@@ -51,7 +51,7 @@ function componentMembershipToApiAuth(
   membership: ComponentResolvedMembership
 ): ApiAuthMembershipLike {
   return {
-    _id: membership.vortexAuthMemberId,
+    _id: membership.betterAuthMemberId,
     organizationId: membership.organizationId,
     roleTemplate: membership.role,
     status: membership.status,
@@ -65,7 +65,7 @@ function expandRolePermissions(role: OrganizationMemberRole): string[] {
 }
 
 /**
- * Resolve the user's memberships for API auth from the vortexAuth component
+ * Resolve the user's memberships for API auth from the betterAuth component
  * (the SOLE source of truth), projected onto the shared membership shape.
  */
 async function resolveApiAuthMemberships(
@@ -155,7 +155,7 @@ export const getUserByIdentityForApiAuth = internalQuery({
     }
 
     const linkedIdentity = await ctx.runQuery(
-      components.vortexAuth.identity.getByTokenIdentifier,
+      components.betterAuthConsumer.identity.getByTokenIdentifier,
       {
         tokenIdentifier: args.tokenIdentifier,
       }
@@ -166,8 +166,8 @@ export const getUserByIdentityForApiAuth = internalQuery({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_vortex_auth_user", (q) =>
-        q.eq("vortexAuthUserId", linkedIdentity.userId)
+      .withIndex("by_better_auth_user", (q) =>
+        q.eq("betterAuthUserId", linkedIdentity.userId)
       )
       .first();
     if (user === null) {

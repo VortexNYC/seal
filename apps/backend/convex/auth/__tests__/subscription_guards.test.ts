@@ -2,9 +2,9 @@ import { ConvexError } from "convex/values";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
-import { createVortexAuthInvitation } from "../../lib/vortexAuthOrganizations";
+import { createBetterAuthInvitation } from "../../lib/betterAuthOrganizations";
 import { createTestContext } from "../../test.setup";
-import { seedTestOrganizationMember } from "../../testVortexAuth";
+import { seedTestOrganizationMember } from "../../testBetterAuth";
 import {
   GRACE_PERIOD_MS,
   PLAN_LIMITS,
@@ -587,19 +587,19 @@ describe("subscription_guards", () => {
           ctx.db.get("organizations", organizationId),
           ctx.db.get("users", ownerUserId),
         ]);
-        if (!organization?.vortexAuthOrganizationId) {
+        if (!organization?.betterAuthOrganizationId) {
           throw new Error("Organization is not anchored to Vortex Auth");
         }
-        if (!inviter?.vortexAuthUserId) {
+        if (!inviter?.betterAuthUserId) {
           throw new Error("Inviter is not anchored to Vortex Auth");
         }
-        await createVortexAuthInvitation(ctx, {
-          vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+        await createBetterAuthInvitation(ctx, {
+          betterAuthOrganizationId: organization.betterAuthOrganizationId,
           email: "pending@seats.test",
           tokenHash: "pending_token_hash_seat_test",
           role: "member",
           status: "pending",
-          invitedBy: inviter.vortexAuthUserId,
+          invitedBy: inviter.betterAuthUserId,
           expiresAt: Date.now() + 86_400_000,
         });
 

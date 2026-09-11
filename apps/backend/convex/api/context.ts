@@ -4,7 +4,7 @@
  * access to `ctx.auth`, so we resolve credentials manually.
  *
  * Two credential types are accepted, both fully on `@vortexnyc/vortex-auth`:
- *  - **API keys** (non-JWT bearer) → the vortexAuth component (`resolveApiAuth`).
+ *  - **API keys** (non-JWT bearer) → the betterAuth component (`resolveApiAuth`).
  *  - **MCP OAuth access tokens** (ES256 JWT issued by this deployment's
  *    Better-Auth MCP OAuth server) → the package MCP resolver
  *    (`resolveMcpApiAuth` → `resolveMcpAuth`). MCP clients ride the same
@@ -387,7 +387,7 @@ export async function resolveApiAuth(
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
 
-  // Verify against the vortexAuth COMPONENT (prefix lookup + secret hash +
+  // Verify against the betterAuth COMPONENT (prefix lookup + secret hash +
   // status/expiry). The component key maps back to Seal org/user anchors via
   // the internal query.
   const result = await resolveStoredApiKeyCredential({
@@ -606,7 +606,7 @@ export function requireAnyScope(
 //
 // A signed MCP access token carries the better-auth user id, client id, org id,
 // and scopes. `resolveMcpAuth` links that better-auth user back to a Seal user +
-// active org via the vortexAuth identity component (apiAuth.ts), then authorizes
+// active org via the betterAuth identity component (apiAuth.ts), then authorizes
 // org access via the package resolver. It returns a `McpAuthContext`; the
 // `/api/v1` entrypoint adapts that into an `ApiAuthContext` via
 // `resolveMcpApiAuth` (above) so MCP clients reuse the same resource server.

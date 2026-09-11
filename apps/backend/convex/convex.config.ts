@@ -7,14 +7,14 @@ import rag from "@convex-dev/rag/convex.config";
 import rateLimiter from "@convex-dev/rate-limiter/convex.config";
 import workflow from "@convex-dev/workflow/convex.config";
 import workpool from "@convex-dev/workpool/convex.config";
-import vortexAuth from "@vortexnyc/auth/convex.config.js";
+import betterAuthConsumer from "@vortexnyc/auth/convex.config.js";
 import { defineApp } from "convex/server";
 
 const app = defineApp();
 app.use(agent);
 app.use(rateLimiter);
 app.use(betterAuth);
-app.use(vortexAuth);
+app.use(betterAuthConsumer, { name: "betterAuthConsumer" });
 app.use(actionCache);
 app.use(actionRetrier);
 app.use(rag);

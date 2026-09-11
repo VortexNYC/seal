@@ -46,8 +46,8 @@ type GenerateResponseArgs = {
   threadId: string;
   promptMessageId: string;
   prompt?: string;
-  vortexAuthOrganizationId?: string;
-  vortexAuthUserId?: string;
+  betterAuthOrganizationId?: string;
+  betterAuthUserId?: string;
   organizationId: Id<"organizations">;
   userId: string;
   documentId?: Id<"documents">;
@@ -78,8 +78,8 @@ function createSealContext(
 ): SealAICtx {
   return {
     ...ctx,
-    vortexAuthOrganizationId: args.vortexAuthOrganizationId,
-    vortexAuthUserId: args.vortexAuthUserId,
+    betterAuthOrganizationId: args.betterAuthOrganizationId,
+    betterAuthUserId: args.betterAuthUserId,
     organizationId: args.organizationId,
     userId: args.userId,
     documentId: args.documentId,
@@ -104,8 +104,8 @@ async function logChatUsage(
 
   try {
     await ctx.runMutation(internal.ai.usage.logAiUsage, {
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
-      vortexAuthUserId: args.vortexAuthUserId,
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
+      betterAuthUserId: args.betterAuthUserId,
       organizationId: args.organizationId,
       userId: args.internalUserId,
       action: "chat" as const,
@@ -346,8 +346,8 @@ export const getOrCreateThread = authMutation({
     await ctx.db.insert("ai_threads", {
       threadId,
       documentId: args.documentId,
-      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
-      vortexAuthUserId: ctx.auth.vortexAuthUserId,
+      betterAuthOrganizationId: ctx.auth.betterAuthOrganizationId,
+      betterAuthUserId: ctx.auth.betterAuthUserId,
       organizationId: document.organizationId,
       userId: userId.toString(),
       createdAt: Date.now(),
@@ -393,8 +393,8 @@ export const getOrCreateSearchThread = authMutation({
     // Save our mapping (no documentId)
     await ctx.db.insert("ai_threads", {
       threadId,
-      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
-      vortexAuthUserId: ctx.auth.vortexAuthUserId,
+      betterAuthOrganizationId: ctx.auth.betterAuthOrganizationId,
+      betterAuthUserId: ctx.auth.betterAuthUserId,
       organizationId,
       userId: userId.toString(),
       threadType: "search",
@@ -466,8 +466,8 @@ export const sendMessage = authMutation({
       threadId: args.threadId,
       promptMessageId: messageId,
       prompt: args.prompt,
-      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
-      vortexAuthUserId: ctx.auth.vortexAuthUserId,
+      betterAuthOrganizationId: ctx.auth.betterAuthOrganizationId,
+      betterAuthUserId: ctx.auth.betterAuthUserId,
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,
@@ -487,8 +487,8 @@ export const generateResponseAsync = internalAction({
     threadId: v.string(),
     promptMessageId: v.string(),
     prompt: v.optional(v.string()),
-    vortexAuthOrganizationId: v.optional(v.string()),
-    vortexAuthUserId: v.optional(v.string()),
+    betterAuthOrganizationId: v.optional(v.string()),
+    betterAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.string(),
     documentId: v.optional(v.id("documents")),
@@ -606,8 +606,8 @@ export const retryMessage = authMutation({
     await ctx.scheduler.runAfter(0, internal.ai.threads.generateResponseAsync, {
       threadId: args.threadId,
       promptMessageId: args.messageId,
-      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
-      vortexAuthUserId: ctx.auth.vortexAuthUserId,
+      betterAuthOrganizationId: ctx.auth.betterAuthOrganizationId,
+      betterAuthUserId: ctx.auth.betterAuthUserId,
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,
@@ -626,8 +626,8 @@ export const saveThreadMapping = internalMutation({
   args: {
     threadId: v.string(),
     documentId: v.id("documents"),
-    vortexAuthOrganizationId: v.optional(v.string()),
-    vortexAuthUserId: v.optional(v.string()),
+    betterAuthOrganizationId: v.optional(v.string()),
+    betterAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.string(),
   },
@@ -635,8 +635,8 @@ export const saveThreadMapping = internalMutation({
     return await ctx.db.insert("ai_threads", {
       threadId: args.threadId,
       documentId: args.documentId,
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
-      vortexAuthUserId: args.vortexAuthUserId,
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
+      betterAuthUserId: args.betterAuthUserId,
       organizationId: args.organizationId,
       userId: args.userId,
       createdAt: Date.now(),

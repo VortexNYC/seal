@@ -68,7 +68,7 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
     refs: {
       upsertUserFromBetterAuth: internal.users.upsertFromBetterAuth,
       provisionIdentityFromIdentity:
-        components.vortexAuth.identity.provisionFromIdentity,
+        components.betterAuthConsumer.identity.provisionFromIdentity,
       // rateLimitAuthRequest intentionally omitted for P0 (pile pattern) —
       // the runtime's built-in rateLimit below still applies.
     },

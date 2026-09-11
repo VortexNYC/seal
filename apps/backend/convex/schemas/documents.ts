@@ -25,8 +25,8 @@ export type DocumentStatus = Infer<typeof documentStatusTuple>;
 
 export const documentsTable = defineTable({
   // Ownership & Scoping
-  vortexAuthOrganizationId: v.optional(v.string()),
-  vortexAuthOwnerId: v.optional(v.string()),
+  betterAuthOrganizationId: v.optional(v.string()),
+  betterAuthOwnerId: v.optional(v.string()),
   organizationId: v.id("organizations"),
   ownerId: v.id("users"),
 
@@ -132,20 +132,20 @@ export const documentsTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
-  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
+  .index("by_better_auth_organization", ["betterAuthOrganizationId"])
   .index("by_owner", ["ownerId"])
-  .index("by_vortex_auth_owner", ["vortexAuthOwnerId"])
+  .index("by_better_auth_owner", ["betterAuthOwnerId"])
   .index("by_status", ["status"])
   .index("by_sharing_mode", ["sharingMode"])
   .index("by_organization_status", ["organizationId", "status"])
-  .index("by_vortex_auth_organization_status", [
-    "vortexAuthOrganizationId",
+  .index("by_better_auth_organization_status", [
+    "betterAuthOrganizationId",
     "status",
   ])
   .index("by_workflow_status", ["workflowStatus"])
   .index("by_organization_workflow", ["organizationId", "workflowStatus"])
-  .index("by_vortex_auth_organization_workflow", [
-    "vortexAuthOrganizationId",
+  .index("by_better_auth_organization_workflow", [
+    "betterAuthOrganizationId",
     "workflowStatus",
   ])
   .index("by_owner_workflow", ["ownerId", "workflowStatus"])

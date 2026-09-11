@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
-import { seedTestOrganizationMember } from "../../testVortexAuth";
+import { seedTestOrganizationMember } from "../../testBetterAuth";
 import {
   ACCESS_ERRORS,
   canManageDocument,

@@ -424,8 +424,8 @@ export const ownerMutation = customMutation(
 const actionAuthValidator = v.object({
   userId: v.id("users"),
   organizationId: v.id("organizations"),
-  vortexAuthUserId: v.string(),
-  vortexAuthOrganizationId: v.string(),
+  betterAuthUserId: v.string(),
+  betterAuthOrganizationId: v.string(),
   organizationName: v.string(),
   email: v.optional(v.string()),
   name: v.optional(v.string()),
@@ -448,8 +448,8 @@ export const getAdminAuthContext = internalQuery({
     return {
       userId: auth.userId,
       organizationId: auth.organizationId,
-      vortexAuthUserId: auth.vortexAuthUserId,
-      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
+      betterAuthUserId: auth.betterAuthUserId,
+      betterAuthOrganizationId: auth.betterAuthOrganizationId,
       organizationName: auth.organization.name,
       email: auth.email,
       name: auth.name,
@@ -468,8 +468,8 @@ export const getAuthActionContext = internalQuery({
     return {
       userId: auth.userId,
       organizationId: auth.organizationId,
-      vortexAuthUserId: auth.vortexAuthUserId,
-      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
+      betterAuthUserId: auth.betterAuthUserId,
+      betterAuthOrganizationId: auth.betterAuthOrganizationId,
       organizationName: auth.organization.name,
       email: auth.email,
       name: auth.name,

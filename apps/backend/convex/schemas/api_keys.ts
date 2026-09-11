@@ -8,7 +8,7 @@ import { v } from "convex/values";
  */
 export const connectedAppsTable = defineTable({
   // Vortex Auth user for this app connection
-  vortexAuthUserId: v.optional(v.string()),
+  betterAuthUserId: v.optional(v.string()),
 
   // User who connected the app
   userId: v.id("users"),
@@ -29,9 +29,9 @@ export const connectedAppsTable = defineTable({
   connectedAt: v.number(),
   lastActivityAt: v.optional(v.number()),
 })
-  .index("by_vortex_auth_user_id", ["vortexAuthUserId"])
+  .index("by_better_auth_user_id", ["betterAuthUserId"])
   .index("by_user_id", ["userId"])
-  .index("by_vortex_auth_user_id_and_active", ["vortexAuthUserId", "active"])
+  .index("by_better_auth_user_id_and_active", ["betterAuthUserId", "active"])
   .index("by_user_id_and_active", ["userId", "active"])
   .index("by_app_id", ["appId"]);
 
@@ -42,7 +42,7 @@ export const connectedAppsTable = defineTable({
  */
 export const integrationActivityLogsTable = defineTable({
   // Vortex Auth user for this activity
-  vortexAuthUserId: v.optional(v.string()),
+  betterAuthUserId: v.optional(v.string()),
 
   // User who owns the integration
   userId: v.id("users"),
@@ -68,10 +68,10 @@ export const integrationActivityLogsTable = defineTable({
   // Timestamp
   createdAt: v.number(),
 })
-  .index("by_vortex_auth_user_id", ["vortexAuthUserId"])
+  .index("by_better_auth_user_id", ["betterAuthUserId"])
   .index("by_user_id", ["userId"])
-  .index("by_vortex_auth_user_id_and_created_at", [
-    "vortexAuthUserId",
+  .index("by_better_auth_user_id_and_created_at", [
+    "betterAuthUserId",
     "createdAt",
   ])
   .index("by_user_id_and_created_at", ["userId", "createdAt"]);

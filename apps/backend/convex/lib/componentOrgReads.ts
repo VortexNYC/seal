@@ -1,22 +1,22 @@
 /**
- * Component-SOLE org membership/role/invitation reads (vortexAuth
+ * Component-SOLE org membership/role/invitation reads (betterAuth
  * component-truth, P2). Adapted from crm's lib/componentOrgReads.ts.
  *
  * These helpers resolve a user's organization memberships, roles, and
- * invitations from the vortexAuth COMPONENT (the source of truth) and map
+ * invitations from the betterAuth COMPONENT (the source of truth) and map
  * them into the shapes Seal's existing authz code consumes. They use only
  * the component's EXPOSED queries (never internal indexes):
- *   - components.vortexAuth.organizations.listMembershipsByUser
- *   - components.vortexAuth.organizations.listMembersByOrganization
- *   - components.vortexAuth.organizations.getMemberByUserOrganization
- *   - components.vortexAuth.organizations.getMember
- *   - components.vortexAuth.organizations.getRole / getRoleByKey / listRolesByOrganization
- *   - components.vortexAuth.organizations.getInvitationByTokenHash / getInvitationByEmailId / listInvitationsByOrganization
+ *   - components.betterAuthConsumer.organizations.listMembershipsByUser
+ *   - components.betterAuthConsumer.organizations.listMembersByOrganization
+ *   - components.betterAuthConsumer.organizations.getMemberByUserOrganization
+ *   - components.betterAuthConsumer.organizations.getMember
+ *   - components.betterAuthConsumer.organizations.getRole / getRoleByKey / listRolesByOrganization
+ *   - components.betterAuthConsumer.organizations.getInvitationByTokenHash / getInvitationByEmailId / listInvitationsByOrganization
  *
  * Seal differences from crm: role keys are validated against Seal's
  * OrganizationMemberRole (system/owner/admin/member/viewer); API-key
  * readers are omitted (Seal API keys are migrated in P5). Org/user ids are
- * mapped back to Seal anchors via by_vortex_auth_organization / by_vortex_auth_user.
+ * mapped back to Seal anchors via by_better_auth_organization / by_better_auth_user.
  *
  * P2b lands these additively — no call site uses them yet; the auth hot
  * path + member/invitation list queries are switched to them in later P2
@@ -34,7 +34,7 @@ type ReadCtx = Pick<QueryCtx | MutationCtx, "db" | "runQuery">;
 /** Seal membership status as represented by authz (the component's three). */
 type SealMembershipStatus = "active" | "pending" | "suspended";
 
-// The vortexAuth component exposes its own table ids as opaque STRINGS over
+// The betterAuth component exposes its own table ids as opaque STRINGS over
 // the query boundary (Seal's @vortexnyc/vortex-auth codegen does not brand
 // them). Treat every component-side id as a plain string.
 type ComponentOrganizationId = string;
@@ -53,7 +53,7 @@ export type ComponentResolvedMembership = {
   organizationId: Id<"organizations">;
   role: OrganizationMemberRole;
   status: SealMembershipStatus;
-  vortexAuthMemberId: string;
+  betterAuthMemberId: string;
   roleId: string;
 };
 
@@ -102,20 +102,20 @@ function mapComponentStatus(
 
 /**
  * Resolve and map ALL of a user's component memberships into Seal domain
- * shapes. Returns `[]` when the user has no `vortexAuthUserId` bridge.
+ * shapes. Returns `[]` when the user has no `betterAuthUserId` bridge.
  */
 export async function resolveComponentMemberships(
   ctx: ReadCtx,
-  user: Pick<Doc<"users">, "vortexAuthUserId">
+  user: Pick<Doc<"users">, "betterAuthUserId">
 ): Promise<ComponentResolvedMembership[]> {
-  const vortexAuthUserId = user.vortexAuthUserId;
-  if (!vortexAuthUserId) {
+  const betterAuthUserId = user.betterAuthUserId;
+  if (!betterAuthUserId) {
     return [];
   }
 
   const componentMembers = await ctx.runQuery(
-    components.vortexAuth.organizations.listMembershipsByUser,
-    { userId: vortexAuthUserId }
+    components.betterAuthConsumer.organizations.listMembershipsByUser,
+    { userId: betterAuthUserId }
   );
 
   const resolved: ComponentResolvedMembership[] = [];
@@ -135,20 +135,20 @@ export async function resolveComponentMemberships(
  */
 export async function resolveComponentMembershipForOrganization(
   ctx: ReadCtx,
-  user: Pick<Doc<"users">, "vortexAuthUserId">,
-  organization: Pick<Doc<"organizations">, "_id" | "vortexAuthOrganizationId">
+  user: Pick<Doc<"users">, "betterAuthUserId">,
+  organization: Pick<Doc<"organizations">, "_id" | "betterAuthOrganizationId">
 ): Promise<ComponentResolvedMembership | null> {
-  const vortexAuthUserId = user.vortexAuthUserId;
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthUserId || !vortexAuthOrganizationId) {
+  const betterAuthUserId = user.betterAuthUserId;
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthUserId || !betterAuthOrganizationId) {
     return null;
   }
 
   const member = await ctx.runQuery(
-    components.vortexAuth.organizations.getMemberByUserOrganization,
+    components.betterAuthConsumer.organizations.getMemberByUserOrganization,
     {
-      userId: vortexAuthUserId,
-      organizationId: vortexAuthOrganizationId,
+      userId: betterAuthUserId,
+      organizationId: betterAuthOrganizationId,
     }
   );
   if (member === null) {
@@ -163,18 +163,18 @@ export async function resolveComponentMembershipForOrganization(
  */
 export async function listComponentMembersByOrganization(
   ctx: ReadCtx,
-  organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">,
+  organization: Pick<Doc<"organizations">, "betterAuthOrganizationId">,
   options?: { status?: "active" | "invited" | "suspended"; limit?: number }
 ): Promise<ComponentResolvedOrganizationMember[]> {
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthOrganizationId) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthOrganizationId) {
     return [];
   }
 
   const members = await ctx.runQuery(
-    components.vortexAuth.organizations.listMembersByOrganization,
+    components.betterAuthConsumer.organizations.listMembersByOrganization,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
       status: options?.status,
       limit: options?.limit,
     }
@@ -208,7 +208,7 @@ export async function getComponentMemberById(
   componentMemberId: string
 ): Promise<ComponentResolvedMemberById | null> {
   const member = await ctx.runQuery(
-    components.vortexAuth.organizations.getMemberByIdForSystem,
+    components.betterAuthConsumer.organizations.getMemberByIdForSystem,
     {
       memberId: componentMemberId,
     }
@@ -241,19 +241,19 @@ export async function getComponentMemberById(
  */
 export async function getComponentMemberRefForUserOrganization(
   ctx: ReadCtx,
-  user: Pick<Doc<"users">, "vortexAuthUserId">,
-  organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">
+  user: Pick<Doc<"users">, "betterAuthUserId">,
+  organization: Pick<Doc<"organizations">, "betterAuthOrganizationId">
 ): Promise<{ memberId: ComponentMemberId; roleId: ComponentRoleId } | null> {
-  const vortexAuthUserId = user.vortexAuthUserId;
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthUserId || !vortexAuthOrganizationId) {
+  const betterAuthUserId = user.betterAuthUserId;
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthUserId || !betterAuthOrganizationId) {
     return null;
   }
   const member = await ctx.runQuery(
-    components.vortexAuth.organizations.getMemberByUserOrganization,
+    components.betterAuthConsumer.organizations.getMemberByUserOrganization,
     {
-      userId: vortexAuthUserId,
-      organizationId: vortexAuthOrganizationId,
+      userId: betterAuthUserId,
+      organizationId: betterAuthOrganizationId,
     }
   );
   if (member === null) {
@@ -265,16 +265,16 @@ export async function getComponentMemberRefForUserOrganization(
 /** List the roles of a Seal organization from the component. */
 export async function listComponentRolesByOrganization(
   ctx: ReadCtx,
-  organization: Pick<Doc<"organizations">, "_id" | "vortexAuthOrganizationId">
+  organization: Pick<Doc<"organizations">, "_id" | "betterAuthOrganizationId">
 ): Promise<ComponentResolvedRole[]> {
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthOrganizationId) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthOrganizationId) {
     return [];
   }
   const roles = (await ctx.runQuery(
-    components.vortexAuth.organizations.listRolesByOrganization,
+    components.betterAuthConsumer.organizations.listRolesByOrganization,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
     }
   )) as Array<{
     _id: ComponentRoleId;
@@ -298,17 +298,17 @@ export async function listComponentRolesByOrganization(
 /** Resolve a single component role by its key within a Seal organization. */
 export async function getComponentRoleByKey(
   ctx: ReadCtx,
-  organization: Pick<Doc<"organizations">, "_id" | "vortexAuthOrganizationId">,
+  organization: Pick<Doc<"organizations">, "_id" | "betterAuthOrganizationId">,
   key: string
 ): Promise<ComponentResolvedRole | null> {
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthOrganizationId) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthOrganizationId) {
     return null;
   }
   const role = await ctx.runQuery(
-    components.vortexAuth.organizations.getRoleByKey,
+    components.betterAuthConsumer.organizations.getRoleByKey,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
       key,
     }
   );
@@ -358,7 +358,7 @@ async function mapComponentMembership(
     organizationId: sealOrganizationId,
     role,
     status: mapComponentStatus(member.status),
-    vortexAuthMemberId: member._id,
+    betterAuthMemberId: member._id,
     roleId: member.roleId,
   };
 }
@@ -368,10 +368,13 @@ async function resolveRole(
   roleId: ComponentRoleId,
   organizationId: ComponentOrganizationId
 ): Promise<OrganizationMemberRole | null> {
-  const role = await ctx.runQuery(components.vortexAuth.organizations.getRole, {
-    roleId,
-    organizationId,
-  });
+  const role = await ctx.runQuery(
+    components.betterAuthConsumer.organizations.getRole,
+    {
+      roleId,
+      organizationId,
+    }
+  );
   if (role === null || !isOrganizationMemberRole(role.key)) {
     return null;
   }
@@ -384,8 +387,8 @@ async function resolveSealOrganizationId(
 ): Promise<Id<"organizations"> | null> {
   const organization = await ctx.db
     .query("organizations")
-    .withIndex("by_vortex_auth_organization", (q) =>
-      q.eq("vortexAuthOrganizationId", componentOrganizationId)
+    .withIndex("by_better_auth_organization", (q) =>
+      q.eq("betterAuthOrganizationId", componentOrganizationId)
     )
     .first();
   return organization?._id ?? null;
@@ -400,8 +403,8 @@ async function resolveSealUserId(
   }
   const user = await ctx.db
     .query("users")
-    .withIndex("by_vortex_auth_user", (q) =>
-      q.eq("vortexAuthUserId", componentUserId)
+    .withIndex("by_better_auth_user", (q) =>
+      q.eq("betterAuthUserId", componentUserId)
     )
     .first();
   return user?._id ?? null;
@@ -492,7 +495,7 @@ export async function getComponentApiKeyByPrefix(
   keyPrefix: string
 ): Promise<ComponentResolvedApiKey | null> {
   const apiKey = await ctx.runQuery(
-    components.vortexAuth.apiKeys.getApiKeyByPrefix,
+    components.betterAuthConsumer.apiKeys.getApiKeyByPrefix,
     { keyPrefix }
   );
   if (apiKey === null) {
@@ -504,17 +507,17 @@ export async function getComponentApiKeyByPrefix(
 /** List a Seal organization's component apiKeys, mapped to Seal anchors. */
 export async function listComponentApiKeysByOrganization(
   ctx: ReadCtx,
-  organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">,
+  organization: Pick<Doc<"organizations">, "betterAuthOrganizationId">,
   options?: { status?: "active" | "revoked"; limit?: number }
 ): Promise<ComponentResolvedApiKey[]> {
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthOrganizationId) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthOrganizationId) {
     return [];
   }
   const apiKeys = await ctx.runQuery(
-    components.vortexAuth.apiKeys.listApiKeysByOrganization,
+    components.betterAuthConsumer.apiKeys.listApiKeysByOrganization,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
       status: options?.status,
       limit: options?.limit,
     }
@@ -630,7 +633,7 @@ export async function getComponentInvitationByTokenHash(
   tokenHash: string
 ): Promise<ComponentResolvedInvitation | null> {
   const invitation = await ctx.runQuery(
-    components.vortexAuth.organizations.getInvitationByTokenHash,
+    components.betterAuthConsumer.organizations.getInvitationByTokenHash,
     { tokenHash }
   );
   if (invitation === null) {
@@ -648,7 +651,7 @@ export async function getComponentInvitationByEmailId(
   emailId: string
 ): Promise<ComponentResolvedInvitation | null> {
   const invitation = await ctx.runQuery(
-    components.vortexAuth.organizations.getInvitationByEmailId,
+    components.betterAuthConsumer.organizations.getInvitationByEmailId,
     { emailId }
   );
   if (invitation === null) {
@@ -667,7 +670,7 @@ export async function getComponentInvitationById(
   invitationId: string
 ): Promise<ComponentResolvedInvitation | null> {
   const invitation = await ctx.runQuery(
-    components.vortexAuth.organizations.getInvitationByIdForSystem,
+    components.betterAuthConsumer.organizations.getInvitationByIdForSystem,
     { invitationId: invitationId }
   );
   if (invitation === null) {
@@ -682,18 +685,18 @@ export async function getComponentInvitationById(
  */
 export async function listComponentInvitationsByOrganization(
   ctx: ReadCtx,
-  organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">,
+  organization: Pick<Doc<"organizations">, "betterAuthOrganizationId">,
   status?: "pending" | "accepted" | "revoked" | "expired",
   options?: { limit?: number }
 ): Promise<ComponentResolvedInvitation[]> {
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (!vortexAuthOrganizationId) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (!betterAuthOrganizationId) {
     return [];
   }
   const invitations = await ctx.runQuery(
-    components.vortexAuth.organizations.listInvitationsByOrganization,
+    components.betterAuthConsumer.organizations.listInvitationsByOrganization,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: betterAuthOrganizationId,
       limit: options?.limit ?? 500,
       status,
     }

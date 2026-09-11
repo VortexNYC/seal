@@ -1,5 +1,5 @@
 /**
- * Component-backed API keys (P5). The vortexAuth component is the source of
+ * Component-backed API keys (P5). The betterAuth component is the source of
  * truth for these API keys. Tokens are shown once at creation/rotation; only a
  * prefix + hash are stored.
  */
@@ -13,16 +13,16 @@ import { ConvexError, v } from "convex/values";
 
 import { internalQuery, mutation, query } from "../_generated/server";
 import { getAuthContext } from "../auth";
+import { rotateBetterAuthApiKey } from "../lib/betterAuthApiKeyRotate";
+import {
+  createBetterAuthApiKey,
+  revokeBetterAuthApiKey,
+} from "../lib/betterAuthOrganizations";
 import {
   getComponentApiKeyByPrefix,
   listComponentApiKeysByOrganization,
   type ComponentResolvedApiKey,
 } from "../lib/componentOrgReads";
-import { rotateVortexAuthApiKey } from "../lib/vortexAuthApiKeyRotate";
-import {
-  createVortexAuthApiKey,
-  revokeVortexAuthApiKey,
-} from "../lib/vortexAuthOrganizations";
 
 const SEAL_API_TOKEN_PREFIX = "seal";
 
@@ -76,9 +76,9 @@ export const createApiKey = mutation({
     const token = formatApiKeyToken({ keyPrefix, secret });
     const keyHash = await hashApiKeySecret(secret);
 
-    const id = await createVortexAuthApiKey(ctx, {
-      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
-      vortexAuthUserId: auth.vortexAuthUserId,
+    const id = await createBetterAuthApiKey(ctx, {
+      betterAuthOrganizationId: auth.betterAuthOrganizationId,
+      betterAuthUserId: auth.betterAuthUserId,
       name,
       keyPrefix,
       keyHash,
@@ -174,9 +174,9 @@ export const revokeApiKey = mutation({
     if (!keys.some((k) => k._id === args.apiKeyId)) {
       throw new ConvexError("API key not found in this organization");
     }
-    await revokeVortexAuthApiKey(ctx, {
+    await revokeBetterAuthApiKey(ctx, {
       apiKeyId: args.apiKeyId,
-      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
+      betterAuthOrganizationId: auth.betterAuthOrganizationId,
     });
     return { success: true };
   },
@@ -216,9 +216,9 @@ export const rotateApiKey = mutation({
     const token = formatApiKeyToken({ keyPrefix, secret });
     const keyHash = await hashApiKeySecret(secret);
 
-    await rotateVortexAuthApiKey(ctx, {
+    await rotateBetterAuthApiKey(ctx, {
       apiKeyId: args.apiKeyId,
-      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
+      betterAuthOrganizationId: auth.betterAuthOrganizationId,
       keyPrefix,
       keyHash,
     });

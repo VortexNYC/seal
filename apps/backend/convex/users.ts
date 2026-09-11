@@ -53,7 +53,7 @@ export const getCurrentUser = query({
 
 /**
  * Provision the currently-authenticated Better-Auth user into Seal's
- * `users` table (and the vortexAuth component identity). Public mutation
+ * `users` table (and the betterAuth component identity). Public mutation
  * the web client can call on first authenticated load.
  */
 export const provisionCurrentBetterAuthUser = mutation({
@@ -111,7 +111,7 @@ export const deleteFromBetterAuth = internalMutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.runQuery(
-      components.vortexAuth.identity.getByIdentity,
+      components.betterAuthConsumer.identity.getByIdentity,
       {
         issuer: getBetterAuthIdentityIssuer(),
         provider: getBetterAuthIdentityProvider(),
@@ -124,8 +124,8 @@ export const deleteFromBetterAuth = internalMutation({
 
     const localUser = await ctx.db
       .query("users")
-      .withIndex("by_vortex_auth_user", (q) =>
-        q.eq("vortexAuthUserId", identity.userId)
+      .withIndex("by_better_auth_user", (q) =>
+        q.eq("betterAuthUserId", identity.userId)
       )
       .first();
     if (localUser === null) {
@@ -144,14 +144,14 @@ async function upsertBetterAuthUser(
   const provisionPayload = createBetterAuthIdentityProvisionPayload(args);
   const normalizedEmail = requireProvisionedEmail(provisionPayload.user.email);
   const vortexProvision = await ctx.runMutation(
-    components.vortexAuth.identity.provisionFromIdentity,
+    components.betterAuthConsumer.identity.provisionFromIdentity,
     provisionPayload
   );
 
-  const existingByVortexAuth = await ctx.db
+  const existingByBetterAuth = await ctx.db
     .query("users")
-    .withIndex("by_vortex_auth_user", (q) =>
-      q.eq("vortexAuthUserId", vortexProvision.userId)
+    .withIndex("by_better_auth_user", (q) =>
+      q.eq("betterAuthUserId", vortexProvision.userId)
     )
     .first();
   const existingByEmail = await ctx.db
@@ -167,12 +167,12 @@ async function upsertBetterAuthUser(
     name: provisionPayload.user.name,
     avatar: provisionPayload.user.image,
     isEmailVerified: args.emailVerified,
-    vortexAuthUserId: vortexProvision.userId,
+    betterAuthUserId: vortexProvision.userId,
     lastLoginAt: now,
     updatedAt: now,
   };
 
-  const existingUser = existingByVortexAuth ?? existingByEmail;
+  const existingUser = existingByBetterAuth ?? existingByEmail;
 
   if (existingUser) {
     await ctx.db.patch("users", existingUser._id, patch);

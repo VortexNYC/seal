@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { createVortexAuthInvitation } from "../lib/vortexAuthOrganizations";
+import { createBetterAuthInvitation } from "../lib/betterAuthOrganizations";
 import { createTestContext } from "../test.setup";
-import { seedTestOrganizationMember } from "../testVortexAuth";
+import { seedTestOrganizationMember } from "../testBetterAuth";
 
 describe("invitations seat enforcement (SEA-605)", () => {
   let t: ReturnType<typeof createTestContext>;
@@ -156,19 +156,19 @@ describe("invitations seat enforcement (SEA-605)", () => {
         ctx.db.get("organizations", organizationId),
         ctx.db.get("users", ownerUserId),
       ]);
-      if (!organization?.vortexAuthOrganizationId) {
+      if (!organization?.betterAuthOrganizationId) {
         throw new Error("Organization is not anchored to Vortex Auth");
       }
-      if (!inviter?.vortexAuthUserId) {
+      if (!inviter?.betterAuthUserId) {
         throw new Error("Inviter is not anchored to Vortex Auth");
       }
-      await createVortexAuthInvitation(ctx, {
-        vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      await createBetterAuthInvitation(ctx, {
+        betterAuthOrganizationId: organization.betterAuthOrganizationId,
         email: "late@invite-seat.test",
         tokenHash,
         role: "member",
         status: "pending",
-        invitedBy: inviter.vortexAuthUserId,
+        invitedBy: inviter.betterAuthUserId,
         expiresAt: Date.now() + 86_400_000,
       });
     });

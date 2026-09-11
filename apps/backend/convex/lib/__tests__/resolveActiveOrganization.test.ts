@@ -6,7 +6,7 @@ describe("buildActiveOrganizationUserPatch", () => {
   test("writes Seal id and Vortex Auth id when anchored", () => {
     const organization = {
       _id: "org_local",
-      vortexAuthOrganizationId: "vortex_org_1",
+      betterAuthOrganizationId: "vortex_org_1",
     };
 
     const patch = buildActiveOrganizationUserPatch(
@@ -16,7 +16,7 @@ describe("buildActiveOrganizationUserPatch", () => {
 
     expect(patch).toEqual({
       activeOrganizationId: "org_local",
-      activeVortexAuthOrganizationId: "vortex_org_1",
+      activeBetterAuthOrganizationId: "vortex_org_1",
       updatedAt: 1_700_000_000_000,
     });
   });

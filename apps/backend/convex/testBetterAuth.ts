@@ -2,17 +2,17 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import {
-  ensureVortexAuthOrganization,
-  upsertVortexAuthMember,
-} from "./lib/vortexAuthOrganizations";
+  ensureBetterAuthOrganization,
+  upsertBetterAuthMember,
+} from "./lib/betterAuthOrganizations";
 import type { OrganizationMemberRole } from "./schema";
 
-type TestVortexAuthCtx = Pick<MutationCtx, "db" | "runMutation" | "runQuery">;
+type TestBetterAuthCtx = Pick<MutationCtx, "db" | "runMutation" | "runQuery">;
 type ComponentMemberStatus = "active" | "invited" | "suspended";
-const testVortexAuthIdentityIssuer = "seal-test-vortex-auth";
+const testBetterAuthIdentityIssuer = "seal-test-vortex-auth";
 
 export async function seedTestOrganizationMember(
-  ctx: TestVortexAuthCtx,
+  ctx: TestBetterAuthCtx,
   args: {
     organizationId: Id<"organizations">;
     userId: Id<"users">;
@@ -26,39 +26,39 @@ export async function seedTestOrganizationMember(
     throw new Error(`test_user_not_found: ${args.userId}`);
   }
 
-  if (!user.vortexAuthUserId) {
+  if (!user.betterAuthUserId) {
     await ctx.runMutation(internal.users.upsertFromBetterAuth, {
       betterAuthUserId: user.authSubject,
       email: user.email,
       emailVerified: user.isEmailVerified,
-      issuer: args.identityIssuer ?? testVortexAuthIdentityIssuer,
+      issuer: args.identityIssuer ?? testBetterAuthIdentityIssuer,
       ...(user.name !== undefined ? { name: user.name } : {}),
       ...(user.avatar !== undefined ? { image: user.avatar } : {}),
     });
 
     user = await ctx.db.get("users", args.userId);
-    if (!user?.vortexAuthUserId) {
+    if (!user?.betterAuthUserId) {
       throw new Error(
-        `test_user_vortex_auth_bridge_not_provisioned: ${args.userId}`
+        `test_user_better_auth_bridge_not_provisioned: ${args.userId}`
       );
     }
   }
 
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
+  const betterAuthOrganizationId = await ensureBetterAuthOrganization(
     ctx,
     args.organizationId,
-    user.vortexAuthUserId
+    user.betterAuthUserId
   );
 
   await ctx.db.patch("users", args.userId, {
     activeOrganizationId: args.organizationId,
-    activeVortexAuthOrganizationId: vortexAuthOrganizationId,
+    activeBetterAuthOrganizationId: betterAuthOrganizationId,
     updatedAt: Date.now(),
   });
 
-  return await upsertVortexAuthMember(ctx, {
-    vortexAuthOrganizationId,
-    vortexAuthUserId: user.vortexAuthUserId,
+  return await upsertBetterAuthMember(ctx, {
+    betterAuthOrganizationId,
+    betterAuthUserId: user.betterAuthUserId,
     role: args.role,
     status: args.status ?? "active",
   });

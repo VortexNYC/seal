@@ -46,7 +46,7 @@ export const documentRemindersTable = defineTable({
   subject: v.optional(v.string()), // Email subject (for when email is enabled)
 
   // Tracking
-  vortexAuthCreatedBy: v.optional(v.string()),
+  betterAuthCreatedBy: v.optional(v.string()),
   createdBy: v.id("users"), // Who created/triggered the reminder
   attemptCount: v.optional(v.number()), // Number of send attempts
   lastError: v.optional(v.string()), // Last error message if failed
@@ -60,7 +60,7 @@ export const documentRemindersTable = defineTable({
   .index("by_document_status", ["documentId", "status"])
   .index("by_status_scheduled", ["status", "scheduledFor"])
   .index("by_created_by", ["createdBy"])
-  .index("by_vortex_auth_created_by", ["vortexAuthCreatedBy"]);
+  .index("by_better_auth_created_by", ["betterAuthCreatedBy"]);
 
 /**
  * Get human-readable label for reminder type

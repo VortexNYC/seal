@@ -1,6 +1,6 @@
 import type { McpOAuthClient } from "@vortexnyc/auth/mcp";
 /**
- * MCP OAuth internal queries/mutations that delegate to the vortexAuth
+ * MCP OAuth internal queries/mutations that delegate to the betterAuth
  * component (authorization codes, dynamic clients, refresh tokens, signing
  * keys) and to the betterAuth component (session → user lookup).
  *
@@ -99,7 +99,7 @@ type StoredMcpOAuthClient = {
   softwareVersion: string | null;
 } | null;
 
-type VortexAuthMcpRefs = {
+type BetterAuthMcpRefs = {
   mcp: {
     createAuthorizationCode: FunctionReference<
       "mutation",
@@ -302,20 +302,20 @@ type VortexAuthMcpRefs = {
 };
 
 /**
- * The vortexAuth component proxy carries the mcp function refs at runtime,
+ * The betterAuth component proxy carries the mcp function refs at runtime,
  * but the generated component types cannot express them. Structural
  * predicate documents the seam without an assertion; the refs resolve
  * lazily through the codegen proxy.
  */
-function hasMcpRefs(value: unknown): value is VortexAuthMcpRefs {
+function hasMcpRefs(value: unknown): value is BetterAuthMcpRefs {
   return typeof value === "object" && value !== null;
 }
 
-const vortexAuthComponent: unknown = components.vortexAuth;
-if (!hasMcpRefs(vortexAuthComponent)) {
-  throw new Error("vortexAuth component is not registered");
+const betterAuthComponent: unknown = components.betterAuthConsumer;
+if (!hasMcpRefs(betterAuthComponent)) {
+  throw new Error("betterAuth component is not registered");
 }
-const vortexAuthMcp = vortexAuthComponent.mcp;
+const betterAuthMcp = betterAuthComponent.mcp;
 
 type QueryRunner = Pick<QueryCtx | MutationCtx, "runQuery">;
 
@@ -377,7 +377,7 @@ export const resolveBetterAuthSessionFromToken = internalQuery({
 export const createAuthorizationCode = internalMutation({
   args: createAuthorizationCodeArgsValidator,
   handler: async (ctx, args) => {
-    return await ctx.runMutation(vortexAuthMcp.createAuthorizationCode, {
+    return await ctx.runMutation(betterAuthMcp.createAuthorizationCode, {
       code: args.code,
       clientId: args.clientId,
       redirectUri: args.redirectUri,
@@ -398,7 +398,7 @@ export const consumeAuthorizationCode = internalMutation({
   args: consumeAuthorizationCodeArgsValidator,
   handler: async (ctx, args) => {
     const consumed = await ctx.runMutation(
-      vortexAuthMcp.consumeAuthorizationCode,
+      betterAuthMcp.consumeAuthorizationCode,
       args
     );
     if (consumed === null) {
@@ -416,7 +416,7 @@ export const consumeAuthorizationCode = internalMutation({
 export const issueRefreshToken = internalMutation({
   args: issueRefreshTokenArgsValidator,
   handler: async (ctx, args) => {
-    return await ctx.runMutation(vortexAuthMcp.issueRefreshToken, {
+    return await ctx.runMutation(betterAuthMcp.issueRefreshToken, {
       clientId: args.clientId,
       betterAuthUserId: args.betterAuthUserId,
       organizationId: String(args.organizationId),
@@ -443,7 +443,7 @@ export const redeemRefreshToken = internalMutation({
       };
     }
 
-    const redeemed = await ctx.runMutation(vortexAuthMcp.redeemRefreshToken, {
+    const redeemed = await ctx.runMutation(betterAuthMcp.redeemRefreshToken, {
       client: serializeClient(client),
       refreshToken: args.refreshToken,
       requestedScopes: args.requestedScopes
@@ -474,7 +474,7 @@ async function resolveClientInternal(
   clientId: string
 ): Promise<McpOAuthClient | null> {
   const stored: StoredMcpOAuthClient = await ctx.runQuery(
-    vortexAuthMcp.resolveClient,
+    betterAuthMcp.resolveClient,
     {
       clientId,
     }
@@ -529,7 +529,7 @@ export const registerDynamicClient = internalMutation({
     softwareVersion: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.runMutation(vortexAuthMcp.registerDynamicClient, {
+    return await ctx.runMutation(betterAuthMcp.registerDynamicClient, {
       ...args,
       supportedScopes: [...MCP_OAUTH_ALLOWED_SCOPES],
     });
@@ -548,7 +548,7 @@ export const createDynamicClient = internalMutation({
     softwareVersion: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.runMutation(vortexAuthMcp.createDynamicClient, {
+    return await ctx.runMutation(betterAuthMcp.createDynamicClient, {
       ...args,
       clientIdPrefix: "seal-mcp",
       supportedScopes: [...MCP_OAUTH_ALLOWED_SCOPES],
@@ -559,7 +559,7 @@ export const createDynamicClient = internalMutation({
 export const getSigningKey = internalQuery({
   args: {},
   handler: async (ctx) => {
-    return await ctx.runQuery(vortexAuthMcp.getSigningKey, {});
+    return await ctx.runQuery(betterAuthMcp.getSigningKey, {});
   },
 });
 
@@ -568,14 +568,14 @@ export const listSigningKeys = internalQuery({
     includeRetired: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    return await ctx.runQuery(vortexAuthMcp.listSigningKeys, args);
+    return await ctx.runQuery(betterAuthMcp.listSigningKeys, args);
   },
 });
 
 export const upsertSigningKey = internalMutation({
   args: signingKeyDocValidator,
   handler: async (ctx, args) => {
-    return await ctx.runMutation(vortexAuthMcp.upsertSigningKey, args);
+    return await ctx.runMutation(betterAuthMcp.upsertSigningKey, args);
   },
 });
 
@@ -586,7 +586,7 @@ export const updateSigningKeyStatus = internalMutation({
     retiredAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.runMutation(vortexAuthMcp.updateSigningKeyStatus, args);
+    return await ctx.runMutation(betterAuthMcp.updateSigningKeyStatus, args);
   },
 });
 

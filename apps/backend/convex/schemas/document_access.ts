@@ -13,29 +13,29 @@ export type DocumentPermissionLevel = Infer<
 export const documentAccessTable = defineTable({
   // References
   documentId: v.id("documents"),
-  vortexAuthUserId: v.optional(v.string()),
+  betterAuthUserId: v.optional(v.string()),
   userId: v.id("users"),
 
   // Permission level for this specific user
   permissionLevel: documentPermissionLevelTuple,
 
   // Audit trail - initial grant
-  vortexAuthGrantedBy: v.optional(v.string()),
+  betterAuthGrantedBy: v.optional(v.string()),
   grantedBy: v.id("users"),
   grantedAt: v.number(),
 
   // Audit trail - permission updates
-  vortexAuthUpdatedBy: v.optional(v.string()),
+  betterAuthUpdatedBy: v.optional(v.string()),
   updatedBy: v.optional(v.id("users")),
   updatedAt: v.optional(v.number()),
 
   // Audit trail - revocation
   revokedAt: v.optional(v.number()),
-  vortexAuthRevokedBy: v.optional(v.string()),
+  betterAuthRevokedBy: v.optional(v.string()),
   revokedBy: v.optional(v.id("users")),
 })
   .index("by_document", ["documentId"])
   .index("by_user", ["userId"])
-  .index("by_vortex_auth_user", ["vortexAuthUserId"])
+  .index("by_better_auth_user", ["betterAuthUserId"])
   .index("by_document_user", ["documentId", "userId"])
-  .index("by_document_vortex_auth_user", ["documentId", "vortexAuthUserId"]);
+  .index("by_document_better_auth_user", ["documentId", "betterAuthUserId"]);

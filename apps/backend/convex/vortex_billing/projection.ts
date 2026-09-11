@@ -388,9 +388,9 @@ export const projectSubscriptionUpdated = internalMutation({
     const tier = product?.metadata?.tier;
 
     const projection = {
-      vortexAuthOrganizationId:
-        existingSubscription?.vortexAuthOrganizationId ??
-        organization.vortexAuthOrganizationId,
+      betterAuthOrganizationId:
+        existingSubscription?.betterAuthOrganizationId ??
+        organization.betterAuthOrganizationId,
       organizationId: args.sealOrganizationId,
       externalCustomerId: args.customerExternalId,
       externalSubscriptionId: args.subscriptionExternalId,

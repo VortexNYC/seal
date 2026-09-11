@@ -49,7 +49,7 @@ export const analyzeDocumentFields = createTool({
 
       await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
         documentId: docId,
-        vortexAuthOrganizationId: ctx.vortexAuthOrganizationId,
+        betterAuthOrganizationId: ctx.betterAuthOrganizationId,
         organizationId: ctx.organizationId,
         fields: result.fields,
         modelUsed: "gemini-3-flash",
@@ -61,7 +61,7 @@ export const analyzeDocumentFields = createTool({
       if (result.annotations && result.annotations.length > 0) {
         await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
           documentId: docId,
-          vortexAuthOrganizationId: ctx.vortexAuthOrganizationId,
+          betterAuthOrganizationId: ctx.betterAuthOrganizationId,
           organizationId: ctx.organizationId,
           annotations: result.annotations,
           modelUsed: "gemini-3-flash",

@@ -46,7 +46,7 @@ const rawClientConfig: unknown = {
     refs: {
       upsertUserFromBetterAuth: internal.users.upsertFromBetterAuth,
       provisionIdentityFromIdentity:
-        components.vortexAuth.identity.provisionFromIdentity,
+        components.betterAuthConsumer.identity.provisionFromIdentity,
       deleteUserFromBetterAuth: internal.users.deleteFromBetterAuth,
     },
   }),

@@ -53,9 +53,9 @@ function sortedPermissionKeys(
 export type AuthUser = Pick<
   Doc<"users">,
   | "_id"
-  | "vortexAuthUserId"
+  | "betterAuthUserId"
   | "activeOrganizationId"
-  | "activeVortexAuthOrganizationId"
+  | "activeBetterAuthOrganizationId"
   | "isSuperAdmin"
   | "email"
   | "name"
@@ -67,7 +67,7 @@ export type AuthUser = Pick<
  */
 export type AuthOrganization = Pick<
   Doc<"organizations">,
-  "_id" | "vortexAuthOrganizationId" | "status" | "name"
+  "_id" | "betterAuthOrganizationId" | "status" | "name"
 >;
 
 /**
@@ -81,8 +81,8 @@ export type AuthOrganization = Pick<
 export interface AuthContextWithPermissions {
   userId: Id<"users">;
   organizationId: Id<"organizations">;
-  vortexAuthUserId: string;
-  vortexAuthOrganizationId: string;
+  betterAuthUserId: string;
+  betterAuthOrganizationId: string;
   email?: string;
   name?: string;
   role: string;
@@ -118,7 +118,7 @@ async function requireAuthenticatedUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<AuthUser> {
   // Prefer glue 2-hop (component identity → local user). Fall back to
-  // authSubject index for rows not yet backfilled onto vortexAuthUserId.
+  // authSubject index for rows not yet backfilled onto betterAuthUserId.
   const glueUser = await findCurrentUserRow(ctx);
   if (glueUser !== null) {
     return glueUser;
@@ -174,15 +174,15 @@ function buildSuperAdminContext(
   organizationId: Id<"organizations">,
   subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
-  const vortexAuthUserId = user.vortexAuthUserId;
-  if (vortexAuthUserId === undefined) {
+  const betterAuthUserId = user.betterAuthUserId;
+  if (betterAuthUserId === undefined) {
     throwPermissionAuthError(
       "FORBIDDEN",
       "User is not anchored in Vortex Auth"
     );
   }
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (vortexAuthOrganizationId === undefined) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (betterAuthOrganizationId === undefined) {
     throwPermissionAuthError(
       "FORBIDDEN",
       "Organization is not anchored in Vortex Auth"
@@ -192,8 +192,8 @@ function buildSuperAdminContext(
   return {
     userId: user._id,
     organizationId,
-    vortexAuthUserId,
-    vortexAuthOrganizationId,
+    betterAuthUserId,
+    betterAuthOrganizationId,
     email: user.email,
     name: user.name,
     role: "super_admin",
@@ -331,12 +331,12 @@ async function resolvePermissions(
 ): Promise<PermissionKey[]> {
   let permissions: PermissionKey[] = resolveRoleTemplate(membership.role);
 
-  if (membership.roleId && organization.vortexAuthOrganizationId) {
+  if (membership.roleId && organization.betterAuthOrganizationId) {
     const role = await ctx.runQuery(
-      components.vortexAuth.organizations.getRole,
+      components.betterAuthConsumer.organizations.getRole,
       {
         roleId: membership.roleId,
-        organizationId: organization.vortexAuthOrganizationId,
+        organizationId: organization.betterAuthOrganizationId,
       }
     );
     permissions = role
@@ -370,15 +370,15 @@ function buildPermissionContext(
   permissions: string[],
   subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
-  const vortexAuthUserId = user.vortexAuthUserId;
-  if (vortexAuthUserId === undefined) {
+  const betterAuthUserId = user.betterAuthUserId;
+  if (betterAuthUserId === undefined) {
     throwPermissionAuthError(
       "FORBIDDEN",
       "User is not anchored in Vortex Auth"
     );
   }
-  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
-  if (vortexAuthOrganizationId === undefined) {
+  const betterAuthOrganizationId = organization.betterAuthOrganizationId;
+  if (betterAuthOrganizationId === undefined) {
     throwPermissionAuthError(
       "FORBIDDEN",
       "Organization is not anchored in Vortex Auth"
@@ -388,8 +388,8 @@ function buildPermissionContext(
   return {
     userId: user._id,
     organizationId,
-    vortexAuthUserId,
-    vortexAuthOrganizationId,
+    betterAuthUserId,
+    betterAuthOrganizationId,
     email: user.email,
     name: user.name,
     role: membership.role,

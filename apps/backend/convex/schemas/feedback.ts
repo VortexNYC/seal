@@ -7,8 +7,8 @@ export const feedbackTypeTuple = v.union(
 );
 
 export const feedbackTable = defineTable({
-  vortexAuthUserId: v.optional(v.string()),
-  vortexAuthOrganizationId: v.optional(v.string()),
+  betterAuthUserId: v.optional(v.string()),
+  betterAuthOrganizationId: v.optional(v.string()),
   userId: v.id("users"),
   organizationId: v.id("organizations"),
   type: feedbackTypeTuple,
@@ -17,6 +17,6 @@ export const feedbackTable = defineTable({
   createdAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
-  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
+  .index("by_better_auth_organization", ["betterAuthOrganizationId"])
   .index("by_user", ["userId"])
-  .index("by_vortex_auth_user", ["vortexAuthUserId"]);
+  .index("by_better_auth_user", ["betterAuthUserId"]);

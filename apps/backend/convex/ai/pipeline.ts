@@ -24,8 +24,8 @@ const MAX_AI_PAGE_COUNT = 1000;
 
 type ProcessDocumentArgs = {
   documentId: Id<"documents">;
-  vortexAuthOrganizationId?: string;
-  vortexAuthUserId?: string;
+  betterAuthOrganizationId?: string;
+  betterAuthUserId?: string;
   organizationId: Id<"organizations">;
   userId?: Id<"users">;
 };
@@ -126,8 +126,8 @@ async function logAiUsage(
   }
 
   await ctx.runMutation(internal.ai.usage.logAiUsage, {
-    vortexAuthOrganizationId: args.vortexAuthOrganizationId,
-    vortexAuthUserId: args.vortexAuthUserId,
+    betterAuthOrganizationId: args.betterAuthOrganizationId,
+    betterAuthUserId: args.betterAuthUserId,
     organizationId: args.organizationId,
     userId: args.userId,
     action,
@@ -180,7 +180,7 @@ async function maybeSaveAnnotations(
 
   await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
     documentId: args.documentId,
-    vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    betterAuthOrganizationId: args.betterAuthOrganizationId,
     organizationId: args.organizationId,
     annotations: result.annotations,
     modelUsed: "gemini-3-flash",
@@ -265,7 +265,7 @@ async function runDocumentProcessing(
     internal.ai.mutations.saveFieldSuggestions,
     {
       documentId: args.documentId,
-      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      betterAuthOrganizationId: args.betterAuthOrganizationId,
       organizationId: args.organizationId,
       fields: result.fields,
       modelUsed: "gemini-3-flash",
@@ -287,8 +287,8 @@ async function runDocumentProcessing(
 export const processDocument = internalAction({
   args: {
     documentId: v.id("documents"),
-    vortexAuthOrganizationId: v.optional(v.string()),
-    vortexAuthUserId: v.optional(v.string()),
+    betterAuthOrganizationId: v.optional(v.string()),
+    betterAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.optional(v.id("users")),
   },
