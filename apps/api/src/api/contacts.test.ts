@@ -7,22 +7,24 @@ import { createD1 } from "../global/db.js";
 import {
   contacts,
   documents,
+  member,
   organization,
   recipients,
+  user,
 } from "../global/schema.js";
-import type { SessionUser } from "../platform/session.js";
+import type { Variables } from "../platform/types.js";
 import contactsRoute from "./contacts.js";
 
-function createApp(activeOrganizationId: string) {
+function createApp(_activeOrganizationId: string) {
   const app = new OpenAPIHono<{
     Bindings: CloudflareBindings;
-    Variables: { user: SessionUser | null };
+    Variables: Variables;
   }>();
 
   app.use("/api/contacts/*", async (c, next) => {
     c.set("user", {
       user: { id: "user_1" },
-      session: { activeOrganizationId },
+      session: { activeOrganizationId: _activeOrganizationId },
     });
     await next();
   });
@@ -58,6 +60,8 @@ describe("contacts API", () => {
     await db.delete(contacts);
     await db.delete(recipients);
     await db.delete(documents);
+    await db.delete(member);
+    await db.delete(user);
     await db.delete(organization);
 
     await db.insert(organization).values({
@@ -70,20 +74,42 @@ describe("contacts API", () => {
       name: "Other Org",
       slug: "other-org",
     });
+    await db.insert(user).values({
+      id: "user_1",
+      name: "Test User",
+      email: "test@example.com",
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_1",
+      userId: "user_1",
+      role: "owner",
+      createdAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_2",
+      userId: "user_1",
+      role: "owner",
+      createdAt: new Date(),
+    });
   });
 
   it("lists contacts scoped to the active organization", async () => {
     const app = createApp("org_1");
 
     const empty = await app.fetch(
-      new Request("http://localhost:8787/api/contacts"),
+      new Request("http://localhost:8787/api/contacts/test-org"),
       env
     );
     expect(empty.status).toBe(200);
     expect(contactListSchema.parse(await parseJson(empty))).toEqual([]);
 
     const createRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,7 +125,7 @@ describe("contacts API", () => {
     const created = contactIdSchema.parse(await parseJson(createRes));
 
     const listRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts"),
+      new Request("http://localhost:8787/api/contacts/test-org"),
       env
     );
     const list = contactListSchema.parse(await parseJson(listRes));
@@ -117,7 +143,7 @@ describe("contacts API", () => {
     const app = createApp("org_1");
 
     await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -131,7 +157,7 @@ describe("contacts API", () => {
     );
 
     await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -145,7 +171,7 @@ describe("contacts API", () => {
     );
 
     const statusRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts?status=lead"),
+      new Request("http://localhost:8787/api/contacts/test-org?status=lead"),
       env
     );
     const statusList = contactListSchema.parse(await parseJson(statusRes));
@@ -154,7 +180,7 @@ describe("contacts API", () => {
 
     const searchRes = await app.fetch(
       new Request(
-        "http://localhost:8787/api/contacts?search=doe&status=active"
+        "http://localhost:8787/api/contacts/test-org?search=doe&status=active"
       ),
       env
     );
@@ -167,7 +193,7 @@ describe("contacts API", () => {
     const app = createApp("org_1");
 
     const createRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,7 +208,7 @@ describe("contacts API", () => {
     const created = contactIdSchema.parse(await parseJson(createRes));
 
     const getRes = await app.fetch(
-      new Request(`http://localhost:8787/api/contacts/${created.id}`),
+      new Request(`http://localhost:8787/api/contacts/test-org/${created.id}`),
       env
     );
     expect(getRes.status).toBe(200);
@@ -193,7 +219,7 @@ describe("contacts API", () => {
   it("returns 404 for a contact in another organization", async () => {
     const app1 = createApp("org_1");
     const createRes = await app1.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -209,13 +235,13 @@ describe("contacts API", () => {
 
     const app2 = createApp("org_2");
     const getRes = await app2.fetch(
-      new Request(`http://localhost:8787/api/contacts/${created.id}`),
+      new Request(`http://localhost:8787/api/contacts/other-org/${created.id}`),
       env
     );
     expect(getRes.status).toBe(404);
 
     const deleteRes = await app2.fetch(
-      new Request(`http://localhost:8787/api/contacts/${created.id}`, {
+      new Request(`http://localhost:8787/api/contacts/other-org/${created.id}`, {
         method: "DELETE",
       }),
       env
@@ -227,7 +253,7 @@ describe("contacts API", () => {
     const app = createApp("org_1");
 
     const createRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -242,7 +268,7 @@ describe("contacts API", () => {
     const created = contactIdSchema.parse(await parseJson(createRes));
 
     const patchRes = await app.fetch(
-      new Request(`http://localhost:8787/api/contacts/${created.id}`, {
+      new Request(`http://localhost:8787/api/contacts/test-org/${created.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName: "Jonathan" }),
@@ -254,7 +280,7 @@ describe("contacts API", () => {
     expect(updated.firstName).toBe("Jonathan");
 
     const deleteRes = await app.fetch(
-      new Request(`http://localhost:8787/api/contacts/${created.id}`, {
+      new Request(`http://localhost:8787/api/contacts/test-org/${created.id}`, {
         method: "DELETE",
       }),
       env
@@ -262,7 +288,7 @@ describe("contacts API", () => {
     expect(deleteRes.status).toBe(204);
 
     const getRes = await app.fetch(
-      new Request(`http://localhost:8787/api/contacts/${created.id}`),
+      new Request(`http://localhost:8787/api/contacts/test-org/${created.id}`),
       env
     );
     expect(getRes.status).toBe(404);
@@ -272,7 +298,7 @@ describe("contacts API", () => {
     const app = createApp("org_1");
 
     const createA = await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -287,7 +313,7 @@ describe("contacts API", () => {
     const contactA = contactIdSchema.parse(await parseJson(createA));
 
     const createB = await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -302,7 +328,7 @@ describe("contacts API", () => {
     const contactB = contactIdSchema.parse(await parseJson(createB));
 
     const bulkRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts/bulk-delete", {
+      new Request("http://localhost:8787/api/contacts/test-org/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -319,7 +345,7 @@ describe("contacts API", () => {
     ]);
 
     const listRes = await app.fetch(
-      new Request("http://localhost:8787/api/contacts"),
+      new Request("http://localhost:8787/api/contacts/test-org"),
       env
     );
     const list = contactListSchema.parse(await parseJson(listRes));
@@ -330,7 +356,7 @@ describe("contacts API", () => {
     const app = createApp("org_1");
 
     await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -345,7 +371,7 @@ describe("contacts API", () => {
 
     const emailRes = await app.fetch(
       new Request(
-        "http://localhost:8787/api/contacts/by-email?email=john@example.com"
+        "http://localhost:8787/api/contacts/test-org/by-email?email=john@example.com"
       ),
       env
     );
@@ -355,7 +381,7 @@ describe("contacts API", () => {
 
     const missingRes = await app.fetch(
       new Request(
-        "http://localhost:8787/api/contacts/by-email?email=jane@example.com"
+        "http://localhost:8787/api/contacts/test-org/by-email?email=jane@example.com"
       ),
       env
     );
@@ -368,7 +394,7 @@ describe("contacts API", () => {
     const db = createD1(env.D1);
 
     await app.fetch(
-      new Request("http://localhost:8787/api/contacts", {
+      new Request("http://localhost:8787/api/contacts/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -402,7 +428,7 @@ describe("contacts API", () => {
 
     const relatedRes = await app.fetch(
       new Request(
-        "http://localhost:8787/api/contacts/related-documents?email=john@example.com"
+        "http://localhost:8787/api/contacts/test-org/related-documents?email=john@example.com"
       ),
       env
     );

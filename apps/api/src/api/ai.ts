@@ -64,7 +64,6 @@ const getFieldSuggestionsRoute = createRoute({
 });
 
 app.openapi(getFieldSuggestionsRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -171,7 +170,6 @@ const getAnnotationsRoute = createRoute({
 });
 
 app.openapi(getAnnotationsRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -255,9 +253,8 @@ const getThreadRoute = createRoute({
 });
 
 app.openapi(getThreadRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -319,9 +316,8 @@ function generatePublicId(): string {
 }
 
 app.openapi(getOrCreateThreadRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -401,7 +397,6 @@ const dismissAnnotationsRoute = createRoute({
 });
 
 app.openapi(dismissAnnotationsRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -501,7 +496,6 @@ const dismissFieldSuggestionsRoute = createRoute({
 });
 
 app.openapi(dismissFieldSuggestionsRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -584,7 +578,6 @@ const getProgressRoute = createRoute({
 });
 
 app.openapi(getProgressRoute, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { threadId } = c.req.valid("param");
 
@@ -597,7 +590,7 @@ app.openapi(getProgressRoute, async (c) => {
       and(
         eq(aiThreads.threadId, threadId),
         eq(aiThreads.organizationId, organizationId),
-        eq(aiThreads.userId, user!.user.id)
+        eq(aiThreads.userId, c.get("user")!.user.id)
       )
     )
     .limit(1);

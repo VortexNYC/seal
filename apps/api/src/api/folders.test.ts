@@ -4,20 +4,20 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { folders, organization } from "../global/schema.js";
-import type { SessionUser } from "../platform/session.js";
+import { folders, member, organization, user } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
 import foldersRoute from "./folders.js";
 
-function createApp(activeOrganizationId: string, userId = "user_1") {
+function createApp(_activeOrganizationId: string, userId = "user_1") {
   const app = new OpenAPIHono<{
     Bindings: CloudflareBindings;
-    Variables: { user: SessionUser | null };
+    Variables: Variables;
   }>();
 
   app.use("/api/folders/*", async (c, next) => {
     c.set("user", {
       user: { id: userId, name: "Test User", email: "test@example.com" },
-      session: { activeOrganizationId },
+      session: { activeOrganizationId: _activeOrganizationId },
     });
     await next();
   });
@@ -43,6 +43,8 @@ describe("folders API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
     await db.delete(folders);
+    await db.delete(member);
+    await db.delete(user);
     await db.delete(organization);
 
     await db.insert(organization).values({
@@ -54,6 +56,21 @@ describe("folders API", () => {
       id: "org_2",
       name: "Other Org",
       slug: "other-org",
+    });
+    await db.insert(user).values({
+      id: "user_1",
+      name: "Test User",
+      email: "test@example.com",
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_1",
+      userId: "user_1",
+      role: "owner",
+      createdAt: new Date(),
     });
   });
 
@@ -85,7 +102,7 @@ describe("folders API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/folders"),
+      new Request("http://localhost:8787/api/folders/test-org"),
       env
     );
     const list = folderListSchema.parse(await parseJson(response));
@@ -145,7 +162,7 @@ describe("folders API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/folders/${childPublicId}/breadcrumbs`
+        `http://localhost:8787/api/folders/test-org/${childPublicId}/breadcrumbs`
       ),
       env
     );
@@ -163,7 +180,7 @@ describe("folders API", () => {
     const app = createApp("org_1");
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/folders", {
+      new Request("http://localhost:8787/api/folders/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "New Folder", type: "document" }),
@@ -193,7 +210,7 @@ describe("folders API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/folders", {
+      new Request("http://localhost:8787/api/folders/test-org", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -241,7 +258,7 @@ describe("folders API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/folders/all?type=document"),
+      new Request("http://localhost:8787/api/folders/test-org/all?type=document"),
       env
     );
     const all = folderListSchema.parse(await parseJson(response));

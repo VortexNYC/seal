@@ -90,7 +90,6 @@ const listRouteDef = createRoute({
 });
 
 app.openapi(listRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { limit } = c.req.valid("query");
 

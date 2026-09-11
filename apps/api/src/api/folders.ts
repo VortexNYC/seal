@@ -90,7 +90,6 @@ const listRouteDef = createRoute({
 });
 
 app.openapi(listRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { type, parentId } = c.req.valid("query");
 
@@ -161,7 +160,6 @@ const createRouteDef = createRoute({
 });
 
 app.openapi(createRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { name, type, parentId, visibility, pinned } = c.req.valid("json");
 
@@ -199,7 +197,7 @@ app.openapi(createRouteDef, async (c) => {
     parentId: parentInternalId,
     visibility,
     pinned,
-    createdBy: user!.user.id,
+    createdBy: c.get("user")!.user.id,
     createdAt: now,
     updatedAt: now,
   });
@@ -252,7 +250,6 @@ const allRouteDef = createRoute({
 });
 
 app.openapi(allRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { type } = c.req.valid("query");
 
@@ -316,7 +313,6 @@ const breadcrumbsRouteDef = createRoute({
 });
 
 app.openapi(breadcrumbsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 

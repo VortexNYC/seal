@@ -16,19 +16,19 @@ import {
   signatures,
   user,
 } from "../global/schema.js";
-import type { SessionUser } from "../platform/session.js";
+import type { Variables } from "../platform/types.js";
 import documentsRoute from "./documents.js";
 
-function createApp(activeOrganizationId: string, userId = "user_1") {
+function createApp(_activeOrganizationId: string, userId = "user_1") {
   const app = new OpenAPIHono<{
     Bindings: CloudflareBindings;
-    Variables: { user: SessionUser | null };
+    Variables: Variables;
   }>();
 
   app.use("/api/documents/*", async (c, next) => {
     c.set("user", {
       user: { id: userId, name: "Test User", email: "test@example.com" },
-      session: { activeOrganizationId },
+      session: { activeOrganizationId: _activeOrganizationId },
     });
     await next();
   });
@@ -117,7 +117,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/documents"),
+      new Request("http://localhost:8787/api/documents/test-org"),
       env
     );
     const list = documentListSchema.parse(await parseJson(response));
@@ -155,7 +155,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/documents?workflowStatus=sent"),
+      new Request("http://localhost:8787/api/documents/test-org?workflowStatus=sent"),
       env
     );
     const list = documentListSchema.parse(await parseJson(response));
@@ -209,7 +209,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents?folderId=${folderPublicId}`
+        `http://localhost:8787/api/documents/test-org?folderId=${folderPublicId}`
       ),
       env
     );
@@ -248,7 +248,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/documents?filter=owned"),
+      new Request("http://localhost:8787/api/documents/test-org?filter=owned"),
       env
     );
     const list = documentListSchema.parse(await parseJson(response));
@@ -275,7 +275,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}`, {
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}`, {
         method: "DELETE",
       }),
       env
@@ -311,7 +311,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/send`, {
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/send`, {
         method: "POST",
       }),
       env
@@ -347,7 +347,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/cancel`, {
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/cancel`, {
         method: "POST",
       }),
       env
@@ -397,7 +397,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/documents/move", {
+      new Request("http://localhost:8787/api/documents/test-org/move", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -454,7 +454,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/transfer`, {
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/transfer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newOwnerId: "user_2" }),
@@ -506,7 +506,7 @@ describe("documents API", () => {
     });
 
     const shareResponse = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/share`, {
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: "user_2", permissionLevel: "view" }),
@@ -516,7 +516,7 @@ describe("documents API", () => {
     expect(shareResponse.status).toBe(200);
 
     const sharingResponse = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}/sharing`),
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/sharing`),
       env
     );
     const sharing = z
@@ -578,7 +578,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/signature-fields`
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields`
       ),
       env
     );
@@ -660,7 +660,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/payment-configs`
+        `http://localhost:8787/api/documents/test-org/${publicId}/payment-configs`
       ),
       env
     );
@@ -726,7 +726,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/recipients/progress`
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients/progress`
       ),
       env
     );
@@ -791,7 +791,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/recipients/me`
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients/me`
       ),
       env
     );
@@ -826,7 +826,7 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/${publicId}`, {
+      new Request(`http://localhost:8787/api/documents/test-org/${publicId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -919,7 +919,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/signature-fields/me`
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields/me`
       ),
       env
     );
@@ -971,7 +971,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/recipients`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1028,7 +1028,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/recipients/${recipientPublicId}`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients/${recipientPublicId}`,
         { method: "DELETE" }
       ),
       env
@@ -1076,7 +1076,7 @@ describe("documents API", () => {
 
     const response = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/recipients/${recipientPublicId}/resend`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients/${recipientPublicId}/resend`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1134,7 +1134,7 @@ describe("documents API", () => {
 
     const createResponse = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/signature-fields`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1167,7 +1167,7 @@ describe("documents API", () => {
 
     const repositionResponse = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/signature-fields/${fieldPublicId}/position`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields/${fieldPublicId}/position`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -1183,7 +1183,7 @@ describe("documents API", () => {
 
     const updateResponse = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/signature-fields/${fieldPublicId}`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields/${fieldPublicId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -1199,7 +1199,7 @@ describe("documents API", () => {
 
     const deleteResponse = await app.fetch(
       new Request(
-        `http://localhost:8787/api/documents/${publicId}/signature-fields/${fieldPublicId}`,
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields/${fieldPublicId}`,
         { method: "DELETE" }
       ),
       env

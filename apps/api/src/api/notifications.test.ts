@@ -4,20 +4,20 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { notifications, organization } from "../global/schema.js";
-import type { SessionUser } from "../platform/session.js";
+import { member, notifications, organization, user } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
 import notificationsRoute from "./notifications.js";
 
-function createApp(activeOrganizationId: string, userId = "user_1") {
+function createApp(_activeOrganizationId: string, userId = "user_1") {
   const app = new OpenAPIHono<{
     Bindings: CloudflareBindings;
-    Variables: { user: SessionUser | null };
+    Variables: Variables;
   }>();
 
   app.use("/api/notifications/*", async (c, next) => {
     c.set("user", {
       user: { id: userId },
-      session: { activeOrganizationId },
+      session: { activeOrganizationId: _activeOrganizationId },
     });
     await next();
   });
@@ -44,6 +44,8 @@ describe("notifications API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
     await db.delete(notifications);
+    await db.delete(member);
+    await db.delete(user);
     await db.delete(organization);
 
     await db.insert(organization).values({
@@ -56,13 +58,28 @@ describe("notifications API", () => {
       name: "Other Org",
       slug: "other-org",
     });
+    await db.insert(user).values({
+      id: "user_1",
+      name: "Test User",
+      email: "test@example.com",
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: "org_1",
+      userId: "user_1",
+      role: "owner",
+      createdAt: new Date(),
+    });
   });
 
   it("lists notifications scoped to user and organization", async () => {
     const app = createApp("org_1", "user_1");
 
     const empty = await app.fetch(
-      new Request("http://localhost:8787/api/notifications"),
+      new Request("http://localhost:8787/api/notifications/test-org"),
       env
     );
     expect(empty.status).toBe(200);
@@ -85,7 +102,7 @@ describe("notifications API", () => {
     });
 
     const listRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications"),
+      new Request("http://localhost:8787/api/notifications/test-org"),
       env
     );
     const list = notificationListSchema.parse(await parseJson(listRes));
@@ -114,7 +131,7 @@ describe("notifications API", () => {
     });
 
     const listRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications"),
+      new Request("http://localhost:8787/api/notifications/test-org"),
       env
     );
     const list = notificationListSchema.parse(await parseJson(listRes));
@@ -149,7 +166,7 @@ describe("notifications API", () => {
     });
 
     const countRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/unread-count"),
+      new Request("http://localhost:8787/api/notifications/test-org/unread-count"),
       env
     );
     const result = countSchema.parse(await parseJson(countRes));
@@ -174,7 +191,7 @@ describe("notifications API", () => {
     });
 
     const markRes = await app.fetch(
-      new Request(`http://localhost:8787/api/notifications/${publicId}/read`, {
+      new Request(`http://localhost:8787/api/notifications/test-org/${publicId}/read`, {
         method: "POST",
       }),
       env
@@ -183,7 +200,7 @@ describe("notifications API", () => {
     expect(updated.read).toBe(true);
 
     const countRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/unread-count"),
+      new Request("http://localhost:8787/api/notifications/test-org/unread-count"),
       env
     );
     const result = countSchema.parse(await parseJson(countRes));
@@ -218,7 +235,7 @@ describe("notifications API", () => {
     });
 
     const markAllRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/read-all", {
+      new Request("http://localhost:8787/api/notifications/test-org/read-all", {
         method: "POST",
       }),
       env
@@ -227,7 +244,7 @@ describe("notifications API", () => {
     expect(result.count).toBe(2);
 
     const countRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/unread-count"),
+      new Request("http://localhost:8787/api/notifications/test-org/unread-count"),
       env
     );
     const unread = countSchema.parse(await parseJson(countRes));

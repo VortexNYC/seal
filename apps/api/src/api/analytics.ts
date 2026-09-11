@@ -71,9 +71,8 @@ const statsRouteDef = createRoute({
 });
 
 app.openapi(statsRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = sessionUser!.user.id;
+  const userId = c.get("user")!.user.id;
   const { scope: requestedScope } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -193,9 +192,8 @@ const trendsRouteDef = createRoute({
 });
 
 app.openapi(trendsRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = sessionUser!.user.id;
+  const userId = c.get("user")!.user.id;
   const {
     days,
     startDate,
@@ -340,9 +338,8 @@ const periodStatsRouteDef = createRoute({
 });
 
 app.openapi(periodStatsRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = sessionUser!.user.id;
+  const userId = c.get("user")!.user.id;
   const { period, scope: requestedScope } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -437,9 +434,8 @@ const memberActivityRouteDef = createRoute({
 });
 
 app.openapi(memberActivityRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = sessionUser!.user.id;
+  const userId = c.get("user")!.user.id;
 
   const db = createD1(c.env.D1);
 
@@ -560,7 +556,6 @@ const exportDocumentsRouteDef = createRoute({
 });
 
 app.openapi(exportDocumentsRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
 
   const { workflowStatus, startDate, endDate } = c.req.valid("query");
@@ -685,7 +680,6 @@ const emailEngagementRouteDef = createRoute({
 });
 
 app.openapi(emailEngagementRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
   const { days } = c.req.valid("query");
 
@@ -777,7 +771,6 @@ function bucketForMs(ms: number): string {
 }
 
 app.openapi(recipientTimingRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
   const { days } = c.req.valid("query");
 
@@ -888,7 +881,6 @@ const templatePerformanceRouteDef = createRoute({
 });
 
 app.openapi(templatePerformanceRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const organizationId = c.get("organization").id;
 
   const db = createD1(c.env.D1);

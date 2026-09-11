@@ -256,7 +256,6 @@ const createRouteDef = createRoute({
 });
 
 app.openapi(createRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const input = c.req.valid("json");
 
@@ -289,7 +288,7 @@ app.openapi(createRouteDef, async (c) => {
     id: documentId,
     publicId,
     organizationId,
-    ownerId: user!.user.id,
+    ownerId: c.get("user")!.user.id,
     folderId: folderInternalId,
     name: input.name,
     description: input.description ?? null,
@@ -309,7 +308,7 @@ app.openapi(createRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "document.created",
-    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: input.name,
     metadata: JSON.stringify({ documentId, publicId }),
     createdAt: now,
@@ -359,9 +358,8 @@ const listRouteDef = createRoute({
 });
 
 app.openapi(listRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { filter, workflowStatus, folderId, rootOnly } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -459,7 +457,6 @@ const statsRouteDef = createRoute({
 });
 
 app.openapi(statsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
 
   const db = createD1(c.env.D1);
@@ -541,7 +538,6 @@ const trendsRouteDef = createRoute({
 });
 
 app.openapi(trendsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { days } = c.req.valid("query");
 
@@ -631,7 +627,6 @@ const recentRouteDef = createRoute({
 });
 
 app.openapi(recentRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { limit } = c.req.valid("query");
 
@@ -728,7 +723,6 @@ const attentionRouteDef = createRoute({
 });
 
 app.openapi(attentionRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const db = createD1(c.env.D1);
 
@@ -850,7 +844,6 @@ const getRouteDef = createRoute({
 });
 
 app.openapi(getRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -984,9 +977,8 @@ const updateRouteDef = createRoute({
 });
 
 app.openapi(updateRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -1096,7 +1088,6 @@ const uploadRouteDef = createRoute({
 });
 
 app.openapi(uploadRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -1156,7 +1147,6 @@ const downloadRouteDef = createRoute({
 });
 
 app.openapi(downloadRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -1299,9 +1289,8 @@ const addRecipientsRouteDef = createRoute({
 });
 
 app.openapi(addRecipientsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -1382,7 +1371,7 @@ app.openapi(addRecipientsRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "recipients.added",
-    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -1413,7 +1402,6 @@ const listRecipientsRouteDef = createRoute({
 });
 
 app.openapi(listRecipientsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -1466,9 +1454,8 @@ const removeRecipientRouteDef = createRoute({
 });
 
 app.openapi(removeRecipientRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId, recipientPublicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -1559,9 +1546,8 @@ const resendRecipientRouteDef = createRoute({
 });
 
 app.openapi(resendRecipientRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId, recipientPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -1630,7 +1616,7 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     .where(eq(recipients.id, recipient.id));
 
   if (recipient.email) {
-    const senderName = user!.user.name ?? user!.user.email ?? "Unknown";
+    const senderName = c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
     const emailResult = await sendDocumentInvitationEmail(c.env, {
       to: recipient.email,
       recipientName: recipient.name ?? recipient.email,
@@ -1649,7 +1635,7 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "recipient.resend",
-    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -1838,7 +1824,6 @@ const listSignatureFieldsRouteDef = createRoute({
 });
 
 app.openapi(listSignatureFieldsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -1886,9 +1871,8 @@ const getSignatureFieldsForMeRouteDef = createRoute({
 });
 
 app.openapi(getSignatureFieldsForMeRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userEmail = user!.user.email?.toLowerCase();
+  const userEmail = c.get("user")!.user.email?.toLowerCase();
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -2044,9 +2028,8 @@ const createSignatureFieldRouteDef = createRoute({
 });
 
 app.openapi(createSignatureFieldRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -2231,9 +2214,8 @@ const updateSignatureFieldRouteDef = createRoute({
 });
 
 app.openapi(updateSignatureFieldRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -2369,9 +2351,8 @@ const repositionSignatureFieldRouteDef = createRoute({
 });
 
 app.openapi(repositionSignatureFieldRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -2493,9 +2474,8 @@ const assignSignatureFieldRouteDef = createRoute({
 });
 
 app.openapi(assignSignatureFieldRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -2618,9 +2598,8 @@ const deleteSignatureFieldRouteDef = createRoute({
 });
 
 app.openapi(deleteSignatureFieldRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -2734,7 +2713,6 @@ const listPaymentConfigsRouteDef = createRoute({
 });
 
 app.openapi(listPaymentConfigsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -2912,7 +2890,6 @@ const getPaymentConfigRouteDef = createRoute({
 });
 
 app.openapi(getPaymentConfigRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId, fieldPublicId } = c.req.valid("param");
 
@@ -3005,9 +2982,8 @@ const upsertPaymentConfigRouteDef = createRoute({
 });
 
 app.openapi(upsertPaymentConfigRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -3219,7 +3195,6 @@ const recipientProgressRouteDef = createRoute({
 });
 
 app.openapi(recipientProgressRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -3321,9 +3296,8 @@ const recipientByMeRouteDef = createRoute({
 });
 
 app.openapi(recipientByMeRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userEmail = user!.user.email?.toLowerCase();
+  const userEmail = c.get("user")!.user.email?.toLowerCase();
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -3448,7 +3422,6 @@ const signRouteDef = createRoute({
 });
 
 app.openapi(signRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId, recipientPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -3610,9 +3583,8 @@ const saveSignatureFieldRouteDef = createRoute({
 });
 
 app.openapi(saveSignatureFieldRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userEmail = user!.user.email?.toLowerCase();
+  const userEmail = c.get("user")!.user.email?.toLowerCase();
   if (!userEmail) {
     return c.json({ error: "User email not available" }, 400);
   }
@@ -3761,9 +3733,8 @@ const submitSignatureRouteDef = createRoute({
 });
 
 app.openapi(submitSignatureRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userEmail = user!.user.email?.toLowerCase();
+  const userEmail = c.get("user")!.user.email?.toLowerCase();
   if (!userEmail) {
     return c.json({ error: "User email not available" }, 400);
   }
@@ -3838,7 +3809,7 @@ app.openapi(submitSignatureRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: `recipient.${input.status}`,
-    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -3870,7 +3841,6 @@ const listSignaturesRouteDef = createRoute({
 });
 
 app.openapi(listSignaturesRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -3947,9 +3917,8 @@ const deleteRouteDef = createRoute({
 });
 
 app.openapi(deleteRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -4005,9 +3974,8 @@ const sendRouteDef = createRoute({
 });
 
 app.openapi(sendRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -4084,7 +4052,7 @@ app.openapi(sendRouteDef, async (c) => {
     })
     .where(eq(documents.id, doc.id));
 
-  const senderName = user!.user.name ?? user!.user.email ?? "Unknown";
+  const senderName = c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
 
   const emailPromises: Promise<EmailSendResult>[] = [];
   for (const update of recipientUpdates) {
@@ -4122,7 +4090,7 @@ app.openapi(sendRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "document.sent",
-    actorName: user!.user.name ?? user!.user.email ?? "Unknown",
+    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -4156,9 +4124,8 @@ const cancelRouteDef = createRoute({
 });
 
 app.openapi(cancelRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -4230,7 +4197,6 @@ const moveDocumentsRouteDef = createRoute({
 });
 
 app.openapi(moveDocumentsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { documentIds, folderId } = c.req.valid("json");
 
@@ -4306,9 +4272,8 @@ const updateThumbnailRouteDef = createRoute({
 });
 
 app.openapi(updateThumbnailRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const { thumbnailDataUrl } = c.req.valid("json");
 
@@ -4370,9 +4335,8 @@ const transferOwnershipRouteDef = createRoute({
 });
 
 app.openapi(transferOwnershipRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const { newOwnerId } = c.req.valid("json");
 
@@ -4489,7 +4453,6 @@ const sharingRouteDef = createRoute({
 });
 
 app.openapi(sharingRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -4587,9 +4550,8 @@ const updateSharingRouteDef = createRoute({
 });
 
 app.openapi(updateSharingRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const { sharingMode } = c.req.valid("json");
 
@@ -4642,9 +4604,8 @@ const shareRouteDef = createRoute({
 });
 
 app.openapi(shareRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const { userId: targetUserId, permissionLevel } = c.req.valid("json");
 
@@ -4732,9 +4693,8 @@ const revokeRouteDef = createRoute({
 });
 
 app.openapi(revokeRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const { userId: targetUserId } = c.req.valid("json");
 
@@ -4792,9 +4752,8 @@ const updatePermissionRouteDef = createRoute({
 });
 
 app.openapi(updatePermissionRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const { userId: targetUserId, permissionLevel } = c.req.valid("json");
 
@@ -4864,9 +4823,8 @@ const saveAsTemplateRouteDef = createRoute({
 });
 
 app.openapi(saveAsTemplateRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
-  const userId = user!.user.id;
+  const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 

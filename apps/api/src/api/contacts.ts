@@ -132,7 +132,6 @@ const listRouteDef = createRoute({
 });
 
 app.openapi(listRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { search, status } = c.req.valid("query");
 
@@ -190,7 +189,6 @@ const byEmailRouteDef = createRoute({
 });
 
 app.openapi(byEmailRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { email } = c.req.valid("query");
 
@@ -231,7 +229,6 @@ const createRouteDef = createRoute({
 });
 
 app.openapi(createRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const input = c.req.valid("json");
 
@@ -257,7 +254,7 @@ app.openapi(createRouteDef, async (c) => {
     lastContactedAt: input.lastContactedAt
       ? new Date(input.lastContactedAt)
       : null,
-    createdBy: user!.user.id,
+    createdBy: c.get("user")!.user.id,
     createdAt: now,
     updatedAt: now,
   });
@@ -297,7 +294,6 @@ const relatedDocumentsRouteDef = createRoute({
 });
 
 app.openapi(relatedDocumentsRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { email } = c.req.valid("query");
 
@@ -348,7 +344,6 @@ const getRouteDef = createRoute({
 });
 
 app.openapi(getRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -396,7 +391,6 @@ const updateRouteDef = createRoute({
 });
 
 app.openapi(updateRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -493,7 +487,6 @@ const deleteRouteDef = createRoute({
 });
 
 app.openapi(deleteRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
@@ -550,7 +543,6 @@ const bulkDeleteRouteDef = createRoute({
 });
 
 app.openapi(bulkDeleteRouteDef, async (c) => {
-  const user = c.get("user");
   const organizationId = c.get("organization").id;
   const { ids } = c.req.valid("json");
 

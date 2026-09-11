@@ -88,13 +88,12 @@ const getRouteDef = createRoute({
 });
 
 app.openapi(getRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const db = createD1(c.env.D1);
 
   const rows = await db
     .select({ metadata: user.metadata })
     .from(user)
-    .where(eq(user.id, sessionUser!.user.id))
+    .where(eq(user.id, c.get("user")!.user.id))
     .limit(1);
 
   const metadata = safeParseMetadata(rows[0]?.metadata ?? null) ?? {};
@@ -128,14 +127,13 @@ const patchRouteDef = createRoute({
 });
 
 app.openapi(patchRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const body = c.req.valid("json");
   const db = createD1(c.env.D1);
 
   const rows = await db
     .select({ metadata: user.metadata })
     .from(user)
-    .where(eq(user.id, sessionUser!.user.id))
+    .where(eq(user.id, c.get("user")!.user.id))
     .limit(1);
 
   const metadata = safeParseMetadata(rows[0]?.metadata ?? null) ?? {};
@@ -158,7 +156,7 @@ app.openapi(patchRouteDef, async (c) => {
       metadata: serializeMetadata(metadata),
       updatedAt: new Date(),
     })
-    .where(eq(user.id, sessionUser!.user.id));
+    .where(eq(user.id, c.get("user")!.user.id));
 
   return c.json(notificationPreferencesSchema.parse(next));
 });
@@ -217,10 +215,9 @@ const usageRouteDef = createRoute({
 });
 
 app.openapi(usageRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const db = createD1(c.env.D1);
 
-  const userId = sessionUser!.user.id;
+  const userId = c.get("user")!.user.id;
   const organizationId = c.get("organization").id;
 
   const docs = await db
@@ -362,7 +359,6 @@ const connectedAppsRouteDef = createRoute({
 });
 
 app.openapi(connectedAppsRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const db = createD1(c.env.D1);
 
   const rows = await db
@@ -375,7 +371,7 @@ app.openapi(connectedAppsRouteDef, async (c) => {
       scopes: connectedApps.scopes,
     })
     .from(connectedApps)
-    .where(eq(connectedApps.userId, sessionUser!.user.id))
+    .where(eq(connectedApps.userId, c.get("user")!.user.id))
     .orderBy(connectedApps.connectedAt);
 
   return c.json(
@@ -416,7 +412,6 @@ const integrationActivityRouteDef = createRoute({
 });
 
 app.openapi(integrationActivityRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const db = createD1(c.env.D1);
 
   const rows = await db
@@ -429,7 +424,7 @@ app.openapi(integrationActivityRouteDef, async (c) => {
       createdAt: integrationActivityLogs.createdAt,
     })
     .from(integrationActivityLogs)
-    .where(eq(integrationActivityLogs.userId, sessionUser!.user.id))
+    .where(eq(integrationActivityLogs.userId, c.get("user")!.user.id))
     .orderBy(integrationActivityLogs.createdAt);
 
   return c.json(
@@ -458,7 +453,6 @@ const disconnectConnectedAppRouteDef = createRoute({
 });
 
 app.openapi(disconnectConnectedAppRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const { id } = c.req.valid("param");
   const db = createD1(c.env.D1);
 
@@ -468,7 +462,7 @@ app.openapi(disconnectConnectedAppRouteDef, async (c) => {
     .where(
       and(
         eq(connectedApps.id, id),
-        eq(connectedApps.userId, sessionUser!.user.id)
+        eq(connectedApps.userId, c.get("user")!.user.id)
       )
     )
     .limit(1);
@@ -499,7 +493,6 @@ const subscriptionRouteDef = createRoute({
 });
 
 app.openapi(subscriptionRouteDef, async (c) => {
-  const sessionUser = c.get("user");
   const db = createD1(c.env.D1);
 
   const organizationId = c.get("organization").id;
