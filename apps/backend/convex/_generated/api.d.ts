@@ -38,11 +38,6 @@ import type * as ai_tools_search_documents from "../ai/tools/search_documents.js
 import type * as ai_types from "../ai/types.js";
 import type * as ai_usage from "../ai/usage.js";
 import type * as ai_workpool from "../ai/workpool.js";
-import type * as api_context from "../api/context.js";
-import type * as api_errors from "../api/errors.js";
-import type * as api_helpers from "../api/helpers.js";
-import type * as apiAuth from "../apiAuth.js";
-import type * as api_keys_keys from "../api_keys/keys.js";
 import type * as audit_logs_helpers from "../audit_logs/helpers.js";
 import type * as audit_logs_queries from "../audit_logs/queries.js";
 import type * as auth from "../auth.js";
@@ -64,7 +59,6 @@ import type * as documents_hash_document_action from "../documents/hash_document
 import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
 import type * as documents_recipients_queries from "../documents/recipients_queries.js";
 import type * as emails_worker_email from "../emails/worker_email.js";
-import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as lib_authIdentities from "../lib/authIdentities.js";
 import type * as lib_betterAuthApiKeyRotate from "../lib/betterAuthApiKeyRotate.js";
@@ -74,10 +68,6 @@ import type * as lib_componentOrgReads from "../lib/componentOrgReads.js";
 import type * as lib_identity from "../lib/identity.js";
 import type * as lib_resolveActiveOrganization from "../lib/resolveActiveOrganization.js";
 import type * as lib_suiteOrgPolicy from "../lib/suiteOrgPolicy.js";
-import type * as mcpOAuth from "../mcpOAuth.js";
-import type * as mcpOAuthAuth from "../mcpOAuthAuth.js";
-import type * as mcpOAuthAuthorization from "../mcpOAuthAuthorization.js";
-import type * as mcpOAuthNode from "../mcpOAuthNode.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
@@ -141,13 +131,6 @@ import type * as vortex_billing_catalog_mutations from "../vortex_billing/catalo
 import type * as vortex_billing_catalog_queries from "../vortex_billing/catalog_queries.js";
 import type * as vortex_billing_catalog_sync from "../vortex_billing/catalog_sync.js";
 import type * as vortex_billing_payable_actions from "../vortex_billing/payable_actions.js";
-import type * as vortex_billing_projection from "../vortex_billing/projection.js";
-import type * as vortex_billing_webhook_handlers from "../vortex_billing/webhook_handlers.js";
-import type * as vortex_billing_webhook_signature from "../vortex_billing/webhook_signature.js";
-import type * as vortex_billing_worker_subscriptions from "../vortex_billing/worker_subscriptions.js";
-import type * as webhooks_delivery from "../webhooks/delivery.js";
-import type * as webhooks_publish from "../webhooks/publish.js";
-import type * as webhooks_slack_formatter from "../webhooks/slack_formatter.js";
 import type * as workflows_index from "../workflows/index.js";
 
 import type {
@@ -187,11 +170,6 @@ declare const fullApi: ApiFromModules<{
   "ai/types": typeof ai_types;
   "ai/usage": typeof ai_usage;
   "ai/workpool": typeof ai_workpool;
-  "api/context": typeof api_context;
-  "api/errors": typeof api_errors;
-  "api/helpers": typeof api_helpers;
-  apiAuth: typeof apiAuth;
-  "api_keys/keys": typeof api_keys_keys;
   "audit_logs/helpers": typeof audit_logs_helpers;
   "audit_logs/queries": typeof audit_logs_queries;
   auth: typeof auth;
@@ -213,7 +191,6 @@ declare const fullApi: ApiFromModules<{
   "documents/recipient_helpers": typeof documents_recipient_helpers;
   "documents/recipients_queries": typeof documents_recipients_queries;
   "emails/worker_email": typeof emails_worker_email;
-  http: typeof http;
   invitations: typeof invitations;
   "lib/authIdentities": typeof lib_authIdentities;
   "lib/betterAuthApiKeyRotate": typeof lib_betterAuthApiKeyRotate;
@@ -223,10 +200,6 @@ declare const fullApi: ApiFromModules<{
   "lib/identity": typeof lib_identity;
   "lib/resolveActiveOrganization": typeof lib_resolveActiveOrganization;
   "lib/suiteOrgPolicy": typeof lib_suiteOrgPolicy;
-  mcpOAuth: typeof mcpOAuth;
-  mcpOAuthAuth: typeof mcpOAuthAuth;
-  mcpOAuthAuthorization: typeof mcpOAuthAuthorization;
-  mcpOAuthNode: typeof mcpOAuthNode;
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
@@ -290,13 +263,6 @@ declare const fullApi: ApiFromModules<{
   "vortex_billing/catalog_queries": typeof vortex_billing_catalog_queries;
   "vortex_billing/catalog_sync": typeof vortex_billing_catalog_sync;
   "vortex_billing/payable_actions": typeof vortex_billing_payable_actions;
-  "vortex_billing/projection": typeof vortex_billing_projection;
-  "vortex_billing/webhook_handlers": typeof vortex_billing_webhook_handlers;
-  "vortex_billing/webhook_signature": typeof vortex_billing_webhook_signature;
-  "vortex_billing/worker_subscriptions": typeof vortex_billing_worker_subscriptions;
-  "webhooks/delivery": typeof webhooks_delivery;
-  "webhooks/publish": typeof webhooks_publish;
-  "webhooks/slack_formatter": typeof webhooks_slack_formatter;
   "workflows/index": typeof workflows_index;
 }>;
 

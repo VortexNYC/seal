@@ -21,13 +21,6 @@ const crons = gatedCrons();
     internal.organizations.mutations.cleanupExpiredInvitations
   );
 
-  // Process pending webhook deliveries every minute
-  crons.interval(
-    "process-webhook-deliveries",
-    { minutes: 1 },
-    internal.webhooks.delivery.processWebhookDeliveries
-  );
-
   // Sync Seal's SaaS catalog projection from Vortex Billing daily
   crons.daily(
     "sync-vortex-billing-catalog",
