@@ -3,6 +3,8 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { folders } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 
 const FolderSchema = z
   .object({
@@ -55,7 +57,7 @@ const BreadcrumbSchema = z.object({
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -63,16 +65,14 @@ app.use("/*", async (c, next) => {
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = user.session?.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
   return next();
 });
 
+app.use("/:slug/*", organizationMiddleware);
+
 const listRouteDef = createRoute({
   method: "get",
-  path: "/",
+  path: "/{slug}",
   request: {
     query: z.object({
       type: z.enum(["document", "template"]).default("document"),
@@ -91,7 +91,7 @@ const listRouteDef = createRoute({
 
 app.openapi(listRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { type, parentId } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -141,7 +141,7 @@ const createFolderBodySchema = z.object({
 
 const createRouteDef = createRoute({
   method: "post",
-  path: "/",
+  path: "/{slug}",
   request: {
     body: {
       content: {
@@ -162,7 +162,7 @@ const createRouteDef = createRoute({
 
 app.openapi(createRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { name, type, parentId, visibility, pinned } = c.req.valid("json");
 
   const db = createD1(c.env.D1);
@@ -235,7 +235,7 @@ app.openapi(createRouteDef, async (c) => {
 
 const allRouteDef = createRoute({
   method: "get",
-  path: "/all",
+  path: "/{slug}/all",
   request: {
     query: z.object({
       type: z.enum(["document", "template"]).default("document"),
@@ -253,7 +253,7 @@ const allRouteDef = createRoute({
 
 app.openapi(allRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { type } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -298,7 +298,7 @@ app.openapi(allRouteDef, async (c) => {
 
 const breadcrumbsRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/breadcrumbs",
+  path: "/{slug}/{publicId}/breadcrumbs",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -317,7 +317,7 @@ const breadcrumbsRouteDef = createRoute({
 
 app.openapi(breadcrumbsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);

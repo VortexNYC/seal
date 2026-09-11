@@ -10,6 +10,8 @@ import {
   subscriptions,
   user,
 } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 
 const emailPreferencesSchema = z.object({
   enabled: z.boolean().default(true),
@@ -58,7 +60,7 @@ function serializeMetadata(value: Record<string, unknown>): string {
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -68,6 +70,8 @@ app.use("/*", async (c, next) => {
   }
   return next();
 });
+
+app.use("/:slug/*", organizationMiddleware);
 
 const getRouteDef = createRoute({
   method: "get",
@@ -202,7 +206,7 @@ const usageResponseSchema = z.object({
 
 const usageRouteDef = createRoute({
   method: "get",
-  path: "/me/usage",
+  path: "/{slug}/me/usage",
   responses: {
     200: {
       content: { "application/json": { schema: usageResponseSchema } },
@@ -217,7 +221,7 @@ app.openapi(usageRouteDef, async (c) => {
   const db = createD1(c.env.D1);
 
   const userId = sessionUser!.user.id;
-  const organizationId = sessionUser!.session?.activeOrganizationId;
+  const organizationId = c.get("organization").id;
 
   const docs = await db
     .select({
@@ -484,7 +488,7 @@ const subscriptionResponseSchema = z.object({
 
 const subscriptionRouteDef = createRoute({
   method: "get",
-  path: "/me/subscription",
+  path: "/{slug}/me/subscription",
   responses: {
     200: {
       content: { "application/json": { schema: subscriptionResponseSchema } },
@@ -498,7 +502,7 @@ app.openapi(subscriptionRouteDef, async (c) => {
   const sessionUser = c.get("user");
   const db = createD1(c.env.D1);
 
-  const organizationId = sessionUser!.session?.activeOrganizationId;
+  const organizationId = c.get("organization").id;
   let plan: Plan = "free";
 
   if (organizationId) {

@@ -3,6 +3,8 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { notifications } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 
 const EmailStatusSchema = z
   .union([
@@ -84,7 +86,7 @@ function notificationResponse(row: {
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -92,16 +94,14 @@ app.use("/*", async (c, next) => {
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = user.session?.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
   return next();
 });
 
+app.use("/:slug/*", organizationMiddleware);
+
 const listRouteDef = createRoute({
   method: "get",
-  path: "/",
+  path: "/{slug}",
   request: {
     query: z.object({
       limit: z.coerce.number().int().min(1).max(100).optional(),
@@ -119,7 +119,7 @@ const listRouteDef = createRoute({
 
 app.openapi(listRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { limit = 20 } = c.req.valid("query");
 
@@ -141,7 +141,7 @@ app.openapi(listRouteDef, async (c) => {
 
 const unreadCountRouteDef = createRoute({
   method: "get",
-  path: "/unread-count",
+  path: "/{slug}/unread-count",
   responses: {
     200: {
       content: {
@@ -156,7 +156,7 @@ const unreadCountRouteDef = createRoute({
 
 app.openapi(unreadCountRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
 
   const db = createD1(c.env.D1);
@@ -176,7 +176,7 @@ app.openapi(unreadCountRouteDef, async (c) => {
 
 const markAsReadRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/read",
+  path: "/{slug}/{publicId}/read",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -193,7 +193,7 @@ const markAsReadRouteDef = createRoute({
 
 app.openapi(markAsReadRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
 
@@ -238,7 +238,7 @@ app.openapi(markAsReadRouteDef, async (c) => {
 
 const markAllReadRouteDef = createRoute({
   method: "post",
-  path: "/read-all",
+  path: "/{slug}/read-all",
   responses: {
     200: {
       content: {
@@ -253,7 +253,7 @@ const markAllReadRouteDef = createRoute({
 
 app.openapi(markAllReadRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
 
   const db = createD1(c.env.D1);

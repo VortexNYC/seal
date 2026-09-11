@@ -10,10 +10,12 @@ import {
   templates,
   user,
 } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -21,12 +23,10 @@ app.use("/*", async (c, next) => {
   if (!sessionUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = sessionUser.session?.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
   return next();
 });
+
+app.use("/:slug/*", organizationMiddleware);
 
 const analyticsStatsQuerySchema = z.object({
   scope: z
@@ -54,7 +54,7 @@ const analyticsStatsResponseSchema = z
 
 const statsRouteDef = createRoute({
   method: "get",
-  path: "/stats",
+  path: "/{slug}/stats",
   request: {
     query: analyticsStatsQuerySchema,
   },
@@ -72,7 +72,7 @@ const statsRouteDef = createRoute({
 
 app.openapi(statsRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = sessionUser!.user.id;
   const { scope: requestedScope } = c.req.valid("query");
 
@@ -176,7 +176,7 @@ const analyticsTrendSchema = z
 
 const trendsRouteDef = createRoute({
   method: "get",
-  path: "/trends",
+  path: "/{slug}/trends",
   request: {
     query: analyticsTrendsQuerySchema,
   },
@@ -194,7 +194,7 @@ const trendsRouteDef = createRoute({
 
 app.openapi(trendsRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = sessionUser!.user.id;
   const {
     days,
@@ -323,7 +323,7 @@ const analyticsPeriodStatsResponseSchema = z
 
 const periodStatsRouteDef = createRoute({
   method: "get",
-  path: "/period-stats",
+  path: "/{slug}/period-stats",
   request: {
     query: analyticsPeriodStatsQuerySchema,
   },
@@ -341,7 +341,7 @@ const periodStatsRouteDef = createRoute({
 
 app.openapi(periodStatsRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = sessionUser!.user.id;
   const { period, scope: requestedScope } = c.req.valid("query");
 
@@ -423,7 +423,7 @@ const memberActivitySchema = z
 
 const memberActivityRouteDef = createRoute({
   method: "get",
-  path: "/member-activity",
+  path: "/{slug}/member-activity",
   responses: {
     200: {
       content: {
@@ -438,7 +438,7 @@ const memberActivityRouteDef = createRoute({
 
 app.openapi(memberActivityRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = sessionUser!.user.id;
 
   const db = createD1(c.env.D1);
@@ -543,7 +543,7 @@ const exportDocumentsQuerySchema = z.object({
 
 const exportDocumentsRouteDef = createRoute({
   method: "get",
-  path: "/documents/export",
+  path: "/{slug}/documents/export",
   request: {
     query: exportDocumentsQuerySchema,
   },
@@ -561,7 +561,7 @@ const exportDocumentsRouteDef = createRoute({
 
 app.openapi(exportDocumentsRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
 
   const { workflowStatus, startDate, endDate } = c.req.valid("query");
 
@@ -668,7 +668,7 @@ const emailEngagementSchema = z
 
 const emailEngagementRouteDef = createRoute({
   method: "get",
-  path: "/email-engagement",
+  path: "/{slug}/email-engagement",
   request: {
     query: emailEngagementQuerySchema,
   },
@@ -686,7 +686,7 @@ const emailEngagementRouteDef = createRoute({
 
 app.openapi(emailEngagementRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { days } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -749,7 +749,7 @@ const recipientTimingQuerySchema = z.object({
 
 const recipientTimingRouteDef = createRoute({
   method: "get",
-  path: "/recipient-timing",
+  path: "/{slug}/recipient-timing",
   request: {
     query: recipientTimingQuerySchema,
   },
@@ -778,7 +778,7 @@ function bucketForMs(ms: number): string {
 
 app.openapi(recipientTimingRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { days } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -871,7 +871,7 @@ const templatePerformanceQuerySchema = z.object({
 
 const templatePerformanceRouteDef = createRoute({
   method: "get",
-  path: "/template-performance",
+  path: "/{slug}/template-performance",
   request: {
     query: templatePerformanceQuerySchema,
   },
@@ -889,7 +889,7 @@ const templatePerformanceRouteDef = createRoute({
 
 app.openapi(templatePerformanceRouteDef, async (c) => {
   const sessionUser = c.get("user");
-  const organizationId = sessionUser!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
 
   const db = createD1(c.env.D1);
 

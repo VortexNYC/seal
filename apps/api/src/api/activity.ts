@@ -3,6 +3,8 @@ import { desc, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { activity } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 
 const ActivityMetadataSchema = z
   .record(z.string(), z.unknown())
@@ -54,7 +56,7 @@ function activityResponse(row: {
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -62,16 +64,14 @@ app.use("/*", async (c, next) => {
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = user.session?.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
   return next();
 });
 
+app.use("/:slug/*", organizationMiddleware);
+
 const listRouteDef = createRoute({
   method: "get",
-  path: "/",
+  path: "/{slug}",
   request: {
     query: z.object({
       limit: z.coerce.number().int().min(1).max(100).default(10),
@@ -91,7 +91,7 @@ const listRouteDef = createRoute({
 
 app.openapi(listRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { limit } = c.req.valid("query");
 
   const db = createD1(c.env.D1);

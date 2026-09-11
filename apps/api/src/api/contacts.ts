@@ -3,6 +3,8 @@ import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { contacts, documents, recipients } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 
 const ContactSchema = z
   .object({
@@ -95,7 +97,7 @@ function contactResponse(row: {
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -103,16 +105,14 @@ app.use("/*", async (c, next) => {
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = user.session?.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
   return next();
 });
 
+app.use("/:slug/*", organizationMiddleware);
+
 const listRouteDef = createRoute({
   method: "get",
-  path: "/",
+  path: "/{slug}",
   request: {
     query: z.object({
       search: z.string().optional(),
@@ -133,7 +133,7 @@ const listRouteDef = createRoute({
 
 app.openapi(listRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { search, status } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -171,7 +171,7 @@ app.openapi(listRouteDef, async (c) => {
 
 const byEmailRouteDef = createRoute({
   method: "get",
-  path: "/by-email",
+  path: "/{slug}/by-email",
   request: {
     query: z.object({
       email: z.string().email(),
@@ -191,7 +191,7 @@ const byEmailRouteDef = createRoute({
 
 app.openapi(byEmailRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { email } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -211,7 +211,7 @@ app.openapi(byEmailRouteDef, async (c) => {
 
 const createRouteDef = createRoute({
   method: "post",
-  path: "/",
+  path: "/{slug}",
   request: {
     body: {
       content: {
@@ -232,7 +232,7 @@ const createRouteDef = createRoute({
 
 app.openapi(createRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const input = c.req.valid("json");
 
   const db = createD1(c.env.D1);
@@ -278,7 +278,7 @@ app.openapi(createRouteDef, async (c) => {
 
 const relatedDocumentsRouteDef = createRoute({
   method: "get",
-  path: "/related-documents",
+  path: "/{slug}/related-documents",
   request: {
     query: z.object({
       email: z.string().email(),
@@ -298,7 +298,7 @@ const relatedDocumentsRouteDef = createRoute({
 
 app.openapi(relatedDocumentsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { email } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -332,7 +332,7 @@ app.openapi(relatedDocumentsRouteDef, async (c) => {
 
 const getRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}",
+  path: "/{slug}/{publicId}",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -349,7 +349,7 @@ const getRouteDef = createRoute({
 
 app.openapi(getRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -374,7 +374,7 @@ app.openapi(getRouteDef, async (c) => {
 
 const updateRouteDef = createRoute({
   method: "patch",
-  path: "/{publicId}",
+  path: "/{slug}/{publicId}",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -397,7 +397,7 @@ const updateRouteDef = createRoute({
 
 app.openapi(updateRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -480,7 +480,7 @@ app.openapi(updateRouteDef, async (c) => {
 
 const deleteRouteDef = createRoute({
   method: "delete",
-  path: "/{publicId}",
+  path: "/{slug}/{publicId}",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -494,7 +494,7 @@ const deleteRouteDef = createRoute({
 
 app.openapi(deleteRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -520,7 +520,7 @@ app.openapi(deleteRouteDef, async (c) => {
 
 const bulkDeleteRouteDef = createRoute({
   method: "post",
-  path: "/bulk-delete",
+  path: "/{slug}/bulk-delete",
   request: {
     body: {
       content: {
@@ -551,7 +551,7 @@ const bulkDeleteRouteDef = createRoute({
 
 app.openapi(bulkDeleteRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { ids } = c.req.valid("json");
 
   const db = createD1(c.env.D1);
