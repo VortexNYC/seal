@@ -52,6 +52,7 @@ export async function publishWebhookEvent(
   ctx: Pick<MutationCtx, "db">,
   params: {
     organizationId: Id<"organizations">;
+    vortexAuthOrganizationId?: string;
     eventType: WebhookEventType;
     data: Record<string, unknown>;
   }
@@ -94,6 +95,7 @@ export async function publishWebhookEvent(
 
     await ctx.db.insert("webhook_deliveries", {
       endpointId: endpoint._id,
+      vortexAuthOrganizationId: params.vortexAuthOrganizationId,
       organizationId: params.organizationId,
       eventId,
       eventType: params.eventType,

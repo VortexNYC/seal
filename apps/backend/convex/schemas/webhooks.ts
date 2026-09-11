@@ -73,6 +73,8 @@ export const webhookEndpoints = defineTable({
   /**
    * Organization that owns this webhook endpoint.
    */
+  vortexAuthOrganizationId: v.optional(v.string()),
+  vortexAuthCreatedBy: v.optional(v.string()),
   organizationId: v.id("organizations"),
 
   /**
@@ -168,6 +170,11 @@ export const webhookEndpoints = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
+  .index("by_vortex_auth_organization_status", [
+    "vortexAuthOrganizationId",
+    "status",
+  ])
   .index("by_organization_status", ["organizationId", "status"]);
 
 /**
@@ -184,6 +191,11 @@ export const webhookDeliveries = defineTable({
    * The endpoint this delivery is for.
    */
   endpointId: v.id("webhook_endpoints"),
+
+  /**
+   * Vortex Auth organization for this delivery.
+   */
+  vortexAuthOrganizationId: v.optional(v.string()),
 
   /**
    * Organization for efficient querying.
@@ -260,4 +272,5 @@ export const webhookDeliveries = defineTable({
   .index("by_endpoint_created", ["endpointId", "createdAt"])
   .index("by_event_id", ["eventId"])
   .index("by_status_next_retry", ["status", "nextRetryAt"])
-  .index("by_organization", ["organizationId"]);
+  .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"]);
