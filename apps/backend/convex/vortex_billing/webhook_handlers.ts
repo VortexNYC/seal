@@ -255,7 +255,7 @@ const vortexWebhookDispatchers: Record<
     );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
-  "payable_object.updated": async (ctx, event): Promise<Response> => {
+  "payable_object.updated": async (_ctx, event): Promise<Response> => {
     const projection = parseVortexPayableObjectEvent(event);
     if (projection === null) {
       return jsonResponse(
@@ -266,30 +266,29 @@ const vortexWebhookDispatchers: Record<
 
     const url = process.env.SIGN_API_EMAIL_URL;
     const key = process.env.SIGN_API_EMAIL_KEY;
-    if (url && key) {
-      const res = await fetch(
-        `${url}/internal/webhooks/vortex-billing/payable-object`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-internal-api-key": key,
-          },
-          body: JSON.stringify(projection),
-        }
-      );
-      const body = (await res.json()) as unknown;
+    if (!url || !key) {
       return jsonResponse(
-        { received: true, eventId: event.id, ...body },
-        res.status
+        { error: "worker_not_configured", eventId: event.id },
+        500
       );
     }
 
-    const result = await ctx.runMutation(
-      internal.vortex_billing.projection.projectPayableObjectUpdated,
-      projection
+    const res = await fetch(
+      `${url}/internal/webhooks/vortex-billing/payable-object`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": key,
+        },
+        body: JSON.stringify(projection),
+      }
     );
-    return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+    const body = (await res.json()) as unknown;
+    return jsonResponse(
+      { received: true, eventId: event.id, ...body },
+      res.status
+    );
   },
 };
 
