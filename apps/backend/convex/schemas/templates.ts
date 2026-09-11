@@ -19,6 +19,8 @@ export type TemplateStatus = Infer<typeof templateStatusTuple>;
 
 export const templatesTable = defineTable({
   // Ownership & Scoping
+  vortexAuthOrganizationId: v.optional(v.string()),
+  vortexAuthCreatedBy: v.optional(v.string()),
   organizationId: v.id("organizations"),
   createdBy: v.id("users"),
 
@@ -52,9 +54,15 @@ export const templatesTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
   .index("by_creator", ["createdBy"])
+  .index("by_vortex_auth_creator", ["vortexAuthCreatedBy"])
   .index("by_status", ["status"])
   .index("by_organization_status", ["organizationId", "status"])
+  .index("by_vortex_auth_organization_status", [
+    "vortexAuthOrganizationId",
+    "status",
+  ])
   .index("by_use_count", ["useCount"])
   .index("by_folder", ["folderId"]);
 
