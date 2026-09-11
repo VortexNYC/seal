@@ -1,32 +1,18 @@
 /**
  * General Settings Page
  *
- * Core VortexOrganizationProfile for tenant identity (name / slug / logo /
- * brand colors / email from / org MFA + session timeout).
- * Seal-specific workspace defaults (timezone, currency) remain below.
+ * Workspace identity and regional defaults, built on Kumo UI.
  * Route: /{slug}/settings
- *
- * @validation VAL-REAL-1776629332274
  */
-
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  VortexOrganizationProfile,
-  type VortexOrgProfileOrganization,
-} from "@vortexnyc/auth/react";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-} from "@vortexnyc/ui";
-import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { FloppyDisk } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -45,6 +31,15 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/")({
   }),
 });
 
+interface FormData {
+  name: string;
+  slug: string;
+  logo: string;
+  timezone: string;
+  currency: string;
+  currencyKind: string;
+}
+
 function GeneralSettings() {
   const { slug } = Route.useParams();
 
@@ -54,46 +49,21 @@ function GeneralSettings() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    slug: "",
+    logo: "",
     timezone: "UTC",
     currency: "BRL",
     currencyKind: "normal",
   });
 
-  const profileOrganization =
-    useMemo<VortexOrgProfileOrganization | null>(() => {
-      if (!organization) {
-        return null;
-      }
-      const status =
-        organization.status === "suspended" || organization.status === "deleted"
-          ? organization.status
-          : "active";
-      const brand = organization.suiteBrand ?? {};
-      const logoFromBranding =
-        typeof organization.brandingSettings?.logoUrl === "string"
-          ? organization.brandingSettings.logoUrl
-          : undefined;
-      const imageUrl =
-        (typeof organization.logo === "string" && organization.logo) ||
-        logoFromBranding;
-      return {
-        _id: organization._id,
-        name: organization.name,
-        slug: organization.slug,
-        imageUrl,
-        status,
-        brand,
-        security: organization.suiteSecurity,
-      };
-    }, [organization]);
-
-  const isAdmin =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
-
   useEffect(() => {
     if (organization) {
       setFormData({
+        name: organization.name,
+        slug: organization.slug,
+        logo: organization.logo ?? "",
         timezone: organization.timezone || "UTC",
         currency: organization.currency || "BRL",
         currencyKind: organization.currencyKind || "normal",
@@ -101,13 +71,17 @@ function GeneralSettings() {
     }
   }, [organization]);
 
+  const isAdmin =
+    organization?.userRole === "owner" || organization?.userRole === "admin";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setIsSubmitting(true);
 
     try {
       await updateWorkspace(slug, {
+        name: formData.name,
+        logo: formData.logo || null,
         timezone: formData.timezone,
         currency: formData.currency,
         currencyKind: formData.currencyKind,
@@ -131,87 +105,108 @@ function GeneralSettings() {
 
   return (
     <PageWrapper title="General Settings">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <VortexOrganizationProfile
-            isAdmin={isAdmin}
-            isLoading={isPending}
-            onUpdate={async (input) => {
-              try {
-                await updateWorkspace(slug, {
-                  ...(input.name !== undefined ? { name: input.name } : {}),
-                  ...(input.imageUrl !== undefined
-                    ? { logo: input.imageUrl ?? undefined }
-                    : {}),
-                  ...(input.brand !== undefined ? { brand: input.brand } : {}),
-                  ...(input.security !== undefined
-                    ? { security: input.security }
-                    : {}),
-                });
-                toast.success("Workspace profile updated");
-              } catch (error) {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to update workspace profile"
-                );
-              }
-            }}
-            organization={profileOrganization}
-            copy={{
-              title: "Workspace profile",
-              description:
-                "Suite tenant identity, brand, and org security (Core). Signing chrome stays under Branding.",
-              slugLabel: "Workspace slug",
-            }}
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="grid gap-6">
+        <LayerCard>
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Workspace profile
+            </Text>
+            <Text variant="secondary">
+              Tenant identity. Brand and security settings live on their own
+              pages.
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Workspace name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  disabled={!isAdmin}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Workspace slug</Label>
+                <Input id="slug" value={formData.slug} disabled />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="logo">Logo URL</Label>
+                <Input
+                  id="logo"
+                  value={formData.logo}
+                  onChange={(e) =>
+                    setFormData({ ...formData, logo: e.target.value })
+                  }
+                  placeholder="https://…"
+                  disabled={!isAdmin}
+                />
+              </div>
+            </div>
+          </LayerCard.Primary>
+        </LayerCard>
 
-        <form onSubmit={handleSubmit} className="contents">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Regional defaults</CardTitle>
-              <CardDescription>
-                Seal product defaults for documents and payments in this
-                workspace.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+        <LayerCard>
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Regional defaults
+            </Text>
+            <Text variant="secondary">
+              Product defaults for documents and payments in this workspace.
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
                 <Input
                   id="timezone"
-                  type="text"
                   value={formData.timezone}
                   onChange={(e) =>
                     setFormData({ ...formData, timezone: e.target.value })
                   }
                   placeholder="UTC"
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Input
                   id="currency"
-                  type="text"
                   value={formData.currency}
                   onChange={(e) =>
                     setFormData({ ...formData, currency: e.target.value })
                   }
                   placeholder="USD"
+                  disabled={!isAdmin}
                 />
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-2">
+                <Label htmlFor="currencyKind">Currency kind</Label>
+                <Input
+                  id="currencyKind"
+                  value={formData.currencyKind}
+                  onChange={(e) =>
+                    setFormData({ ...formData, currencyKind: e.target.value })
+                  }
+                  placeholder="normal"
+                  disabled={!isAdmin}
+                />
+              </div>
+            </div>
+          </LayerCard.Primary>
+        </LayerCard>
 
-          <div className="flex justify-end md:col-span-2">
-            <Button type="submit" disabled={isSubmitting || !isAdmin}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Saving..." : "Save regional defaults"}
-            </Button>
-          </div>
-        </form>
-      </div>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !isAdmin}>
+            <FloppyDisk className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Saving…" : "Save workspace settings"}
+          </Button>
+        </div>
+      </form>
     </PageWrapper>
   );
 }
