@@ -8,51 +8,8 @@
  * @module
  */
 
-import type * as audit_logs_helpers from "../audit_logs/helpers.js";
-import type * as audit_logs_queries from "../audit_logs/queries.js";
-import type * as auth from "../auth.js";
-import type * as auth_access_control from "../auth/access_control.js";
-import type * as auth_permissions from "../auth/permissions.js";
-import type * as auth_plan_limits from "../auth/plan_limits.js";
-import type * as auth_subscription_guards from "../auth/subscription_guards.js";
-import type * as auth_subscription_helpers from "../auth/subscription_helpers.js";
-import type * as auth_wrappers from "../auth/wrappers.js";
-import type * as betterAuth from "../betterAuth.js";
-import type * as betterAuthClient from "../betterAuthClient.js";
 import type * as crons from "../crons.js";
-import type * as crypto_encryption from "../crypto/encryption.js";
-import type * as crypto_helpers from "../crypto/helpers.js";
-import type * as documents_ai_document_state from "../documents/ai_document_state.js";
-import type * as documents_document_reads from "../documents/document_reads.js";
-import type * as documents_extract_text_action from "../documents/extract_text_action.js";
-import type * as documents_hash_document_action from "../documents/hash_document_action.js";
-import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
-import type * as documents_recipients_queries from "../documents/recipients_queries.js";
-import type * as emails_worker_email from "../emails/worker_email.js";
-import type * as invitations from "../invitations.js";
-import type * as lib_authIdentities from "../lib/authIdentities.js";
-import type * as lib_betterAuthApiKeyRotate from "../lib/betterAuthApiKeyRotate.js";
-import type * as lib_betterAuthOrganizations from "../lib/betterAuthOrganizations.js";
-import type * as lib_canonicalGlue from "../lib/canonicalGlue.js";
-import type * as lib_componentOrgReads from "../lib/componentOrgReads.js";
-import type * as lib_identity from "../lib/identity.js";
-import type * as lib_resolveActiveOrganization from "../lib/resolveActiveOrganization.js";
-import type * as lib_suiteOrgPolicy from "../lib/suiteOrgPolicy.js";
-import type * as organizations_helpers from "../organizations/helpers.js";
-import type * as organizations_mutations from "../organizations/mutations.js";
-import type * as organizations_queries from "../organizations/queries.js";
-import type * as payment_fields_helpers from "../payment_fields/helpers.js";
-import type * as payment_fields_worker_invoices from "../payment_fields/worker_invoices.js";
-import type * as payment_fields_worker_payment_configs from "../payment_fields/worker_payment_configs.js";
-import type * as payments_merchant_account_mutations from "../payments/merchant_account_mutations.js";
-import type * as payments_merchant_account_validators from "../payments/merchant_account_validators.js";
-import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_saas_billing_provider from "../payments/saas_billing_provider.js";
-import type * as payments_subscription_actions from "../payments/subscription_actions.js";
-import type * as payments_vortex_merchant_actions from "../payments/vortex_merchant_actions.js";
-import type * as payments_vortex_merchant_queries from "../payments/vortex_merchant_queries.js";
-import type * as retrier from "../retrier.js";
-import type * as rls from "../rls.js";
 import type * as schemas_ai_document_annotations from "../schemas/ai_document_annotations.js";
 import type * as schemas_ai_field_suggestions from "../schemas/ai_field_suggestions.js";
 import type * as schemas_ai_progress from "../schemas/ai_progress.js";
@@ -92,16 +49,8 @@ import type * as schemas_user_profiles from "../schemas/user_profiles.js";
 import type * as schemas_users from "../schemas/users.js";
 import type * as schemas_vortex_billing_webhook_events from "../schemas/vortex_billing_webhook_events.js";
 import type * as schemas_webhooks from "../schemas/webhooks.js";
-import type * as signature_fields_queries from "../signature_fields/queries.js";
-import type * as subscription_price_resolver from "../subscription_price_resolver.js";
-import type * as testBetterAuth from "../testBetterAuth.js";
-import type * as users from "../users.js";
-import type * as validations_organizations from "../validations/organizations.js";
 import type * as vortex_billing_catalog_mutations from "../vortex_billing/catalog_mutations.js";
-import type * as vortex_billing_catalog_queries from "../vortex_billing/catalog_queries.js";
 import type * as vortex_billing_catalog_sync from "../vortex_billing/catalog_sync.js";
-import type * as vortex_billing_payable_actions from "../vortex_billing/payable_actions.js";
-import type * as workflows_index from "../workflows/index.js";
 
 import type {
   ApiFromModules,
@@ -110,51 +59,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "audit_logs/helpers": typeof audit_logs_helpers;
-  "audit_logs/queries": typeof audit_logs_queries;
-  auth: typeof auth;
-  "auth/access_control": typeof auth_access_control;
-  "auth/permissions": typeof auth_permissions;
-  "auth/plan_limits": typeof auth_plan_limits;
-  "auth/subscription_guards": typeof auth_subscription_guards;
-  "auth/subscription_helpers": typeof auth_subscription_helpers;
-  "auth/wrappers": typeof auth_wrappers;
-  betterAuth: typeof betterAuth;
-  betterAuthClient: typeof betterAuthClient;
   crons: typeof crons;
-  "crypto/encryption": typeof crypto_encryption;
-  "crypto/helpers": typeof crypto_helpers;
-  "documents/ai_document_state": typeof documents_ai_document_state;
-  "documents/document_reads": typeof documents_document_reads;
-  "documents/extract_text_action": typeof documents_extract_text_action;
-  "documents/hash_document_action": typeof documents_hash_document_action;
-  "documents/recipient_helpers": typeof documents_recipient_helpers;
-  "documents/recipients_queries": typeof documents_recipients_queries;
-  "emails/worker_email": typeof emails_worker_email;
-  invitations: typeof invitations;
-  "lib/authIdentities": typeof lib_authIdentities;
-  "lib/betterAuthApiKeyRotate": typeof lib_betterAuthApiKeyRotate;
-  "lib/betterAuthOrganizations": typeof lib_betterAuthOrganizations;
-  "lib/canonicalGlue": typeof lib_canonicalGlue;
-  "lib/componentOrgReads": typeof lib_componentOrgReads;
-  "lib/identity": typeof lib_identity;
-  "lib/resolveActiveOrganization": typeof lib_resolveActiveOrganization;
-  "lib/suiteOrgPolicy": typeof lib_suiteOrgPolicy;
-  "organizations/helpers": typeof organizations_helpers;
-  "organizations/mutations": typeof organizations_mutations;
-  "organizations/queries": typeof organizations_queries;
-  "payment_fields/helpers": typeof payment_fields_helpers;
-  "payment_fields/worker_invoices": typeof payment_fields_worker_invoices;
-  "payment_fields/worker_payment_configs": typeof payment_fields_worker_payment_configs;
-  "payments/merchant_account_mutations": typeof payments_merchant_account_mutations;
-  "payments/merchant_account_validators": typeof payments_merchant_account_validators;
-  "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/saas_billing_provider": typeof payments_saas_billing_provider;
-  "payments/subscription_actions": typeof payments_subscription_actions;
-  "payments/vortex_merchant_actions": typeof payments_vortex_merchant_actions;
-  "payments/vortex_merchant_queries": typeof payments_vortex_merchant_queries;
-  retrier: typeof retrier;
-  rls: typeof rls;
   "schemas/ai_document_annotations": typeof schemas_ai_document_annotations;
   "schemas/ai_field_suggestions": typeof schemas_ai_field_suggestions;
   "schemas/ai_progress": typeof schemas_ai_progress;
@@ -194,16 +100,8 @@ declare const fullApi: ApiFromModules<{
   "schemas/users": typeof schemas_users;
   "schemas/vortex_billing_webhook_events": typeof schemas_vortex_billing_webhook_events;
   "schemas/webhooks": typeof schemas_webhooks;
-  "signature_fields/queries": typeof signature_fields_queries;
-  subscription_price_resolver: typeof subscription_price_resolver;
-  testBetterAuth: typeof testBetterAuth;
-  users: typeof users;
-  "validations/organizations": typeof validations_organizations;
   "vortex_billing/catalog_mutations": typeof vortex_billing_catalog_mutations;
-  "vortex_billing/catalog_queries": typeof vortex_billing_catalog_queries;
   "vortex_billing/catalog_sync": typeof vortex_billing_catalog_sync;
-  "vortex_billing/payable_actions": typeof vortex_billing_payable_actions;
-  "workflows/index": typeof workflows_index;
 }>;
 
 /**

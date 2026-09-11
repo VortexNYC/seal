@@ -14,20 +14,12 @@ import { internal } from "./_generated/api";
 // (pnpm dlx convex env set CRONS_ENABLED true --prod).
 const crons = gatedCrons();
 {
-  // Clean up expired organization invitations daily at midnight UTC
-  crons.daily(
-    "cleanup-expired-invitations",
-    { hourUTC: 0, minuteUTC: 0 },
-    internal.organizations.mutations.cleanupExpiredInvitations
-  );
-
   // Sync Seal's SaaS catalog projection from Vortex Billing daily
   crons.daily(
     "sync-vortex-billing-catalog",
     { hourUTC: 6, minuteUTC: 30 },
     internal.vortex_billing.catalog_sync.syncCatalogFromVortex
   );
-
 }
 
 export default crons;
