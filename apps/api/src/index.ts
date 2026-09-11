@@ -484,6 +484,90 @@ app.post("/internal/webhooks/vortex-billing/invoice", async (c) => {
   return c.json({ success: true });
 });
 
+const subscriptionEventBody = z.object({
+  eventId: z.string(),
+  organizationId: z.string(),
+  externalCustomerId: z.string(),
+  externalSubscriptionId: z.string(),
+  externalPriceId: z.string(),
+  externalProductId: z.string().optional(),
+  status: z.union([
+    z.literal("active"),
+    z.literal("past_due"),
+    z.literal("canceled"),
+    z.literal("trialing"),
+    z.literal("paused"),
+    z.literal("incomplete"),
+    z.literal("incomplete_expired"),
+    z.literal("unpaid"),
+  ]),
+  cancelAtPeriodEnd: z.boolean().default(false),
+  currentPeriodStart: z.number().optional(),
+  currentPeriodEnd: z.number().optional(),
+  canceledAt: z.number().optional(),
+  cancelReason: z.string().optional(),
+  latestInvoiceId: z.string().optional(),
+});
+
+app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = subscriptionEventBody.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const body = parseResult.data;
+  const db = createD1(c.env.D1);
+  const now = new Date();
+
+  const existing = await db.query.subscriptions.findFirst({
+    where: eq(
+      subscriptions.externalSubscriptionId,
+      body.externalSubscriptionId
+    ),
+  });
+
+  const base = {
+    organizationId: body.organizationId,
+    externalCustomerId: body.externalCustomerId,
+    externalSubscriptionId: body.externalSubscriptionId,
+    externalPriceId: body.externalPriceId,
+    externalProductId: body.externalProductId ?? null,
+    status: body.status,
+    cancelAtPeriodEnd: body.cancelAtPeriodEnd,
+    currentPeriodStart: body.currentPeriodStart
+      ? new Date(body.currentPeriodStart)
+      : null,
+    currentPeriodEnd: body.currentPeriodEnd
+      ? new Date(body.currentPeriodEnd)
+      : null,
+    canceledAt: body.canceledAt ? new Date(body.canceledAt) : null,
+    cancelReason: body.cancelReason ?? null,
+    latestInvoiceId: body.latestInvoiceId ?? null,
+    updatedAt: now,
+  };
+
+  if (existing) {
+    await db
+      .update(subscriptions)
+      .set(base)
+      .where(eq(subscriptions.id, existing.id));
+  } else {
+    await db.insert(subscriptions).values({
+      ...base,
+      id: crypto.randomUUID(),
+      publicId: body.externalSubscriptionId,
+      createdAt: now,
+    });
+  }
+
+  return c.json({ success: true });
+});
+
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 app.get("/.well-known/oauth-authorization-server/seal-mcp", (c) => {

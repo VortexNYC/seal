@@ -711,6 +711,8 @@ export const subscriptions = sqliteTable(
     currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
     latestInvoiceId: text("latest_invoice_id"),
     latestInvoiceStatus: text("latest_invoice_status"),
+    canceledAt: integer("canceled_at", { mode: "timestamp_ms" }),
+    cancelReason: text("cancel_reason"),
     pastDueSince: integer("past_due_since", { mode: "timestamp_ms" }),
     metadata: text("metadata"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })

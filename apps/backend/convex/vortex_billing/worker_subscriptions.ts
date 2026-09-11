@@ -73,3 +73,74 @@ export const projectInvoiceEvent = internalAction({
     return { projected: true };
   },
 });
+
+const subscriptionUpdatedArgs = {
+  eventId: v.string(),
+  organizationId: v.string(),
+  externalCustomerId: v.string(),
+  externalSubscriptionId: v.string(),
+  externalPriceId: v.string(),
+  externalProductId: v.optional(v.string()),
+  status: v.union(
+    v.literal("active"),
+    v.literal("past_due"),
+    v.literal("canceled"),
+    v.literal("trialing"),
+    v.literal("paused"),
+    v.literal("incomplete"),
+    v.literal("incomplete_expired"),
+    v.literal("unpaid")
+  ),
+  cancelAtPeriodEnd: v.optional(v.boolean()),
+  currentPeriodStart: v.optional(v.number()),
+  currentPeriodEnd: v.optional(v.number()),
+  canceledAt: v.optional(v.number()),
+  cancelReason: v.optional(v.string()),
+  latestInvoiceId: v.optional(v.string()),
+};
+
+export const projectSubscriptionUpdated = internalAction({
+  args: subscriptionUpdatedArgs,
+  handler: async (_ctx, args) => {
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return { projected: false };
+    }
+
+    const res = await fetch(
+      `${url}/internal/webhooks/vortex-billing/subscription`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": key,
+        },
+        body: JSON.stringify({
+          eventId: args.eventId,
+          organizationId: args.organizationId,
+          externalCustomerId: args.externalCustomerId,
+          externalSubscriptionId: args.externalSubscriptionId,
+          externalPriceId: args.externalPriceId,
+          externalProductId: args.externalProductId,
+          status: args.status,
+          cancelAtPeriodEnd: args.cancelAtPeriodEnd ?? false,
+          currentPeriodStart: args.currentPeriodStart,
+          currentPeriodEnd: args.currentPeriodEnd,
+          canceledAt: args.canceledAt,
+          cancelReason: args.cancelReason,
+          latestInvoiceId: args.latestInvoiceId,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `Worker subscription event projection failed: ${res.status} ${text}`
+      );
+    }
+
+    return { projected: true };
+  },
+});
