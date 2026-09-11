@@ -428,6 +428,7 @@ const actionAuthValidator = v.object({
   name: v.optional(v.string()),
   role: v.string(),
   userType: v.string(),
+  permissions: v.array(v.string()),
 });
 
 export const getAdminAuthContext = internalQuery({
@@ -448,6 +449,7 @@ export const getAdminAuthContext = internalQuery({
       name: auth.name,
       role: auth.role,
       userType: auth.userType,
+      permissions: auth.permissions,
     };
   },
 });
@@ -464,6 +466,7 @@ export const getAuthActionContext = internalQuery({
       name: auth.name,
       role: auth.role,
       userType: auth.userType,
+      permissions: auth.permissions,
     };
   },
 });

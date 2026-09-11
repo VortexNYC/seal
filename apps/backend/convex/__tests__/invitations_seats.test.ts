@@ -93,7 +93,7 @@ describe("invitations seat enforcement (SEA-605)", () => {
     await expect(
       t
         .withIdentity({ subject: "invite_seat_owner" })
-        .mutation(api.invitations.createInvitation, {
+        .action(api.invitations.createInvitation, {
           email: "teammate@example.com",
           role: "member",
         })
@@ -105,7 +105,7 @@ describe("invitations seat enforcement (SEA-605)", () => {
 
     const result = await t
       .withIdentity({ subject: "invite_seat_owner" })
-      .mutation(api.invitations.createInvitation, {
+      .action(api.invitations.createInvitation, {
         email: "teammate@example.com",
         role: "member",
       });

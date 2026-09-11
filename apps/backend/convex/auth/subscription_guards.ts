@@ -338,6 +338,15 @@ export function getApplicationFee(
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }
 
+export const getSubscriptionPlanQuery = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    return await getSubscriptionPlan(ctx.db, args.organizationId);
+  },
+});
+
 /**
  * D1-backed subscription plan lookup.
  *
@@ -365,7 +374,10 @@ export const getSubscriptionPlanD1 = internalAction({
     const url = process.env.SIGN_API_EMAIL_URL;
     const key = process.env.SIGN_API_EMAIL_KEY;
     if (!url || !key) {
-      return await getSubscriptionPlan(ctx.db, args.organizationId);
+      return await ctx.runQuery(
+        internal.auth.subscription_guards.getSubscriptionPlanQuery,
+        { organizationId: args.organizationId }
+      );
     }
 
     const res = await fetch(
@@ -382,7 +394,10 @@ export const getSubscriptionPlanD1 = internalAction({
     if (!res.ok) {
       const text = await res.text();
       console.error(`Worker subscription-plan failed: ${res.status} ${text}`);
-      return await getSubscriptionPlan(ctx.db, args.organizationId);
+      return await ctx.runQuery(
+        internal.auth.subscription_guards.getSubscriptionPlanQuery,
+        { organizationId: args.organizationId }
+      );
     }
 
     try {
@@ -390,7 +405,10 @@ export const getSubscriptionPlanD1 = internalAction({
       return parse(subscriptionPlanResponseValidator, body);
     } catch (error) {
       console.error("Failed to parse Worker subscription-plan:", error);
-      return await getSubscriptionPlan(ctx.db, args.organizationId);
+      return await ctx.runQuery(
+        internal.auth.subscription_guards.getSubscriptionPlanQuery,
+        { organizationId: args.organizationId }
+      );
     }
   },
 });
