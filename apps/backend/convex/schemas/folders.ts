@@ -14,6 +14,8 @@ export const folderVisibilityTuple = v.union(
 export type FolderVisibility = Infer<typeof folderVisibilityTuple>;
 
 export const foldersTable = defineTable({
+  vortexAuthOrganizationId: v.optional(v.string()),
+  vortexAuthCreatedBy: v.optional(v.string()),
   organizationId: v.id("organizations"),
   name: v.string(),
   parentId: v.optional(v.id("folders")),
@@ -25,6 +27,8 @@ export const foldersTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
   .index("by_parent", ["parentId"])
   .index("by_org_type", ["organizationId", "type"])
+  .index("by_vortex_auth_org_type", ["vortexAuthOrganizationId", "type"])
   .index("by_org_created_by", ["organizationId", "createdBy"]);
