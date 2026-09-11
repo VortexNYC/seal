@@ -37,7 +37,6 @@ import {
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
@@ -96,13 +95,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   cancelDocument as cancelDocumentApi,
   deleteDocument as deleteDocumentApi,
   downloadDocument,
   getDocuments,
   getFolders,
-  getOrganization,
   moveDocumentsToFolder,
   sendDocument as sendDocumentApi,
   type ApiDocument,
@@ -1531,25 +1530,13 @@ function DocumentsPage() {
     }
   };
 
-  const { data: organization } = useSuspenseQuery({
-    queryKey: ["api", "organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
+  const { data: organization } = useSuspenseOrganization(slug);
 
-  const delegateOwnership = useMemo(() => {
-    if (!organization?.metadata) return false;
-    try {
-      const metadataSchema = z.object({
-        delegateOwnership: z.boolean().optional(),
-      });
-      const parsed = metadataSchema.safeParse(
-        JSON.parse(organization.metadata)
-      );
-      return parsed.success ? (parsed.data.delegateOwnership ?? false) : false;
-    } catch {
-      return false;
-    }
-  }, [organization?.metadata]);
+  if (!organization) {
+    return null;
+  }
+
+  const delegateOwnership = organization.delegateOwnership;
 
   const handleRefetch = () => {
     void queryClient.invalidateQueries({ queryKey: ["api"] });

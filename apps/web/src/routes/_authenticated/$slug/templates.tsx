@@ -13,6 +13,7 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -87,7 +88,6 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import {
   deleteTemplate as deleteTemplateApi,
   getFolders,
-  getOrganization,
   getOrganizationTemplates,
   moveTemplateToFolder,
   updateTemplate as updateTemplateApi,
@@ -769,10 +769,11 @@ function TemplatesPage() {
     }
   };
 
-  const { data: organization } = useSuspenseQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
+  const { data: organization } = useSuspenseOrganization(slug);
+
+  if (!organization) {
+    return null;
+  }
 
   return (
     <PageWrapper

@@ -27,7 +27,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   getNotificationSettings,
-  getOrganization,
   updateNotificationSettings,
 } from "@/lib/api-client";
 
@@ -41,15 +40,9 @@ export const Route = createFileRoute(
 function NotificationSettings() {
   const { slug } = Route.useParams();
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
-
   const { data: notificationSettings } = useQuery({
     queryKey: ["notifications", slug],
     queryFn: () => getNotificationSettings(slug),
-    enabled: !!organization,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,7 +118,7 @@ function NotificationSettings() {
     }
   };
 
-  if (!organization || !notificationSettings) {
+  if (!notificationSettings) {
     return null;
   }
 

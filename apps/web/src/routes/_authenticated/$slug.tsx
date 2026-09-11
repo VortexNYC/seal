@@ -6,7 +6,6 @@
  * Route: /{slug}/*
  */
 
-import { useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
@@ -25,8 +24,8 @@ import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
-import { getOrganization } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -56,14 +55,7 @@ function WorkspaceLayout() {
   const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
   useJamMetadata();
 
-  const { data: organization } = useQuery({
-    queryKey: ["api", "organizations", slug],
-    queryFn: () => getOrganization(slug),
-  });
-
-  if (organization === undefined) {
-    return null;
-  }
+  const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
     return <NotFoundPage />;

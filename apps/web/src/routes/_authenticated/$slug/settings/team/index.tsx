@@ -3,13 +3,12 @@ import {
   InviteMemberForm,
   OrganizationMembers,
 } from "@vortexnyc/better-auth-ui";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";
+import { useOrganization } from "@/hooks/use-organization";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { getOrganization } from "@/lib/api-client";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
@@ -22,10 +21,7 @@ function TeamSettings() {
   const client = getBetterAuthUiClient();
   const { isPro } = useSubscriptionLimits();
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
+  const { data: organization } = useOrganization(slug);
 
   const canManage =
     organization?.userRole === "owner" ||

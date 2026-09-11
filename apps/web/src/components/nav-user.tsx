@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronsUpDown,
@@ -25,7 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getOrganization } from "@/lib/api-client";
+import { useOrganization } from "@/hooks/use-organization";
 
 export function NavUser({
   user,
@@ -43,10 +42,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
+  const { data: organization } = useOrganization(slug);
   const plan = organization?.plan ?? "free";
   const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
   const isPro = plan === "pro";

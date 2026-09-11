@@ -24,7 +24,6 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import {
   getBrandingSettings,
-  getOrganization,
   updateBrandingSettings,
 } from "@/lib/api-client";
 
@@ -38,15 +37,9 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
 function BrandingSettings() {
   const { slug } = Route.useParams();
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
-
   const { data: brandingSettings } = useQuery({
     queryKey: ["branding", slug],
     queryFn: () => getBrandingSettings(slug),
-    enabled: !!organization,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,7 +84,7 @@ function BrandingSettings() {
     }
   };
 
-  if (!organization || !brandingSettings) {
+  if (!brandingSettings) {
     return null;
   }
 
