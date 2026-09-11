@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { AlertTriangleIcon, ArrowRightLeftIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getOrganizationMembers, transferDocument } from "@/lib/api-client";
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
+import { transferDocument } from "@/lib/api-client";
 
 interface TransferOwnershipDialogProps {
   open: boolean;
@@ -44,11 +45,7 @@ export function TransferOwnershipDialog({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: members } = useQuery({
-    queryKey: ["api", "organization", slug, "members"],
-    queryFn: () => getOrganizationMembers(slug),
-    enabled: open,
-  });
+  const { data: members } = useOrganizationMembers(slug, open);
 
   const transferOwnership = useMutation({
     mutationFn: (variables: { publicId: string; newOwnerId: string }) =>

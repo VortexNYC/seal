@@ -1,11 +1,10 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
- * Forgot password — request a reset email (Core VortexForgotPasswordForm).
- * Recovery links land on /reset-password?token=…
+ * Forgot password — request a reset email.
  */
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { VortexForgotPasswordForm } from "@vortexnyc/auth/react";
+import { AuthProvider, ForgotPasswordForm } from "@vortexnyc/better-auth-ui";
 
-import { authClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/forgot-password")({
@@ -25,19 +24,19 @@ function resolveAppOrigin(): string {
 }
 
 function ForgotPasswordRoute() {
+  const client = getBetterAuthUiClient();
   const resetPasswordUrl = `${resolveAppOrigin()}/reset-password`;
 
+  if (client === null) {
+    return <p className="text-center text-sm">Auth client not configured.</p>;
+  }
+
   return (
-    <div className="space-y-4">
-      <VortexForgotPasswordForm
-        authClient={authClient}
+    <AuthProvider client={client}>
+      <ForgotPasswordForm
         resetPasswordUrl={resetPasswordUrl}
+        signInUrl="/sign-in"
       />
-      <p className="text-muted-foreground text-center text-sm">
-        <Link className="underline underline-offset-4" to="/sign-in">
-          Back to sign in
-        </Link>
-      </p>
-    </div>
+    </AuthProvider>
   );
 }

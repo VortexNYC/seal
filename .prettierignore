@@ -6,7 +6,6 @@ dist
 .output
 .turbo
 .cache
-apps/backend/convex/_generated
 apps/web/src/routeTree.gen.ts
 apps/landing/src/routeTree.gen.ts
 apps/landing/.source

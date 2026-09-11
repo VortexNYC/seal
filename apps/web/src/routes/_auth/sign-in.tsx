@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { VortexAuthSignInPage, useVortexAuth } from "@vortexnyc/auth/react";
+import { AuthProvider, SignInForm } from "@vortexnyc/better-auth-ui";
 
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 interface SignInSearch {
@@ -25,8 +25,8 @@ export const Route = createFileRoute("/_auth/sign-in")({
 });
 
 function RouteComponent() {
-  const auth = useVortexAuth(betterAuthClient);
   const { token, redirect } = Route.useSearch();
+  const client = getBetterAuthUiClient();
 
   const forceRedirectUrl = redirect
     ? redirect
@@ -34,13 +34,18 @@ function RouteComponent() {
       ? `/accept-invite?token=${encodeURIComponent(token)}`
       : "/app";
 
+  if (client === null) {
+    return <p className="text-center text-sm">Auth client not configured.</p>;
+  }
+
   return (
-    <VortexAuthSignInPage
-      auth={auth}
-      authClient={betterAuthClient}
-      forceRedirectUrl={forceRedirectUrl}
-      forgotPasswordHref="/forgot-password"
-      signUpUrl="/sign-up"
-    />
+    <AuthProvider client={client}>
+      <SignInForm
+        redirectTo={forceRedirectUrl}
+        forgotPasswordHref="/forgot-password"
+        signUpUrl="/sign-up"
+        providers={[]}
+      />
+    </AuthProvider>
   );
 }

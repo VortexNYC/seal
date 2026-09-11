@@ -5,11 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import {
-  addRecipients,
-  getContacts,
-  getOrganizationMembers,
-} from "@/lib/api-client";
+import { addRecipients, getContacts } from "@/lib/api-client";
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
@@ -82,11 +79,7 @@ export function AddRecipientDialog({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
 
-  const { data: members } = useQuery({
-    queryKey: ["organizations", slug, "members"],
-    queryFn: () => getOrganizationMembers(slug),
-    enabled: open,
-  });
+  const { data: members } = useOrganizationMembers(slug, open);
 
   const { data: contactSuggestions } = useQuery({
     queryKey: ["contacts", "suggest", email],

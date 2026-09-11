@@ -26,7 +26,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  getOrganization,
   getSigningSettings,
   updateSigningSettings,
 } from "@/lib/api-client";
@@ -47,15 +46,9 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/signing")({
 function SigningSettings() {
   const { slug } = Route.useParams();
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
-
   const { data: signingSettings } = useQuery({
     queryKey: ["signing", slug],
     queryFn: () => getSigningSettings(slug),
-    enabled: !!organization,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,7 +120,7 @@ function SigningSettings() {
     }
   };
 
-  if (!organization || !signingSettings) {
+  if (!signingSettings) {
     return null;
   }
 

@@ -58,7 +58,7 @@ curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
 
 ```json
 {
-  "upload_url": "https://storage.convex.cloud/upload/..."
+  "upload_url": "https://api.seal.nyc/api/v1/uploads?token=..."
 }
 ```
 
@@ -69,7 +69,7 @@ curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
 
 ## Upload File
 
-Upload the file to the generated URL. The response from Convex storage returns a `storageId` that you use when creating the document.
+Upload the file to the generated URL. The response from Cloudflare R2 storage returns a `storageId` that you use when creating the document.
 
 ### Endpoint
 

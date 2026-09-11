@@ -21,7 +21,6 @@ An open-source, agent-native e-signature platform.
 | `apps/web`               | Main product app                              | React 19, TanStack Router, Vite |
 | `apps/landing`           | Marketing site and published developer docs   | TanStack Start, Fumadocs        |
 | `apps/api`               | Cloudflare Worker backend, REST API, webhooks | Hono, Drizzle, Zod, wrangler    |
-| `apps/backend`           | Legacy Convex backend (being retired)         | Convex, TypeScript              |
 | `apps/mcp-worker`        | MCP worker for Sign tools/resources           | Cloudflare Workers, MCP SDK     |
 | `packages/transactional` | Transactional email templates                 | React Email                     |
 | `packages/react-sdk`     | Embeddable React signing SDK                  | TypeScript, React               |

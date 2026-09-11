@@ -1,12 +1,11 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Email verification landing — linked from signup / change-email messages (?token=…).
- * Core VortexVerifyEmailScreen covers both flows (SEA-598).
  */
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { VortexVerifyEmailScreen } from "@vortexnyc/auth/react";
+import { AuthProvider, VerifyEmailForm } from "@vortexnyc/better-auth-ui";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { authClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/verify-email")({
@@ -31,20 +30,26 @@ function resolveAppOrigin(): string {
 function VerifyEmailRoute() {
   const { token } = Route.useSearch();
   const { user } = useCurrentUser();
+  const client = getBetterAuthUiClient();
   const userEmail = user?.primaryEmailAddress?.emailAddress ?? null;
-  const verifyEmailUrl = `${resolveAppOrigin()}/verify-email`;
+  const callbackUrl = `${resolveAppOrigin()}/verify-email`;
+
+  if (client === null) {
+    return <p className="text-center text-sm">Auth client not configured.</p>;
+  }
 
   return (
     <div className="space-y-4">
-      <VortexVerifyEmailScreen
-        authClient={authClient}
-        onVerified={() => {
-          window.location.assign("/sign-in");
-        }}
-        resendCallbackUrl={verifyEmailUrl}
-        token={token ?? ""}
-        userEmail={userEmail}
-      />
+      <AuthProvider client={client}>
+        <VerifyEmailForm
+          callbackUrl={callbackUrl}
+          token={token}
+          userEmail={userEmail}
+          onSuccess={() => {
+            window.location.assign("/sign-in");
+          }}
+        />
+      </AuthProvider>
       <p className="text-muted-foreground text-center text-sm">
         <Link className="underline underline-offset-4" to="/sign-in">
           Back to sign in

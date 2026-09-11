@@ -1,25 +1,19 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - Security
  *
- * Core session list + 2FA enrollment via @vortexnyc/auth/react.
+ * Sessions, two-factor enrollment, and password change via @vortexnyc/better-auth-ui.
  * Route: /{slug}/settings/profile/security
  */
-
-import { createFileRoute } from "@tanstack/react-router";
 import {
-  VortexEnableTwoFactorForm,
-  VortexSessionList,
-} from "@vortexnyc/auth/react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@vortexnyc/ui";
+  AuthProvider,
+  ChangePasswordForm,
+  EnableTwoFactorForm,
+  SessionList,
+} from "@vortexnyc/better-auth-ui";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"
@@ -28,48 +22,33 @@ export const Route = createFileRoute(
 });
 
 function SecuritySettings() {
+  const client = getBetterAuthUiClient();
+
+  if (client === null) {
+    return <p className="text-center text-sm">Auth client not configured.</p>;
+  }
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Sessions</CardTitle>
-          <CardDescription>
-            Devices and browsers signed into your account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <VortexSessionList authClient={authClient} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Two-factor authentication</CardTitle>
-          <CardDescription>
-            Add an authenticator app for stronger account protection.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <VortexEnableTwoFactorForm
-            authClient={authClient}
-            issuer="Seal"
-            onEnrolled={() => {
-              toast.success("Two-factor authentication enabled");
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>Manage your account password.</CardDescription>
-        </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          To change your password, sign out and use the “Forgot password” link
-          on the sign-in page — we’ll email you a secure reset link.
-        </CardContent>
-      </Card>
-    </div>
+    <AuthProvider client={client}>
+      <div className="space-y-6">
+        <SessionList
+          showRevokeOthersAction
+          onRevoke={() => {
+            toast.success("Session revoked");
+          }}
+        />
+        <EnableTwoFactorForm
+          issuer="Seal"
+          onSuccess={() => {
+            toast.success("Two-factor authentication enabled");
+          }}
+        />
+        <ChangePasswordForm
+          onSuccess={() => {
+            toast.success("Password changed");
+          }}
+        />
+      </div>
+    </AuthProvider>
   );
 }

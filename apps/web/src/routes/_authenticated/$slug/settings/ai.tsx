@@ -25,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   getAiSettings,
-  getOrganization,
   updateAiSettings,
 } from "@/lib/api-client";
 
@@ -37,15 +36,9 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/ai")({
 function AISettings() {
   const { slug } = Route.useParams();
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
-
   const { data: aiSettings } = useQuery({
     queryKey: ["ai", slug],
     queryFn: () => getAiSettings(slug),
-    enabled: !!organization,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +78,7 @@ function AISettings() {
     }
   };
 
-  if (!organization || !aiSettings) {
+  if (!aiSettings) {
     return null;
   }
 

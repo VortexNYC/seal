@@ -1,37 +1,23 @@
-/**
- * General Settings Page
- *
- * Core VortexOrganizationProfile for tenant identity (name / slug / logo /
- * brand colors / email from / org MFA + session timeout).
- * Seal-specific workspace defaults (timezone, currency) remain below.
- * Route: /{slug}/settings
- *
- * @validation VAL-REAL-1776629332274
- */
-
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
 import {
-  VortexOrganizationProfile,
-  type VortexOrgProfileOrganization,
-} from "@vortexnyc/auth/react";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-} from "@vortexnyc/ui";
-import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+  AuthProvider,
+  OrganizationProfile,
+  useAuth,
+} from "@vortexnyc/better-auth-ui";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { FloppyDisk } from "@phosphor-icons/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { getOrganization, updateWorkspace } from "@/lib/api-client";
+import { useOrganization } from "@/hooks/use-organization";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
@@ -45,172 +31,204 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/")({
   }),
 });
 
+interface ProductFormData {
+  timezone: string;
+  currency: string;
+  currencyKind: string;
+}
+
+const DEFAULT_PRODUCT: ProductFormData = {
+  timezone: "UTC",
+  currency: "BRL",
+  currencyKind: "normal",
+};
+
+function productFromMetadata(
+  metadata: Record<string, unknown> | undefined,
+): ProductFormData {
+  if (metadata === undefined) {
+    return DEFAULT_PRODUCT;
+  }
+  return {
+    timezone: typeof metadata.timezone === "string" ? metadata.timezone : DEFAULT_PRODUCT.timezone,
+    currency: typeof metadata.currency === "string" ? metadata.currency : DEFAULT_PRODUCT.currency,
+    currencyKind: typeof metadata.currencyKind === "string" ? metadata.currencyKind : DEFAULT_PRODUCT.currencyKind,
+  };
+}
+
 function GeneralSettings() {
+  const client = getBetterAuthUiClient();
+
+  if (client === null) {
+    return (
+      <PageWrapper title="General Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <AuthProvider client={client}>
+      <GeneralSettingsContent />
+    </AuthProvider>
+  );
+}
+
+function GeneralSettingsContent() {
   const { slug } = Route.useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const client = useAuth();
+  const { data: organization } = useOrganization(slug);
 
-  const { data: organization, isPending } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
-
+  const [product, setProduct] = useState<ProductFormData>(DEFAULT_PRODUCT);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    timezone: "UTC",
-    currency: "BRL",
-    currencyKind: "normal",
-  });
-
-  const profileOrganization =
-    useMemo<VortexOrgProfileOrganization | null>(() => {
-      if (!organization) {
-        return null;
-      }
-      const status =
-        organization.status === "suspended" || organization.status === "deleted"
-          ? organization.status
-          : "active";
-      const brand = organization.suiteBrand ?? {};
-      const logoFromBranding =
-        typeof organization.brandingSettings?.logoUrl === "string"
-          ? organization.brandingSettings.logoUrl
-          : undefined;
-      const imageUrl =
-        (typeof organization.logo === "string" && organization.logo) ||
-        logoFromBranding;
-      return {
-        _id: organization._id,
-        name: organization.name,
-        slug: organization.slug,
-        imageUrl,
-        status,
-        brand,
-        security: organization.suiteSecurity,
-      };
-    }, [organization]);
-
-  const isAdmin =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
 
   useEffect(() => {
-    if (organization) {
-      setFormData({
-        timezone: organization.timezone || "UTC",
-        currency: organization.currency || "BRL",
-        currencyKind: organization.currencyKind || "normal",
-      });
-    }
+    setProduct(productFromMetadata(organization?.metadata));
   }, [organization]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const isAdmin =
+    organization?.userRole === "owner" ||
+    organization?.userRole === "admin";
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (client.organization?.update === undefined || organization?.id === undefined) {
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      await updateWorkspace(slug, {
-        timezone: formData.timezone,
-        currency: formData.currency,
-        currencyKind: formData.currencyKind,
+      const existingMetadata = organization.metadata ?? {};
+
+      const response = await client.organization.update({
+        organizationId: organization.id,
+        data: {
+          metadata: {
+            ...existingMetadata,
+            timezone: product.timezone,
+            currency: product.currency,
+            currencyKind: product.currencyKind,
+          },
+        },
       });
 
-      toast.success("Workspace settings updated successfully");
+      if (response.error !== null) {
+        toast.error(
+          response.error.message ?? "Could not update workspace settings.",
+        );
+      } else {
+        toast.success("Workspace settings updated successfully.");
+      }
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update workspace settings"
+          : "Could not update workspace settings.",
       );
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
-  if (isPending || !organization) {
-    return null;
+  if (organization === undefined) {
+    return (
+      <PageWrapper title="General Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
   }
 
   return (
     <PageWrapper title="General Settings">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <VortexOrganizationProfile
-            isAdmin={isAdmin}
-            isLoading={isPending}
-            onUpdate={async (input) => {
-              try {
-                await updateWorkspace(slug, {
-                  ...(input.name !== undefined ? { name: input.name } : {}),
-                  ...(input.imageUrl !== undefined
-                    ? { logo: input.imageUrl ?? undefined }
-                    : {}),
-                  ...(input.brand !== undefined ? { brand: input.brand } : {}),
-                  ...(input.security !== undefined
-                    ? { security: input.security }
-                    : {}),
+      <div className="grid gap-6">
+        {organization && (
+          <OrganizationProfile
+            organizationId={organization.id}
+            onUpdated={(updated) => {
+              void queryClient.invalidateQueries({
+                queryKey: ["organization", updated.slug],
+              });
+              if (updated.slug !== slug) {
+                void navigate({
+                  to: "/$slug/settings",
+                  params: { slug: updated.slug },
                 });
-                toast.success("Workspace profile updated");
-              } catch (error) {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to update workspace profile"
-                );
               }
             }}
-            organization={profileOrganization}
-            copy={{
-              title: "Workspace profile",
-              description:
-                "Suite tenant identity, brand, and org security (Core). Signing chrome stays under Branding.",
-              slugLabel: "Workspace slug",
+            onDeleted={() => {
+              void navigate({ to: "/" });
             }}
           />
-        </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="contents">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Regional defaults</CardTitle>
-              <CardDescription>
-                Seal product defaults for documents and payments in this
-                workspace.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+        <LayerCard>
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Regional defaults
+            </Text>
+            <Text variant="secondary">
+              Product defaults for documents and payments in this workspace.
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
                 <Input
                   id="timezone"
-                  type="text"
-                  value={formData.timezone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, timezone: e.target.value })
+                  value={product.timezone}
+                  onChange={(event) =>
+                    setProduct((prev) => ({
+                      ...prev,
+                      timezone: event.target.value,
+                    }))
                   }
                   placeholder="UTC"
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Input
                   id="currency"
-                  type="text"
-                  value={formData.currency}
-                  onChange={(e) =>
-                    setFormData({ ...formData, currency: e.target.value })
+                  value={product.currency}
+                  onChange={(event) =>
+                    setProduct((prev) => ({
+                      ...prev,
+                      currency: event.target.value,
+                    }))
                   }
                   placeholder="USD"
+                  disabled={!isAdmin}
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end md:col-span-2">
-            <Button type="submit" disabled={isSubmitting || !isAdmin}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Saving..." : "Save regional defaults"}
-            </Button>
-          </div>
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="currencyKind">Currency kind</Label>
+                <Input
+                  id="currencyKind"
+                  value={product.currencyKind}
+                  onChange={(event) =>
+                    setProduct((prev) => ({
+                      ...prev,
+                      currencyKind: event.target.value,
+                    }))
+                  }
+                  placeholder="normal"
+                  disabled={!isAdmin}
+                />
+              </div>
+              <div className="md:col-span-3 flex justify-end">
+                <Button type="submit" disabled={!isAdmin || isSubmitting}>
+                  <FloppyDisk className="mr-2 h-4 w-4" />
+                  {isSubmitting ? "Saving…" : "Save workspace settings"}
+                </Button>
+              </div>
+            </form>
+          </LayerCard.Primary>
+        </LayerCard>
       </div>
     </PageWrapper>
   );

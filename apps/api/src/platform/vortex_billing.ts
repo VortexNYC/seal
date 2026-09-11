@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -8,15 +9,35 @@ import {
   vortexBillingWebhookEvents,
 } from "../global/schema.js";
 
-type PaymentStatus =
-  | "pending"
-  | "created"
-  | "awaiting"
-  | "paid"
-  | "failed"
-  | "cancelled";
+const paymentStatusSchema = z.enum([
+  "pending",
+  "created",
+  "awaiting",
+  "paid",
+  "failed",
+  "cancelled",
+]);
+const invoiceStatusSchema = z.enum([
+  "draft",
+  "open",
+  "paid",
+  "void",
+  "uncollectible",
+  "deleted",
+]);
 
-type InvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
+type PaymentStatus = z.infer<typeof paymentStatusSchema>;
+type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
+
+function parsePaymentStatus(status: string | null): PaymentStatus | null {
+  if (status === null) return null;
+  return paymentStatusSchema.parse(status);
+}
+
+function parseInvoiceStatus(status: string | null): InvoiceStatus | null {
+  if (status === null) return null;
+  return invoiceStatusSchema.parse(status);
+}
 
 export interface ProjectPayableObjectInput {
   eventId: string;
@@ -329,8 +350,8 @@ export async function projectPayableObjectUpdated(
 
   if (
     shouldIgnoreTerminalPayableProjection({
-      currentInvoiceStatus: invoiceRecord?.status ?? null,
-      currentPaymentStatus: config?.paymentStatus ?? null,
+      currentInvoiceStatus: parseInvoiceStatus(invoiceRecord?.status ?? null),
+      currentPaymentStatus: parsePaymentStatus(config?.paymentStatus ?? null),
       incomingInvoiceStatus: invoiceStatus,
       incomingPaymentStatus: paymentStatus,
     })

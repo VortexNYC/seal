@@ -189,7 +189,11 @@ export async function runDunningEmails(
       }
 
       const nextStep = step + 1;
-      const nextAt = new Date(now.getTime() + DUNNING_DELAYS[nextStep]);
+      const delay = DUNNING_DELAYS[nextStep];
+      if (delay === undefined) {
+        return;
+      }
+      const nextAt = new Date(now.getTime() + delay);
       await db
         .update(documentInvoices)
         .set({

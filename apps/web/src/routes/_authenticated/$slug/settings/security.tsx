@@ -1,39 +1,30 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
+import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
 /**
  * Security Settings Page
  *
  * Seal-owned: API access, IP allowlist (enforced in api/context.ts), document
- * ownership transfer. Org MFA + session timeout are Core (VOR-183 / SEA-604) —
- * dead toggles removed from this UI.
+ * ownership transfer. Org MFA + session timeout are Core (VOR-183 / SEA-604).
  *
  * Product document audit → audit-log.
  * Route: /{slug}/settings/security
  */
-
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Label,
-  Switch,
-} from "@vortexnyc/ui";
-import { ArrowRightLeft, Save, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  getOrganization,
-  getSecuritySettings,
-  updateSecuritySettings,
-  updateWorkspace,
-} from "@/lib/api-client";
+import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
+import { useOrganization } from "@/hooks/use-organization";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {
@@ -42,32 +33,51 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   }
 );
 
-function SecuritySettings() {
-  const { slug } = Route.useParams();
+interface SecurityFormData {
+  ipAllowlistText: string;
+  allowApiAccess: boolean;
+}
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
+function SecuritySettings() {
+  const client = getBetterAuthUiClient();
+
+  if (client === null) {
+    return (
+      <PageWrapper title="Security Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <AuthProvider client={client}>
+      <SecuritySettingsContent />
+    </AuthProvider>
+  );
+}
+
+function SecuritySettingsContent() {
+  const { slug } = Route.useParams();
+  const client = useAuth();
+  const { data: organization } = useOrganization(slug);
 
   const { data: securitySettings } = useQuery({
     queryKey: ["security", slug],
     queryFn: () => getSecuritySettings(slug),
-    enabled: !!organization,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDelegateOwnershipUpdating, setIsDelegateOwnershipUpdating] =
     useState(false);
   const [delegateOwnership, setDelegateOwnership] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SecurityFormData>({
     ipAllowlistText: "",
     allowApiAccess: true,
   });
 
-  const isOwner = organization?.userRole === "owner";
-  const isAdmin =
-    organization?.userRole === "admin" || organization?.userRole === "owner";
+  const userRole = organization?.userRole;
+  const isOwner = userRole === "owner";
+  const isAdmin = userRole === "admin" || userRole === "owner";
 
   useEffect(() => {
     if (securitySettings) {
@@ -79,16 +89,37 @@ function SecuritySettings() {
   }, [securitySettings]);
 
   useEffect(() => {
-    if (organization) {
-      setDelegateOwnership(organization.delegateOwnership ?? false);
-    }
+    setDelegateOwnership(organization?.delegateOwnership ?? false);
   }, [organization]);
 
   const handleDelegateOwnershipChange = async (checked: boolean) => {
+    if (client.organization?.update === undefined || organization?.id === undefined) {
+      toast.error("Organization update is not available.");
+      return;
+    }
+
     setIsDelegateOwnershipUpdating(true);
     try {
       setDelegateOwnership(checked);
-      await updateWorkspace(slug, { delegateOwnership: checked });
+
+      const existingMetadata = organization.metadata ?? {};
+
+      const response = await client.organization.update({
+        organizationId: organization.id,
+        data: {
+          metadata: {
+            ...existingMetadata,
+            delegateOwnership: checked,
+          },
+        },
+      });
+
+      if (response.error !== null) {
+        throw new Error(
+          response.error.message ?? "Could not update ownership transfer."
+        );
+      }
+
       toast.success(
         checked ? "Ownership transfer enabled" : "Ownership transfer disabled"
       );
@@ -138,20 +169,20 @@ function SecuritySettings() {
     <PageWrapper title="Security Settings">
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
         {!isOwner && (
-          <Card className="border-warning/30 bg-warning-surface md:col-span-2">
-            <CardContent className="pt-6">
-              <p className="text-warning text-sm">
-                Security settings can only be modified by organization owners.
-                Contact your organization owner to make changes.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 md:col-span-2">
+            <p className="text-warning text-sm">
+              Security settings can only be modified by organization owners.
+              Contact your organization owner to make changes.
+            </p>
+          </div>
         )}
 
-        <Card className="border-dashed md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Suite vs Sign</CardTitle>
-            <CardDescription>
+        <LayerCard className="border-dashed md:col-span-2">
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Suite vs Sign
+            </Text>
+            <Text variant="secondary" size="sm">
               Org-wide MFA and session timeout are set on{" "}
               <Link
                 className="text-primary underline-offset-4 hover:underline"
@@ -171,54 +202,53 @@ function SecuritySettings() {
               </Link>
               . This page keeps Seal API access, IP allowlist, and document
               ownership transfer.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+            </Text>
+          </LayerCard.Secondary>
+        </LayerCard>
 
-        <Card className="md:col-span-2">
-          <CardHeader>
+        <LayerCard className="md:col-span-2">
+          <LayerCard.Secondary>
             <div className="flex items-center gap-2">
               <Shield className="size-5" />
-              <CardTitle>API Access</CardTitle>
+              <Text as="h2" variant="heading">
+                API Access
+              </Text>
             </div>
-            <CardDescription>
+            <Text variant="secondary" size="sm">
               Control programmatic access to your workspace via the REST API
               (enforced in API auth).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="allow-api" className="text-sm font-medium">
-                  Allow API access
-                </Label>
-                <p className="text-muted-foreground text-xs">
-                  Enable programmatic access via API keys. Disabling revokes all
-                  existing API key access.
-                </p>
-              </div>
-              <Switch
-                id="allow-api"
-                checked={formData.allowApiAccess}
-                disabled={!isOwner}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, allowApiAccess: checked })
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <Checkbox
+              label="Allow API access"
+              checked={formData.allowApiAccess}
+              disabled={!isOwner}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, allowApiAccess: checked })
+              }
+            />
+            <Text variant="secondary" size="sm">
+              Enable programmatic access via API keys. Disabling revokes all
+              existing API key access.
+            </Text>
+          </LayerCard.Primary>
+        </LayerCard>
 
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>IP Allowlist</CardTitle>
-            <CardDescription>
+        <LayerCard className="md:col-span-2">
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              IP Allowlist
+            </Text>
+            <Text variant="secondary" size="sm">
               Restrict API access to specific IP addresses or CIDR ranges. Leave
               empty for no restriction.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <Label htmlFor="ip-allowlist">Allowed CIDR ranges</Label>
             <Textarea
+              id="ip-allowlist"
               value={formData.ipAllowlistText}
               disabled={!isOwner}
               onChange={(e) =>
@@ -227,60 +257,56 @@ function SecuritySettings() {
               placeholder={"192.168.1.0/24\n10.0.0.0/8"}
               rows={4}
             />
-            <p className="text-muted-foreground mt-2 text-xs">
+            <Text variant="secondary" size="sm">
               One CIDR range per line
-            </p>
-          </CardContent>
-        </Card>
+            </Text>
+          </LayerCard.Primary>
+        </LayerCard>
 
-        <Card className="md:col-span-2">
-          <CardHeader>
+        <LayerCard className="md:col-span-2">
+          <LayerCard.Secondary>
             <div className="flex items-center gap-2">
-              <ArrowRightLeft className="size-5" />
-              <CardTitle>Document Ownership Transfer</CardTitle>
+              <ArrowsLeftRight className="size-5" />
+              <Text as="h2" variant="heading">
+                Document Ownership Transfer
+              </Text>
             </div>
-            <CardDescription>
+            <Text variant="secondary" size="sm">
               Seal product setting: allow document owners to transfer ownership
               to other organization members.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label
-                  htmlFor="delegate-ownership"
-                  className="text-sm font-medium"
-                >
-                  Enable ownership transfer
-                </Label>
-                <p className="text-muted-foreground text-xs">
-                  When enabled, document owners and admins can reassign document
-                  ownership to any organization member.
-                </p>
-              </div>
-              <Switch
-                id="delegate-ownership"
-                checked={delegateOwnership}
-                disabled={!isAdmin || isDelegateOwnershipUpdating}
-                onCheckedChange={handleDelegateOwnershipChange}
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <Checkbox
+              label="Enable ownership transfer"
+              checked={delegateOwnership}
+              disabled={!isAdmin || isDelegateOwnershipUpdating}
+              onCheckedChange={(checked) =>
+                void handleDelegateOwnershipChange(checked)
+              }
+            />
+            <Text variant="secondary" size="sm">
+              When enabled, document owners and admins can reassign document
+              ownership to any organization member.
+            </Text>
+          </LayerCard.Primary>
+        </LayerCard>
 
         <div className="flex justify-end md:col-span-2">
           <Button type="submit" disabled={isSubmitting || !isOwner}>
-            <Save className="mr-2 size-4" />
-            {isSubmitting ? "Saving..." : "Save Changes"}
+            <FloppyDisk className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </form>
 
       {isAdmin ? (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Access &amp; security events</CardTitle>
-            <CardDescription>
+        <LayerCard className="mt-6">
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Access &amp; security events
+            </Text>
+            <Text variant="secondary" size="sm">
               Member, organization, and login events are managed in Vortex Auth.
               For document and signing activity, use the{" "}
               <Link
@@ -291,14 +317,14 @@ function SecuritySettings() {
                 Audit log
               </Link>
               .
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <Text variant="secondary" size="sm">
               Security audit history is not available in this workspace view.
-            </p>
-          </CardContent>
-        </Card>
+            </Text>
+          </LayerCard.Primary>
+        </LayerCard>
       ) : null}
     </PageWrapper>
   );

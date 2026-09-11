@@ -6,39 +6,6 @@ import {
   type DocumentWorkflowStatus,
 } from "@/lib/document-status";
 
-const organizationSchema = z.object({
-  _id: z.string(),
-  id: z.string(),
-  name: z.string(),
-  slug: z.string(),
-  logo: z.string().nullable().optional(),
-  metadata: z.string().nullable().optional(),
-  status: z.string(),
-  userRole: z.string(),
-  suiteBrand: z.record(z.string(), z.unknown()),
-  suiteSecurity: z.record(z.string(), z.unknown()),
-  brandingSettings: z.record(z.string(), z.unknown()).nullable().optional(),
-  delegateOwnership: z.boolean(),
-  timezone: z.string(),
-  currency: z.string(),
-  currencyKind: z.string(),
-  plan: z.string(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
-});
-
-const teamSummarySchema = z.object({
-  total: z.number().int(),
-  active: z.number().int(),
-  pending: z.number().int(),
-  byRole: z.object({
-    owner: z.number().int(),
-    admin: z.number().int(),
-    member: z.number().int(),
-    viewer: z.number().int(),
-  }),
-});
-
 const documentTrendSchema = z.object({
   date: z.string(),
   created: z.number().int(),
@@ -188,8 +155,6 @@ const notificationSchema = z.object({
   updatedAt: z.number(),
 });
 
-export type ApiOrganization = z.infer<typeof organizationSchema>;
-export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 export type ApiAnalyticsStats = z.infer<typeof analyticsStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
@@ -263,13 +228,6 @@ async function apiFetch<T>(
 
   const data: unknown = await response.json();
   return schema.parse(data);
-}
-
-export async function getOrganization(slug: string): Promise<ApiOrganization> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}`,
-    organizationSchema
-  );
 }
 
 const brandingSettingsSchema = z.record(z.string(), z.unknown());
@@ -669,38 +627,6 @@ export async function updateBrandingSettings(
       method: "PATCH",
       body: JSON.stringify(input),
     }
-  );
-}
-
-export async function updateWorkspace(
-  slug: string,
-  input: {
-    name?: string;
-    logo?: string | null;
-    brand?: Record<string, unknown>;
-    security?: Record<string, unknown>;
-    delegateOwnership?: boolean;
-    timezone?: string;
-    currency?: string;
-    currencyKind?: string;
-  }
-): Promise<ApiOrganization> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/workspace`,
-    organizationSchema,
-    {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    }
-  );
-}
-
-export async function getOrganizationTeam(
-  slug: string
-): Promise<ApiTeamSummary> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/team`,
-    teamSummarySchema
   );
 }
 
@@ -1141,17 +1067,6 @@ const sharingResponseSchema = z.object({
 
 export type ApiDocumentSharing = z.infer<typeof sharingResponseSchema>;
 
-const teamMemberSchema = z.object({
-  userId: z.string(),
-  name: z.string().nullable(),
-  email: z.string(),
-  role: z.string(),
-  avatarUrl: z.string().nullable(),
-  status: z.string(),
-});
-
-export type ApiTeamMember = z.infer<typeof teamMemberSchema>;
-
 export async function getDocuments(
   options: {
     filter?: "all" | "owned" | "shared";
@@ -1406,14 +1321,7 @@ export async function updateDocumentPermission(
   );
 }
 
-export async function getOrganizationMembers(
-  slug: string
-): Promise<ApiTeamMember[]> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/members`,
-    z.array(teamMemberSchema)
-  );
-}
+
 
 const recipientSchema = z.object({
   id: z.string(),

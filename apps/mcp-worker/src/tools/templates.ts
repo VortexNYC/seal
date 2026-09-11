@@ -1,6 +1,6 @@
 /**
  * @fileoverview Template tools for the Seal MCP server.
- * Uses shared validation schemas from @seal/backend.
+ * Validation schemas are defined locally in `../api-contracts`.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 

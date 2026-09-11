@@ -9,12 +9,30 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { UsersIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getOrganizationTeam } from "@/lib/api-client";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { cn } from "@/lib/utils";
 
 interface TeamOverviewProps {
   slug: string;
   organizationName: string;
+}
+
+interface RoleCounts {
+  owner: number;
+  admin: number;
+  member: number;
+  viewer: number;
+}
+
+interface TeamSummary {
+  total: number;
+  active: number;
+  pending: number;
+  byRole: RoleCounts;
+}
+
+function isKnownRole(role: string): role is keyof RoleCounts {
+  return role === "owner" || role === "admin" || role === "member" || role === "viewer";
 }
 
 export function TeamOverview({
@@ -23,7 +41,58 @@ export function TeamOverview({
 }: TeamOverviewProps): React.ReactElement {
   const { data: memberCount } = useSuspenseQuery({
     queryKey: ["api", "organization", slug, "team"],
-    queryFn: () => getOrganizationTeam(slug),
+    queryFn: async (): Promise<TeamSummary> => {
+      const client = getBetterAuthUiClient();
+      if (client === null) {
+        throw new Error("Auth client is not available.");
+      }
+      if (client.organization?.getFullOrganization === undefined) {
+        throw new Error("Organization API is not available.");
+      }
+
+      const response = await client.organization.getFullOrganization({
+        query: { organizationSlug: slug },
+      });
+      if (response.error !== null) {
+        throw new Error(
+          response.error.message ?? "Could not load organization team.",
+        );
+      }
+
+      const fullOrg = response.data;
+      if (fullOrg == null) {
+        return {
+          total: 0,
+          active: 0,
+          pending: 0,
+          byRole: { owner: 0, admin: 0, member: 0, viewer: 0 },
+        };
+      }
+
+      const byRole: RoleCounts = {
+        owner: 0,
+        admin: 0,
+        member: 0,
+        viewer: 0,
+      };
+
+      for (const member of fullOrg.members) {
+        const role = member.role;
+        if (typeof role === "string" && isKnownRole(role)) {
+          byRole[role]++;
+        }
+      }
+
+      const active = fullOrg.members.length;
+      const pending = fullOrg.invitations.length;
+
+      return {
+        total: active + pending,
+        active,
+        pending,
+        byRole,
+      };
+    },
   });
 
   const activeCount = memberCount.active;
@@ -121,7 +190,7 @@ function RolePill({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-        colorClass
+        colorClass,
       )}
     >
       {count} {label}

@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Local agent configuration
+.devin/
+
 # dependencies
 /node_modules
 /apps/*/node_modules
@@ -86,13 +89,7 @@ sample-doc.pdf
 .playwright-cli/
 .playwright-profile/
 
-# Auth state files (local dev)
-apps/backend/auth-state.json
-apps/backend/seal-auth
-
 # Ad-hoc screenshots and test documents
-apps/backend/*.png
-apps/backend/*.pdf
 *.png
 *.gif
 
@@ -107,17 +104,13 @@ docs/app-feature-map.md
 .test-env
 .pi/
 docs/test-sessions/
-apps/backend/--annotate
 apps/node_modules/
 
 # Local env variants and backups
-apps/backend/.env.local.bak
 apps/web/.env.production-env
 apps/web/.env.staging-custom
 apps/web/.env.staging-env
 
-# Convex generated files (web app mirrors backend — not source of truth)
-apps/web/convex/_generated/
 .claude/hookify.*.local.md
 .claude/skills/openlogs-server-logs
 .agents/skills/openlogs-server-logs/

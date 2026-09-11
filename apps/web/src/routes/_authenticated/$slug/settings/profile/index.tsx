@@ -1,23 +1,20 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - General
  *
- * Core VortexUserProfile for account identity; change-email via Core form.
+ * User profile, email, and account management via @vortexnyc/better-auth-ui.
  * Route: /{slug}/settings/profile/ (index)
  */
-
-import { createFileRoute } from "@tanstack/react-router";
 import {
-  VortexChangeEmailForm,
-  VortexUserProfile,
-  type VortexUserProfileUser,
-  useVortexAuthForgotPassword,
-  useVortexAuthUpdateProfile,
-} from "@vortexnyc/auth/react";
-import { useMemo } from "react";
+  AuthProvider,
+  ChangeEmailForm,
+  ChangePasswordForm,
+  DeleteAccountForm,
+  UserProfileForm,
+} from "@vortexnyc/better-auth-ui";
 import { toast } from "sonner";
 
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { authClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 function resolveAppOrigin(): string {
   const configured = import.meta.env.VITE_APP_URL;
@@ -37,84 +34,41 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
 );
 
 function ProfileSettings() {
-  const { user, isLoaded } = useCurrentUser();
-  const { updateProfile: updateAuthProfile } =
-    useVortexAuthUpdateProfile(authClient);
-  const { requestReset, isRequesting } =
-    useVortexAuthForgotPassword(authClient);
+  const client = getBetterAuthUiClient();
 
-  const profileUser = useMemo<VortexUserProfileUser | null>(() => {
-    if (!user) {
-      return null;
-    }
-    return {
-      id: user.id,
-      email: user.primaryEmailAddress?.emailAddress ?? "",
-      name: user.fullName ?? user.username ?? null,
-      imageUrl: user.imageUrl ?? null,
-    };
-  }, [user]);
+  if (client === null) {
+    return <p className="text-center text-sm">Auth client not configured.</p>;
+  }
+
+  const verifyCallbackUrl = `${resolveAppOrigin()}/verify-email`;
 
   return (
-    <div className="space-y-6">
-      <VortexUserProfile
-        isLoading={!isLoaded}
-        onChangePassword={() => {
-          const email = profileUser?.email?.trim();
-          if (!email) {
-            toast.error("No email on this account to send a reset link.");
-            return;
-          }
-          if (isRequesting) {
-            return;
-          }
-          void requestReset({
-            email,
-            redirectTo: `${resolveAppOrigin()}/reset-password`,
-          }).then((result) => {
-            if (!result.ok) {
-              toast.error(
-                result.error ?? "Failed to send password reset email"
-              );
-              return;
-            }
+    <AuthProvider client={client}>
+      <div className="space-y-6">
+        <UserProfileForm
+          onSuccess={() => {
+            toast.success("Profile updated");
+          }}
+        />
+        <ChangeEmailForm
+          callbackURL={verifyCallbackUrl}
+          onSuccess={() => {
             toast.success(
-              "Password reset email sent. Check your inbox to set a new password."
+              "Confirmation email sent. Click the link from the new address to finish the change."
             );
-          });
-        }}
-        onDeleteAccount={() => {
-          toast.info(
-            "Account deletion is not available from this screen. Contact support."
-          );
-        }}
-        onManageTwoFactor={() => {
-          toast.info("Manage two-factor authentication under Security.");
-        }}
-        onUpdateProfile={async (input) => {
-          const result = await updateAuthProfile({
-            name: input.name,
-            ...(input.imageUrl != null ? { image: input.imageUrl } : {}),
-          });
-          if (!result.ok) {
-            toast.error(result.error ?? "Failed to update profile");
-            return;
-          }
-          toast.success("Profile updated successfully");
-        }}
-        user={profileUser}
-      />
-
-      <VortexChangeEmailForm
-        authClient={authClient}
-        currentEmail={profileUser?.email ?? null}
-        onRequested={() => {
-          toast.success(
-            "Confirmation email sent. Click the link from the new address to finish the change."
-          );
-        }}
-        verifyCallbackUrl={`${resolveAppOrigin()}/verify-email`}
-      />
-    </div>
+          }}
+        />
+        <ChangePasswordForm
+          onSuccess={() => {
+            toast.success("Password updated");
+          }}
+        />
+        <DeleteAccountForm
+          onSuccess={() => {
+            window.location.assign("/");
+          }}
+        />
+      </div>
+    </AuthProvider>
   );
 }

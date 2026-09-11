@@ -7,7 +7,6 @@ catalog:
   "@types/node": "^25.5.2"
   "@types/react": "^19.2.14"
   "@types/react-dom": "^19.2.3"
-  "convex": "^1.41.0"
   "react": "^19.2.4"
   "react-dom": "^19.2.4"
   "typescript": "~5.9.3"
@@ -44,7 +43,7 @@ onlyBuiltDependencies:
 minimumReleaseAgeExclude:
   - "@vortexnyc/auth@0.14.3 || 0.15.0 || 0.16.0 || 0.16.1 || 0.17.0 || 0.18.0"
   - '@vortexnyc/tooling@0.11.14 || 0.11.15 || 0.11.16 || 0.11.19 || 0.11.22 || 0.11.23 || 0.11.25'
-  - "@vortexnyc/convex@0.7.2 || 0.8.0 || 0.9.0"
+
   - "@tanstack/react-router-devtools@1.167.1"
   - "@tanstack/router-devtools-core@1.168.1"
   - "@tanstack/react-router@1.170.19"
@@ -63,4 +62,3 @@ minimumReleaseAgeExclude:
 
 overrides:
   "@tanstack/router-core": "1.171.16"
-  "@convex-dev/agent": "0.6.4"

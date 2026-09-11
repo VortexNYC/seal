@@ -30,7 +30,7 @@ export function parseApiError(error: unknown): ParsedError {
   const rawMessage = error instanceof Error ? error.message : String(error);
   // Strip common server error prefixes to get just the human-readable message.
   const apiMatch = rawMessage.match(
-    /(?:ConvexError|Error):\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s
+    /(?:Error):\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s
   );
   const message = apiMatch ? apiMatch[1].trim() : rawMessage;
   const lowerMessage = message.toLowerCase();

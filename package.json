@@ -11,8 +11,8 @@
     "dev:all": "pnpm run dev",
     "build": "pnpm --filter @seal/web run build",
     "build:all": "vp run -r build",
-    "test": "pnpm --filter @vortex/sign-api --filter @seal/web --filter @seal/backend run test",
-    "typecheck": "pnpm --filter @vortex/sign-api --filter @seal/web --filter @seal/backend --filter @seal/react --filter @seal/transactional run typecheck",
+    "test": "pnpm --filter @vortex/sign-api --filter @seal/web run test",
+    "typecheck": "pnpm --filter @vortex/sign-api --filter @seal/web --filter @seal/react --filter @seal/transactional run typecheck",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix && vp fmt",
     "format": "vp fmt",
@@ -23,7 +23,7 @@
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
-    "clean": "(cd apps/backend && pnpm run clean) && (cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules"
+    "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",

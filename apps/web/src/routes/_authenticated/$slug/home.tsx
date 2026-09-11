@@ -8,7 +8,6 @@
  * Route: /{slug}/home
  */
 
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 
@@ -24,8 +23,8 @@ import { TrendChart } from "@/components/dashboard/trend-chart";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
-import { getOrganization } from "@/lib/api-client";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({
@@ -131,10 +130,11 @@ function WorkspaceHome(): React.ReactElement | null {
   const { slug } = Route.useParams();
   const { user } = useUser();
 
-  const { data: organization } = useSuspenseQuery({
-    queryKey: ["api", "organization", slug],
-    queryFn: () => getOrganization(slug),
-  });
+  const { data: organization } = useSuspenseOrganization(slug);
+
+  if (!organization) {
+    return null;
+  }
 
   const firstName = user?.firstName ?? "there";
   const greeting = getGreeting();

@@ -105,8 +105,8 @@ function PrivacyPolicy() {
           </p>
           <ul>
             <li>
-              <strong>Convex</strong> — Backend infrastructure, authentication,
-              and data storage
+              <strong>Cloudflare</strong> — Edge compute, authentication, D1
+              database, R2 object storage, and Durable Objects
             </li>
             <li>
               <strong>Vortex Payments</strong> — Payment processing and

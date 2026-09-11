@@ -6,12 +6,12 @@
  * Route: /{slug}/*
  */
 
-import { useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   Outlet,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -25,8 +25,9 @@ import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
-import { getOrganization } from "@/lib/api-client";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -56,14 +57,13 @@ function WorkspaceLayout() {
   const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
   useJamMetadata();
 
-  const { data: organization } = useQuery({
-    queryKey: ["api", "organizations", slug],
-    queryFn: () => getOrganization(slug),
-  });
+  useEffect(() => {
+    const client = getBetterAuthUiClient();
+    if (client?.organization?.setActive === undefined) return;
+    void client.organization.setActive({ organizationSlug: slug });
+  }, [slug]);
 
-  if (organization === undefined) {
-    return null;
-  }
+  const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
     return <NotFoundPage />;

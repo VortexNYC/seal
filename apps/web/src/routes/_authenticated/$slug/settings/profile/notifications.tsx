@@ -1,28 +1,16 @@
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { Bell, Clock, Desktop, EnvelopeSimple } from "@phosphor-icons/react";
 /**
  * Profile Settings Page - Notifications
  *
  * User notification preferences management
  * Route: /{slug}/settings/profile/notifications
  */
-
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Separator,
-  Switch,
-} from "@vortexnyc/ui";
-import { Bell, Clock, Mail, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -72,18 +60,13 @@ function NotificationSettings() {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
-
-  // Email preferences
   const [emailPrefs, setEmailPrefs] = useState<EmailPreferences>(
     DEFAULT_EMAIL_PREFERENCES
   );
-
-  // Other notification settings
   const [inAppEnabled, setInAppEnabled] = useState(true);
   const [desktopEnabled, setDesktopEnabled] = useState(false);
   const [frequency, setFrequency] = useState<NotificationFrequency>("instant");
 
-  // Initialize from profile
   useEffect(() => {
     if (userProfile) {
       setEmailPrefs(userProfile.email);
@@ -99,14 +82,12 @@ function NotificationSettings() {
   ) => {
     const newPrefs = { ...emailPrefs, [key]: value };
 
-    // If disabling main toggle, disable all sub-options
     if (key === "enabled" && !value) {
       newPrefs.documentEvents = false;
       newPrefs.reminders = false;
       newPrefs.weeklyDigest = false;
     }
 
-    // If enabling a sub-option, ensure main toggle is on
     if (key !== "enabled" && value) {
       newPrefs.enabled = true;
     }
@@ -122,7 +103,6 @@ function NotificationSettings() {
 
   const handleDesktopToggle = async (value: boolean) => {
     if (value) {
-      // Request browser notification permission
       if ("Notification" in window) {
         const permission = await Notification.requestPermission();
         if (permission !== "granted") {
@@ -167,177 +147,157 @@ function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Email Notifications */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            <CardTitle>Email Notifications</CardTitle>
+            <EnvelopeSimple className="size-5" />
+            <Text as="h2" variant="heading">
+              Email Notifications
+            </Text>
           </div>
-          <CardDescription>
+          <Text variant="secondary" size="sm">
             Choose which email notifications you want to receive
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="email-enabled">Email Notifications</Label>
-              <p className="text-muted-foreground text-sm">
-                Receive notifications via email
-              </p>
-            </div>
-            <Switch
-              id="email-enabled"
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary className="space-y-6">
+          <div className="space-y-2">
+            <Checkbox
+              label="Email Notifications"
               checked={emailPrefs.enabled}
               onCheckedChange={(checked) =>
-                handleEmailToggle("enabled", checked)
+                void handleEmailToggle("enabled", checked)
               }
               disabled={isUpdating}
             />
+            <Text variant="secondary" size="sm">
+              Receive notifications via email
+            </Text>
           </div>
 
           {emailPrefs.enabled && (
-            <>
-              <Separator />
-              <div className="space-y-4 pl-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="document-events">Document Events</Label>
-                    <p className="text-muted-foreground text-sm">
-                      When documents are sent, signed, or completed
-                    </p>
-                  </div>
-                  <Switch
-                    id="document-events"
-                    checked={emailPrefs.documentEvents}
-                    onCheckedChange={(checked) =>
-                      handleEmailToggle("documentEvents", checked)
-                    }
-                    disabled={isUpdating}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="reminders">Reminders</Label>
-                    <p className="text-muted-foreground text-sm">
-                      Reminder emails for pending signatures
-                    </p>
-                  </div>
-                  <Switch
-                    id="reminders"
-                    checked={emailPrefs.reminders}
-                    onCheckedChange={(checked) =>
-                      handleEmailToggle("reminders", checked)
-                    }
-                    disabled={isUpdating}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="weekly-digest">Weekly Digest</Label>
-                    <p className="text-muted-foreground text-sm">
-                      Weekly summary of your document activity
-                    </p>
-                  </div>
-                  <Switch
-                    id="weekly-digest"
-                    checked={emailPrefs.weeklyDigest}
-                    onCheckedChange={(checked) =>
-                      handleEmailToggle("weeklyDigest", checked)
-                    }
-                    disabled={isUpdating}
-                  />
-                </div>
+            <div className="space-y-4 border-l-2 pl-4">
+              <div className="space-y-2">
+                <Checkbox
+                  label="Document Events"
+                  checked={emailPrefs.documentEvents}
+                  onCheckedChange={(checked) =>
+                    void handleEmailToggle("documentEvents", checked)
+                  }
+                  disabled={isUpdating}
+                />
+                <Text variant="secondary" size="sm">
+                  When documents are sent, signed, or completed
+                </Text>
               </div>
-            </>
+
+              <div className="space-y-2">
+                <Checkbox
+                  label="Reminders"
+                  checked={emailPrefs.reminders}
+                  onCheckedChange={(checked) =>
+                    void handleEmailToggle("reminders", checked)
+                  }
+                  disabled={isUpdating}
+                />
+                <Text variant="secondary" size="sm">
+                  Reminder emails for pending signatures
+                </Text>
+              </div>
+
+              <div className="space-y-2">
+                <Checkbox
+                  label="Weekly Digest"
+                  checked={emailPrefs.weeklyDigest}
+                  onCheckedChange={(checked) =>
+                    void handleEmailToggle("weeklyDigest", checked)
+                  }
+                  disabled={isUpdating}
+                />
+                <Text variant="secondary" size="sm">
+                  Weekly summary of your document activity
+                </Text>
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
 
-      {/* In-App Notifications */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            <CardTitle>In-App Notifications</CardTitle>
+            <Bell className="size-5" />
+            <Text as="h2" variant="heading">
+              In-App Notifications
+            </Text>
           </div>
-          <CardDescription>
+          <Text variant="secondary" size="sm">
             Notifications shown within the application
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="in-app">In-App Notifications</Label>
-              <p className="text-muted-foreground text-sm">
-                Show notifications in the app notification center
-              </p>
-            </div>
-            <Switch
-              id="in-app"
-              checked={inAppEnabled}
-              onCheckedChange={handleInAppToggle}
-              disabled={isUpdating}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary className="space-y-2">
+          <Checkbox
+            label="In-App Notifications"
+            checked={inAppEnabled}
+            onCheckedChange={(checked) => void handleInAppToggle(checked)}
+            disabled={isUpdating}
+          />
+          <Text variant="secondary" size="sm">
+            Show notifications in the app notification center
+          </Text>
+        </LayerCard.Primary>
+      </LayerCard>
 
-      {/* Desktop Notifications */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            <CardTitle>Desktop Notifications</CardTitle>
+            <Desktop className="size-5" />
+            <Text as="h2" variant="heading">
+              Desktop Notifications
+            </Text>
           </div>
-          <CardDescription>
+          <Text variant="secondary" size="sm">
             Browser push notifications for important updates
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="desktop">Desktop Notifications</Label>
-              <p className="text-muted-foreground text-sm">
-                Receive push notifications in your browser
-              </p>
-            </div>
-            <Switch
-              id="desktop"
-              checked={desktopEnabled}
-              onCheckedChange={handleDesktopToggle}
-              disabled={isUpdating}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary className="space-y-2">
+          <Checkbox
+            label="Desktop Notifications"
+            checked={desktopEnabled}
+            onCheckedChange={(checked) => void handleDesktopToggle(checked)}
+            disabled={isUpdating}
+          />
+          <Text variant="secondary" size="sm">
+            Receive push notifications in your browser
+          </Text>
+        </LayerCard.Primary>
+      </LayerCard>
 
-      {/* Notification Frequency */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            <CardTitle>Notification Frequency</CardTitle>
+            <Clock className="size-5" />
+            <Text as="h2" variant="heading">
+              Notification Frequency
+            </Text>
           </div>
-          <CardDescription>
+          <Text variant="secondary" size="sm">
             How often you want to receive non-critical notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
+          <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <Label htmlFor="frequency">Frequency</Label>
-              <p className="text-muted-foreground text-sm">
+              <Text variant="secondary" size="sm">
                 Choose how often you receive notification digests
-              </p>
+              </Text>
             </div>
-            <Select
+            <select
+              id="frequency"
               value={frequency}
-              onValueChange={(value) => {
+              onChange={(e) => {
                 const parsed = parseSelectValue(
-                  value,
+                  e.target.value,
                   NOTIFICATION_FREQUENCIES
                 );
                 if (parsed) {
@@ -345,19 +305,15 @@ function NotificationSettings() {
                 }
               }}
               disabled={isUpdating}
+              className="h-10 rounded-md border bg-transparent px-3 py-2 text-base md:text-sm"
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select frequency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="instant">Instant</SelectItem>
-                <SelectItem value="daily">Daily Digest</SelectItem>
-                <SelectItem value="weekly">Weekly Digest</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="instant">Instant</option>
+              <option value="daily">Daily Digest</option>
+              <option value="weekly">Weekly Digest</option>
+            </select>
           </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
     </div>
   );
 }
