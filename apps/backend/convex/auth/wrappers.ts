@@ -482,6 +482,42 @@ export const adminAction = customAction(
   })
 );
 
+export const getViewerIdentity = internalQuery({
+  args: {},
+  returns: v.object({ subject: v.string(), tokenIdentifier: v.string() }),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new ConvexError("Authentication required");
+    }
+    return {
+      subject: identity.subject,
+      tokenIdentifier: identity.tokenIdentifier,
+    };
+  },
+});
+
+export const getUserByAuthSubject = internalQuery({
+  args: { subject: v.string() },
+  returns: v.union(
+    v.object({
+      _id: v.id("users"),
+      _creationTime: v.number(),
+      authSubject: v.string(),
+      email: v.string(),
+      name: v.optional(v.string()),
+      activeOrganizationId: v.optional(v.id("organizations")),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.subject))
+      .first();
+  },
+});
+
 export const authAction = customAction(
   action,
   customCtx(async (ctx) => {

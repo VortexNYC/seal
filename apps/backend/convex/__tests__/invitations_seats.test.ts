@@ -177,7 +177,7 @@ describe("invitations seat enforcement (SEA-605)", () => {
     await expect(
       t
         .withIdentity({ subject: "invite_seat_late" })
-        .mutation(api.invitations.redeemInvitation, { token })
+        .action(api.invitations.redeemInvitation, { token })
     ).rejects.toThrow(/seat limit/i);
 
     // invitee should not have been patched as a member path success

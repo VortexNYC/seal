@@ -10,15 +10,15 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import {
+  action,
   internalAction,
   internalMutation,
-  type MutationCtx,
+  internalQuery,
   mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
 import { authAction, getAuthContext } from "./auth";
-import { ensureSeatLimit } from "./auth/subscription_guards";
 import { sendAuthEmailDraft } from "./emails/worker_email";
 import {
   getComponentInvitationById,
@@ -265,32 +265,20 @@ export const getInvitationByToken = query({
   },
 });
 
-/**
- * Redeem an invitation: the authenticated user joins the inviting org as the
- * invited role and it becomes their active org. Idempotent-ish (re-redeeming a
- * non-pending invite throws).
- */
-export const redeemInvitation = mutation({
-  args: { token: v.string() },
-  handler: async (
-    ctx: MutationCtx,
-    args
-  ): Promise<{ organizationId: string }> => {
-    // The invitee is authenticated but typically has NO org yet, so resolve
-    // the user directly (getAuthContext would require an active org).
-    const identity = await ctx.auth.getUserIdentity();
-    if (identity === null) {
-      throw new ConvexError("Authentication required");
-    }
+export const redeemInvitationPreflight = internalQuery({
+  args: {
+    subject: v.string(),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_auth_subject", (q) =>
-        q.eq("authSubject", identity.subject)
-      )
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.subject))
       .first();
     if (user === null) {
       throw new ConvexError("User record not found");
     }
+
     const tokenHash = await sha256(args.token);
     const invitation = await getComponentInvitationByTokenHash(ctx, tokenHash);
     if (invitation === null) {
@@ -316,41 +304,107 @@ export const redeemInvitation = mutation({
       throw new ConvexError("Organization not found");
     }
 
-    // Already a member: allow redeem without consuming another seat.
     const existingMembership = await getComponentMemberRefForUserOrganization(
       ctx,
       user,
       organization
     );
-    if (existingMembership === null) {
-      // SEA-605: enforce seats on redeem (stale invites after seat fill).
-      await ensureSeatLimit(ctx, invitation.organizationId);
+
+    return {
+      userId: user._id,
+      invitationId: invitation._id,
+      organizationId: organization._id,
+      vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      existingMembership: existingMembership?._id ?? null,
+    };
+  },
+});
+
+export const redeemInvitationCore = internalMutation({
+  args: {
+    userId: v.id("users"),
+    invitationId: v.string(),
+    organizationId: v.id("organizations"),
+    vortexAuthOrganizationId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const user = await ctx.db.get("users", args.userId);
+    if (!user) {
+      throw new ConvexError("User record not found");
     }
 
-    const now = Date.now();
+    const invitation = await getComponentInvitationById(ctx, args.invitationId);
+    if (invitation === null) {
+      throw new ConvexError("Invitation not found");
+    }
+    if (invitation.status !== "pending") {
+      throw new ConvexError(`Invitation is ${invitation.status}`);
+    }
+    if (invitation.expiresAt < Date.now()) {
+      await setVortexAuthInvitationStatus(ctx, {
+        organizationId: args.organizationId,
+        invitationId: invitation._id,
+        status: "expired",
+      });
+      throw new ConvexError("Invitation has expired");
+    }
+
     await upsertVortexAuthMember(ctx, {
-      organizationId: invitation.organizationId,
-      userId: user._id,
+      organizationId: args.organizationId,
+      userId: args.userId,
       role: invitation.role,
       status: "active",
       invitedBy: invitation.invitedBy,
       acceptedAt: now,
     });
     await setVortexAuthInvitationStatus(ctx, {
-      organizationId: invitation.organizationId,
+      organizationId: args.organizationId,
       invitationId: invitation._id,
       status: "accepted",
-      acceptedByUserId: user._id,
+      acceptedByUserId: args.userId,
       acceptedAt: now,
     });
 
-    // Make the joined org the user's active org so they land in it.
-    await ctx.db.patch("users", user._id, {
-      activeOrganizationId: invitation.organizationId,
-      activeVortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+    await ctx.db.patch("users", args.userId, {
+      activeOrganizationId: args.organizationId,
+      activeVortexAuthOrganizationId: args.vortexAuthOrganizationId,
       updatedAt: now,
     });
 
-    return { organizationId: invitation.organizationId };
+    return { organizationId: args.organizationId };
+  },
+});
+
+/**
+ * Redeem an invitation: the authenticated user joins the inviting org as the
+ * invited role and it becomes their active org. Idempotent-ish (re-redeeming a
+ * non-pending invite throws).
+ */
+export const redeemInvitation = action({
+  args: { token: v.string() },
+  handler: async (ctx, args): Promise<{ organizationId: string }> => {
+    const { subject } = await ctx.runQuery(
+      internal.auth.wrappers.getViewerIdentity,
+      {}
+    );
+    const preflight = await ctx.runQuery(
+      internal.invitations.redeemInvitationPreflight,
+      { subject, token: args.token }
+    );
+
+    // Already a member: allow redeem without consuming another seat.
+    if (preflight.existingMembership === null) {
+      await ctx.runAction(internal.auth.subscription_guards.ensureSeatLimitD1, {
+        organizationId: preflight.organizationId,
+      });
+    }
+
+    return await ctx.runMutation(internal.invitations.redeemInvitationCore, {
+      userId: preflight.userId,
+      invitationId: preflight.invitationId,
+      organizationId: preflight.organizationId,
+      vortexAuthOrganizationId: preflight.vortexAuthOrganizationId,
+    });
   },
 });
