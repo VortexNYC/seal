@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { routeAgentRequest } from "agents";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, not, or } from "drizzle-orm";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
@@ -675,6 +675,32 @@ app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
       publicId: body.externalSubscriptionId,
       createdAt: now,
     });
+  }
+
+  if (body.status === "active" || body.status === "trialing") {
+    await db
+      .update(subscriptions)
+      .set({
+        status: "canceled",
+        canceledAt: now,
+        cancelReason: "replaced_by_vortex_billing_subscription",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(subscriptions.organizationId, body.organizationId),
+          not(
+            eq(
+              subscriptions.externalSubscriptionId,
+              body.externalSubscriptionId
+            )
+          ),
+          or(
+            eq(subscriptions.status, "active"),
+            eq(subscriptions.status, "trialing")
+          )
+        )
+      );
   }
 
   return c.json({ success: true });
