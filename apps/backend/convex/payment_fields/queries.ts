@@ -52,21 +52,3 @@ export const getPaymentConfigInternal = internalQuery({
     return await ctx.db.get("payment_field_configs", args.configId);
   },
 });
-
-/**
- * Internal query for payment configs by document (used by actions).
- */
-export const getPaymentConfigsByDocumentInternal = internalQuery({
-  args: {
-    documentId: v.id("documents"),
-  },
-  handler: async (ctx, args) => {
-    const configs = [];
-    for await (const config of ctx.db
-      .query("payment_field_configs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))) {
-      configs.push(config);
-    }
-    return configs;
-  },
-});

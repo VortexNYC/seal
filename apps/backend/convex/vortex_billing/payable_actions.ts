@@ -12,6 +12,7 @@ import {
   type CreateRecurringPayableRequest,
 } from "@vortexnyc/payments-sdk";
 import { ConvexError, v } from "convex/values";
+import { z } from "zod";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
@@ -99,6 +100,157 @@ type PaymentFieldConfigInput = {
     readonly balanceDueDays: number;
   };
 };
+
+const paymentFieldConfigLineItemSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+});
+
+const lateFeesSchema = z.object({
+  enabled: z.boolean(),
+  type: z.enum(["percentage", "fixed"]),
+  amount: z.number(),
+  gracePeriodDays: z.number(),
+});
+
+const recurringConfigSchema = z.object({
+  interval: z.enum(["week", "month", "year"]),
+  intervalCount: z.number(),
+  endCondition: z.enum(["never", "after_count", "on_date"]),
+  endAfterCount: z.number().optional(),
+  endOnDate: z.number().optional(),
+});
+
+const installmentsConfigSchema = z.object({
+  count: z.number(),
+  interval: z.enum(["week", "month"]),
+  firstPaymentAmount: z.number().optional(),
+});
+
+const depositBalanceConfigSchema = z.object({
+  depositPercent: z.number(),
+  balanceDueDays: z.number(),
+});
+
+const paymentFieldConfigSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  fieldId: z.string(),
+  documentId: z.string(),
+  organizationId: z.string(),
+  paymentType: z.enum([
+    "one_time",
+    "recurring",
+    "installments",
+    "deposit_balance",
+  ]),
+  items: z
+    .string()
+    .transform((s) => {
+      const parsed: unknown = JSON.parse(s);
+      return parsed;
+    })
+    .pipe(z.array(paymentFieldConfigLineItemSchema)),
+  currency: z.string(),
+  dueDateTerms: z.enum(["on_receipt", "net_15", "net_30", "net_60", "custom"]),
+  customDueDays: z.number().nullable(),
+  customDueDate: z.string().nullable(),
+  lateFees: z
+    .string()
+    .nullable()
+    .transform((s) => {
+      if (s === null) return null;
+      const parsed: unknown = JSON.parse(s);
+      return parsed;
+    })
+    .pipe(lateFeesSchema.nullable()),
+  recurringConfig: z
+    .string()
+    .nullable()
+    .transform((s) => {
+      if (s === null) return null;
+      const parsed: unknown = JSON.parse(s);
+      return parsed;
+    })
+    .pipe(recurringConfigSchema.nullable()),
+  installmentsConfig: z
+    .string()
+    .nullable()
+    .transform((s) => {
+      if (s === null) return null;
+      const parsed: unknown = JSON.parse(s);
+      return parsed;
+    })
+    .pipe(installmentsConfigSchema.nullable()),
+  depositBalanceConfig: z
+    .string()
+    .nullable()
+    .transform((s) => {
+      if (s === null) return null;
+      const parsed: unknown = JSON.parse(s);
+      return parsed;
+    })
+    .pipe(depositBalanceConfigSchema.nullable()),
+  allowedPaymentMethods: z
+    .string()
+    .transform((s) => {
+      const parsed: unknown = JSON.parse(s);
+      return parsed;
+    })
+    .pipe(z.array(z.string())),
+  feeHandling: z.enum(["absorb", "pass_to_recipient"]),
+  taxEnabled: z.boolean(),
+  taxBehavior: z.enum(["inclusive", "exclusive"]).nullable(),
+  totalAmountCents: z.number(),
+  providerInvoiceId: z.string().nullable(),
+  providerSubscriptionId: z.string().nullable(),
+  providerPaymentIntentId: z.string().nullable(),
+  hostedInvoiceUrl: z.string().nullable(),
+  vortexPayableId: z.string().nullable(),
+  vortexDepositBalancePayableId: z.string().nullable(),
+  vortexInstallmentPayableId: z.string().nullable(),
+  vortexRecurringPayableId: z.string().nullable(),
+  vortexPaymentRequestId: z.string().nullable(),
+  paymentStatus: z.string().nullable(),
+});
+
+type PaymentFieldConfig = z.infer<typeof paymentFieldConfigSchema>;
+
+function parsePaymentFieldConfig(raw: unknown): PaymentFieldConfig {
+  return paymentFieldConfigSchema.parse(raw);
+}
+
+async function getPaymentFieldConfigs(
+  documentId: string
+): Promise<PaymentFieldConfig[]> {
+  const url = process.env.SIGN_API_EMAIL_URL;
+  const key = process.env.SIGN_API_EMAIL_KEY;
+  if (!url || !key) {
+    throw new ConvexError("Worker API not configured");
+  }
+
+  const res = await fetch(
+    `${url}/internal/payment-field-configs?documentId=${encodeURIComponent(documentId)}`,
+    {
+      headers: {
+        "x-internal-api-key": key,
+      },
+    }
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new ConvexError(
+      `Worker payment-field-configs list failed: ${res.status} ${text}`
+    );
+  }
+
+  const body = z
+    .object({ configs: z.array(z.unknown()) })
+    .parse(await res.json());
+  return body.configs.map(parsePaymentFieldConfig);
+}
 
 type PaymentRecipient = {
   readonly email: string;
@@ -994,7 +1146,7 @@ function getDueDays(
 }
 
 function resolvePaymentFieldRecipient(
-  config: Doc<"payment_field_configs">,
+  config: PaymentFieldConfig,
   fieldMap: Map<string, Doc<"signature_fields">>,
   recipientMap: Map<string, Doc<"document_recipients">>
 ): PaymentRecipient {
@@ -1002,7 +1154,7 @@ function resolvePaymentFieldRecipient(
     throw new ConvexError("Payment field has no line items configured");
   }
 
-  const field = fieldMap.get(config.fieldId.toString());
+  const field = fieldMap.get(config.fieldId);
   if (!field) {
     throw new ConvexError("Payment field not found");
   }
@@ -1298,10 +1450,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     ),
   }),
   handler: async (ctx, args) => {
-    const configs: Doc<"payment_field_configs">[] = await ctx.runQuery(
-      internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
-      { documentId: args.documentId }
-    );
+    const configs = await getPaymentFieldConfigs(args.documentId);
 
     if (configs.length === 0) {
       return { paymentLinks: [] };
@@ -1367,7 +1516,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         const recurringPayable = await createVortexRecurringPayable(
           recurringRequest,
           env,
-          `seal-document-recurring-payable:${config._id}`
+          `seal-document-recurring-payable:${config.id}`
         );
         if (recurringPayable.checkoutUrl === undefined) {
           throw new ConvexError(
@@ -1378,7 +1527,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         await ctx.runMutation(
           internal.payment_fields.mutations.storeVortexPayableIds,
           {
-            configId: config._id,
+            configId: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: recurringPayable.payableId,
             vortexRecurringPayableId: recurringPayable.recurringPayableId,
@@ -1408,7 +1557,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         const installmentPayable = await createVortexInstallmentPayable(
           installmentRequest,
           env,
-          `seal-document-installment-payable:${config._id}`
+          `seal-document-installment-payable:${config.id}`
         );
         if (installmentPayable.checkoutUrl === undefined) {
           throw new ConvexError(
@@ -1419,7 +1568,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         await ctx.runMutation(
           internal.payment_fields.mutations.storeVortexPayableIds,
           {
-            configId: config._id,
+            configId: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: installmentPayable.payableId,
             vortexInstallmentPayableId: installmentPayable.installmentPayableId,
@@ -1449,7 +1598,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         const depositBalancePayable = await createVortexDepositBalancePayable(
           depositBalanceRequest,
           env,
-          `seal-document-deposit-balance-payable:${config._id}`
+          `seal-document-deposit-balance-payable:${config.id}`
         );
         if (depositBalancePayable.checkoutUrl === undefined) {
           throw new ConvexError(
@@ -1460,7 +1609,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         await ctx.runMutation(
           internal.payment_fields.mutations.storeVortexPayableIds,
           {
-            configId: config._id,
+            configId: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: depositBalancePayable.payableId,
             vortexDepositBalancePayableId:
@@ -1491,7 +1640,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         const payable = await createVortexPayable(
           payableRequest,
           env,
-          `seal-document-payable:${config._id}`
+          `seal-document-payable:${config.id}`
         );
         if (payable.checkoutUrl === undefined) {
           throw new ConvexError(
@@ -1502,7 +1651,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         await ctx.runMutation(
           internal.payment_fields.mutations.storeVortexPayableIds,
           {
-            configId: config._id,
+            configId: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: payable.payableId,
             vortexPaymentRequestId: payable.paymentRequestId,
@@ -1527,10 +1676,10 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
 });
 
 function toPaymentFieldConfigInput(
-  config: Doc<"payment_field_configs">
+  config: PaymentFieldConfig
 ): PaymentFieldConfigInput {
   return {
-    _id: config._id,
+    _id: config.id,
     fieldId: config.fieldId,
     documentId: config.documentId,
     organizationId: config.organizationId,
@@ -1538,15 +1687,15 @@ function toPaymentFieldConfigInput(
     items: config.items,
     currency: config.currency,
     dueDateTerms: config.dueDateTerms,
-    customDueDays: config.customDueDays,
-    customDueDate: config.customDueDate,
+    customDueDays: config.customDueDays ?? undefined,
+    customDueDate: config.customDueDate ?? undefined,
     totalAmountCents: config.totalAmountCents,
     feeHandling: config.feeHandling,
     taxEnabled: config.taxEnabled,
-    taxBehavior: config.taxBehavior,
-    recurringConfig: config.recurringConfig,
-    installmentsConfig: config.installmentsConfig,
-    depositBalanceConfig: config.depositBalanceConfig,
+    taxBehavior: config.taxBehavior ?? undefined,
+    recurringConfig: config.recurringConfig ?? undefined,
+    installmentsConfig: config.installmentsConfig ?? undefined,
+    depositBalanceConfig: config.depositBalanceConfig ?? undefined,
   };
 }
 

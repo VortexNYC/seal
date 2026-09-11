@@ -1,5 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { routeAgentRequest } from "agents";
+import { eq } from "drizzle-orm";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
@@ -330,6 +331,43 @@ app.post("/internal/payment-field-configs", async (c) => {
   });
 
   return c.json({ success: true });
+});
+
+app.get("/internal/payment-field-configs/:id", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const db = createD1(c.env.D1);
+  const config = await db.query.paymentFieldConfigs.findFirst({
+    where: eq(paymentFieldConfigs.id, c.req.param("id")),
+  });
+
+  if (!config) {
+    return c.json({ error: "not found" }, 404);
+  }
+
+  return c.json(config);
+});
+
+app.get("/internal/payment-field-configs", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const documentId = c.req.query("documentId");
+  if (!documentId) {
+    return c.json({ error: "documentId required" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const configs = await db.query.paymentFieldConfigs.findMany({
+    where: eq(paymentFieldConfigs.documentId, documentId),
+  });
+
+  return c.json({ configs });
 });
 
 const payableObjectBody = z.object({
