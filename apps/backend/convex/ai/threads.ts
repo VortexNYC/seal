@@ -346,6 +346,8 @@ export const getOrCreateThread = authMutation({
     await ctx.db.insert("ai_threads", {
       threadId,
       documentId: args.documentId,
+      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
+      vortexAuthUserId: ctx.auth.vortexAuthUserId,
       organizationId: document.organizationId,
       userId: userId.toString(),
       createdAt: Date.now(),
@@ -391,6 +393,8 @@ export const getOrCreateSearchThread = authMutation({
     // Save our mapping (no documentId)
     await ctx.db.insert("ai_threads", {
       threadId,
+      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
+      vortexAuthUserId: ctx.auth.vortexAuthUserId,
       organizationId,
       userId: userId.toString(),
       threadType: "search",
@@ -622,6 +626,8 @@ export const saveThreadMapping = internalMutation({
   args: {
     threadId: v.string(),
     documentId: v.id("documents"),
+    vortexAuthOrganizationId: v.optional(v.string()),
+    vortexAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.string(),
   },
@@ -629,6 +635,8 @@ export const saveThreadMapping = internalMutation({
     return await ctx.db.insert("ai_threads", {
       threadId: args.threadId,
       documentId: args.documentId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      vortexAuthUserId: args.vortexAuthUserId,
       organizationId: args.organizationId,
       userId: args.userId,
       createdAt: Date.now(),
