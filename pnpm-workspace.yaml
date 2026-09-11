@@ -59,6 +59,7 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider@4.0.13'
   - '@ai-sdk/react@4.0.100'
   - ai@7.0.97
+  - '@vortexnyc/better-auth-ui@0.1.1'
 
 overrides:
   "@tanstack/router-core": "1.171.16"
