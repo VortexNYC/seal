@@ -14,7 +14,6 @@ import {
 } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminAction, adminMutation, authMutation } from "../auth";
-import { ensureProFeature } from "../auth/subscription_guards";
 import {
   getComponentMemberById,
   getComponentMemberRefForUserOrganization,
@@ -1002,20 +1001,30 @@ export const updateAiSettings = adminMutation({
 // Branding settings (admin-only)
 // ---------------------------------------------------------------------------
 
-export const generateLogoUploadUrl = adminMutation({
+export const generateLogoUploadUrlCore = internalMutation({
   args: {},
   handler: async (ctx) => {
-    await ensureProFeature(
-      ctx.db,
-      ctx.auth.organization._id,
-      "Custom branding"
-    );
     return await ctx.storage.generateUploadUrl();
   },
 });
 
-export const updateBrandingSettings = adminMutation({
+export const generateLogoUploadUrl = adminAction({
+  args: {},
+  handler: async (ctx) => {
+    await ctx.runAction(internal.auth.subscription_guards.ensureProFeatureD1, {
+      organizationId: ctx.auth.organizationId,
+      featureName: "Custom branding",
+    });
+    return await ctx.runMutation(
+      internal.organizations.mutations.generateLogoUploadUrlCore,
+      {}
+    );
+  },
+});
+
+export const updateBrandingSettingsCore = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     logoStorageId: v.optional(v.id("_storage")),
     removeLogo: v.optional(v.boolean()),
     brandColor: v.optional(v.string()),
@@ -1029,13 +1038,7 @@ export const updateBrandingSettings = adminMutation({
     enabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await ensureProFeature(
-      ctx.db,
-      ctx.auth.organization._id,
-      "Custom branding"
-    );
-
-    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", args.organizationId);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.brandingSettings ?? {
@@ -1066,6 +1069,36 @@ export const updateBrandingSettings = adminMutation({
     });
 
     return { success: true };
+  },
+});
+
+export const updateBrandingSettings = adminAction({
+  args: {
+    logoStorageId: v.optional(v.id("_storage")),
+    removeLogo: v.optional(v.boolean()),
+    brandColor: v.optional(v.string()),
+    accentColor: v.optional(v.string()),
+    emailFromName: v.optional(v.string()),
+    emailReplyTo: v.optional(v.string()),
+    hideSealBranding: v.optional(v.boolean()),
+    customFooterText: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    companyWebsite: v.optional(v.string()),
+    enabled: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.runAction(internal.auth.subscription_guards.ensureProFeatureD1, {
+      organizationId: ctx.auth.organizationId,
+      featureName: "Custom branding",
+    });
+
+    return await ctx.runMutation(
+      internal.organizations.mutations.updateBrandingSettingsCore,
+      {
+        organizationId: ctx.auth.organizationId,
+        ...args,
+      }
+    );
   },
 });
 
