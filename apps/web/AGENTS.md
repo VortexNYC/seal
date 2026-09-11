@@ -19,15 +19,15 @@ apps/web/
 
 ## WHERE TO LOOK
 
-| Task        | Location                                 | Notes                                                |
-| ----------- | ---------------------------------------- | ---------------------------------------------------- |
-| Root layout | `apps/web/src/routes/__root.tsx`         | Router setup + providers                             |
-| Auth gate   | `apps/web/src/routes/_authenticated.tsx` | Core `AuthAuthenticatedRouteGate` + Seal slug guard  |
-| Route tree  | `apps/web/src/routes/`                   | File-based routes                                    |
-| App entry   | `apps/web/src/main.tsx`                  | Better-Auth + TanStack Query + Router wiring         |
-| API client  | `apps/web/src/lib/api-client.ts`         | Zod-typed Hono API client for `apps/api`             |
-| E2E fixtures| `apps/web/e2e/fixtures/`                 | Auth helpers + Worker API test fixtures              |
-| E2E pages   | `apps/web/e2e/pages/`                    | Page Object Models                                   |
+| Task         | Location                                 | Notes                                               |
+| ------------ | ---------------------------------------- | --------------------------------------------------- |
+| Root layout  | `apps/web/src/routes/__root.tsx`         | Router setup + providers                            |
+| Auth gate    | `apps/web/src/routes/_authenticated.tsx` | Core `AuthAuthenticatedRouteGate` + Seal slug guard |
+| Route tree   | `apps/web/src/routes/`                   | File-based routes                                   |
+| App entry    | `apps/web/src/main.tsx`                  | Better-Auth + TanStack Query + Router wiring        |
+| API client   | `apps/web/src/lib/api-client.ts`         | Zod-typed Hono API client for `apps/api`            |
+| E2E fixtures | `apps/web/e2e/fixtures/`                 | Auth helpers + Worker API test fixtures             |
+| E2E pages    | `apps/web/e2e/pages/`                    | Page Object Models                                  |
 
 ## CONVENTIONS
 

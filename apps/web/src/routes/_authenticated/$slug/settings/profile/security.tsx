@@ -1,3 +1,4 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - Security
  *
@@ -10,7 +11,6 @@ import {
   EnableTwoFactorForm,
   SessionList,
 } from "@vortexnyc/better-auth-ui";
-import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";

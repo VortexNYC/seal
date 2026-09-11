@@ -64,7 +64,6 @@
     "@vortexnyc/better-auth-ui": "link:../../../better-auth-ui",
     "@vortexnyc/money": "0.2.2",
     "@vortexnyc/observability": "0.2.0",
-    "@vortexnyc/ui": "0.5.0",
     "agents": "0.20.1",
     "ai": "^7.0.97",
     "better-auth": "1.6.9",

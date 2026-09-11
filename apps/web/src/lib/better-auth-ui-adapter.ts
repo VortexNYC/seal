@@ -42,7 +42,8 @@ export function getBetterAuthUiClient(): AnyAuthClient | null {
             verifyTotp: (args) => c.twoFactor.verifyTotp(args),
             verifyBackupCode: (args) => c.twoFactor.verifyBackupCode(args),
             disable: (args) => c.twoFactor.disable(args),
-            generateBackupCodes: (args) => c.twoFactor.generateBackupCodes(args),
+            generateBackupCodes: (args) =>
+              c.twoFactor.generateBackupCodes(args),
           },
         }
       : {}),
