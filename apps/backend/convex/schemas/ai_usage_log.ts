@@ -11,6 +11,8 @@ export const aiActionValidator = v.union(
 );
 
 export const aiUsageLogTable = defineTable({
+  vortexAuthOrganizationId: v.optional(v.string()),
+  vortexAuthUserId: v.optional(v.string()),
   organizationId: v.id("organizations"),
   userId: v.id("users"),
   action: aiActionValidator,

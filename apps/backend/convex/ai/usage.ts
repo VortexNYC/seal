@@ -44,6 +44,8 @@ function estimateCost(tokensUsed: number, modelUsed: string): number {
  */
 export const logAiUsage = internalMutation({
   args: {
+    vortexAuthOrganizationId: v.optional(v.string()),
+    vortexAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.id("users"),
     action: v.union(
