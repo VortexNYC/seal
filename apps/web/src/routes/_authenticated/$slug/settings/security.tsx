@@ -4,6 +4,7 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
+import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
 /**
  * Security Settings Page
  *
@@ -21,12 +22,8 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  getOrganization,
-  getSecuritySettings,
-  updateSecuritySettings,
-  updateWorkspace,
-} from "@/lib/api-client";
+import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {
@@ -35,32 +32,78 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   }
 );
 
-function SecuritySettings() {
-  const { slug } = Route.useParams();
+interface SecurityFormData {
+  ipAllowlistText: string;
+  allowApiAccess: boolean;
+}
 
-  const { data: organization } = useQuery({
-    queryKey: ["organization", slug],
-    queryFn: () => getOrganization(slug),
+function readDelegateOwnership(metadata: Record<string, unknown> | undefined): boolean {
+  if (metadata === undefined) return false;
+  const value = metadata.delegateOwnership;
+  return value === true;
+}
+
+function SecuritySettings() {
+  const client = getBetterAuthUiClient();
+
+  if (client === null) {
+    return (
+      <PageWrapper title="Security Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <AuthProvider client={client}>
+      <SecuritySettingsContent />
+    </AuthProvider>
+  );
+}
+
+function SecuritySettingsContent() {
+  const { slug } = Route.useParams();
+  const client = useAuth();
+
+  const { data: fullOrg } = useQuery({
+    queryKey: ["organization", slug, "full"],
+    queryFn: async () => {
+      if (client.organization?.getFullOrganization === undefined) {
+        throw new Error("Organization API is not available.");
+      }
+      return client.organization.getFullOrganization({
+        query: { organizationSlug: slug },
+      });
+    },
+  });
+
+  const { data: activeRole } = useQuery({
+    queryKey: ["organization", "active-role", slug],
+    queryFn: async () => {
+      if (client.organization?.getActiveMemberRole === undefined) {
+        throw new Error("Organization role API is not available.");
+      }
+      return client.organization.getActiveMemberRole();
+    },
   });
 
   const { data: securitySettings } = useQuery({
     queryKey: ["security", slug],
     queryFn: () => getSecuritySettings(slug),
-    enabled: !!organization,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDelegateOwnershipUpdating, setIsDelegateOwnershipUpdating] =
     useState(false);
   const [delegateOwnership, setDelegateOwnership] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SecurityFormData>({
     ipAllowlistText: "",
     allowApiAccess: true,
   });
 
-  const isOwner = organization?.userRole === "owner";
-  const isAdmin =
-    organization?.userRole === "admin" || organization?.userRole === "owner";
+  const userRole = activeRole?.data?.role;
+  const isOwner = userRole === "owner";
+  const isAdmin = userRole === "admin" || userRole === "owner";
 
   useEffect(() => {
     if (securitySettings) {
@@ -72,16 +115,36 @@ function SecuritySettings() {
   }, [securitySettings]);
 
   useEffect(() => {
-    if (organization) {
-      setDelegateOwnership(organization.delegateOwnership ?? false);
-    }
-  }, [organization]);
+    setDelegateOwnership(readDelegateOwnership(fullOrg?.data?.metadata));
+  }, [fullOrg]);
 
   const handleDelegateOwnershipChange = async (checked: boolean) => {
+    if (client.organization?.update === undefined || fullOrg?.data == null) {
+      toast.error("Organization update is not available.");
+      return;
+    }
+
     setIsDelegateOwnershipUpdating(true);
     try {
       setDelegateOwnership(checked);
-      await updateWorkspace(slug, { delegateOwnership: checked });
+
+      const existingMetadata = fullOrg.data.metadata ?? {};
+
+      const response = await client.organization.update({
+        data: {
+          metadata: {
+            ...existingMetadata,
+            delegateOwnership: checked,
+          },
+        },
+      });
+
+      if (response.error !== null) {
+        throw new Error(
+          response.error.message ?? "Could not update ownership transfer."
+        );
+      }
+
       toast.success(
         checked ? "Ownership transfer enabled" : "Ownership transfer disabled"
       );
@@ -123,7 +186,7 @@ function SecuritySettings() {
     }
   };
 
-  if (!organization || !securitySettings) {
+  if (!fullOrg?.data || !securitySettings) {
     return null;
   }
 
