@@ -689,6 +689,46 @@ export const documentInvoices = sqliteTable(
   ]
 );
 
+export const subscriptions = sqliteTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    externalCustomerId: text("external_customer_id").notNull(),
+    externalSubscriptionId: text("external_subscription_id").notNull().unique(),
+    externalPriceId: text("external_price_id"),
+    externalProductId: text("external_product_id"),
+    status: text("status").notNull(),
+    cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    currentPeriodStart: integer("current_period_start", {
+      mode: "timestamp_ms",
+    }),
+    currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
+    latestInvoiceId: text("latest_invoice_id"),
+    latestInvoiceStatus: text("latest_invoice_status"),
+    pastDueSince: integer("past_due_since", { mode: "timestamp_ms" }),
+    metadata: text("metadata"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("subscriptions_organizationId_idx").on(table.organizationId),
+    index("subscriptions_externalSubscriptionId_idx").on(
+      table.externalSubscriptionId
+    ),
+  ]
+);
+
 export const activity = sqliteTable(
   "activity",
   {

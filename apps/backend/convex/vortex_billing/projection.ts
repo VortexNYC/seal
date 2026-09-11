@@ -560,6 +560,31 @@ async function projectInvoiceEvent(
     processedAt: now,
   });
 
+  const finalStatus =
+    ("status" in entitlementPatch ? entitlementPatch.status : undefined) ??
+    statusPatch.status ??
+    subscription.status;
+
+  await ctx.scheduler.runAfter(
+    0,
+    internal.vortex_billing.worker_subscriptions.projectInvoiceEvent,
+    {
+      eventId: args.eventId,
+      organizationId: subscription.organizationId,
+      externalCustomerId: subscription.externalCustomerId,
+      externalSubscriptionId: subscription.externalSubscriptionId,
+      externalPriceId: subscription.externalPriceId,
+      externalProductId: subscription.externalProductId,
+      invoiceNumber: args.invoiceNumber,
+      invoiceStatus: args.invoiceStatus,
+      status: finalStatus,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      latestInvoiceStatus: statusPatch.latestInvoiceStatus,
+    }
+  );
+
   return invoiceResult({
     processed: true,
     duplicate: false,

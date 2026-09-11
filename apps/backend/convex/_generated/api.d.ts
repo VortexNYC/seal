@@ -147,6 +147,7 @@ import type * as vortex_billing_projection from "../vortex_billing/projection.js
 import type * as vortex_billing_proof_actions from "../vortex_billing/proof_actions.js";
 import type * as vortex_billing_webhook_handlers from "../vortex_billing/webhook_handlers.js";
 import type * as vortex_billing_webhook_signature from "../vortex_billing/webhook_signature.js";
+import type * as vortex_billing_worker_subscriptions from "../vortex_billing/worker_subscriptions.js";
 import type * as webhooks_delivery from "../webhooks/delivery.js";
 import type * as webhooks_publish from "../webhooks/publish.js";
 import type * as webhooks_slack_formatter from "../webhooks/slack_formatter.js";
@@ -298,6 +299,7 @@ declare const fullApi: ApiFromModules<{
   "vortex_billing/proof_actions": typeof vortex_billing_proof_actions;
   "vortex_billing/webhook_handlers": typeof vortex_billing_webhook_handlers;
   "vortex_billing/webhook_signature": typeof vortex_billing_webhook_signature;
+  "vortex_billing/worker_subscriptions": typeof vortex_billing_worker_subscriptions;
   "webhooks/delivery": typeof webhooks_delivery;
   "webhooks/publish": typeof webhooks_publish;
   "webhooks/slack_formatter": typeof webhooks_slack_formatter;

@@ -32,7 +32,11 @@ import templatesV1 from "./api/v1/templates.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import webhooksV1 from "./api/v1/webhooks.js";
 import { createD1 } from "./global/db.js";
-import { documentInvoices, paymentFieldConfigs } from "./global/schema.js";
+import {
+  documentInvoices,
+  paymentFieldConfigs,
+  subscriptions,
+} from "./global/schema.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import {
@@ -395,6 +399,89 @@ app.post("/internal/webhooks/vortex-billing/payable-object", async (c) => {
 
   const result = await projectPayableObjectUpdated(c.env, parseResult.data);
   return c.json(result);
+});
+
+const invoiceEventBody = z.object({
+  eventId: z.string(),
+  organizationId: z.string(),
+  externalCustomerId: z.string(),
+  externalSubscriptionId: z.string(),
+  externalPriceId: z.string().optional(),
+  externalProductId: z.string().optional(),
+  invoiceNumber: z.string(),
+  invoiceStatus: z.string(),
+  status: z.union([
+    z.literal("active"),
+    z.literal("past_due"),
+    z.literal("canceled"),
+    z.literal("trialing"),
+    z.literal("paused"),
+    z.literal("incomplete"),
+    z.literal("incomplete_expired"),
+    z.literal("unpaid"),
+  ]),
+  cancelAtPeriodEnd: z.boolean().default(false),
+  currentPeriodStart: z.string().datetime().optional(),
+  currentPeriodEnd: z.string().datetime().optional(),
+  latestInvoiceStatus: z.string(),
+});
+
+app.post("/internal/webhooks/vortex-billing/invoice", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = invoiceEventBody.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const body = parseResult.data;
+  const db = createD1(c.env.D1);
+  const now = new Date();
+
+  const existing = await db.query.subscriptions.findFirst({
+    where: eq(
+      subscriptions.externalSubscriptionId,
+      body.externalSubscriptionId
+    ),
+  });
+
+  const base = {
+    organizationId: body.organizationId,
+    externalCustomerId: body.externalCustomerId,
+    externalSubscriptionId: body.externalSubscriptionId,
+    externalPriceId: body.externalPriceId ?? null,
+    externalProductId: body.externalProductId ?? null,
+    status: body.status,
+    cancelAtPeriodEnd: body.cancelAtPeriodEnd,
+    latestInvoiceId: body.invoiceNumber,
+    latestInvoiceStatus: body.latestInvoiceStatus,
+    currentPeriodStart: body.currentPeriodStart
+      ? new Date(body.currentPeriodStart)
+      : null,
+    currentPeriodEnd: body.currentPeriodEnd
+      ? new Date(body.currentPeriodEnd)
+      : null,
+    updatedAt: now,
+  };
+
+  if (existing) {
+    await db
+      .update(subscriptions)
+      .set(base)
+      .where(eq(subscriptions.id, existing.id));
+  } else {
+    await db.insert(subscriptions).values({
+      ...base,
+      id: crypto.randomUUID(),
+      publicId: body.externalSubscriptionId,
+      createdAt: now,
+    });
+  }
+
+  return c.json({ success: true });
 });
 
 app.get("/health", (c) => c.json({ status: "ok" }));
