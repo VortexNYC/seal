@@ -50,7 +50,9 @@ export function TeamOverview({
         throw new Error("Organization API is not available.");
       }
 
-      const response = await client.organization.getFullOrganization();
+      const response = await client.organization.getFullOrganization({
+        query: { organizationSlug: slug },
+      });
       if (response.error !== null) {
         throw new Error(
           response.error.message ?? "Could not load organization team.",
