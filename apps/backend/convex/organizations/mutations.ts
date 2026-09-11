@@ -5,6 +5,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { components } from "../_generated/api";
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import {
   internalMutation,
@@ -12,8 +13,8 @@ import {
   mutation,
 } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
-import { adminMutation, authMutation } from "../auth";
-import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
+import { adminAction, adminMutation, authMutation } from "../auth";
+import { ensureProFeature } from "../auth/subscription_guards";
 import {
   getComponentMemberById,
   getComponentMemberRefForUserOrganization,
@@ -562,24 +563,23 @@ export const deleteWorkspace = authMutation({
   },
 });
 
-/**
- * Add member to organization
- */
-export const addMember = adminMutation({
+export const addMemberCore = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     userId: v.id("users"),
     role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     userType: v.optional(v.union(v.literal("personal"), v.literal("business"))),
+    assignedBy: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { organization } = ctx.auth;
-
-    await ensureSeatLimit(ctx, organization._id);
-
-    // Check if user exists
     const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new ConvexError("User not found");
+    }
+
+    const organization = await ctx.db.get("organizations", args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
     }
 
     const existingMembership = await getComponentMemberRefForUserOrganization(
@@ -592,14 +592,41 @@ export const addMember = adminMutation({
     }
 
     const membershipId = await upsertVortexAuthMember(ctx, {
-      organizationId: organization._id,
+      organizationId: args.organizationId,
       userId: args.userId,
       role: args.role,
       status: "active",
-      assignedBy: ctx.auth.user._id,
+      assignedBy: args.assignedBy,
     });
 
     return { id: membershipId };
+  },
+});
+
+/**
+ * Add member to organization
+ */
+export const addMember = adminAction({
+  args: {
+    userId: v.id("users"),
+    role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+    userType: v.optional(v.union(v.literal("personal"), v.literal("business"))),
+  },
+  handler: async (ctx, args) => {
+    await ctx.runAction(internal.auth.subscription_guards.ensureSeatLimitD1, {
+      organizationId: ctx.auth.organizationId,
+    });
+
+    return await ctx.runMutation(
+      internal.organizations.mutations.addMemberCore,
+      {
+        organizationId: ctx.auth.organizationId,
+        userId: args.userId,
+        role: args.role,
+        userType: args.userType,
+        assignedBy: ctx.auth.userId,
+      }
+    );
   },
 });
 

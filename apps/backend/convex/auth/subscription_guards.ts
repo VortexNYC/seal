@@ -12,8 +12,9 @@ import { parse } from "@vortexnyc/convex/helpers";
 import { addMoney, applyRate, money } from "@vortexnyc/money";
 import { ConvexError, v } from "convex/values";
 
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalAction } from "../_generated/server";
+import { internalAction, internalQuery } from "../_generated/server";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import {
   listComponentInvitationsByOrganization,
@@ -390,6 +391,93 @@ export const getSubscriptionPlanD1 = internalAction({
     } catch (error) {
       console.error("Failed to parse Worker subscription-plan:", error);
       return await getSubscriptionPlan(ctx.db, args.organizationId);
+    }
+  },
+});
+
+export const getSeatCounts = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const organization = await ctx.db.get("organizations", args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+
+    const members = await listComponentMembersByOrganization(
+      ctx,
+      organization,
+      { status: "active" }
+    );
+    const pending = await listComponentInvitationsByOrganization(
+      ctx,
+      organization,
+      "pending"
+    );
+    return { active: members.length, pending: pending.length };
+  },
+});
+
+/**
+ * Throw if the organization is not on a Pro (or higher) plan.
+ *
+ * Error message intentionally contains "Professional plan" and "upgrade"
+ * so `parseConvexError()` classifies it as a subscription error.
+ */
+export const ensureProFeatureD1 = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    featureName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { isPro } = await ctx.runAction(
+      internal.auth.subscription_guards.getSubscriptionPlanD1,
+      { organizationId: args.organizationId }
+    );
+    if (!isPro) {
+      throw new ConvexError(
+        `${args.featureName} requires a Professional plan. Please upgrade to continue.`
+      );
+    }
+  },
+});
+
+/**
+ * Throw if adding another member would exceed the org's seat limit.
+ *
+ * Pass `includePendingInvites: true` when creating invitations so pending
+ * invites reserve seats (SEA-605). Redeem / addMember only count active members.
+ */
+export const ensureSeatLimitD1 = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    includePendingInvites: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { plan } = await ctx.runAction(
+      internal.auth.subscription_guards.getSubscriptionPlanD1,
+      { organizationId: args.organizationId }
+    );
+    const limits = PLAN_LIMITS[plan];
+
+    const { active, pending } = await ctx.runQuery(
+      internal.auth.subscription_guards.getSeatCounts,
+      { organizationId: args.organizationId }
+    );
+
+    const occupied = args.includePendingInvites ? active + pending : active;
+    if (occupied >= limits.maxSeats) {
+      const seatLabel =
+        limits.maxSeats === Infinity ? "unlimited" : String(limits.maxSeats);
+      throw new ConvexError(
+        `You've reached the seat limit for your plan (${occupied}/${seatLabel}). ` +
+          (plan === "free"
+            ? "Upgrade to Professional to add team members."
+            : plan === "pro"
+              ? "Upgrade to Enterprise for more than 20 seats."
+              : "Contact support to increase your seat limit.")
+      );
     }
   },
 });

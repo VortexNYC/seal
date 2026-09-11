@@ -9,6 +9,7 @@
  */
 
 import {
+  customAction,
   customCtx,
   customMutation,
   customQuery,
@@ -17,9 +18,10 @@ import {
   wrapDatabaseReader,
   wrapDatabaseWriter,
 } from "convex-helpers/server/rowLevelSecurity";
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
-import { mutation, query } from "../_generated/server";
+import { internal } from "../_generated/api";
+import { action, internalQuery, mutation, query } from "../_generated/server";
 import { rlsRules } from "../rls";
 import { getAuthContextWithPermissions } from "./auth.permissions";
 
@@ -416,5 +418,74 @@ export const ownerMutation = customMutation(
       auth,
       db: wrapDatabaseWriter(ctx, ctx.db, rules),
     };
+  })
+);
+
+const actionAuthValidator = v.object({
+  userId: v.id("users"),
+  organizationId: v.id("organizations"),
+  email: v.optional(v.string()),
+  name: v.optional(v.string()),
+  role: v.string(),
+  userType: v.string(),
+});
+
+export const getAdminAuthContext = internalQuery({
+  args: {},
+  returns: actionAuthValidator,
+  handler: async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+    if (!auth.isAdmin()) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Admin privileges required",
+      });
+    }
+    return {
+      userId: auth.userId,
+      organizationId: auth.organizationId,
+      email: auth.email,
+      name: auth.name,
+      role: auth.role,
+      userType: auth.userType,
+    };
+  },
+});
+
+export const getAuthActionContext = internalQuery({
+  args: {},
+  returns: actionAuthValidator,
+  handler: async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+    return {
+      userId: auth.userId,
+      organizationId: auth.organizationId,
+      email: auth.email,
+      name: auth.name,
+      role: auth.role,
+      userType: auth.userType,
+    };
+  },
+});
+
+export const adminAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const auth = await ctx.runQuery(
+      internal.auth.wrappers.getAdminAuthContext,
+      {}
+    );
+    return { auth };
+  })
+);
+
+export const authAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const auth = await ctx.runQuery(
+      internal.auth.wrappers.getAuthActionContext,
+      {}
+    );
+    return { auth };
   })
 );

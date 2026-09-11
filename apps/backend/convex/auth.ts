@@ -16,8 +16,10 @@ export {
 } from "./auth/auth.permissions";
 
 export {
+  adminAction,
   adminMutation,
   adminQuery,
+  authAction,
   authMutation,
   authQuery,
   memberMutation,
