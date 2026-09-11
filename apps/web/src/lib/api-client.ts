@@ -193,6 +193,34 @@ export type ApiContact = {
 };
 export type ApiRelatedDocument = z.infer<typeof relatedDocumentSchema>;
 
+let currentOrganizationSlug: string | null = null;
+
+export function setCurrentOrganizationSlug(slug: string): void {
+  currentOrganizationSlug = slug;
+}
+
+function withOrganizationSlug(path: string): string {
+  const slug = currentOrganizationSlug;
+  if (!slug) return path;
+
+  const productMatch = path.match(
+    /^(\/api\/(?:documents|folders|contacts|notifications|analytics|activity))(\/.*)?$/
+  );
+  if (productMatch) {
+    const tail = productMatch[2] ?? "";
+    return `${productMatch[1]}/${slug}${tail}`;
+  }
+
+  if (
+    path === "/api/users/me/usage" ||
+    path === "/api/users/me/subscription"
+  ) {
+    return `/api/users/${slug}/me${path.slice("/api/users".length)}`;
+  }
+
+  return path;
+}
+
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
   if (typeof value === "string" && value.length > 0) {
@@ -211,7 +239,7 @@ async function apiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${getBaseUrl()}${path}`, {
+  const response = await fetch(`${getBaseUrl()}${withOrganizationSlug(path)}`, {
     ...init,
     credentials: "include",
     headers,
