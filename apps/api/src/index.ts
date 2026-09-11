@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { routeAgentRequest } from "agents";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
@@ -532,6 +532,7 @@ const invoiceEventBody = z.object({
   currentPeriodStart: z.string().datetime().optional(),
   currentPeriodEnd: z.string().datetime().optional(),
   latestInvoiceStatus: z.string(),
+  metadata: z.string().optional(),
 });
 
 app.post("/internal/webhooks/vortex-billing/invoice", async (c) => {
@@ -572,6 +573,7 @@ app.post("/internal/webhooks/vortex-billing/invoice", async (c) => {
     currentPeriodEnd: body.currentPeriodEnd
       ? new Date(body.currentPeriodEnd)
       : null,
+    metadata: body.metadata ?? null,
     updatedAt: now,
   };
 
@@ -615,6 +617,7 @@ const subscriptionEventBody = z.object({
   canceledAt: z.number().optional(),
   cancelReason: z.string().optional(),
   latestInvoiceId: z.string().optional(),
+  metadata: z.string().optional(),
 });
 
 app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
@@ -656,6 +659,7 @@ app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
     canceledAt: body.canceledAt ? new Date(body.canceledAt) : null,
     cancelReason: body.cancelReason ?? null,
     latestInvoiceId: body.latestInvoiceId ?? null,
+    metadata: body.metadata ?? null,
     updatedAt: now,
   };
 
@@ -675,6 +679,66 @@ app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
 
   return c.json({ success: true });
 });
+
+app.get(
+  "/internal/organizations/:organizationId/subscription-plan",
+  async (c) => {
+    const key = c.req.header("x-internal-api-key");
+    if (key !== c.env.INTERNAL_API_KEY) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+
+    const organizationId = c.req.param("organizationId");
+    const db = createD1(c.env.D1);
+
+    const now = Date.now();
+    const recent = await db
+      .select()
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.organizationId, organizationId),
+          or(
+            eq(subscriptions.status, "active"),
+            eq(subscriptions.status, "trialing"),
+            eq(subscriptions.status, "past_due")
+          )
+        )
+      )
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(20);
+
+    const paid =
+      recent.find((s) => s.status === "active" || s.status === "trialing") ??
+      recent.find((s) => {
+        if (s.status !== "past_due") return false;
+        const since = (s.pastDueSince ?? s.createdAt).getTime();
+        return now - since <= 14 * 24 * 60 * 60 * 1000;
+      });
+
+    const metadataSchema = z.object({ tier: z.string().optional() });
+    let tier: string | undefined;
+    if (paid?.metadata != null) {
+      try {
+        const parsed = metadataSchema.safeParse(JSON.parse(paid.metadata));
+        if (parsed.success) {
+          tier = parsed.data.tier;
+        }
+      } catch {
+        // ignore malformed metadata
+      }
+    }
+
+    const plan: "free" | "pro" | "enterprise" =
+      tier === "enterprise" ? "enterprise" : tier === "pro" ? "pro" : "free";
+
+    return c.json({
+      isPro: plan === "pro" || plan === "enterprise",
+      isEnterprise: plan === "enterprise",
+      plan,
+    });
+  }
+);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 

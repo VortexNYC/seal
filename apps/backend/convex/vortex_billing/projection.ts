@@ -4,7 +4,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import type { SubscriptionStatus } from "../schemas/subscriptions";
-import { resolveSubscriptionPriceByAnyId } from "../subscription_price_resolver";
+import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 
 export type VortexSubscriptionProjectionResult = {
   readonly processed: boolean;
@@ -366,12 +366,17 @@ export const projectSubscriptionUpdated = internalMutation({
       };
     }
 
-    const price = await resolveSubscriptionPriceByAnyId(ctx.db, args.planCode);
+    const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
+      ctx.db,
+      args.planCode
+    );
     if (!price) {
       throw new Error(
         `Seal subscription price not found for Vortex planCode: ${args.planCode}. Run Vortex catalog sync before projecting this subscription.`
       );
     }
+
+    const tier = product?.metadata?.tier;
 
     const projection = {
       organizationId: args.sealOrganizationId,
@@ -460,6 +465,7 @@ export const projectSubscriptionUpdated = internalMutation({
         canceledAt: parseOptionalIsoMillis(args.canceledAt),
         cancelReason: args.cancelReason,
         latestInvoiceId: args.latestInvoiceId,
+        metadata: JSON.stringify({ tier }),
       }
     );
 
@@ -542,6 +548,12 @@ async function projectInvoiceEvent(
     });
   }
 
+  const { product } = await resolveSubscriptionPriceAndProductByAnyId(
+    ctx.db,
+    subscription.externalPriceId
+  );
+  const tier = product?.metadata?.tier;
+
   const now = Date.now();
   if (isStaleSourceEvent(subscription, args.sourceCreatedAt)) {
     await insertProcessedVortexEvent(ctx, {
@@ -608,6 +620,7 @@ async function projectInvoiceEvent(
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd: subscription.currentPeriodEnd,
       latestInvoiceStatus: statusPatch.latestInvoiceStatus,
+      metadata: JSON.stringify({ tier }),
     }
   );
 

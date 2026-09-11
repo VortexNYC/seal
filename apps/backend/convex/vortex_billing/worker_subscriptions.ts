@@ -25,6 +25,7 @@ const invoiceEventArgs = {
   currentPeriodStart: v.optional(v.number()),
   currentPeriodEnd: v.optional(v.number()),
   latestInvoiceStatus: v.string(),
+  metadata: v.optional(v.string()),
 };
 
 export const projectInvoiceEvent = internalAction({
@@ -60,6 +61,7 @@ export const projectInvoiceEvent = internalAction({
           ? new Date(args.currentPeriodEnd).toISOString()
           : undefined,
         latestInvoiceStatus: args.latestInvoiceStatus,
+        metadata: args.metadata,
       }),
     });
 
@@ -97,6 +99,7 @@ const subscriptionUpdatedArgs = {
   canceledAt: v.optional(v.number()),
   cancelReason: v.optional(v.string()),
   latestInvoiceId: v.optional(v.string()),
+  metadata: v.optional(v.string()),
 };
 
 export const projectSubscriptionUpdated = internalAction({
@@ -130,6 +133,7 @@ export const projectSubscriptionUpdated = internalAction({
           canceledAt: args.canceledAt,
           cancelReason: args.cancelReason,
           latestInvoiceId: args.latestInvoiceId,
+          metadata: args.metadata,
         }),
       }
     );
