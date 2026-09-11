@@ -1,10 +1,10 @@
-import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
+import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
 /**
  * Security Settings Page
  *
@@ -16,15 +16,14 @@ import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
  */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AuthProvider, useAuth } from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { useOrganization } from "@/hooks/use-organization";
+import { Textarea } from "@/components/ui/textarea";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
-import { betterAuthClient } from "@/lib/better-auth";
-import { toast } from "@/lib/toast";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {
@@ -38,8 +37,14 @@ interface SecurityFormData {
   allowApiAccess: boolean;
 }
 
+function readDelegateOwnership(metadata: Record<string, unknown> | undefined): boolean {
+  if (metadata === undefined) return false;
+  const value = metadata.delegateOwnership;
+  return value === true;
+}
+
 function SecuritySettings() {
-  const client = betterAuthClient;
+  const client = getBetterAuthUiClient();
 
   if (client === null) {
     return (
@@ -59,7 +64,28 @@ function SecuritySettings() {
 function SecuritySettingsContent() {
   const { slug } = Route.useParams();
   const client = useAuth();
-  const { data: organization } = useOrganization(slug);
+
+  const { data: fullOrg } = useQuery({
+    queryKey: ["organization", slug, "full"],
+    queryFn: async () => {
+      if (client.organization?.getFullOrganization === undefined) {
+        throw new Error("Organization API is not available.");
+      }
+      return client.organization.getFullOrganization({
+        query: { organizationSlug: slug },
+      });
+    },
+  });
+
+  const { data: activeRole } = useQuery({
+    queryKey: ["organization", "active-role", slug],
+    queryFn: async () => {
+      if (client.organization?.getActiveMemberRole === undefined) {
+        throw new Error("Organization role API is not available.");
+      }
+      return client.organization.getActiveMemberRole();
+    },
+  });
 
   const { data: securitySettings } = useQuery({
     queryKey: ["security", slug],
@@ -75,7 +101,7 @@ function SecuritySettingsContent() {
     allowApiAccess: true,
   });
 
-  const userRole = organization?.userRole;
+  const userRole = activeRole?.data?.role;
   const isOwner = userRole === "owner";
   const isAdmin = userRole === "admin" || userRole === "owner";
 
@@ -89,14 +115,11 @@ function SecuritySettingsContent() {
   }, [securitySettings]);
 
   useEffect(() => {
-    setDelegateOwnership(organization?.delegateOwnership ?? false);
-  }, [organization]);
+    setDelegateOwnership(readDelegateOwnership(fullOrg?.data?.metadata));
+  }, [fullOrg]);
 
   const handleDelegateOwnershipChange = async (checked: boolean) => {
-    if (
-      client.organization?.update === undefined ||
-      organization?.id === undefined
-    ) {
+    if (client.organization?.update === undefined || fullOrg?.data == null) {
       toast.error("Organization update is not available.");
       return;
     }
@@ -105,10 +128,9 @@ function SecuritySettingsContent() {
     try {
       setDelegateOwnership(checked);
 
-      const existingMetadata = organization.metadata ?? {};
+      const existingMetadata = fullOrg.data.metadata ?? {};
 
       const response = await client.organization.update({
-        organizationId: organization.id,
         data: {
           metadata: {
             ...existingMetadata,
@@ -164,7 +186,7 @@ function SecuritySettingsContent() {
     }
   };
 
-  if (!organization || !securitySettings) {
+  if (!fullOrg?.data || !securitySettings) {
     return null;
   }
 

@@ -1,24 +1,23 @@
+import {
+  AuthProvider,
+  OrganizationProfile,
+  useAuth,
+} from "@vortexnyc/better-auth-ui";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk } from "@phosphor-icons/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  AuthProvider,
-  OrganizationProfile,
-  useAuth,
-} from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { useOrganization } from "@/hooks/use-organization";
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { pageSEO } from "@/lib/seo";
-import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
   component: GeneralSettings,
@@ -44,29 +43,20 @@ const DEFAULT_PRODUCT: ProductFormData = {
 };
 
 function productFromMetadata(
-  metadata: Record<string, unknown> | undefined
+  metadata: Record<string, unknown> | undefined,
 ): ProductFormData {
   if (metadata === undefined) {
     return DEFAULT_PRODUCT;
   }
   return {
-    timezone:
-      typeof metadata.timezone === "string"
-        ? metadata.timezone
-        : DEFAULT_PRODUCT.timezone,
-    currency:
-      typeof metadata.currency === "string"
-        ? metadata.currency
-        : DEFAULT_PRODUCT.currency,
-    currencyKind:
-      typeof metadata.currencyKind === "string"
-        ? metadata.currencyKind
-        : DEFAULT_PRODUCT.currencyKind,
+    timezone: typeof metadata.timezone === "string" ? metadata.timezone : DEFAULT_PRODUCT.timezone,
+    currency: typeof metadata.currency === "string" ? metadata.currency : DEFAULT_PRODUCT.currency,
+    currencyKind: typeof metadata.currencyKind === "string" ? metadata.currencyKind : DEFAULT_PRODUCT.currencyKind,
   };
 }
 
 function GeneralSettings() {
-  const client = betterAuthClient;
+  const client = getBetterAuthUiClient();
 
   if (client === null) {
     return (
@@ -86,36 +76,55 @@ function GeneralSettings() {
 function GeneralSettingsContent() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const client = useAuth();
-  const { data: organization } = useOrganization(slug);
+
+  const { data: fullOrg } = useQuery({
+    queryKey: ["organization", slug, "full"],
+    queryFn: async () => {
+      if (client.organization?.getFullOrganization === undefined) {
+        throw new Error("Organization API is not available.");
+      }
+      return client.organization.getFullOrganization({
+        query: { organizationSlug: slug },
+      });
+    },
+  });
+
+  const { data: activeRole } = useQuery({
+    queryKey: ["organization", "active-role", slug],
+    queryFn: async () => {
+      if (client.organization?.getActiveMemberRole === undefined) {
+        throw new Error("Organization role API is not available.");
+      }
+      return client.organization.getActiveMemberRole();
+    },
+  });
 
   const [product, setProduct] = useState<ProductFormData>(DEFAULT_PRODUCT);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setProduct(productFromMetadata(organization?.metadata));
-  }, [organization]);
+    const metadata = fullOrg?.data?.metadata;
+    setProduct(productFromMetadata(metadata));
+  }, [fullOrg]);
 
   const isAdmin =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
+    activeRole?.data?.role === "owner" ||
+    activeRole?.data?.role === "admin";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (
-      client.organization?.update === undefined ||
-      organization?.id === undefined
-    ) {
+    if (client.organization?.update === undefined || fullOrg?.data == null) {
       return;
     }
 
+    const org = fullOrg.data;
     setIsSubmitting(true);
 
     try {
-      const existingMetadata = organization.metadata ?? {};
+      const existingMetadata = org.metadata ?? {};
 
       const response = await client.organization.update({
-        organizationId: organization.id,
         data: {
           metadata: {
             ...existingMetadata,
@@ -128,7 +137,7 @@ function GeneralSettingsContent() {
 
       if (response.error !== null) {
         toast.error(
-          response.error.message ?? "Could not update workspace settings."
+          response.error.message ?? "Could not update workspace settings.",
         );
       } else {
         toast.success("Workspace settings updated successfully.");
@@ -137,43 +146,29 @@ function GeneralSettingsContent() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Could not update workspace settings."
+          : "Could not update workspace settings.",
       );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  if (organization === undefined) {
-    return (
-      <PageWrapper title="General Settings">
-        <FormSkeleton />
-      </PageWrapper>
-    );
-  }
-
   return (
     <PageWrapper title="General Settings">
       <div className="grid gap-6">
-        {organization && (
-          <OrganizationProfile
-            organizationId={organization.id}
-            onUpdated={(updated) => {
-              void queryClient.invalidateQueries({
-                queryKey: ["organization", updated.slug],
+        <OrganizationProfile
+          onUpdated={(organization) => {
+            if (organization.slug !== slug) {
+              void navigate({
+                to: "/$slug/settings",
+                params: { slug: organization.slug },
               });
-              if (updated.slug !== slug) {
-                void navigate({
-                  to: "/$slug/settings",
-                  params: { slug: updated.slug },
-                });
-              }
-            }}
-            onDeleted={() => {
-              void navigate({ to: "/" });
-            }}
-          />
-        )}
+            }
+          }}
+          onDeleted={() => {
+            void navigate({ to: "/" });
+          }}
+        />
 
         <LayerCard>
           <LayerCard.Secondary>
@@ -231,7 +226,7 @@ function GeneralSettingsContent() {
                   disabled={!isAdmin}
                 />
               </div>
-              <div className="flex justify-end md:col-span-3">
+              <div className="md:col-span-3 flex justify-end">
                 <Button type="submit" disabled={!isAdmin || isSubmitting}>
                   <FloppyDisk className="mr-2 h-4 w-4" />
                   {isSubmitting ? "Saving…" : "Save workspace settings"}

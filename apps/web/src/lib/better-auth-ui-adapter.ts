@@ -59,7 +59,20 @@ export function getBetterAuthUiClient(): AnyAuthClient | null {
     ...(c.twoFactor !== undefined
       ? {
           twoFactor: {
-            enable: (args) => c.twoFactor.enable(args),
+            enable: async (args) => {
+              const response = await c.twoFactor.enable(args);
+              const data = response.data;
+              return {
+                data:
+                  data && "totpURI" in data
+                    ? {
+                        totpURI: data.totpURI,
+                        backupCodes: data.backupCodes,
+                      }
+                    : null,
+                error: response.error,
+              };
+            },
             verifyTotp: (args) => c.twoFactor.verifyTotp(args),
             verifyBackupCode: (args) => c.twoFactor.verifyBackupCode(args),
             disable: (args) => c.twoFactor.disable(args),
@@ -105,6 +118,7 @@ export function getBetterAuthUiClient(): AnyAuthClient | null {
                 ...args,
                 role: toBetterAuthRole(args.role),
               }),
+            getActiveMemberRole: () => c.organization.getActiveMemberRole(),
           },
         }
       : {}),

@@ -659,29 +659,6 @@ export async function updateBrandingSettings(
   );
 }
 
-export async function updateWorkspace(
-  slug: string,
-  input: {
-    name?: string;
-    logo?: string | null;
-    brand?: Record<string, unknown>;
-    security?: Record<string, unknown>;
-    delegateOwnership?: boolean;
-    timezone?: string;
-    currency?: string;
-    currencyKind?: string;
-  }
-): Promise<ApiOrganization> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/workspace`,
-    organizationSchema,
-    {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    }
-  );
-}
-
 export async function getDocumentStats(): Promise<ApiDocumentStats> {
   return apiFetch("/api/documents/stats", documentStatsSchema);
 }
