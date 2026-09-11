@@ -456,7 +456,7 @@ describe("AddRecipientDialog", () => {
       // Achieved by setting name to empty string via member override
       const members = [
         {
-          id: "member_0",
+          userId: "member_0",
           email: "test@example.com",
           name: "",
           avatarUrl: null,
