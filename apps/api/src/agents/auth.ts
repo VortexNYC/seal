@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
-import { aiThreads } from "../global/schema.js";
-import { getSessionUser, type SessionUser } from "../platform/session.js";
+import { aiThreads, member } from "../global/schema.js";
+import { getSessionUser } from "../platform/session.js";
 
 export interface ThreadOwnership {
   organizationId: string;
@@ -10,25 +10,19 @@ export interface ThreadOwnership {
 }
 
 export function authorizeThreadAccess(
-  user: SessionUser,
+  userId: string,
+  organizationId: string,
   thread: ThreadOwnership | undefined
 ): boolean {
   if (!thread) {
     return false;
   }
-
-  if (!user.session?.activeOrganizationId) {
+  if (thread.userId !== userId) {
     return false;
   }
-
-  if (thread.organizationId !== user.session.activeOrganizationId) {
+  if (thread.organizationId !== organizationId) {
     return false;
   }
-
-  if (thread.userId !== user.user.id) {
-    return false;
-  }
-
   return true;
 }
 
@@ -42,7 +36,7 @@ export async function authenticateAgentConnection(
   }
 
   const user = await getSessionUser(env, req);
-  if (!user?.session?.activeOrganizationId) {
+  if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -57,7 +51,26 @@ export async function authenticateAgentConnection(
     .limit(1);
 
   const thread = threadRows[0];
-  if (!authorizeThreadAccess(user, thread)) {
+  if (!thread) {
+    return new Response("Thread not found", { status: 404 });
+  }
+
+  const membershipRows = await db
+    .select()
+    .from(member)
+    .where(
+      and(
+        eq(member.organizationId, thread.organizationId),
+        eq(member.userId, user.user.id)
+      )
+    )
+    .limit(1);
+
+  if (membershipRows.length === 0) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  if (!authorizeThreadAccess(user.user.id, thread.organizationId, thread)) {
     return new Response("Forbidden", { status: 403 });
   }
 

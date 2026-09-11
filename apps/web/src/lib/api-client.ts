@@ -193,18 +193,18 @@ export type ApiContact = {
 };
 export type ApiRelatedDocument = z.infer<typeof relatedDocumentSchema>;
 
-let currentOrganizationSlug: string | null = null;
-
-export function setCurrentOrganizationSlug(slug: string): void {
-  currentOrganizationSlug = slug;
+function getOrganizationSlugFromPath(): string | null {
+  if (typeof window === "undefined") return null;
+  const match = window.location.pathname.match(/^\/([^/]+)/);
+  return match ? match[1] : null;
 }
 
 function withOrganizationSlug(path: string): string {
-  const slug = currentOrganizationSlug;
+  const slug = getOrganizationSlugFromPath();
   if (!slug) return path;
 
   const productMatch = path.match(
-    /^(\/api\/(?:documents|folders|contacts|notifications|analytics|activity))(\/.*)?$/
+    /^(\/api\/(?:documents|folders|contacts|notifications|analytics|activity|feedback))(\/.*)?$/
   );
   if (productMatch) {
     const tail = productMatch[2] ?? "";

@@ -148,7 +148,7 @@ app.openapi(createSavedSignatureRoute, async (c) => {
   }
 
   const id = crypto.randomUUID();
-  const organizationId = user!.session?.activeOrganizationId ?? null;
+  const organizationId: string | null = null;
   const now = new Date();
 
   await db.insert(savedSignatures).values({
@@ -180,6 +180,7 @@ app.openapi(createSavedSignatureRoute, async (c) => {
     200
   );
 });
+
 
 const updateBodySchema = z.object({
   name: z.string().min(1).optional(),

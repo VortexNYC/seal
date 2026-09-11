@@ -28,7 +28,6 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
-import { setCurrentOrganizationSlug } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -59,7 +58,6 @@ function WorkspaceLayout() {
   useJamMetadata();
 
   useEffect(() => {
-    setCurrentOrganizationSlug(slug);
     const client = getBetterAuthUiClient();
     if (client?.organization?.setActive === undefined) return;
     void client.organization.setActive({ organizationSlug: slug });

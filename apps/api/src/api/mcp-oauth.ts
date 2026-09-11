@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { importJWK, SignJWT } from "jose";
 import { z } from "zod";
 
@@ -393,6 +393,7 @@ const authorizeQuerySchema = z.object({
   state: z.string().optional(),
   code_challenge: z.string().min(1),
   code_challenge_method: z.literal("S256"),
+  organization_slug: z.string().optional(),
 });
 
 app.get("/authorize", async (c) => {
@@ -432,19 +433,43 @@ app.get("/authorize", async (c) => {
   }
 
   const userId = sessionUser.user.id;
-  let organizationId: string | null =
-    sessionUser.session?.activeOrganizationId ?? null;
+  let organizationId: string | null = null;
 
-  if (!organizationId) {
+  if (params.organization_slug) {
+    const orgs = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.slug, params.organization_slug))
+      .limit(1);
+    const [firstOrg] = orgs;
+    if (!firstOrg) {
+      return oauthError(400, "invalid_request", "Unknown organization");
+    }
+    const memberships = await db
+      .select()
+      .from(member)
+      .where(
+        and(
+          eq(member.userId, userId),
+          eq(member.organizationId, firstOrg.id)
+        )
+      )
+      .limit(1);
+    if (memberships.length === 0) {
+      return oauthError(403, "access_denied", "User is not a member");
+    }
+    organizationId = firstOrg.id;
+  } else {
     const memberships = await db
       .select({ organizationId: member.organizationId })
       .from(member)
       .where(eq(member.userId, userId))
       .limit(1);
     const [first] = memberships;
-    if (first) {
-      organizationId = first.organizationId;
+    if (!first) {
+      return oauthError(403, "access_denied", "User has no organization");
     }
+    organizationId = first.organizationId;
   }
 
   const code = crypto.randomUUID();
