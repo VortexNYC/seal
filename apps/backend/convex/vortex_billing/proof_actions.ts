@@ -52,23 +52,6 @@ type MarkVortexDocumentPayableProofWaitingForPaymentResult = {
   readonly workflowStatus: "waiting_for_payment";
 };
 
-type SeedVortexWebhookProofPaymentConfigResult = {
-  readonly organizationId: Id<"organizations">;
-  readonly ownerId: Id<"users">;
-  readonly documentId: Id<"documents">;
-  readonly recipientId: Id<"document_recipients">;
-  readonly fieldId: Id<"signature_fields">;
-  readonly configId: Id<"payment_field_configs">;
-  readonly vortexPayableId: string;
-};
-
-type SeedVortexWebhookProofPaymentConfigArgs = {
-  readonly proofRunId: string;
-  readonly vortexPayableId: string;
-  readonly vortexPaymentRequestId: string;
-  readonly hostedInvoiceUrl: string;
-};
-
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
   readonly organizationBillingCustomerId: string | null;
@@ -102,34 +85,6 @@ type VortexSaasBillingProofState = {
     readonly unitAmount: number | undefined;
   } | null;
   readonly activeNonVortexProviderIdPresent: boolean;
-};
-
-type VortexWebhookProofPaymentState = {
-  readonly configId: Id<"payment_field_configs"> | undefined;
-  readonly documentId: Id<"documents"> | undefined;
-  readonly paymentStatus: string | undefined;
-  readonly configProviderInvoiceId: string | undefined;
-  readonly configProviderSubscriptionId: string | undefined;
-  readonly configProviderPaymentIntentId: string | undefined;
-  readonly vortexPayableId: string | undefined;
-  readonly vortexPaymentRequestId: string | undefined;
-  readonly hostedInvoiceUrl: string | undefined;
-  readonly documentWorkflowStatus: string | undefined;
-  readonly invoiceStatus: string | undefined;
-  readonly invoiceProvider: string | undefined;
-  readonly invoiceProviderInvoiceId: string | undefined;
-  readonly invoiceProviderSubscriptionId: string | undefined;
-  readonly invoiceProviderCustomerId: string | undefined;
-  readonly invoiceProviderAccountId: string | undefined;
-  readonly invoiceVortexPayableId: string | undefined;
-  readonly invoiceVortexPaymentRequestId: string | undefined;
-  readonly invoiceHostedUrl: string | undefined;
-  readonly invoicePaidAt: number | undefined;
-  readonly invoiceDunningStatus: string | undefined;
-  readonly invoiceDunningStep: number | undefined;
-  readonly invoiceDunningStartedAt: number | undefined;
-  readonly invoiceNextDunningAt: number | undefined;
-  readonly invoiceDunningCompletedAt: number | undefined;
 };
 
 type CreateVortexDocumentPayableProofObjectsResult = {
@@ -836,31 +791,6 @@ async function insertVortexProofPaymentConfig(
   });
 }
 
-async function insertVortexWebhookProofInvoice(
-  ctx: MutationCtx,
-  args: SeedVortexWebhookProofPaymentConfigArgs,
-  documentId: Id<"documents">,
-  organizationId: Id<"organizations">,
-  now: number
-): Promise<void> {
-  await ctx.db.insert("document_invoices", {
-    documentId,
-    organizationId,
-    provider: "vortex_billing",
-    vortexPayableId: args.vortexPayableId,
-    vortexPaymentRequestId: args.vortexPaymentRequestId,
-    status: "open",
-    customerEmail: `vortex-webhook-recipient+${args.proofRunId}@seal.test`,
-    customerName: "Vortex Webhook Proof Recipient",
-    amountDue: 4200,
-    currency: "usd",
-    hostedInvoiceUrl: args.hostedInvoiceUrl,
-    finalizedAt: now,
-    createdAt: now,
-    updatedAt: now,
-  });
-}
-
 export const seedVortexOneTimeDocumentPayableProofDocument = internalMutation({
   args: {
     proofRunId: v.string(),
@@ -1064,115 +994,6 @@ export const seedVortexDepositBalanceDocumentPayableProofDocument =
     },
   });
 
-export const seedVortexWebhookProofPaymentConfig = internalMutation({
-  args: {
-    proofRunId: v.string(),
-    vortexPayableId: v.string(),
-    vortexPaymentRequestId: v.string(),
-    hostedInvoiceUrl: v.string(),
-  },
-  handler: async (
-    ctx,
-    args
-  ): Promise<SeedVortexWebhookProofPaymentConfigResult> => {
-    const now = Date.now();
-    const organizationId = await insertSaasProofOrganization(
-      ctx,
-      `webhook-document-${args.proofRunId}`,
-      now
-    );
-    const ownerId = await insertSaasProofOwner(
-      ctx,
-      `webhook-document-${args.proofRunId}`,
-      organizationId
-    );
-    const documentId = await ctx.db.insert("documents", {
-      organizationId,
-      ownerId,
-      name: `Vortex webhook document payment proof ${args.proofRunId}`,
-      fileSize: 1024,
-      fileType: "application/pdf",
-      storageId: `vortex-webhook-document-proof-${args.proofRunId}`,
-      sharingMode: "private",
-      status: "active",
-      workflowStatus: "waiting_for_payment",
-      signingMode: "parallel",
-      createdAt: now,
-      updatedAt: now,
-    });
-    const recipientId = await ctx.db.insert("document_recipients", {
-      documentId,
-      email: `vortex-webhook-recipient+${args.proofRunId}@seal.test`,
-      name: "Vortex Webhook Proof Recipient",
-      role: "signer",
-      status: "signed",
-      order: 1,
-      signingToken: `vortex-webhook-proof-token-${args.proofRunId}`,
-      tokenExpiresAt: now + 30 * 24 * 60 * 60 * 1000,
-      createdAt: now,
-      updatedAt: now,
-    });
-    const fieldId = await ctx.db.insert("signature_fields", {
-      documentId,
-      recipientId,
-      fieldType: "payment",
-      label: "Document payment",
-      isRequired: true,
-      x: 10,
-      y: 24,
-      width: 35,
-      height: 10,
-      page: 1,
-      createdAt: now,
-      updatedAt: now,
-    });
-    const configId = await ctx.db.insert("payment_field_configs", {
-      fieldId,
-      documentId,
-      organizationId,
-      paymentType: "one_time",
-      items: [
-        {
-          id: `vortex-webhook-proof-line-${args.proofRunId}`,
-          description: "Vortex webhook document payment proof",
-          quantity: 1,
-          unitPrice: 4200,
-        },
-      ],
-      currency: "usd",
-      dueDateTerms: "net_30",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
-      totalAmountCents: 4200,
-      paymentStatus: "awaiting",
-      vortexPayableId: args.vortexPayableId,
-      vortexPaymentRequestId: args.vortexPaymentRequestId,
-      hostedInvoiceUrl: args.hostedInvoiceUrl,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    await insertVortexWebhookProofInvoice(
-      ctx,
-      args,
-      documentId,
-      organizationId,
-      now
-    );
-
-    return {
-      organizationId,
-      ownerId,
-      documentId,
-      recipientId,
-      fieldId,
-      configId,
-      vortexPayableId: args.vortexPayableId,
-    };
-  },
-});
-
 export const getVortexSaasBillingProofState = internalQuery({
   args: {
     organizationId: v.id("organizations"),
@@ -1364,137 +1185,6 @@ export const getVortexCatalogProofPrice = internalQuery({
       recurring: price.recurring,
       productName: product.name,
       productStatus: product.status,
-    };
-  },
-});
-
-function toWebhookProofConfigState(
-  config: Doc<"payment_field_configs"> | null
-): Pick<
-  VortexWebhookProofPaymentState,
-  | "configId"
-  | "paymentStatus"
-  | "configProviderInvoiceId"
-  | "configProviderSubscriptionId"
-  | "configProviderPaymentIntentId"
-  | "vortexPayableId"
-  | "vortexPaymentRequestId"
-  | "hostedInvoiceUrl"
-> {
-  return {
-    configId: config?._id,
-    paymentStatus: config?.paymentStatus,
-    configProviderInvoiceId: config?.providerInvoiceId,
-    configProviderSubscriptionId: config?.providerSubscriptionId,
-    configProviderPaymentIntentId: config?.providerPaymentIntentId,
-    vortexPayableId: config?.vortexPayableId,
-    vortexPaymentRequestId: config?.vortexPaymentRequestId,
-    hostedInvoiceUrl: config?.hostedInvoiceUrl,
-  };
-}
-
-function toWebhookProofInvoiceState(
-  invoice: Doc<"document_invoices"> | null
-): Pick<
-  VortexWebhookProofPaymentState,
-  | "invoiceStatus"
-  | "invoiceProvider"
-  | "invoiceProviderInvoiceId"
-  | "invoiceProviderSubscriptionId"
-  | "invoiceProviderCustomerId"
-  | "invoiceProviderAccountId"
-  | "invoiceVortexPayableId"
-  | "invoiceVortexPaymentRequestId"
-  | "invoiceHostedUrl"
-  | "invoicePaidAt"
-  | "invoiceDunningStatus"
-  | "invoiceDunningStep"
-  | "invoiceDunningStartedAt"
-  | "invoiceNextDunningAt"
-  | "invoiceDunningCompletedAt"
-> {
-  return {
-    ...toWebhookProofInvoiceIdentityState(invoice),
-    ...toWebhookProofInvoiceDunningState(invoice),
-  };
-}
-
-function toWebhookProofInvoiceIdentityState(
-  invoice: Doc<"document_invoices"> | null
-): Pick<
-  VortexWebhookProofPaymentState,
-  | "invoiceStatus"
-  | "invoiceProvider"
-  | "invoiceProviderInvoiceId"
-  | "invoiceProviderSubscriptionId"
-  | "invoiceProviderCustomerId"
-  | "invoiceProviderAccountId"
-  | "invoiceVortexPayableId"
-  | "invoiceVortexPaymentRequestId"
-  | "invoiceHostedUrl"
-  | "invoicePaidAt"
-> {
-  return {
-    invoiceStatus: invoice?.status,
-    invoiceProvider: invoice?.provider,
-    invoiceProviderInvoiceId: invoice?.providerInvoiceId,
-    invoiceProviderSubscriptionId: invoice?.providerSubscriptionId,
-    invoiceProviderCustomerId: invoice?.providerCustomerId,
-    invoiceProviderAccountId: invoice?.providerAccountId,
-    invoiceVortexPayableId: invoice?.vortexPayableId,
-    invoiceVortexPaymentRequestId: invoice?.vortexPaymentRequestId,
-    invoiceHostedUrl: invoice?.hostedInvoiceUrl,
-    invoicePaidAt: invoice?.paidAt,
-  };
-}
-
-function toWebhookProofInvoiceDunningState(
-  invoice: Doc<"document_invoices"> | null
-): Pick<
-  VortexWebhookProofPaymentState,
-  | "invoiceDunningStatus"
-  | "invoiceDunningStep"
-  | "invoiceDunningStartedAt"
-  | "invoiceNextDunningAt"
-  | "invoiceDunningCompletedAt"
-> {
-  return {
-    invoiceDunningStatus: invoice?.dunningStatus,
-    invoiceDunningStep: invoice?.dunningStep,
-    invoiceDunningStartedAt: invoice?.dunningStartedAt,
-    invoiceNextDunningAt: invoice?.nextDunningAt,
-    invoiceDunningCompletedAt: invoice?.dunningCompletedAt,
-  };
-}
-
-export const getVortexWebhookProofPaymentState = internalQuery({
-  args: {
-    vortexPayableId: v.string(),
-  },
-  handler: async (ctx, args): Promise<VortexWebhookProofPaymentState> => {
-    const config = await ctx.db
-      .query("payment_field_configs")
-      .withIndex("by_vortex_payable", (q) =>
-        q.eq("vortexPayableId", args.vortexPayableId)
-      )
-      .first();
-    const invoice = await ctx.db
-      .query("document_invoices")
-      .withIndex("by_vortex_payable", (q) =>
-        q.eq("vortexPayableId", args.vortexPayableId)
-      )
-      .first();
-    const documentId = config?.documentId ?? invoice?.documentId;
-    const document =
-      documentId === undefined
-        ? null
-        : await ctx.db.get("documents", documentId);
-
-    return {
-      documentId,
-      documentWorkflowStatus: document?.workflowStatus,
-      ...toWebhookProofConfigState(config),
-      ...toWebhookProofInvoiceState(invoice),
     };
   },
 });

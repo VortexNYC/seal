@@ -273,7 +273,7 @@ export const updatePaymentStatusFromProviderSubscription = internalMutation({
 /**
  * Internal mutation to store Vortex Billing payable IDs back on a payment config
  * after Vortex creates the payable and manual payment request during send.
- * Also creates a document_invoices record for revenue tracking.
+ * Also creates the D1 document invoice record via createDocumentInvoice.
  */
 export const storeVortexPayableIds = internalMutation({
   args: {

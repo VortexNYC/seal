@@ -156,20 +156,11 @@ describe("Vortex Billing document payable local proof", () => {
         );
       });
 
-      const state = await t.run(async (ctx) => {
-        const config = await ctx.db.get(seed.configId);
-        const invoices = await ctx.db
-          .query("document_invoices")
-          .withIndex("by_vortex_payable", (q) =>
-            q.eq("vortexPayableId", vortexPayableId)
-          )
-          .collect();
-        return { config, invoices };
+      const config = await t.run(async (ctx) => {
+        return await ctx.db.get(seed.configId);
       });
 
-      const config = requirePresent(state.config, "payment config");
-
-      expect(state.invoices).toHaveLength(0);
+      requirePresent(config, "payment config");
       expect(
         selectDocumentPaymentProvider(seed.organizationId, [config], {
           VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify([

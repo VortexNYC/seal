@@ -474,32 +474,24 @@ describe("Payment field mutations", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const config = await ctx.db.get(configId);
-        const invoices = await ctx.db
-          .query("document_invoices")
-          .withIndex("by_vortex_payable", (q) =>
-            q.eq("vortexPayableId", "payable_vortex_123")
-          )
-          .collect();
-        return { config, invoices };
+        return await ctx.db.get(configId);
       });
 
-      expect(result.config?.paymentStatus).toBe("awaiting");
-      expect(result.config?.vortexPayableId).toBe("payable_vortex_123");
-      expect(result.config?.vortexRecurringPayableId).toBe(
+      expect(result?.paymentStatus).toBe("awaiting");
+      expect(result?.vortexPayableId).toBe("payable_vortex_123");
+      expect(result?.vortexRecurringPayableId).toBe(
         "recurring_payable_vortex_123"
       );
-      expect(result.config?.vortexInstallmentPayableId).toBe(
+      expect(result?.vortexInstallmentPayableId).toBe(
         "installment_payable_vortex_123"
       );
-      expect(result.config?.vortexDepositBalancePayableId).toBe(
+      expect(result?.vortexDepositBalancePayableId).toBe(
         "deposit_balance_payable_vortex_123"
       );
-      expect(result.config?.vortexPaymentRequestId).toBe("pr_vortex_123");
-      expect(result.config?.hostedInvoiceUrl).toBe(
+      expect(result?.vortexPaymentRequestId).toBe("pr_vortex_123");
+      expect(result?.hostedInvoiceUrl).toBe(
         "https://payments.vortex.test/pay/token_456"
       );
-      expect(result.invoices).toHaveLength(0);
     });
   });
 

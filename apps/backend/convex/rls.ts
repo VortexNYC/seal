@@ -300,7 +300,7 @@ function getPrimaryDocumentRules(
 function getDocumentWorkflowRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null
-): Pick<StrictRules, "document_reminders" | "folders" | "document_invoices"> {
+): Pick<StrictRules, "document_reminders" | "folders"> {
   return {
     document_reminders: {
       read: async (queryCtx, doc) => {
@@ -333,19 +333,6 @@ function getDocumentWorkflowRules(
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.organizationId !== rlsCtx.orgId) return false;
         return rlsCtx.isAdmin || doc.createdBy === rlsCtx.userId;
-      },
-    },
-    document_invoices: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId !== rlsCtx.orgId) return false;
-        return rlsCtx.isAdmin;
       },
     },
   };

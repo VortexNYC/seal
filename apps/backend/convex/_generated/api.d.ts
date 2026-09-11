@@ -105,7 +105,6 @@ import type * as schemas_audit_logs from "../schemas/audit_logs.js";
 import type * as schemas_contacts from "../schemas/contacts.js";
 import type * as schemas_data_exports from "../schemas/data_exports.js";
 import type * as schemas_document_access from "../schemas/document_access.js";
-import type * as schemas_document_invoices from "../schemas/document_invoices.js";
 import type * as schemas_document_recipients from "../schemas/document_recipients.js";
 import type * as schemas_document_reminders from "../schemas/document_reminders.js";
 import type * as schemas_document_versions from "../schemas/document_versions.js";
@@ -256,7 +255,6 @@ declare const fullApi: ApiFromModules<{
   "schemas/contacts": typeof schemas_contacts;
   "schemas/data_exports": typeof schemas_data_exports;
   "schemas/document_access": typeof schemas_document_access;
-  "schemas/document_invoices": typeof schemas_document_invoices;
   "schemas/document_recipients": typeof schemas_document_recipients;
   "schemas/document_reminders": typeof schemas_document_reminders;
   "schemas/document_versions": typeof schemas_document_versions;

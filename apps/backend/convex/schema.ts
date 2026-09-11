@@ -27,7 +27,6 @@ import {
   type DocumentPermissionLevel,
   documentAccessTable,
 } from "./schemas/document_access";
-import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
   type RecipientStatus as DocumentRecipientStatus,
   documentRecipientsTable,
@@ -201,7 +200,6 @@ export default defineSchema({
 
   documents: documentsTable,
   document_versions: documentVersionsTable,
-  document_invoices: documentInvoicesTable,
   document_access: documentAccessTable,
   document_recipients: documentRecipientsTable,
   document_reminders: documentRemindersTable,
