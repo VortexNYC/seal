@@ -265,6 +265,7 @@ async function runDocumentProcessing(
     internal.ai.mutations.saveFieldSuggestions,
     {
       documentId: args.documentId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
       organizationId: args.organizationId,
       fields: result.fields,
       modelUsed: "gemini-3-flash",

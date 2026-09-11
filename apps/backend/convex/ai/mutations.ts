@@ -177,6 +177,7 @@ async function createPaymentConfigsFromExtraction(
 export const saveFieldSuggestions = internalMutation({
   args: {
     documentId: v.id("documents"),
+    vortexAuthOrganizationId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     fields: v.array(
       v.object({
@@ -208,6 +209,7 @@ export const saveFieldSuggestions = internalMutation({
 
     return await ctx.db.insert("ai_field_suggestions", {
       documentId: args.documentId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
       organizationId: args.organizationId,
       fields: args.fields,
       modelUsed: args.modelUsed,

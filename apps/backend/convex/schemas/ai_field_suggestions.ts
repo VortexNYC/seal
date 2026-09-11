@@ -54,6 +54,7 @@ export const paymentExtractionValidator = v.object({
 
 export const aiFieldSuggestionsTable = defineTable({
   documentId: v.id("documents"),
+  vortexAuthOrganizationId: v.optional(v.string()),
   organizationId: v.id("organizations"),
   fields: v.array(
     v.object({
