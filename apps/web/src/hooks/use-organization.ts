@@ -39,29 +39,22 @@ function toNumber(value: unknown): number {
 
 async function fetchOrganization(
   slug: string,
+  userId: string | undefined,
 ): Promise<OrganizationView | null> {
   const client = getBetterAuthUiClient();
   if (client === null) {
     throw new Error("Auth client is not available.");
   }
-  if (
-    client.organization?.getFullOrganization === undefined ||
-    client.organization?.getActiveMemberRole === undefined
-  ) {
+  if (client.organization?.getFullOrganization === undefined) {
     throw new Error("Organization API is not available.");
   }
 
-  const [fullOrg, activeRole] = await Promise.all([
-    client.organization.getFullOrganization({
-      query: { organizationSlug: slug },
-    }),
-    client.organization.getActiveMemberRole(),
-  ]);
+  const fullOrg = await client.organization.getFullOrganization({
+    query: { organizationSlug: slug },
+  });
 
   if (fullOrg.error !== null) {
-    throw new Error(
-      fullOrg.error.message ?? "Could not load organization.",
-    );
+    throw new Error(fullOrg.error.message ?? "Could not load organization.");
   }
 
   const data = fullOrg.data;
@@ -69,9 +62,14 @@ async function fetchOrganization(
     return null;
   }
 
+  const members = data.members ?? [];
+  const currentMember =
+    userId === undefined
+      ? undefined
+      : members.find((member) => member.userId === userId);
+
   const meta = data.metadata ?? {};
-  const status =
-    typeof meta.status === "string" ? meta.status : "active";
+  const status = typeof meta.status === "string" ? meta.status : "active";
   const plan = typeof meta.plan === "string" ? meta.plan : "free";
   const timezone =
     typeof meta.timezone === "string" ? meta.timezone : "UTC";
@@ -87,10 +85,11 @@ async function fetchOrganization(
     id: data.id,
     name: data.name,
     slug: data.slug,
-    logo: typeof data.logo === "string" && data.logo.length > 0 ? data.logo : null,
+    logo:
+      typeof data.logo === "string" && data.logo.length > 0 ? data.logo : null,
     metadata: meta,
     status,
-    userRole: activeRole.data?.role ?? "member",
+    userRole: currentMember?.role ?? "member",
     suiteBrand: asRecord(meta.suiteBrand),
     suiteSecurity: asRecord(meta.suiteSecurity),
     brandingSettings: Object.keys(branding).length > 0 ? branding : null,
@@ -103,16 +102,27 @@ async function fetchOrganization(
   };
 }
 
+function useOrganizationClient() {
+  const client = getBetterAuthUiClient();
+  if (client === null) {
+    throw new Error("Auth client is not available.");
+  }
+  const session = client.useSession();
+  return { client, userId: session.data?.user?.id };
+}
+
 export function useOrganization(slug: string) {
+  const { userId } = useOrganizationClient();
   return useQuery({
     queryKey: ["organization", slug],
-    queryFn: () => fetchOrganization(slug),
+    queryFn: () => fetchOrganization(slug, userId),
   });
 }
 
 export function useSuspenseOrganization(slug: string) {
+  const { userId } = useOrganizationClient();
   return useSuspenseQuery({
     queryKey: ["organization", slug],
-    queryFn: () => fetchOrganization(slug),
+    queryFn: () => fetchOrganization(slug, userId),
   });
 }

@@ -23,6 +23,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
+import { useOrganization } from "@/hooks/use-organization";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
@@ -35,12 +36,6 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
 interface SecurityFormData {
   ipAllowlistText: string;
   allowApiAccess: boolean;
-}
-
-function readDelegateOwnership(metadata: Record<string, unknown> | undefined): boolean {
-  if (metadata === undefined) return false;
-  const value = metadata.delegateOwnership;
-  return value === true;
 }
 
 function SecuritySettings() {
@@ -64,28 +59,7 @@ function SecuritySettings() {
 function SecuritySettingsContent() {
   const { slug } = Route.useParams();
   const client = useAuth();
-
-  const { data: fullOrg } = useQuery({
-    queryKey: ["organization", slug, "full"],
-    queryFn: async () => {
-      if (client.organization?.getFullOrganization === undefined) {
-        throw new Error("Organization API is not available.");
-      }
-      return client.organization.getFullOrganization({
-        query: { organizationSlug: slug },
-      });
-    },
-  });
-
-  const { data: activeRole } = useQuery({
-    queryKey: ["organization", "active-role", slug],
-    queryFn: async () => {
-      if (client.organization?.getActiveMemberRole === undefined) {
-        throw new Error("Organization role API is not available.");
-      }
-      return client.organization.getActiveMemberRole();
-    },
-  });
+  const { data: organization } = useOrganization(slug);
 
   const { data: securitySettings } = useQuery({
     queryKey: ["security", slug],
@@ -101,7 +75,7 @@ function SecuritySettingsContent() {
     allowApiAccess: true,
   });
 
-  const userRole = activeRole?.data?.role;
+  const userRole = organization?.userRole;
   const isOwner = userRole === "owner";
   const isAdmin = userRole === "admin" || userRole === "owner";
 
@@ -115,11 +89,11 @@ function SecuritySettingsContent() {
   }, [securitySettings]);
 
   useEffect(() => {
-    setDelegateOwnership(readDelegateOwnership(fullOrg?.data?.metadata));
-  }, [fullOrg]);
+    setDelegateOwnership(organization?.delegateOwnership ?? false);
+  }, [organization]);
 
   const handleDelegateOwnershipChange = async (checked: boolean) => {
-    if (client.organization?.update === undefined || fullOrg?.data == null) {
+    if (client.organization?.update === undefined || organization?.id === undefined) {
       toast.error("Organization update is not available.");
       return;
     }
@@ -128,9 +102,10 @@ function SecuritySettingsContent() {
     try {
       setDelegateOwnership(checked);
 
-      const existingMetadata = fullOrg.data.metadata ?? {};
+      const existingMetadata = organization.metadata ?? {};
 
       const response = await client.organization.update({
+        organizationId: organization.id,
         data: {
           metadata: {
             ...existingMetadata,
@@ -186,7 +161,7 @@ function SecuritySettingsContent() {
     }
   };
 
-  if (!fullOrg?.data || !securitySettings) {
+  if (!organization || !securitySettings) {
     return null;
   }
 

@@ -9,13 +9,14 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
+import { useOrganization } from "@/hooks/use-organization";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { pageSEO } from "@/lib/seo";
 
@@ -76,55 +77,34 @@ function GeneralSettings() {
 function GeneralSettingsContent() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const client = useAuth();
-
-  const { data: fullOrg } = useQuery({
-    queryKey: ["organization", slug, "full"],
-    queryFn: async () => {
-      if (client.organization?.getFullOrganization === undefined) {
-        throw new Error("Organization API is not available.");
-      }
-      return client.organization.getFullOrganization({
-        query: { organizationSlug: slug },
-      });
-    },
-  });
-
-  const { data: activeRole } = useQuery({
-    queryKey: ["organization", "active-role", slug],
-    queryFn: async () => {
-      if (client.organization?.getActiveMemberRole === undefined) {
-        throw new Error("Organization role API is not available.");
-      }
-      return client.organization.getActiveMemberRole();
-    },
-  });
+  const { data: organization } = useOrganization(slug);
 
   const [product, setProduct] = useState<ProductFormData>(DEFAULT_PRODUCT);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const metadata = fullOrg?.data?.metadata;
-    setProduct(productFromMetadata(metadata));
-  }, [fullOrg]);
+    setProduct(productFromMetadata(organization?.metadata));
+  }, [organization]);
 
   const isAdmin =
-    activeRole?.data?.role === "owner" ||
-    activeRole?.data?.role === "admin";
+    organization?.userRole === "owner" ||
+    organization?.userRole === "admin";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (client.organization?.update === undefined || fullOrg?.data == null) {
+    if (client.organization?.update === undefined || organization?.id === undefined) {
       return;
     }
 
-    const org = fullOrg.data;
     setIsSubmitting(true);
 
     try {
-      const existingMetadata = org.metadata ?? {};
+      const existingMetadata = organization.metadata ?? {};
 
       const response = await client.organization.update({
+        organizationId: organization.id,
         data: {
           metadata: {
             ...existingMetadata,
@@ -153,22 +133,36 @@ function GeneralSettingsContent() {
     }
   }
 
+  if (organization === undefined) {
+    return (
+      <PageWrapper title="General Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
+  }
+
   return (
     <PageWrapper title="General Settings">
       <div className="grid gap-6">
-        <OrganizationProfile
-          onUpdated={(organization) => {
-            if (organization.slug !== slug) {
-              void navigate({
-                to: "/$slug/settings",
-                params: { slug: organization.slug },
+        {organization && (
+          <OrganizationProfile
+            organizationId={organization.id}
+            onUpdated={(updated) => {
+              void queryClient.invalidateQueries({
+                queryKey: ["organization", updated.slug],
               });
-            }
-          }}
-          onDeleted={() => {
-            void navigate({ to: "/" });
-          }}
-        />
+              if (updated.slug !== slug) {
+                void navigate({
+                  to: "/$slug/settings",
+                  params: { slug: updated.slug },
+                });
+              }
+            }}
+            onDeleted={() => {
+              void navigate({ to: "/" });
+            }}
+          />
+        )}
 
         <LayerCard>
           <LayerCard.Secondary>

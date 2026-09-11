@@ -43,7 +43,9 @@ export function useOrganizationMembers(slug: string, enabled = true) {
         throw new Error("Organization members are not available.");
       }
 
-      const response = await client.organization.getFullOrganization();
+      const response = await client.organization.getFullOrganization({
+        query: { organizationSlug: slug },
+      });
       if (response.error !== null) {
         throw new Error(response.error.message ?? "Could not load members.");
       }
