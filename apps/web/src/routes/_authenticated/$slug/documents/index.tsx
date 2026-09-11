@@ -1,14 +1,3 @@
-import { Badge } from "@cloudflare/kumo/components/badge";
-import { Button } from "@cloudflare/kumo/components/button";
-import { DatePicker } from "@cloudflare/kumo/components/date-picker";
-import { Dialog } from "@cloudflare/kumo/components/dialog";
-import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
-import { Empty } from "@cloudflare/kumo/components/empty";
-import { Input } from "@cloudflare/kumo/components/input";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Popover } from "@cloudflare/kumo/components/popover";
-import { Table } from "@cloudflare/kumo/components/table";
-import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
   useMutation,
   useQueryClient,
@@ -47,6 +36,7 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { toast } from "sonner";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
@@ -58,6 +48,52 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
@@ -76,7 +112,6 @@ import {
   type DocumentWorkflowStatus,
 } from "@/lib/document-status";
 import { pageSEO } from "@/lib/seo";
-import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
@@ -298,8 +333,8 @@ function confirmDialogActionLabel(type: ConfirmDialogState["type"]): string {
 
 function confirmDialogActionVariant(
   type: ConfirmDialogState["type"]
-): "primary" | "destructive" {
-  return type === "delete" || type === "cancel" ? "destructive" : "primary";
+): "default" | "destructive" {
+  return type === "delete" || type === "cancel" ? "destructive" : "default";
 }
 
 function formatBytes(bytes: number): string {
@@ -418,32 +453,32 @@ function FolderTableRow({
   readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
-    <Table.Row
+    <TableRow
       key={folder._id}
       className="hover:bg-muted/50 cursor-pointer"
       onClick={() => onFolderNavigate(folder._id)}
     >
-      <Table.Cell>
+      <TableCell>
         <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-[60px]">
           <FolderIcon className="text-muted-foreground h-5 w-5" />
         </div>
-      </Table.Cell>
-      <Table.Cell>
+      </TableCell>
+      <TableCell>
         <p className="font-medium">{folder.name}</p>
         <p className="text-muted-foreground text-xs">Folder</p>
-      </Table.Cell>
-      <Table.Cell className="hidden sm:table-cell">
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
         <div className="text-sm">
           <p>{formatDate(folder.createdAt)}</p>
         </div>
-      </Table.Cell>
-      <Table.Cell>
+      </TableCell>
+      <TableCell>
         <Badge variant="outline" className="text-xs">
           Folder
         </Badge>
-      </Table.Cell>
-      <Table.Cell className="text-right" />
-    </Table.Row>
+      </TableCell>
+      <TableCell className="text-right" />
+    </TableRow>
   );
 }
 
@@ -458,38 +493,36 @@ function DocumentTableRow({
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
 }) {
-  const { slug } = Route.useParams();
   return (
-    <Table.Row
+    <TableRow
       key={doc._id}
       data-testid="document-row"
       className="hover:bg-muted/50 cursor-pointer"
       onClick={() => actions.openDocument(doc._id)}
     >
-      <Table.Cell>
+      <TableCell>
         <DocumentThumbnail
-          organizationSlug={slug}
           publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
         />
-      </Table.Cell>
-      <Table.Cell>
+      </TableCell>
+      <TableCell>
         <DocumentSummary doc={doc} matches={matches} />
-      </Table.Cell>
-      <Table.Cell className="hidden sm:table-cell">
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
         <div className="text-sm">
           <p>{formatDate(doc.createdAt)}</p>
           <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
         </div>
-      </Table.Cell>
-      <Table.Cell>
+      </TableCell>
+      <TableCell>
         <div className="flex items-center gap-2">
           <WorkflowStatusBadge status={doc.workflowStatus} />
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
-      </Table.Cell>
-      <Table.Cell className="text-right">
+      </TableCell>
+      <TableCell className="text-right">
         <DocumentActionsMenu
           actions={actions}
           delegateOwnership={delegateOwnership}
@@ -497,8 +530,8 @@ function DocumentTableRow({
           includeExpiredSend
           includeTransferOwnership
         />
-      </Table.Cell>
-    </Table.Row>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -540,7 +573,7 @@ function FolderGridCard({
   readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
-    <LayerCard
+    <Card
       key={folder._id}
       className="hover:bg-secondary cursor-pointer transition-colors duration-200"
       onClick={() => onFolderNavigate(folder._id)}
@@ -548,14 +581,14 @@ function FolderGridCard({
       <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
         <FolderIcon className="text-muted-foreground h-12 w-12" />
       </div>
-      <LayerCard.Primary>
-        <h3 className="flex items-center gap-2 text-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
           <FolderIcon className="h-4 w-4 shrink-0" />
           <span className="line-clamp-2">{folder.name}</span>
-        </h3>
-        <p>Folder</p>
-      </LayerCard.Primary>
-    </LayerCard>
+        </CardTitle>
+        <CardDescription>Folder</CardDescription>
+      </CardHeader>
+    </Card>
   );
 }
 
@@ -568,38 +601,36 @@ function DocumentGridCard({
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
 }) {
-  const { slug } = Route.useParams();
   return (
-    <LayerCard
+    <Card
       key={doc._id}
       className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
       onClick={() => actions.openDocument(doc._id)}
     >
       <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
         <DocumentThumbnail
-          organizationSlug={slug}
           publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
           className="h-full w-full"
         />
       </div>
-      <LayerCard.Primary>
+      <CardHeader>
         <GridCardHeader actions={actions} doc={doc} matches={matches} />
         {doc.description && (
-          <p className="line-clamp-2">
+          <CardDescription className="line-clamp-2">
             <HighlightedText
               text={doc.description}
               matches={matches}
               fieldKey="description"
             />
-          </p>
+          </CardDescription>
         )}
-      </LayerCard.Primary>
-      <div className="p-4 pt-0">
+      </CardHeader>
+      <CardContent>
         <DocumentGridMetadata doc={doc} />
-      </div>
-    </LayerCard>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -616,9 +647,9 @@ function GridCardHeader({
     <div className="flex items-start justify-between">
       <div className="flex min-w-0 flex-1 items-start gap-2">
         <FileIcon className="text-muted-foreground h-5 w-5" />
-        <h3 className="line-clamp-2 text-base leading-5 break-all">
+        <CardTitle className="line-clamp-2 text-base leading-5 break-all">
           <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
-        </h3>
+        </CardTitle>
       </div>
       <DocumentActionsMenu actions={actions} doc={doc} />
     </div>
@@ -653,7 +684,7 @@ function DocumentGridMetadata({ doc }: { readonly doc: DocumentListItem }) {
 
 function SharingModeBadge({ sharingMode }: { readonly sharingMode: string }) {
   return (
-    <Badge variant={sharingMode === "private" ? "secondary" : "primary"}>
+    <Badge variant={sharingMode === "private" ? "secondary" : "default"}>
       {sharingMode === "private" && "Private"}
       {sharingMode === "workspace" && "Team"}
       {sharingMode === "specific" && "Specific"}
@@ -670,11 +701,11 @@ function DocumentAiStatus({
 }) {
   if (status === "processing") {
     return tooltip ? (
-      <Tooltip
-        content="AI analyzing document"
-        render={<span className="inline-flex" />}
-      >
-        <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+        </TooltipTrigger>
+        <TooltipContent>AI analyzing document</TooltipContent>
       </Tooltip>
     ) : (
       <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
@@ -682,11 +713,11 @@ function DocumentAiStatus({
   }
   if (status !== "completed") return null;
   return tooltip ? (
-    <Tooltip
-      content="AI analysis complete"
-      render={<span className="inline-flex" />}
-    >
-      <SparklesIcon className="text-ai-accent h-3 w-3" />
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <SparklesIcon className="text-ai-accent h-3 w-3" />
+      </TooltipTrigger>
+      <TooltipContent>AI analysis complete</TooltipContent>
     </Tooltip>
   ) : (
     <SparklesIcon className="text-ai-accent h-3 w-3" />
@@ -714,71 +745,70 @@ function DocumentActionsMenu({
     workflowStatus === "sent" || workflowStatus === "in_progress";
   return (
     <DropdownMenu>
-      <DropdownMenu.Trigger>
+      <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          shape="square"
-          size="sm"
+          size="icon"
           aria-label={`Document actions for ${doc.name}`}
           className="h-8 w-8 shrink-0"
           onClick={(event) => event.stopPropagation()}
         >
           <MoreVerticalIcon className="h-4 w-4" />
         </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
         align="end"
         onClick={(event) => event.stopPropagation()}
       >
-        <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)}>
+        <DropdownMenuItem onClick={() => actions.openDocument(doc._id)}>
           <FileTextIcon className="mr-2 h-4 w-4" />
           Open
-        </DropdownMenu.Item>
+        </DropdownMenuItem>
         {canSend && (
-          <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)}>
+          <DropdownMenuItem onClick={() => actions.sendDocument(doc._id)}>
             <SendIcon className="mr-2 h-4 w-4" />
             {workflowStatus === "expired"
               ? "Re-send Document"
               : "Send Document"}
-          </DropdownMenu.Item>
+          </DropdownMenuItem>
         )}
         {canCancel && (
-          <DropdownMenu.Item
+          <DropdownMenuItem
             onClick={() => actions.cancelDocument(doc._id)}
-            variant="danger"
+            className="text-destructive"
           >
             <BanIcon className="mr-2 h-4 w-4" />
             Cancel Document
-          </DropdownMenu.Item>
+          </DropdownMenuItem>
         )}
-        <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)}>
+        <DropdownMenuItem onClick={() => actions.downloadDocument(doc._id)}>
           <DownloadIcon className="mr-2 h-4 w-4" />
           Download
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
+        </DropdownMenuItem>
+        <DropdownMenuItem
           onClick={() => actions.shareDocument(doc._id, doc.name)}
         >
           <Share2Icon className="mr-2 h-4 w-4" />
           Share
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)}>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => actions.moveToFolder(doc._id)}>
           <FolderInputIcon className="mr-2 h-4 w-4" />
           Move to Folder
-        </DropdownMenu.Item>
+        </DropdownMenuItem>
         {includeTransferOwnership && delegateOwnership && (
-          <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)}>
+          <DropdownMenuItem onClick={() => actions.transferOwnership(doc)}>
             <ArrowRightLeftIcon className="mr-2 h-4 w-4" />
             Transfer Ownership
-          </DropdownMenu.Item>
+          </DropdownMenuItem>
         )}
-        <DropdownMenu.Item
+        <DropdownMenuItem
           onClick={() => actions.deleteDocument(doc._id)}
-          variant="danger"
+          className="text-destructive"
         >
           <TrashIcon className="mr-2 h-4 w-4" />
           Delete
-        </DropdownMenu.Item>
-      </DropdownMenu.Content>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }
@@ -827,18 +857,10 @@ function useDocumentsListData({
   | "workflowStatusFilter"
 >): DocumentsListData & { readonly refetch: () => void } {
   const [currentPage, setCurrentPage] = useState(1);
-  const { slug } = Route.useParams();
   const { data: apiDocuments, refetch: refetchDocuments } = useSuspenseQuery({
-    queryKey: [
-      "api",
-      "documents",
-      filter,
-      workflowStatusFilter,
-      folderId,
-      slug,
-    ],
+    queryKey: ["api", "documents", filter, workflowStatusFilter, folderId],
     queryFn: () =>
-      getDocuments(slug, {
+      getDocuments({
         filter,
         workflowStatus:
           workflowStatusFilter === "all" ? undefined : workflowStatusFilter,
@@ -847,8 +869,8 @@ function useDocumentsListData({
       }),
   });
   const { data: apiFolders, refetch: refetchFolders } = useSuspenseQuery({
-    queryKey: ["api", "folders", "document", folderId, slug],
-    queryFn: () => getFolders(slug, { type: "document", parentId: folderId }),
+    queryKey: ["api", "folders", "document", folderId],
+    queryFn: () => getFolders({ type: "document", parentId: folderId }),
   });
 
   const allDocuments = useMemo(
@@ -1004,25 +1026,21 @@ function DocumentsEmptyState({
   readonly onUploadClick: () => void;
 }) {
   return hasFiltersOrSearch ? (
-    <Empty
-      icon={<SearchIcon size={48} />}
+    <EmptyState
+      icon={SearchIcon}
       title="No documents found"
       description="Try adjusting your search or filters to find what you're looking for."
     />
   ) : (
-    <Empty
-      icon={<FileTextIcon size={48} />}
+    <EmptyState
+      icon={FileTextIcon}
       title="No documents yet"
       description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
-      contents={
-        <Button
-          onClick={onUploadClick}
-          variant="primary"
-          icon={<UploadIcon className="h-4 w-4" />}
-        >
-          Upload Document
-        </Button>
-      }
+      action={{
+        label: "Upload Document",
+        onClick: onUploadClick,
+        icon: UploadIcon,
+      }}
     />
   );
 }
@@ -1049,10 +1067,10 @@ function DocumentsTable({
   return (
     <div className="overflow-x-auto rounded-lg border">
       <Table className="min-w-[600px]">
-        <Table.Header>
-          <Table.Row>
-            <Table.Head className="w-[80px] sm:w-[100px]">Thumbnail</Table.Head>
-            <Table.Head>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[80px] sm:w-[100px]">Thumbnail</TableHead>
+            <TableHead>
               <SortHeader
                 field="name"
                 label="Title"
@@ -1060,8 +1078,8 @@ function DocumentsTable({
                 sortDirection={sortDirection}
                 sortField={sortField}
               />
-            </Table.Head>
-            <Table.Head className="hidden sm:table-cell">
+            </TableHead>
+            <TableHead className="hidden sm:table-cell">
               <SortHeader
                 field="createdAt"
                 label="Upload Date"
@@ -1069,8 +1087,8 @@ function DocumentsTable({
                 sortDirection={sortDirection}
                 sortField={sortField}
               />
-            </Table.Head>
-            <Table.Head>
+            </TableHead>
+            <TableHead>
               <SortHeader
                 field="workflowStatus"
                 label="Status"
@@ -1078,11 +1096,11 @@ function DocumentsTable({
                 sortDirection={sortDirection}
                 sortField={sortField}
               />
-            </Table.Head>
-            <Table.Head className="text-right">Actions</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
+            </TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {!searchQuery.trim() &&
             data.subfolders?.map((folder) => (
               <FolderTableRow
@@ -1100,7 +1118,7 @@ function DocumentsTable({
               matches={data.matchesMap.get(doc._id)}
             />
           ))}
-        </Table.Body>
+        </TableBody>
       </Table>
     </div>
   );
@@ -1170,7 +1188,7 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
             (page) => (
               <Button
                 key={page}
-                variant={page === data.currentPage ? "primary" : "outline"}
+                variant={page === data.currentPage ? "default" : "outline"}
                 size="sm"
                 onClick={() => data.setCurrentPage(page)}
                 className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
@@ -1234,34 +1252,28 @@ function DocumentConfirmationDialog({
 }) {
   const content = confirmDialogContent(confirmDialog.type);
   return (
-    <Dialog.Root
-      role="alertdialog"
+    <AlertDialog
       open={confirmDialog.open}
       onOpenChange={(open) =>
         setConfirmDialog({ ...defaultConfirmDialog(), open })
       }
     >
-      <Dialog size="sm" className="p-6">
-        <Dialog.Title>{content.title}</Dialog.Title>
-        <Dialog.Description>{content.description}</Dialog.Description>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              setConfirmDialog({ ...defaultConfirmDialog(), open: false })
-            }
-          >
-            Cancel
-          </Button>
-          <Button
-            variant={confirmDialogActionVariant(confirmDialog.type)}
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{content.title}</AlertDialogTitle>
+          <AlertDialogDescription>{content.description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
             onClick={onConfirm}
+            variant={confirmDialogActionVariant(confirmDialog.type)}
           >
             {confirmDialogActionLabel(confirmDialog.type)}
-          </Button>
-        </div>
-      </Dialog>
-    </Dialog.Root>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -1287,13 +1299,13 @@ function useDocumentListActions({
   const router = useRouter();
   const { track } = useAnalytics();
   const deleteDocument = useMutation({
-    mutationFn: (publicId: string) => deleteDocumentApi(slug, publicId),
+    mutationFn: deleteDocumentApi,
   });
   const sendDocument = useMutation({
-    mutationFn: (publicId: string) => sendDocumentApi(slug, publicId),
+    mutationFn: (publicId: string) => sendDocumentApi(publicId),
   });
   const cancelDocument = useMutation({
-    mutationFn: (publicId: string) => cancelDocumentApi(slug, publicId),
+    mutationFn: cancelDocumentApi,
   });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(
     defaultConfirmDialog()
@@ -1313,7 +1325,7 @@ function useDocumentListActions({
   };
   const handleDownload = async (documentId: string) => {
     try {
-      const blob = await downloadDocument(slug, documentId);
+      const blob = await downloadDocument(documentId);
       const url = window.URL.createObjectURL(blob);
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");
@@ -1468,8 +1480,7 @@ function DocumentsPage() {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveDocumentId, setMoveDocumentId] = useState<string | null>(null);
   const moveDocumentsToFolderMutation = useMutation({
-    mutationFn: (options: { documentIds: string[]; folderId?: string }) =>
-      moveDocumentsToFolder(slug, options),
+    mutationFn: moveDocumentsToFolder,
   });
 
   // folderIdParam is a public folder id from the URL
@@ -1562,18 +1573,12 @@ function DocumentsPage() {
         icon: UploadIcon,
         variant: "default",
       }}
-      headerActions={
-        <CreateFolderDialog
-          organizationSlug={slug}
-          type="document"
-          parentId={folderId}
-        />
-      }
+      headerActions={<CreateFolderDialog type="document" parentId={folderId} />}
       headerCenter={
         <FolderBreadcrumbs
-          organizationSlug={slug}
           folderId={folderId}
           type="document"
+          onNavigate={handleFolderSelect}
         />
       }
     >
@@ -1583,7 +1588,6 @@ function DocumentsPage() {
           <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             type="text"
-            aria-label="Search documents by name or description"
             placeholder="Search documents by name or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -1592,9 +1596,7 @@ function DocumentsPage() {
           {searchQuery && (
             <Button
               variant="ghost"
-              shape="square"
-              size="sm"
-              title="Clear search"
+              size="icon"
               className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
               onClick={() => setSearchQuery("")}
             >
@@ -1609,19 +1611,19 @@ function DocumentsPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-2">
               <Button
-                variant={filter === "all" ? "primary" : "outline"}
+                variant={filter === "all" ? "default" : "outline"}
                 onClick={() => setFilter("all")}
               >
                 All Documents
               </Button>
               <Button
-                variant={filter === "owned" ? "primary" : "outline"}
+                variant={filter === "owned" ? "default" : "outline"}
                 onClick={() => setFilter("owned")}
               >
                 My Documents
               </Button>
               <Button
-                variant={filter === "shared" ? "primary" : "outline"}
+                variant={filter === "shared" ? "default" : "outline"}
                 onClick={() => setFilter("shared")}
               >
                 Shared with Me
@@ -1630,9 +1632,8 @@ function DocumentsPage() {
             {/* SEA-68: View mode toggle */}
             <div className="bg-background flex items-center gap-1 rounded-md border">
               <Button
-                variant={viewMode === "table" ? "primary" : "ghost"}
-                shape="square"
-                size="sm"
+                variant={viewMode === "table" ? "default" : "ghost"}
+                size="icon"
                 className="h-9 w-9"
                 aria-label="Table view"
                 onClick={() => setViewMode("table")}
@@ -1640,9 +1641,8 @@ function DocumentsPage() {
                 <LayoutListIcon className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === "grid" ? "primary" : "ghost"}
-                shape="square"
-                size="sm"
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="icon"
                 className="h-9 w-9"
                 aria-label="Grid view"
                 onClick={() => setViewMode("grid")}
@@ -1659,21 +1659,21 @@ function DocumentsPage() {
             </span>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "all" ? "primary" : "outline"}
+              variant={workflowStatusFilter === "all" ? "default" : "outline"}
               onClick={() => setWorkflowStatusFilter("all")}
             >
               All
             </Button>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "draft" ? "primary" : "outline"}
+              variant={workflowStatusFilter === "draft" ? "default" : "outline"}
               onClick={() => setWorkflowStatusFilter("draft")}
             >
               Drafts
             </Button>
             <Button
               size="sm"
-              variant={workflowStatusFilter === "sent" ? "primary" : "outline"}
+              variant={workflowStatusFilter === "sent" ? "default" : "outline"}
               onClick={() => setWorkflowStatusFilter("sent")}
             >
               Sent
@@ -1681,7 +1681,7 @@ function DocumentsPage() {
             <Button
               size="sm"
               variant={
-                workflowStatusFilter === "in_progress" ? "primary" : "outline"
+                workflowStatusFilter === "in_progress" ? "default" : "outline"
               }
               onClick={() => setWorkflowStatusFilter("in_progress")}
             >
@@ -1690,7 +1690,7 @@ function DocumentsPage() {
             <Button
               size="sm"
               variant={
-                workflowStatusFilter === "completed" ? "primary" : "outline"
+                workflowStatusFilter === "completed" ? "default" : "outline"
               }
               onClick={() => setWorkflowStatusFilter("completed")}
             >
@@ -1699,7 +1699,7 @@ function DocumentsPage() {
             <Button
               size="sm"
               variant={
-                workflowStatusFilter === "cancelled" ? "primary" : "outline"
+                workflowStatusFilter === "cancelled" ? "default" : "outline"
               }
               onClick={() => setWorkflowStatusFilter("cancelled")}
             >
@@ -1708,7 +1708,7 @@ function DocumentsPage() {
             <Button
               size="sm"
               variant={
-                workflowStatusFilter === "expired" ? "primary" : "outline"
+                workflowStatusFilter === "expired" ? "default" : "outline"
               }
               onClick={() => setWorkflowStatusFilter("expired")}
             >
@@ -1718,52 +1718,50 @@ function DocumentsPage() {
             {/* SEA-74: Date Range Filter */}
             <div className="w-full sm:ml-2 sm:w-auto sm:border-l sm:pl-2">
               <Popover>
-                <Popover.Trigger
-                  render={
-                    <Button
-                      variant={dateRange?.from ? "primary" : "outline"}
-                      size="sm"
-                      className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                      {dateRange?.from ? (
-                        dateRange.to ? (
-                          <>
-                            {dateRange.from.toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}{" "}
-                            -{" "}
-                            {dateRange.to.toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </>
-                        ) : (
-                          dateRange.from.toLocaleDateString("en-US", {
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={dateRange?.from ? "default" : "outline"}
+                    size="sm"
+                    className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {dateRange.from.toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                            year: "numeric",
-                          })
-                        )
+                          })}{" "}
+                          -{" "}
+                          {dateRange.to.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </>
                       ) : (
-                        "Date Range"
-                      )}
-                    </Button>
-                  }
-                />
-                <Popover.Content className="w-auto p-0" align="start">
-                  <DatePicker
+                        dateRange.from.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      )
+                    ) : (
+                      "Date Range"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
                     mode="range"
                     selected={dateRange}
-                    onChange={setDateRange}
+                    onSelect={setDateRange}
                     numberOfMonths={1}
                     className="sm:hidden"
                   />
-                  <DatePicker
+                  <Calendar
                     mode="range"
                     selected={dateRange}
-                    onChange={setDateRange}
+                    onSelect={setDateRange}
                     numberOfMonths={2}
                     className="hidden sm:block"
                   />
@@ -1779,7 +1777,7 @@ function DocumentsPage() {
                       </Button>
                     </div>
                   )}
-                </Popover.Content>
+                </PopoverContent>
               </Popover>
             </div>
           </div>
@@ -1912,7 +1910,6 @@ function DocumentsPage() {
 
       <UploadDialog
         organizationId={organization.id}
-        organizationSlug={slug}
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onSuccess={handleRefetch}
@@ -1920,7 +1917,6 @@ function DocumentsPage() {
 
       {selectedDocumentId && (
         <ShareDocumentDialog
-          organizationSlug={slug}
           documentId={selectedDocumentId}
           documentName={selectedDocumentName}
           slug={slug}
@@ -1932,7 +1928,6 @@ function DocumentsPage() {
       <MoveToFolderDialog
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
-        organizationSlug={slug}
         organizationId={organization.id}
         type="document"
         onMove={handleMoveConfirm}
@@ -1942,7 +1937,6 @@ function DocumentsPage() {
         <TransferOwnershipDialog
           open={transferDialogOpen}
           onOpenChange={setTransferDialogOpen}
-          organizationSlug={slug}
           documentId={documentToTransfer.id}
           documentName={documentToTransfer.name}
           currentOwnerId={documentToTransfer.ownerId}

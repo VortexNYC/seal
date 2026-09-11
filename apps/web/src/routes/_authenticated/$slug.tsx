@@ -6,13 +6,11 @@
  * Route: /{slug}/*
  */
 
-import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import {
   type ErrorComponentProps,
   createFileRoute,
   Outlet,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -24,9 +22,10 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
-import { useJamMetadata } from "@/hooks/use-jam-metadata";
+import { DotPattern } from "@/components/ui/patterns";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
-import { betterAuthClient } from "@/lib/better-auth";
+import { useJamMetadata } from "@/hooks/use-jam-metadata";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -56,12 +55,6 @@ function WorkspaceLayout() {
   const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
   useJamMetadata();
 
-  useEffect(() => {
-    const client = betterAuthClient;
-    if (client?.organization?.setActive === undefined) return;
-    void client.organization.setActive({ organizationSlug: slug });
-  }, [slug]);
-
   const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
@@ -75,8 +68,9 @@ function WorkspaceLayout() {
   };
 
   return (
-    <Sidebar.Provider collapsible="icon">
+    <SidebarProvider>
       <PostHogIdentify organization={orgData} />
+      <DotPattern className="fixed inset-0 z-0" />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
         <AppSidebar
           slug={slug}
@@ -88,7 +82,7 @@ function WorkspaceLayout() {
         </main>
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
-      <FeedbackButton organizationSlug={slug} />
-    </Sidebar.Provider>
+      <FeedbackButton />
+    </SidebarProvider>
   );
 }

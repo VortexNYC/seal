@@ -5,22 +5,30 @@
  * Route: /{slug}/settings/signing
  */
 
-import { Textarea } from "@cloudflare/kumo";
-import { Button } from "@cloudflare/kumo/components/button";
-import { Checkbox } from "@cloudflare/kumo/components/checkbox";
-import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PenTool, Save } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { getSigningSettings, updateSigningSettings } from "@/lib/api-client";
-import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  getSigningSettings,
+  updateSigningSettings,
+} from "@/lib/api-client";
 
 type SignatureTypeOption = "draw" | "type" | "upload";
 
@@ -119,90 +127,83 @@ function SigningSettings() {
   return (
     <PageWrapper title="Signing Settings">
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
+        <Card className="md:col-span-2">
+          <CardHeader>
             <div className="flex items-center gap-2">
               <PenTool className="size-5" />
-              <Text as="h2" variant="heading">
-                Signature Types
-              </Text>
+              <CardTitle>Signature Types</CardTitle>
             </div>
-            <Text variant="secondary">
+            <CardDescription>
               Choose which signature methods recipients can use when signing
               documents.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <div className="space-y-4">
-              {SIGNATURE_TYPE_OPTIONS.map((type) => (
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {SIGNATURE_TYPE_OPTIONS.map((type) => (
+              <div key={type} className="flex items-center gap-3">
                 <Checkbox
+                  id={`sig-${type}`}
                   checked={formData.allowedSignatureTypes.includes(type)}
                   disabled={isSubmitting}
                   onCheckedChange={(checked) =>
                     handleSignatureTypeToggle(type, checked === true)
                   }
-                  label={
-                    type === "draw"
-                      ? "Draw signature"
-                      : type === "type"
-                        ? "Type signature"
-                        : "Upload signature image"
-                  }
+                  aria-label={`${type === "draw" ? "Draw signature" : type === "type" ? "Type signature" : "Upload signature image"} option`}
                 />
-              ))}
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
+                <Label htmlFor={`sig-${type}`} className="text-sm font-medium">
+                  {type === "draw"
+                    ? "Draw signature"
+                    : type === "type"
+                      ? "Type signature"
+                      : "Upload signature image"}
+                </Label>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Default Deadline
-            </Text>
-            <Text variant="secondary">
+        <Card>
+          <CardHeader>
+            <CardTitle>Default Deadline</CardTitle>
+            <CardDescription>
               Default number of days recipients have to sign after a document is
               sent.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="flex items-center gap-2">
               <Label htmlFor="default-deadline-days" className="sr-only">
                 Default deadline in days
               </Label>
-              <div className="w-24">
-                <Input
-                  id="default-deadline-days"
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={formData.defaultDeadlineDays}
-                  disabled={isSubmitting}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      defaultDeadlineDays: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <Text variant="secondary" as="span">
-                days
-              </Text>
+              <Input
+                id="default-deadline-days"
+                type="number"
+                min={1}
+                max={365}
+                value={formData.defaultDeadlineDays}
+                disabled={isSubmitting}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    defaultDeadlineDays: Number(e.target.value),
+                  })
+                }
+                className="w-24"
+              />
+              <span className="text-muted-foreground text-sm">days</span>
             </div>
-          </LayerCard.Primary>
-        </LayerCard>
+          </CardContent>
+        </Card>
 
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              E-Sign Consent Text
-            </Text>
-            <Text variant="secondary">
+        <Card>
+          <CardHeader>
+            <CardTitle>E-Sign Consent Text</CardTitle>
+            <CardDescription>
               Custom text shown in the e-sign consent dialog. Leave blank to use
               the Seal default.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Textarea
               id="esign-consent-text"
               value={formData.esignConsentText}
@@ -214,14 +215,21 @@ function SigningSettings() {
               rows={4}
               aria-describedby="esign-consent-help"
             />
-            <Text variant="secondary" as="p" id="esign-consent-help">
+            <p
+              id="esign-consent-help"
+              className="text-muted-foreground mt-2 text-xs"
+            >
               This text is shown to recipients before they can sign.
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="flex justify-end md:col-span-2">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+          >
             <Save className="mr-2 size-4" />
             {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>

@@ -1,51 +1,30 @@
-import { Badge } from "@cloudflare/kumo/components/badge";
-import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
-import { Sidebar, useSidebar } from "@cloudflare/kumo/components/sidebar";
-import {
-  CaretUpDown,
-  CreditCard,
-  SignOut,
-  Sparkle,
-  User,
-} from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
+import {
+  ChevronsUpDown,
+  CreditCard,
+  LogOut,
+  Sparkles,
+  User,
+} from "lucide-react";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { useOrganization } from "@/hooks/use-organization";
-import { cn } from "@/lib/utils";
-
-function UserAvatar({
-  avatar,
-  name,
-  initials,
-  className,
-}: {
-  avatar: string;
-  name: string;
-  initials?: string;
-  className?: string;
-}) {
-  const fallback = initials ?? "CN";
-  return (
-    <div
-      className={cn("bg-kumo-elevated overflow-hidden rounded-lg", className)}
-    >
-      {avatar ? (
-        <img
-          src={avatar}
-          alt={name}
-          className="h-full w-full object-cover"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
-      ) : (
-        <div className="text-kumo-secondary flex h-full w-full items-center justify-center text-xs font-medium">
-          {fallback}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function NavUser({
   user,
@@ -69,84 +48,93 @@ export function NavUser({
   const isPro = plan === "pro";
 
   return (
-    <Sidebar.Menu>
-      <Sidebar.MenuItem>
+    <SidebarMenu>
+      <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenu.Trigger>
-            <Sidebar.MenuButton size="base" className="group">
-              <UserAvatar
-                avatar={user.avatar}
-                name={user.name}
-                initials={user.initials}
-                className="h-8 w-8"
-              />
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback className="rounded-lg">
+                  {user.initials ?? "CN"}
+                </AvatarFallback>
+              </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
-              <CaretUpDown className="ml-auto size-4" />
-            </Sidebar.MenuButton>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+              <ChevronsUpDown className="ml-auto size-4" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
-            <DropdownMenu.Label className="p-0 font-normal">
+            <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <UserAvatar
-                  avatar={user.avatar}
-                  name={user.name}
-                  initials={user.initials}
-                  className="h-8 w-8"
-                />
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarFallback className="rounded-lg">
+                    {user.initials ?? "CN"}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
-            </DropdownMenu.Label>
-            <DropdownMenu.Separator />
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
             <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-kumo-secondary text-xs">Plan</span>
+              <span className="text-muted-foreground text-xs">Plan</span>
               <Badge
-                variant={isPro ? "primary" : "secondary"}
-                icon={isPro ? Sparkle : undefined}
-                className="text-xs"
+                variant={isPro ? "default" : "secondary"}
+                className="gap-1 text-xs"
               >
+                {isPro && <Sparkles className="h-3 w-3" />}
                 {planName}
               </Badge>
             </div>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Group>
-              <DropdownMenu.Item
-                icon={User}
-                onClick={() =>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={() =>
                   navigate({ to: "/$slug/settings/profile", params: { slug } })
                 }
               >
+                <User />
                 Profile
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                icon={CreditCard}
-                onClick={() =>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={() =>
                   navigate({
                     to: "/$slug/settings/billing",
                     params: { slug },
                   })
                 }
               >
+                <CreditCard />
                 Billing
-              </DropdownMenu.Item>
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item icon={SignOut} onClick={() => onSignOut?.()}>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => onSignOut?.()}
+            >
+              <LogOut />
               Log out
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
         </DropdownMenu>
-      </Sidebar.MenuItem>
-    </Sidebar.Menu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

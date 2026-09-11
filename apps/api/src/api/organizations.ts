@@ -10,29 +10,6 @@ import {
   templates as templatesTable,
 } from "../global/schema.js";
 
-const OrganizationSchema = z
-  .object({
-    _id: z.string(),
-    id: z.string(),
-    name: z.string(),
-    slug: z.string(),
-    logo: z.string().nullable().optional(),
-    metadata: z.string().nullable().optional(),
-    status: z.string(),
-    userRole: z.string(),
-    suiteBrand: z.record(z.string(), z.unknown()),
-    suiteSecurity: z.record(z.string(), z.unknown()),
-    brandingSettings: z.record(z.string(), z.unknown()).nullable().optional(),
-    delegateOwnership: z.boolean(),
-    timezone: z.string().default("UTC"),
-    currency: z.string().default("BRL"),
-    currencyKind: z.string().default("normal"),
-    plan: z.string().default("free"),
-    createdAt: z.number(),
-    updatedAt: z.number(),
-  })
-  .openapi("Organization");
-
 const TemplateListItemSchema = z
   .object({
     _id: z.string(),
@@ -64,58 +41,10 @@ function parseMetadata(metadata: string | null): Record<string, unknown> {
 }
 
 const recordSchema = z.record(z.string(), z.unknown());
-const nullableRecordSchema = z.record(z.string(), z.unknown()).nullable();
 
 function asRecord(v: unknown): Record<string, unknown> {
   const result = recordSchema.safeParse(v);
   return result.success ? result.data : {};
-}
-
-function organizationResponse(
-  org: {
-    id: string;
-    name: string;
-    slug: string;
-    logo: string | null;
-    metadata: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  },
-  userRole: string | undefined
-) {
-  const meta = parseMetadata(org.metadata);
-  const status = typeof meta.status === "string" ? meta.status : "active";
-
-  const brandingSettingsResult = nullableRecordSchema.safeParse(
-    meta.brandingSettings
-  );
-
-  return {
-    _id: org.id,
-    id: org.id,
-    name: org.name,
-    slug: org.slug,
-    logo: org.logo,
-    metadata: org.metadata,
-    status,
-    userRole: userRole ?? "member",
-    suiteBrand: asRecord(meta.suiteBrand),
-    suiteSecurity: asRecord(meta.suiteSecurity),
-    brandingSettings: brandingSettingsResult.success
-      ? brandingSettingsResult.data
-      : null,
-    delegateOwnership:
-      typeof meta.delegateOwnership === "boolean"
-        ? meta.delegateOwnership
-        : false,
-    timezone: typeof meta.timezone === "string" ? meta.timezone : "UTC",
-    currency: typeof meta.currency === "string" ? meta.currency : "BRL",
-    currencyKind:
-      typeof meta.currencyKind === "string" ? meta.currencyKind : "normal",
-    plan: typeof meta.plan === "string" ? meta.plan : "free",
-    createdAt: org.createdAt.getTime(),
-    updatedAt: org.updatedAt.getTime(),
-  };
 }
 
 const app = new OpenAPIHono<{
@@ -165,32 +94,6 @@ app.use("/:slug/*", async (c, next) => {
   c.set("organization", org);
   c.set("membership", membership[0]);
   return next();
-});
-
-const getRouteDef = createRoute({
-  method: "get",
-  path: "/{slug}",
-  request: {
-    params: z.object({ slug: z.string() }),
-  },
-  responses: {
-    200: {
-      content: { "application/json": { schema: OrganizationSchema } },
-      description: "Organization found",
-    },
-    401: { description: "Unauthorized" },
-    403: { description: "Forbidden" },
-    404: { description: "Organization not found" },
-  },
-});
-
-app.openapi(getRouteDef, async (c) => {
-  const org = c.get("organization");
-  const membership = c.get("membership");
-  if (!org) {
-    return c.json({ error: "Organization not found" }, 404);
-  }
-  return c.json(organizationResponse(org, membership?.role));
 });
 
 const BrandingSettingsSchema = z

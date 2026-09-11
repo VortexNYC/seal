@@ -6,27 +6,6 @@ import {
   type DocumentWorkflowStatus,
 } from "@/lib/document-status";
 
-const organizationSchema = z.object({
-  _id: z.string(),
-  id: z.string(),
-  name: z.string(),
-  slug: z.string(),
-  logo: z.string().nullable().optional(),
-  metadata: z.string().nullable().optional(),
-  status: z.string(),
-  userRole: z.string(),
-  suiteBrand: z.record(z.string(), z.unknown()),
-  suiteSecurity: z.record(z.string(), z.unknown()),
-  brandingSettings: z.record(z.string(), z.unknown()).nullable().optional(),
-  delegateOwnership: z.boolean(),
-  timezone: z.string(),
-  currency: z.string(),
-  currencyKind: z.string(),
-  plan: z.string(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
-});
-
 const documentTrendSchema = z.object({
   date: z.string(),
   created: z.number().int(),
@@ -176,7 +155,6 @@ const notificationSchema = z.object({
   updatedAt: z.number(),
 });
 
-export type ApiOrganization = z.infer<typeof organizationSchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 export type ApiAnalyticsStats = z.infer<typeof analyticsStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
@@ -250,13 +228,6 @@ async function apiFetch<T>(
 
   const data: unknown = await response.json();
   return schema.parse(data);
-}
-
-export async function getOrganization(slug: string): Promise<ApiOrganization> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}`,
-    organizationSchema
-  );
 }
 
 const brandingSettingsSchema = z.record(z.string(), z.unknown());
