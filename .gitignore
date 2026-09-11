@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Local agent configuration
+.devin/
+
 # dependencies
 /node_modules
 /apps/*/node_modules
