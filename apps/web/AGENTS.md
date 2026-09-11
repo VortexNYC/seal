@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-React 19 SPA using TanStack Router (file-based) + Vite, with Better-Auth through Vortex Auth (`@vortexnyc/auth`) and the Cloudflare Worker API (`apps/api`) for product data. Legacy Convex is no longer loaded in the production web bundle; the remaining E2E harness can still target a Convex deployment for backend seeding.
+React 19 SPA using TanStack Router (file-based) + Vite, with Better-Auth through Vortex Auth (`@vortexnyc/auth`) and the Cloudflare Worker API (`apps/api`) for product data.
 
 ## STRUCTURE
 
@@ -26,7 +26,7 @@ apps/web/
 | Route tree  | `apps/web/src/routes/`                   | File-based routes                                    |
 | App entry   | `apps/web/src/main.tsx`                  | Better-Auth + TanStack Query + Router wiring         |
 | API client  | `apps/web/src/lib/api-client.ts`         | Zod-typed Hono API client for `apps/api`             |
-| E2E fixtures| `apps/web/e2e/fixtures/`                 | Auth helpers + optional Convex backend test fixtures |
+| E2E fixtures| `apps/web/e2e/fixtures/`                 | Auth helpers + Worker API test fixtures              |
 | E2E pages   | `apps/web/e2e/pages/`                    | Page Object Models                                   |
 
 ## CONVENTIONS
