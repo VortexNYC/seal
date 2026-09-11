@@ -17,6 +17,8 @@ export const contactStatusValidator = v.union(
 export type ContactStatus = Infer<typeof contactStatusValidator>;
 
 export const contactsTable = defineTable({
+  vortexAuthOrganizationId: v.optional(v.string()),
+  vortexAuthCreatedBy: v.optional(v.string()),
   organizationId: v.id("organizations"),
   firstName: v.string(),
   lastName: v.string(),
@@ -34,9 +36,12 @@ export const contactsTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
   .index("by_email", ["email"])
   .index("by_org_email", ["organizationId", "email"])
+  .index("by_vortex_auth_org_email", ["vortexAuthOrganizationId", "email"])
   .index("by_org_status", ["organizationId", "status"])
+  .index("by_vortex_auth_org_status", ["vortexAuthOrganizationId", "status"])
   .searchIndex("search_contacts", {
     searchField: "fullName",
     filterFields: ["organizationId", "status"],
