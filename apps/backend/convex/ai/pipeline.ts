@@ -180,6 +180,7 @@ async function maybeSaveAnnotations(
 
   await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
     documentId: args.documentId,
+    vortexAuthOrganizationId: args.vortexAuthOrganizationId,
     organizationId: args.organizationId,
     annotations: result.annotations,
     modelUsed: "gemini-3-flash",

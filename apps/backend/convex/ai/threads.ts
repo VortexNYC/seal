@@ -78,6 +78,8 @@ function createSealContext(
 ): SealAICtx {
   return {
     ...ctx,
+    vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    vortexAuthUserId: args.vortexAuthUserId,
     organizationId: args.organizationId,
     userId: args.userId,
     documentId: args.documentId,

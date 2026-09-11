@@ -401,6 +401,7 @@ export const saveExtractedPaymentConfig = internalMutation({
 export const saveDocumentAnnotations = internalMutation({
   args: {
     documentId: v.id("documents"),
+    vortexAuthOrganizationId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     annotations: v.array(
       v.object({
@@ -452,6 +453,7 @@ export const saveDocumentAnnotations = internalMutation({
 
     return await ctx.db.insert("ai_document_annotations", {
       documentId: args.documentId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
       organizationId: args.organizationId,
       annotations: args.annotations,
       modelUsed: args.modelUsed,

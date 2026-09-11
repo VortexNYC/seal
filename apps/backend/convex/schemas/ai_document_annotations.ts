@@ -25,6 +25,7 @@ export type AnnotationSeverity = "informational" | "important" | "critical";
 
 export const aiDocumentAnnotationsTable = defineTable({
   documentId: v.id("documents"),
+  vortexAuthOrganizationId: v.optional(v.string()),
   organizationId: v.id("organizations"),
   annotations: v.array(
     v.object({
