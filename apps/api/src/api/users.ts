@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, or } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -7,6 +7,7 @@ import {
   documents as documentsTable,
   integrationActivityLogs,
   organization as organizationTable,
+  subscriptions,
   user,
 } from "../global/schema.js";
 
@@ -501,12 +502,46 @@ app.openapi(subscriptionRouteDef, async (c) => {
   let plan: Plan = "free";
 
   if (organizationId) {
-    const orgRows = await db
-      .select({ metadata: organizationTable.metadata })
-      .from(organizationTable)
-      .where(eq(organizationTable.id, organizationId))
-      .limit(1);
-    plan = getPlanFromMetadata(orgRows[0]?.metadata ?? null);
+    const now = Date.now();
+    const recent = await db
+      .select()
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.organizationId, organizationId),
+          or(
+            eq(subscriptions.status, "active"),
+            eq(subscriptions.status, "trialing"),
+            eq(subscriptions.status, "past_due")
+          )
+        )
+      )
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(20);
+
+    const paid =
+      recent.find((s) => s.status === "active" || s.status === "trialing") ??
+      recent.find((s) => {
+        if (s.status !== "past_due") return false;
+        const since = (s.pastDueSince ?? s.createdAt).getTime();
+        return now - since <= 14 * 24 * 60 * 60 * 1000;
+      });
+
+    const metadataSchema = z.object({ tier: z.string().optional() });
+    let tier: string | undefined;
+    if (paid?.metadata != null) {
+      try {
+        const parsed = metadataSchema.safeParse(JSON.parse(paid.metadata));
+        if (parsed.success) {
+          tier = parsed.data.tier;
+        }
+      } catch {
+        // ignore malformed metadata
+      }
+    }
+
+    plan =
+      tier === "enterprise" ? "enterprise" : tier === "pro" ? "pro" : "free";
   }
 
   return c.json({ plan });

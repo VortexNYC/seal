@@ -9,7 +9,7 @@ import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { betterAuthConvexProvider } from "./auth.config";
 import { authComponent as consumerAuthComponent } from "./betterAuthClient";
-import { sendAuthEmailDraft } from "./emails/resend_component";
+import { sendAuthEmailDraft } from "./emails/worker_email";
 
 /** Auth-email from-address (same source as Seal's transactional senders). */
 function authEmailFromAddress(): string {

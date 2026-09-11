@@ -23,7 +23,7 @@ First, generate a secure upload URL for your PDF document:
 
 ```typescript
 const uploadResponse = await fetch(
-  "https://seal.convex.site/api/v1/uploads/generate-url",
+  "https://api.seal.nyc/api/v1/uploads/generate-url",
   {
     method: "POST",
     headers: {
@@ -38,7 +38,7 @@ const { upload_url } = await uploadResponse.json();
 ### cURL
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/uploads/generate-url \
+curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -93,23 +93,20 @@ Create a document record, then add recipients separately via the Recipients API:
 #### TypeScript
 
 ```typescript
-const documentResponse = await fetch(
-  "https://seal.convex.site/api/v1/documents",
-  {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      title: "Service Agreement",
-      description: "Annual service contract for review and signature",
-      storage_id: storageId, // from Step 2
-      file_size: fileBlob.size,
-      file_type: "application/pdf",
-    }),
-  }
-);
+const documentResponse = await fetch("https://api.seal.nyc/api/v1/documents", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "Service Agreement",
+    description: "Annual service contract for review and signature",
+    storage_id: storageId, // from Step 2
+    file_size: fileBlob.size,
+    file_type: "application/pdf",
+  }),
+});
 
 const document = await documentResponse.json();
 console.log("Document created:", document.id);
@@ -118,7 +115,7 @@ console.log("Document created:", document.id);
 #### cURL
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents \
+curl -X POST https://api.seal.nyc/api/v1/documents \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -159,7 +156,7 @@ const recipients = [
 
 for (const recipient of recipients) {
   await fetch(
-    `https://seal.convex.site/api/v1/recipients?document_id=${document.id}`,
+    `https://api.seal.nyc/api/v1/recipients?document_id=${document.id}`,
     {
       method: "POST",
       headers: {
@@ -175,7 +172,7 @@ for (const recipient of recipients) {
 #### cURL
 
 ```bash
-curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -185,7 +182,7 @@ curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1
     "order": 1
   }'
 
-curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -204,7 +201,7 @@ Send the document to all recipients via email:
 
 ```typescript
 const sendResponse = await fetch(
-  `https://seal.convex.site/api/v1/documents/send?id=${document.id}`,
+  `https://api.seal.nyc/api/v1/documents/send?id=${document.id}`,
   {
     method: "POST",
     headers: {
@@ -225,7 +222,7 @@ console.log("Document sent:", result);
 ### cURL
 
 ```bash
-curl -X POST "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+curl -X POST "https://api.seal.nyc/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -260,7 +257,7 @@ You can check the document status at any time:
 
 ```typescript
 const statusResponse = await fetch(
-  `https://seal.convex.site/api/v1/documents/get?id=${document.id}`,
+  `https://api.seal.nyc/api/v1/documents/get?id=${document.id}`,
   {
     headers: {
       Authorization: "Bearer ak_your_api_key_here",

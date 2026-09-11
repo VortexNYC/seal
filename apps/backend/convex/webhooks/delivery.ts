@@ -26,7 +26,6 @@ import {
   internalMutation,
   internalQuery,
 } from "../_generated/server";
-import { getSubscriptionPlan } from "../auth/subscription_guards";
 import { formatSlackMessage } from "./slack_formatter";
 
 const slackWebhookPayloadValidator = v.object({
@@ -410,7 +409,7 @@ async function processPendingDelivery(
   }
 
   // Check org tier — Free tier orgs have webhooks suspended
-  const orgTier = await ctx.runQuery(internal.webhooks.delivery.getOrgTier, {
+  const orgTier = await ctx.runAction(internal.webhooks.delivery.getOrgTier, {
     organizationId: delivery.organizationId,
   });
   if (orgTier === "free") {
@@ -583,12 +582,20 @@ export const abandonPendingDeliveriesForOrg = internalMutation({
   },
 });
 
-export const getOrgTier = internalQuery({
+export const getOrgTier = internalAction({
   args: {
     organizationId: v.id("organizations"),
   },
-  handler: async (ctx, args): Promise<string> => {
-    const { plan } = await getSubscriptionPlan(ctx.db, args.organizationId);
+  returns: v.union(
+    v.literal("free"),
+    v.literal("pro"),
+    v.literal("enterprise")
+  ),
+  handler: async (ctx, args) => {
+    const { plan } = await ctx.runAction(
+      internal.auth.subscription_guards.getSubscriptionPlanD1,
+      { organizationId: args.organizationId }
+    );
     return plan;
   },
 });

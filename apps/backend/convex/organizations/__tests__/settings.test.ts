@@ -130,7 +130,7 @@ describe("Organization settings", () => {
     test("updates companyName and companyWebsite", async () => {
       await t
         .withIdentity({ subject: "settings_admin" })
-        .mutation(api.organizations.mutations.updateBrandingSettings, {
+        .action(api.organizations.mutations.updateBrandingSettings, {
           companyName: "Acme Corp",
           companyWebsite: "https://acme.com",
         });
@@ -148,13 +148,13 @@ describe("Organization settings", () => {
     test("preserves companyName on partial update", async () => {
       await t
         .withIdentity({ subject: "settings_admin" })
-        .mutation(api.organizations.mutations.updateBrandingSettings, {
+        .action(api.organizations.mutations.updateBrandingSettings, {
           companyName: "Acme Corp",
         });
 
       await t
         .withIdentity({ subject: "settings_admin" })
-        .mutation(api.organizations.mutations.updateBrandingSettings, {
+        .action(api.organizations.mutations.updateBrandingSettings, {
           brandColor: "#ff0000",
         });
 
@@ -600,7 +600,7 @@ describe("Organization settings", () => {
       // Set some branding first
       await t
         .withIdentity({ subject: "settings_admin" })
-        .mutation(api.organizations.mutations.updateBrandingSettings, {
+        .action(api.organizations.mutations.updateBrandingSettings, {
           companyName: "Acme Corp",
           brandColor: "#ff0000",
           enabled: true,

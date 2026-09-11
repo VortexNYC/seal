@@ -1,76 +1,20 @@
 import { test as base, type Page } from "@playwright/test";
 
 import { createDocument, deleteDocument } from "../factories/document-factory";
+import { loadSamplePdf } from "./api-test-client";
 import {
   ensureAuthenticatedWorkspaceHome,
   getTestWorkspaceConfig,
 } from "./auth-helpers";
-import { ensurePdfStorageId } from "./convex-test-api";
-import { pdfStorageIdPath, sampleDocumentPath } from "./paths";
+import { sampleDocumentPath } from "./paths";
 import { readCachedWorkspaceSlug } from "./workspace-state";
 
 type AuthFixtures = {
   authenticatedPage: Page;
   organizationSlug: string;
-  /** Create a document via Convex API (~300ms) and return its ID and name. Auto-deletes after test. */
+  /** Create a document via Seal API (~300ms) and return its ID and name. Auto-deletes after test. */
   createApiDocument: () => Promise<{ id: string; name: string }>;
 };
-
-/** Shared in-memory cache of the PDF storageId across all workers in a process */
-let cachedStorageId: string | null = null;
-
-async function getStorageId(): Promise<string> {
-  if (cachedStorageId) return cachedStorageId;
-
-  try {
-    const { readFileSync } = await import("node:fs");
-    cachedStorageId = readFileSync(pdfStorageIdPath, "utf8").trim() || null;
-  } catch {
-    cachedStorageId = null;
-  }
-
-  if (cachedStorageId) {
-    return cachedStorageId;
-  }
-
-  cachedStorageId = await ensurePdfStorageId(sampleDocumentPath);
-  return cachedStorageId;
-}
-
-async function getBetterAuthSubject(page: Page): Promise<string | undefined> {
-  const subject = await page.evaluate(() => {
-    const raw = localStorage.getItem("better-auth_session_data");
-    if (!raw) return null;
-
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (typeof parsed !== "object" || parsed === null) return null;
-      const user =
-        "user" in parsed && typeof parsed.user === "object"
-          ? parsed.user
-          : null;
-      if (user && "id" in user && typeof user.id === "string") {
-        return user.id;
-      }
-      const session =
-        "session" in parsed && typeof parsed.session === "object"
-          ? parsed.session
-          : null;
-      if (
-        session &&
-        "userId" in session &&
-        typeof session.userId === "string"
-      ) {
-        return session.userId;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  });
-
-  return subject ?? undefined;
-}
 
 /**
  * Extended test with authentication fixtures
@@ -84,16 +28,15 @@ export const test = base.extend<AuthFixtures>({
     await use(page);
   },
 
-  createApiDocument: async ({ organizationSlug, authenticatedPage }, use) => {
+  createApiDocument: async ({ authenticatedPage }, use) => {
+    const request = authenticatedPage.context().request;
     const created: Array<{ id: string }> = [];
 
     const factory = async () => {
-      const storageId = await getStorageId();
-      const ownerAuthSubject = await getBetterAuthSubject(authenticatedPage);
+      const pdfFile = await loadSamplePdf(sampleDocumentPath);
       const { id, name } = await createDocument({
-        organizationSlug,
-        storageId,
-        ownerAuthSubject,
+        request,
+        pdfFile,
       });
       created.push({ id });
       return { id, name };
@@ -103,7 +46,9 @@ export const test = base.extend<AuthFixtures>({
 
     // Auto-cleanup all docs created during this test
     await Promise.all(
-      created.map(({ id }) => deleteDocument(id).catch(() => {}))
+      created.map(({ id }) =>
+        deleteDocument({ request, documentId: id }).catch(() => {})
+      )
     );
   },
 

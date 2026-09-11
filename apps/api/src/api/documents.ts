@@ -20,6 +20,7 @@ import {
   documents,
   folders,
   member,
+  organization,
   paymentFieldConfigs,
   recipients,
   signatureFields,
@@ -28,6 +29,11 @@ import {
   templates,
   user as userTable,
 } from "../global/schema.js";
+import {
+  type EmailSendResult,
+  sendDocumentInvitationEmail,
+  sendOwnershipTransferredEmail,
+} from "../platform/email.js";
 import ai from "./ai.js";
 
 const DocumentSchema = z
@@ -1557,6 +1563,7 @@ app.openapi(resendRecipientRouteDef, async (c) => {
   const organizationId = user!.session!.activeOrganizationId!;
   const userId = user!.user.id;
   const { publicId, recipientPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
 
   const db = createD1(c.env.D1);
   const docRows = await db
@@ -1621,6 +1628,22 @@ app.openapi(resendRecipientRouteDef, async (c) => {
       updatedAt: now,
     })
     .where(eq(recipients.id, recipient.id));
+
+  if (recipient.email) {
+    const senderName = user!.user.name ?? user!.user.email ?? "Unknown";
+    const emailResult = await sendDocumentInvitationEmail(c.env, {
+      to: recipient.email,
+      recipientName: recipient.name ?? recipient.email,
+      senderName,
+      documentName: doc.name,
+      signingToken: newToken,
+      customMessage: input.customMessage,
+      expiresAt: newExpiration.getTime(),
+    });
+    if (!emailResult.success) {
+      console.error("[documents/resend] invitation email failed:", emailResult);
+    }
+  }
 
   await db.insert(activity).values({
     id: crypto.randomUUID(),
@@ -4053,8 +4076,47 @@ app.openapi(sendRouteDef, async (c) => {
 
   await db
     .update(documents)
-    .set({ status: "sent", sentAt: now, updatedAt: now })
+    .set({
+      status: "sent",
+      sentAt: now,
+      deadline: tokenExpiresAt,
+      updatedAt: now,
+    })
     .where(eq(documents.id, doc.id));
+
+  const senderName = user!.user.name ?? user!.user.email ?? "Unknown";
+
+  const emailPromises: Promise<EmailSendResult>[] = [];
+  for (const update of recipientUpdates) {
+    const recipient = recipientRows.find((r) => r.id === update.id);
+    if (!recipient || !recipient.email) {
+      emailPromises.push(
+        Promise.resolve({ success: false, error: "missing recipient email" })
+      );
+      continue;
+    }
+    const customMessage = input.recipientMessages?.[recipient.publicId];
+    emailPromises.push(
+      sendDocumentInvitationEmail(c.env, {
+        to: recipient.email,
+        recipientName: recipient.name ?? recipient.email,
+        senderName,
+        documentName: doc.name,
+        signingToken: update.signingToken,
+        customMessage,
+        expiresAt: tokenExpiresAt.getTime(),
+      })
+    );
+  }
+  const emailResults = await Promise.all(emailPromises);
+
+  const failedEmails = emailResults.filter((r) => !r.success);
+  if (failedEmails.length > 0) {
+    console.error(
+      "[documents/send] some invitation emails failed:",
+      failedEmails
+    );
+  }
 
   await db.insert(activity).values({
     id: crypto.randomUUID(),
@@ -4339,9 +4401,11 @@ app.openapi(transferOwnershipRouteDef, async (c) => {
     return c.json({ error: "New owner is not an organization member" }, 422);
   }
 
+  const now = new Date();
+
   await db
     .update(documents)
-    .set({ ownerId: newOwnerId, updatedAt: new Date() })
+    .set({ ownerId: newOwnerId, updatedAt: now })
     .where(eq(documents.id, ownerCheck.docId));
 
   const rows = await db
@@ -4353,6 +4417,31 @@ app.openapi(transferOwnershipRouteDef, async (c) => {
   const updated = rows[0];
   if (!updated) {
     return c.json({ error: "Document not found" }, 404);
+  }
+
+  const [newOwner] = await db
+    .select({ name: userTable.name, email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.id, newOwnerId))
+    .limit(1);
+  const [org] = await db
+    .select({ slug: organization.slug })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  if (newOwner?.email && org?.slug) {
+    const result = await sendOwnershipTransferredEmail(c.env, {
+      to: newOwner.email,
+      newOwnerName: newOwner.name ?? newOwner.email,
+      documentName: updated.name,
+      documentSlug: org.slug,
+      documentPublicId: publicId,
+      transferredAt: now.getTime(),
+    });
+    if (!result.success) {
+      console.error("[documents/transfer] transfer email failed:", result);
+    }
   }
 
   return c.json(documentResponse(updated));

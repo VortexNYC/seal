@@ -7,6 +7,7 @@ import type { DataModel, Id } from "../_generated/dataModel";
 import {
   parseVortexInvoiceEvent,
   parseVortexPayableObjectEvent,
+  type VortexSubscriptionProjectionResult,
 } from "./projection";
 import { verifyVortexWebhookSignature } from "./webhook_signature";
 
@@ -201,10 +202,56 @@ const vortexWebhookDispatchers: Record<
       );
     }
 
-    const result = await ctx.runMutation(
-      internal.vortex_billing.projection.projectSubscriptionUpdated,
-      projection
-    );
+    let result: VortexSubscriptionProjectionResult;
+    try {
+      const { projected } = await ctx.runAction(
+        internal.vortex_billing.worker_subscriptions.projectSubscriptionUpdated,
+        {
+          eventId: projection.eventId,
+          organizationId: projection.sealOrganizationId,
+          externalCustomerId: projection.customerExternalId,
+          externalSubscriptionId: projection.subscriptionExternalId,
+          externalPriceId: projection.planCode,
+          status: projection.status,
+          cancelAtPeriodEnd: projection.cancelAtPeriodEnd,
+          currentPeriodStart: Date.parse(projection.currentPeriodStart),
+          currentPeriodEnd: Date.parse(projection.currentPeriodEnd),
+          canceledAt:
+            projection.canceledAt === undefined
+              ? undefined
+              : Date.parse(projection.canceledAt),
+          cancelReason: projection.cancelReason,
+          latestInvoiceId: projection.latestInvoiceId,
+        }
+      );
+
+      if (projected) {
+        const activeNonVortexProviderIdPresent = await ctx.runAction(
+          internal.vortex_billing.worker_subscriptions
+            .hasActiveNonVortexProviderShapedSubscription,
+          { organizationId: projection.sealOrganizationId }
+        );
+        result = await ctx.runMutation(
+          internal.vortex_billing.projection.projectSubscriptionUpdated,
+          {
+            ...projection,
+            activeNonVortexProviderIdPresent,
+            skipD1Sync: true,
+          }
+        );
+      } else {
+        result = await ctx.runMutation(
+          internal.vortex_billing.projection.projectSubscriptionUpdated,
+          projection
+        );
+      }
+    } catch {
+      result = await ctx.runMutation(
+        internal.vortex_billing.projection.projectSubscriptionUpdated,
+        projection
+      );
+    }
+
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
   "invoice.paid": async (ctx, event): Promise<Response> => {
@@ -255,7 +302,7 @@ const vortexWebhookDispatchers: Record<
     );
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
-  "payable_object.updated": async (ctx, event): Promise<Response> => {
+  "payable_object.updated": async (_ctx, event): Promise<Response> => {
     const projection = parseVortexPayableObjectEvent(event);
     if (projection === null) {
       return jsonResponse(
@@ -264,11 +311,31 @@ const vortexWebhookDispatchers: Record<
       );
     }
 
-    const result = await ctx.runMutation(
-      internal.vortex_billing.projection.projectPayableObjectUpdated,
-      projection
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return jsonResponse(
+        { error: "worker_not_configured", eventId: event.id },
+        500
+      );
+    }
+
+    const res = await fetch(
+      `${url}/internal/webhooks/vortex-billing/payable-object`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": key,
+        },
+        body: JSON.stringify(projection),
+      }
     );
-    return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
+    const body = (await res.json()) as unknown;
+    return jsonResponse(
+      { received: true, eventId: event.id, ...body },
+      res.status
+    );
   },
 };
 

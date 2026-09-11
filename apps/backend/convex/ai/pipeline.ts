@@ -60,7 +60,7 @@ async function shouldProcessDocument(
   }
 
   const currentDoc = await ctx.runQuery(
-    internal.documents.queries.getDocumentInternal,
+    internal.documents.document_reads.getDocumentInternal,
     {
       documentId,
     }
@@ -78,7 +78,7 @@ async function getProcessableDocument(
   documentId: Id<"documents">
 ): Promise<InternalDocument> {
   const document = await ctx.runQuery(
-    internal.documents.queries.getDocumentInternal,
+    internal.documents.document_reads.getDocumentInternal,
     {
       documentId,
     }
@@ -195,7 +195,7 @@ async function maybeRunOcrFallback(
   args: ProcessDocumentArgs
 ): Promise<void> {
   const document = await ctx.runQuery(
-    internal.documents.queries.getDocumentInternal,
+    internal.documents.document_reads.getDocumentInternal,
     {
       documentId: args.documentId,
     }

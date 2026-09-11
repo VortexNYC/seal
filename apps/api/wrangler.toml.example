@@ -4,12 +4,14 @@ compatibility_date = "2026-07-30"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
+INTERNAL_API_KEY = "REPLACE_WITH_A_RANDOM_SECRET"
 BETTER_AUTH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
 BETTER_AUTH_URL = "https://vortex-sign-api.example.workers.dev"
 TOKEN_HASH_SECRET = "REPLACE_WITH_A_RANDOM_SECRET"
 SEAL_MCP_SIGNING_KEY_ID = "seal-mcp-key-1"
 ALLOWED_ORIGINS = "https://vortex-sign-api.example.workers.dev"
 EMAIL_FROM = "notifications@vortex.nyc"
+APP_URL = "https://vortex-sign.example.workers.dev"
 
 # Generate a private JWK (e.g. ES256) and set it via `wrangler secret put SEAL_MCP_SIGNING_KEY`
 # after copying this example to wrangler.toml. The JWKS endpoint exposes the public half.
@@ -37,3 +39,6 @@ class_name = "SealChatAgent"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SealChatAgent"]
+
+[triggers]
+crons = ["0 9 * * *"]

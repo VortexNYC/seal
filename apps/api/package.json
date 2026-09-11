@@ -16,6 +16,7 @@
   "dependencies": {
     "@cloudflare/ai-chat": "0.11.0",
     "@hono/zod-openapi": "^0.19.5",
+    "@seal/transactional": "workspace:*",
     "agents": "0.20.1",
     "ai": "^7.0.97",
     "better-auth": "1.6.9",

@@ -216,8 +216,8 @@ export function isAuthenticatedUrl(url: string): boolean {
 
 /**
  * Wait for a Better-Auth session cookie to be present. This is a lightweight
- * proxy for "the sign-in handshake has finished" without requiring a Convex
- * client on the page.
+ * proxy for "the sign-in handshake has finished" without requiring a
+ * data-sync client on the page.
  */
 export async function ensureAuthenticated(page: Page): Promise<void> {
   await page.waitForFunction(() => document.cookie.length > 0, {
@@ -228,7 +228,7 @@ export async function ensureAuthenticated(page: Page): Promise<void> {
 /**
  * Ensure workspace exists — called AFTER auth is saved, never blocks auth setup.
  * Onboarding already creates the workspace via the UI; this function no longer
- * needs to drive Convex directly.
+ * needs to drive a backend sync layer directly.
  */
 export async function ensureWorkspace(_page: Page): Promise<void> {
   // Better-Auth onboarding creates the workspace during sign-in setup.

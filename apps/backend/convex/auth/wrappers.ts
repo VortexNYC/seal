@@ -9,6 +9,7 @@
  */
 
 import {
+  customAction,
   customCtx,
   customMutation,
   customQuery,
@@ -17,9 +18,10 @@ import {
   wrapDatabaseReader,
   wrapDatabaseWriter,
 } from "convex-helpers/server/rowLevelSecurity";
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
-import { mutation, query } from "../_generated/server";
+import { internal } from "../_generated/api";
+import { action, internalQuery, mutation, query } from "../_generated/server";
 import { rlsRules } from "../rls";
 import { getAuthContextWithPermissions } from "./auth.permissions";
 
@@ -416,5 +418,113 @@ export const ownerMutation = customMutation(
       auth,
       db: wrapDatabaseWriter(ctx, ctx.db, rules),
     };
+  })
+);
+
+const actionAuthValidator = v.object({
+  userId: v.id("users"),
+  organizationId: v.id("organizations"),
+  email: v.optional(v.string()),
+  name: v.optional(v.string()),
+  role: v.string(),
+  userType: v.string(),
+  permissions: v.array(v.string()),
+});
+
+export const getAdminAuthContext = internalQuery({
+  args: {},
+  returns: actionAuthValidator,
+  handler: async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+    if (!auth.isAdmin()) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Admin privileges required",
+      });
+    }
+    return {
+      userId: auth.userId,
+      organizationId: auth.organizationId,
+      email: auth.email,
+      name: auth.name,
+      role: auth.role,
+      userType: auth.userType,
+      permissions: auth.permissions,
+    };
+  },
+});
+
+export const getAuthActionContext = internalQuery({
+  args: {},
+  returns: actionAuthValidator,
+  handler: async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+    return {
+      userId: auth.userId,
+      organizationId: auth.organizationId,
+      email: auth.email,
+      name: auth.name,
+      role: auth.role,
+      userType: auth.userType,
+      permissions: auth.permissions,
+    };
+  },
+});
+
+export const adminAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const auth = await ctx.runQuery(
+      internal.auth.wrappers.getAdminAuthContext,
+      {}
+    );
+    return { auth };
+  })
+);
+
+export const getViewerIdentity = internalQuery({
+  args: {},
+  returns: v.object({ subject: v.string(), tokenIdentifier: v.string() }),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new ConvexError("Authentication required");
+    }
+    return {
+      subject: identity.subject,
+      tokenIdentifier: identity.tokenIdentifier,
+    };
+  },
+});
+
+export const getUserByAuthSubject = internalQuery({
+  args: { subject: v.string() },
+  returns: v.union(
+    v.object({
+      _id: v.id("users"),
+      _creationTime: v.number(),
+      authSubject: v.string(),
+      email: v.string(),
+      name: v.optional(v.string()),
+      activeOrganizationId: v.optional(v.id("organizations")),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.subject))
+      .first();
+  },
+});
+
+export const authAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const auth = await ctx.runQuery(
+      internal.auth.wrappers.getAuthActionContext,
+      {}
+    );
+    return { auth };
   })
 );

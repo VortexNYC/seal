@@ -12,6 +12,11 @@ import {
   signatures,
   user as userTable,
 } from "../global/schema.js";
+import {
+  sendDocumentCompletedEmail,
+  sendDocumentViewedEmail,
+  sendSigningCompleteEmail,
+} from "../platform/email.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -633,7 +638,68 @@ app.openapi(submitRouteDef, async (c) => {
     .set(update)
     .where(eq(recipients.id, recipient.id));
 
+  const [owner] = await db
+    .select({ name: userTable.name, email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.id, doc.ownerId))
+    .limit(1);
+
+  const [org] = await db
+    .select({ slug: organization.slug })
+    .from(organization)
+    .where(eq(organization.id, doc.organizationId))
+    .limit(1);
+  const orgSlug = org?.slug ?? "";
+
+  if (input.status === "viewed" && owner?.email) {
+    const result = await sendDocumentViewedEmail(c.env, {
+      to: owner.email,
+      ownerName: owner.name ?? owner.email,
+      documentName: doc.name,
+      documentSlug: orgSlug,
+      documentPublicId: doc.publicId,
+      recipientName: recipient.name ?? recipient.email,
+      recipientEmail: recipient.email,
+      viewedAt: nowDate.getTime(),
+    });
+    if (!result.success) {
+      console.error("[public/submit] viewed email failed:", result);
+    }
+  }
+
   if (input.status === "signed" || input.status === "approved") {
+    if (recipient.email) {
+      const role: "signer" | "approver" | "viewer" =
+        recipient.role === "approver"
+          ? "approver"
+          : recipient.role === "viewer"
+            ? "viewer"
+            : "signer";
+      const result = await sendSigningCompleteEmail(c.env, {
+        to: recipient.email,
+        recipientName: recipient.name ?? recipient.email,
+        documentName: doc.name,
+        signedAt: nowDate.getTime(),
+        role,
+      });
+      if (!result.success) {
+        console.error("[public/submit] signing complete email failed:", result);
+      }
+    }
+
+    await db.insert(activity).values({
+      id: crypto.randomUUID(),
+      organizationId: doc.organizationId,
+      action: "recipient.signed",
+      actorName: recipient.name ?? recipient.email,
+      targetName: doc.name,
+      metadata: JSON.stringify({
+        documentId: doc.id,
+        publicId: doc.publicId,
+        recipientId: recipient.id,
+      }),
+      createdAt: nowDate,
+    });
     if (doc.allowDictateNextSigner) {
       const placeholderRows = await db
         .select()
@@ -677,6 +743,65 @@ app.openapi(submitRouteDef, async (c) => {
           updatedAt: nowDate,
         })
         .where(eq(documents.id, doc.id));
+
+      await db.insert(activity).values({
+        id: crypto.randomUUID(),
+        organizationId: doc.organizationId,
+        action: "document.completed",
+        actorName: recipient.name ?? recipient.email,
+        targetName: doc.name,
+        metadata: JSON.stringify({
+          documentId: doc.id,
+          publicId: doc.publicId,
+        }),
+        createdAt: nowDate,
+      });
+
+      if (owner?.email) {
+        const allRecipients = await db
+          .select({
+            name: recipients.name,
+            email: recipients.email,
+            role: recipients.role,
+            status: recipients.status,
+            signedAt: recipients.signedAt,
+            approvedAt: recipients.approvedAt,
+            viewedAt: recipients.viewedAt,
+          })
+          .from(recipients)
+          .where(eq(recipients.documentId, doc.id));
+
+        const recipientsSummary = allRecipients
+          .filter((r) => r.status !== "pending")
+          .map((r) => ({
+            name: r.name ?? r.email ?? "Unknown",
+            email: r.email,
+            role:
+              r.role === "approver"
+                ? ("approver" as const)
+                : r.role === "viewer"
+                  ? ("viewer" as const)
+                  : ("signer" as const),
+            completedAt:
+              r.signedAt?.getTime() ??
+              r.approvedAt?.getTime() ??
+              r.viewedAt?.getTime() ??
+              nowDate.getTime(),
+          }));
+
+        const result = await sendDocumentCompletedEmail(c.env, {
+          to: owner.email,
+          senderName: owner.name ?? owner.email,
+          documentName: doc.name,
+          documentSlug: orgSlug,
+          documentPublicId: doc.publicId,
+          completedAt: nowDate.getTime(),
+          recipientsSummary,
+        });
+        if (!result.success) {
+          console.error("[public/submit] completed email failed:", result);
+        }
+      }
     }
   }
 

@@ -43,7 +43,7 @@ export const ocrExtractText = internalAction({
     args
   ): Promise<{ charCount: number; tokensUsed: number; durationMs: number }> => {
     const document = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
+      internal.documents.document_reads.getDocumentInternal,
       {
         documentId: args.documentId,
       }
@@ -97,10 +97,13 @@ export const ocrExtractText = internalAction({
     }
 
     // Save via the same mutation unpdf uses
-    await ctx.runMutation(internal.documents.mutations.updateExtractedText, {
-      documentId: args.documentId,
-      extractedText,
-    });
+    await ctx.runMutation(
+      internal.documents.ai_document_state.updateExtractedText,
+      {
+        documentId: args.documentId,
+        extractedText,
+      }
+    );
 
     console.info(
       `[OCR Fallback] Extracted ${extractedText.length} chars from scanned PDF ${args.documentId}`

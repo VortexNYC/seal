@@ -326,6 +326,9 @@ export const documents = sqliteTable(
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     sentAt: integer("sent_at", { mode: "timestamp_ms" }),
     deadline: integer("deadline", { mode: "timestamp_ms" }),
+    lastExpirationAlertAt: integer("last_expiration_alert_at", {
+      mode: "timestamp_ms",
+    }),
     redirectUrl: text("redirect_url"),
     allowDictateNextSigner: integer("allow_dictate_next_signer", {
       mode: "boolean",
@@ -333,6 +336,7 @@ export const documents = sqliteTable(
       .notNull()
       .default(false),
     signingMode: text("signing_mode").notNull().default("parallel"),
+    workflowStatus: text("workflow_status").notNull().default("draft"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -397,6 +401,10 @@ export const recipients = sqliteTable(
     signedAt: integer("signed_at", { mode: "timestamp_ms" }),
     approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
     declinedAt: integer("declined_at", { mode: "timestamp_ms" }),
+    lastRemindedAt: integer("last_reminded_at", { mode: "timestamp_ms" }),
+    reminderCount: integer("reminder_count", { mode: "number" })
+      .notNull()
+      .default(0),
     signatureData: text("signature_data"),
     signatureType: text("signature_type"),
     authenticationData: text("authentication_data"),
@@ -551,6 +559,19 @@ export const signatureFields = sqliteTable(
   ]
 );
 
+export const vortexBillingWebhookEvents = sqliteTable(
+  "vortex_billing_webhook_events",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id").notNull().unique(),
+    eventType: text("event_type").notNull(),
+    processedAt: integer("processed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [index("vortexBillingWebhookEvents_eventId_idx").on(table.eventId)]
+);
+
 export const paymentFieldConfigs = sqliteTable(
   "payment_field_configs",
   {
@@ -604,6 +625,109 @@ export const paymentFieldConfigs = sqliteTable(
     index("paymentFieldConfigs_fieldId_idx").on(table.fieldId),
     index("paymentFieldConfigs_documentId_idx").on(table.documentId),
     index("paymentFieldConfigs_organizationId_idx").on(table.organizationId),
+  ]
+);
+
+export const documentInvoices = sqliteTable(
+  "document_invoices",
+  {
+    id: text("id").primaryKey(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    provider: text("provider").default("vortex_billing"),
+    providerAccountId: text("provider_account_id"),
+    providerInvoiceId: text("provider_invoice_id"),
+    providerCustomerId: text("provider_customer_id"),
+    providerSubscriptionId: text("provider_subscription_id"),
+    vortexPayableId: text("vortex_payable_id"),
+    vortexPaymentRequestId: text("vortex_payment_request_id"),
+    status: text("status").notNull().default("draft"),
+    customerEmail: text("customer_email").notNull(),
+    customerName: text("customer_name"),
+    amountDue: integer("amount_due").notNull(),
+    currency: text("currency").notNull(),
+    hostedInvoiceUrl: text("hosted_invoice_url"),
+    invoicePdf: text("invoice_pdf"),
+    finalizedAt: integer("finalized_at", { mode: "timestamp_ms" }),
+    paidAt: integer("paid_at", { mode: "timestamp_ms" }),
+    voidedAt: integer("voided_at", { mode: "timestamp_ms" }),
+    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+    dunningStatus: text("dunning_status").notNull().default("none"),
+    dunningStep: integer("dunning_step").notNull().default(0),
+    dunningStartedAt: integer("dunning_started_at", { mode: "timestamp_ms" }),
+    lastDunningEmailAt: integer("last_dunning_email_at", {
+      mode: "timestamp_ms",
+    }),
+    nextDunningAt: integer("next_dunning_at", { mode: "timestamp_ms" }),
+    dunningCompletedAt: integer("dunning_completed_at", {
+      mode: "timestamp_ms",
+    }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("documentInvoices_documentId_idx").on(table.documentId),
+    index("documentInvoices_providerInvoiceId_idx").on(table.providerInvoiceId),
+    index("documentInvoices_vortexPayableId_idx").on(table.vortexPayableId),
+    index("documentInvoices_organizationId_idx").on(table.organizationId),
+    index("documentInvoices_providerSubscriptionId_idx").on(
+      table.providerSubscriptionId
+    ),
+    index("documentInvoices_dunningStatus_nextDunningAt_idx").on(
+      table.dunningStatus,
+      table.nextDunningAt
+    ),
+  ]
+);
+
+export const subscriptions = sqliteTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    externalCustomerId: text("external_customer_id").notNull(),
+    externalSubscriptionId: text("external_subscription_id").notNull().unique(),
+    externalPriceId: text("external_price_id"),
+    externalProductId: text("external_product_id"),
+    status: text("status").notNull(),
+    cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    currentPeriodStart: integer("current_period_start", {
+      mode: "timestamp_ms",
+    }),
+    currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
+    latestInvoiceId: text("latest_invoice_id"),
+    latestInvoiceStatus: text("latest_invoice_status"),
+    canceledAt: integer("canceled_at", { mode: "timestamp_ms" }),
+    cancelReason: text("cancel_reason"),
+    pastDueSince: integer("past_due_since", { mode: "timestamp_ms" }),
+    metadata: text("metadata"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("subscriptions_organizationId_idx").on(table.organizationId),
+    index("subscriptions_externalSubscriptionId_idx").on(
+      table.externalSubscriptionId
+    ),
   ]
 );
 

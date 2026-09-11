@@ -11,16 +11,9 @@ import { internal } from "./_generated/api";
 // Scheduled workloads run ONLY on the production deployment. Dev / preview / staging
 // deployments set no CRONS_ENABLED and therefore register ZERO crons — they must never
 // run 24/7 and burn Convex DB I/O with no users. Set CRONS_ENABLED=true on prod only
-// (bunx convex env set CRONS_ENABLED true --prod).
+// (pnpm dlx convex env set CRONS_ENABLED true --prod).
 const crons = gatedCrons();
 {
-  // Clean up old email records from the direct Resend transport hourly [BETA] [SIGMA] [CONFLICT-B]
-  crons.interval(
-    "cleanup-resend-emails",
-    { hours: 1 },
-    internal.emails.resend_component.cleanupResendEmails
-  );
-
   // Clean up expired organization invitations daily at midnight UTC
   crons.daily(
     "cleanup-expired-invitations",
@@ -42,13 +35,6 @@ const crons = gatedCrons();
     internal.vortex_billing.catalog_sync.syncCatalogFromVortex
   );
 
-  // Clean up expired download tokens weekly
-  crons.weekly(
-    "cleanup-expired-download-tokens",
-    { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 },
-    internal.documents.download_tokens.cleanupExpiredTokens
-  );
-
   // Clean up old AI usage logs weekly (entries older than 90 days)
   crons.weekly(
     "cleanup-ai-usage-logs",
@@ -68,34 +54,6 @@ const crons = gatedCrons();
     "cleanup-ai-dismissed-annotations",
     { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 30 },
     internal.ai.cleanup.cleanupDismissedAnnotations
-  );
-
-  // Process automated reminders daily at 9am UTC (based on org reminderSchedule)
-  crons.daily(
-    "process-automated-reminders",
-    { hourUTC: 9, minuteUTC: 0 },
-    internal.documents.automated_reminders.processAutomatedReminders
-  );
-
-  // Send expiration alerts daily at 10am UTC (based on org expirationAlertDays)
-  crons.daily(
-    "process-expiration-alerts",
-    { hourUTC: 10, minuteUTC: 0 },
-    internal.documents.expiration_alerts.processExpirationAlerts
-  );
-
-  // Sweep expired recipients every 15 minutes
-  crons.interval(
-    "sweep-expired-recipients",
-    { minutes: 15 },
-    internal.documents.expiration_sweep.sweepExpiredRecipients
-  );
-
-  // Process dunning (payment recovery) emails daily at 11am UTC
-  crons.daily(
-    "process-dunning-emails",
-    { hourUTC: 11, minuteUTC: 0 },
-    internal.payment_fields.dunning.processDunningEmails
   );
 }
 

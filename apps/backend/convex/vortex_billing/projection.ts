@@ -2,11 +2,13 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, type MutationCtx } from "../_generated/server";
-import { updateVortexPaymentStatusFromWebhookInDb } from "../payment_fields/mutations";
+import {
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+} from "../_generated/server";
 import type { SubscriptionStatus } from "../schemas/subscriptions";
-import { resolveSubscriptionPriceByAnyId } from "../subscription_price_resolver";
-import { publishWebhookEvent } from "../webhooks/publish";
+import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 
 export type VortexSubscriptionProjectionResult = {
   readonly processed: boolean;
@@ -50,13 +52,6 @@ export type VortexPayableObjectProjection = {
   readonly status: VortexPayableObjectStatus;
   readonly paymentRequestId?: string;
   readonly hostedInvoiceUrl?: string;
-};
-
-export type VortexPayableObjectProjectionResult = {
-  readonly processed: boolean;
-  readonly duplicate: boolean;
-  readonly ignored: boolean;
-  readonly payableId: string;
 };
 
 const nonVortexProviderIdPattern = /^(cus|sub|price|prod)_/u;
@@ -271,26 +266,29 @@ async function cancelOtherPaidSubscriptions(
   }
 }
 
-async function hasActiveNonVortexProviderShapedSubscription(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">
-): Promise<boolean> {
-  for await (const subscription of ctx.db
-    .query("subscriptions")
-    .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active")
-    )) {
-    if (
-      nonVortexProviderIdPattern.test(subscription.externalCustomerId) ||
-      nonVortexProviderIdPattern.test(subscription.externalSubscriptionId) ||
-      nonVortexProviderIdPattern.test(subscription.externalPriceId)
-    ) {
-      return true;
+export const getActiveNonVortexProviderShapedSubscriptionQuery = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    for await (const subscription of ctx.db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active")
+      )) {
+      if (
+        nonVortexProviderIdPattern.test(subscription.externalCustomerId) ||
+        nonVortexProviderIdPattern.test(subscription.externalSubscriptionId) ||
+        nonVortexProviderIdPattern.test(subscription.externalPriceId)
+      ) {
+        return true;
+      }
     }
-  }
 
-  return false;
-}
+    return false;
+  },
+});
 
 export const projectSubscriptionUpdated = internalMutation({
   args: {
@@ -308,8 +306,18 @@ export const projectSubscriptionUpdated = internalMutation({
     cancelReason: v.optional(v.string()),
     latestInvoiceId: v.optional(v.string()),
     sourceCreatedAt: v.optional(v.number()),
+    activeNonVortexProviderIdPresent: v.optional(v.boolean()),
+    skipD1Sync: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<VortexSubscriptionProjectionResult> => {
+    let activeNonVortexProviderIdPresent =
+      args.activeNonVortexProviderIdPresent ??
+      (await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.sealOrganizationId }
+      ));
+
     const existingEvent = await ctx.db
       .query("vortex_billing_webhook_events")
       .withIndex("by_event_id", (q) => q.eq("eventId", args.eventId))
@@ -320,11 +328,7 @@ export const projectSubscriptionUpdated = internalMutation({
         duplicate: true,
         organizationId: args.sealOrganizationId,
         externalSubscriptionId: args.subscriptionExternalId,
-        activeNonVortexProviderIdPresent:
-          await hasActiveNonVortexProviderShapedSubscription(
-            ctx,
-            args.sealOrganizationId
-          ),
+        activeNonVortexProviderIdPresent,
       };
     }
 
@@ -367,20 +371,21 @@ export const projectSubscriptionUpdated = internalMutation({
         ignored: true,
         organizationId: args.sealOrganizationId,
         externalSubscriptionId: args.subscriptionExternalId,
-        activeNonVortexProviderIdPresent:
-          await hasActiveNonVortexProviderShapedSubscription(
-            ctx,
-            args.sealOrganizationId
-          ),
+        activeNonVortexProviderIdPresent,
       };
     }
 
-    const price = await resolveSubscriptionPriceByAnyId(ctx.db, args.planCode);
+    const { price, product } = await resolveSubscriptionPriceAndProductByAnyId(
+      ctx.db,
+      args.planCode
+    );
     if (!price) {
       throw new Error(
         `Seal subscription price not found for Vortex planCode: ${args.planCode}. Run Vortex catalog sync before projecting this subscription.`
       );
     }
+
+    const tier = product?.metadata?.tier;
 
     const projection = {
       organizationId: args.sealOrganizationId,
@@ -446,16 +451,49 @@ export const projectSubscriptionUpdated = internalMutation({
       processedAt: now,
     });
 
+    if (!args.skipD1Sync) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.vortex_billing.worker_subscriptions.projectSubscriptionUpdated,
+        {
+          eventId: args.eventId,
+          organizationId: args.sealOrganizationId,
+          externalCustomerId: args.customerExternalId,
+          externalSubscriptionId: args.subscriptionExternalId,
+          externalPriceId: args.planCode,
+          externalProductId: price.externalProductId,
+          status,
+          cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+          currentPeriodStart: parseIsoMillis(
+            args.currentPeriodStart,
+            "currentPeriodStart"
+          ),
+          currentPeriodEnd: parseIsoMillis(
+            args.currentPeriodEnd,
+            "currentPeriodEnd"
+          ),
+          canceledAt: parseOptionalIsoMillis(args.canceledAt),
+          cancelReason: args.cancelReason,
+          latestInvoiceId: args.latestInvoiceId,
+          metadata: JSON.stringify({ tier }),
+        }
+      );
+    }
+
+    if (args.activeNonVortexProviderIdPresent === undefined) {
+      activeNonVortexProviderIdPresent = await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.sealOrganizationId }
+      );
+    }
+
     return {
       processed: true,
       duplicate: false,
       organizationId: args.sealOrganizationId,
       externalSubscriptionId: args.subscriptionExternalId,
-      activeNonVortexProviderIdPresent:
-        await hasActiveNonVortexProviderShapedSubscription(
-          ctx,
-          args.sealOrganizationId
-        ),
+      activeNonVortexProviderIdPresent,
     };
   },
 });
@@ -525,6 +563,12 @@ async function projectInvoiceEvent(
     });
   }
 
+  const { product } = await resolveSubscriptionPriceAndProductByAnyId(
+    ctx.db,
+    subscription.externalPriceId
+  );
+  const tier = product?.metadata?.tier;
+
   const now = Date.now();
   if (isStaleSourceEvent(subscription, args.sourceCreatedAt)) {
     await insertProcessedVortexEvent(ctx, {
@@ -569,6 +613,44 @@ async function projectInvoiceEvent(
     processedAt: now,
   });
 
+  const finalStatus =
+    ("status" in entitlementPatch ? entitlementPatch.status : undefined) ??
+    statusPatch.status ??
+    subscription.status;
+
+  await ctx.scheduler.runAfter(
+    0,
+    internal.vortex_billing.worker_subscriptions.projectInvoiceEvent,
+    {
+      eventId: args.eventId,
+      organizationId: subscription.organizationId,
+      externalCustomerId: subscription.externalCustomerId,
+      externalSubscriptionId: subscription.externalSubscriptionId,
+      externalPriceId: subscription.externalPriceId,
+      externalProductId: subscription.externalProductId,
+      invoiceNumber: args.invoiceNumber,
+      invoiceStatus: args.invoiceStatus,
+      status: finalStatus,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      latestInvoiceStatus: statusPatch.latestInvoiceStatus,
+      metadata: JSON.stringify({ tier }),
+    }
+  );
+
+  const invoiceUpdatePayload = JSON.stringify({
+    id: args.invoiceNumber,
+    status: statusPatch.latestInvoiceStatus,
+    paidAt: statusPatch.latestInvoiceStatus === "paid" ? now : undefined,
+  });
+
+  await ctx.scheduler.runAfter(
+    0,
+    internal.payment_fields.worker_invoices.updateDocumentInvoice,
+    { payload: invoiceUpdatePayload }
+  );
+
   return invoiceResult({
     processed: true,
     duplicate: false,
@@ -606,336 +688,6 @@ export const projectInvoicePaymentFailed = internalMutation({
     return await projectInvoiceEvent(ctx, args, {
       status: "past_due",
       latestInvoiceStatus: args.invoiceStatus,
-    });
-  },
-});
-
-function payableResult(input: {
-  readonly processed: boolean;
-  readonly duplicate: boolean;
-  readonly ignored: boolean;
-  readonly payableId: string;
-}): VortexPayableObjectProjectionResult {
-  return input;
-}
-
-function paymentStatusForPayableStatus(
-  status: VortexPayableObjectStatus
-): "awaiting" | "paid" | "failed" {
-  switch (status) {
-    case "paid":
-      return "paid";
-    case "failed":
-      return "failed";
-    case "awaiting_payment":
-      return "awaiting";
-    default: {
-      const _exhaustive: never = status;
-      throw new Error(`Unhandled payable status: ${String(_exhaustive)}`);
-    }
-  }
-}
-
-function invoiceStatusForPayableStatus(
-  status: VortexPayableObjectStatus
-): "open" | "paid" | "uncollectible" {
-  switch (status) {
-    case "paid":
-      return "paid";
-    case "failed":
-      return "uncollectible";
-    case "awaiting_payment":
-      return "open";
-    default: {
-      const _exhaustive: never = status;
-      throw new Error(`Unhandled payable status: ${String(_exhaustive)}`);
-    }
-  }
-}
-
-function shouldIgnoreTerminalPayableProjection(input: {
-  readonly currentInvoiceStatus: string | undefined;
-  readonly currentPaymentStatus: string | undefined;
-  readonly incomingInvoiceStatus: "open" | "paid" | "uncollectible";
-  readonly incomingPaymentStatus: "awaiting" | "paid" | "failed";
-}): boolean {
-  if (input.currentInvoiceStatus === "paid") {
-    return input.incomingInvoiceStatus !== "paid";
-  }
-  if (input.currentInvoiceStatus === "void") {
-    return input.incomingInvoiceStatus !== "paid";
-  }
-  if (input.currentInvoiceStatus === "uncollectible") {
-    return (
-      input.incomingInvoiceStatus === "open" ||
-      input.incomingInvoiceStatus === "uncollectible"
-    );
-  }
-  if (input.currentPaymentStatus === "paid") {
-    return input.incomingPaymentStatus !== "paid";
-  }
-  if (input.currentPaymentStatus === "cancelled") {
-    return input.incomingPaymentStatus !== "paid";
-  }
-  if (input.currentPaymentStatus === "failed") {
-    return (
-      input.incomingPaymentStatus === "awaiting" ||
-      input.incomingPaymentStatus === "failed"
-    );
-  }
-  return false;
-}
-
-async function patchPayableLineage(
-  ctx: MutationCtx,
-  input: {
-    readonly configId: Id<"payment_field_configs"> | undefined;
-    readonly invoiceRecordId: Id<"document_invoices"> | undefined;
-    readonly paymentRequestId: string | undefined;
-    readonly hostedInvoiceUrl: string | undefined;
-    readonly now: number;
-  }
-): Promise<void> {
-  const patch = {
-    ...(input.paymentRequestId !== undefined && {
-      vortexPaymentRequestId: input.paymentRequestId,
-    }),
-    ...(input.hostedInvoiceUrl !== undefined && {
-      hostedInvoiceUrl: input.hostedInvoiceUrl,
-    }),
-    updatedAt: input.now,
-  };
-
-  if (
-    input.paymentRequestId === undefined &&
-    input.hostedInvoiceUrl === undefined
-  ) {
-    return;
-  }
-
-  if (input.configId !== undefined) {
-    await ctx.db.patch("payment_field_configs", input.configId, patch);
-  }
-  if (input.invoiceRecordId !== undefined) {
-    await ctx.db.patch("document_invoices", input.invoiceRecordId, patch);
-  }
-}
-
-async function cancelInvoiceDunning(
-  ctx: MutationCtx,
-  invoiceRecordId: Id<"document_invoices">,
-  now: number
-): Promise<void> {
-  const invoice = await ctx.db.get("document_invoices", invoiceRecordId);
-  if (!invoice || invoice.dunningStatus !== "active") {
-    return;
-  }
-
-  await ctx.db.patch("document_invoices", invoiceRecordId, {
-    dunningStatus: "cancelled",
-    dunningCompletedAt: now,
-    nextDunningAt: undefined,
-    updatedAt: now,
-  });
-}
-
-async function startInvoiceDunning(
-  ctx: MutationCtx,
-  invoiceRecordId: Id<"document_invoices">,
-  now: number
-): Promise<boolean> {
-  const invoice = await ctx.db.get("document_invoices", invoiceRecordId);
-  if (!invoice) {
-    return false;
-  }
-  if (
-    invoice.dunningStatus === "active" ||
-    invoice.dunningStatus === "completed" ||
-    invoice.dunningStatus === "cancelled"
-  ) {
-    return false;
-  }
-  if (invoice.status !== "open" && invoice.status !== "uncollectible") {
-    return false;
-  }
-
-  await ctx.db.patch("document_invoices", invoiceRecordId, {
-    dunningStatus: "active",
-    dunningStep: 0,
-    dunningStartedAt: now,
-    nextDunningAt: now,
-    updatedAt: now,
-  });
-  return true;
-}
-
-async function finalizeDocumentIfPaymentComplete(
-  ctx: MutationCtx,
-  documentId: Id<"documents">,
-  now: number
-): Promise<void> {
-  const document = await ctx.db.get("documents", documentId);
-  if (!document || document.workflowStatus !== "waiting_for_payment") {
-    return;
-  }
-
-  let allPaid = true;
-  for await (const config of ctx.db
-    .query("payment_field_configs")
-    .withIndex("by_document", (q) => q.eq("documentId", documentId))) {
-    if (
-      config.paymentStatus !== "paid" &&
-      config.paymentStatus !== "cancelled"
-    ) {
-      allPaid = false;
-      break;
-    }
-  }
-
-  if (!allPaid) {
-    return;
-  }
-
-  await ctx.db.patch("documents", documentId, {
-    workflowStatus: "completed",
-    completedAt: now,
-    updatedAt: now,
-  });
-
-  await publishWebhookEvent(ctx, {
-    organizationId: document.organizationId,
-    eventType: "document.completed",
-    data: {
-      document_id: documentId,
-      name: document.name,
-      completed_at: new Date(now).toISOString(),
-    },
-  });
-}
-
-export const projectPayableObjectUpdated = internalMutation({
-  args: {
-    eventId: v.string(),
-    payableId: v.string(),
-    status: v.union(
-      v.literal("paid"),
-      v.literal("failed"),
-      v.literal("awaiting_payment")
-    ),
-    paymentRequestId: v.optional(v.string()),
-    hostedInvoiceUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args): Promise<VortexPayableObjectProjectionResult> => {
-    const existingEvent = await ctx.db
-      .query("vortex_billing_webhook_events")
-      .withIndex("by_event_id", (q) => q.eq("eventId", args.eventId))
-      .first();
-    if (existingEvent) {
-      return payableResult({
-        processed: false,
-        duplicate: true,
-        ignored: false,
-        payableId: args.payableId,
-      });
-    }
-
-    const [config, invoiceRecord] = await Promise.all([
-      ctx.db
-        .query("payment_field_configs")
-        .withIndex("by_vortex_payable", (q) =>
-          q.eq("vortexPayableId", args.payableId)
-        )
-        .first(),
-      ctx.db
-        .query("document_invoices")
-        .withIndex("by_vortex_payable", (q) =>
-          q.eq("vortexPayableId", args.payableId)
-        )
-        .first(),
-    ]);
-
-    if (!config && !invoiceRecord) {
-      return payableResult({
-        processed: false,
-        duplicate: false,
-        ignored: true,
-        payableId: args.payableId,
-      });
-    }
-
-    const now = Date.now();
-    const paymentStatus = paymentStatusForPayableStatus(args.status);
-    const invoiceStatus = invoiceStatusForPayableStatus(args.status);
-    if (
-      shouldIgnoreTerminalPayableProjection({
-        currentInvoiceStatus: invoiceRecord?.status,
-        currentPaymentStatus: config?.paymentStatus,
-        incomingInvoiceStatus: invoiceStatus,
-        incomingPaymentStatus: paymentStatus,
-      })
-    ) {
-      await insertProcessedVortexEvent(ctx, {
-        eventId: args.eventId,
-        eventType: "payable_object.updated",
-        processedAt: now,
-      });
-      return payableResult({
-        processed: false,
-        duplicate: false,
-        ignored: true,
-        payableId: args.payableId,
-      });
-    }
-
-    const result = await updateVortexPaymentStatusFromWebhookInDb(ctx, {
-      vortexPayableId: args.payableId,
-      paymentStatus,
-    });
-    if (result === null) {
-      return payableResult({
-        processed: false,
-        duplicate: false,
-        ignored: true,
-        payableId: args.payableId,
-      });
-    }
-
-    await patchPayableLineage(ctx, {
-      configId: result.configId,
-      invoiceRecordId: result.invoiceRecordId,
-      paymentRequestId: args.paymentRequestId,
-      hostedInvoiceUrl: args.hostedInvoiceUrl,
-      now,
-    });
-
-    if (args.status === "paid") {
-      if (result.invoiceRecordId !== undefined) {
-        await cancelInvoiceDunning(ctx, result.invoiceRecordId, now);
-      }
-      if (result.documentId !== undefined) {
-        await finalizeDocumentIfPaymentComplete(ctx, result.documentId, now);
-      }
-    } else if (
-      args.status === "failed" &&
-      result.invoiceRecordId !== undefined
-    ) {
-      // Open the dunning sequence (step 0, due now). Email delivery + step advancement are
-      // driven by Seal's existing processDunningEmails cron — the canonical dunning path — so
-      // the projection stays a pure state mutation and the post-webhook step is deterministic.
-      await startInvoiceDunning(ctx, result.invoiceRecordId, now);
-    }
-
-    await insertProcessedVortexEvent(ctx, {
-      eventId: args.eventId,
-      eventType: "payable_object.updated",
-      processedAt: now,
-    });
-
-    return payableResult({
-      processed: true,
-      duplicate: false,
-      ignored: false,
-      payableId: args.payableId,
     });
   },
 });

@@ -148,6 +148,34 @@
       "when": 1789056992341,
       "tag": "0021_add_webhooks_table",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1789077313137,
+      "tag": "0021_faulty_skreet",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1789084329840,
+      "tag": "0022_daily_zombie",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1789084997661,
+      "tag": "0023_sturdy_next_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1789085009461,
+      "tag": "0024_round_mister_fear",
+      "breakpoints": true
     }
   ]
 }

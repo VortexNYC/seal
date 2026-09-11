@@ -87,7 +87,7 @@ All webhook payloads follow this structure:
 ### 1. Create Webhook Endpoint
 
 ```typescript
-const response = await fetch("https://seal.convex.site/api/v1/webhooks", {
+const response = await fetch("https://api.seal.nyc/api/v1/webhooks", {
   method: "POST",
   headers: {
     Authorization: "Bearer ak_your_api_key_here",
@@ -185,7 +185,7 @@ Send test events from the Seal dashboard or use the API:
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/webhooks/wh_abc123/test",
+  "https://api.seal.nyc/api/v1/webhooks/wh_abc123/test",
   {
     method: "POST",
     headers: {

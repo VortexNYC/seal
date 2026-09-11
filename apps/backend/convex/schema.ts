@@ -27,7 +27,6 @@ import {
   type DocumentPermissionLevel,
   documentAccessTable,
 } from "./schemas/document_access";
-import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
   type RecipientStatus as DocumentRecipientStatus,
   documentRecipientsTable,
@@ -48,7 +47,6 @@ import {
   type SigningMode,
   documentsTable,
 } from "./schemas/documents";
-import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
 import {
   foldersTable,
@@ -80,7 +78,6 @@ import {
   type PaymentMethod,
   type PaymentStatus,
   type PaymentType,
-  paymentFieldConfigsTable,
 } from "./schemas/payment_field_configs";
 import {
   type AuthenticationMethod,
@@ -202,7 +199,6 @@ export default defineSchema({
 
   documents: documentsTable,
   document_versions: documentVersionsTable,
-  document_invoices: documentInvoicesTable,
   document_access: documentAccessTable,
   document_recipients: documentRecipientsTable,
   document_reminders: documentRemindersTable,
@@ -213,11 +209,9 @@ export default defineSchema({
   signature_fields: signatureFieldsTable,
   signatures: signaturesTable,
   saved_signatures: savedSignaturesTable,
-  payment_field_configs: paymentFieldConfigsTable,
 
   // Audit and compliance
   audit_logs: auditLogsTable,
-  download_tokens: downloadTokensTable,
 
   // Notifications
   notifications: notificationsTable,

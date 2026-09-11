@@ -130,7 +130,7 @@ export class DashboardPage {
       exact: true,
     });
 
-    // Wait for the sidebar to populate — section buttons depend on Convex queries
+    // Wait for the sidebar to populate — section buttons depend on API queries
     // for permissions and org data that may not have resolved yet.
     await sectionButton.waitFor({ state: "visible", timeout: 5000 });
 

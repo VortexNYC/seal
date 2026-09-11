@@ -300,7 +300,7 @@ function getPrimaryDocumentRules(
 function getDocumentWorkflowRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null
-): Pick<StrictRules, "document_reminders" | "folders" | "document_invoices"> {
+): Pick<StrictRules, "document_reminders" | "folders"> {
   return {
     document_reminders: {
       read: async (queryCtx, doc) => {
@@ -335,26 +335,13 @@ function getDocumentWorkflowRules(
         return rlsCtx.isAdmin || doc.createdBy === rlsCtx.userId;
       },
     },
-    document_invoices: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId !== rlsCtx.orgId) return false;
-        return rlsCtx.isAdmin;
-      },
-    },
   };
 }
 
 function getDocumentAssetRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null
-): Pick<StrictRules, "document_versions" | "payment_field_configs"> {
+): Pick<StrictRules, "document_versions"> {
   return {
     document_versions: {
       read: async (queryCtx, doc) => {
@@ -373,25 +360,6 @@ function getDocumentAssetRules(
         if (rlsCtx.isSuperAdmin) return true;
         const document = await queryCtx.db.get("documents", doc.documentId);
         return document ? document.ownerId === rlsCtx.userId : false;
-      },
-    },
-    payment_field_configs: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId === rlsCtx.orgId) return true;
-        return rlsCtx.recipientContext
-          ? doc.documentId === rlsCtx.recipientContext.documentId
-          : false;
-      },
-      modify: async (queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId !== rlsCtx.orgId) return false;
-        const document = await queryCtx.db.get("documents", doc.documentId);
-        if (!document) return false;
-        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
-        return access === "owner";
       },
     },
   };
@@ -682,15 +650,8 @@ function getIntegrationAndWebhookRules(
 function getInternalOnlyRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null
-): Pick<
-  StrictRules,
-  "download_tokens" | "subscription_coupons" | "subscription_promo_codes"
-> {
+): Pick<StrictRules, "subscription_coupons" | "subscription_promo_codes"> {
   return {
-    download_tokens: {
-      read: async () => false,
-      modify: async () => false,
-    },
     subscription_coupons: {
       read: async () => rlsCtx !== null,
       modify: async () => false,

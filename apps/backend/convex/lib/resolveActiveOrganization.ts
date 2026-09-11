@@ -1,23 +1,80 @@
 /**
- * Resolve Seal organization id from dual active-org pointers.
+ * Resolve the user's active Seal organization id.
  *
- * Canonical: `users.activeVortexAuthOrganizationId` → local org via glue index.
- * Fallback: `users.activeOrganizationId` (legacy bridge until column retirement).
+ * Canonical source is the active organization stored on the current Better
+ * Auth session. Falls back to local bridge columns while the session
+ * migration is in progress.
  */
 
+import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import type { QueryCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 
-type ResolveCtx = Pick<QueryCtx, "db">;
+type ResolveCtx = QueryCtx | MutationCtx;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function resolveActiveOrganizationFromSession(
+  ctx: ResolveCtx
+): Promise<Id<"organizations"> | null> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (identity === null) {
+    return null;
+  }
+
+  const sessionId =
+    typeof identity.sessionId === "string" && identity.sessionId.length > 0
+      ? identity.sessionId
+      : null;
+  if (sessionId === null) {
+    return null;
+  }
+
+  const session = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "session",
+    where: [
+      { field: "_id", value: sessionId },
+      { field: "userId", value: identity.subject },
+    ],
+  });
+
+  if (!isRecord(session)) {
+    return null;
+  }
+
+  const activeOrganizationId = session["activeOrganizationId"];
+  if (typeof activeOrganizationId !== "string") {
+    return null;
+  }
+
+  const anchor = await ctx.db
+    .query("organizations")
+    .withIndex("by_vortex_auth_organization", (q) =>
+      q.eq("vortexAuthOrganizationId", activeOrganizationId)
+    )
+    .unique();
+
+  return anchor?._id ?? null;
+}
 
 /**
  * Resolve the user's active Seal organization id.
- * Prefers the Vortex Auth pointer; falls back to the legacy Seal id.
+ *
+ * Canonical source is the active organization on the current Better Auth
+ * session. Falls back to the local Vortex Auth pointer and then the legacy
+ * Seal id while the session migration is in progress.
  */
 export async function resolveActiveOrganizationId(
   ctx: ResolveCtx,
   user: Doc<"users">
 ): Promise<Id<"organizations"> | null> {
+  const sessionOrganizationId = await resolveActiveOrganizationFromSession(ctx);
+  if (sessionOrganizationId !== null) {
+    return sessionOrganizationId;
+  }
+
   const vortexAuthOrgId = user.activeVortexAuthOrganizationId;
   if (vortexAuthOrgId !== undefined) {
     const anchor = await ctx.db

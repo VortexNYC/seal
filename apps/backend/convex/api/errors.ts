@@ -21,7 +21,7 @@
  * @example
  * ```json
  * {
- *   "type": "https://api.seal.app/errors/validation",
+ *   "type": "https://api.seal.nyc/errors/validation",
  *   "title": "Validation Error",
  *   "status": 422,
  *   "detail": "The request body contains invalid fields",
@@ -102,7 +102,7 @@ export type ApiErrorCode =
  * Base URL for error type URIs.
  * Points to documentation for each error type.
  */
-const ERROR_TYPE_BASE = "https://api.seal.app/errors";
+const ERROR_TYPE_BASE = "https://api.seal.nyc/errors";
 
 /**
  * Custom error class for API errors.

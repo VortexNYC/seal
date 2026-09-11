@@ -403,7 +403,7 @@ export async function resolveApiAuth(
   const apiKey = result.apiKey;
 
   // Tier check: Free-tier organizations cannot use the API
-  const { plan } = await ctx.runQuery(
+  const { plan } = await ctx.runAction(
     internal.auth.subscription_helpers.checkProFeature,
     {
       organizationId: apiKey.organizationId,

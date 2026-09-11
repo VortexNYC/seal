@@ -114,15 +114,10 @@ async function requireAuthenticatedUser(
 
 async function getMembershipOrThrow(
   ctx: QueryCtx | MutationCtx,
-  userId: Id<"users">,
-  organizationId: Id<"organizations">,
+  user: Doc<"users">,
+  organization: Doc<"organizations">,
   notFoundMessage: string
 ): Promise<AuthMember> {
-  const user = await ctx.db.get("users", userId);
-  if (!user) {
-    throwPermissionAuthError("UNAUTHORIZED", "User not found");
-  }
-  const organization = await getOrganizationOrThrow(ctx, organizationId);
   const componentMembership = await resolveComponentMembershipForOrganization(
     ctx,
     user,
@@ -134,8 +129,8 @@ async function getMembershipOrThrow(
   }
 
   return {
-    userId,
-    organizationId,
+    userId: user._id,
+    organizationId: organization._id,
     role: componentMembership.role,
     status: componentMembership.status,
     permissions: [],
@@ -151,22 +146,32 @@ async function getOrganizationOrThrow(
   if (!organization) {
     throwPermissionAuthError("NOT_FOUND", "Organization not found");
   }
+
+  if (organization.vortexAuthOrganizationId !== undefined) {
+    const componentOrg = await ctx.runQuery(
+      components.vortexAuth.organizations.getOrganization,
+      { organizationId: organization.vortexAuthOrganizationId }
+    );
+    if (componentOrg === null) {
+      throwPermissionAuthError("NOT_FOUND", "Organization not found");
+    }
+    if (componentOrg.status !== "active") {
+      throwPermissionAuthError(
+        "FORBIDDEN",
+        `Organization is ${componentOrg.status}`
+      );
+    }
+  }
+
+  const organizationStatus = organization.status ?? "active";
+  if (organizationStatus !== "active") {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      `Organization is ${organizationStatus}`
+    );
+  }
+
   return organization;
-}
-
-async function getActiveSubscription(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">
-): Promise<Doc<"subscriptions"> | undefined> {
-  const subscription = await ctx.db
-    .query("subscriptions")
-    .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active")
-    )
-    .order("desc")
-    .first();
-
-  return subscription ?? undefined;
 }
 
 function buildSuperAdminContext(
@@ -282,24 +287,17 @@ async function buildActiveMembershipContext(
     throwPermissionAuthError("FORBIDDEN", "No active organization");
   }
 
+  const organization = await getOrganizationOrThrow(ctx, organizationId);
+
   const membership = await getMembershipOrThrow(
     ctx,
-    user._id,
-    organizationId,
+    user,
+    organization,
     "Not a member of active organization"
   );
 
   if (membership.status !== "active") {
     throwPermissionAuthError("FORBIDDEN", `Membership is ${membership.status}`);
-  }
-
-  const organization = await getOrganizationOrThrow(ctx, organizationId);
-  const organizationStatus = organization.status ?? "active";
-  if (organizationStatus !== "active") {
-    throwPermissionAuthError(
-      "FORBIDDEN",
-      `Organization is ${organizationStatus}`
-    );
   }
 
   return { membership, organization, organizationId };
@@ -408,11 +406,10 @@ export async function getAuthContextWithPermissions(
     const organization = await getOrganizationOrThrow(ctx, organizationId);
     const member = await getMembershipOrThrow(
       ctx,
-      user._id,
-      organizationId,
+      user,
+      organization,
       "No membership found for super admin"
     );
-    const subscription = await getActiveSubscription(ctx, organizationId);
 
     await enforceSuiteOrgSecurityForActiveOrg(ctx, organization);
 
@@ -421,14 +418,13 @@ export async function getAuthContextWithPermissions(
       member,
       organization,
       organizationId,
-      subscription
+      undefined
     );
   }
 
   const { membership, organization, organizationId } =
     await buildActiveMembershipContext(ctx, user);
   const permissions = await resolvePermissions(ctx, membership, organization);
-  const subscription = await getActiveSubscription(ctx, organizationId);
 
   await enforceSuiteOrgSecurityForActiveOrg(ctx, organization);
 
@@ -438,7 +434,7 @@ export async function getAuthContextWithPermissions(
     organization,
     organizationId,
     permissions,
-    subscription
+    undefined
   );
 }
 

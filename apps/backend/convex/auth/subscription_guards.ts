@@ -8,10 +8,13 @@
  * All lookups are scoped to the ORGANIZATION, not the user.
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { addMoney, applyRate, money } from "@vortexnyc/money";
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
+import { internalAction, internalQuery } from "../_generated/server";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import {
   listComponentInvitationsByOrganization,
@@ -303,7 +306,7 @@ export function calculateApplicationFee(
   ).amount;
 }
 
-function readEnterpriseCustomRates(
+export function readEnterpriseCustomRates(
   org: Doc<"organizations"> | null
 ): { cardRate: number; cardFixed: number } | undefined {
   if (org === null) {
@@ -324,20 +327,175 @@ function readEnterpriseCustomRates(
 }
 
 /**
- * Get the application fee for a payment, resolving the org's tier.
+ * Get the application fee for a payment given a plan and optional custom rates.
  */
-export async function getApplicationFee(
-  db: DatabaseReader,
-  organizationId: Id<"organizations">,
+export function getApplicationFee(
   amountCents: number,
-  isAch: boolean
-): Promise<number> {
-  const { plan } = await getSubscriptionPlan(db, organizationId);
-
-  // Check for enterprise custom rates
-  const org = await db.get("organizations", organizationId);
-  const customRates =
-    plan === "enterprise" ? readEnterpriseCustomRates(org) : undefined;
-
+  plan: TierPlan,
+  isAch: boolean,
+  customRates?: { cardRate: number; cardFixed: number }
+): number {
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }
+
+export const getSubscriptionPlanQuery = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    return await getSubscriptionPlan(ctx.db, args.organizationId);
+  },
+});
+
+/**
+ * D1-backed subscription plan lookup.
+ *
+ * Calls the Worker endpoint first. If the Worker is unavailable, falls back
+ * to the Convex `getSubscriptionPlan` helper.
+ */
+const subscriptionPlanResponseValidator = v.object({
+  isPro: v.boolean(),
+  isEnterprise: v.boolean(),
+  plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+});
+
+/**
+ * D1-backed subscription plan lookup.
+ *
+ * Calls the Worker endpoint first. If the Worker is unavailable, falls back
+ * to the Convex `getSubscriptionPlan` helper.
+ */
+export const getSubscriptionPlanD1 = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: subscriptionPlanResponseValidator,
+  handler: async (ctx, args) => {
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return await ctx.runQuery(
+        internal.auth.subscription_guards.getSubscriptionPlanQuery,
+        { organizationId: args.organizationId }
+      );
+    }
+
+    const res = await fetch(
+      `${url}/internal/organizations/${encodeURIComponent(
+        args.organizationId
+      )}/subscription-plan`,
+      {
+        headers: {
+          "x-internal-api-key": key,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Worker subscription-plan failed: ${res.status} ${text}`);
+      return await ctx.runQuery(
+        internal.auth.subscription_guards.getSubscriptionPlanQuery,
+        { organizationId: args.organizationId }
+      );
+    }
+
+    try {
+      const body = await res.json();
+      return parse(subscriptionPlanResponseValidator, body);
+    } catch (error) {
+      console.error("Failed to parse Worker subscription-plan:", error);
+      return await ctx.runQuery(
+        internal.auth.subscription_guards.getSubscriptionPlanQuery,
+        { organizationId: args.organizationId }
+      );
+    }
+  },
+});
+
+export const getSeatCounts = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const organization = await ctx.db.get("organizations", args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+
+    const members = await listComponentMembersByOrganization(
+      ctx,
+      organization,
+      { status: "active" }
+    );
+    const pending = await listComponentInvitationsByOrganization(
+      ctx,
+      organization,
+      "pending"
+    );
+    return { active: members.length, pending: pending.length };
+  },
+});
+
+/**
+ * Throw if the organization is not on a Pro (or higher) plan.
+ *
+ * Error message intentionally contains "Professional plan" and "upgrade"
+ * so `parseConvexError()` classifies it as a subscription error.
+ */
+export const ensureProFeatureD1 = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    featureName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { isPro } = await ctx.runAction(
+      internal.auth.subscription_guards.getSubscriptionPlanD1,
+      { organizationId: args.organizationId }
+    );
+    if (!isPro) {
+      throw new ConvexError(
+        `${args.featureName} requires a Professional plan. Please upgrade to continue.`
+      );
+    }
+  },
+});
+
+/**
+ * Throw if adding another member would exceed the org's seat limit.
+ *
+ * Pass `includePendingInvites: true` when creating invitations so pending
+ * invites reserve seats (SEA-605). Redeem / addMember only count active members.
+ */
+export const ensureSeatLimitD1 = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    includePendingInvites: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { plan } = await ctx.runAction(
+      internal.auth.subscription_guards.getSubscriptionPlanD1,
+      { organizationId: args.organizationId }
+    );
+    const limits = PLAN_LIMITS[plan];
+
+    const { active, pending } = await ctx.runQuery(
+      internal.auth.subscription_guards.getSeatCounts,
+      { organizationId: args.organizationId }
+    );
+
+    const occupied = args.includePendingInvites ? active + pending : active;
+    if (occupied >= limits.maxSeats) {
+      const seatLabel =
+        limits.maxSeats === Infinity ? "unlimited" : String(limits.maxSeats);
+      throw new ConvexError(
+        `You've reached the seat limit for your plan (${occupied}/${seatLabel}). ` +
+          (plan === "free"
+            ? "Upgrade to Professional to add team members."
+            : plan === "pro"
+              ? "Upgrade to Enterprise for more than 20 seats."
+              : "Contact support to increase your seat limit.")
+      );
+    }
+  },
+});

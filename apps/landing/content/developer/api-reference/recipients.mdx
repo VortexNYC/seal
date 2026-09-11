@@ -80,7 +80,7 @@ GET /api/v1/recipients?document_id={documentId}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
   {
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
@@ -94,7 +94,7 @@ const { data: recipients } = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+curl -X GET "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -143,7 +143,7 @@ GET /api/v1/recipients/get?document_id={documentId}&id={id}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  "https://api.seal.nyc/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
   {
     headers: {
       Authorization: "Bearer ak_your_api_key_here",
@@ -157,7 +157,7 @@ const recipient = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET "https://seal.convex.site/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+curl -X GET "https://api.seal.nyc/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -209,7 +209,7 @@ POST /api/v1/recipients?document_id={documentId}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
   {
     method: "POST",
     headers: {
@@ -232,7 +232,7 @@ const recipient = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -282,7 +282,7 @@ PUT /api/v1/recipients/update?document_id={documentId}&id={id}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  "https://api.seal.nyc/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
   {
     method: "PUT",
     headers: {
@@ -302,7 +302,7 @@ const recipient = await response.json();
 ### cURL Example
 
 ```bash
-curl -X PUT "https://seal.convex.site/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+curl -X PUT "https://api.seal.nyc/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -334,7 +334,7 @@ DELETE /api/v1/recipients/delete?document_id={documentId}&id={id}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  "https://api.seal.nyc/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
   {
     method: "DELETE",
     headers: {
@@ -350,7 +350,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X DELETE "https://seal.convex.site/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+curl -X DELETE "https://api.seal.nyc/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -383,7 +383,7 @@ POST /api/v1/recipients/remind?document_id={documentId}&id={id}
 
 ```typescript
 const response = await fetch(
-  "https://seal.convex.site/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  "https://api.seal.nyc/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
   {
     method: "POST",
     headers: {
@@ -402,7 +402,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST "https://seal.convex.site/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+curl -X POST "https://api.seal.nyc/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -433,7 +433,7 @@ Use the `order` field to enforce a signing sequence. Recipients with lower order
 
 ```typescript
 // Add recipients in sequence
-await fetch("https://seal.convex.site/api/v1/recipients?document_id=doc123", {
+await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
   method: "POST",
   headers: {
     Authorization: "Bearer ak_xxx",
@@ -447,7 +447,7 @@ await fetch("https://seal.convex.site/api/v1/recipients?document_id=doc123", {
   }),
 });
 
-await fetch("https://seal.convex.site/api/v1/recipients?document_id=doc123", {
+await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
   method: "POST",
   headers: {
     Authorization: "Bearer ak_xxx",
