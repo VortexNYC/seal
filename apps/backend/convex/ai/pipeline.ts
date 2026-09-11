@@ -24,6 +24,8 @@ const MAX_AI_PAGE_COUNT = 1000;
 
 type ProcessDocumentArgs = {
   documentId: Id<"documents">;
+  vortexAuthOrganizationId?: string;
+  vortexAuthUserId?: string;
   organizationId: Id<"organizations">;
   userId?: Id<"users">;
 };
@@ -124,6 +126,8 @@ async function logAiUsage(
   }
 
   await ctx.runMutation(internal.ai.usage.logAiUsage, {
+    vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    vortexAuthUserId: args.vortexAuthUserId,
     organizationId: args.organizationId,
     userId: args.userId,
     action,
@@ -281,6 +285,8 @@ async function runDocumentProcessing(
 export const processDocument = internalAction({
   args: {
     documentId: v.id("documents"),
+    vortexAuthOrganizationId: v.optional(v.string()),
+    vortexAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.optional(v.id("users")),
   },

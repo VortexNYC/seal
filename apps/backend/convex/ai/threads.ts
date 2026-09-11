@@ -46,6 +46,8 @@ type GenerateResponseArgs = {
   threadId: string;
   promptMessageId: string;
   prompt?: string;
+  vortexAuthOrganizationId?: string;
+  vortexAuthUserId?: string;
   organizationId: Id<"organizations">;
   userId: string;
   documentId?: Id<"documents">;
@@ -100,6 +102,8 @@ async function logChatUsage(
 
   try {
     await ctx.runMutation(internal.ai.usage.logAiUsage, {
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      vortexAuthUserId: args.vortexAuthUserId,
       organizationId: args.organizationId,
       userId: args.internalUserId,
       action: "chat" as const,
@@ -456,6 +460,8 @@ export const sendMessage = authMutation({
       threadId: args.threadId,
       promptMessageId: messageId,
       prompt: args.prompt,
+      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
+      vortexAuthUserId: ctx.auth.vortexAuthUserId,
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,
@@ -475,6 +481,8 @@ export const generateResponseAsync = internalAction({
     threadId: v.string(),
     promptMessageId: v.string(),
     prompt: v.optional(v.string()),
+    vortexAuthOrganizationId: v.optional(v.string()),
+    vortexAuthUserId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.string(),
     documentId: v.optional(v.id("documents")),
@@ -592,6 +600,8 @@ export const retryMessage = authMutation({
     await ctx.scheduler.runAfter(0, internal.ai.threads.generateResponseAsync, {
       threadId: args.threadId,
       promptMessageId: args.messageId,
+      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
+      vortexAuthUserId: ctx.auth.vortexAuthUserId,
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,

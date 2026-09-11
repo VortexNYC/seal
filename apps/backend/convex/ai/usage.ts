@@ -65,16 +65,8 @@ export const logAiUsage = internalMutation({
     const now = Date.now();
     const estimatedCostUsd = estimateCost(args.tokensUsed, args.modelUsed);
 
-    const [organization, user] = await Promise.all([
-      ctx.db.get("organizations", args.organizationId),
-      ctx.db.get("users", args.userId),
-    ]);
-
     const id = await ctx.db.insert("ai_usage_log", {
       ...args,
-      vortexAuthOrganizationId:
-        args.vortexAuthOrganizationId ?? organization?.vortexAuthOrganizationId,
-      vortexAuthUserId: args.vortexAuthUserId ?? user?.vortexAuthUserId,
       estimatedCostUsd,
       createdAt: now,
     });

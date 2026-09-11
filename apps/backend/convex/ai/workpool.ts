@@ -43,13 +43,17 @@ export async function enqueueAiPipeline(
   db: DatabaseReader,
   documentId: Id<"documents">,
   organizationId: Id<"organizations">,
-  userId?: Id<"users">
+  userId?: Id<"users">,
+  vortexAuthOrganizationId?: string,
+  vortexAuthUserId?: string
 ) {
   const isPro = await isProOrganization(db, organizationId);
   const pool = isPro ? aiPoolPro : aiPoolFree;
 
   await pool.enqueueAction(ctx, internal.ai.pipeline.processDocument, {
     documentId,
+    vortexAuthOrganizationId,
+    vortexAuthUserId,
     organizationId,
     userId,
   });
