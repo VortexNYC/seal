@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import {
   internalMutation,
@@ -763,10 +764,15 @@ export const storeVortexPayableIds = internalMutation({
           existing.finalizedAt === undefined && { finalizedAt: now }),
         updatedAt: now,
       });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
+        { invoiceId: existing._id }
+      );
       return null;
     }
 
-    await ctx.db.insert("document_invoices", {
+    const invoiceId = await ctx.db.insert("document_invoices", {
       documentId: config.documentId,
       organizationId: config.organizationId,
       provider: "vortex_billing",
@@ -782,6 +788,12 @@ export const storeVortexPayableIds = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
+      { invoiceId }
+    );
 
     return null;
   },
@@ -885,6 +897,11 @@ export const upsertRecurringInvoice = internalMutation({
           !existing.finalizedAt && { finalizedAt: now }),
         updatedAt: now,
       });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
+        { invoiceId: existing._id }
+      );
       return { invoiceId: existing._id, created: false };
     }
 
@@ -907,6 +924,12 @@ export const upsertRecurringInvoice = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
+      { invoiceId }
+    );
 
     return { invoiceId, created: true };
   },

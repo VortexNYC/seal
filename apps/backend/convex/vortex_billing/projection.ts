@@ -931,6 +931,14 @@ export const projectPayableObjectUpdated = internalMutation({
       processedAt: now,
     });
 
+    if (result.invoiceRecordId !== undefined) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
+        { invoiceId: result.invoiceRecordId }
+      );
+    }
+
     return payableResult({
       processed: true,
       duplicate: false,

@@ -30,6 +30,8 @@ import signaturesV1 from "./api/v1/signatures.js";
 import templatesV1 from "./api/v1/templates.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import webhooksV1 from "./api/v1/webhooks.js";
+import { createD1 } from "./global/db.js";
+import { documentInvoices } from "./global/schema.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import {
@@ -141,6 +143,98 @@ app.post("/internal/send-email", async (c) => {
   }
 
   return c.json({ success: true, id: crypto.randomUUID() });
+});
+
+const documentInvoiceBody = z.object({
+  id: z.string(),
+  documentId: z.string(),
+  organizationId: z.string(),
+  provider: z.string().optional(),
+  providerAccountId: z.string().nullable().optional(),
+  providerInvoiceId: z.string().nullable().optional(),
+  providerCustomerId: z.string().nullable().optional(),
+  providerSubscriptionId: z.string().nullable().optional(),
+  vortexPayableId: z.string().nullable().optional(),
+  vortexPaymentRequestId: z.string().nullable().optional(),
+  status: z.string(),
+  customerEmail: z.string(),
+  customerName: z.string().nullable().optional(),
+  amountDue: z.number(),
+  currency: z.string(),
+  hostedInvoiceUrl: z.string().nullable().optional(),
+  invoicePdf: z.string().nullable().optional(),
+  finalizedAt: z.number().nullable().optional(),
+  paidAt: z.number().nullable().optional(),
+  voidedAt: z.number().nullable().optional(),
+  deletedAt: z.number().nullable().optional(),
+  dunningStatus: z.string().optional(),
+  dunningStep: z.number().optional(),
+  dunningStartedAt: z.number().nullable().optional(),
+  lastDunningEmailAt: z.number().nullable().optional(),
+  nextDunningAt: z.number().nullable().optional(),
+  dunningCompletedAt: z.number().nullable().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+function timestamp(value: number | null | undefined): Date | null {
+  return value === undefined || value === null ? null : new Date(value);
+}
+
+app.post("/internal/document-invoices", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = documentInvoiceBody.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const body = parseResult.data;
+  const db = createD1(c.env.D1);
+
+  const values = {
+    id: body.id,
+    documentId: body.documentId,
+    organizationId: body.organizationId,
+    provider: body.provider ?? "vortex_billing",
+    providerAccountId: body.providerAccountId ?? null,
+    providerInvoiceId: body.providerInvoiceId ?? null,
+    providerCustomerId: body.providerCustomerId ?? null,
+    providerSubscriptionId: body.providerSubscriptionId ?? null,
+    vortexPayableId: body.vortexPayableId ?? null,
+    vortexPaymentRequestId: body.vortexPaymentRequestId ?? null,
+    status: body.status,
+    customerEmail: body.customerEmail,
+    customerName: body.customerName ?? null,
+    amountDue: body.amountDue,
+    currency: body.currency,
+    hostedInvoiceUrl: body.hostedInvoiceUrl ?? null,
+    invoicePdf: body.invoicePdf ?? null,
+    finalizedAt: timestamp(body.finalizedAt),
+    paidAt: timestamp(body.paidAt),
+    voidedAt: timestamp(body.voidedAt),
+    deletedAt: timestamp(body.deletedAt),
+    dunningStatus: body.dunningStatus ?? "none",
+    dunningStep: body.dunningStep ?? 0,
+    dunningStartedAt: timestamp(body.dunningStartedAt),
+    lastDunningEmailAt: timestamp(body.lastDunningEmailAt),
+    nextDunningAt: timestamp(body.nextDunningAt),
+    dunningCompletedAt: timestamp(body.dunningCompletedAt),
+    createdAt: new Date(body.createdAt),
+    updatedAt: new Date(body.updatedAt),
+  };
+
+  const { id: _id, ...set } = values;
+
+  await db.insert(documentInvoices).values(values).onConflictDoUpdate({
+    target: documentInvoices.id,
+    set,
+  });
+
+  return c.json({ success: true });
 });
 
 app.get("/health", (c) => c.json({ status: "ok" }));
