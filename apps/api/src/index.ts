@@ -39,19 +39,11 @@ import {
 } from "./global/schema.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
-import {
-  verifyMcpAccessToken,
-  type McpAccessToken,
-} from "./platform/mcp-auth.js";
+import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
 import { runScheduledTasks } from "./platform/scheduled.js";
-import { getSessionUser, type SessionUser } from "./platform/session.js";
+import { getSessionUser } from "./platform/session.js";
+import type { Variables } from "./platform/types.js";
 import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
-
-type Variables = {
-  auth: ReturnType<typeof createAuth>;
-  user: SessionUser | null;
-  mcp?: McpAccessToken;
-};
 
 interface Env extends CloudflareBindings {
   SealChatAgent: DurableObjectNamespace<SealChatAgent>;
