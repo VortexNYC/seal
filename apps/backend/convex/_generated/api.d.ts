@@ -8,36 +8,6 @@
  * @module
  */
 
-import type * as ai_actions from "../ai/actions.js";
-import type * as ai_agent from "../ai/agent.js";
-import type * as ai_analyzeFieldsAction from "../ai/analyzeFieldsAction.js";
-import type * as ai_analyzeFieldsSchema from "../ai/analyzeFieldsSchema.js";
-import type * as ai_cleanup from "../ai/cleanup.js";
-import type * as ai_component_ctx from "../ai/component_ctx.js";
-import type * as ai_eval from "../ai/eval.js";
-import type * as ai_evalExtraction from "../ai/evalExtraction.js";
-import type * as ai_eval_helpers from "../ai/eval_helpers.js";
-import type * as ai_model from "../ai/model.js";
-import type * as ai_mutations from "../ai/mutations.js";
-import type * as ai_ocrFallback from "../ai/ocrFallback.js";
-import type * as ai_paymentExtraction from "../ai/paymentExtraction.js";
-import type * as ai_paymentExtractionAction from "../ai/paymentExtractionAction.js";
-import type * as ai_pipeline from "../ai/pipeline.js";
-import type * as ai_pipeline_mutations from "../ai/pipeline_mutations.js";
-import type * as ai_progress from "../ai/progress.js";
-import type * as ai_queries from "../ai/queries.js";
-import type * as ai_rateLimiting from "../ai/rateLimiting.js";
-import type * as ai_search from "../ai/search.js";
-import type * as ai_search_queries from "../ai/search_queries.js";
-import type * as ai_threadQueries from "../ai/threadQueries.js";
-import type * as ai_threads from "../ai/threads.js";
-import type * as ai_tools_analyze_fields from "../ai/tools/analyze_fields.js";
-import type * as ai_tools_extract_payment_terms from "../ai/tools/extract_payment_terms.js";
-import type * as ai_tools_paymentExtractionSchema from "../ai/tools/paymentExtractionSchema.js";
-import type * as ai_tools_search_documents from "../ai/tools/search_documents.js";
-import type * as ai_types from "../ai/types.js";
-import type * as ai_usage from "../ai/usage.js";
-import type * as ai_workpool from "../ai/workpool.js";
 import type * as audit_logs_helpers from "../audit_logs/helpers.js";
 import type * as audit_logs_queries from "../audit_logs/queries.js";
 import type * as auth from "../auth.js";
@@ -140,36 +110,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "ai/actions": typeof ai_actions;
-  "ai/agent": typeof ai_agent;
-  "ai/analyzeFieldsAction": typeof ai_analyzeFieldsAction;
-  "ai/analyzeFieldsSchema": typeof ai_analyzeFieldsSchema;
-  "ai/cleanup": typeof ai_cleanup;
-  "ai/component_ctx": typeof ai_component_ctx;
-  "ai/eval": typeof ai_eval;
-  "ai/evalExtraction": typeof ai_evalExtraction;
-  "ai/eval_helpers": typeof ai_eval_helpers;
-  "ai/model": typeof ai_model;
-  "ai/mutations": typeof ai_mutations;
-  "ai/ocrFallback": typeof ai_ocrFallback;
-  "ai/paymentExtraction": typeof ai_paymentExtraction;
-  "ai/paymentExtractionAction": typeof ai_paymentExtractionAction;
-  "ai/pipeline": typeof ai_pipeline;
-  "ai/pipeline_mutations": typeof ai_pipeline_mutations;
-  "ai/progress": typeof ai_progress;
-  "ai/queries": typeof ai_queries;
-  "ai/rateLimiting": typeof ai_rateLimiting;
-  "ai/search": typeof ai_search;
-  "ai/search_queries": typeof ai_search_queries;
-  "ai/threadQueries": typeof ai_threadQueries;
-  "ai/threads": typeof ai_threads;
-  "ai/tools/analyze_fields": typeof ai_tools_analyze_fields;
-  "ai/tools/extract_payment_terms": typeof ai_tools_extract_payment_terms;
-  "ai/tools/paymentExtractionSchema": typeof ai_tools_paymentExtractionSchema;
-  "ai/tools/search_documents": typeof ai_tools_search_documents;
-  "ai/types": typeof ai_types;
-  "ai/usage": typeof ai_usage;
-  "ai/workpool": typeof ai_workpool;
   "audit_logs/helpers": typeof audit_logs_helpers;
   "audit_logs/queries": typeof audit_logs_queries;
   auth: typeof auth;
