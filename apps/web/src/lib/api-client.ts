@@ -193,34 +193,6 @@ export type ApiContact = {
 };
 export type ApiRelatedDocument = z.infer<typeof relatedDocumentSchema>;
 
-function getOrganizationSlugFromPath(): string | null {
-  if (typeof window === "undefined") return null;
-  const match = window.location.pathname.match(/^\/([^/]+)/);
-  return match ? match[1] : null;
-}
-
-function withOrganizationSlug(path: string): string {
-  const slug = getOrganizationSlugFromPath();
-  if (!slug) return path;
-
-  const productMatch = path.match(
-    /^(\/api\/(?:documents|folders|contacts|notifications|analytics|activity|feedback))(\/.*)?$/
-  );
-  if (productMatch) {
-    const tail = productMatch[2] ?? "";
-    return `${productMatch[1]}/${slug}${tail}`;
-  }
-
-  if (
-    path === "/api/users/me/usage" ||
-    path === "/api/users/me/subscription"
-  ) {
-    return `/api/users/${slug}/me${path.slice("/api/users".length)}`;
-  }
-
-  return path;
-}
-
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
   if (typeof value === "string" && value.length > 0) {
@@ -239,7 +211,7 @@ async function apiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${getBaseUrl()}${withOrganizationSlug(path)}`, {
+  const response = await fetch(`${getBaseUrl()}${path}`, {
     ...init,
     credentials: "include",
     headers,
@@ -487,15 +459,22 @@ export async function getCurrentSubscription(): Promise<{ plan: string }> {
 
 const feedbackResponseSchema = z.object({ id: z.string() });
 
-export async function submitFeedback(input: {
-  type: "bug" | "suggestion";
-  message: string;
-  route?: string;
-}): Promise<{ id: string }> {
-  return apiFetch("/api/feedback", feedbackResponseSchema, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function submitFeedback(
+  organizationSlug: string,
+  input: {
+    type: "bug" | "suggestion";
+    message: string;
+    route?: string;
+  }
+): Promise<{ id: string }> {
+  return apiFetch(
+    `/api/feedback/${encodeURIComponent(organizationSlug)}`,
+    feedbackResponseSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
 }
 
 const aiSettingsSchema = z.object({

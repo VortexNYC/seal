@@ -90,7 +90,7 @@ function WorkspaceLayout() {
         </main>
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
-      <FeedbackButton />
+      <FeedbackButton organizationSlug={slug} />
     </SidebarProvider>
   );
 }
