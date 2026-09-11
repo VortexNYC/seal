@@ -51,16 +51,6 @@ function expectNoLegacyProviderConfigIds(
   expect(config.providerPaymentIntentId).toBeUndefined();
 }
 
-function expectNoLegacyProviderInvoiceIds(
-  invoice: Doc<"document_invoices">
-): void {
-  expect(invoice.providerAccountId).toBeUndefined();
-  expect(invoice.providerInvoiceId).toBeUndefined();
-  expect(invoice.providerSubscriptionId).toBeUndefined();
-  expect(invoice.providerCustomerId).toBeUndefined();
-  expect("providerPaymentIntentId" in invoice).toBe(false);
-}
-
 function parentMutationArgs(
   parentField: ParentVortexField | undefined,
   parentPayableId: string
@@ -178,9 +168,8 @@ describe("Vortex Billing document payable local proof", () => {
       });
 
       const config = requirePresent(state.config, "payment config");
-      const invoice = requirePresent(state.invoices[0], "document invoice");
 
-      expect(state.invoices).toHaveLength(1);
+      expect(state.invoices).toHaveLength(0);
       expect(
         selectDocumentPaymentProvider(seed.organizationId, [config], {
           VORTEX_BILLING_DOCUMENT_PAYMENT_ORGANIZATION_IDS: JSON.stringify([
@@ -203,20 +192,6 @@ describe("Vortex Billing document payable local proof", () => {
       } else {
         expect(config[proofCase.parentField]).toBe(parentPayableId);
       }
-
-      expect(invoice).toMatchObject({
-        documentId: seed.documentId,
-        organizationId: seed.organizationId,
-        provider: "vortex_billing",
-        vortexPayableId,
-        vortexPaymentRequestId,
-        status: "open",
-        customerEmail: recipientEmail,
-        amountDue: config.totalAmountCents,
-        currency: "usd",
-        hostedInvoiceUrl,
-      });
-      expectNoLegacyProviderInvoiceIds(invoice);
     });
   }
 });

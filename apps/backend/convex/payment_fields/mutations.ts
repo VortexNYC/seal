@@ -742,57 +742,27 @@ export const storeVortexPayableIds = internalMutation({
     const invoiceStatus = documentInvoiceStatusForPaymentStatus(
       args.paymentStatus
     );
-    const existing = await ctx.db
-      .query("document_invoices")
-      .withIndex("by_vortex_payable", (q) =>
-        q.eq("vortexPayableId", args.vortexPayableId)
-      )
-      .first();
-
-    if (existing) {
-      const terminalStatuses = new Set(["paid", "void", "uncollectible"]);
-      if (terminalStatuses.has(existing.status)) {
-        return null;
-      }
-
-      await ctx.db.patch("document_invoices", existing._id, {
-        status: invoiceStatus,
-        vortexPaymentRequestId: args.vortexPaymentRequestId,
-        amountDue: config.totalAmountCents,
-        hostedInvoiceUrl: args.hostedInvoiceUrl,
-        ...(invoiceStatus === "open" &&
-          existing.finalizedAt === undefined && { finalizedAt: now }),
-        updatedAt: now,
-      });
-      await ctx.scheduler.runAfter(
-        0,
-        internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
-        { invoiceId: existing._id }
-      );
-      return null;
-    }
-
-    const invoiceId = await ctx.db.insert("document_invoices", {
-      documentId: config.documentId,
-      organizationId: config.organizationId,
-      provider: "vortex_billing",
-      vortexPayableId: args.vortexPayableId,
-      vortexPaymentRequestId: args.vortexPaymentRequestId,
-      status: invoiceStatus,
-      customerEmail: args.customerEmail,
-      customerName: args.customerName,
-      amountDue: config.totalAmountCents,
-      currency: config.currency,
-      hostedInvoiceUrl: args.hostedInvoiceUrl,
-      ...(invoiceStatus === "open" && { finalizedAt: now }),
-      createdAt: now,
-      updatedAt: now,
-    });
 
     await ctx.scheduler.runAfter(
       0,
-      internal.payment_fields.worker_invoices.syncDocumentInvoiceToWorker,
-      { invoiceId }
+      internal.payment_fields.worker_invoices.createDocumentInvoice,
+      {
+        id: args.vortexPayableId,
+        documentId: config.documentId,
+        organizationId: config.organizationId,
+        provider: "vortex_billing",
+        vortexPayableId: args.vortexPayableId,
+        vortexPaymentRequestId: args.vortexPaymentRequestId,
+        status: invoiceStatus,
+        customerEmail: args.customerEmail,
+        customerName: args.customerName,
+        amountDue: config.totalAmountCents,
+        currency: config.currency,
+        hostedInvoiceUrl: args.hostedInvoiceUrl,
+        ...(invoiceStatus === "open" && { finalizedAt: now }),
+        createdAt: now,
+        updatedAt: now,
+      }
     );
 
     return null;

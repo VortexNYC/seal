@@ -561,20 +561,7 @@ describe("Payment field mutations", () => {
       expect(result.config?.hostedInvoiceUrl).toBe(
         "https://payments.vortex.test/pay/token_456"
       );
-      expect(result.invoices).toHaveLength(1);
-      expect(sealAssertPresent(result.invoices[0])).toMatchObject({
-        documentId,
-        organizationId,
-        provider: "vortex_billing",
-        vortexPayableId: "payable_vortex_123",
-        vortexPaymentRequestId: "pr_vortex_123",
-        status: "open",
-        customerEmail: "signer@example.com",
-        customerName: "Test Signer",
-        amountDue: 15000,
-        currency: "usd",
-        hostedInvoiceUrl: "https://payments.vortex.test/pay/token_456",
-      });
+      expect(result.invoices).toHaveLength(0);
     });
   });
 
