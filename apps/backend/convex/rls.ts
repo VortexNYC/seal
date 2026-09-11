@@ -24,6 +24,8 @@ export type SealRLSContext = {
   // Core identity
   userId: Id<"users"> | null;
   orgId: Id<"organizations"> | null;
+  vortexAuthUserId: string | null;
+  vortexAuthOrganizationId: string | null;
 
   // Role and permissions
   role: string | null;
@@ -64,6 +66,8 @@ async function getRLSContext(ctx: QueryCtx): Promise<SealRLSContext | null> {
     return {
       userId: auth.userId,
       orgId: auth.organizationId,
+      vortexAuthUserId: auth.vortexAuthUserId ?? null,
+      vortexAuthOrganizationId: auth.vortexAuthOrganizationId ?? null,
       role: auth.role,
       permissions: auth.permissions,
       isOwner: auth.isOwner(),
