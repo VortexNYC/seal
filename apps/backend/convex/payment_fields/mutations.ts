@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
+import { type Doc } from "../_generated/dataModel";
 import { internalMutation, mutation } from "../_generated/server";
 import {
   dueDateTermsTuple,
@@ -151,6 +152,15 @@ export const upsertPaymentConfig = mutation({
         totalAmountCents,
         updatedAt: now,
       });
+      const updated = await ctx.db.get("payment_field_configs", existing._id);
+      if (updated) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.payment_fields.worker_payment_configs
+            .createPaymentFieldConfig,
+          toWorkerPaymentFieldConfig(updated)
+        );
+      }
       return existing._id;
     }
 
@@ -178,6 +188,15 @@ export const upsertPaymentConfig = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    const config = await ctx.db.get("payment_field_configs", configId);
+    if (config) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_payment_configs.createPaymentFieldConfig,
+        toWorkerPaymentFieldConfig(config)
+      );
+    }
 
     return configId;
   },
@@ -221,6 +240,7 @@ export const updatePaymentStatus = mutation({
       throw new ConvexError("Payment config not found");
     }
 
+    const now = Date.now();
     await ctx.db.patch("payment_field_configs", args.configId, {
       paymentStatus: args.paymentStatus,
       ...(args.providerInvoiceId !== undefined && {
@@ -232,8 +252,17 @@ export const updatePaymentStatus = mutation({
       ...(args.providerPaymentIntentId !== undefined && {
         providerPaymentIntentId: args.providerPaymentIntentId,
       }),
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    const updated = await ctx.db.get("payment_field_configs", args.configId);
+    if (updated) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_payment_configs.createPaymentFieldConfig,
+        toWorkerPaymentFieldConfig(updated)
+      );
+    }
 
     return { success: true };
   },
@@ -261,10 +290,20 @@ export const updatePaymentStatusFromProviderSubscription = internalMutation({
       return null;
     }
 
+    const now = Date.now();
     await ctx.db.patch("payment_field_configs", config._id, {
       paymentStatus: args.paymentStatus,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    const updated = await ctx.db.get("payment_field_configs", config._id);
+    if (updated) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_payment_configs.createPaymentFieldConfig,
+        toWorkerPaymentFieldConfig(updated)
+      );
+    }
 
     return config._id;
   },
@@ -317,6 +356,15 @@ export const storeVortexPayableIds = internalMutation({
       }),
       updatedAt: now,
     });
+
+    const updated = await ctx.db.get("payment_field_configs", args.configId);
+    if (updated) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payment_fields.worker_payment_configs.createPaymentFieldConfig,
+        toWorkerPaymentFieldConfig(updated)
+      );
+    }
 
     const invoiceStatus = documentInvoiceStatusForPaymentStatus(
       args.paymentStatus
@@ -374,4 +422,47 @@ function documentInvoiceStatusForPaymentStatus(
       throw new Error(`Unhandled payment status: ${String(_exhaustive)}`);
     }
   }
+}
+
+function toWorkerPaymentFieldConfig(config: Doc<"payment_field_configs">) {
+  return {
+    id: config._id,
+    publicId: config._id,
+    fieldId: config.fieldId,
+    documentId: config.documentId,
+    organizationId: config.organizationId,
+    paymentType: config.paymentType,
+    items: JSON.stringify(config.items),
+    currency: config.currency,
+    dueDateTerms: config.dueDateTerms,
+    customDueDays: config.customDueDays,
+    customDueDate: config.customDueDate,
+    lateFees: config.lateFees ? JSON.stringify(config.lateFees) : undefined,
+    recurringConfig: config.recurringConfig
+      ? JSON.stringify(config.recurringConfig)
+      : undefined,
+    installmentsConfig: config.installmentsConfig
+      ? JSON.stringify(config.installmentsConfig)
+      : undefined,
+    depositBalanceConfig: config.depositBalanceConfig
+      ? JSON.stringify(config.depositBalanceConfig)
+      : undefined,
+    allowedPaymentMethods: JSON.stringify(config.allowedPaymentMethods),
+    feeHandling: config.feeHandling,
+    taxEnabled: config.taxEnabled,
+    taxBehavior: config.taxBehavior,
+    totalAmountCents: config.totalAmountCents,
+    providerInvoiceId: config.providerInvoiceId,
+    providerSubscriptionId: config.providerSubscriptionId,
+    providerPaymentIntentId: config.providerPaymentIntentId,
+    hostedInvoiceUrl: config.hostedInvoiceUrl,
+    vortexPayableId: config.vortexPayableId,
+    vortexDepositBalancePayableId: config.vortexDepositBalancePayableId,
+    vortexInstallmentPayableId: config.vortexInstallmentPayableId,
+    vortexRecurringPayableId: config.vortexRecurringPayableId,
+    vortexPaymentRequestId: config.vortexPaymentRequestId,
+    paymentStatus: config.paymentStatus,
+    createdAt: config.createdAt,
+    updatedAt: config.updatedAt,
+  };
 }

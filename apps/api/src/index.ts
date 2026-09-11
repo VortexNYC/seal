@@ -31,7 +31,7 @@ import templatesV1 from "./api/v1/templates.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import webhooksV1 from "./api/v1/webhooks.js";
 import { createD1 } from "./global/db.js";
-import { documentInvoices } from "./global/schema.js";
+import { documentInvoices, paymentFieldConfigs } from "./global/schema.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import {
@@ -232,6 +232,100 @@ app.post("/internal/document-invoices", async (c) => {
 
   await db.insert(documentInvoices).values(values).onConflictDoUpdate({
     target: documentInvoices.id,
+    set,
+  });
+
+  return c.json({ success: true });
+});
+
+const paymentFieldConfigBody = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  fieldId: z.string(),
+  documentId: z.string(),
+  organizationId: z.string(),
+  paymentType: z.string(),
+  items: z.string(),
+  currency: z.string(),
+  dueDateTerms: z.string(),
+  customDueDays: z.number().optional(),
+  customDueDate: z.string().optional(),
+  lateFees: z.string().optional(),
+  recurringConfig: z.string().optional(),
+  installmentsConfig: z.string().optional(),
+  depositBalanceConfig: z.string().optional(),
+  allowedPaymentMethods: z.string(),
+  feeHandling: z.string(),
+  taxEnabled: z.boolean(),
+  taxBehavior: z.string().optional(),
+  totalAmountCents: z.number(),
+  providerInvoiceId: z.string().optional(),
+  providerSubscriptionId: z.string().optional(),
+  providerPaymentIntentId: z.string().optional(),
+  hostedInvoiceUrl: z.string().optional(),
+  vortexPayableId: z.string().optional(),
+  vortexDepositBalancePayableId: z.string().optional(),
+  vortexInstallmentPayableId: z.string().optional(),
+  vortexRecurringPayableId: z.string().optional(),
+  vortexPaymentRequestId: z.string().optional(),
+  paymentStatus: z.string().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+app.post("/internal/payment-field-configs", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = paymentFieldConfigBody.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const body = parseResult.data;
+  const db = createD1(c.env.D1);
+
+  const values = {
+    id: body.id,
+    publicId: body.publicId,
+    fieldId: body.fieldId,
+    documentId: body.documentId,
+    organizationId: body.organizationId,
+    paymentType: body.paymentType,
+    items: body.items,
+    currency: body.currency,
+    dueDateTerms: body.dueDateTerms,
+    customDueDays: body.customDueDays ?? null,
+    customDueDate: body.customDueDate ?? null,
+    lateFees: body.lateFees ?? null,
+    recurringConfig: body.recurringConfig ?? null,
+    installmentsConfig: body.installmentsConfig ?? null,
+    depositBalanceConfig: body.depositBalanceConfig ?? null,
+    allowedPaymentMethods: body.allowedPaymentMethods,
+    feeHandling: body.feeHandling,
+    taxEnabled: body.taxEnabled,
+    taxBehavior: body.taxBehavior ?? null,
+    totalAmountCents: body.totalAmountCents,
+    providerInvoiceId: body.providerInvoiceId ?? null,
+    providerSubscriptionId: body.providerSubscriptionId ?? null,
+    providerPaymentIntentId: body.providerPaymentIntentId ?? null,
+    hostedInvoiceUrl: body.hostedInvoiceUrl ?? null,
+    vortexPayableId: body.vortexPayableId ?? null,
+    vortexDepositBalancePayableId: body.vortexDepositBalancePayableId ?? null,
+    vortexInstallmentPayableId: body.vortexInstallmentPayableId ?? null,
+    vortexRecurringPayableId: body.vortexRecurringPayableId ?? null,
+    vortexPaymentRequestId: body.vortexPaymentRequestId ?? null,
+    paymentStatus: body.paymentStatus ?? null,
+    createdAt: new Date(body.createdAt),
+    updatedAt: new Date(body.updatedAt),
+  };
+
+  const { id: _id, ...set } = values;
+
+  await db.insert(paymentFieldConfigs).values(values).onConflictDoUpdate({
+    target: paymentFieldConfigs.id,
     set,
   });
 
