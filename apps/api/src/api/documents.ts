@@ -35,6 +35,8 @@ import {
   sendOwnershipTransferredEmail,
 } from "../platform/email.js";
 import ai from "./ai.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const DocumentSchema = z
   .object({
@@ -209,7 +211,7 @@ function base64ToBytes(value: string) {
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -217,12 +219,10 @@ app.use("/*", async (c, next) => {
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const activeOrganizationId = user.session?.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
   return next();
 });
+
+app.use("/:slug/*", organizationMiddleware);
 
 const createDocumentBodySchema = z.object({
   name: z.string().min(1),
@@ -236,7 +236,7 @@ const createDocumentBodySchema = z.object({
 
 const createRouteDef = createRoute({
   method: "post",
-  path: "/",
+  path: "/{slug}",
   request: {
     body: {
       content: {
@@ -257,7 +257,7 @@ const createRouteDef = createRoute({
 
 app.openapi(createRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const input = c.req.valid("json");
 
   const db = createD1(c.env.D1);
@@ -336,7 +336,7 @@ app.openapi(createRouteDef, async (c) => {
 
 const listRouteDef = createRoute({
   method: "get",
-  path: "/",
+  path: "/{slug}",
   request: {
     query: z.object({
       filter: z.enum(["all", "owned", "shared"]).optional(),
@@ -360,7 +360,7 @@ const listRouteDef = createRoute({
 
 app.openapi(listRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { filter, workflowStatus, folderId, rootOnly } = c.req.valid("query");
 
@@ -447,7 +447,7 @@ const DocumentStatsSchema = z
 
 const statsRouteDef = createRoute({
   method: "get",
-  path: "/stats",
+  path: "/{slug}/stats",
   responses: {
     200: {
       content: { "application/json": { schema: DocumentStatsSchema } },
@@ -460,7 +460,7 @@ const statsRouteDef = createRoute({
 
 app.openapi(statsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
 
   const db = createD1(c.env.D1);
 
@@ -522,7 +522,7 @@ const DocumentTrendsSchema = z
 
 const trendsRouteDef = createRoute({
   method: "get",
-  path: "/trends",
+  path: "/{slug}/trends",
   request: {
     query: z.object({
       days: z.coerce.number().int().min(1).max(90).default(30),
@@ -542,7 +542,7 @@ const trendsRouteDef = createRoute({
 
 app.openapi(trendsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { days } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -612,7 +612,7 @@ const RecentDocumentSchema = z
 
 const recentRouteDef = createRoute({
   method: "get",
-  path: "/recent",
+  path: "/{slug}/recent",
   request: {
     query: z.object({
       limit: z.coerce.number().int().min(1).max(50).default(5),
@@ -632,7 +632,7 @@ const recentRouteDef = createRoute({
 
 app.openapi(recentRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { limit } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
@@ -714,7 +714,7 @@ const DocumentAttentionSchema = z
 
 const attentionRouteDef = createRoute({
   method: "get",
-  path: "/attention",
+  path: "/{slug}/attention",
   responses: {
     200: {
       content: {
@@ -729,7 +729,7 @@ const attentionRouteDef = createRoute({
 
 app.openapi(attentionRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const db = createD1(c.env.D1);
 
   const now = Date.now();
@@ -836,7 +836,7 @@ app.openapi(attentionRouteDef, async (c) => {
 
 const getRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}",
+  path: "/{slug}/{publicId}",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -851,7 +851,7 @@ const getRouteDef = createRoute({
 
 app.openapi(getRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -963,7 +963,7 @@ function validateFieldTypeAndProperties(
 
 const updateRouteDef = createRoute({
   method: "patch",
-  path: "/{publicId}",
+  path: "/{slug}/{publicId}",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -985,7 +985,7 @@ const updateRouteDef = createRoute({
 
 app.openapi(updateRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -1076,7 +1076,7 @@ const uploadBodySchema = z.object({
 
 const uploadRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/upload",
+  path: "/{slug}/{publicId}/upload",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -1097,7 +1097,7 @@ const uploadRouteDef = createRoute({
 
 app.openapi(uploadRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -1144,7 +1144,7 @@ app.openapi(uploadRouteDef, async (c) => {
 
 const downloadRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/download",
+  path: "/{slug}/{publicId}/download",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -1157,7 +1157,7 @@ const downloadRouteDef = createRoute({
 
 app.openapi(downloadRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const bucket = c.env.DOCUMENTS_BUCKET;
@@ -1278,7 +1278,7 @@ const addRecipientsBodySchema = z.object({
 
 const addRecipientsRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/recipients",
+  path: "/{slug}/{publicId}/recipients",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -1300,7 +1300,7 @@ const addRecipientsRouteDef = createRoute({
 
 app.openapi(addRecipientsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -1397,7 +1397,7 @@ app.openapi(addRecipientsRouteDef, async (c) => {
 
 const listRecipientsRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/recipients",
+  path: "/{slug}/{publicId}/recipients",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -1414,7 +1414,7 @@ const listRecipientsRouteDef = createRoute({
 
 app.openapi(listRecipientsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -1445,7 +1445,7 @@ app.openapi(listRecipientsRouteDef, async (c) => {
 
 const removeRecipientRouteDef = createRoute({
   method: "delete",
-  path: "/{publicId}/recipients/{recipientPublicId}",
+  path: "/{slug}/{publicId}/recipients/{recipientPublicId}",
   request: {
     params: z.object({
       publicId: z.string(),
@@ -1467,7 +1467,7 @@ const removeRecipientRouteDef = createRoute({
 
 app.openapi(removeRecipientRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId, recipientPublicId } = c.req.valid("param");
 
@@ -1533,7 +1533,7 @@ const resendRecipientBodySchema = z.object({
 
 const resendRecipientRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/recipients/{recipientPublicId}/resend",
+  path: "/{slug}/{publicId}/recipients/{recipientPublicId}/resend",
   request: {
     params: z.object({
       publicId: z.string(),
@@ -1560,7 +1560,7 @@ const resendRecipientRouteDef = createRoute({
 
 app.openapi(resendRecipientRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId, recipientPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -1822,7 +1822,7 @@ function signatureFieldWithValuesResponse(
 
 const listSignatureFieldsRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/signature-fields",
+  path: "/{slug}/{publicId}/signature-fields",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -1839,7 +1839,7 @@ const listSignatureFieldsRouteDef = createRoute({
 
 app.openapi(listSignatureFieldsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -1870,7 +1870,7 @@ app.openapi(listSignatureFieldsRouteDef, async (c) => {
 
 const getSignatureFieldsForMeRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/signature-fields/me",
+  path: "/{slug}/{publicId}/signature-fields/me",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -1887,7 +1887,7 @@ const getSignatureFieldsForMeRouteDef = createRoute({
 
 app.openapi(getSignatureFieldsForMeRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userEmail = user!.user.email?.toLowerCase();
   const { publicId } = c.req.valid("param");
 
@@ -2021,7 +2021,7 @@ const createSignatureFieldBodySchema = z.object({
 
 const createSignatureFieldRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/signature-fields",
+  path: "/{slug}/{publicId}/signature-fields",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -2045,7 +2045,7 @@ const createSignatureFieldRouteDef = createRoute({
 
 app.openapi(createSignatureFieldRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -2210,7 +2210,7 @@ const updateSignatureFieldBodySchema = z.object({
 
 const updateSignatureFieldRouteDef = createRoute({
   method: "patch",
-  path: "/{publicId}/signature-fields/{fieldPublicId}",
+  path: "/{slug}/{publicId}/signature-fields/{fieldPublicId}",
   request: {
     params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
     body: {
@@ -2232,7 +2232,7 @@ const updateSignatureFieldRouteDef = createRoute({
 
 app.openapi(updateSignatureFieldRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -2348,7 +2348,7 @@ const repositionSignatureFieldBodySchema = z.object({
 
 const repositionSignatureFieldRouteDef = createRoute({
   method: "patch",
-  path: "/{publicId}/signature-fields/{fieldPublicId}/position",
+  path: "/{slug}/{publicId}/signature-fields/{fieldPublicId}/position",
   request: {
     params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
     body: {
@@ -2370,7 +2370,7 @@ const repositionSignatureFieldRouteDef = createRoute({
 
 app.openapi(repositionSignatureFieldRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -2472,7 +2472,7 @@ const assignSignatureFieldBodySchema = z.object({
 
 const assignSignatureFieldRouteDef = createRoute({
   method: "patch",
-  path: "/{publicId}/signature-fields/{fieldPublicId}/assign",
+  path: "/{slug}/{publicId}/signature-fields/{fieldPublicId}/assign",
   request: {
     params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
     body: {
@@ -2494,7 +2494,7 @@ const assignSignatureFieldRouteDef = createRoute({
 
 app.openapi(assignSignatureFieldRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -2600,7 +2600,7 @@ app.openapi(assignSignatureFieldRouteDef, async (c) => {
 
 const deleteSignatureFieldRouteDef = createRoute({
   method: "delete",
-  path: "/{publicId}/signature-fields/{fieldPublicId}",
+  path: "/{slug}/{publicId}/signature-fields/{fieldPublicId}",
   request: {
     params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
   },
@@ -2619,7 +2619,7 @@ const deleteSignatureFieldRouteDef = createRoute({
 
 app.openapi(deleteSignatureFieldRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId, fieldPublicId } = c.req.valid("param");
 
@@ -2718,7 +2718,7 @@ function paymentConfigSummaryResponse(config: {
 
 const listPaymentConfigsRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/payment-configs",
+  path: "/{slug}/{publicId}/payment-configs",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -2735,7 +2735,7 @@ const listPaymentConfigsRouteDef = createRoute({
 
 app.openapi(listPaymentConfigsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -2896,7 +2896,7 @@ function paymentConfigResponse(config: {
 
 const getPaymentConfigRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/payment-configs/{fieldPublicId}",
+  path: "/{slug}/{publicId}/payment-configs/{fieldPublicId}",
   request: {
     params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
   },
@@ -2913,7 +2913,7 @@ const getPaymentConfigRouteDef = createRoute({
 
 app.openapi(getPaymentConfigRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId, fieldPublicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -2982,7 +2982,7 @@ const upsertPaymentConfigBodySchema = z.object({
 
 const upsertPaymentConfigRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/payment-configs",
+  path: "/{slug}/{publicId}/payment-configs",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -3006,7 +3006,7 @@ const upsertPaymentConfigRouteDef = createRoute({
 
 app.openapi(upsertPaymentConfigRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -3203,7 +3203,7 @@ const RecipientProgressSchema = z
 
 const recipientProgressRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/recipients/progress",
+  path: "/{slug}/{publicId}/recipients/progress",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -3220,7 +3220,7 @@ const recipientProgressRouteDef = createRoute({
 
 app.openapi(recipientProgressRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -3307,7 +3307,7 @@ app.openapi(recipientProgressRouteDef, async (c) => {
 
 const recipientByMeRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/recipients/me",
+  path: "/{slug}/{publicId}/recipients/me",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -3322,7 +3322,7 @@ const recipientByMeRouteDef = createRoute({
 
 app.openapi(recipientByMeRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userEmail = user!.user.email?.toLowerCase();
   const { publicId } = c.req.valid("param");
 
@@ -3425,7 +3425,7 @@ function signatureResponse(signature: {
 
 const signRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/recipients/{recipientPublicId}/sign",
+  path: "/{slug}/{publicId}/recipients/{recipientPublicId}/sign",
   request: {
     params: z.object({
       publicId: z.string(),
@@ -3449,7 +3449,7 @@ const signRouteDef = createRoute({
 
 app.openapi(signRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId, recipientPublicId } = c.req.valid("param");
   const input = c.req.valid("json");
 
@@ -3589,7 +3589,7 @@ const saveSignatureFieldBodySchema = z.object({
 
 const saveSignatureFieldRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/signature-fields/{fieldPublicId}/save",
+  path: "/{slug}/{publicId}/signature-fields/{fieldPublicId}/save",
   request: {
     params: z.object({ publicId: z.string(), fieldPublicId: z.string() }),
     body: {
@@ -3611,7 +3611,7 @@ const saveSignatureFieldRouteDef = createRoute({
 
 app.openapi(saveSignatureFieldRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userEmail = user!.user.email?.toLowerCase();
   if (!userEmail) {
     return c.json({ error: "User email not available" }, 400);
@@ -3740,7 +3740,7 @@ const submitSignatureBodySchema = z.object({
 
 const submitSignatureRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/submit",
+  path: "/{slug}/{publicId}/submit",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -3762,7 +3762,7 @@ const submitSignatureRouteDef = createRoute({
 
 app.openapi(submitSignatureRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userEmail = user!.user.email?.toLowerCase();
   if (!userEmail) {
     return c.json({ error: "User email not available" }, 400);
@@ -3854,7 +3854,7 @@ app.openapi(submitSignatureRouteDef, async (c) => {
 
 const listSignaturesRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/signatures",
+  path: "/{slug}/{publicId}/signatures",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -3871,7 +3871,7 @@ const listSignaturesRouteDef = createRoute({
 
 app.openapi(listSignaturesRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -3929,7 +3929,7 @@ async function requireDocumentOwner(
 
 const deleteRouteDef = createRoute({
   method: "delete",
-  path: "/{publicId}",
+  path: "/{slug}/{publicId}",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -3948,7 +3948,7 @@ const deleteRouteDef = createRoute({
 
 app.openapi(deleteRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
 
@@ -3983,7 +3983,7 @@ const sendDocumentBodySchema = z.object({
 
 const sendRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/send",
+  path: "/{slug}/{publicId}/send",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4006,7 +4006,7 @@ const sendRouteDef = createRoute({
 
 app.openapi(sendRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -4137,7 +4137,7 @@ app.openapi(sendRouteDef, async (c) => {
 
 const cancelRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/cancel",
+  path: "/{slug}/{publicId}/cancel",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -4157,7 +4157,7 @@ const cancelRouteDef = createRoute({
 
 app.openapi(cancelRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
 
@@ -4208,7 +4208,7 @@ const moveDocumentsBodySchema = z.object({
 
 const moveDocumentsRouteDef = createRoute({
   method: "post",
-  path: "/move",
+  path: "/{slug}/move",
   request: {
     body: {
       content: {
@@ -4231,7 +4231,7 @@ const moveDocumentsRouteDef = createRoute({
 
 app.openapi(moveDocumentsRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { documentIds, folderId } = c.req.valid("json");
 
   const db = createD1(c.env.D1);
@@ -4283,7 +4283,7 @@ const updateThumbnailBodySchema = z.object({
 
 const updateThumbnailRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/thumbnail",
+  path: "/{slug}/{publicId}/thumbnail",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4307,7 +4307,7 @@ const updateThumbnailRouteDef = createRoute({
 
 app.openapi(updateThumbnailRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const { thumbnailDataUrl } = c.req.valid("json");
@@ -4348,7 +4348,7 @@ const transferOwnershipBodySchema = z.object({
 
 const transferOwnershipRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/transfer",
+  path: "/{slug}/{publicId}/transfer",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4371,7 +4371,7 @@ const transferOwnershipRouteDef = createRoute({
 
 app.openapi(transferOwnershipRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const { newOwnerId } = c.req.valid("json");
@@ -4471,7 +4471,7 @@ const SharingResponseSchema = z.object({
 
 const sharingRouteDef = createRoute({
   method: "get",
-  path: "/{publicId}/sharing",
+  path: "/{slug}/{publicId}/sharing",
   request: {
     params: z.object({ publicId: z.string() }),
   },
@@ -4490,7 +4490,7 @@ const sharingRouteDef = createRoute({
 
 app.openapi(sharingRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -4566,7 +4566,7 @@ const updateSharingBodySchema = z.object({
 
 const updateSharingRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/sharing",
+  path: "/{slug}/{publicId}/sharing",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4588,7 +4588,7 @@ const updateSharingRouteDef = createRoute({
 
 app.openapi(updateSharingRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const { sharingMode } = c.req.valid("json");
@@ -4625,7 +4625,7 @@ const shareBodySchema = z.object({
 
 const shareRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/share",
+  path: "/{slug}/{publicId}/share",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4643,7 +4643,7 @@ const shareRouteDef = createRoute({
 
 app.openapi(shareRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const { userId: targetUserId, permissionLevel } = c.req.valid("json");
@@ -4716,7 +4716,7 @@ const revokeBodySchema = z.object({
 
 const revokeRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/revoke",
+  path: "/{slug}/{publicId}/revoke",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4733,7 +4733,7 @@ const revokeRouteDef = createRoute({
 
 app.openapi(revokeRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const { userId: targetUserId } = c.req.valid("json");
@@ -4774,7 +4774,7 @@ const updatePermissionBodySchema = z.object({
 
 const updatePermissionRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/permission",
+  path: "/{slug}/{publicId}/permission",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4793,7 +4793,7 @@ const updatePermissionRouteDef = createRoute({
 
 app.openapi(updatePermissionRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const { userId: targetUserId, permissionLevel } = c.req.valid("json");
@@ -4841,7 +4841,7 @@ const saveAsTemplateResponseSchema = z
 
 const saveAsTemplateRouteDef = createRoute({
   method: "post",
-  path: "/{publicId}/save-as-template",
+  path: "/{slug}/{publicId}/save-as-template",
   request: {
     params: z.object({ publicId: z.string() }),
     body: {
@@ -4865,7 +4865,7 @@ const saveAsTemplateRouteDef = createRoute({
 
 app.openapi(saveAsTemplateRouteDef, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
@@ -4956,6 +4956,6 @@ app.openapi(saveAsTemplateRouteDef, async (c) => {
   return c.json({ publicId: templatePublicId, fieldCount: fields.length }, 201);
 });
 
-app.route("/:publicId/ai", ai);
+app.route("/:slug/:publicId/ai", ai);
 
 export default app;

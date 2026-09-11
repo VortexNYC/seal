@@ -9,22 +9,12 @@ import {
   aiThreads,
   documents,
 } from "../global/schema.js";
+import type { Variables } from "../platform/types.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
-
-app.use("/*", async (c, next) => {
-  const user = c.get("user");
-  if (!user) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-  if (!user.session?.activeOrganizationId) {
-    return c.json({ error: "No active organization" }, 403);
-  }
-  return next();
-});
 
 const suggestionItemSchema = z.object({
   fieldType: z.string(),
@@ -75,7 +65,7 @@ const getFieldSuggestionsRoute = createRoute({
 
 app.openapi(getFieldSuggestionsRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -182,7 +172,7 @@ const getAnnotationsRoute = createRoute({
 
 app.openapi(getAnnotationsRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -266,7 +256,7 @@ const getThreadRoute = createRoute({
 
 app.openapi(getThreadRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
 
@@ -330,7 +320,7 @@ function generatePublicId(): string {
 
 app.openapi(getOrCreateThreadRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const userId = user!.user.id;
   const { publicId } = c.req.valid("param");
 
@@ -412,7 +402,7 @@ const dismissAnnotationsRoute = createRoute({
 
 app.openapi(dismissAnnotationsRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -512,7 +502,7 @@ const dismissFieldSuggestionsRoute = createRoute({
 
 app.openapi(dismissFieldSuggestionsRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
@@ -595,7 +585,7 @@ const getProgressRoute = createRoute({
 
 app.openapi(getProgressRoute, async (c) => {
   const user = c.get("user");
-  const organizationId = user!.session!.activeOrganizationId!;
+  const organizationId = c.get("organization").id;
   const { threadId } = c.req.valid("param");
 
   const db = createD1(c.env.D1);
