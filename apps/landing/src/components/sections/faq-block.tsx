@@ -100,7 +100,7 @@ const staticFaqs = [
   {
     question: "How secure are my documents?",
     answer:
-      "Documents are encrypted at rest and in transit. Each signed document gets a SHA-256 hash for tamper detection. Authentication and real-time secure data storage run on our own Convex infrastructure.",
+      "Documents are encrypted at rest and in transit. Each signed document gets a SHA-256 hash for tamper detection. Authentication and secure data storage run on Cloudflare's edge infrastructure.",
   },
   {
     question: "Can I integrate Seal with my existing tools?",

@@ -158,7 +158,7 @@ curl -X GET "https://api.seal.nyc/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u
   "updated_at": "2024-01-27T10:31:00Z",
   "recipients_count": 2,
   "signed_count": 1,
-  "download_url": "https://storage.convex.cloud/...",
+  "download_url": "https://api.seal.nyc/api/v1/documents/download?id=...",
   "recipients": [
     {
       "id": "rec_abc123",
@@ -450,7 +450,7 @@ Returns the updated document object.
   "updated_at": "2024-01-27T10:31:00Z",
   "recipients_count": 2,
   "signed_count": 0,
-  "download_url": "https://storage.convex.cloud/..."
+  "download_url": "https://api.seal.nyc/api/v1/documents/download?id=..."
 }
 ```
 
@@ -577,7 +577,7 @@ curl -X GET "https://api.seal.nyc/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4
 
 ```json
 {
-  "download_url": "https://storage.convex.cloud/...",
+  "download_url": "https://api.seal.nyc/api/v1/documents/download-file?token=...",
   "expires_at": "2024-01-27T11:00:00Z"
 }
 ```

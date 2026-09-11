@@ -46,7 +46,7 @@ curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
 
 ```json
 {
-  "upload_url": "https://storage.convex.cloud/..."
+  "upload_url": "https://api.seal.nyc/api/v1/uploads?token=..."
 }
 ```
 
@@ -79,7 +79,7 @@ const { storageId } = await uploadResult.json();
 ### cURL
 
 ```bash
-curl -X POST "https://storage.convex.cloud/..." \
+curl -X POST "https://api.seal.nyc/api/v1/uploads?token=..." \
   -H "Content-Type: application/pdf" \
   --data-binary "@contract.pdf"
 ```
