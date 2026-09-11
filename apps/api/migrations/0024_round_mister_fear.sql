@@ -1,0 +1,1 @@
+ALTER TABLE `documents` ADD `workflow_status` text DEFAULT 'draft' NOT NULL;

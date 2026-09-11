@@ -40,6 +40,7 @@ import {
 } from "./platform/mcp-auth.js";
 import { runScheduledTasks } from "./platform/scheduled.js";
 import { getSessionUser, type SessionUser } from "./platform/session.js";
+import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
 
 type Variables = {
   auth: ReturnType<typeof createAuth>;
@@ -235,6 +236,33 @@ app.post("/internal/document-invoices", async (c) => {
   });
 
   return c.json({ success: true });
+});
+
+const payableObjectBody = z.object({
+  eventId: z.string(),
+  payableId: z.string(),
+  status: z.union([
+    z.literal("paid"),
+    z.literal("failed"),
+    z.literal("awaiting_payment"),
+  ]),
+  paymentRequestId: z.string().optional(),
+  hostedInvoiceUrl: z.string().optional(),
+});
+
+app.post("/internal/webhooks/vortex-billing/payable-object", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = payableObjectBody.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const result = await projectPayableObjectUpdated(c.env, parseResult.data);
+  return c.json(result);
 });
 
 app.get("/health", (c) => c.json({ status: "ok" }));

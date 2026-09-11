@@ -336,6 +336,7 @@ export const documents = sqliteTable(
       .notNull()
       .default(false),
     signingMode: text("signing_mode").notNull().default("parallel"),
+    workflowStatus: text("workflow_status").notNull().default("draft"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -556,6 +557,19 @@ export const signatureFields = sqliteTable(
       table.recipientId
     ),
   ]
+);
+
+export const vortexBillingWebhookEvents = sqliteTable(
+  "vortex_billing_webhook_events",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id").notNull().unique(),
+    eventType: text("event_type").notNull(),
+    processedAt: integer("processed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [index("vortexBillingWebhookEvents_eventId_idx").on(table.eventId)]
 );
 
 export const paymentFieldConfigs = sqliteTable(
