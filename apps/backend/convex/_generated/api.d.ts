@@ -142,7 +142,6 @@ import type * as vortex_billing_catalog_queries from "../vortex_billing/catalog_
 import type * as vortex_billing_catalog_sync from "../vortex_billing/catalog_sync.js";
 import type * as vortex_billing_payable_actions from "../vortex_billing/payable_actions.js";
 import type * as vortex_billing_projection from "../vortex_billing/projection.js";
-import type * as vortex_billing_proof_actions from "../vortex_billing/proof_actions.js";
 import type * as vortex_billing_webhook_handlers from "../vortex_billing/webhook_handlers.js";
 import type * as vortex_billing_webhook_signature from "../vortex_billing/webhook_signature.js";
 import type * as vortex_billing_worker_subscriptions from "../vortex_billing/worker_subscriptions.js";
@@ -292,7 +291,6 @@ declare const fullApi: ApiFromModules<{
   "vortex_billing/catalog_sync": typeof vortex_billing_catalog_sync;
   "vortex_billing/payable_actions": typeof vortex_billing_payable_actions;
   "vortex_billing/projection": typeof vortex_billing_projection;
-  "vortex_billing/proof_actions": typeof vortex_billing_proof_actions;
   "vortex_billing/webhook_handlers": typeof vortex_billing_webhook_handlers;
   "vortex_billing/webhook_signature": typeof vortex_billing_webhook_signature;
   "vortex_billing/worker_subscriptions": typeof vortex_billing_worker_subscriptions;

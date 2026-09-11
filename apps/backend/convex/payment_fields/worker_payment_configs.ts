@@ -58,3 +58,34 @@ export const updatePaymentFieldConfig = internalAction({
     return { updated: true };
   },
 });
+
+export const createPaymentFieldConfig = internalAction({
+  args: {
+    payload: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return { created: false };
+    }
+
+    const res = await fetch(`${url}/internal/payment-field-configs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-api-key": key,
+      },
+      body: args.payload,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `Worker payment-field-configs create failed: ${res.status} ${text}`
+      );
+    }
+
+    return { created: true };
+  },
+});

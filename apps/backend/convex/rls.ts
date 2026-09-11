@@ -341,7 +341,7 @@ function getDocumentWorkflowRules(
 function getDocumentAssetRules(
   _ctx: QueryCtx,
   rlsCtx: SealRLSContext | null
-): Pick<StrictRules, "document_versions" | "payment_field_configs"> {
+): Pick<StrictRules, "document_versions"> {
   return {
     document_versions: {
       read: async (queryCtx, doc) => {
@@ -360,25 +360,6 @@ function getDocumentAssetRules(
         if (rlsCtx.isSuperAdmin) return true;
         const document = await queryCtx.db.get("documents", doc.documentId);
         return document ? document.ownerId === rlsCtx.userId : false;
-      },
-    },
-    payment_field_configs: {
-      read: async (_queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId === rlsCtx.orgId) return true;
-        return rlsCtx.recipientContext
-          ? doc.documentId === rlsCtx.recipientContext.documentId
-          : false;
-      },
-      modify: async (queryCtx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (doc.organizationId !== rlsCtx.orgId) return false;
-        const document = await queryCtx.db.get("documents", doc.documentId);
-        if (!document) return false;
-        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
-        return access === "owner";
       },
     },
   };

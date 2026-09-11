@@ -78,7 +78,6 @@ import {
   type PaymentMethod,
   type PaymentStatus,
   type PaymentType,
-  paymentFieldConfigsTable,
 } from "./schemas/payment_field_configs";
 import {
   type AuthenticationMethod,
@@ -210,7 +209,6 @@ export default defineSchema({
   signature_fields: signatureFieldsTable,
   signatures: signaturesTable,
   saved_signatures: savedSignaturesTable,
-  payment_field_configs: paymentFieldConfigsTable,
 
   // Audit and compliance
   audit_logs: auditLogsTable,
