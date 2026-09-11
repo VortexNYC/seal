@@ -363,15 +363,15 @@ type ComponentApiKeyStatus = "active" | "revoked";
 
 /**
  * Create an API key in the vortexAuth COMPONENT — the source of truth for API
- * keys (P5; Seal has no local api_keys table). The org is ensured in the
- * component first; the owner `userId` is mapped to the component user via the
- * bridge id. Returns the COMPONENT apiKey id (a string).
+ * keys (P5; Seal has no local api_keys table). Takes Vortex Auth ids directly;
+ * the caller must already have a resolved auth context. Returns the COMPONENT
+ * apiKey id (a string).
  */
 export async function createVortexAuthApiKey(
   ctx: VortexAuthMutationCtx,
   args: {
-    organizationId: Id<"organizations">;
-    userId: Id<"users">;
+    vortexAuthOrganizationId: string;
+    vortexAuthUserId: string;
     name: string;
     keyPrefix: string;
     keyHash: string;
@@ -381,29 +381,11 @@ export async function createVortexAuthApiKey(
     status?: ComponentApiKeyStatus;
   }
 ): Promise<string> {
-  const user = await ctx.db.get("users", args.userId);
-  if (user === null) {
-    throw new ConvexError({
-      code: "NOT_FOUND",
-      message: "API key user not found",
-    });
-  }
-  if (!user.vortexAuthUserId) {
-    throw new ConvexError({
-      code: "FAILED_PRECONDITION",
-      message: "API key user is missing vortex auth bridge id",
-    });
-  }
-
   const result = await ctx.runMutation(
     components.vortexAuth.apiKeys.upsertApiKey,
     {
-      organizationId: await ensureVortexAuthOrganization(
-        ctx,
-        args.organizationId,
-        user.vortexAuthUserId
-      ),
-      userId: user.vortexAuthUserId,
+      organizationId: args.vortexAuthOrganizationId,
+      userId: args.vortexAuthUserId,
       name: args.name,
       keyPrefix: args.keyPrefix,
       keyHash: args.keyHash,
@@ -422,15 +404,11 @@ export async function createVortexAuthApiKey(
 /** Revoke a COMPONENT apiKey (idempotent). `apiKeyId` is the COMPONENT id. */
 export async function revokeVortexAuthApiKey(
   ctx: VortexAuthMutationCtx,
-  args: { apiKeyId: string; organizationId: Id<"organizations"> }
+  args: { apiKeyId: string; vortexAuthOrganizationId: string }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(
-    ctx,
-    args.organizationId
-  );
   await ctx.runMutation(components.vortexAuth.apiKeys.revokeApiKey, {
     apiKeyId: args.apiKeyId,
-    organizationId,
+    organizationId: args.vortexAuthOrganizationId,
   });
 }
 

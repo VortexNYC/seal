@@ -77,8 +77,8 @@ export const createApiKey = mutation({
     const keyHash = await hashApiKeySecret(secret);
 
     const id = await createVortexAuthApiKey(ctx, {
-      organizationId: auth.organizationId,
-      userId: auth.userId,
+      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
+      vortexAuthUserId: auth.vortexAuthUserId,
       name,
       keyPrefix,
       keyHash,
@@ -176,7 +176,7 @@ export const revokeApiKey = mutation({
     }
     await revokeVortexAuthApiKey(ctx, {
       apiKeyId: args.apiKeyId,
-      organizationId: auth.organizationId,
+      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
     });
     return { success: true };
   },
@@ -218,7 +218,7 @@ export const rotateApiKey = mutation({
 
     await rotateVortexAuthApiKey(ctx, {
       apiKeyId: args.apiKeyId,
-      organizationId: auth.organizationId,
+      vortexAuthOrganizationId: auth.vortexAuthOrganizationId,
       keyPrefix,
       keyHash,
     });
