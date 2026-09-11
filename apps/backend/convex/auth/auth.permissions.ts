@@ -47,9 +47,30 @@ function sortedPermissionKeys(
 }
 
 /**
+ * User subset carried in the auth context. Fields are sourced from Vortex Auth;
+ * the `_id` is the Seal local bridge id.
+ */
+export type AuthUser = Pick<
+  Doc<"users">,
+  "_id" | "vortexAuthUserId" | "activeOrganizationId"
+>;
+
+/**
+ * Organization subset carried in the auth context. Fields are sourced from
+ * Vortex Auth; the `_id` is the Seal local bridge id.
+ */
+export type AuthOrganization = Pick<
+  Doc<"organizations">,
+  "_id" | "vortexAuthOrganizationId" | "status"
+>;
+
+/**
  * Unified auth context — Stack A fields (docs/orgs) + Stack B fields (RLS/AI).
  * `isAdmin` / `isOwner` are callables (Stack A call sites use `isAdmin()`).
  * RLS reads them via `isAdmin()` / `isOwner()`.
+ *
+ * `user` and `organization` are intentionally narrow; they represent the
+ * Vortex Auth identity + the Seal bridge id, not the full local documents.
  */
 export interface AuthContextWithPermissions {
   userId: Id<"users">;
@@ -71,9 +92,9 @@ export interface AuthContextWithPermissions {
   canManageSubscription: () => boolean;
   canManageMembers: () => boolean;
 
-  user: Doc<"users">;
+  user: AuthUser;
   member: AuthMember;
-  organization: Doc<"organizations">;
+  organization: AuthOrganization;
   subscription?: Doc<"subscriptions">;
   userType: UserType;
 }
