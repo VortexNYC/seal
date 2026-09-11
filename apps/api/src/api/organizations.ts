@@ -1,15 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
   documents as documentsTable,
   folders as foldersTable,
-  invitation,
   member,
   organization,
   templates as templatesTable,
-  user as userTable,
 } from "../global/schema.js";
 
 const OrganizationSchema = z
@@ -50,20 +48,6 @@ const TemplateListItemSchema = z
     updatedAt: z.number(),
   })
   .openapi("TemplateListItem");
-
-const TeamSummarySchema = z
-  .object({
-    total: z.number().int(),
-    active: z.number().int(),
-    pending: z.number().int(),
-    byRole: z.object({
-      owner: z.number().int(),
-      admin: z.number().int(),
-      member: z.number().int(),
-      viewer: z.number().int(),
-    }),
-  })
-  .openapi("TeamSummary");
 
 function parseMetadata(metadata: string | null): Record<string, unknown> {
   if (!metadata) return {};
@@ -207,128 +191,6 @@ app.openapi(getRouteDef, async (c) => {
     return c.json({ error: "Organization not found" }, 404);
   }
   return c.json(organizationResponse(org, membership?.role));
-});
-
-const teamRouteDef = createRoute({
-  method: "get",
-  path: "/{slug}/team",
-  request: {
-    params: z.object({ slug: z.string() }),
-  },
-  responses: {
-    200: {
-      content: { "application/json": { schema: TeamSummarySchema } },
-      description: "Team summary",
-    },
-    401: { description: "Unauthorized" },
-    403: { description: "Forbidden" },
-    404: { description: "Organization not found" },
-  },
-});
-
-app.openapi(teamRouteDef, async (c) => {
-  const org = c.get("organization");
-  if (!org) {
-    return c.json({ error: "Organization not found" }, 404);
-  }
-
-  const db = createD1(c.env.D1);
-
-  const totalResult = await db
-    .select({ value: count() })
-    .from(member)
-    .where(eq(member.organizationId, org.id));
-
-  const active = totalResult[0]?.value ?? 0;
-
-  const pendingResult = await db
-    .select({ value: count() })
-    .from(invitation)
-    .where(
-      and(
-        eq(invitation.organizationId, org.id),
-        eq(invitation.status, "pending")
-      )
-    );
-
-  const pending = pendingResult[0]?.value ?? 0;
-  const total = active + pending;
-
-  const roleCounts = await db
-    .select({ role: member.role, value: count() })
-    .from(member)
-    .where(eq(member.organizationId, org.id))
-    .groupBy(member.role);
-
-  const byRole = { owner: 0, admin: 0, member: 0, viewer: 0 };
-  for (const row of roleCounts) {
-    const role = row.role;
-    if (
-      role === "owner" ||
-      role === "admin" ||
-      role === "member" ||
-      role === "viewer"
-    ) {
-      byRole[role] = row.value;
-    }
-  }
-
-  return c.json({
-    total,
-    active,
-    pending,
-    byRole,
-  });
-});
-
-const TeamMemberSchema = z.object({
-  userId: z.string(),
-  name: z.string().nullable(),
-  email: z.string(),
-  role: z.string(),
-  avatarUrl: z.string().nullable(),
-  status: z.string(),
-});
-
-const membersRouteDef = createRoute({
-  method: "get",
-  path: "/{slug}/members",
-  request: {
-    params: z.object({ slug: z.string() }),
-  },
-  responses: {
-    200: {
-      content: { "application/json": { schema: z.array(TeamMemberSchema) } },
-      description: "Organization members",
-    },
-    401: { description: "Unauthorized" },
-    403: { description: "Forbidden" },
-    404: { description: "Organization not found" },
-  },
-});
-
-app.openapi(membersRouteDef, async (c) => {
-  const org = c.get("organization");
-  if (!org) {
-    return c.json({ error: "Organization not found" }, 404);
-  }
-
-  const db = createD1(c.env.D1);
-
-  const rows = await db
-    .select({
-      userId: member.userId,
-      name: userTable.name,
-      email: userTable.email,
-      role: member.role,
-      avatarUrl: userTable.image,
-    })
-    .from(member)
-    .innerJoin(userTable, eq(member.userId, userTable.id))
-    .where(eq(member.organizationId, org.id))
-    .orderBy(userTable.name);
-
-  return c.json(rows.map((r) => Object.assign(r, { status: "active" })));
 });
 
 const BrandingSettingsSchema = z

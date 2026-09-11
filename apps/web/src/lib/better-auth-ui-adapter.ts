@@ -2,6 +2,27 @@ import type { AnyAuthClient } from "@vortexnyc/better-auth-ui";
 
 import { betterAuthClient } from "./better-auth";
 
+const knownRoles = ["owner", "admin", "member"] as const;
+type KnownRole = (typeof knownRoles)[number];
+
+function isKnownRole(role: string): role is KnownRole {
+  return knownRoles.some((r) => r === role);
+}
+
+function toBetterAuthRole(
+  role: string | string[],
+): KnownRole | KnownRole[] {
+  if (typeof role === "string") {
+    return isKnownRole(role) ? role : "member";
+  }
+  const filtered = role.filter(isKnownRole);
+  return filtered.length > 0 ? filtered : ["member"];
+}
+
+function cleanLogo(logo: string | null | undefined): string | undefined {
+  return typeof logo === "string" && logo.length > 0 ? logo : undefined;
+}
+
 export function getBetterAuthUiClient(): AnyAuthClient | null {
   if (betterAuthClient === null) {
     return null;
@@ -44,6 +65,46 @@ export function getBetterAuthUiClient(): AnyAuthClient | null {
             disable: (args) => c.twoFactor.disable(args),
             generateBackupCodes: (args) =>
               c.twoFactor.generateBackupCodes(args),
+          },
+        }
+      : {}),
+    ...(c.organization !== undefined
+      ? {
+          organization: {
+            list: () => c.organization.list(),
+            create: (args) =>
+              c.organization.create({
+                ...args,
+                logo: cleanLogo(args.logo),
+              }),
+            delete: (args) => c.organization.delete(args),
+            update: (args) =>
+              c.organization.update({
+                ...args,
+                data: {
+                  ...args.data,
+                  logo: cleanLogo(args.data.logo),
+                },
+              }),
+            setActive: (args) => c.organization.setActive(args),
+            getFullOrganization: (args) =>
+              c.organization.getFullOrganization(args),
+            checkSlug: (args) => c.organization.checkSlug(args),
+            listUserInvitations: () => c.organization.listUserInvitations(),
+            inviteMember: (args) =>
+              c.organization.inviteMember({
+                ...args,
+                role: toBetterAuthRole(args.role),
+              }),
+            acceptInvitation: (args) => c.organization.acceptInvitation(args),
+            rejectInvitation: (args) => c.organization.rejectInvitation(args),
+            cancelInvitation: (args) => c.organization.cancelInvitation(args),
+            removeMember: (args) => c.organization.removeMember(args),
+            updateMemberRole: (args) =>
+              c.organization.updateMemberRole({
+                ...args,
+                role: toBetterAuthRole(args.role),
+              }),
           },
         }
       : {}),

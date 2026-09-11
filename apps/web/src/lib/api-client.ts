@@ -27,18 +27,6 @@ const organizationSchema = z.object({
   updatedAt: z.number(),
 });
 
-const teamSummarySchema = z.object({
-  total: z.number().int(),
-  active: z.number().int(),
-  pending: z.number().int(),
-  byRole: z.object({
-    owner: z.number().int(),
-    admin: z.number().int(),
-    member: z.number().int(),
-    viewer: z.number().int(),
-  }),
-});
-
 const documentTrendSchema = z.object({
   date: z.string(),
   created: z.number().int(),
@@ -189,7 +177,6 @@ const notificationSchema = z.object({
 });
 
 export type ApiOrganization = z.infer<typeof organizationSchema>;
-export type ApiTeamSummary = z.infer<typeof teamSummarySchema>;
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 export type ApiAnalyticsStats = z.infer<typeof analyticsStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
@@ -695,15 +682,6 @@ export async function updateWorkspace(
   );
 }
 
-export async function getOrganizationTeam(
-  slug: string
-): Promise<ApiTeamSummary> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/team`,
-    teamSummarySchema
-  );
-}
-
 export async function getDocumentStats(): Promise<ApiDocumentStats> {
   return apiFetch("/api/documents/stats", documentStatsSchema);
 }
@@ -1141,17 +1119,6 @@ const sharingResponseSchema = z.object({
 
 export type ApiDocumentSharing = z.infer<typeof sharingResponseSchema>;
 
-const teamMemberSchema = z.object({
-  userId: z.string(),
-  name: z.string().nullable(),
-  email: z.string(),
-  role: z.string(),
-  avatarUrl: z.string().nullable(),
-  status: z.string(),
-});
-
-export type ApiTeamMember = z.infer<typeof teamMemberSchema>;
-
 export async function getDocuments(
   options: {
     filter?: "all" | "owned" | "shared";
@@ -1406,14 +1373,7 @@ export async function updateDocumentPermission(
   );
 }
 
-export async function getOrganizationMembers(
-  slug: string
-): Promise<ApiTeamMember[]> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/members`,
-    z.array(teamMemberSchema)
-  );
-}
+
 
 const recipientSchema = z.object({
   id: z.string(),

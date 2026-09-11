@@ -15,12 +15,12 @@ import { toast } from "sonner";
 
 import {
   getDocumentSharing,
-  getOrganizationMembers,
   revokeDocumentAccess,
   shareDocument,
   updateDocumentPermission,
   updateDocumentSharing,
 } from "@/lib/api-client";
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
@@ -106,11 +106,7 @@ export function ShareDocumentDialog({
     queryFn: () => getDocumentSharing(documentId),
     enabled: open,
   });
-  const { data: organizationMembers } = useQuery({
-    queryKey: ["api", "organization", slug, "members"],
-    queryFn: () => getOrganizationMembers(slug),
-    enabled: open,
-  });
+  const { data: organizationMembers } = useOrganizationMembers(slug, open);
 
   const updateSharingMode = useMutation({
     mutationFn: (variables: { publicId: string; sharingMode: SharingMode }) =>
