@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export interface OrganizationMemberView {
   userId: string;
@@ -22,7 +22,7 @@ function toView(
       image?: string | null;
     } | null;
   },
-  status: "active" | "pending"
+  status: "active" | "pending",
 ): OrganizationMemberView {
   return {
     userId: member.userId,
@@ -38,17 +38,12 @@ export function useOrganizationMembers(slug: string, enabled = true) {
   return useQuery({
     queryKey: ["organizations", slug, "members"],
     queryFn: async (): Promise<OrganizationMemberView[]> => {
-      const client = betterAuthClient;
-      if (
-        client === null ||
-        client.organization?.getFullOrganization === undefined
-      ) {
+      const client = getBetterAuthUiClient();
+      if (client === null || client.organization?.getFullOrganization === undefined) {
         throw new Error("Organization members are not available.");
       }
 
-      const response = await client.organization.getFullOrganization({
-        query: { organizationSlug: slug },
-      });
+      const response = await client.organization.getFullOrganization();
       if (response.error !== null) {
         throw new Error(response.error.message ?? "Could not load members.");
       }
@@ -67,8 +62,8 @@ export function useOrganizationMembers(slug: string, enabled = true) {
               role: invitation.role ?? "member",
               user: { name: null, email: invitation.email, image: null },
             },
-            "pending"
-          )
+            "pending",
+          ),
         );
 
       return [...active, ...pending];

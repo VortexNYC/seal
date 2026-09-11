@@ -1,7 +1,3 @@
-import { Badge } from "@cloudflare/kumo/components/badge";
-import { Button } from "@cloudflare/kumo/components/button";
-import { SkeletonLine } from "@cloudflare/kumo/components/loader";
-import { Select } from "@cloudflare/kumo/components/select";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,8 +11,8 @@ import {
   XIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
-import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import {
   getDocumentSharing,
   revokeDocumentAccess,
@@ -24,10 +20,20 @@ import {
   updateDocumentPermission,
   updateDocumentSharing,
 } from "@/lib/api-client";
-import { toast } from "@/lib/toast";
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Badge } from "../ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Skeleton } from "../ui/skeleton";
 
 interface ShareDocumentDialogProps {
   open: boolean;
@@ -35,7 +41,6 @@ interface ShareDocumentDialogProps {
   documentId: string;
   documentName: string;
   slug: string;
-  organizationSlug: string;
 }
 
 type PermissionLevel = "view" | "edit" | "manage";
@@ -89,7 +94,6 @@ export function ShareDocumentDialog({
   documentId,
   documentName,
   slug,
-  organizationSlug,
 }: ShareDocumentDialogProps) {
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -99,18 +103,14 @@ export function ShareDocumentDialog({
 
   const { data: documentAccess } = useQuery({
     queryKey: ["api", "documents", documentId, "sharing"],
-    queryFn: () => getDocumentSharing(organizationSlug, documentId),
+    queryFn: () => getDocumentSharing(documentId),
     enabled: open,
   });
   const { data: organizationMembers } = useOrganizationMembers(slug, open);
 
   const updateSharingMode = useMutation({
     mutationFn: (variables: { publicId: string; sharingMode: SharingMode }) =>
-      updateDocumentSharing(
-        organizationSlug,
-        variables.publicId,
-        variables.sharingMode
-      ),
+      updateDocumentSharing(variables.publicId, variables.sharingMode),
   });
   const grantAccess = useMutation({
     mutationFn: (variables: {
@@ -119,7 +119,6 @@ export function ShareDocumentDialog({
       permissionLevel: PermissionLevel;
     }) =>
       shareDocument(
-        organizationSlug,
         variables.publicId,
         variables.userId,
         variables.permissionLevel
@@ -127,11 +126,7 @@ export function ShareDocumentDialog({
   });
   const revokeAccess = useMutation({
     mutationFn: (variables: { publicId: string; userId: string }) =>
-      revokeDocumentAccess(
-        organizationSlug,
-        variables.publicId,
-        variables.userId
-      ),
+      revokeDocumentAccess(variables.publicId, variables.userId),
   });
   const updateAccessLevel = useMutation({
     mutationFn: (variables: {
@@ -140,7 +135,6 @@ export function ShareDocumentDialog({
       permissionLevel: PermissionLevel;
     }) =>
       updateDocumentPermission(
-        organizationSlug,
         variables.publicId,
         variables.userId,
         variables.permissionLevel
@@ -279,14 +273,12 @@ export function ShareDocumentDialog({
                   </div>
                 </div>
                 <DialogPrimitive.Close asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    aria-label="Close"
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
                   >
                     <XIcon className="h-4 w-4" />
-                  </Button>
+                  </button>
                 </DialogPrimitive.Close>
               </div>
             </div>
@@ -390,58 +382,72 @@ export function ShareDocumentDialog({
                         <Select
                           value={selectedMemberId ?? ""}
                           onValueChange={(value) => setSelectedMemberId(value)}
-                          placeholder="Select a team member"
-                          className="flex-1"
-                          data-testid="member-select"
                         >
-                          {availableMembers.map((member) => (
-                            <Select.Option
-                              key={member.userId}
-                              value={member.userId}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span>{member.name ?? member.email}</span>
-                                {member.name && (
-                                  <span className="text-kumo-secondary text-xs">
-                                    {member.email}
-                                  </span>
-                                )}
+                          <SelectTrigger
+                            className="flex-1"
+                            data-testid="member-select"
+                          >
+                            <SelectValue placeholder="Select a team member" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableMembers.length === 0 ? (
+                              <div className="text-muted-foreground px-2 py-4 text-center text-sm">
+                                No team members to add
                               </div>
-                            </Select.Option>
-                          ))}
+                            ) : (
+                              availableMembers.map((member) => (
+                                <SelectItem
+                                  key={member.userId}
+                                  value={member.userId}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>{member.name ?? member.email}</span>
+                                    {member.name && (
+                                      <span className="text-muted-foreground text-xs">
+                                        {member.email}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
                         </Select>
 
                         <Select
                           value={selectedPermission}
-                          onValueChange={(value) => {
-                            if (!value) return;
+                          onValueChange={(value) =>
                             setSelectedPermission(
                               parseSelectValue(value, PERMISSION_LEVELS) ??
                                 selectedPermission
-                            );
-                          }}
-                          className="w-32"
-                          data-testid="permission-select"
+                            )
+                          }
                         >
-                          <Select.Option value="view">Can view</Select.Option>
-                          <Select.Option value="edit">Can edit</Select.Option>
-                          <Select.Option value="manage">
-                            Can manage
-                          </Select.Option>
+                          <SelectTrigger
+                            className="w-32"
+                            data-testid="permission-select"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="view">Can view</SelectItem>
+                            <SelectItem value="edit">Can edit</SelectItem>
+                            <SelectItem value="manage">Can manage</SelectItem>
+                          </SelectContent>
                         </Select>
 
-                        <Button
-                          variant="primary"
-                          size="sm"
+                        <button
+                          type="button"
                           onClick={handleGrantAccess}
                           disabled={!selectedMemberId || isUpdating}
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isUpdating ? (
                             <Loader2Icon className="h-4 w-4 animate-spin" />
                           ) : (
                             "Add"
                           )}
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   )}
@@ -458,12 +464,14 @@ export function ShareDocumentDialog({
                         className="bg-muted flex items-center justify-between rounded-xl p-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="from-warning to-warning/70 text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-xs">
-                            {getInitials(
-                              documentAccess.owner.name ??
-                                documentAccess.owner.email
-                            )}
-                          </div>
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="from-warning to-warning/70 text-primary-foreground bg-gradient-to-br text-xs">
+                              {getInitials(
+                                documentAccess.owner.name ??
+                                  documentAccess.owner.email
+                              )}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
                             <div className="flex items-center gap-2">
                               <span
@@ -476,8 +484,8 @@ export function ShareDocumentDialog({
                               <Badge
                                 variant="outline"
                                 className="border-warning/30 bg-warning-surface text-warning text-xs"
-                                icon={CrownIcon}
                               >
+                                <CrownIcon className="mr-1 h-3 w-3" />
                                 Owner
                               </Badge>
                             </div>
@@ -498,9 +506,13 @@ export function ShareDocumentDialog({
                           className="bg-muted flex items-center justify-between rounded-xl p-3"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="from-primary to-primary/70 text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-xs">
-                              {getInitials(access.userName ?? access.userEmail)}
-                            </div>
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="from-primary to-primary/70 text-primary-foreground bg-gradient-to-br text-xs">
+                                {getInitials(
+                                  access.userName ?? access.userEmail
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
                             <div>
                               <span
                                 data-testid="access-name"
@@ -519,7 +531,6 @@ export function ShareDocumentDialog({
                             <Select
                               value={access.permissionLevel}
                               onValueChange={(value) => {
-                                if (!value) return;
                                 const level = parseSelectValue(
                                   value,
                                   PERMISSION_LEVELS
@@ -532,31 +543,30 @@ export function ShareDocumentDialog({
                                 }
                               }}
                               disabled={isUpdating}
-                              size="sm"
-                              className="w-28"
-                              data-testid="permission-dropdown"
                             >
-                              <Select.Option value="view">
-                                Can view
-                              </Select.Option>
-                              <Select.Option value="edit">
-                                Can edit
-                              </Select.Option>
-                              <Select.Option value="manage">
-                                Can manage
-                              </Select.Option>
+                              <SelectTrigger
+                                className="h-8 w-28 text-xs"
+                                data-testid="permission-dropdown"
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="view">Can view</SelectItem>
+                                <SelectItem value="edit">Can edit</SelectItem>
+                                <SelectItem value="manage">
+                                  Can manage
+                                </SelectItem>
+                              </SelectContent>
                             </Select>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
+                              type="button"
                               data-testid="revoke-access-button"
                               onClick={() => handleRevokeAccess(access.userId)}
                               disabled={isUpdating}
-                              className="p-1.5"
-                              aria-label="Revoke access"
+                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-lg p-1.5 transition-colors disabled:opacity-50"
                             >
                               <XIcon className="h-4 w-4" />
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -577,9 +587,12 @@ export function ShareDocumentDialog({
             {/* Footer */}
             <div className="border-border flex justify-end border-t px-6 py-4">
               <DialogPrimitive.Close asChild>
-                <Button variant="secondary" size="sm">
+                <button
+                  type="button"
+                  className="bg-muted text-foreground hover:bg-muted/80 rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                >
                   Done
-                </Button>
+                </button>
               </DialogPrimitive.Close>
             </div>
 
@@ -610,17 +623,17 @@ function ShareDialogSkeleton() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <SkeletonLine className="h-4 w-24" />
+        <Skeleton className="h-4 w-24" />
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonLine key={i} className="h-20 rounded-xl" />
+            <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
         </div>
       </div>
       <div className="space-y-3">
-        <SkeletonLine className="h-4 w-32" />
+        <Skeleton className="h-4 w-32" />
         {Array.from({ length: 2 }).map((_, i) => (
-          <SkeletonLine key={i} className="h-14 rounded-xl" />
+          <Skeleton key={i} className="h-14 rounded-xl" />
         ))}
       </div>
     </div>
