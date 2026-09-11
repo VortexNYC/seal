@@ -16,7 +16,7 @@ type PaymentStatus =
   | "failed"
   | "cancelled";
 
-type InvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
+type InvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible" | "deleted";
 
 export interface ProjectPayableObjectInput {
   eventId: string;
@@ -329,8 +329,8 @@ export async function projectPayableObjectUpdated(
 
   if (
     shouldIgnoreTerminalPayableProjection({
-      currentInvoiceStatus: invoiceRecord?.status ?? null,
-      currentPaymentStatus: config?.paymentStatus ?? null,
+      currentInvoiceStatus: (invoiceRecord?.status ?? null) as InvoiceStatus | null,
+      currentPaymentStatus: (config?.paymentStatus ?? null) as PaymentStatus | null,
       incomingInvoiceStatus: invoiceStatus,
       incomingPaymentStatus: paymentStatus,
     })
