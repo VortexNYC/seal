@@ -143,19 +143,6 @@ async function upsertPersonalOrganization(
   return organization;
 }
 
-async function ensurePrimaryOwnerMembership(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-  organizationId: Id<"organizations">
-): Promise<void> {
-  await upsertVortexAuthMember(ctx, {
-    organizationId,
-    userId,
-    role: "owner",
-    status: "active",
-  });
-}
-
 async function clearOtherPrimaryMemberships(
   _ctx: MutationCtx,
   _userId: Id<"users">,
@@ -235,7 +222,7 @@ async function setComponentMemberRole(
   }
   const roleId = await ensureComponentRoleForTemplate(
     ctx,
-    organization._id,
+    organization.vortexAuthOrganizationId,
     role
   );
   await ctx.runMutation(components.vortexAuth.organizations.setMemberRole, {
@@ -330,14 +317,13 @@ export const ensurePersonalOrganization = mutation({
       preferredName
     );
 
-    await ensurePrimaryOwnerMembership(ctx, user._id, organization._id);
     await clearOtherPrimaryMemberships(ctx, user._id, organization._id);
 
     // Mirror the org + owner into the vortexAuth component immediately so
     // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
     await anchorNewOrganizationOwner(ctx, {
       organizationId: organization._id,
-      ownerUserId: user._id,
+      ownerVortexAuthUserId: user.vortexAuthUserId,
     });
 
     await ctx.db.patch("users", user._id, {
@@ -440,7 +426,7 @@ export const createWorkspace = authMutation({
     // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
     await anchorNewOrganizationOwner(ctx, {
       organizationId,
-      ownerUserId: user._id,
+      ownerVortexAuthUserId: user.vortexAuthUserId,
     });
 
     return { id: organizationId };
@@ -568,17 +554,23 @@ export const addMemberCore = internalMutation({
     userId: v.id("users"),
     role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
     userType: v.optional(v.union(v.literal("personal"), v.literal("business"))),
-    assignedBy: v.id("users"),
+    assignedByVortexAuthUserId: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new ConvexError("User not found");
     }
+    if (!user.vortexAuthUserId) {
+      throw new ConvexError("User is missing vortex auth bridge id");
+    }
 
     const organization = await ctx.db.get("organizations", args.organizationId);
     if (!organization) {
       throw new ConvexError("Organization not found");
+    }
+    if (!organization.vortexAuthOrganizationId) {
+      throw new ConvexError("Organization is missing vortex auth bridge id");
     }
 
     const existingMembership = await getComponentMemberRefForUserOrganization(
@@ -591,11 +583,11 @@ export const addMemberCore = internalMutation({
     }
 
     const membershipId = await upsertVortexAuthMember(ctx, {
-      organizationId: args.organizationId,
-      userId: args.userId,
+      vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
+      vortexAuthUserId: user.vortexAuthUserId,
       role: args.role,
       status: "active",
-      assignedBy: args.assignedBy,
+      vortexAuthAssignedBy: args.assignedByVortexAuthUserId,
     });
 
     return { id: membershipId };
@@ -623,7 +615,7 @@ export const addMember = adminAction({
         userId: args.userId,
         role: args.role,
         userType: args.userType,
-        assignedBy: ctx.auth.userId,
+        assignedByVortexAuthUserId: ctx.auth.vortexAuthUserId,
       }
     );
   },

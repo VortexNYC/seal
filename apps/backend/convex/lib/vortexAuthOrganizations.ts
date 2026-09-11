@@ -79,14 +79,8 @@ type ComponentMemberStatus = "active" | "invited" | "suspended";
  */
 export async function ensureVortexAuthSystemRoles(
   ctx: VortexAuthMutationCtx,
-  organizationId: Id<"organizations">,
-  createdByVortexAuthUserId?: string
+  vortexAuthOrganizationId: string
 ) {
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
-    ctx,
-    organizationId,
-    createdByVortexAuthUserId
-  );
   await ctx.runMutation(components.vortexAuth.organizations.seedDefaultRoles, {
     organizationId: vortexAuthOrganizationId,
     catalog: Object.entries(ROLE_PERMISSIONS).map(([name, permissions]) => ({
@@ -100,19 +94,15 @@ export async function ensureVortexAuthSystemRoles(
 }
 
 /**
- * Ensure a single component role exists for `(organizationId, role)`, keeping
- * its permission set in sync with Seal's ROLE_PERMISSIONS definition. The local
- * org row is anchored first. Returns the component role id.
+ * Ensure a single component role exists for `(vortexAuthOrganizationId, role)`,
+ * keeping its permission set in sync with Seal's ROLE_PERMISSIONS definition.
+ * Takes the Vortex Auth organization id directly. Returns the component role id.
  */
 export async function ensureComponentRoleForTemplate(
   ctx: VortexAuthMutationCtx,
-  organizationId: Id<"organizations">,
+  vortexAuthOrganizationId: string,
   role: OrganizationMemberRole
 ) {
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
-    ctx,
-    organizationId
-  );
   const result = await ctx.runMutation(
     components.vortexAuth.organizations.ensureRole,
     {
@@ -127,57 +117,38 @@ export async function ensureComponentRoleForTemplate(
 }
 
 /**
- * Create or update a member in the component for `(organizationId, userId)` with
- * the given Seal role + status. The org + role are ensured in the component
- * first. Returns the component member id. SOLE writer for membership once the
- * local `organization_members` table is dropped (P7).
+ * Create or update a member in the component for `(vortexAuthOrganizationId,
+ * vortexAuthUserId)` with the given Seal role + status. The role is ensured in
+ * the component first. Returns the component member id. SOLE writer for
+ * membership once the local `organization_members` table is dropped (P7).
  */
 export async function upsertVortexAuthMember(
   ctx: VortexAuthMutationCtx,
   args: {
-    organizationId: Id<"organizations">;
-    userId: Id<"users">;
+    vortexAuthOrganizationId: string;
+    vortexAuthUserId: string;
     role: OrganizationMemberRole;
     status: ComponentMemberStatus;
-    invitedBy?: Id<"users">;
-    assignedBy?: Id<"users">;
+    vortexAuthInvitedBy?: string;
+    vortexAuthAssignedBy?: string;
     acceptedAt?: number;
   }
 ) {
-  const user = await ctx.db.get("users", args.userId);
-  if (user === null) {
-    throw new ConvexError({
-      code: "NOT_FOUND",
-      message: "Organization member user not found",
-    });
-  }
-  if (!user.vortexAuthUserId) {
-    throw new ConvexError({
-      code: "FAILED_PRECONDITION",
-      message: "Organization member user is missing vortex auth bridge id",
-    });
-  }
-
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
-    ctx,
-    args.organizationId,
-    user.vortexAuthUserId
-  );
   const roleId = await ensureComponentRoleForTemplate(
     ctx,
-    args.organizationId,
+    args.vortexAuthOrganizationId,
     args.role
   );
 
   const result = await ctx.runMutation(
     components.vortexAuth.organizations.upsertMember,
     {
-      organizationId: vortexAuthOrganizationId,
-      userId: user.vortexAuthUserId,
+      organizationId: args.vortexAuthOrganizationId,
+      userId: args.vortexAuthUserId,
       roleId,
       status: args.status,
-      invitedBy: await getOptionalVortexAuthUserId(ctx, args.invitedBy),
-      assignedBy: await getOptionalVortexAuthUserId(ctx, args.assignedBy),
+      invitedBy: args.vortexAuthInvitedBy,
+      assignedBy: args.vortexAuthAssignedBy,
       acceptedAt: args.acceptedAt,
     }
   );
@@ -199,23 +170,21 @@ export async function upsertVortexAuthMember(
  */
 export async function anchorNewOrganizationOwner(
   ctx: VortexAuthMutationCtx,
-  args: { organizationId: Id<"organizations">; ownerUserId: Id<"users"> }
+  args: {
+    organizationId: Id<"organizations">;
+    ownerVortexAuthUserId?: string;
+  }
 ): Promise<void> {
-  const owner = await ctx.db.get("users", args.ownerUserId);
-  await ensureVortexAuthOrganization(
+  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
     ctx,
     args.organizationId,
-    owner?.vortexAuthUserId
+    args.ownerVortexAuthUserId
   );
-  await ensureVortexAuthSystemRoles(
-    ctx,
-    args.organizationId,
-    owner?.vortexAuthUserId
-  );
-  if (owner?.vortexAuthUserId) {
+  await ensureVortexAuthSystemRoles(ctx, vortexAuthOrganizationId);
+  if (args.ownerVortexAuthUserId) {
     await upsertVortexAuthMember(ctx, {
-      organizationId: args.organizationId,
-      userId: args.ownerUserId,
+      vortexAuthOrganizationId,
+      vortexAuthUserId: args.ownerVortexAuthUserId,
       role: "owner",
       status: "active",
     });
@@ -238,55 +207,36 @@ type ComponentInvitationEmailDeliveryStatus =
 /**
  * Create (or, by tokenHash, update) an invitation in the vortexAuth COMPONENT —
  * the SOLE source of truth for invitations once the local
- * `organization_invitations` table is dropped (P7). Returns the COMPONENT
- * invitation id (a string).
+ * `organization_invitations` table is dropped (P7). Takes Vortex Auth ids
+ * directly. Returns the COMPONENT invitation id (a string).
  */
 export async function createVortexAuthInvitation(
   ctx: VortexAuthMutationCtx,
   args: {
-    organizationId: Id<"organizations">;
+    vortexAuthOrganizationId: string;
     email: string;
     tokenHash: string;
     role: OrganizationMemberRole;
     status: ComponentInvitationStatus;
-    invitedBy: Id<"users">;
+    invitedBy: string;
     expiresAt: number;
   }
 ): Promise<string> {
-  const invitedBy = await ctx.db.get("users", args.invitedBy);
-  if (invitedBy === null) {
-    throw new ConvexError({
-      code: "NOT_FOUND",
-      message: "Invitation creator not found",
-    });
-  }
-  if (!invitedBy.vortexAuthUserId) {
-    throw new ConvexError({
-      code: "FAILED_PRECONDITION",
-      message: "Invitation creator is missing vortex auth bridge id",
-    });
-  }
-
-  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
-    ctx,
-    args.organizationId,
-    invitedBy.vortexAuthUserId
-  );
   const roleId = await ensureComponentRoleForTemplate(
     ctx,
-    args.organizationId,
+    args.vortexAuthOrganizationId,
     args.role
   );
 
   const result = await ctx.runMutation(
     components.vortexAuth.organizations.upsertInvitation,
     {
-      organizationId: vortexAuthOrganizationId,
+      organizationId: args.vortexAuthOrganizationId,
       roleId,
       email: args.email,
       tokenHash: args.tokenHash,
       status: args.status,
-      invitedBy: invitedBy.vortexAuthUserId,
+      invitedBy: args.invitedBy,
       expiresAt: args.expiresAt,
     }
   );
@@ -295,32 +245,25 @@ export async function createVortexAuthInvitation(
 
 /**
  * Set the status of a COMPONENT invitation (accepted/revoked/expired).
- * `acceptedByUserId` is mapped to the component user via the Seal bridge id.
+ * Takes Vortex Auth ids directly.
  */
 export async function setVortexAuthInvitationStatus(
   ctx: VortexAuthMutationCtx,
   args: {
-    organizationId: Id<"organizations">;
+    vortexAuthOrganizationId: string;
     invitationId: string;
     status: ComponentInvitationStatus;
-    acceptedByUserId?: Id<"users">;
+    acceptedByVortexAuthUserId?: string;
     acceptedAt?: number;
   }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(
-    ctx,
-    args.organizationId
-  );
   await ctx.runMutation(
     components.vortexAuth.organizations.setInvitationStatus,
     {
       invitationId: args.invitationId,
-      organizationId,
+      organizationId: args.vortexAuthOrganizationId,
       status: args.status,
-      acceptedByUserId: await getOptionalVortexAuthUserId(
-        ctx,
-        args.acceptedByUserId
-      ),
+      acceptedByUserId: args.acceptedByVortexAuthUserId,
       acceptedAt: args.acceptedAt,
     }
   );
@@ -333,7 +276,7 @@ export async function setVortexAuthInvitationStatus(
 export async function recordVortexAuthInvitationEmailDelivery(
   ctx: VortexAuthMutationCtx,
   args: {
-    organizationId: Id<"organizations">;
+    vortexAuthOrganizationId: string;
     invitationId: string;
     emailId?: string | null;
     emailDeliveryStatus: ComponentInvitationEmailDeliveryStatus;
@@ -341,15 +284,11 @@ export async function recordVortexAuthInvitationEmailDelivery(
     emailDeliveryError?: string | null;
   }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(
-    ctx,
-    args.organizationId
-  );
   await ctx.runMutation(
     components.vortexAuth.organizations.recordInvitationEmailDelivery,
     {
       invitationId: args.invitationId,
-      organizationId,
+      organizationId: args.vortexAuthOrganizationId,
       emailId: args.emailId ?? null,
       emailDeliveryStatus: args.emailDeliveryStatus,
       emailDeliveryEvent: args.emailDeliveryEvent ?? null,
@@ -417,28 +356,13 @@ export async function touchVortexAuthApiKeyLastUsed(
   ctx: VortexAuthMutationCtx,
   args: {
     apiKeyId: string;
-    organizationId: Id<"organizations">;
+    vortexAuthOrganizationId: string;
     ip?: string | null;
   }
 ): Promise<void> {
-  const organizationId = await ensureVortexAuthOrganization(
-    ctx,
-    args.organizationId
-  );
   await ctx.runMutation(components.vortexAuth.apiKeys.touchApiKeyLastUsed, {
     apiKeyId: args.apiKeyId,
-    organizationId,
+    organizationId: args.vortexAuthOrganizationId,
     ip: args.ip ?? null,
   });
-}
-
-async function getOptionalVortexAuthUserId(
-  ctx: VortexAuthMutationCtx,
-  userId: Id<"users"> | undefined
-): Promise<string | undefined> {
-  if (userId === undefined) {
-    return undefined;
-  }
-  const user = await ctx.db.get("users", userId);
-  return user?.vortexAuthUserId;
 }

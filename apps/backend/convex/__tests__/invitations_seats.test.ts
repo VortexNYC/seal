@@ -152,13 +152,23 @@ describe("invitations seat enforcement (SEA-605)", () => {
       );
 
     await t.run(async (ctx) => {
+      const [organization, inviter] = await Promise.all([
+        ctx.db.get("organizations", organizationId),
+        ctx.db.get("users", ownerUserId),
+      ]);
+      if (!organization?.vortexAuthOrganizationId) {
+        throw new Error("Organization is not anchored to Vortex Auth");
+      }
+      if (!inviter?.vortexAuthUserId) {
+        throw new Error("Inviter is not anchored to Vortex Auth");
+      }
       await createVortexAuthInvitation(ctx, {
-        organizationId,
+        vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
         email: "late@invite-seat.test",
         tokenHash,
         role: "member",
         status: "pending",
-        invitedBy: ownerUserId,
+        invitedBy: inviter.vortexAuthUserId,
         expiresAt: Date.now() + 86_400_000,
       });
     });

@@ -583,13 +583,23 @@ describe("subscription_guards", () => {
           })
         ).resolves.toBeUndefined();
 
+        const [organization, inviter] = await Promise.all([
+          ctx.db.get("organizations", organizationId),
+          ctx.db.get("users", ownerUserId),
+        ]);
+        if (!organization?.vortexAuthOrganizationId) {
+          throw new Error("Organization is not anchored to Vortex Auth");
+        }
+        if (!inviter?.vortexAuthUserId) {
+          throw new Error("Inviter is not anchored to Vortex Auth");
+        }
         await createVortexAuthInvitation(ctx, {
-          organizationId,
+          vortexAuthOrganizationId: organization.vortexAuthOrganizationId,
           email: "pending@seats.test",
           tokenHash: "pending_token_hash_seat_test",
           role: "member",
           status: "pending",
-          invitedBy: ownerUserId,
+          invitedBy: inviter.vortexAuthUserId,
           expiresAt: Date.now() + 86_400_000,
         });
 

@@ -1,7 +1,10 @@
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { upsertVortexAuthMember } from "./lib/vortexAuthOrganizations";
+import {
+  ensureVortexAuthOrganization,
+  upsertVortexAuthMember,
+} from "./lib/vortexAuthOrganizations";
 import type { OrganizationMemberRole } from "./schema";
 
 type TestVortexAuthCtx = Pick<MutationCtx, "db" | "runMutation" | "runQuery">;
@@ -18,7 +21,7 @@ export async function seedTestOrganizationMember(
     identityIssuer?: string;
   }
 ): Promise<string> {
-  const user = await ctx.db.get("users", args.userId);
+  let user = await ctx.db.get("users", args.userId);
   if (!user) {
     throw new Error(`test_user_not_found: ${args.userId}`);
   }
@@ -33,17 +36,29 @@ export async function seedTestOrganizationMember(
       ...(user.avatar !== undefined ? { image: user.avatar } : {}),
     });
 
-    const bridgedUser = await ctx.db.get("users", args.userId);
-    if (!bridgedUser?.vortexAuthUserId) {
+    user = await ctx.db.get("users", args.userId);
+    if (!user?.vortexAuthUserId) {
       throw new Error(
         `test_user_vortex_auth_bridge_not_provisioned: ${args.userId}`
       );
     }
   }
 
+  const vortexAuthOrganizationId = await ensureVortexAuthOrganization(
+    ctx,
+    args.organizationId,
+    user.vortexAuthUserId
+  );
+
+  await ctx.db.patch("users", args.userId, {
+    activeOrganizationId: args.organizationId,
+    activeVortexAuthOrganizationId: vortexAuthOrganizationId,
+    updatedAt: Date.now(),
+  });
+
   return await upsertVortexAuthMember(ctx, {
-    organizationId: args.organizationId,
-    userId: args.userId,
+    vortexAuthOrganizationId,
+    vortexAuthUserId: user.vortexAuthUserId,
     role: args.role,
     status: args.status ?? "active",
   });

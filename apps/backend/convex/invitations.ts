@@ -54,8 +54,11 @@ function appOrigin(): string {
 
 export const createInvitationCore = internalMutation({
   args: {
-    organizationId: v.id("organizations"),
-    invitedBy: v.id("users"),
+    vortexAuthOrganizationId: v.string(),
+    organizationName: v.string(),
+    invitedByVortexAuthUserId: v.string(),
+    invitedByName: v.optional(v.string()),
+    invitedByEmail: v.string(),
     email: v.string(),
     role: inviteRoleValidator,
   },
@@ -68,20 +71,14 @@ export const createInvitationCore = internalMutation({
       throw new ConvexError("Invalid email address");
     }
 
-    const organization = await ctx.db.get("organizations", args.organizationId);
-    if (!organization) {
-      throw new ConvexError("Organization not found");
-    }
-
-    const inviter = await ctx.db.get("users", args.invitedBy);
-    if (!inviter) {
-      throw new ConvexError("Inviter not found");
-    }
+    const vortexAuthOrganization = {
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+    };
 
     // Reject duplicate pending invitations for the same email.
     const existing = await listComponentInvitationsByOrganization(
       ctx,
-      organization,
+      vortexAuthOrganization,
       "pending"
     );
     if (existing.some((inv) => inv.email.toLowerCase() === email)) {
@@ -95,12 +92,12 @@ export const createInvitationCore = internalMutation({
     const expiresAt = Date.now() + INVITE_TTL_MS;
 
     const invitationId = await createVortexAuthInvitation(ctx, {
-      organizationId: args.organizationId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
       email,
       tokenHash,
       role: args.role,
       status: "pending",
-      invitedBy: args.invitedBy,
+      invitedBy: args.invitedByVortexAuthUserId,
       expiresAt,
     });
 
@@ -110,8 +107,8 @@ export const createInvitationCore = internalMutation({
     await ctx.scheduler.runAfter(0, internal.invitations.sendInviteEmail, {
       to: email,
       acceptUrl,
-      organizationName: organization.name,
-      inviterLabel: inviter.name ?? inviter.email,
+      organizationName: args.organizationName,
+      inviterLabel: args.invitedByName ?? args.invitedByEmail,
       roleName: args.role,
       expiresAt,
     });
@@ -149,8 +146,11 @@ export const createInvitation = authAction({
     });
 
     return await ctx.runMutation(internal.invitations.createInvitationCore, {
-      organizationId: ctx.auth.organizationId,
-      invitedBy: ctx.auth.userId,
+      vortexAuthOrganizationId: ctx.auth.vortexAuthOrganizationId,
+      organizationName: ctx.auth.organizationName,
+      invitedByVortexAuthUserId: ctx.auth.vortexAuthUserId,
+      invitedByName: ctx.auth.name,
+      invitedByEmail: ctx.auth.email,
       email: args.email,
       role: args.role,
     });
@@ -343,26 +343,29 @@ export const redeemInvitationCore = internalMutation({
     }
     if (invitation.expiresAt < Date.now()) {
       await setVortexAuthInvitationStatus(ctx, {
-        organizationId: args.organizationId,
+        vortexAuthOrganizationId: args.vortexAuthOrganizationId,
         invitationId: invitation._id,
         status: "expired",
       });
       throw new ConvexError("Invitation has expired");
     }
+    if (!user.vortexAuthUserId) {
+      throw new ConvexError("User is missing vortex auth bridge id");
+    }
 
     await upsertVortexAuthMember(ctx, {
-      organizationId: args.organizationId,
-      userId: args.userId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
+      vortexAuthUserId: user.vortexAuthUserId,
       role: invitation.role,
       status: "active",
-      invitedBy: invitation.invitedBy,
+      vortexAuthInvitedBy: invitation.invitedBy,
       acceptedAt: now,
     });
     await setVortexAuthInvitationStatus(ctx, {
-      organizationId: args.organizationId,
+      vortexAuthOrganizationId: args.vortexAuthOrganizationId,
       invitationId: invitation._id,
       status: "accepted",
-      acceptedByUserId: args.userId,
+      acceptedByVortexAuthUserId: user.vortexAuthUserId,
       acceptedAt: now,
     });
 
