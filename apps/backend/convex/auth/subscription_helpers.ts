@@ -9,23 +9,25 @@
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { internalAction, internalQuery } from "../_generated/server";
+import { internalAction } from "../_generated/server";
 import {
   getApplicationFee,
-  getSubscriptionPlan,
   readEnterpriseCustomRates,
 } from "./subscription_guards";
 
 /**
  * Check whether an organization is on a Pro (or higher) plan.
- * Designed to be called from queries/actions via `ctx.runQuery(...)`.
+ * Designed to be called from actions via `ctx.runAction(...)`.
  */
-export const checkProFeature = internalQuery({
+export const checkProFeature = internalAction({
   args: {
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    return await getSubscriptionPlan(ctx.db, args.organizationId);
+    return await ctx.runAction(
+      internal.auth.subscription_guards.getSubscriptionPlanD1,
+      { organizationId: args.organizationId }
+    );
   },
 });
 
