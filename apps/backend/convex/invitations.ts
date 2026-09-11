@@ -230,7 +230,7 @@ export const revokeInvitation = mutation({
     const invitation = await getComponentInvitationById(ctx, args.invitationId);
     if (
       invitation === null ||
-      invitation.organizationId !== auth.organization._id
+      invitation.organizationId !== auth.organizationId
     ) {
       throw new ConvexError("Invitation not found in this organization");
     }
@@ -238,7 +238,7 @@ export const revokeInvitation = mutation({
       throw new ConvexError("Only pending invitations can be revoked");
     }
     await setVortexAuthInvitationStatus(ctx, {
-      organizationId: auth.organization._id,
+      organizationId: auth.organizationId,
       invitationId: args.invitationId,
       status: "revoked",
     });

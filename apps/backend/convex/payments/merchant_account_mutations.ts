@@ -93,7 +93,7 @@ export const updateFeeHandling = adminMutation({
     const account = await ctx.db
       .query("merchant_accounts")
       .withIndex("by_organization", (q) =>
-        q.eq("organizationId", ctx.auth.organization._id)
+        q.eq("organizationId", ctx.auth.organizationId)
       )
       .first();
 

@@ -170,7 +170,7 @@ export const getDocumentRecipients = authQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.auth.user._id;
+    const userId = ctx.auth.userId;
 
     // 1. Get the document
     const document = await ctx.db.get("documents", args.documentId);
@@ -313,7 +313,7 @@ export const getRecipientProgress = authQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.auth.user._id;
+    const userId = ctx.auth.userId;
 
     const document = await getDocumentOrThrow(ctx, args.documentId);
 
@@ -399,7 +399,7 @@ export const getRecipientProgress = authQuery({
 export const getMyRecipientDocuments = authQuery({
   args: {},
   handler: async (ctx) => {
-    const userId = ctx.auth.user._id;
+    const userId = ctx.auth.userId;
 
     // 1. Get user email
     const user = await ctx.db.get("users", userId);
@@ -446,7 +446,7 @@ export const getRecipientByAuthenticatedUser = authQuery({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const userId = ctx.auth.user._id;
+    const userId = ctx.auth.userId;
 
     // 1. Get user email
     const user = await ctx.db.get("users", userId);

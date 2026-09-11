@@ -212,7 +212,7 @@ function buildAuditExport(
 export const getDocumentAuditLogs = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    const userId = ctx.auth.user._id;
+    const userId = ctx.auth.userId;
 
     // 1. Get the document
     const document = await getDocumentOrThrow(ctx, args.documentId);
@@ -250,7 +250,7 @@ export const getOrganizationAuditLogs = authQuery({
   },
   handler: async (ctx, args) => {
     if (
-      ctx.auth.organization._id !== args.organizationId ||
+      ctx.auth.organizationId !== args.organizationId ||
       ctx.auth.member.status !== "active"
     ) {
       throw new ConvexError("You are not a member of this organization");
@@ -287,7 +287,7 @@ export const getOrganizationAuditLogs = authQuery({
 export const exportDocumentAuditTrail = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {
-    const userId = ctx.auth.user._id;
+    const userId = ctx.auth.userId;
 
     // 1. Get the document
     const document = await ctx.db.get("documents", args.documentId);
@@ -406,7 +406,7 @@ export const listOrgAuditLogs = adminQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const orgId = ctx.auth.organization._id;
+    const orgId = ctx.auth.organizationId;
     const fetchLimit = Math.min((args.limit ?? 100) * 5, 1000);
 
     const logs = await ctx.db

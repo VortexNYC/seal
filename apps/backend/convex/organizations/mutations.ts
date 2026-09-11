@@ -537,7 +537,7 @@ export const deleteWorkspace = authMutation({
     }
 
     if (
-      ctx.auth.organization._id !== args.organizationId ||
+      ctx.auth.organizationId !== args.organizationId ||
       ctx.auth.member.role !== "owner"
     ) {
       throw new ConvexError(
@@ -976,7 +976,7 @@ export const updateAiSettings = adminMutation({
     aiShowRedlinesToSigners: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organizationId);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.aiSettings ?? {
@@ -1117,7 +1117,7 @@ export const updateSigningSettings = adminMutation({
     defaultDeadlineDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organizationId);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.signingSettings ?? {
@@ -1170,7 +1170,7 @@ export const updateNotificationSettings = adminMutation({
     sendViewedNotification: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organizationId);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.notificationSettings ?? {
@@ -1220,7 +1220,7 @@ export const updateSecuritySettings = adminMutation({
       );
     }
 
-    const org = await ctx.db.get("organizations", ctx.auth.organization._id);
+    const org = await ctx.db.get("organizations", ctx.auth.organizationId);
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.securitySettings ?? {
@@ -1284,7 +1284,7 @@ export const resetOrgSettings = adminMutation({
 
     const field = settingsCategoryField[args.category];
 
-    await ctx.db.patch("organizations", ctx.auth.organization._id, {
+    await ctx.db.patch("organizations", ctx.auth.organizationId, {
       [field]: undefined,
       updatedAt: Date.now(),
     });
@@ -1302,7 +1302,7 @@ export const updateDelegateOwnership = adminMutation({
     enabled: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch("organizations", ctx.auth.organization._id, {
+    await ctx.db.patch("organizations", ctx.auth.organizationId, {
       delegateOwnership: args.enabled,
       updatedAt: Date.now(),
     });
