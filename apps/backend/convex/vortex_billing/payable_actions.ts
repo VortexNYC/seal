@@ -1496,7 +1496,7 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
         recipientMap
       );
       const configInput = toPaymentFieldConfigInput(config);
-      const platformFeeCents = await ctx.runQuery(
+      const platformFeeCents = await ctx.runAction(
         internal.auth.subscription_helpers.getApplicationFeeForOrganization,
         {
           organizationId: args.organizationId,

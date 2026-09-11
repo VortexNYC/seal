@@ -8,10 +8,12 @@
  * All lookups are scoped to the ORGANIZATION, not the user.
  */
 
+import { parse } from "@vortexnyc/convex/helpers";
 import { addMoney, applyRate, money } from "@vortexnyc/money";
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
+import { internalAction } from "../_generated/server";
 import type { DatabaseReader, QueryCtx } from "../_generated/server";
 import {
   listComponentInvitationsByOrganization,
@@ -303,7 +305,7 @@ export function calculateApplicationFee(
   ).amount;
 }
 
-function readEnterpriseCustomRates(
+export function readEnterpriseCustomRates(
   org: Doc<"organizations"> | null
 ): { cardRate: number; cardFixed: number } | undefined {
   if (org === null) {
@@ -324,20 +326,70 @@ function readEnterpriseCustomRates(
 }
 
 /**
- * Get the application fee for a payment, resolving the org's tier.
+ * Get the application fee for a payment given a plan and optional custom rates.
  */
-export async function getApplicationFee(
-  db: DatabaseReader,
-  organizationId: Id<"organizations">,
+export function getApplicationFee(
   amountCents: number,
-  isAch: boolean
-): Promise<number> {
-  const { plan } = await getSubscriptionPlan(db, organizationId);
-
-  // Check for enterprise custom rates
-  const org = await db.get("organizations", organizationId);
-  const customRates =
-    plan === "enterprise" ? readEnterpriseCustomRates(org) : undefined;
-
+  plan: TierPlan,
+  isAch: boolean,
+  customRates?: { cardRate: number; cardFixed: number }
+): number {
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }
+
+/**
+ * D1-backed subscription plan lookup.
+ *
+ * Calls the Worker endpoint first. If the Worker is unavailable, falls back
+ * to the Convex `getSubscriptionPlan` helper.
+ */
+const subscriptionPlanResponseValidator = v.object({
+  isPro: v.boolean(),
+  isEnterprise: v.boolean(),
+  plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+});
+
+/**
+ * D1-backed subscription plan lookup.
+ *
+ * Calls the Worker endpoint first. If the Worker is unavailable, falls back
+ * to the Convex `getSubscriptionPlan` helper.
+ */
+export const getSubscriptionPlanD1 = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: subscriptionPlanResponseValidator,
+  handler: async (ctx, args) => {
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return await getSubscriptionPlan(ctx.db, args.organizationId);
+    }
+
+    const res = await fetch(
+      `${url}/internal/organizations/${encodeURIComponent(
+        args.organizationId
+      )}/subscription-plan`,
+      {
+        headers: {
+          "x-internal-api-key": key,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Worker subscription-plan failed: ${res.status} ${text}`);
+      return await getSubscriptionPlan(ctx.db, args.organizationId);
+    }
+
+    try {
+      const body = await res.json();
+      return parse(subscriptionPlanResponseValidator, body);
+    } catch (error) {
+      console.error("Failed to parse Worker subscription-plan:", error);
+      return await getSubscriptionPlan(ctx.db, args.organizationId);
+    }
+  },
+});
