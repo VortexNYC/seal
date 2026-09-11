@@ -306,13 +306,17 @@ export const projectSubscriptionUpdated = internalMutation({
     cancelReason: v.optional(v.string()),
     latestInvoiceId: v.optional(v.string()),
     sourceCreatedAt: v.optional(v.number()),
+    activeNonVortexProviderIdPresent: v.optional(v.boolean()),
+    skipD1Sync: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<VortexSubscriptionProjectionResult> => {
-    let activeNonVortexProviderIdPresent = await ctx.runQuery(
-      internal.vortex_billing.projection
-        .getActiveNonVortexProviderShapedSubscriptionQuery,
-      { organizationId: args.sealOrganizationId }
-    );
+    let activeNonVortexProviderIdPresent =
+      args.activeNonVortexProviderIdPresent ??
+      (await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.sealOrganizationId }
+      ));
 
     const existingEvent = await ctx.db
       .query("vortex_billing_webhook_events")
@@ -447,38 +451,42 @@ export const projectSubscriptionUpdated = internalMutation({
       processedAt: now,
     });
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.vortex_billing.worker_subscriptions.projectSubscriptionUpdated,
-      {
-        eventId: args.eventId,
-        organizationId: args.sealOrganizationId,
-        externalCustomerId: args.customerExternalId,
-        externalSubscriptionId: args.subscriptionExternalId,
-        externalPriceId: args.planCode,
-        externalProductId: price.externalProductId,
-        status,
-        cancelAtPeriodEnd: args.cancelAtPeriodEnd,
-        currentPeriodStart: parseIsoMillis(
-          args.currentPeriodStart,
-          "currentPeriodStart"
-        ),
-        currentPeriodEnd: parseIsoMillis(
-          args.currentPeriodEnd,
-          "currentPeriodEnd"
-        ),
-        canceledAt: parseOptionalIsoMillis(args.canceledAt),
-        cancelReason: args.cancelReason,
-        latestInvoiceId: args.latestInvoiceId,
-        metadata: JSON.stringify({ tier }),
-      }
-    );
+    if (!args.skipD1Sync) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.vortex_billing.worker_subscriptions.projectSubscriptionUpdated,
+        {
+          eventId: args.eventId,
+          organizationId: args.sealOrganizationId,
+          externalCustomerId: args.customerExternalId,
+          externalSubscriptionId: args.subscriptionExternalId,
+          externalPriceId: args.planCode,
+          externalProductId: price.externalProductId,
+          status,
+          cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+          currentPeriodStart: parseIsoMillis(
+            args.currentPeriodStart,
+            "currentPeriodStart"
+          ),
+          currentPeriodEnd: parseIsoMillis(
+            args.currentPeriodEnd,
+            "currentPeriodEnd"
+          ),
+          canceledAt: parseOptionalIsoMillis(args.canceledAt),
+          cancelReason: args.cancelReason,
+          latestInvoiceId: args.latestInvoiceId,
+          metadata: JSON.stringify({ tier }),
+        }
+      );
+    }
 
-    activeNonVortexProviderIdPresent = await ctx.runQuery(
-      internal.vortex_billing.projection
-        .getActiveNonVortexProviderShapedSubscriptionQuery,
-      { organizationId: args.sealOrganizationId }
-    );
+    if (args.activeNonVortexProviderIdPresent === undefined) {
+      activeNonVortexProviderIdPresent = await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.sealOrganizationId }
+      );
+    }
 
     return {
       processed: true,

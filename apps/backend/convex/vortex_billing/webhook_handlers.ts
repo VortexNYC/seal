@@ -7,6 +7,7 @@ import type { DataModel, Id } from "../_generated/dataModel";
 import {
   parseVortexInvoiceEvent,
   parseVortexPayableObjectEvent,
+  type VortexSubscriptionProjectionResult,
 } from "./projection";
 import { verifyVortexWebhookSignature } from "./webhook_signature";
 
@@ -201,10 +202,56 @@ const vortexWebhookDispatchers: Record<
       );
     }
 
-    const result = await ctx.runMutation(
-      internal.vortex_billing.projection.projectSubscriptionUpdated,
-      projection
-    );
+    let result: VortexSubscriptionProjectionResult;
+    try {
+      const { projected } = await ctx.runAction(
+        internal.vortex_billing.worker_subscriptions.projectSubscriptionUpdated,
+        {
+          eventId: projection.eventId,
+          organizationId: projection.sealOrganizationId,
+          externalCustomerId: projection.customerExternalId,
+          externalSubscriptionId: projection.subscriptionExternalId,
+          externalPriceId: projection.planCode,
+          status: projection.status,
+          cancelAtPeriodEnd: projection.cancelAtPeriodEnd,
+          currentPeriodStart: Date.parse(projection.currentPeriodStart),
+          currentPeriodEnd: Date.parse(projection.currentPeriodEnd),
+          canceledAt:
+            projection.canceledAt === undefined
+              ? undefined
+              : Date.parse(projection.canceledAt),
+          cancelReason: projection.cancelReason,
+          latestInvoiceId: projection.latestInvoiceId,
+        }
+      );
+
+      if (projected) {
+        const activeNonVortexProviderIdPresent = await ctx.runAction(
+          internal.vortex_billing.worker_subscriptions
+            .hasActiveNonVortexProviderShapedSubscription,
+          { organizationId: projection.sealOrganizationId }
+        );
+        result = await ctx.runMutation(
+          internal.vortex_billing.projection.projectSubscriptionUpdated,
+          {
+            ...projection,
+            activeNonVortexProviderIdPresent,
+            skipD1Sync: true,
+          }
+        );
+      } else {
+        result = await ctx.runMutation(
+          internal.vortex_billing.projection.projectSubscriptionUpdated,
+          projection
+        );
+      }
+    } catch {
+      result = await ctx.runMutation(
+        internal.vortex_billing.projection.projectSubscriptionUpdated,
+        projection
+      );
+    }
+
     return jsonResponse({ received: true, eventId: event.id, ...result }, 200);
   },
   "invoice.paid": async (ctx, event): Promise<Response> => {

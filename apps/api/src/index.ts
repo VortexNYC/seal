@@ -766,6 +766,43 @@ app.get(
   }
 );
 
+app.get(
+  "/internal/organizations/:organizationId/has-active-non-vortex-provider-subscription",
+  async (c) => {
+    const key = c.req.header("x-internal-api-key");
+    if (key !== c.env.INTERNAL_API_KEY) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+
+    const organizationId = c.req.param("organizationId");
+    const db = createD1(c.env.D1);
+
+    const nonVortexProviderIdPattern = /^(cus|sub|price|prod)_/u;
+    const active = await db
+      .select({
+        externalCustomerId: subscriptions.externalCustomerId,
+        externalSubscriptionId: subscriptions.externalSubscriptionId,
+        externalPriceId: subscriptions.externalPriceId,
+      })
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.organizationId, organizationId),
+          eq(subscriptions.status, "active")
+        )
+      );
+
+    const hasActive = active.some(
+      (s) =>
+        nonVortexProviderIdPattern.test(s.externalCustomerId) ||
+        nonVortexProviderIdPattern.test(s.externalSubscriptionId) ||
+        nonVortexProviderIdPattern.test(s.externalPriceId ?? "")
+    );
+
+    return c.json({ hasActive });
+  }
+);
+
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 app.get("/.well-known/oauth-authorization-server/seal-mcp", (c) => {

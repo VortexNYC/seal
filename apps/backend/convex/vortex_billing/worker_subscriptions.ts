@@ -1,5 +1,7 @@
+import { parse } from "@vortexnyc/convex/helpers";
 import { v } from "convex/values";
 
+import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 
 const invoiceEventArgs = {
@@ -146,5 +148,69 @@ export const projectSubscriptionUpdated = internalAction({
     }
 
     return { projected: true };
+  },
+});
+
+const hasActiveNonVortexProviderShapedSubscriptionResponse = v.object({
+  hasActive: v.boolean(),
+});
+
+export const hasActiveNonVortexProviderShapedSubscription = internalAction({
+  args: {
+    organizationId: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.organizationId }
+      );
+    }
+
+    const res = await fetch(
+      `${url}/internal/organizations/${encodeURIComponent(
+        args.organizationId
+      )}/has-active-non-vortex-provider-subscription`,
+      {
+        headers: {
+          "x-internal-api-key": key,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(
+        `Worker has-active-non-vortex-provider-subscription failed: ${res.status} ${text}`
+      );
+      return await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.organizationId }
+      );
+    }
+
+    try {
+      const body = await res.json();
+      const parsed = parse(
+        hasActiveNonVortexProviderShapedSubscriptionResponse,
+        body
+      );
+      return parsed.hasActive;
+    } catch (error) {
+      console.error(
+        "Failed to parse Worker non-Vortex subscription check:",
+        error
+      );
+      return await ctx.runQuery(
+        internal.vortex_billing.projection
+          .getActiveNonVortexProviderShapedSubscriptionQuery,
+        { organizationId: args.organizationId }
+      );
+    }
   },
 });
