@@ -243,6 +243,60 @@ app.post("/internal/document-invoices", async (c) => {
   return c.json({ success: true });
 });
 
+const documentInvoiceUpdateBody = z.object({
+  status: z.enum(["draft", "open", "paid", "void", "uncollectible"]).optional(),
+  paidAt: z.number().optional(),
+  voidedAt: z.number().optional(),
+  dunningCompletedAt: z.number().optional(),
+  deletedAt: z.number().optional(),
+});
+
+app.patch("/internal/document-invoices/:id", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = documentInvoiceUpdateBody.safeParse(await c.req.json());
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const id = c.req.param("id");
+  const body = parseResult.data;
+  const db = createD1(c.env.D1);
+
+  const existing = await db.query.documentInvoices.findFirst({
+    where: eq(documentInvoices.id, id),
+  });
+  if (!existing) {
+    return c.json({ error: "not found" }, 404);
+  }
+
+  const set: {
+    status?: string;
+    paidAt?: Date | null;
+    voidedAt?: Date | null;
+    dunningCompletedAt?: Date | null;
+    deletedAt?: Date | null;
+  } = {};
+  if (body.status !== undefined) set.status = body.status;
+  if (body.paidAt !== undefined) set.paidAt = new Date(body.paidAt);
+  if (body.voidedAt !== undefined) set.voidedAt = new Date(body.voidedAt);
+  if (body.dunningCompletedAt !== undefined)
+    set.dunningCompletedAt = new Date(body.dunningCompletedAt);
+  if (body.deletedAt !== undefined) set.deletedAt = new Date(body.deletedAt);
+
+  if (Object.keys(set).length > 0) {
+    await db
+      .update(documentInvoices)
+      .set(set)
+      .where(eq(documentInvoices.id, id));
+  }
+
+  return c.json({ success: true });
+});
+
 const paymentFieldConfigBody = z.object({
   id: z.string(),
   publicId: z.string(),

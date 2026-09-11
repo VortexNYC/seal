@@ -611,6 +611,18 @@ async function projectInvoiceEvent(
     }
   );
 
+  const invoiceUpdatePayload = JSON.stringify({
+    id: args.invoiceNumber,
+    status: statusPatch.latestInvoiceStatus,
+    paidAt: statusPatch.latestInvoiceStatus === "paid" ? now : undefined,
+  });
+
+  await ctx.scheduler.runAfter(
+    0,
+    internal.payment_fields.worker_invoices.updateDocumentInvoice,
+    { payload: invoiceUpdatePayload }
+  );
+
   return invoiceResult({
     processed: true,
     duplicate: false,

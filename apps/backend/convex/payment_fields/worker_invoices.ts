@@ -62,3 +62,44 @@ export const createDocumentInvoice = internalAction({
     return { created: true };
   },
 });
+
+export const updateDocumentInvoice = internalAction({
+  args: {
+    payload: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (!url || !key) {
+      return { updated: false };
+    }
+
+    const body = JSON.parse(args.payload);
+    const res = await fetch(
+      `${url}/internal/document-invoices/${encodeURIComponent(body.id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": key,
+        },
+        body: JSON.stringify({
+          status: body.status,
+          paidAt: body.paidAt,
+          voidedAt: body.voidedAt,
+          dunningCompletedAt: body.dunningCompletedAt,
+          deletedAt: body.deletedAt,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `Worker document-invoices patch failed: ${res.status} ${text}`
+      );
+    }
+
+    return { updated: true };
+  },
+});
