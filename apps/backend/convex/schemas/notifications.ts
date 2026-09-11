@@ -126,6 +126,8 @@ export const emailStatusTuple = v.union(
 export type EmailStatus = Infer<typeof emailStatusTuple>;
 
 export const notificationsTable = defineTable({
+  vortexAuthUserId: v.optional(v.string()),
+  vortexAuthOrganizationId: v.optional(v.string()),
   userId: v.id("users"),
   organizationId: v.id("organizations"),
   type: notificationTypeTuple,
@@ -140,9 +142,16 @@ export const notificationsTable = defineTable({
   emailMessageId: v.optional(v.string()), // Resend message ID for delivery tracking
 })
   .index("by_user", ["userId"])
+  .index("by_vortex_auth_user", ["vortexAuthUserId"])
   .index("by_user_unread", ["userId", "read"])
+  .index("by_vortex_auth_user_unread", ["vortexAuthUserId", "read"])
   .index("by_user_created", ["userId", "createdAt"])
+  .index("by_vortex_auth_user_created", ["vortexAuthUserId", "createdAt"])
   .index("by_organization", ["organizationId"])
   .index("by_organization_user", ["organizationId", "userId"])
+  .index("by_vortex_auth_organization_user", [
+    "vortexAuthOrganizationId",
+    "vortexAuthUserId",
+  ])
   .index("by_email_status", ["emailStatus"])
   .index("by_email_message_id", ["emailMessageId"]);
