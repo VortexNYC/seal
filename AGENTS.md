@@ -8,13 +8,13 @@
 
 ## OVERVIEW
 
-Vortex Sign is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns.
+Vortex Sign is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns. The legacy Convex backend has been removed; product data lives in the Cloudflare Worker API (`apps/api`).
 
 ## STRUCTURE
 
 ```text
 vortex-sign/
-├── apps/               # web, landing, api, backend (legacy), mcp-worker
+├── apps/               # web, landing, api, mcp-worker
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
 └── docs/               # planning, architecture, design notes (mostly archival)
@@ -28,9 +28,8 @@ vortex-sign/
 | Permissions & roles    | `docs/archive/root/ROLES_AND_PERMISSIONS.md`                   | Historical reference; verify live auth code too |
 | Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend                 |
 | REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |
-| Legacy backend         | `apps/backend/convex/`                                         | Convex (being retired)                          |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
-| Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + Convex + Router setup             |
+| Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + TanStack Query + Router setup     |
 | Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
 | Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
 | API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |
@@ -44,7 +43,6 @@ vortex-sign/
 
 - `apps/web/AGENTS.md`
 - `apps/landing/AGENTS.md`
-- `apps/backend/convex/AGENTS.md`
 - `apps/mcp-worker/AGENTS.md`
 - `packages/transactional/AGENTS.md`
 
@@ -52,17 +50,14 @@ vortex-sign/
 
 - TypeScript strict: no `any`, `@ts-ignore`, `@ts-expect-error`, `as any`; exported functions have explicit return types.
 - Cloudflare Worker backend (`apps/api`): use Hono + Drizzle + wrangler; native-first auth/storage.
-- Legacy Convex backend: use auth wrappers; commit `apps/backend/convex/_generated/`.
 - Routes: TanStack file-based; `apps/web/src/routeTree.gen.ts` and `apps/landing/src/routeTree.gen.ts` are generated.
 - Landing docs: `apps/landing/.source/*` and `apps/landing/content/docs/api-reference/*` are generated artifacts; regenerate from source instead of hand-editing.
 - E2E: Playwright page objects; prefer `data-testid` selectors.
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
-- Raw Convex `query`/`mutation` without wrappers.
-- Modify `apps/backend/convex/schemas/subscription_coupons.ts` or `apps/backend/convex/schemas/subscription_promo_codes.ts` directly.
 - Mutate historical usage counters directly; preserve usage history through documented payment projections.
-- Edit generated files: `apps/backend/convex/_generated/*`, `apps/web/src/routeTree.gen.ts`, `apps/landing/src/routeTree.gen.ts`, `apps/landing/.source/*`.
+- Edit generated files: `apps/web/src/routeTree.gen.ts`, `apps/landing/src/routeTree.gen.ts`, `apps/landing/.source/*`.
 - Hand-edit generated API reference docs under `apps/landing/content/docs/api-reference/`; update `apps/landing/openapi.yaml` and regenerate instead.
 - Use CSS-class selectors in E2E tests.
 - Commit secrets or `.env*` files.
@@ -93,7 +88,6 @@ pnpm run verify
 pnpm run test
 
 pnpm --filter @vortex/sign-api run test
-pnpm --filter @seal/backend run test
 pnpm --filter @seal/web run test
 pnpm --dir apps/web run test:e2e
 pnpm --dir apps/landing run docs:generate:api
@@ -105,7 +99,7 @@ Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/l
 ## NOTES
 
 - LSP codemap unavailable in this environment.
-- Complexity hotspots: `apps/backend/convex/http.ts`, `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx`, `apps/web/src/routes/sign.$token.tsx`.
+- Complexity hotspots: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx`, `apps/web/src/routes/sign.$token.tsx`.
 - D1 migrations: `drizzle-kit generate` can emit full-schema snapshots when `migrations/meta/_journal.json` is out of sync with existing `.sql` files. Use manual incremental `.sql` migrations and keep `_journal.json` aligned; `readD1Migrations` / `applyD1Migrations` in tests apply all `.sql` files in filename order.
 
 <!-- BEGIN VORTEX TOOLING MANAGED REVIEW GUIDELINES -->
@@ -118,13 +112,10 @@ Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/l
 * **Rule of two:** if this PR introduces code that already exists in 2 or more Vortex codebases (helpers, gates, scripts, config patterns, Convex utilities), REJECT it — the primitive belongs in a published `@vortexnyc/*` package. Flag the duplication, name the repos, and require a Core lift ticket instead of a third copy.
 * **pnpm only** (never npm/yarn/bun/npx). **Never** `any` (use `unknown` + narrow). **Never** `eslint-disable`/`biome-ignore`/`@ts-ignore`.
 * **REMEDIATION INTEGRITY — a lint/type fix must change BEHAVIOR toward the rule's intent or prove the rule's documented non-applicability through a Core-owned ratchet, never just silence the report.** A check is a proxy; satisfying its letter while preserving the flagged behavior is gaming, and it is REJECTED even when the number hits zero. In any diff whose purpose is clearing a lint/type/convex finding: (a) it may NOT introduce a new named helper, wrapper, naming convention, or abstraction that merely relocates the flagged construct out of the matcher's reach (e.g. a `sequentialForEach`/`parallelForEach` wrapper, an async `.reduce`, a helper that hides an `await` from `no-await-in-loop`) — if a "fix lint" diff ADDS a function definition, that is a red flag, inspect it as gaming; (b) it may NOT add `as any`/`as unknown as`, a `void`-prefixed promise, or any broad suppression-shaped comment/allowlist/config entry; (c) it may NOT weaken a read that must return all rows (`.take(N)`/`.paginate()` on a money/aggregate path is a silent cap). The reviewer must confirm the fix altered execution semantics in the intended direction or that the rule does not apply — same behavior + green check without either proof = FAIL. Use the provider's native concurrency primitive when it owns the lifecycle (for example Convex **Workpool**/**Rate Limiter**). When correctness or a provider contract truly requires a raw serial loop — dependent pagination, bounded retry/backoff, or ordered event application — ratchet the exact reviewed source file under `lint.sequentialFiles` and require behavior proof. Wildcards, directories, and filename-based exemptions are forbidden. Prefer an adversarial second-pass review on remediation PRs: its job is to prove the fix is cosmetic.
-* **Auth is Vortex Auth** (better-auth + Convex). **Clerk is always wrong.**
-* **Convex cost** — no dynamic `ctx.db.query(table)`, no unindexed `.collect()` (whole-table scans blow the 16 MiB / 32k-doc limits).
-* **Convex reads — use the RIGHT native tool, don't over-wrap.** Match the need, smallest tool that fits: (1) read all rows of ONE index → **native `for await (const x of ctx.db.query(t).withIndex(...))`** — the Convex query is async-iterable, lint-clean, no dependency. NEVER `.collect()`, and NEVER `.take(N)` on a money/aggregate read (a silent cap = wrong totals). (2) `await ctx.db.get(id)` inside a loop (`no-await-in-loop`) → convex-helpers **`getAll`/`getManyFrom`/`getManyVia`**. (3) merge/order across multiple index ranges → convex-helpers **`mergedStream`/`streamIndexRange`**. (4) cursor pagination → convex-helpers **`paginator`**. Helpers (2)–(4) come from **`@vortexnyc/convex/helpers`**. REJECT wrapping a plain single-index read in `stream()` — that's the power tool where the native iterator already does the job.
-* **Untrusted input — parse against a validator, never cast.** `JSON.parse` returns `any`; `JSON.parse(x) as T` is a lie the type system cannot check and is the single largest source of `no-unsafe-type-assertion` across the fleet. Use **`parse(validator, value)`** (typed result, throws on mismatch) or **`validate(validator, value)`** (type guard) from **`@vortexnyc/convex/helpers`** — they re-export `convex-helpers/validators`, which imports only `convex/values`, so they work in Convex functions, packages AND Node scripts alike. The validators you already declared in `schema.ts` and in each function's `args` ARE the parser — do not hand-write a guard per shape. Pass `db` when a `v.id(table)` must be proven to belong to that table; without it `v.id` is only checked as a string. A remaining `as T` on a parsed payload means no validator was declared for that boundary — declare one.
-* **Convex `ctx` code lives under `convex/`.** Any module that accepts a `QueryCtx`/`MutationCtx`/`ActionCtx` — helpers and runtime factories included, not just the query/mutation definitions — belongs in a `convex/` directory. Convex permits otherwise (`convex.json` only declares where FUNCTION DEFINITIONS live, so imported helpers may sit anywhere and still execute inside Convex), but the typed Convex lint tier globs `convex/` and `component/` only, so anything else is UNCHECKED. vortex-payments kept a 2501-line billing runtime in `apps/backend/src/` — 91 `ctx.db` sites, imported by 14 Convex functions — which silently accumulated 69 findings no gate could see. If pure logic must live outside, split it: the `ctx`-taking part moves under `convex/`, the rest stays. `project-kit doctor` fails on violations (`convex-code-outside-convex-dir`).
+* **Auth is Vortex Auth** (better-auth + Cloudflare). **Clerk is always wrong.**
+* **Untrusted input — parse against a validator, never cast.** `JSON.parse` returns `any`; `JSON.parse(x) as T` is a lie the type system cannot check. Use Zod (`z.object(...).parse(value)` or `.safeParse()`) at every request/env/boundary in the Worker, and the Drizzle schema for database boundaries. A remaining `as T` means no validator was declared for that boundary — declare one.
 * **Money math — `@vortexnyc/money`, never hand-rolled.** Money is INTEGER minor units (no float storage). A bare `Math.round`/`Math.floor`/`Math.ceil`, `.toFixed`, `parseFloat`, or `/ 100`/`* 100` on a money amount is a REJECT — route it through Core: fractional rounding → `roundMinorUnits`/`applyRate`/`multiplyMoney`; major↔minor conversion → `fromMajorUnits`/`toMajorNumber`/`toMinorUnitsInt`; splitting an amount into parts → `allocate` (penny-safe largest-remainder, NEVER `total / n`); combining amounts that may differ in currency (cross-entity, multi-currency) → `sumMoney`/`addMoney`/`compareMoney` for the currency-mismatch guard; display → `formatMoney`. A raw integer `+`/`reduce` is acceptable ONLY for an exact same-currency minor-unit sum that cannot lose precision (e.g. summing one invoice's line amounts); anything that rounds, divides, converts, or crosses currencies must use the Core primitive. Rounding policy is **round-half-up, applied per line-item, then sum the integer minor units** — this MATCHES Stripe exactly (fee `0.025 → 0.03`; tax rounded at the invoice-item level to the smallest unit *before* totaling) and US banking. NEVER banker's/half-even — that diverges from Stripe. New raw-number money arithmetic in a consumer is CORE-FIRST debt: if a needed operation is missing, add it to `@vortexnyc/money` and consume it — never hand-roll in the consumer.
-* **Test flavor** — a test that touches `ctx`/schema/`_generated` is a `.vitest.ts` using `convex-test` (edge-runtime); pure logic is a `.test.ts` run by `vitest` (`pnpm run test:unit`). NEVER `bun test` or `bun:test` APIs — bun is not the toolchain.
+* **Test flavor** — tests run with vitest (`pnpm run test`). NEVER `bun test` or `bun:test` APIs — bun is not the toolchain.
 * **Supply never single-sourced** — model calls need the flat fallback chain (`ollama-cloud → opencode-go → openai/gpt-5.5`), never one provider, never a metered tier.
 * **No secrets/PII in logs.** Auth middleware wraps every route. **No AI attribution** anywhere.
 <!-- END VORTEX TOOLING MANAGED REVIEW GUIDELINES -->
