@@ -146,6 +146,31 @@ async function getOrganizationOrThrow(
   if (!organization) {
     throwPermissionAuthError("NOT_FOUND", "Organization not found");
   }
+
+  if (organization.vortexAuthOrganizationId !== undefined) {
+    const componentOrg = await ctx.runQuery(
+      components.vortexAuth.organizations.getOrganization,
+      { organizationId: organization.vortexAuthOrganizationId }
+    );
+    if (componentOrg === null) {
+      throwPermissionAuthError("NOT_FOUND", "Organization not found");
+    }
+    if (componentOrg.status !== "active") {
+      throwPermissionAuthError(
+        "FORBIDDEN",
+        `Organization is ${componentOrg.status}`
+      );
+    }
+  }
+
+  const organizationStatus = organization.status ?? "active";
+  if (organizationStatus !== "active") {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      `Organization is ${organizationStatus}`
+    );
+  }
+
   return organization;
 }
 
@@ -273,13 +298,6 @@ async function buildActiveMembershipContext(
 
   if (membership.status !== "active") {
     throwPermissionAuthError("FORBIDDEN", `Membership is ${membership.status}`);
-  }
-  const organizationStatus = organization.status ?? "active";
-  if (organizationStatus !== "active") {
-    throwPermissionAuthError(
-      "FORBIDDEN",
-      `Organization is ${organizationStatus}`
-    );
   }
 
   return { membership, organization, organizationId };
