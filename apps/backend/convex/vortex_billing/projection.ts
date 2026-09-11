@@ -2,7 +2,11 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, type MutationCtx } from "../_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+} from "../_generated/server";
 import type { SubscriptionStatus } from "../schemas/subscriptions";
 import { resolveSubscriptionPriceAndProductByAnyId } from "../subscription_price_resolver";
 
@@ -262,26 +266,29 @@ async function cancelOtherPaidSubscriptions(
   }
 }
 
-async function hasActiveNonVortexProviderShapedSubscription(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">
-): Promise<boolean> {
-  for await (const subscription of ctx.db
-    .query("subscriptions")
-    .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active")
-    )) {
-    if (
-      nonVortexProviderIdPattern.test(subscription.externalCustomerId) ||
-      nonVortexProviderIdPattern.test(subscription.externalSubscriptionId) ||
-      nonVortexProviderIdPattern.test(subscription.externalPriceId)
-    ) {
-      return true;
+export const getActiveNonVortexProviderShapedSubscriptionQuery = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    for await (const subscription of ctx.db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active")
+      )) {
+      if (
+        nonVortexProviderIdPattern.test(subscription.externalCustomerId) ||
+        nonVortexProviderIdPattern.test(subscription.externalSubscriptionId) ||
+        nonVortexProviderIdPattern.test(subscription.externalPriceId)
+      ) {
+        return true;
+      }
     }
-  }
 
-  return false;
-}
+    return false;
+  },
+});
 
 export const projectSubscriptionUpdated = internalMutation({
   args: {
@@ -301,6 +308,12 @@ export const projectSubscriptionUpdated = internalMutation({
     sourceCreatedAt: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<VortexSubscriptionProjectionResult> => {
+    let activeNonVortexProviderIdPresent = await ctx.runQuery(
+      internal.vortex_billing.projection
+        .getActiveNonVortexProviderShapedSubscriptionQuery,
+      { organizationId: args.sealOrganizationId }
+    );
+
     const existingEvent = await ctx.db
       .query("vortex_billing_webhook_events")
       .withIndex("by_event_id", (q) => q.eq("eventId", args.eventId))
@@ -311,11 +324,7 @@ export const projectSubscriptionUpdated = internalMutation({
         duplicate: true,
         organizationId: args.sealOrganizationId,
         externalSubscriptionId: args.subscriptionExternalId,
-        activeNonVortexProviderIdPresent:
-          await hasActiveNonVortexProviderShapedSubscription(
-            ctx,
-            args.sealOrganizationId
-          ),
+        activeNonVortexProviderIdPresent,
       };
     }
 
@@ -358,11 +367,7 @@ export const projectSubscriptionUpdated = internalMutation({
         ignored: true,
         organizationId: args.sealOrganizationId,
         externalSubscriptionId: args.subscriptionExternalId,
-        activeNonVortexProviderIdPresent:
-          await hasActiveNonVortexProviderShapedSubscription(
-            ctx,
-            args.sealOrganizationId
-          ),
+        activeNonVortexProviderIdPresent,
       };
     }
 
@@ -469,16 +474,18 @@ export const projectSubscriptionUpdated = internalMutation({
       }
     );
 
+    activeNonVortexProviderIdPresent = await ctx.runQuery(
+      internal.vortex_billing.projection
+        .getActiveNonVortexProviderShapedSubscriptionQuery,
+      { organizationId: args.sealOrganizationId }
+    );
+
     return {
       processed: true,
       duplicate: false,
       organizationId: args.sealOrganizationId,
       externalSubscriptionId: args.subscriptionExternalId,
-      activeNonVortexProviderIdPresent:
-        await hasActiveNonVortexProviderShapedSubscription(
-          ctx,
-          args.sealOrganizationId
-        ),
+      activeNonVortexProviderIdPresent,
     };
   },
 });
