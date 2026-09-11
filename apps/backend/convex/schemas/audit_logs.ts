@@ -89,6 +89,8 @@ export type AuditResourceType = Infer<typeof auditResourceTypeTuple>;
 
 export const auditLogsTable = defineTable({
   // Scoping
+  vortexAuthOrganizationId: v.optional(v.string()),
+  vortexAuthUserId: v.optional(v.string()),
   organizationId: v.id("organizations"), // Organization context
 
   // Actor Information
@@ -132,7 +134,9 @@ export const auditLogsTable = defineTable({
   createdAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
   .index("by_user", ["userId"])
+  .index("by_vortex_auth_user", ["vortexAuthUserId"])
   .index("by_document", ["documentId"])
   .index("by_recipient", ["recipientId"])
   .index("by_action", ["action"])
