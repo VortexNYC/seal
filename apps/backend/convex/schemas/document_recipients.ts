@@ -35,6 +35,7 @@ export const documentRecipientsTable = defineTable({
   // Recipient information
   email: v.string(),
   name: v.optional(v.string()),
+  vortexAuthUserId: v.optional(v.string()),
   userId: v.optional(v.id("users")), // Link to user account if recipient has one
 
   // Role and status
@@ -99,6 +100,7 @@ export const documentRecipientsTable = defineTable({
   .index("by_token", ["signingToken"])
   .index("by_token_hash", ["tokenHash"])
   .index("by_email", ["email"])
+  .index("by_vortex_auth_user", ["vortexAuthUserId"])
   .index("by_document_order", ["documentId", "order"]);
 
 /**
