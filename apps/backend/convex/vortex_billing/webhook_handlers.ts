@@ -264,6 +264,27 @@ const vortexWebhookDispatchers: Record<
       );
     }
 
+    const url = process.env.SIGN_API_EMAIL_URL;
+    const key = process.env.SIGN_API_EMAIL_KEY;
+    if (url && key) {
+      const res = await fetch(
+        `${url}/internal/webhooks/vortex-billing/payable-object`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-api-key": key,
+          },
+          body: JSON.stringify(projection),
+        }
+      );
+      const body = (await res.json()) as unknown;
+      return jsonResponse(
+        { received: true, eventId: event.id, ...body },
+        res.status
+      );
+    }
+
     const result = await ctx.runMutation(
       internal.vortex_billing.projection.projectPayableObjectUpdated,
       projection
