@@ -2,6 +2,7 @@ import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export const merchantAccountsTable = defineTable({
+  vortexAuthOrganizationId: v.optional(v.string()),
   organizationId: v.id("organizations"),
   provider: v.literal("vortex"),
   providerAccountId: v.string(),
@@ -30,6 +31,7 @@ export const merchantAccountsTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization", ["organizationId"])
+  .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"])
   .index("by_provider_account", ["providerAccountId"]);
 
 export type MerchantAccountType = "standard" | "express";

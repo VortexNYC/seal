@@ -20,6 +20,7 @@ export const getAccountByOrganizationId = internalQuery({
 
 export const upsertMerchantAccount = internalMutation({
   args: {
+    vortexAuthOrganizationId: v.optional(v.string()),
     organizationId: v.id("organizations"),
     providerAccountId: v.string(),
     accountType: v.union(v.literal("standard"), v.literal("express")),
@@ -54,8 +55,15 @@ export const upsertMerchantAccount = internalMutation({
       )
       .first();
 
+    const vortexAuthOrganizationId =
+      args.vortexAuthOrganizationId ??
+      existing?.vortexAuthOrganizationId ??
+      (await ctx.db.get("organizations", args.organizationId))
+        ?.vortexAuthOrganizationId;
+
     const now = Date.now();
     const payload = {
+      vortexAuthOrganizationId,
       organizationId: args.organizationId,
       provider: "vortex" as const,
       providerAccountId: args.providerAccountId,
