@@ -7,7 +7,10 @@ import { downloadDocument } from "@/lib/api-client";
  * Manages PDF viewer state: loading the PDF URL, responsive width, page navigation,
  * and zoom tracking. Returns refs needed for the PDF container DOM elements.
  */
-export function usePdfViewer(documentPublicId: string) {
+export function usePdfViewer(
+  organizationSlug: string,
+  documentPublicId: string
+) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -23,7 +26,7 @@ export function usePdfViewer(documentPublicId: string) {
   useEffect(() => {
     const fetchPdfUrl = async () => {
       try {
-        const blob = await downloadDocument(documentPublicId);
+        const blob = await downloadDocument(organizationSlug, documentPublicId);
         const url = URL.createObjectURL(blob);
         setPdfUrl(url);
       } catch {

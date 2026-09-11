@@ -83,24 +83,25 @@ function renderPopover(
       queryReturn.unreadCount ?? 0
     );
     queryClient.setQueryData(
-      ["api", "notifications"],
+      ["api", "notifications", slug],
       queryReturn.notifications ?? []
     );
     queryClient.setQueryData(
-      ["api", "notifications", "unread-count"],
+      ["api", "notifications", "unread-count", slug],
       queryReturn.unreadCount ?? 0
     );
   }
 
-  mockMarkNotificationAsRead.mockImplementation((id: string) =>
-    Promise.resolve(makeNotification({ _id: id, read: true }))
+  mockMarkNotificationAsRead.mockImplementation(
+    (_organizationSlug: string, id: string) =>
+      Promise.resolve(makeNotification({ _id: id, read: true }))
   );
   mockMarkAllNotificationsAsRead.mockResolvedValue(0);
 
   return {
     ...render(
       <QueryClientProvider client={queryClient}>
-        <NotificationsPopover slug={slug} />
+        <NotificationsPopover slug={slug} organizationSlug={slug} />
       </QueryClientProvider>
     ),
     queryClient,
@@ -512,7 +513,7 @@ describe("NotificationsPopover", () => {
       await user.click(
         screen.getByText("Sharing was disabled for 1 document(s)")
       );
-      expect(mockMarkNotificationAsRead.mock.calls[0]?.[0]).toBe("notif_1");
+      expect(mockMarkNotificationAsRead.mock.calls[0]?.[1]).toBe("notif_1");
     });
 
     test("does not call markNotificationAsRead when clicking an already-read notification", async () => {

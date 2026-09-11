@@ -16,6 +16,7 @@ interface DocumentThumbnailProps {
   thumbnailDataUrl?: string | null;
   name: string;
   className?: string;
+  organizationSlug: string;
 }
 
 export function DocumentThumbnail({
@@ -23,6 +24,7 @@ export function DocumentThumbnail({
   thumbnailDataUrl,
   name,
   className = "w-12 h-16 sm:w-16 sm:h-20",
+  organizationSlug,
 }: DocumentThumbnailProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [localThumbnail, setLocalThumbnail] = useState<string | null>(
@@ -33,7 +35,11 @@ export function DocumentThumbnail({
 
   const updateThumbnail = useMutation({
     mutationFn: (variables: { publicId: string; thumbnailDataUrl: string }) =>
-      updateDocumentThumbnail(variables.publicId, variables.thumbnailDataUrl),
+      updateDocumentThumbnail(
+        organizationSlug,
+        variables.publicId,
+        variables.thumbnailDataUrl
+      ),
   });
 
   useEffect(() => {
@@ -50,7 +56,7 @@ export function DocumentThumbnail({
       let objectUrl: string | undefined;
 
       try {
-        const blob = await downloadDocument(publicId);
+        const blob = await downloadDocument(organizationSlug, publicId);
         objectUrl = window.URL.createObjectURL(blob);
         const thumbnail = await generateThumbnailFromUrl(objectUrl);
 

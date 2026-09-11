@@ -1,8 +1,3 @@
-import {
-  AuthProvider,
-  OrganizationProfile,
-  useAuth,
-} from "@vortexnyc/better-auth-ui";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
@@ -11,6 +6,11 @@ import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  AuthProvider,
+  OrganizationProfile,
+  useAuth,
+} from "@vortexnyc/better-auth-ui";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -44,15 +44,24 @@ const DEFAULT_PRODUCT: ProductFormData = {
 };
 
 function productFromMetadata(
-  metadata: Record<string, unknown> | undefined,
+  metadata: Record<string, unknown> | undefined
 ): ProductFormData {
   if (metadata === undefined) {
     return DEFAULT_PRODUCT;
   }
   return {
-    timezone: typeof metadata.timezone === "string" ? metadata.timezone : DEFAULT_PRODUCT.timezone,
-    currency: typeof metadata.currency === "string" ? metadata.currency : DEFAULT_PRODUCT.currency,
-    currencyKind: typeof metadata.currencyKind === "string" ? metadata.currencyKind : DEFAULT_PRODUCT.currencyKind,
+    timezone:
+      typeof metadata.timezone === "string"
+        ? metadata.timezone
+        : DEFAULT_PRODUCT.timezone,
+    currency:
+      typeof metadata.currency === "string"
+        ? metadata.currency
+        : DEFAULT_PRODUCT.currency,
+    currencyKind:
+      typeof metadata.currencyKind === "string"
+        ? metadata.currencyKind
+        : DEFAULT_PRODUCT.currencyKind,
   };
 }
 
@@ -89,12 +98,14 @@ function GeneralSettingsContent() {
   }, [organization]);
 
   const isAdmin =
-    organization?.userRole === "owner" ||
-    organization?.userRole === "admin";
+    organization?.userRole === "owner" || organization?.userRole === "admin";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (client.organization?.update === undefined || organization?.id === undefined) {
+    if (
+      client.organization?.update === undefined ||
+      organization?.id === undefined
+    ) {
       return;
     }
 
@@ -117,7 +128,7 @@ function GeneralSettingsContent() {
 
       if (response.error !== null) {
         toast.error(
-          response.error.message ?? "Could not update workspace settings.",
+          response.error.message ?? "Could not update workspace settings."
         );
       } else {
         toast.success("Workspace settings updated successfully.");
@@ -126,7 +137,7 @@ function GeneralSettingsContent() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Could not update workspace settings.",
+          : "Could not update workspace settings."
       );
     } finally {
       setIsSubmitting(false);
@@ -220,7 +231,7 @@ function GeneralSettingsContent() {
                   disabled={!isAdmin}
                 />
               </div>
-              <div className="md:col-span-3 flex justify-end">
+              <div className="flex justify-end md:col-span-3">
                 <Button type="submit" disabled={!isAdmin || isSubmitting}>
                   <FloppyDisk className="mr-2 h-4 w-4" />
                   {isSubmitting ? "Saving…" : "Save workspace settings"}

@@ -60,6 +60,7 @@ function renderDialog(
     onOpenChange: vi.fn(),
     onUpdated: vi.fn(),
     contact: makeContact(),
+    organizationSlug: "acme",
     ...overrides,
   };
   return { ...render(<EditContactDialog {...props} />), props };
@@ -175,6 +176,7 @@ describe("EditContactDialog", () => {
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(mockUpdateContact).toHaveBeenCalledWith(
+        "acme",
         "contact_1",
         expect.objectContaining({
           firstName: "Janet",

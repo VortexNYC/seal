@@ -21,8 +21,8 @@ export function NeedsAttention({
   slug,
 }: NeedsAttentionProps): React.ReactElement | null {
   const { data: attention } = useQuery({
-    queryKey: ["api", "documents", "attention"],
-    queryFn: getDocumentAttention,
+    queryKey: ["api", "documents", "attention", slug],
+    queryFn: () => getDocumentAttention(slug),
   });
 
   if (!attention || attention.totalIssues === 0) return null;

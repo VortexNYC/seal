@@ -90,6 +90,7 @@ interface Recipient {
 }
 
 interface FieldPropertiesPanelProps {
+  organizationSlug: string;
   documentPublicId: string;
   field: FieldData;
   recipients: Recipient[];
@@ -226,7 +227,9 @@ function useFieldPropertiesActions({
   state,
   onSave,
   onClose,
+  organizationSlug,
 }: {
+  organizationSlug: string;
   documentPublicId: string;
   field: FieldData;
   recipients: Recipient[];
@@ -235,8 +238,13 @@ function useFieldPropertiesActions({
   onClose: () => void;
 }) {
   const updateField = useMutation({
-    mutationFn: (input: Parameters<typeof updateSignatureField>[2]) =>
-      updateSignatureField(documentPublicId, field.publicId, input),
+    mutationFn: (input: Parameters<typeof updateSignatureField>[3]) =>
+      updateSignatureField(
+        organizationSlug,
+        documentPublicId,
+        field.publicId,
+        input
+      ),
   });
 
   const handleRecipientChange = async (value: string) => {
@@ -305,12 +313,14 @@ function useFieldPropertiesActions({
 }
 
 function useFieldPropertiesForm({
+  organizationSlug,
   documentPublicId,
   field,
   recipients,
   onSave,
   onClose,
 }: {
+  organizationSlug: string;
   documentPublicId: string;
   field: FieldData;
   recipients: Recipient[];
@@ -319,6 +329,7 @@ function useFieldPropertiesForm({
 }) {
   const state = useFieldPropertiesState(field, recipients);
   const actions = useFieldPropertiesActions({
+    organizationSlug,
     documentPublicId,
     field,
     recipients,
@@ -729,6 +740,7 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 };
 
 export function FieldPropertiesPanel({
+  organizationSlug,
   documentPublicId,
   field,
   recipients,
@@ -737,6 +749,7 @@ export function FieldPropertiesPanel({
   onConfigurePayment,
 }: FieldPropertiesPanelProps) {
   const form = useFieldPropertiesForm({
+    organizationSlug,
     documentPublicId,
     field,
     recipients,

@@ -82,10 +82,16 @@ function StatCard({
   );
 }
 
-export function StatsCards(): React.ReactElement {
+interface StatsCardsProps {
+  organizationSlug: string;
+}
+
+export function StatsCards({
+  organizationSlug,
+}: StatsCardsProps): React.ReactElement {
   const { data: stats } = useSuspenseQuery({
-    queryKey: ["api", "documents", "stats"],
-    queryFn: getDocumentStats,
+    queryKey: ["api", "documents", "stats", organizationSlug],
+    queryFn: () => getDocumentStats(organizationSlug),
   });
 
   return (

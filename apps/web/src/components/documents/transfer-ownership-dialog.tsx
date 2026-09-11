@@ -31,6 +31,7 @@ interface TransferOwnershipDialogProps {
   currentOwnerId: string;
   sharingMode: string;
   slug: string;
+  organizationSlug: string;
 }
 
 export function TransferOwnershipDialog({
@@ -41,6 +42,7 @@ export function TransferOwnershipDialog({
   currentOwnerId,
   sharingMode,
   slug,
+  organizationSlug,
 }: TransferOwnershipDialogProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +51,11 @@ export function TransferOwnershipDialog({
 
   const transferOwnership = useMutation({
     mutationFn: (variables: { publicId: string; newOwnerId: string }) =>
-      transferDocument(variables.publicId, variables.newOwnerId),
+      transferDocument(
+        organizationSlug,
+        variables.publicId,
+        variables.newOwnerId
+      ),
   });
 
   const eligibleMembers =

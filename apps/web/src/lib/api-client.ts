@@ -5,13 +5,11 @@ import {
   toWorkflowStatus,
   type DocumentWorkflowStatus,
 } from "@/lib/document-status";
-
 const documentTrendSchema = z.object({
   date: z.string(),
   created: z.number().int(),
   completed: z.number().int(),
 });
-
 const documentStatsSchema = z.object({
   total: z.number().int(),
   pending: z.number().int(),
@@ -26,7 +24,6 @@ const documentStatsSchema = z.object({
   createdThisMonth: z.number().int(),
   completedThisMonth: z.number().int(),
 });
-
 const analyticsStatsSchema = z.object({
   total: z.number().int(),
   draft: z.number().int(),
@@ -41,7 +38,6 @@ const analyticsStatsSchema = z.object({
   avgSigningTimeMs: z.number().int().nullable(),
   isAdmin: z.boolean(),
 });
-
 const recentDocumentSchema = z.object({
   _id: z.string(),
   name: z.string(),
@@ -51,7 +47,6 @@ const recentDocumentSchema = z.object({
   status: z.string(),
   thumbnailDataUrl: z.string().nullable().optional(),
 });
-
 const documentAttentionSchema = z.object({
   totalIssues: z.number().int(),
   staleRecipients: z.array(
@@ -80,7 +75,6 @@ const documentAttentionSchema = z.object({
     })
   ),
 });
-
 const activitySchema = z.object({
   id: z.string(),
   organizationId: z.string(),
@@ -90,7 +84,6 @@ const activitySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   timestamp: z.number(),
 });
-
 const contactSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -110,14 +103,12 @@ const contactSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 const relatedDocumentSchema = z.object({
   id: z.string(),
   name: z.string(),
   workflowStatus: z.string(),
   role: z.string(),
 });
-
 const notificationTypeSchema = z.enum([
   "document_shared",
   "access_revoked",
@@ -130,14 +121,12 @@ const notificationTypeSchema = z.enum([
   "sharing_disabled",
   "bulk_access_revoked",
 ]);
-
 const notificationEmailStatusSchema = z.enum([
   "pending",
   "sent",
   "failed",
   "not_applicable",
 ]);
-
 const notificationSchema = z.object({
   _id: z.string(),
   userId: z.string(),
@@ -154,7 +143,6 @@ const notificationSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 export type ApiDocumentStats = z.infer<typeof documentStatsSchema>;
 export type ApiAnalyticsStats = z.infer<typeof analyticsStatsSchema>;
 export type ApiDocumentTrend = z.infer<typeof documentTrendSchema>;
@@ -192,35 +180,6 @@ export type ApiContact = {
   updatedAt: number;
 };
 export type ApiRelatedDocument = z.infer<typeof relatedDocumentSchema>;
-
-function getOrganizationSlugFromPath(): string | null {
-  if (typeof window === "undefined") return null;
-  const match = window.location.pathname.match(/^\/([^/]+)/);
-  return match ? match[1] : null;
-}
-
-function withOrganizationSlug(path: string): string {
-  const slug = getOrganizationSlugFromPath();
-  if (!slug) return path;
-
-  const productMatch = path.match(
-    /^(\/api\/(?:documents|folders|contacts|notifications|analytics|activity|feedback))(\/.*)?$/
-  );
-  if (productMatch) {
-    const tail = productMatch[2] ?? "";
-    return `${productMatch[1]}/${slug}${tail}`;
-  }
-
-  if (
-    path === "/api/users/me/usage" ||
-    path === "/api/users/me/subscription"
-  ) {
-    return `/api/users/${slug}/me${path.slice("/api/users".length)}`;
-  }
-
-  return path;
-}
-
 function getBaseUrl(): string {
   const value: unknown = import.meta.env.VITE_API_URL;
   if (typeof value === "string" && value.length > 0) {
@@ -228,7 +187,6 @@ function getBaseUrl(): string {
   }
   return "";
 }
-
 async function apiFetch<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -238,39 +196,31 @@ async function apiFetch<T>(
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-
-  const response = await fetch(`${getBaseUrl()}${withOrganizationSlug(path)}`, {
+  const response = await fetch(`${getBaseUrl()}${path}`, {
     ...init,
     credentials: "include",
     headers,
   });
-
   if (!response.ok) {
     const text = await response.text().catch(() => "Unknown error");
     throw new Error(`API error ${response.status}: ${text}`);
   }
-
   if (response.status === 204) {
     return schema.parse(undefined);
   }
-
   const data: unknown = await response.json();
   return schema.parse(data);
 }
-
 const brandingSettingsSchema = z.record(z.string(), z.unknown());
-
 export type ApiBrandingSettings = z.infer<typeof brandingSettingsSchema>;
-
 export async function getBrandingSettings(
-  slug: string
+  organizationSlug: string
 ): Promise<ApiBrandingSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/branding`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/branding`,
     brandingSettingsSchema
   );
 }
-
 const templateListItemSchema = z.object({
   _id: z.string(),
   id: z.string(),
@@ -284,15 +234,13 @@ const templateListItemSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 export type ApiTemplateListItem = z.infer<typeof templateListItemSchema>;
-
 export async function getOrganizationTemplates(
-  slug: string,
+  organizationSlug: string,
   folderId?: string
 ): Promise<ApiTemplateListItem[]> {
   const url = new URL(
-    `/api/organizations/${encodeURIComponent(slug)}/templates`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/templates`,
     window.location.origin
   );
   if (folderId) {
@@ -303,18 +251,20 @@ export async function getOrganizationTemplates(
     z.array(templateListItemSchema)
   );
 }
-
 const useTemplateResponseSchema = z.object({
   documentId: z.string(),
 });
-
 export async function useTemplate(
-  slug: string,
+  organizationSlug: string,
   templateId: string,
-  input: { documentName?: string }
-): Promise<{ documentId: string }> {
+  input: {
+    documentName?: string;
+  }
+): Promise<{
+  documentId: string;
+}> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}/use`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/templates/${encodeURIComponent(templateId)}/use`,
     useTemplateResponseSchema,
     {
       method: "POST",
@@ -322,14 +272,16 @@ export async function useTemplate(
     }
   );
 }
-
 export async function updateTemplate(
-  slug: string,
+  organizationSlug: string,
   templateId: string,
-  input: { name?: string; description?: string | null }
+  input: {
+    name?: string;
+    description?: string | null;
+  }
 ): Promise<ApiTemplateListItem> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/templates/${encodeURIComponent(templateId)}`,
     templateListItemSchema,
     {
       method: "PATCH",
@@ -337,27 +289,25 @@ export async function updateTemplate(
     }
   );
 }
-
 export async function deleteTemplate(
-  slug: string,
+  organizationSlug: string,
   templateId: string
 ): Promise<void> {
   await apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/templates/${encodeURIComponent(templateId)}`,
     z.void(),
     {
       method: "DELETE",
     }
   );
 }
-
 export async function moveTemplateToFolder(
-  slug: string,
+  organizationSlug: string,
   templateId: string,
   folderId?: string
 ): Promise<void> {
   await apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/templates/${encodeURIComponent(templateId)}/folder`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/templates/${encodeURIComponent(templateId)}/folder`,
     z.void(),
     {
       method: "PATCH",
@@ -367,32 +317,27 @@ export async function moveTemplateToFolder(
     }
   );
 }
-
 const emailPreferencesSchema = z.object({
   enabled: z.boolean(),
   documentEvents: z.boolean(),
   reminders: z.boolean(),
   weeklyDigest: z.boolean(),
 });
-
 const notificationPreferencesSchema = z.object({
   email: emailPreferencesSchema,
   inApp: z.boolean(),
   desktop: z.boolean(),
   frequency: z.enum(["instant", "daily", "weekly"]),
 });
-
 export type ApiNotificationPreferences = z.infer<
   typeof notificationPreferencesSchema
 >;
-
 export async function getUserNotificationPreferences(): Promise<ApiNotificationPreferences> {
   return apiFetch(
     "/api/users/me/notification-preferences",
     notificationPreferencesSchema
   );
 }
-
 export async function updateUserNotificationPreferences(
   input: Partial<ApiNotificationPreferences>
 ): Promise<ApiNotificationPreferences> {
@@ -405,7 +350,6 @@ export async function updateUserNotificationPreferences(
     }
   );
 }
-
 const usageStatisticsSchema = z.object({
   totalDocuments: z.number().int(),
   workflowCounts: z.object({
@@ -427,13 +371,10 @@ const usageStatisticsSchema = z.object({
   documentsPercentUsed: z.number(),
   completionRate: z.number().int(),
 });
-
 export type ApiUsageStatistics = z.infer<typeof usageStatisticsSchema>;
-
 export async function getUserUsageStatistics(): Promise<ApiUsageStatistics> {
   return apiFetch("/api/users/me/usage", usageStatisticsSchema);
 }
-
 const connectedAppSchema = z.object({
   id: z.string(),
   appName: z.string(),
@@ -442,9 +383,7 @@ const connectedAppSchema = z.object({
   lastActivityAt: z.number().nullable(),
   scopes: z.array(z.string()),
 });
-
 export type ApiConnectedApp = z.infer<typeof connectedAppSchema>;
-
 const integrationActivityLogSchema = z.object({
   id: z.string(),
   type: z.string(),
@@ -453,15 +392,12 @@ const integrationActivityLogSchema = z.object({
   details: z.string().nullable(),
   createdAt: z.number(),
 });
-
 export type ApiIntegrationActivityLog = z.infer<
   typeof integrationActivityLogSchema
 >;
-
 export async function getConnectedApps(): Promise<ApiConnectedApp[]> {
   return apiFetch("/api/users/me/connected-apps", z.array(connectedAppSchema));
 }
-
 export async function getIntegrationActivity(): Promise<
   ApiIntegrationActivityLog[]
 > {
@@ -470,51 +406,55 @@ export async function getIntegrationActivity(): Promise<
     z.array(integrationActivityLogSchema)
   );
 }
-
 export async function disconnectConnectedApp(id: string): Promise<void> {
   return apiFetch(`/api/users/me/connected-apps/${id}`, z.void(), {
     method: "DELETE",
   });
 }
-
 const subscriptionSchema = z.object({
   plan: z.string(),
 });
-
-export async function getCurrentSubscription(): Promise<{ plan: string }> {
+export async function getCurrentSubscription(): Promise<{
+  plan: string;
+}> {
   return apiFetch("/api/users/me/subscription", subscriptionSchema);
 }
-
 const feedbackResponseSchema = z.object({ id: z.string() });
-
-export async function submitFeedback(input: {
-  type: "bug" | "suggestion";
-  message: string;
-  route?: string;
-}): Promise<{ id: string }> {
-  return apiFetch("/api/feedback", feedbackResponseSchema, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function submitFeedback(
+  organizationSlug: string,
+  input: {
+    type: "bug" | "suggestion";
+    message: string;
+    route?: string;
+  }
+): Promise<{
+  id: string;
+}> {
+  return apiFetch(
+    `/api/feedback/${encodeURIComponent(organizationSlug)}`,
+    feedbackResponseSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
 }
-
 const aiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiAutoAnalyze: z.boolean(),
   aiShowRedlinesToSigners: z.boolean(),
 });
-
 export type ApiAiSettings = z.infer<typeof aiSettingsSchema>;
-
-export async function getAiSettings(slug: string): Promise<ApiAiSettings> {
+export async function getAiSettings(
+  organizationSlug: string
+): Promise<ApiAiSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/ai`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/ai`,
     aiSettingsSchema
   );
 }
-
 export async function updateAiSettings(
-  slug: string,
+  organizationSlug: string,
   input: {
     aiEnabled?: boolean;
     aiAutoAnalyze?: boolean;
@@ -522,7 +462,7 @@ export async function updateAiSettings(
   }
 ): Promise<ApiAiSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/ai`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/ai`,
     aiSettingsSchema,
     {
       method: "PATCH",
@@ -530,32 +470,28 @@ export async function updateAiSettings(
     }
   );
 }
-
 const securitySettingsSchema = z.object({
   ipAllowlist: z.array(z.string()),
   allowApiAccess: z.boolean(),
 });
-
 export type ApiSecuritySettings = z.infer<typeof securitySettingsSchema>;
-
 export async function getSecuritySettings(
-  slug: string
+  organizationSlug: string
 ): Promise<ApiSecuritySettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/security`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/security`,
     securitySettingsSchema
   );
 }
-
 export async function updateSecuritySettings(
-  slug: string,
+  organizationSlug: string,
   input: {
     ipAllowlist?: string[];
     allowApiAccess?: boolean;
   }
 ): Promise<ApiSecuritySettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/security`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/security`,
     securitySettingsSchema,
     {
       method: "PATCH",
@@ -563,29 +499,25 @@ export async function updateSecuritySettings(
     }
   );
 }
-
 const notificationSettingsSchema = z.object({
   reminderSchedule: z.array(z.number().int()),
   expirationAlertDays: z.number().int(),
   sendCompletionEmail: z.boolean(),
   sendViewedNotification: z.boolean(),
 });
-
 export type ApiNotificationSettings = z.infer<
   typeof notificationSettingsSchema
 >;
-
 export async function getNotificationSettings(
-  slug: string
+  organizationSlug: string
 ): Promise<ApiNotificationSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/notifications`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/notifications`,
     notificationSettingsSchema
   );
 }
-
 export async function updateNotificationSettings(
-  slug: string,
+  organizationSlug: string,
   input: {
     reminderSchedule?: number[];
     expirationAlertDays?: number;
@@ -594,7 +526,7 @@ export async function updateNotificationSettings(
   }
 ): Promise<ApiNotificationSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/notifications`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/notifications`,
     notificationSettingsSchema,
     {
       method: "PATCH",
@@ -602,7 +534,6 @@ export async function updateNotificationSettings(
     }
   );
 }
-
 const signingSettingsSchema = z.object({
   allowedSignatureTypes: z.array(
     z.union([z.literal("draw"), z.literal("type"), z.literal("upload")])
@@ -610,20 +541,17 @@ const signingSettingsSchema = z.object({
   esignConsentText: z.string().nullable().optional(),
   defaultDeadlineDays: z.number().int(),
 });
-
 export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
-
 export async function getSigningSettings(
-  slug: string
+  organizationSlug: string
 ): Promise<ApiSigningSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/signing`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/signing`,
     signingSettingsSchema
   );
 }
-
 export async function updateSigningSettings(
-  slug: string,
+  organizationSlug: string,
   input: {
     allowedSignatureTypes?: Array<"draw" | "type" | "upload">;
     esignConsentText?: string;
@@ -631,7 +559,7 @@ export async function updateSigningSettings(
   }
 ): Promise<ApiSigningSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/signing`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/signing`,
     signingSettingsSchema,
     {
       method: "PATCH",
@@ -639,9 +567,8 @@ export async function updateSigningSettings(
     }
   );
 }
-
 export async function updateBrandingSettings(
-  slug: string,
+  organizationSlug: string,
   input: {
     enabled?: boolean;
     hideSealBranding?: boolean;
@@ -649,7 +576,7 @@ export async function updateBrandingSettings(
   }
 ): Promise<ApiBrandingSettings> {
   return apiFetch(
-    `/api/organizations/${encodeURIComponent(slug)}/branding`,
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/branding`,
     brandingSettingsSchema,
     {
       method: "PATCH",
@@ -657,47 +584,55 @@ export async function updateBrandingSettings(
     }
   );
 }
-
-export async function getDocumentStats(): Promise<ApiDocumentStats> {
-  return apiFetch("/api/documents/stats", documentStatsSchema);
+export async function getDocumentStats(
+  organizationSlug: string
+): Promise<ApiDocumentStats> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/stats`,
+    documentStatsSchema
+  );
 }
-
 export async function getAnalyticsStats(
+  organizationSlug: string,
   scope: "personal" | "team" = "team"
 ): Promise<ApiAnalyticsStats> {
   return apiFetch(
-    `/api/analytics/stats?scope=${encodeURIComponent(scope)}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/stats?scope=${encodeURIComponent(scope)}`,
     analyticsStatsSchema
   );
 }
-
 export async function getAnalyticsTrends(
+  organizationSlug: string,
   input:
-    | { days: number; scope: "personal" | "team" }
-    | { startDate: number; endDate: number; scope: "personal" | "team" }
+    | {
+        days: number;
+        scope: "personal" | "team";
+      }
+    | {
+        startDate: number;
+        endDate: number;
+        scope: "personal" | "team";
+      }
 ): Promise<ApiDocumentTrend[]> {
   if ("days" in input) {
     return apiFetch(
-      `/api/analytics/trends?days=${encodeURIComponent(input.days)}&scope=${encodeURIComponent(input.scope)}`,
+      `/api/analytics/${encodeURIComponent(organizationSlug)}/trends?days=${encodeURIComponent(input.days)}&scope=${encodeURIComponent(input.scope)}`,
       z.array(documentTrendSchema)
     );
   }
   return apiFetch(
-    `/api/analytics/trends?startDate=${encodeURIComponent(input.startDate)}&endDate=${encodeURIComponent(input.endDate)}&scope=${encodeURIComponent(input.scope)}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/trends?startDate=${encodeURIComponent(input.startDate)}&endDate=${encodeURIComponent(input.endDate)}&scope=${encodeURIComponent(input.scope)}`,
     z.array(documentTrendSchema)
   );
 }
-
 const analyticsPeriodStatsSchema = z.object({
   created: z.number().int(),
   completed: z.number().int(),
   period: z.string(),
 });
-
 export type ApiAnalyticsPeriodStats = z.infer<
   typeof analyticsPeriodStatsSchema
 >;
-
 const memberActivitySchema = z.object({
   userId: z.string(),
   name: z.string(),
@@ -709,9 +644,7 @@ const memberActivitySchema = z.object({
   completionRate: z.number().int(),
   avgSigningTimeMs: z.number().int().nullable(),
 });
-
 export type ApiMemberActivity = z.infer<typeof memberActivitySchema>;
-
 const emailEngagementSchema = z.object({
   total: z.number().int(),
   deliveryRate: z.number().int(),
@@ -720,14 +653,11 @@ const emailEngagementSchema = z.object({
   bounceRate: z.number().int(),
   avgTimeToOpen: z.number().int().nullable(),
 });
-
 export type ApiEmailEngagement = z.infer<typeof emailEngagementSchema>;
-
 const timingBucketSchema = z.object({
   bucket: z.string(),
   count: z.number().int(),
 });
-
 const recipientTimingSchema = z.object({
   sampleSize: z.number().int(),
   avgTimeToView: z.number().int().nullable(),
@@ -735,9 +665,7 @@ const recipientTimingSchema = z.object({
   avgTotalTurnaround: z.number().int().nullable(),
   distribution: z.array(timingBucketSchema),
 });
-
 export type ApiRecipientTiming = z.infer<typeof recipientTimingSchema>;
-
 const templatePerformanceSchema = z.object({
   templateId: z.string(),
   templateName: z.string(),
@@ -746,36 +674,34 @@ const templatePerformanceSchema = z.object({
   avgTurnaround: z.number().int().nullable(),
   declineRate: z.number().int(),
 });
-
 export type ApiTemplatePerformance = z.infer<typeof templatePerformanceSchema>;
-
 export async function getTemplatePerformance(
+  organizationSlug: string,
   days = 90
 ): Promise<ApiTemplatePerformance[]> {
   return apiFetch(
-    `/api/analytics/template-performance?days=${encodeURIComponent(days)}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/template-performance?days=${encodeURIComponent(days)}`,
     z.array(templatePerformanceSchema)
   );
 }
-
 export async function getRecipientTimingStats(
+  organizationSlug: string,
   days = 30
 ): Promise<ApiRecipientTiming> {
   return apiFetch(
-    `/api/analytics/recipient-timing?days=${encodeURIComponent(days)}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/recipient-timing?days=${encodeURIComponent(days)}`,
     recipientTimingSchema
   );
 }
-
 export async function getEmailEngagementStats(
+  organizationSlug: string,
   days = 30
 ): Promise<ApiEmailEngagement> {
   return apiFetch(
-    `/api/analytics/email-engagement?days=${encodeURIComponent(days)}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/email-engagement?days=${encodeURIComponent(days)}`,
     emailEngagementSchema
   );
 }
-
 const exportDocumentSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -790,10 +716,9 @@ const exportDocumentSchema = z.object({
   signedCount: z.number().int(),
   pendingCount: z.number().int(),
 });
-
 export type ApiExportDocument = z.infer<typeof exportDocumentSchema>;
-
 export async function getAnalyticsDocumentsForExport(
+  organizationSlug: string,
   args: {
     workflowStatus?: string;
     startDate?: number;
@@ -807,52 +732,54 @@ export async function getAnalyticsDocumentsForExport(
   if (args.endDate !== undefined) params.set("endDate", String(args.endDate));
   const query = params.toString();
   return apiFetch(
-    `/api/analytics/documents/export${query ? `?${query}` : ""}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/documents/export${query ? `?${query}` : ""}`,
     z.array(exportDocumentSchema)
   );
 }
-
-export async function getMemberActivity(): Promise<ApiMemberActivity[]> {
+export async function getMemberActivity(
+  organizationSlug: string
+): Promise<ApiMemberActivity[]> {
   return apiFetch(
-    "/api/analytics/member-activity",
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/member-activity`,
     z.array(memberActivitySchema)
   );
 }
-
 export async function getAnalyticsPeriodStats(
+  organizationSlug: string,
   period: "today" | "week" | "month" | "year",
   scope: "personal" | "team"
 ): Promise<ApiAnalyticsPeriodStats> {
   return apiFetch(
-    `/api/analytics/period-stats?period=${encodeURIComponent(period)}&scope=${encodeURIComponent(scope)}`,
+    `/api/analytics/${encodeURIComponent(organizationSlug)}/period-stats?period=${encodeURIComponent(period)}&scope=${encodeURIComponent(scope)}`,
     analyticsPeriodStatsSchema
   );
 }
-
 export async function getDocumentTrends(
+  organizationSlug: string,
   days = 30
 ): Promise<ApiDocumentTrend[]> {
   return apiFetch(
-    `/api/documents/trends?days=${encodeURIComponent(days)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/trends?days=${encodeURIComponent(days)}`,
     z.array(documentTrendSchema)
   );
 }
-
-export async function getRecentActivity(limit = 10): Promise<ApiActivity[]> {
+export async function getRecentActivity(
+  organizationSlug: string,
+  limit = 10
+): Promise<ApiActivity[]> {
   return apiFetch(
-    `/api/activity?limit=${encodeURIComponent(limit)}`,
+    `/api/activity/${encodeURIComponent(organizationSlug)}?limit=${encodeURIComponent(limit)}`,
     z.array(activitySchema)
   );
 }
-
 export async function getRecentDocuments(
+  organizationSlug: string,
   limit = 5
 ): Promise<ApiRecentDocument[]> {
   const rows = await apiFetch(
-    `/api/documents/recent?limit=${encodeURIComponent(limit)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/recent?limit=${encodeURIComponent(limit)}`,
     z.array(recentDocumentSchema)
   );
-
   return rows.map((row) => ({
     _id: row._id,
     name: row.name,
@@ -863,16 +790,18 @@ export async function getRecentDocuments(
     thumbnailDataUrl: row.thumbnailDataUrl,
   }));
 }
-
-export async function getDocumentAttention(): Promise<ApiDocumentAttention> {
-  return apiFetch("/api/documents/attention", documentAttentionSchema);
+export async function getDocumentAttention(
+  organizationSlug: string
+): Promise<ApiDocumentAttention> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/attention`,
+    documentAttentionSchema
+  );
 }
-
 type ContactListParams = {
   search?: string;
   status?: "active" | "inactive" | "lead";
 };
-
 function toApiContact(row: z.infer<typeof contactSchema>): ApiContact {
   return {
     _id: row.publicId,
@@ -892,38 +821,38 @@ function toApiContact(row: z.infer<typeof contactSchema>): ApiContact {
     updatedAt: row.updatedAt,
   };
 }
-
 export async function getContacts(
+  organizationSlug: string,
   params: ContactListParams = {}
 ): Promise<ApiContact[]> {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.status) query.set("status", params.status);
   const queryString = query.toString();
-  const path = `/api/contacts${queryString ? `?${queryString}` : ""}`;
-
+  const path = `/api/contacts/${encodeURIComponent(organizationSlug)}${queryString ? `?${queryString}` : ""}`;
   const rows = await apiFetch(path, z.array(contactSchema));
   return rows.map(toApiContact);
 }
-
 export async function getContactByEmail(
+  organizationSlug: string,
   email: string
 ): Promise<ApiContact | null> {
   const row = await apiFetch(
-    `/api/contacts/by-email?email=${encodeURIComponent(email)}`,
+    `/api/contacts/${encodeURIComponent(organizationSlug)}/by-email?email=${encodeURIComponent(email)}`,
     contactSchema.nullable()
   );
   return row ? toApiContact(row) : null;
 }
-
-export async function getContact(publicId: string): Promise<ApiContact> {
+export async function getContact(
+  organizationSlug: string,
+  publicId: string
+): Promise<ApiContact> {
   const row = await apiFetch(
-    `/api/contacts/${encodeURIComponent(publicId)}`,
+    `/api/contacts/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}`,
     contactSchema
   );
   return toApiContact(row);
 }
-
 type ContactInput = {
   firstName: string;
   lastName: string;
@@ -936,21 +865,27 @@ type ContactInput = {
   tags?: string[];
   lastContactedAt?: number;
 };
-
-export async function createContact(input: ContactInput): Promise<ApiContact> {
-  const row = await apiFetch("/api/contacts", contactSchema, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function createContact(
+  organizationSlug: string,
+  input: ContactInput
+): Promise<ApiContact> {
+  const row = await apiFetch(
+    `/api/contacts/${encodeURIComponent(organizationSlug)}`,
+    contactSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
   return toApiContact(row);
 }
-
 export async function updateContact(
+  organizationSlug: string,
   publicId: string,
   input: Partial<ContactInput>
 ): Promise<ApiContact> {
   const row = await apiFetch(
-    `/api/contacts/${encodeURIComponent(publicId)}`,
+    `/api/contacts/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}`,
     contactSchema,
     {
       method: "PATCH",
@@ -959,18 +894,29 @@ export async function updateContact(
   );
   return toApiContact(row);
 }
-
-export async function deleteContact(publicId: string): Promise<void> {
-  await apiFetch(`/api/contacts/${encodeURIComponent(publicId)}`, z.void(), {
-    method: "DELETE",
-  });
+export async function deleteContact(
+  organizationSlug: string,
+  publicId: string
+): Promise<void> {
+  await apiFetch(
+    `/api/contacts/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}`,
+    z.void(),
+    {
+      method: "DELETE",
+    }
+  );
 }
-
 export async function bulkDeleteContacts(
+  organizationSlug: string,
   publicIds: string[]
-): Promise<{ id: string; success: boolean }[]> {
+): Promise<
+  {
+    id: string;
+    success: boolean;
+  }[]
+> {
   return apiFetch(
-    "/api/contacts/bulk-delete",
+    `/api/contacts/${encodeURIComponent(organizationSlug)}/bulk-delete`,
     z.array(
       z.object({
         id: z.string(),
@@ -983,50 +929,53 @@ export async function bulkDeleteContacts(
     }
   );
 }
-
 export async function getContactRelatedDocuments(
+  organizationSlug: string,
   email: string
 ): Promise<ApiRelatedDocument[]> {
   return apiFetch(
-    `/api/contacts/related-documents?email=${encodeURIComponent(email)}`,
+    `/api/contacts/${encodeURIComponent(organizationSlug)}/related-documents?email=${encodeURIComponent(email)}`,
     z.array(relatedDocumentSchema)
   );
 }
-
-export async function getNotifications(limit = 20): Promise<ApiNotification[]> {
+export async function getNotifications(
+  organizationSlug: string,
+  limit = 20
+): Promise<ApiNotification[]> {
   return apiFetch(
-    `/api/notifications?limit=${encodeURIComponent(limit)}`,
+    `/api/notifications/${encodeURIComponent(organizationSlug)}?limit=${encodeURIComponent(limit)}`,
     z.array(notificationSchema)
   );
 }
-
-export async function getUnreadNotificationCount(): Promise<number> {
+export async function getUnreadNotificationCount(
+  organizationSlug: string
+): Promise<number> {
   const result = await apiFetch(
-    "/api/notifications/unread-count",
+    `/api/notifications/${encodeURIComponent(organizationSlug)}/unread-count`,
     z.object({ count: z.number().int() })
   );
   return result.count;
 }
-
 export async function markNotificationAsRead(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiNotification> {
   return apiFetch(
-    `/api/notifications/${encodeURIComponent(publicId)}/read`,
+    `/api/notifications/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/read`,
     notificationSchema,
     { method: "POST" }
   );
 }
-
-export async function markAllNotificationsAsRead(): Promise<number> {
+export async function markAllNotificationsAsRead(
+  organizationSlug: string
+): Promise<number> {
   const result = await apiFetch(
-    "/api/notifications/read-all",
+    `/api/notifications/${encodeURIComponent(organizationSlug)}/read-all`,
     z.object({ count: z.number().int() }),
     { method: "POST" }
   );
   return result.count;
 }
-
 const folderSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1040,9 +989,7 @@ const folderSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 export type ApiFolder = z.infer<typeof folderSchema>;
-
 const documentSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1070,9 +1017,7 @@ const documentSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 export type ApiDocument = z.infer<typeof documentSchema>;
-
 const sharingResponseSchema = z.object({
   sharingMode: z.string(),
   canUseTeamSharing: z.boolean(),
@@ -1092,10 +1037,9 @@ const sharingResponseSchema = z.object({
     })
   ),
 });
-
 export type ApiDocumentSharing = z.infer<typeof sharingResponseSchema>;
-
 export async function getDocuments(
+  organizationSlug: string,
   options: {
     filter?: "all" | "owned" | "shared";
     workflowStatus?: string;
@@ -1117,11 +1061,11 @@ export async function getDocuments(
     query.set("rootOnly", "true");
   }
   const queryString = query.toString();
-  const path = `/api/documents${queryString ? `?${queryString}` : ""}`;
+  const path = `/api/documents/${encodeURIComponent(organizationSlug)}${queryString ? `?${queryString}` : ""}`;
   return apiFetch(path, z.array(documentSchema));
 }
-
 export async function getFolders(
+  organizationSlug: string,
   options: {
     type?: "document" | "template";
     parentId?: string;
@@ -1132,59 +1076,86 @@ export async function getFolders(
   if (options.parentId) {
     query.set("parentId", options.parentId);
   }
-  return apiFetch(`/api/folders?${query.toString()}`, z.array(folderSchema));
+  return apiFetch(
+    `/api/folders/${encodeURIComponent(organizationSlug)}?${query.toString()}`,
+    z.array(folderSchema)
+  );
 }
-
 export async function getAllFolders(
+  organizationSlug: string,
   type: "document" | "template" = "document"
 ): Promise<ApiFolder[]> {
-  return apiFetch(`/api/folders/all?type=${type}`, z.array(folderSchema));
-}
-
-export async function createFolder(options: {
-  name: string;
-  type: "document" | "template";
-  parentId?: string;
-  visibility?: "everyone" | "members" | "restricted";
-  pinned?: boolean;
-}): Promise<ApiFolder> {
-  return apiFetch("/api/folders", folderSchema, {
-    method: "POST",
-    body: JSON.stringify(options),
-  });
-}
-
-export async function getFolderBreadcrumbs(
-  publicId: string
-): Promise<Array<{ id: string; name: string }>> {
   return apiFetch(
-    `/api/folders/${encodeURIComponent(publicId)}/breadcrumbs`,
+    `/api/folders/${encodeURIComponent(organizationSlug)}/all?type=${type}`,
+    z.array(folderSchema)
+  );
+}
+export async function createFolder(
+  organizationSlug: string,
+  options: {
+    name: string;
+    type: "document" | "template";
+    parentId?: string;
+    visibility?: "everyone" | "members" | "restricted";
+    pinned?: boolean;
+  }
+): Promise<ApiFolder> {
+  return apiFetch(
+    `/api/folders/${encodeURIComponent(organizationSlug)}`,
+    folderSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(options),
+    }
+  );
+}
+export async function getFolderBreadcrumbs(
+  organizationSlug: string,
+  publicId: string
+): Promise<
+  Array<{
+    id: string;
+    name: string;
+  }>
+> {
+  return apiFetch(
+    `/api/folders/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/breadcrumbs`,
     z.array(z.object({ id: z.string(), name: z.string() }))
   );
 }
-
-export async function createDocument(input: {
-  name: string;
-  description?: string;
-  fileSize?: number;
-  contentType?: string;
-  pageCount?: number;
-  thumbnailDataUrl?: string;
-  folderId?: string;
-}): Promise<ApiDocument> {
-  return apiFetch("/api/documents", documentSchema, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function createDocument(
+  organizationSlug: string,
+  input: {
+    name: string;
+    description?: string;
+    fileSize?: number;
+    contentType?: string;
+    pageCount?: number;
+    thumbnailDataUrl?: string;
+    folderId?: string;
+  }
+): Promise<ApiDocument> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}`,
+    documentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
 }
-
 export async function uploadDocument(
+  organizationSlug: string,
   publicId: string,
   contentBase64: string,
   contentType: string
-): Promise<{ storageKey: string; contentType: string; size: number }> {
+): Promise<{
+  storageKey: string;
+  contentType: string;
+  size: number;
+}> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/upload`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/upload`,
     z.object({
       storageKey: z.string(),
       contentType: z.string(),
@@ -1196,22 +1167,31 @@ export async function uploadDocument(
     }
   );
 }
-
-export async function deleteDocument(publicId: string): Promise<void> {
-  await apiFetch(`/api/documents/${encodeURIComponent(publicId)}`, z.void(), {
-    method: "DELETE",
-  });
+export async function deleteDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}`,
+    z.void(),
+    {
+      method: "DELETE",
+    }
+  );
 }
-
 export async function sendDocument(
+  organizationSlug: string,
   publicId: string,
   options?: {
-    expirationPeriod?: { amount: number; unit: "day" | "week" | "month" };
+    expirationPeriod?: {
+      amount: number;
+      unit: "day" | "week" | "month";
+    };
     recipientMessages?: Record<string, string>;
   }
 ): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/send`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/send`,
     z.void(),
     {
       method: "POST",
@@ -1219,18 +1199,22 @@ export async function sendDocument(
     }
   );
 }
-
-export async function cancelDocument(publicId: string): Promise<void> {
+export async function cancelDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/cancel`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/cancel`,
     z.void(),
     { method: "POST" }
   );
 }
-
-export async function downloadDocument(publicId: string): Promise<Blob> {
+export async function downloadDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<Blob> {
   const response = await fetch(
-    `${getBaseUrl()}/api/documents/${encodeURIComponent(publicId)}/download`,
+    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/download`,
     { credentials: "include" }
   );
   if (!response.ok) {
@@ -1239,13 +1223,17 @@ export async function downloadDocument(publicId: string): Promise<Blob> {
   }
   return response.blob();
 }
-
-export async function moveDocumentsToFolder(options: {
-  documentIds: string[];
-  folderId?: string;
-}): Promise<{ moved: number }> {
+export async function moveDocumentsToFolder(
+  organizationSlug: string,
+  options: {
+    documentIds: string[];
+    folderId?: string;
+  }
+): Promise<{
+  moved: number;
+}> {
   return apiFetch(
-    "/api/documents/move",
+    `/api/documents/${encodeURIComponent(organizationSlug)}/move`,
     z.object({ moved: z.number().int() }),
     {
       method: "POST",
@@ -1253,13 +1241,13 @@ export async function moveDocumentsToFolder(options: {
     }
   );
 }
-
 export async function updateDocumentThumbnail(
+  organizationSlug: string,
   publicId: string,
   thumbnailDataUrl: string
 ): Promise<ApiDocument> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/thumbnail`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/thumbnail`,
     documentSchema,
     {
       method: "POST",
@@ -1267,13 +1255,13 @@ export async function updateDocumentThumbnail(
     }
   );
 }
-
 export async function transferDocument(
+  organizationSlug: string,
   publicId: string,
   newOwnerId: string
 ): Promise<ApiDocument> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/transfer`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/transfer`,
     documentSchema,
     {
       method: "POST",
@@ -1281,22 +1269,22 @@ export async function transferDocument(
     }
   );
 }
-
 export async function getDocumentSharing(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiDocumentSharing> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/sharing`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/sharing`,
     sharingResponseSchema
   );
 }
-
 export async function updateDocumentSharing(
+  organizationSlug: string,
   publicId: string,
   sharingMode: "private" | "workspace" | "specific"
 ): Promise<ApiDocumentSharing> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/sharing`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/sharing`,
     sharingResponseSchema,
     {
       method: "POST",
@@ -1304,14 +1292,14 @@ export async function updateDocumentSharing(
     }
   );
 }
-
 export async function shareDocument(
+  organizationSlug: string,
   publicId: string,
   userId: string,
   permissionLevel: "view" | "edit" | "manage"
 ): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/share`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/share`,
     z.void(),
     {
       method: "POST",
@@ -1319,13 +1307,13 @@ export async function shareDocument(
     }
   );
 }
-
 export async function revokeDocumentAccess(
+  organizationSlug: string,
   publicId: string,
   userId: string
 ): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/revoke`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/revoke`,
     z.void(),
     {
       method: "POST",
@@ -1333,14 +1321,14 @@ export async function revokeDocumentAccess(
     }
   );
 }
-
 export async function updateDocumentPermission(
+  organizationSlug: string,
   publicId: string,
   userId: string,
   permissionLevel: "view" | "edit" | "manage"
 ): Promise<void> {
   await apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/permission`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/permission`,
     z.void(),
     {
       method: "POST",
@@ -1348,9 +1336,6 @@ export async function updateDocumentPermission(
     }
   );
 }
-
-
-
 const recipientSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1372,9 +1357,7 @@ const recipientSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 export type ApiRecipient = z.infer<typeof recipientSchema>;
-
 const recipientProgressSchema = z.object({
   total: z.number().int(),
   completed: z.number().int(),
@@ -1382,9 +1365,7 @@ const recipientProgressSchema = z.object({
   byStatus: z.record(z.string(), z.number().int()),
   byRole: z.record(z.string(), z.number().int()),
 });
-
 export type ApiRecipientProgress = z.infer<typeof recipientProgressSchema>;
-
 const fieldPropertiesSchema = z
   .object({
     placeholder: z.string().optional(),
@@ -1398,7 +1379,6 @@ const fieldPropertiesSchema = z
   .partial()
   .passthrough()
   .nullable();
-
 const fieldValidationRulesSchema = z
   .object({
     required: z.boolean().optional(),
@@ -1410,7 +1390,6 @@ const fieldValidationRulesSchema = z
   .partial()
   .passthrough()
   .nullable();
-
 const signatureFieldSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1431,9 +1410,7 @@ const signatureFieldSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
 });
-
 export type ApiSignatureField = z.infer<typeof signatureFieldSchema>;
-
 const signatureFieldWithValuesSchema = signatureFieldSchema.extend({
   currentValue: z.string().nullable().optional(),
   currentSignatureImageUrl: z.string().nullable().optional(),
@@ -1448,11 +1425,9 @@ const signatureFieldWithValuesSchema = signatureFieldSchema.extend({
     .nullable()
     .optional(),
 });
-
 export type ApiSignatureFieldWithValues = z.infer<
   typeof signatureFieldWithValuesSchema
 >;
-
 const signatureSchema = z.object({
   id: z.string(),
   fieldId: z.string().nullable().optional(),
@@ -1469,9 +1444,7 @@ const signatureSchema = z.object({
   documentHashAtSigning: z.string().nullable().optional(),
   authenticationData: z.string().nullable().optional(),
 });
-
 export type ApiSignature = z.infer<typeof signatureSchema>;
-
 const paymentConfigSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1482,17 +1455,18 @@ const paymentConfigSchema = z.object({
   currency: z.string(),
   paymentStatus: z.string().nullable().optional(),
 });
-
 export type ApiPaymentConfig = z.infer<typeof paymentConfigSchema>;
-
-export async function getDocument(publicId: string): Promise<ApiDocument> {
+export async function getDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<ApiDocument> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}`,
     documentSchema
   );
 }
-
 export async function updateDocument(
+  organizationSlug: string,
   publicId: string,
   input: {
     name?: string;
@@ -1502,7 +1476,7 @@ export async function updateDocument(
   }
 ): Promise<ApiDocument> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}`,
     documentSchema,
     {
       method: "PATCH",
@@ -1510,13 +1484,19 @@ export async function updateDocument(
     }
   );
 }
-
 export async function saveAsTemplate(
+  organizationSlug: string,
   publicId: string,
-  input: { name: string; description?: string }
-): Promise<{ publicId: string; fieldCount: number }> {
+  input: {
+    name: string;
+    description?: string;
+  }
+): Promise<{
+  publicId: string;
+  fieldCount: number;
+}> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/save-as-template`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/save-as-template`,
     z.object({ publicId: z.string(), fieldCount: z.number().int() }),
     {
       method: "POST",
@@ -1524,35 +1504,35 @@ export async function saveAsTemplate(
     }
   );
 }
-
 export async function getDocumentRecipients(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiRecipient[]> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/recipients`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients`,
     z.array(recipientSchema)
   );
 }
-
 export async function getRecipientProgress(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiRecipientProgress> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/recipients/progress`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients/progress`,
     recipientProgressSchema
   );
 }
-
 export async function getCurrentUserRecipient(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiRecipient | null> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/recipients/me`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients/me`,
     recipientSchema.nullable()
   );
 }
-
 export async function addRecipients(
+  organizationSlug: string,
   publicId: string,
   recipients: Array<{
     email: string;
@@ -1563,7 +1543,7 @@ export async function addRecipients(
   }>
 ): Promise<ApiRecipient[]> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/recipients`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients`,
     z.array(recipientSchema),
     {
       method: "POST",
@@ -1571,25 +1551,29 @@ export async function addRecipients(
     }
   );
 }
-
 export async function removeRecipient(
+  organizationSlug: string,
   publicId: string,
   recipientPublicId: string
-): Promise<{ success: boolean }> {
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}`,
     z.object({ success: z.boolean() }),
     { method: "DELETE" }
   );
 }
-
 export async function resendRecipientEmail(
+  organizationSlug: string,
   publicId: string,
   recipientPublicId: string,
   customMessage?: string
-): Promise<{ success: boolean }> {
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}/resend`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}/resend`,
     z.object({ success: z.boolean() }),
     {
       method: "POST",
@@ -1597,34 +1581,33 @@ export async function resendRecipientEmail(
     }
   );
 }
-
 export async function getDocumentSignatureFields(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiSignatureField[]> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signature-fields`,
     z.array(signatureFieldSchema)
   );
 }
-
 export async function getCurrentUserSignatureFields(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiSignatureFieldWithValues[]> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/me`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signature-fields/me`,
     z.array(signatureFieldWithValuesSchema)
   );
 }
-
 export async function getDocumentSignatures(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiSignature[]> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signatures`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signatures`,
     z.array(signatureSchema)
   );
 }
-
 const paymentConfigDetailSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1682,29 +1665,28 @@ const paymentConfigDetailSchema = z.object({
   totalAmountCents: z.number().int(),
   paymentStatus: z.string().nullable().optional(),
 });
-
 export type ApiPaymentConfigDetail = z.infer<typeof paymentConfigDetailSchema>;
-
 export async function getDocumentPaymentConfigs(
+  organizationSlug: string,
   publicId: string
 ): Promise<ApiPaymentConfig[]> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/payment-configs`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/payment-configs`,
     z.array(paymentConfigSchema)
   );
 }
-
 export async function getPaymentConfig(
+  organizationSlug: string,
   publicId: string,
   fieldPublicId: string
 ): Promise<ApiPaymentConfigDetail> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/payment-configs/${encodeURIComponent(fieldPublicId)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/payment-configs/${encodeURIComponent(fieldPublicId)}`,
     paymentConfigDetailSchema
   );
 }
-
 export async function upsertPaymentConfig(
+  organizationSlug: string,
   publicId: string,
   input: Omit<
     ApiPaymentConfigDetail,
@@ -1718,7 +1700,7 @@ export async function upsertPaymentConfig(
   >
 ): Promise<ApiPaymentConfigDetail> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/payment-configs`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/payment-configs`,
     paymentConfigDetailSchema,
     {
       method: "POST",
@@ -1726,8 +1708,8 @@ export async function upsertPaymentConfig(
     }
   );
 }
-
 export async function createSignatureField(
+  organizationSlug: string,
   publicId: string,
   input: {
     recipientPublicId?: string;
@@ -1745,7 +1727,7 @@ export async function createSignatureField(
   }
 ): Promise<ApiSignatureField> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signature-fields`,
     signatureFieldSchema,
     {
       method: "POST",
@@ -1753,8 +1735,8 @@ export async function createSignatureField(
     }
   );
 }
-
 export async function updateSignatureField(
+  organizationSlug: string,
   publicId: string,
   fieldPublicId: string,
   input: {
@@ -1766,7 +1748,7 @@ export async function updateSignatureField(
   }
 ): Promise<ApiSignatureField> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
     signatureFieldSchema,
     {
       method: "PATCH",
@@ -1774,8 +1756,8 @@ export async function updateSignatureField(
     }
   );
 }
-
 export async function repositionSignatureField(
+  organizationSlug: string,
   publicId: string,
   fieldPublicId: string,
   input: {
@@ -1787,7 +1769,7 @@ export async function repositionSignatureField(
   }
 ): Promise<ApiSignatureField> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/position`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}/position`,
     signatureFieldSchema,
     {
       method: "PATCH",
@@ -1795,22 +1777,22 @@ export async function repositionSignatureField(
     }
   );
 }
-
 export async function deleteSignatureField(
+  organizationSlug: string,
   publicId: string,
   fieldPublicId: string
-): Promise<{ success: boolean }> {
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
-    `/api/documents/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/signature-fields/${encodeURIComponent(fieldPublicId)}`,
     z.object({ success: z.boolean() }),
     { method: "DELETE" }
   );
 }
-
 // ---------------------------------------------------------------------------
 // AI
 // ---------------------------------------------------------------------------
-
 const annotationItemSchema = z.object({
   page: z.number().int(),
   x: z.number(),
@@ -1822,7 +1804,6 @@ const annotationItemSchema = z.object({
   text: z.string(),
   summary: z.string(),
 });
-
 const annotationSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1836,9 +1817,7 @@ const annotationSchema = z.object({
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
 });
-
 export type ApiDocumentAnnotations = z.infer<typeof annotationSchema>;
-
 export async function getDocumentAnnotations(
   publicId: string
 ): Promise<ApiDocumentAnnotations | null> {
@@ -1847,7 +1826,6 @@ export async function getDocumentAnnotations(
     annotationSchema.nullable()
   );
 }
-
 export async function dismissDocumentAnnotations(
   publicId: string
 ): Promise<void> {
@@ -1857,7 +1835,6 @@ export async function dismissDocumentAnnotations(
     { method: "POST" }
   );
 }
-
 const suggestionItemSchema = z.object({
   fieldType: z.string(),
   page: z.number().int(),
@@ -1869,7 +1846,6 @@ const suggestionItemSchema = z.object({
   confidence: z.number(),
   isRequired: z.boolean(),
 });
-
 const fieldSuggestionSchema = z.object({
   id: z.string(),
   publicId: z.string(),
@@ -1883,9 +1859,7 @@ const fieldSuggestionSchema = z.object({
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
 });
-
 export type ApiFieldSuggestions = z.infer<typeof fieldSuggestionSchema>;
-
 export async function getFieldSuggestions(
   publicId: string
 ): Promise<ApiFieldSuggestions | null> {
@@ -1894,12 +1868,14 @@ export async function getFieldSuggestions(
     fieldSuggestionSchema.nullable()
   );
 }
-
 export async function applyFieldSuggestions(
   publicId: string,
   suggestionId: string,
   selectedFieldIndices?: number[]
-): Promise<{ fieldIds: string[]; count: number }> {
+): Promise<{
+  fieldIds: string[];
+  count: number;
+}> {
   return apiFetch(
     `/api/ai/${encodeURIComponent(publicId)}/field-suggestions/${encodeURIComponent(suggestionId)}/apply`,
     z.object({ fieldIds: z.array(z.string()), count: z.number().int() }),
@@ -1909,7 +1885,6 @@ export async function applyFieldSuggestions(
     }
   );
 }
-
 export async function dismissFieldSuggestions(publicId: string): Promise<void> {
   await apiFetch(
     `/api/ai/${encodeURIComponent(publicId)}/field-suggestions/dismiss`,
@@ -1917,30 +1892,26 @@ export async function dismissFieldSuggestions(publicId: string): Promise<void> {
     { method: "POST" }
   );
 }
-
 const threadResponseSchema = z.object({
   threadId: z.string().nullable(),
 });
-
-export async function getThreadForDocument(
-  publicId: string
-): Promise<{ threadId: string | null }> {
+export async function getThreadForDocument(publicId: string): Promise<{
+  threadId: string | null;
+}> {
   return apiFetch(
     `/api/ai/${encodeURIComponent(publicId)}/thread`,
     threadResponseSchema
   );
 }
-
-export async function getOrCreateThread(
-  publicId: string
-): Promise<{ threadId: string | null }> {
+export async function getOrCreateThread(publicId: string): Promise<{
+  threadId: string | null;
+}> {
   return apiFetch(
     `/api/ai/${encodeURIComponent(publicId)}/thread`,
     threadResponseSchema,
     { method: "POST" }
   );
 }
-
 const publicSigningRecipientSchema = z.object({
   _id: z.string(),
   publicId: z.string(),
@@ -1957,7 +1928,6 @@ const publicSigningRecipientSchema = z.object({
   approvedAt: z.number().nullable().optional(),
   declinedAt: z.number().nullable().optional(),
 });
-
 const publicSigningDocumentSchema = z.object({
   _id: z.string(),
   publicId: z.string(),
@@ -1969,7 +1939,6 @@ const publicSigningDocumentSchema = z.object({
   pageCount: z.number().int().nullable().optional(),
   redirectUrl: z.string().nullable().optional(),
 });
-
 const publicSigningSequentialProgressSchema = z.object({
   total: z.number().int(),
   completed: z.number().int(),
@@ -1978,7 +1947,6 @@ const publicSigningSequentialProgressSchema = z.object({
   totalGroups: z.number().int(),
   isWaitingForPreviousGroup: z.boolean(),
 });
-
 const publicSigningTokenResponseSchema = z.object({
   recipient: publicSigningRecipientSchema,
   document: publicSigningDocumentSchema,
@@ -1995,11 +1963,9 @@ const publicSigningTokenResponseSchema = z.object({
     .optional(),
   signingSettings: z.record(z.string(), z.string()).optional(),
 });
-
 export type PublicSigningTokenResponse = z.infer<
   typeof publicSigningTokenResponseSchema
 >;
-
 export async function getSigningByToken(
   token: string
 ): Promise<PublicSigningTokenResponse> {
@@ -2008,7 +1974,6 @@ export async function getSigningByToken(
     publicSigningTokenResponseSchema
   );
 }
-
 const publicSigningFieldSchema = z.object({
   _id: z.string(),
   id: z.string(),
@@ -2041,9 +2006,7 @@ const publicSigningFieldSchema = z.object({
     })
     .optional(),
 });
-
 export type PublicSigningField = z.infer<typeof publicSigningFieldSchema>;
-
 export async function getSigningFields(
   token: string
 ): Promise<PublicSigningField[]> {
@@ -2053,7 +2016,6 @@ export async function getSigningFields(
   );
   return response.fields;
 }
-
 export async function savePublicSigningFieldValue(
   token: string,
   fieldPublicId: string,
@@ -2064,7 +2026,9 @@ export async function savePublicSigningFieldValue(
     ipAddress: string;
     userAgent: string;
   }
-): Promise<{ success: boolean }> {
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/fields/${encodeURIComponent(fieldPublicId)}/save`,
     z.object({ success: z.boolean() }),
@@ -2074,7 +2038,6 @@ export async function savePublicSigningFieldValue(
     }
   );
 }
-
 export async function submitPublicSigning(
   token: string,
   input: {
@@ -2085,7 +2048,9 @@ export async function submitPublicSigning(
     ipAddress: string;
     userAgent: string;
   }
-): Promise<{ success: boolean }> {
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/submit`,
     z.object({ success: z.boolean() }),
@@ -2095,7 +2060,6 @@ export async function submitPublicSigning(
     }
   );
 }
-
 const publicPaymentConfigSummarySchema = z.object({
   _id: z.string(),
   id: z.string(),
@@ -2107,11 +2071,9 @@ const publicPaymentConfigSummarySchema = z.object({
   currency: z.string(),
   paymentStatus: z.string().nullable().optional(),
 });
-
 export type PublicPaymentConfigSummary = z.infer<
   typeof publicPaymentConfigSummarySchema
 >;
-
 export async function getPublicSigningPaymentConfigs(
   token: string
 ): Promise<PublicPaymentConfigSummary[]> {
@@ -2120,7 +2082,6 @@ export async function getPublicSigningPaymentConfigs(
     z.array(publicPaymentConfigSummarySchema)
   );
 }
-
 export async function getPublicSigningPdf(token: string): Promise<Blob> {
   const response = await fetch(
     `/api/public/signing/${encodeURIComponent(token)}/pdf`
@@ -2130,11 +2091,16 @@ export async function getPublicSigningPdf(token: string): Promise<Blob> {
   }
   return response.blob();
 }
-
 export async function recordPublicSigningConsent(
   token: string,
-  input: { ipAddress: string; consentVersion?: string }
-): Promise<{ success: boolean; consentAt: number }> {
+  input: {
+    ipAddress: string;
+    consentVersion?: string;
+  }
+): Promise<{
+  success: boolean;
+  consentAt: number;
+}> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/consent`,
     z.object({ success: z.boolean(), consentAt: z.number() }),
@@ -2144,11 +2110,15 @@ export async function recordPublicSigningConsent(
     }
   );
 }
-
 export async function recordPublicSigningOptOut(
   token: string,
-  input: { ipAddress: string; method?: string }
-): Promise<{ success: boolean }> {
+  input: {
+    ipAddress: string;
+    method?: string;
+  }
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/opt-out`,
     z.object({ success: z.boolean() }),
@@ -2158,15 +2128,18 @@ export async function recordPublicSigningOptOut(
     }
   );
 }
-
 export function getPublicSigningSignedPdfUrl(token: string): string {
   return `/api/public/signing/${encodeURIComponent(token)}/signed-pdf`;
 }
-
 export async function dictatePublicSigningNextSigner(
   token: string,
-  input: { nextName: string; nextEmail: string }
-): Promise<{ success: boolean }> {
+  input: {
+    nextName: string;
+    nextEmail: string;
+  }
+): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/dictate`,
     z.object({ success: z.boolean() }),
@@ -2176,7 +2149,6 @@ export async function dictatePublicSigningNextSigner(
     }
   );
 }
-
 const savedSignatureSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -2188,13 +2160,10 @@ const savedSignatureSchema = z.object({
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
 });
-
 export type ApiSavedSignature = z.infer<typeof savedSignatureSchema>;
-
 export async function listSavedSignatures(): Promise<ApiSavedSignature[]> {
   return apiFetch("/api/saved-signatures", z.array(savedSignatureSchema));
 }
-
 export async function createSavedSignature(input: {
   name: string;
   signatureImageUrl: string;
@@ -2207,10 +2176,12 @@ export async function createSavedSignature(input: {
     body: JSON.stringify(input),
   });
 }
-
 export async function updateSavedSignature(
   id: string,
-  input: { name?: string; isDefault?: boolean }
+  input: {
+    name?: string;
+    isDefault?: boolean;
+  }
 ): Promise<ApiSavedSignature> {
   return apiFetch(
     `/api/saved-signatures/${encodeURIComponent(id)}`,
@@ -2221,27 +2192,24 @@ export async function updateSavedSignature(
     }
   );
 }
-
-export async function deleteSavedSignature(
-  id: string
-): Promise<{ success: boolean }> {
+export async function deleteSavedSignature(id: string): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
     `/api/saved-signatures/${encodeURIComponent(id)}`,
     z.object({ success: z.boolean() }),
     { method: "DELETE" }
   );
 }
-
-export async function incrementSavedSignatureUsage(
-  id: string
-): Promise<{ success: boolean }> {
+export async function incrementSavedSignatureUsage(id: string): Promise<{
+  success: boolean;
+}> {
   return apiFetch(
     `/api/saved-signatures/${encodeURIComponent(id)}/use`,
     z.object({ success: z.boolean() }),
     { method: "POST" }
   );
 }
-
 const aiProgressSchema = z
   .object({
     threadId: z.string(),
@@ -2255,21 +2223,17 @@ const aiProgressSchema = z
     updatedAt: z.number().int(),
   })
   .nullable();
-
 export type ApiAIProgress = z.infer<typeof aiProgressSchema>;
-
 export async function getAIProgress(threadId: string): Promise<ApiAIProgress> {
   return apiFetch(
     `/api/ai/progress/${encodeURIComponent(threadId)}`,
     aiProgressSchema
   );
 }
-
 export async function getClientIp(): Promise<string> {
   const { ip } = await apiFetch("/api/public/ip", z.object({ ip: z.string() }));
   return ip;
 }
-
 function base64FromArrayBuffer(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 0x8000;
@@ -2279,7 +2243,6 @@ function base64FromArrayBuffer(buffer: ArrayBuffer): string {
   }
   return btoa(binary);
 }
-
 export async function uploadAttachment(
   token: string,
   file: File
@@ -2298,14 +2261,12 @@ export async function uploadAttachment(
   );
   return storageKey;
 }
-
 const publicSignerSchema = z.object({
   name: z.string(),
   maskedEmail: z.string(),
   role: z.string(),
   signedAt: z.number().nullable(),
 });
-
 export const verifyDocumentResultSchema = z.object({
   verified: z.boolean(),
   documentName: z.string(),
@@ -2315,9 +2276,7 @@ export const verifyDocumentResultSchema = z.object({
   documentHash: z.string().nullable(),
   createdAt: z.number(),
 });
-
 export type VerifyDocumentResult = z.infer<typeof verifyDocumentResultSchema>;
-
 export async function verifyDocumentByQrToken(
   qrToken: string
 ): Promise<VerifyDocumentResult | null> {

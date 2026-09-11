@@ -534,7 +534,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-2">
-              <NotificationsPopover slug={slug} />
+              <NotificationsPopover slug={slug} organizationSlug={slug} />
               <SidebarMenuButton
                 className="ml-2 flex-1 justify-between"
                 onClick={handleThemeToggle}

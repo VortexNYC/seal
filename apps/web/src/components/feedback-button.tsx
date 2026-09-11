@@ -12,13 +12,18 @@ import { Textarea } from "./ui/textarea";
 
 type Mode = "idle" | "suggestion";
 
-export function FeedbackButton() {
+export function FeedbackButton({
+  organizationSlug,
+}: {
+  organizationSlug: string;
+}) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const submitFeedbackMutation = useMutation({
-    mutationFn: submitFeedback,
+    mutationFn: (input: Parameters<typeof submitFeedback>[1]) =>
+      submitFeedback(organizationSlug, input),
   });
   const location = useLocation();
 

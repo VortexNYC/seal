@@ -42,6 +42,7 @@ function renderDialog(
 ) {
   const props = {
     organizationId: "fake_org_id",
+    organizationSlug: "acme",
     open: true,
     onOpenChange: vi.fn(),
     ...overrides,

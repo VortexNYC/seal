@@ -36,6 +36,7 @@ type Notification = ApiNotification;
 
 interface NotificationsPopoverProps {
   slug: string;
+  organizationSlug: string;
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -328,18 +329,21 @@ function EmptyState() {
   );
 }
 
-export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
+export function NotificationsPopover({
+  slug,
+  organizationSlug,
+}: NotificationsPopoverProps) {
   const queryClient = useQueryClient();
   const { data: notifications, isLoading } = useQuery({
-    queryKey: ["api", "notifications"],
-    queryFn: () => getNotifications(20),
+    queryKey: ["api", "notifications", organizationSlug],
+    queryFn: () => getNotifications(organizationSlug, 20),
   });
   const { data: unreadCount } = useQuery({
-    queryKey: ["api", "notifications", "unread-count"],
-    queryFn: getUnreadNotificationCount,
+    queryKey: ["api", "notifications", "unread-count", organizationSlug],
+    queryFn: () => getUnreadNotificationCount(organizationSlug),
   });
   const markAsReadMutation = useMutation({
-    mutationFn: markNotificationAsRead,
+    mutationFn: (id: string) => markNotificationAsRead(organizationSlug, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["api", "notifications"],
@@ -347,7 +351,7 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
     },
   });
   const markAllAsReadMutation = useMutation({
-    mutationFn: markAllNotificationsAsRead,
+    mutationFn: () => markAllNotificationsAsRead(organizationSlug),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["api", "notifications"],

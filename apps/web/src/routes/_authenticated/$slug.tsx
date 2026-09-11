@@ -25,8 +25,8 @@ import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
@@ -90,7 +90,7 @@ function WorkspaceLayout() {
         </main>
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
-      <FeedbackButton />
+      <FeedbackButton organizationSlug={slug} />
     </SidebarProvider>
   );
 }

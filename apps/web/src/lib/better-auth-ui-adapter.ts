@@ -9,9 +9,7 @@ function isKnownRole(role: string): role is KnownRole {
   return knownRoles.some((r) => r === role);
 }
 
-function toBetterAuthRole(
-  role: string | string[],
-): KnownRole | KnownRole[] {
+function toBetterAuthRole(role: string | string[]): KnownRole | KnownRole[] {
   if (typeof role === "string") {
     return isKnownRole(role) ? role : "member";
   }

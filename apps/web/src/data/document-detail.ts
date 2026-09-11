@@ -239,20 +239,23 @@ function toCurrentUserField(f: ApiSignatureFieldWithValues) {
   };
 }
 
-export function useDocumentDetail(documentPublicId: string) {
+export function useDocumentDetail(
+  organizationSlug: string,
+  documentPublicId: string
+) {
   const { data: documentData, refetch: refetchDocument } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId],
-    queryFn: () => getDocument(documentPublicId),
+    queryFn: () => getDocument(organizationSlug, documentPublicId),
   });
 
   const { data: apiRecipients, refetch: refetchRecipients } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "recipients"],
-    queryFn: () => getDocumentRecipients(documentPublicId),
+    queryFn: () => getDocumentRecipients(organizationSlug, documentPublicId),
   });
 
   const { data: apiProgress } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "recipients", "progress"],
-    queryFn: () => getRecipientProgress(documentPublicId),
+    queryFn: () => getRecipientProgress(organizationSlug, documentPublicId),
   });
 
   const progress: DocumentDetailProgress | null = apiProgress
@@ -270,18 +273,20 @@ export function useDocumentDetail(documentPublicId: string) {
   const { data: apiSignatureFields, refetch: refetchFields } = useSuspenseQuery(
     {
       queryKey: ["documents", documentPublicId, "signature-fields"],
-      queryFn: () => getDocumentSignatureFields(documentPublicId),
+      queryFn: () =>
+        getDocumentSignatureFields(organizationSlug, documentPublicId),
     }
   );
 
   const { data: apiSignatures } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "signatures"],
-    queryFn: () => getDocumentSignatures(documentPublicId),
+    queryFn: () => getDocumentSignatures(organizationSlug, documentPublicId),
   });
 
   const { data: apiPaymentConfigs } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "payment-configs"],
-    queryFn: () => getDocumentPaymentConfigs(documentPublicId),
+    queryFn: () =>
+      getDocumentPaymentConfigs(organizationSlug, documentPublicId),
   });
 
   const {
@@ -289,13 +294,14 @@ export function useDocumentDetail(documentPublicId: string) {
     refetch: refetchCurrentUserRecipient,
   } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "recipients", "me"],
-    queryFn: () => getCurrentUserRecipient(documentPublicId),
+    queryFn: () => getCurrentUserRecipient(organizationSlug, documentPublicId),
   });
 
   const { data: apiCurrentUserFields, refetch: refetchCurrentUserFields } =
     useSuspenseQuery({
       queryKey: ["documents", documentPublicId, "signature-fields", "me"],
-      queryFn: () => getCurrentUserSignatureFields(documentPublicId),
+      queryFn: () =>
+        getCurrentUserSignatureFields(organizationSlug, documentPublicId),
     });
 
   const currentUserRecipient = apiCurrentUserRecipient

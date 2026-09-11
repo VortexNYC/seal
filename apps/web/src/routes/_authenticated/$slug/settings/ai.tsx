@@ -23,10 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  getAiSettings,
-  updateAiSettings,
-} from "@/lib/api-client";
+import { getAiSettings, updateAiSettings } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/ai")({
   component: AISettings,

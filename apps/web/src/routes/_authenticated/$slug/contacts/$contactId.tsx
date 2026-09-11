@@ -99,8 +99,8 @@ function RelatedDocumentsContent({
 }) {
   const router = useRouter();
   const { data: documents } = useSuspenseQuery({
-    queryKey: ["api", "contacts", "related-documents", email],
-    queryFn: () => getContactRelatedDocuments(email),
+    queryKey: ["api", "contacts", "related-documents", email, slug],
+    queryFn: () => getContactRelatedDocuments(slug, email),
   });
 
   if ((documents ?? []).length === 0) {
@@ -146,8 +146,8 @@ function ContactDetailContent() {
   const queryClient = useQueryClient();
 
   const { data: contact } = useSuspenseQuery({
-    queryKey: ["api", "contacts", contactId],
-    queryFn: () => getContact(contactId),
+    queryKey: ["api", "contacts", contactId, slug],
+    queryFn: () => getContact(slug, contactId),
   });
 
   const [editOpen, setEditOpen] = useState(false);
@@ -157,7 +157,7 @@ function ContactDetailContent() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteContact(contactId);
+      await deleteContact(slug, contactId);
       await queryClient.invalidateQueries({ queryKey: ["api", "contacts"] });
       toast.success("Contact deleted");
       void router.navigate({ to: "/$slug/contacts", params: { slug } });
@@ -313,6 +313,7 @@ function ContactDetailContent() {
 
       {/* Edit dialog */}
       <EditContactDialog
+        organizationSlug={slug}
         open={editOpen}
         onOpenChange={setEditOpen}
         contact={contact}

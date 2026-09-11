@@ -25,10 +25,16 @@ interface StatusSegment {
   dotColor: string;
 }
 
-export function StatusBreakdown(): React.ReactElement {
+interface StatusBreakdownProps {
+  organizationSlug: string;
+}
+
+export function StatusBreakdown({
+  organizationSlug,
+}: StatusBreakdownProps): React.ReactElement {
   const { data: stats } = useSuspenseQuery({
-    queryKey: ["api", "documents", "stats"],
-    queryFn: getDocumentStats,
+    queryKey: ["api", "documents", "stats", organizationSlug],
+    queryFn: () => getDocumentStats(organizationSlug),
   });
 
   const breakdown: StatusSegment[] = [

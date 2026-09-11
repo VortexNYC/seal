@@ -47,6 +47,7 @@ interface CreateContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (contact: ApiContact) => void;
+  organizationSlug: string;
 }
 
 const createContactSchema = z.object({
@@ -66,6 +67,7 @@ export function CreateContactDialog({
   open,
   onOpenChange,
   onCreated,
+  organizationSlug,
 }: CreateContactDialogProps) {
   const [emailToCheck, setEmailToCheck] = useState("");
   const [existingContact, setExistingContact] = useState<ApiContact | null>(
@@ -107,7 +109,7 @@ export function CreateContactDialog({
     }
     setEmailToCheck(trimmed);
     try {
-      const contact = await getContactByEmail(trimmed);
+      const contact = await getContactByEmail(organizationSlug, trimmed);
       setExistingContact(contact);
     } catch {
       setExistingContact(null);
@@ -116,7 +118,7 @@ export function CreateContactDialog({
 
   const handleSubmit = async (values: CreateContactFormValues) => {
     try {
-      const contact = await createContact({
+      const contact = await createContact(organizationSlug, {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         email: values.email.trim(),

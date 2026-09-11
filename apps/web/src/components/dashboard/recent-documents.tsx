@@ -23,16 +23,18 @@ import { formatRelativeTime } from "@/lib/format-relative-time";
 
 interface RecentDocumentsProps {
   slug: string;
+  organizationSlug: string;
 }
 
 export function RecentDocuments({
   slug,
+  organizationSlug,
 }: RecentDocumentsProps): React.ReactElement {
   const router = useRouter();
 
   const { data: recentDocs } = useSuspenseQuery({
     queryKey: ["api", "documents", "recent"],
-    queryFn: () => getRecentDocuments(5),
+    queryFn: () => getRecentDocuments(organizationSlug, 5),
   });
 
   return (

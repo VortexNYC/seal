@@ -45,6 +45,7 @@ function renderDialog(
     open: true,
     onOpenChange: vi.fn(),
     onCreated: vi.fn(),
+    organizationSlug: "acme",
     ...overrides,
   };
   return { ...render(<CreateContactDialog {...props} />), props };
@@ -179,6 +180,7 @@ describe("CreateContactDialog", () => {
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
       expect(mockCreateContact).toHaveBeenCalledWith(
+        "acme",
         expect.objectContaining({
           firstName: "John",
           lastName: "Doe",

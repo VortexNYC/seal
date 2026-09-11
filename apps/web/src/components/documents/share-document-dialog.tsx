@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import {
   getDocumentSharing,
   revokeDocumentAccess,
@@ -20,7 +21,6 @@ import {
   updateDocumentPermission,
   updateDocumentSharing,
 } from "@/lib/api-client";
-import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
@@ -41,6 +41,7 @@ interface ShareDocumentDialogProps {
   documentId: string;
   documentName: string;
   slug: string;
+  organizationSlug: string;
 }
 
 type PermissionLevel = "view" | "edit" | "manage";
@@ -94,6 +95,7 @@ export function ShareDocumentDialog({
   documentId,
   documentName,
   slug,
+  organizationSlug,
 }: ShareDocumentDialogProps) {
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -103,14 +105,18 @@ export function ShareDocumentDialog({
 
   const { data: documentAccess } = useQuery({
     queryKey: ["api", "documents", documentId, "sharing"],
-    queryFn: () => getDocumentSharing(documentId),
+    queryFn: () => getDocumentSharing(organizationSlug, documentId),
     enabled: open,
   });
   const { data: organizationMembers } = useOrganizationMembers(slug, open);
 
   const updateSharingMode = useMutation({
     mutationFn: (variables: { publicId: string; sharingMode: SharingMode }) =>
-      updateDocumentSharing(variables.publicId, variables.sharingMode),
+      updateDocumentSharing(
+        organizationSlug,
+        variables.publicId,
+        variables.sharingMode
+      ),
   });
   const grantAccess = useMutation({
     mutationFn: (variables: {
@@ -119,6 +125,7 @@ export function ShareDocumentDialog({
       permissionLevel: PermissionLevel;
     }) =>
       shareDocument(
+        organizationSlug,
         variables.publicId,
         variables.userId,
         variables.permissionLevel
@@ -126,7 +133,11 @@ export function ShareDocumentDialog({
   });
   const revokeAccess = useMutation({
     mutationFn: (variables: { publicId: string; userId: string }) =>
-      revokeDocumentAccess(variables.publicId, variables.userId),
+      revokeDocumentAccess(
+        organizationSlug,
+        variables.publicId,
+        variables.userId
+      ),
   });
   const updateAccessLevel = useMutation({
     mutationFn: (variables: {
@@ -135,6 +146,7 @@ export function ShareDocumentDialog({
       permissionLevel: PermissionLevel;
     }) =>
       updateDocumentPermission(
+        organizationSlug,
         variables.publicId,
         variables.userId,
         variables.permissionLevel

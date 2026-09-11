@@ -43,6 +43,7 @@ interface Recipient {
 }
 
 interface FieldPropertiesDialogProps {
+  organizationSlug: string;
   documentPublicId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -53,6 +54,7 @@ interface FieldPropertiesDialogProps {
 }
 
 export function FieldPropertiesDialog({
+  organizationSlug,
   documentPublicId,
   open,
   onOpenChange,
@@ -73,6 +75,7 @@ export function FieldPropertiesDialog({
           </DialogDescription>
         </DialogHeader>
         <FieldPropertiesPanel
+          organizationSlug={organizationSlug}
           documentPublicId={documentPublicId}
           field={field}
           recipients={recipients}

@@ -108,10 +108,16 @@ function getActionLabel(action: string): {
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-export function RecentActivity(): React.ReactElement {
+interface RecentActivityProps {
+  organizationSlug: string;
+}
+
+export function RecentActivity({
+  organizationSlug,
+}: RecentActivityProps): React.ReactElement {
   const { data: activities, isPending } = useQuery({
-    queryKey: ["api", "activity"],
-    queryFn: () => getRecentActivity(10),
+    queryKey: ["api", "activity", organizationSlug],
+    queryFn: () => getRecentActivity(organizationSlug, 10),
   });
 
   // Loading skeleton
