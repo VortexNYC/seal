@@ -11,6 +11,7 @@ import {
   createFileRoute,
   Outlet,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -26,6 +27,7 @@ import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -54,6 +56,12 @@ function WorkspaceLayout() {
   const { slug } = Route.useParams();
   const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
   useJamMetadata();
+
+  useEffect(() => {
+    const client = getBetterAuthUiClient();
+    if (client?.organization?.setActive === undefined) return;
+    void client.organization.setActive({ organizationSlug: slug });
+  }, [slug]);
 
   const { data: organization } = useSuspenseOrganization(slug);
 
