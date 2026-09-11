@@ -4,8 +4,8 @@ import { internalAction } from "../_generated/server";
 
 const documentInvoiceCreateArgs = {
   id: v.string(),
-  documentId: v.id("documents"),
-  organizationId: v.id("organizations"),
+  documentId: v.string(),
+  organizationId: v.string(),
   provider: v.optional(v.string()),
   providerAccountId: v.optional(v.string()),
   providerInvoiceId: v.optional(v.string()),

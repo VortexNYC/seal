@@ -16,7 +16,7 @@ import { z } from "zod";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { internalAction } from "../_generated/server";
+import { internalAction, type ActionCtx } from "../_generated/server";
 import { createVortexBillingClient } from "../payments/vortex_billing_processor.helpers";
 import {
   readVortexBillingEnv,
@@ -1524,19 +1524,30 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           );
         }
 
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeVortexPayableIds,
+        await ctx.scheduler.runAfter(
+          0,
+          internal.payment_fields.worker_payment_configs
+            .updatePaymentFieldConfig,
           {
-            configId: config.id,
+            id: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: recurringPayable.payableId,
             vortexRecurringPayableId: recurringPayable.recurringPayableId,
             vortexPaymentRequestId: recurringPayable.paymentRequestId,
             hostedInvoiceUrl: recurringPayable.checkoutUrl,
-            customerEmail: recipient.email,
-            customerName: recipient.name,
           }
         );
+
+        await createVortexDocumentInvoice({
+          ctx,
+          config,
+          vortexPayableId: recurringPayable.payableId,
+          vortexPaymentRequestId: recurringPayable.paymentRequestId,
+          paymentStatus: "awaiting",
+          hostedInvoiceUrl: recurringPayable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
 
         paymentLinks.push({
           recipientEmail: recipient.email,
@@ -1565,19 +1576,30 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           );
         }
 
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeVortexPayableIds,
+        await ctx.scheduler.runAfter(
+          0,
+          internal.payment_fields.worker_payment_configs
+            .updatePaymentFieldConfig,
           {
-            configId: config.id,
+            id: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: installmentPayable.payableId,
             vortexInstallmentPayableId: installmentPayable.installmentPayableId,
             vortexPaymentRequestId: installmentPayable.paymentRequestId,
             hostedInvoiceUrl: installmentPayable.checkoutUrl,
-            customerEmail: recipient.email,
-            customerName: recipient.name,
           }
         );
+
+        await createVortexDocumentInvoice({
+          ctx,
+          config,
+          vortexPayableId: installmentPayable.payableId,
+          vortexPaymentRequestId: installmentPayable.paymentRequestId,
+          paymentStatus: "awaiting",
+          hostedInvoiceUrl: installmentPayable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
 
         paymentLinks.push({
           recipientEmail: recipient.email,
@@ -1606,20 +1628,31 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           );
         }
 
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeVortexPayableIds,
+        await ctx.scheduler.runAfter(
+          0,
+          internal.payment_fields.worker_payment_configs
+            .updatePaymentFieldConfig,
           {
-            configId: config.id,
+            id: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: depositBalancePayable.payableId,
             vortexDepositBalancePayableId:
               depositBalancePayable.depositBalancePayableId,
             vortexPaymentRequestId: depositBalancePayable.paymentRequestId,
             hostedInvoiceUrl: depositBalancePayable.checkoutUrl,
-            customerEmail: recipient.email,
-            customerName: recipient.name,
           }
         );
+
+        await createVortexDocumentInvoice({
+          ctx,
+          config,
+          vortexPayableId: depositBalancePayable.payableId,
+          vortexPaymentRequestId: depositBalancePayable.paymentRequestId,
+          paymentStatus: "awaiting",
+          hostedInvoiceUrl: depositBalancePayable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
 
         paymentLinks.push({
           recipientEmail: recipient.email,
@@ -1648,18 +1681,29 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
           );
         }
 
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeVortexPayableIds,
+        await ctx.scheduler.runAfter(
+          0,
+          internal.payment_fields.worker_payment_configs
+            .updatePaymentFieldConfig,
           {
-            configId: config.id,
+            id: config.id,
             paymentStatus: "awaiting",
             vortexPayableId: payable.payableId,
             vortexPaymentRequestId: payable.paymentRequestId,
             hostedInvoiceUrl: payable.checkoutUrl,
-            customerEmail: recipient.email,
-            customerName: recipient.name,
           }
         );
+
+        await createVortexDocumentInvoice({
+          ctx,
+          config,
+          vortexPayableId: payable.payableId,
+          vortexPaymentRequestId: payable.paymentRequestId,
+          paymentStatus: "awaiting",
+          hostedInvoiceUrl: payable.checkoutUrl,
+          customerEmail: recipient.email,
+          customerName: recipient.name,
+        });
 
         paymentLinks.push({
           recipientEmail: recipient.email,
@@ -1674,6 +1718,81 @@ export const createVortexPaymentObjectsForDocumentFields = internalAction({
     return { paymentLinks };
   },
 });
+
+async function createVortexDocumentInvoice({
+  ctx,
+  config,
+  vortexPayableId,
+  vortexPaymentRequestId,
+  paymentStatus,
+  hostedInvoiceUrl,
+  customerEmail,
+  customerName,
+}: {
+  readonly ctx: ActionCtx;
+  readonly config: PaymentFieldConfig;
+  readonly vortexPayableId: string;
+  readonly vortexPaymentRequestId: string | undefined;
+  readonly paymentStatus:
+    | "pending"
+    | "created"
+    | "awaiting"
+    | "paid"
+    | "failed"
+    | "cancelled";
+  readonly hostedInvoiceUrl: string;
+  readonly customerEmail: string;
+  readonly customerName: string | undefined;
+}) {
+  const now = Date.now();
+  await ctx.scheduler.runAfter(
+    0,
+    internal.payment_fields.worker_invoices.createDocumentInvoice,
+    {
+      id: vortexPayableId,
+      documentId: config.documentId,
+      organizationId: config.organizationId,
+      vortexPayableId,
+      vortexPaymentRequestId,
+      status: documentInvoiceStatusForPaymentStatus(paymentStatus),
+      customerEmail,
+      customerName,
+      amountDue: config.totalAmountCents,
+      currency: config.currency,
+      hostedInvoiceUrl,
+      createdAt: now,
+      updatedAt: now,
+    }
+  );
+}
+
+function documentInvoiceStatusForPaymentStatus(
+  paymentStatus:
+    | "pending"
+    | "created"
+    | "awaiting"
+    | "paid"
+    | "failed"
+    | "cancelled"
+): "draft" | "open" | "paid" | "void" | "uncollectible" {
+  switch (paymentStatus) {
+    case "pending":
+    case "created":
+      return "draft";
+    case "awaiting":
+      return "open";
+    case "paid":
+      return "paid";
+    case "failed":
+      return "uncollectible";
+    case "cancelled":
+      return "void";
+    default: {
+      const _exhaustive: never = paymentStatus;
+      throw new Error(`Unhandled payment status: ${String(_exhaustive)}`);
+    }
+  }
+}
 
 function toPaymentFieldConfigInput(
   config: PaymentFieldConfig

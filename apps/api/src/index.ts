@@ -355,6 +355,60 @@ app.get("/internal/payment-field-configs/:id", async (c) => {
   return c.json(config);
 });
 
+const paymentFieldConfigUpdateBody = z.object({
+  paymentStatus: z.string().optional(),
+  vortexPayableId: z.string().optional(),
+  vortexRecurringPayableId: z.string().optional(),
+  vortexInstallmentPayableId: z.string().optional(),
+  vortexDepositBalancePayableId: z.string().optional(),
+  vortexPaymentRequestId: z.string().optional(),
+  hostedInvoiceUrl: z.string().optional(),
+  providerInvoiceId: z.string().optional(),
+  providerSubscriptionId: z.string().optional(),
+  providerPaymentIntentId: z.string().optional(),
+});
+
+app.patch("/internal/payment-field-configs/:id", async (c) => {
+  const key = c.req.header("x-internal-api-key");
+  if (key !== c.env.INTERNAL_API_KEY) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parseResult = paymentFieldConfigUpdateBody.safeParse(
+    await c.req.json()
+  );
+  if (!parseResult.success) {
+    return c.json({ error: "invalid body" }, 400);
+  }
+
+  const id = c.req.param("id");
+  const body = parseResult.data;
+  const db = createD1(c.env.D1);
+
+  const existing = await db.query.paymentFieldConfigs.findFirst({
+    where: eq(paymentFieldConfigs.id, id),
+  });
+  if (!existing) {
+    return c.json({ error: "not found" }, 404);
+  }
+
+  const set: Record<string, string | null> = {};
+  for (const [column, value] of Object.entries(body)) {
+    if (value !== undefined) {
+      set[column] = value ?? null;
+    }
+  }
+
+  if (Object.keys(set).length > 0) {
+    await db
+      .update(paymentFieldConfigs)
+      .set(set)
+      .where(eq(paymentFieldConfigs.id, id));
+  }
+
+  return c.json({ success: true });
+});
+
 app.get("/internal/payment-field-configs", async (c) => {
   const key = c.req.header("x-internal-api-key");
   if (key !== c.env.INTERNAL_API_KEY) {
