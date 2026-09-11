@@ -134,7 +134,7 @@ function DocumentDetailPage() {
     refetchFields,
     refetchCurrentUserRecipient,
     refetchCurrentUserFields,
-  } = useDocumentDetail(documentPublicId);
+  } = useDocumentDetail(slug, documentPublicId);
 
   const signatureFieldCount = countSignatureFields(signatureFields);
 
@@ -203,7 +203,7 @@ function DocumentDetailPage() {
 
   // ── Mutations ───────────────────────────────────────────────────────────
   const removeRecipient = async (recipientPublicId: string) => {
-    await removeRecipientApi(documentPublicId, recipientPublicId);
+    await removeRecipientApi(slug, documentPublicId, recipientPublicId);
   };
   const addRecipients = async (
     recipientsInput: {
@@ -212,7 +212,7 @@ function DocumentDetailPage() {
       role: "signer" | "viewer" | "approver";
     }[]
   ) => {
-    await addRecipientsApi(documentPublicId, recipientsInput);
+    await addRecipientsApi(slug, documentPublicId, recipientsInput);
   };
   const updateDocument = async (input: {
     name?: string;
@@ -220,10 +220,10 @@ function DocumentDetailPage() {
     redirectUrl?: string | null;
     allowDictateNextSigner?: boolean;
   }) => {
-    await updateDocumentApi(documentPublicId, input);
+    await updateDocumentApi(slug, documentPublicId, input);
   };
   const resendRecipientEmail = async (recipientPublicId: string) => {
-    await resendRecipientEmailApi(documentPublicId, recipientPublicId);
+    await resendRecipientEmailApi(slug, documentPublicId, recipientPublicId);
   };
 
   // ── Auth ────────────────────────────────────────────────────────────────
@@ -234,9 +234,10 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const pdfViewer = usePdfViewer(documentPublicId);
+  const pdfViewer = usePdfViewer(slug, documentPublicId);
 
   const fieldPlacement = useFieldPlacement({
+    organizationSlug: slug,
     documentPublicId,
     recipients,
     signatureFields,
@@ -887,6 +888,7 @@ function DocumentDetailPage() {
 
         {/* ── Dialogs ─────────────────────────────────────────────────────── */}
         <AddRecipientDialog
+          organizationSlug={slug}
           documentPublicId={documentPublicId}
           slug={slug}
           open={docState.addRecipientOpen}
@@ -944,6 +946,7 @@ function DocumentDetailPage() {
           )}
 
         <FieldPropertiesDialog
+          organizationSlug={slug}
           documentPublicId={documentPublicId}
           open={fieldPlacement.showFieldProperties}
           onOpenChange={(open) => {
@@ -969,6 +972,7 @@ function DocumentDetailPage() {
         />
 
         <PaymentConfigModal
+          organizationSlug={slug}
           documentPublicId={documentPublicId}
           open={fieldPlacement.showPaymentConfigModal}
           onOpenChange={(open) => {
@@ -985,6 +989,7 @@ function DocumentDetailPage() {
         />
 
         <SendDocumentDialog
+          organizationSlug={slug}
           documentPublicId={documentPublicId}
           documentName={documentData.name}
           recipients={recipients}
@@ -1001,6 +1006,7 @@ function DocumentDetailPage() {
         />
 
         <SaveAsTemplateDialog
+          organizationSlug={slug}
           documentPublicId={documentPublicId}
           documentName={documentData.name}
           open={docState.saveAsTemplateOpen}

@@ -30,6 +30,7 @@ interface MoveToFolderDialogProps {
   type: "document" | "template";
   excludeFolderIds?: string[];
   onMove: (targetFolderId?: string) => void;
+  organizationSlug: string;
 }
 
 interface FlatFolder {
@@ -119,10 +120,11 @@ export function MoveToFolderDialog({
   type,
   excludeFolderIds,
   onMove,
+  organizationSlug,
 }: MoveToFolderDialogProps) {
   const { data: apiFolders } = useQuery({
     queryKey: ["api", "folders", "all", type],
-    queryFn: () => getAllFolders(type),
+    queryFn: () => getAllFolders(organizationSlug, type),
     enabled: open,
   });
 

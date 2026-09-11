@@ -25,10 +25,16 @@ import {
 } from "@/components/ui/card";
 import { getDocumentTrends } from "@/lib/api-client";
 
-export function TrendChart(): React.ReactElement {
+interface TrendChartProps {
+  organizationSlug: string;
+}
+
+export function TrendChart({
+  organizationSlug,
+}: TrendChartProps): React.ReactElement {
   const { data: trends } = useSuspenseQuery({
-    queryKey: ["api", "documents", "trends", 30],
-    queryFn: () => getDocumentTrends(30),
+    queryKey: ["api", "documents", "trends", organizationSlug, 30],
+    queryFn: () => getDocumentTrends(organizationSlug, 30),
   });
 
   const chartData = useMemo(() => {

@@ -38,6 +38,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={false}
         onOpenChange={vi.fn()}
         fieldPublicId={null}
@@ -53,6 +54,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}
@@ -71,6 +73,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}
@@ -115,6 +118,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}
@@ -155,6 +159,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}
@@ -191,6 +196,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}
@@ -233,6 +239,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}
@@ -277,6 +284,7 @@ describe("PaymentConfigModal", () => {
     render(
       <PaymentConfigModal
         documentPublicId={FAKE_DOC_ID}
+        organizationSlug="acme"
         open={true}
         onOpenChange={vi.fn()}
         fieldPublicId={FAKE_FIELD_ID}

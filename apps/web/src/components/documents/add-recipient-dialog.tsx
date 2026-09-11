@@ -5,8 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { addRecipients, getContacts } from "@/lib/api-client";
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
+import { addRecipients, getContacts } from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
@@ -46,6 +46,7 @@ interface AddRecipientDialogProps {
   onSuccess?: () => void;
   existingRecipientEmails?: string[];
   currentUserEmail?: string;
+  organizationSlug: string;
 }
 
 function getInitials(name: string | null | undefined): string {
@@ -65,6 +66,7 @@ export function AddRecipientDialog({
   onSuccess,
   existingRecipientEmails = [],
   currentUserEmail,
+  organizationSlug,
 }: AddRecipientDialogProps) {
   const [activeTab, setActiveTab] = useState<"team" | "outsider">("team");
   const [selectedMember, setSelectedMember] = useState<{
@@ -83,7 +85,7 @@ export function AddRecipientDialog({
 
   const { data: contactSuggestions } = useQuery({
     queryKey: ["contacts", "suggest", email],
-    queryFn: () => getContacts({ search: email }),
+    queryFn: () => getContacts(organizationSlug, { search: email }),
     enabled: activeTab === "outsider" && email.length >= 2,
   });
 
@@ -100,7 +102,7 @@ export function AddRecipientDialog({
       email: string;
       name?: string;
       role: "signer" | "viewer" | "approver";
-    }) => addRecipients(documentPublicId, [input]),
+    }) => addRecipients(organizationSlug, documentPublicId, [input]),
   });
 
   // Filter out current user and already-added recipients

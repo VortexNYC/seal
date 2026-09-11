@@ -493,6 +493,7 @@ function DocumentTableRow({
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
 }) {
+  const { slug } = Route.useParams();
   return (
     <TableRow
       key={doc._id}
@@ -502,6 +503,7 @@ function DocumentTableRow({
     >
       <TableCell>
         <DocumentThumbnail
+          organizationSlug={slug}
           publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
@@ -601,6 +603,7 @@ function DocumentGridCard({
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
 }) {
+  const { slug } = Route.useParams();
   return (
     <Card
       key={doc._id}
@@ -609,6 +612,7 @@ function DocumentGridCard({
     >
       <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
         <DocumentThumbnail
+          organizationSlug={slug}
           publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
@@ -857,10 +861,18 @@ function useDocumentsListData({
   | "workflowStatusFilter"
 >): DocumentsListData & { readonly refetch: () => void } {
   const [currentPage, setCurrentPage] = useState(1);
+  const { slug } = Route.useParams();
   const { data: apiDocuments, refetch: refetchDocuments } = useSuspenseQuery({
-    queryKey: ["api", "documents", filter, workflowStatusFilter, folderId],
+    queryKey: [
+      "api",
+      "documents",
+      filter,
+      workflowStatusFilter,
+      folderId,
+      slug,
+    ],
     queryFn: () =>
-      getDocuments({
+      getDocuments(slug, {
         filter,
         workflowStatus:
           workflowStatusFilter === "all" ? undefined : workflowStatusFilter,
@@ -869,8 +881,8 @@ function useDocumentsListData({
       }),
   });
   const { data: apiFolders, refetch: refetchFolders } = useSuspenseQuery({
-    queryKey: ["api", "folders", "document", folderId],
-    queryFn: () => getFolders({ type: "document", parentId: folderId }),
+    queryKey: ["api", "folders", "document", folderId, slug],
+    queryFn: () => getFolders(slug, { type: "document", parentId: folderId }),
   });
 
   const allDocuments = useMemo(
@@ -1299,13 +1311,13 @@ function useDocumentListActions({
   const router = useRouter();
   const { track } = useAnalytics();
   const deleteDocument = useMutation({
-    mutationFn: deleteDocumentApi,
+    mutationFn: (publicId: string) => deleteDocumentApi(slug, publicId),
   });
   const sendDocument = useMutation({
-    mutationFn: (publicId: string) => sendDocumentApi(publicId),
+    mutationFn: (publicId: string) => sendDocumentApi(slug, publicId),
   });
   const cancelDocument = useMutation({
-    mutationFn: cancelDocumentApi,
+    mutationFn: (publicId: string) => cancelDocumentApi(slug, publicId),
   });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(
     defaultConfirmDialog()
@@ -1325,7 +1337,7 @@ function useDocumentListActions({
   };
   const handleDownload = async (documentId: string) => {
     try {
-      const blob = await downloadDocument(documentId);
+      const blob = await downloadDocument(slug, documentId);
       const url = window.URL.createObjectURL(blob);
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");
@@ -1480,7 +1492,8 @@ function DocumentsPage() {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveDocumentId, setMoveDocumentId] = useState<string | null>(null);
   const moveDocumentsToFolderMutation = useMutation({
-    mutationFn: moveDocumentsToFolder,
+    mutationFn: (options: { documentIds: string[]; folderId?: string }) =>
+      moveDocumentsToFolder(slug, options),
   });
 
   // folderIdParam is a public folder id from the URL
@@ -1573,9 +1586,16 @@ function DocumentsPage() {
         icon: UploadIcon,
         variant: "default",
       }}
-      headerActions={<CreateFolderDialog type="document" parentId={folderId} />}
+      headerActions={
+        <CreateFolderDialog
+          organizationSlug={slug}
+          type="document"
+          parentId={folderId}
+        />
+      }
       headerCenter={
         <FolderBreadcrumbs
+          organizationSlug={slug}
           folderId={folderId}
           type="document"
           onNavigate={handleFolderSelect}
@@ -1910,6 +1930,7 @@ function DocumentsPage() {
 
       <UploadDialog
         organizationId={organization.id}
+        organizationSlug={slug}
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onSuccess={handleRefetch}
@@ -1917,6 +1938,7 @@ function DocumentsPage() {
 
       {selectedDocumentId && (
         <ShareDocumentDialog
+          organizationSlug={slug}
           documentId={selectedDocumentId}
           documentName={selectedDocumentName}
           slug={slug}
@@ -1928,6 +1950,7 @@ function DocumentsPage() {
       <MoveToFolderDialog
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
+        organizationSlug={slug}
         organizationId={organization.id}
         type="document"
         onMove={handleMoveConfirm}
@@ -1937,6 +1960,7 @@ function DocumentsPage() {
         <TransferOwnershipDialog
           open={transferDialogOpen}
           onOpenChange={setTransferDialogOpen}
+          organizationSlug={slug}
           documentId={documentToTransfer.id}
           documentName={documentToTransfer.name}
           currentOwnerId={documentToTransfer.ownerId}

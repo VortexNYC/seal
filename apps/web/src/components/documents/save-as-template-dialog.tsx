@@ -33,6 +33,7 @@ interface SaveAsTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  organizationSlug: string;
 }
 
 export function SaveAsTemplateDialog({
@@ -41,6 +42,7 @@ export function SaveAsTemplateDialog({
   open,
   onOpenChange,
   onSuccess,
+  organizationSlug,
 }: SaveAsTemplateDialogProps) {
   const [name, setName] = useState(`${documentName} Template`);
   const [description, setDescription] = useState("");
@@ -48,7 +50,7 @@ export function SaveAsTemplateDialog({
 
   const saveAsTemplateMutation = useMutation({
     mutationFn: (input: { name: string; description?: string }) =>
-      saveAsTemplate(documentPublicId, input),
+      saveAsTemplate(organizationSlug, documentPublicId, input),
   });
 
   const handleSave = async () => {

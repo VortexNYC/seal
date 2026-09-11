@@ -171,7 +171,7 @@ function ContactsTableContent({
     if (!deleteDialog.contactId) return;
 
     try {
-      await deleteContact(deleteDialog.contactId);
+      await deleteContact(slug, deleteDialog.contactId);
       await queryClient.invalidateQueries({ queryKey: ["api", "contacts"] });
       toast.success("Contact deleted");
       // Remove from selection if selected
@@ -193,7 +193,7 @@ function ContactsTableContent({
     setIsBulkDeleting(true);
     try {
       const ids = [...selectedIds];
-      const results = await bulkDeleteContacts(ids);
+      const results = await bulkDeleteContacts(slug, ids);
       const successCount = results.filter((r) => r.success).length;
       const failCount = results.length - successCount;
 
@@ -444,6 +444,7 @@ function ContactsTableContent({
       {/* Edit dialog */}
       {editContact && (
         <EditContactDialog
+          organizationSlug={slug}
           open={!!editContact}
           onOpenChange={(open) => {
             if (!open) setEditContact(null);
@@ -473,11 +474,12 @@ function ContactsListData({
   onSelectionChange: (ids: Set<string>) => void;
   onContactsLoaded: (contacts: ApiContact[]) => void;
 }) {
+  const { slug } = Route.useParams();
   const statusArg = statusFilter === "all" ? undefined : statusFilter;
 
   const { data: contacts } = useSuspenseQuery({
-    queryKey: ["api", "contacts", "list", statusArg ?? "all"],
-    queryFn: () => getContacts({ status: statusArg }),
+    queryKey: ["api", "contacts", "list", statusArg ?? "all", slug],
+    queryFn: () => getContacts(slug, { status: statusArg }),
   });
 
   // Notify parent of loaded contacts for export
@@ -511,11 +513,12 @@ function ContactsSearchData({
   onSelectionChange: (ids: Set<string>) => void;
   onContactsLoaded: (contacts: ApiContact[]) => void;
 }) {
+  const { slug } = Route.useParams();
   const statusArg = statusFilter === "all" ? undefined : statusFilter;
 
   const { data: contacts } = useSuspenseQuery({
-    queryKey: ["api", "contacts", "search", query, statusArg ?? "all"],
-    queryFn: () => getContacts({ search: query, status: statusArg }),
+    queryKey: ["api", "contacts", "search", query, statusArg ?? "all", slug],
+    queryFn: () => getContacts(slug, { search: query, status: statusArg }),
   });
 
   useEffect(() => {
@@ -536,6 +539,7 @@ function ContactsSearchData({
 // --- Page component ---
 
 function ContactsPage() {
+  const { slug } = Route.useParams();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -654,6 +658,7 @@ function ContactsPage() {
         </Suspense>
 
         <CreateContactDialog
+          organizationSlug={slug}
           open={createOpen}
           onOpenChange={setCreateOpen}
           onCreated={() =>

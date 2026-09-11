@@ -125,6 +125,7 @@ interface PaymentConfigModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fieldPublicId: string | null;
+  organizationSlug: string;
 }
 
 type PaymentFieldConfig = ApiPaymentConfigDetail;
@@ -230,13 +231,18 @@ export function PaymentConfigModal({
   open,
   onOpenChange,
   fieldPublicId,
+  organizationSlug,
 }: PaymentConfigModalProps) {
   const { data: existingConfig, isLoading: existingConfigLoading } = useQuery({
     queryKey: ["documents", documentPublicId, "payment-configs", fieldPublicId],
     queryFn: async () => {
       if (!fieldPublicId) return null;
       try {
-        return await getPaymentConfig(documentPublicId, fieldPublicId);
+        return await getPaymentConfig(
+          organizationSlug,
+          documentPublicId,
+          fieldPublicId
+        );
       } catch (error) {
         if (
           error instanceof Error &&
@@ -252,7 +258,7 @@ export function PaymentConfigModal({
   });
   const upsertConfig = useMutation({
     mutationFn: (input: PaymentConfigMutationInput) =>
-      upsertPaymentConfig(documentPublicId, input),
+      upsertPaymentConfig(organizationSlug, documentPublicId, input),
   });
   const form = usePaymentConfigForm(existingConfig);
   const [isSaving, setIsSaving] = useState(false);

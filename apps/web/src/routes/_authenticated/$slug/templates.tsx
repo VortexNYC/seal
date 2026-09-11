@@ -13,7 +13,6 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -85,6 +84,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   deleteTemplate as deleteTemplateApi,
   getFolders,
@@ -175,8 +175,8 @@ function TemplatesList({
 
   // Query subfolders at the current level for inline folder rows
   const { data: subfolders } = useQuery({
-    queryKey: ["api", "folders", "template", folderId],
-    queryFn: () => getFolders({ type: "template", parentId: folderId }),
+    queryKey: ["api", "folders", "template", folderId, slug],
+    queryFn: () => getFolders(slug, { type: "template", parentId: folderId }),
   });
 
   // Filter by search query
@@ -778,9 +778,16 @@ function TemplatesPage() {
   return (
     <PageWrapper
       title="Templates"
-      headerActions={<CreateFolderDialog type="template" parentId={folderId} />}
+      headerActions={
+        <CreateFolderDialog
+          organizationSlug={slug}
+          type="template"
+          parentId={folderId}
+        />
+      }
       headerCenter={
         <FolderBreadcrumbs
+          organizationSlug={slug}
           folderId={folderId}
           type="template"
           onNavigate={handleFolderSelect}
@@ -1006,6 +1013,7 @@ function TemplatesPage() {
       </AlertDialog>
 
       <MoveToFolderDialog
+        organizationSlug={slug}
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
         organizationId={organization.id}

@@ -42,6 +42,7 @@ interface EditContactDialogProps {
   onOpenChange: (open: boolean) => void;
   contact: ApiContact;
   onUpdated?: (contact: ApiContact) => void;
+  organizationSlug: string;
 }
 
 interface FormErrors {
@@ -59,6 +60,7 @@ export function EditContactDialog({
   onOpenChange,
   contact,
   onUpdated,
+  organizationSlug,
 }: EditContactDialogProps) {
   const [firstName, setFirstName] = useState(contact.firstName);
   const [lastName, setLastName] = useState(contact.lastName);
@@ -113,7 +115,7 @@ export function EditContactDialog({
     setIsSubmitting(true);
 
     try {
-      const updated = await updateContact(contact._id, {
+      const updated = await updateContact(organizationSlug, contact._id, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),

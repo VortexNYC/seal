@@ -27,11 +27,13 @@ import { createFolder } from "@/lib/api-client";
 interface CreateFolderDialogProps {
   type: "document" | "template";
   parentId?: string;
+  organizationSlug: string;
 }
 
 export function CreateFolderDialog({
   type,
   parentId,
+  organizationSlug,
 }: CreateFolderDialogProps): React.ReactElement {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -39,7 +41,11 @@ export function CreateFolderDialog({
   const [isCreating, setIsCreating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const createFolderMutation = useMutation({
-    mutationFn: createFolder,
+    mutationFn: (input: {
+      name: string;
+      type: "document" | "template";
+      parentId?: string;
+    }) => createFolder(organizationSlug, input),
   });
 
   useEffect(() => {

@@ -40,6 +40,7 @@ import { Progress } from "../ui/progress";
 
 interface UploadDialogProps {
   organizationId: string;
+  organizationSlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -131,12 +132,14 @@ const getRetryDelay = (retryCount: number): number =>
 
 export function UploadDialog({
   organizationId,
+  organizationSlug,
   open,
   onOpenChange,
   onSuccess,
 }: UploadDialogProps) {
   const controller = useUploadController({
     organizationId,
+    organizationSlug,
     onOpenChange,
     onSuccess,
   });
@@ -203,15 +206,17 @@ function useUploadController({
   organizationId,
   onOpenChange,
   onSuccess,
+  organizationSlug,
 }: Pick<
   UploadDialogProps,
-  "organizationId" | "onOpenChange" | "onSuccess"
+  "organizationId" | "organizationSlug" | "onOpenChange" | "onSuccess"
 >): UploadController {
   const state = useUploadState();
   const { track } = useAnalytics();
   const { usageStats, atDocumentLimit } = useDocumentLimit();
   const createDocumentMutation = useMutation({
-    mutationFn: createDocument,
+    mutationFn: (input: CreateDocumentInput) =>
+      createDocument(organizationSlug, input),
   });
   const uploadDocumentMutation = useMutation({
     mutationFn: (variables: {
@@ -220,6 +225,7 @@ function useUploadController({
       contentType: string;
     }) =>
       uploadDocument(
+        organizationSlug,
         variables.publicId,
         variables.contentBase64,
         variables.contentType

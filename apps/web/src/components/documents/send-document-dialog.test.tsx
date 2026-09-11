@@ -47,6 +47,7 @@ function buildProps(overrides: BuildPropsOptions = {}) {
   return {
     documentPublicId: "fake_doc",
     documentName: "Test Document",
+    organizationSlug: "acme",
     recipients: [
       {
         _id: FAKE_RECIPIENT_ID,

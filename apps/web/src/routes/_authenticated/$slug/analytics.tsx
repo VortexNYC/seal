@@ -101,6 +101,7 @@ export const Route = createFileRoute("/_authenticated/$slug/analytics")({
 });
 
 function AnalyticsPage() {
+  const { slug } = Route.useParams();
   const [activeTab, setActiveTab] = useState("activity");
   const [scope, setScope] = useState<AnalyticsScope>("personal");
   const [trendPreset, setTrendPreset] = useState<TrendPreset>("30");
@@ -110,8 +111,8 @@ function AnalyticsPage() {
 
   // Use useQuery (not useSuspenseQuery) so real-time updates don't trigger Suspense remounts
   const { data: stats } = useQuery({
-    queryKey: ["analytics", "stats", scope],
-    queryFn: () => getAnalyticsStats(scope),
+    queryKey: ["analytics", "stats", scope, slug],
+    queryFn: () => getAnalyticsStats(slug, scope),
   });
   const isAdmin = stats?.isAdmin ?? false;
 
@@ -306,13 +307,14 @@ function OverviewStats({
   };
   scope: AnalyticsScope;
 }) {
+  const { slug } = Route.useParams();
   const { data: weekStats } = useQuery({
-    queryKey: ["analytics", "period", "week", scope],
-    queryFn: () => getAnalyticsPeriodStats("week", scope),
+    queryKey: ["analytics", "period", "week", scope, slug],
+    queryFn: () => getAnalyticsPeriodStats(slug, "week", scope),
   });
   const { data: monthStats } = useQuery({
-    queryKey: ["analytics", "period", "month", scope],
-    queryFn: () => getAnalyticsPeriodStats("month", scope),
+    queryKey: ["analytics", "period", "month", scope, slug],
+    queryFn: () => getAnalyticsPeriodStats(slug, "month", scope),
   });
 
   return (
@@ -480,6 +482,7 @@ function TrendChart({
   customRange: DateRange | undefined;
   scope: AnalyticsScope;
 }) {
+  const { slug } = Route.useParams();
   const queryArgs = useMemo(() => {
     if (preset === "custom" && customRange?.from) {
       const startDate = customRange.from.getTime();
@@ -492,8 +495,8 @@ function TrendChart({
   }, [preset, customRange, scope]);
 
   const { data: trends } = useSuspenseQuery({
-    queryKey: ["analytics", "trends", queryArgs],
-    queryFn: () => getAnalyticsTrends(queryArgs),
+    queryKey: ["analytics", "trends", queryArgs, slug],
+    queryFn: () => getAnalyticsTrends(slug, queryArgs),
   });
 
   const chartData = useMemo(() => {
@@ -619,9 +622,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
+  const { slug } = Route.useParams();
   const { data: stats } = useSuspenseQuery({
-    queryKey: ["analytics", "stats", scope],
-    queryFn: () => getAnalyticsStats(scope),
+    queryKey: ["analytics", "stats", scope, slug],
+    queryFn: () => getAnalyticsStats(slug, scope),
   });
 
   const pieData = useMemo(() => {
@@ -719,9 +723,10 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
 }
 
 function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
+  const { slug } = Route.useParams();
   const { data: stats } = useSuspenseQuery({
-    queryKey: ["analytics", "stats", scope],
-    queryFn: () => getAnalyticsStats(scope),
+    queryKey: ["analytics", "stats", scope, slug],
+    queryFn: () => getAnalyticsStats(slug, scope),
   });
 
   const barData = useMemo(
@@ -873,9 +878,10 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 function RecentActivityFeed() {
+  const { slug } = Route.useParams();
   const { data: activity } = useQuery({
-    queryKey: ["api", "activity", 30],
-    queryFn: () => getRecentActivity(30),
+    queryKey: ["api", "activity", 30, slug],
+    queryFn: () => getRecentActivity(slug, 30),
   });
 
   if (!activity) {
@@ -954,9 +960,10 @@ function RecentActivityFeed() {
 }
 
 function MemberActivityTable() {
+  const { slug } = Route.useParams();
   const { data: memberActivity } = useQuery({
-    queryKey: ["analytics", "member-activity"],
-    queryFn: () => getMemberActivity(),
+    queryKey: ["analytics", "member-activity", slug],
+    queryFn: () => getMemberActivity(slug),
   });
 
   if (!memberActivity) {
@@ -1076,6 +1083,7 @@ const EXPORT_PERIODS = [
 ] as const satisfies readonly ExportPeriod[];
 
 function ExportPanel() {
+  const { slug } = Route.useParams();
   const [statusFilter, setStatusFilter] = useState<ExportStatus>("all");
   const [periodFilter, setPeriodFilter] = useState<ExportPeriod>("all");
   const [isExporting, setIsExporting] = useState(false);
@@ -1121,8 +1129,8 @@ function ExportPanel() {
   }, [statusFilter, periodFilter]);
 
   const { data: exportData } = useQuery({
-    queryKey: ["analytics", "documents", "export", queryArgs],
-    queryFn: () => getAnalyticsDocumentsForExport(queryArgs),
+    queryKey: ["analytics", "documents", "export", queryArgs, slug],
+    queryFn: () => getAnalyticsDocumentsForExport(slug, queryArgs),
   });
 
   const handleExportCsv = useCallback(() => {
@@ -1351,9 +1359,10 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
+  const { slug } = Route.useParams();
   const { data: engagement } = useQuery({
-    queryKey: ["analytics", "email-engagement", 30],
-    queryFn: () => getEmailEngagementStats(30),
+    queryKey: ["analytics", "email-engagement", 30, slug],
+    queryFn: () => getEmailEngagementStats(slug, 30),
   });
 
   if (!engagement) {
@@ -1495,9 +1504,10 @@ const TIMING_BUCKET_COLORS: Record<string, string> = {
 };
 
 function RecipientTimingTab() {
+  const { slug } = Route.useParams();
   const { data: timing } = useQuery({
-    queryKey: ["analytics", "recipient-timing", 30],
-    queryFn: () => getRecipientTimingStats(30),
+    queryKey: ["analytics", "recipient-timing", 30, slug],
+    queryFn: () => getRecipientTimingStats(slug, 30),
   });
 
   if (!timing) {
@@ -1614,10 +1624,11 @@ function RecipientTimingTab() {
 // ─── Template Performance Tab ─────────────────
 
 function TemplatePerformanceTab() {
+  const { slug } = Route.useParams();
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
   const { data: templates } = useQuery({
-    queryKey: ["analytics", "template-performance", 90],
-    queryFn: () => getTemplatePerformance(90),
+    queryKey: ["analytics", "template-performance", 90, slug],
+    queryFn: () => getTemplatePerformance(slug, 90),
   });
 
   if (!templates || isLoadingPlan) {

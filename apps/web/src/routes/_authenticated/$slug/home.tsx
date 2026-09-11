@@ -23,8 +23,8 @@ import { TrendChart } from "@/components/dashboard/trend-chart";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({
@@ -162,17 +162,17 @@ function WorkspaceHome(): React.ReactElement | null {
 
         {/* Stats Cards */}
         <Suspense fallback={<StatsCardsFallback />}>
-          <StatsCards />
+          <StatsCards organizationSlug={slug} />
         </Suspense>
 
         {/* Charts and Status Breakdown */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <Suspense fallback={<ChartFallback />}>
-            <TrendChart />
+            <TrendChart organizationSlug={slug} />
           </Suspense>
 
           <Suspense fallback={<CardFallback />}>
-            <StatusBreakdown />
+            <StatusBreakdown organizationSlug={slug} />
           </Suspense>
         </div>
 
@@ -180,7 +180,7 @@ function WorkspaceHome(): React.ReactElement | null {
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Suspense fallback={<RecentDocsFallback />}>
-              <RecentDocuments slug={slug} />
+              <RecentDocuments slug={slug} organizationSlug={slug} />
             </Suspense>
           </div>
 
@@ -188,7 +188,7 @@ function WorkspaceHome(): React.ReactElement | null {
         </div>
 
         {/* Recent Activity */}
-        <RecentActivity />
+        <RecentActivity organizationSlug={slug} />
 
         {/* Needs Attention */}
         <Suspense fallback={null}>

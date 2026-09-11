@@ -74,6 +74,7 @@ const expirationSchema = z.object({
 });
 
 interface SendDocumentDialogProps {
+  organizationSlug: string;
   documentPublicId: string;
   documentName: string;
   recipients: Array<{
@@ -113,6 +114,7 @@ export function SendDocumentDialog({
   onOpenChange,
   onSuccess,
   defaultDeadlineDays,
+  organizationSlug,
 }: SendDocumentDialogProps) {
   const [customMessage, setCustomMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -152,7 +154,7 @@ export function SendDocumentDialog({
       customMessage?: string;
       recipientMessages?: Record<string, string>;
       expirationPeriod?: { amount: number; unit: "day" | "week" | "month" };
-    }) => sendDocument(documentPublicId, input),
+    }) => sendDocument(organizationSlug, documentPublicId, input),
   });
 
   // Count pending recipients

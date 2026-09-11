@@ -52,6 +52,7 @@ function renderDialog(overrides: RenderOptions = {}) {
   const props = {
     documentPublicId: FAKE_DOC_ID,
     slug: FAKE_SLUG,
+    organizationSlug: FAKE_SLUG,
     open: true,
     onOpenChange: vi.fn<(open: boolean) => void>(),
     onSuccess: vi.fn<() => void>(),

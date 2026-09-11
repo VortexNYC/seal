@@ -24,16 +24,18 @@ interface FolderBreadcrumbsProps {
   folderId?: string;
   type: "document" | "template";
   onNavigate: (folderId?: string) => void;
+  organizationSlug: string;
 }
 
 export function FolderBreadcrumbs({
   folderId,
   type,
   onNavigate,
+  organizationSlug,
 }: FolderBreadcrumbsProps) {
   const { data: breadcrumbs } = useQuery({
     queryKey: ["api", "folders", "breadcrumbs", folderId],
-    queryFn: () => getFolderBreadcrumbs(folderId!),
+    queryFn: () => getFolderBreadcrumbs(organizationSlug, folderId!),
     enabled: Boolean(folderId),
   });
 

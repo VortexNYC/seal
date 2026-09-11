@@ -32,7 +32,12 @@ interface TeamSummary {
 }
 
 function isKnownRole(role: string): role is keyof RoleCounts {
-  return role === "owner" || role === "admin" || role === "member" || role === "viewer";
+  return (
+    role === "owner" ||
+    role === "admin" ||
+    role === "member" ||
+    role === "viewer"
+  );
 }
 
 export function TeamOverview({
@@ -55,7 +60,7 @@ export function TeamOverview({
       });
       if (response.error !== null) {
         throw new Error(
-          response.error.message ?? "Could not load organization team.",
+          response.error.message ?? "Could not load organization team."
         );
       }
 
@@ -190,7 +195,7 @@ function RolePill({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-        colorClass,
+        colorClass
       )}
     >
       {count} {label}

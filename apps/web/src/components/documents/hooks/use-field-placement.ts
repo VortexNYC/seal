@@ -52,6 +52,7 @@ type PaymentConfig = {
 };
 
 interface UseFieldPlacementOptions {
+  organizationSlug: string;
   documentPublicId: string;
   recipients: Recipient[];
   signatureFields: SignatureField[];
@@ -98,6 +99,7 @@ function handleFieldDragOver(e: React.DragEvent): void {
  * selecting/deleting/repositioning fields, and keyboard shortcuts.
  */
 export function useFieldPlacement({
+  organizationSlug,
   documentPublicId,
   recipients,
   signatureFields,
@@ -154,8 +156,8 @@ export function useFieldPlacement({
       input,
     }: {
       publicId: string;
-      input: Parameters<typeof createSignatureFieldApi>[1];
-    }) => createSignatureFieldApi(publicId, input),
+      input: Parameters<typeof createSignatureFieldApi>[2];
+    }) => createSignatureFieldApi(organizationSlug, publicId, input),
   });
   const repositionField = useMutation({
     mutationFn: ({
@@ -165,8 +167,14 @@ export function useFieldPlacement({
     }: {
       publicId: string;
       fieldPublicId: string;
-      input: Parameters<typeof repositionSignatureFieldApi>[2];
-    }) => repositionSignatureFieldApi(publicId, fieldPublicId, input),
+      input: Parameters<typeof repositionSignatureFieldApi>[3];
+    }) =>
+      repositionSignatureFieldApi(
+        organizationSlug,
+        publicId,
+        fieldPublicId,
+        input
+      ),
   });
   const deleteField = useMutation({
     mutationFn: ({
@@ -175,7 +183,7 @@ export function useFieldPlacement({
     }: {
       publicId: string;
       fieldPublicId: string;
-    }) => deleteSignatureFieldApi(publicId, fieldPublicId),
+    }) => deleteSignatureFieldApi(organizationSlug, publicId, fieldPublicId),
   });
 
   // SEA-91: Sync database fields to local state, including signature and payment data
