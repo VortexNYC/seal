@@ -15,7 +15,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { AuthUtils, type AuthMember } from "../auth.utils";
 import { resolveComponentMembershipForOrganization } from "../lib/componentOrgReads";
 import { findCurrentUserRow } from "../lib/identity";
-import { resolveActiveOrganizationId } from "../lib/resolveActiveOrganization";
+import { resolveActiveOrganization } from "../lib/resolveActiveOrganization";
 import { enforceActiveOrgSecurityPolicy } from "../lib/suiteOrgPolicy";
 import type { OrganizationRole, UserType } from "../schema";
 import {
@@ -52,7 +52,13 @@ function sortedPermissionKeys(
  */
 export type AuthUser = Pick<
   Doc<"users">,
-  "_id" | "vortexAuthUserId" | "activeOrganizationId"
+  | "_id"
+  | "vortexAuthUserId"
+  | "activeOrganizationId"
+  | "activeVortexAuthOrganizationId"
+  | "isSuperAdmin"
+  | "email"
+  | "name"
 >;
 
 /**
@@ -61,7 +67,7 @@ export type AuthUser = Pick<
  */
 export type AuthOrganization = Pick<
   Doc<"organizations">,
-  "_id" | "vortexAuthOrganizationId" | "status"
+  "_id" | "vortexAuthOrganizationId" | "status" | "name"
 >;
 
 /**
@@ -108,7 +114,7 @@ function throwPermissionAuthError(code: string, message: string): never {
 
 async function requireAuthenticatedUser(
   ctx: QueryCtx | MutationCtx
-): Promise<Doc<"users">> {
+): Promise<AuthUser> {
   // Prefer glue 2-hop (component identity → local user). Fall back to
   // authSubject index for rows not yet backfilled onto vortexAuthUserId.
   const glueUser = await findCurrentUserRow(ctx);
@@ -135,8 +141,8 @@ async function requireAuthenticatedUser(
 
 async function getMembershipOrThrow(
   ctx: QueryCtx | MutationCtx,
-  user: Doc<"users">,
-  organization: Doc<"organizations">,
+  user: AuthUser,
+  organization: AuthOrganization,
   notFoundMessage: string
 ): Promise<AuthMember> {
   const componentMembership = await resolveComponentMembershipForOrganization(
@@ -159,46 +165,10 @@ async function getMembershipOrThrow(
   };
 }
 
-async function getOrganizationOrThrow(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">
-): Promise<Doc<"organizations">> {
-  const organization = await ctx.db.get("organizations", organizationId);
-  if (!organization) {
-    throwPermissionAuthError("NOT_FOUND", "Organization not found");
-  }
-
-  if (organization.vortexAuthOrganizationId !== undefined) {
-    const componentOrg = await ctx.runQuery(
-      components.vortexAuth.organizations.getOrganization,
-      { organizationId: organization.vortexAuthOrganizationId }
-    );
-    if (componentOrg === null) {
-      throwPermissionAuthError("NOT_FOUND", "Organization not found");
-    }
-    if (componentOrg.status !== "active") {
-      throwPermissionAuthError(
-        "FORBIDDEN",
-        `Organization is ${componentOrg.status}`
-      );
-    }
-  }
-
-  const organizationStatus = organization.status ?? "active";
-  if (organizationStatus !== "active") {
-    throwPermissionAuthError(
-      "FORBIDDEN",
-      `Organization is ${organizationStatus}`
-    );
-  }
-
-  return organization;
-}
-
 function buildSuperAdminContext(
-  user: Doc<"users">,
+  user: AuthUser,
   member: AuthMember,
-  organization: Doc<"organizations">,
+  organization: AuthOrganization,
   organizationId: Id<"organizations">,
   subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
@@ -262,7 +232,7 @@ async function loadBetterAuthSessionCreatedAt(
 
 async function enforceSuiteOrgSecurityForActiveOrg(
   ctx: QueryCtx | MutationCtx,
-  organization: Doc<"organizations">
+  organization: AuthOrganization
 ): Promise<void> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -297,18 +267,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 async function buildActiveMembershipContext(
   ctx: QueryCtx | MutationCtx,
-  user: Doc<"users">
+  user: AuthUser
 ): Promise<{
   membership: AuthMember;
-  organization: Doc<"organizations">;
+  organization: AuthOrganization;
   organizationId: Id<"organizations">;
 }> {
-  const organizationId = await resolveActiveOrganizationId(ctx, user);
-  if (organizationId === null) {
+  const organization = await resolveActiveOrganization(ctx, user);
+  if (organization === null) {
     throwPermissionAuthError("FORBIDDEN", "No active organization");
   }
-
-  const organization = await getOrganizationOrThrow(ctx, organizationId);
+  if (organization.status !== "active") {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      `Organization is ${organization.status}`
+    );
+  }
 
   const membership = await getMembershipOrThrow(
     ctx,
@@ -321,7 +295,7 @@ async function buildActiveMembershipContext(
     throwPermissionAuthError("FORBIDDEN", `Membership is ${membership.status}`);
   }
 
-  return { membership, organization, organizationId };
+  return { membership, organization, organizationId: organization._id };
 }
 
 function resolveRoleTemplate(role: string): PermissionKey[] {
@@ -334,7 +308,7 @@ function resolveRoleTemplate(role: string): PermissionKey[] {
 async function resolvePermissions(
   ctx: QueryCtx | MutationCtx,
   membership: AuthMember,
-  organization: Doc<"organizations">
+  organization: AuthOrganization
 ): Promise<PermissionKey[]> {
   let permissions: PermissionKey[] = resolveRoleTemplate(membership.role);
 
@@ -370,9 +344,9 @@ async function resolvePermissions(
 }
 
 function buildPermissionContext(
-  user: Doc<"users">,
+  user: AuthUser,
   membership: AuthMember,
-  organization: Doc<"organizations">,
+  organization: AuthOrganization,
   organizationId: Id<"organizations">,
   permissions: string[],
   subscription?: Doc<"subscriptions">
@@ -416,15 +390,20 @@ export async function getAuthContextWithPermissions(
   const user = await requireAuthenticatedUser(ctx);
 
   if (user.isSuperAdmin) {
-    const organizationId = await resolveActiveOrganizationId(ctx, user);
-    if (organizationId === null) {
+    const organization = await resolveActiveOrganization(ctx, user);
+    if (organization === null) {
       throwPermissionAuthError(
         "FORBIDDEN",
         "Super admin must have an active organization"
       );
     }
+    if (organization.status !== "active") {
+      throwPermissionAuthError(
+        "FORBIDDEN",
+        `Organization is ${organization.status}`
+      );
+    }
 
-    const organization = await getOrganizationOrThrow(ctx, organizationId);
     const member = await getMembershipOrThrow(
       ctx,
       user,
@@ -438,7 +417,7 @@ export async function getAuthContextWithPermissions(
       user,
       member,
       organization,
-      organizationId,
+      organization._id,
       undefined
     );
   }

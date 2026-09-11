@@ -326,7 +326,7 @@ export async function lookupBetterAuthTwoFactorEnabled(
 export async function enforceActiveOrgSecurityPolicy(
   ctx: OrgCtx,
   args: {
-    organization: Doc<"organizations">;
+    organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">;
     betterAuthUserId: string;
     sessionCreatedAt?: number | null | (() => Promise<number | null>);
   }

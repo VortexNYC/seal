@@ -86,7 +86,7 @@ async function resolveApiAuthMemberships(
  * Prefers Vortex Auth pointer; falls back to legacy Seal activeOrganizationId.
  */
 async function resolveLocalActiveOrgId(
-  ctx: Pick<QueryCtx, "db">,
+  ctx: QueryCtx,
   user: Doc<"users">
 ): Promise<Id<"organizations"> | null> {
   return await resolveActiveOrganizationId(ctx, user);

@@ -1,9 +1,7 @@
 /**
- * Resolve the user's active Seal organization id.
- *
- * Canonical source is the active organization stored on the current Better
- * Auth session. Falls back to local bridge columns while the session
- * migration is in progress.
+ * Resolve the user's active organization from Vortex Auth (canonical) with
+ * Seal local bridge fallbacks. Returns an `AuthOrganization` shape: the
+ * Vortex Auth component fields plus the Seal `_id`.
  */
 
 import { components } from "../_generated/api";
@@ -12,13 +10,18 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 type ResolveCtx = QueryCtx | MutationCtx;
 
+type ResolvedAnchor = {
+  _id: Id<"organizations">;
+  vortexAuthOrganizationId: string;
+} | null;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 async function resolveActiveOrganizationFromSession(
   ctx: ResolveCtx
-): Promise<Id<"organizations"> | null> {
+): Promise<ResolvedAnchor> {
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) {
     return null;
@@ -44,47 +47,94 @@ async function resolveActiveOrganizationFromSession(
     return null;
   }
 
-  const activeOrganizationId = session["activeOrganizationId"];
-  if (typeof activeOrganizationId !== "string") {
+  const vortexAuthOrganizationId = session["activeOrganizationId"];
+  if (typeof vortexAuthOrganizationId !== "string") {
     return null;
   }
 
   const anchor = await ctx.db
     .query("organizations")
     .withIndex("by_vortex_auth_organization", (q) =>
-      q.eq("vortexAuthOrganizationId", activeOrganizationId)
+      q.eq("vortexAuthOrganizationId", vortexAuthOrganizationId)
     )
     .unique();
 
-  return anchor?._id ?? null;
+  if (anchor === null) {
+    return null;
+  }
+
+  return { _id: anchor._id, vortexAuthOrganizationId };
+}
+
+async function getComponentOrganization(
+  ctx: ResolveCtx,
+  organizationId: string
+): Promise<{
+  name: string;
+  status: "active" | "suspended" | "deleted";
+} | null> {
+  const org = await ctx.runQuery(
+    components.vortexAuth.organizations.getOrganization,
+    { organizationId }
+  );
+  if (org === null) {
+    return null;
+  }
+  const status = org.status;
+  if (status !== "active" && status !== "suspended" && status !== "deleted") {
+    return null;
+  }
+  return { name: org.name, status };
 }
 
 /**
- * Resolve the user's active Seal organization id.
+ * Resolve the user's active organization from Vortex Auth.
  *
- * Canonical source is the active organization on the current Better Auth
- * session. Falls back to the local Vortex Auth pointer and then the legacy
- * Seal id while the session migration is in progress.
+ * Canonical source is the active organization on the current Better
+ * Auth session. Falls back to local bridge columns while the session
+ * migration is in progress.
  */
-export async function resolveActiveOrganizationId(
+export async function resolveActiveOrganization(
   ctx: ResolveCtx,
   user: Doc<"users">
-): Promise<Id<"organizations"> | null> {
-  const sessionOrganizationId = await resolveActiveOrganizationFromSession(ctx);
-  if (sessionOrganizationId !== null) {
-    return sessionOrganizationId;
+): Promise<Pick<
+  Doc<"organizations">,
+  "_id" | "vortexAuthOrganizationId" | "status" | "name"
+> | null> {
+  const sessionAnchor = await resolveActiveOrganizationFromSession(ctx);
+  if (sessionAnchor !== null) {
+    const componentOrg = await getComponentOrganization(
+      ctx,
+      sessionAnchor.vortexAuthOrganizationId
+    );
+    if (componentOrg !== null) {
+      return {
+        _id: sessionAnchor._id,
+        vortexAuthOrganizationId: sessionAnchor.vortexAuthOrganizationId,
+        status: componentOrg.status,
+        name: componentOrg.name,
+      };
+    }
   }
 
   const vortexAuthOrgId = user.activeVortexAuthOrganizationId;
   if (vortexAuthOrgId !== undefined) {
-    const anchor = await ctx.db
-      .query("organizations")
-      .withIndex("by_vortex_auth_organization", (q) =>
-        q.eq("vortexAuthOrganizationId", vortexAuthOrgId)
-      )
-      .unique();
-    if (anchor !== null) {
-      return anchor._id;
+    const [anchor, componentOrg] = await Promise.all([
+      ctx.db
+        .query("organizations")
+        .withIndex("by_vortex_auth_organization", (q) =>
+          q.eq("vortexAuthOrganizationId", vortexAuthOrgId)
+        )
+        .unique(),
+      getComponentOrganization(ctx, vortexAuthOrgId),
+    ]);
+    if (anchor !== null && componentOrg !== null) {
+      return {
+        _id: anchor._id,
+        vortexAuthOrganizationId: vortexAuthOrgId,
+        status: componentOrg.status,
+        name: componentOrg.name,
+      };
     }
   }
 
@@ -92,11 +142,32 @@ export async function resolveActiveOrganizationId(
   if (legacyId !== undefined) {
     const org = await ctx.db.get("organizations", legacyId);
     if (org !== null) {
-      return org._id;
+      const componentOrg =
+        org.vortexAuthOrganizationId !== undefined
+          ? await getComponentOrganization(ctx, org.vortexAuthOrganizationId)
+          : null;
+      return {
+        _id: org._id,
+        vortexAuthOrganizationId:
+          org.vortexAuthOrganizationId ?? legacyId.toString(),
+        status: componentOrg?.status ?? org.status ?? "active",
+        name: componentOrg?.name ?? org.name,
+      };
     }
   }
 
   return null;
+}
+
+/**
+ * @deprecated Use `resolveActiveOrganization` for the full auth shape.
+ */
+export async function resolveActiveOrganizationId(
+  ctx: ResolveCtx,
+  user: Doc<"users">
+): Promise<Id<"organizations"> | null> {
+  const org = await resolveActiveOrganization(ctx, user);
+  return org?._id ?? null;
 }
 
 /**
