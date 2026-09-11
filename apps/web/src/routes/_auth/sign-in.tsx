@@ -1,8 +1,7 @@
-import { AuthProvider, SignInForm } from "@vortexnyc/better-auth-ui";
 import { createFileRoute } from "@tanstack/react-router";
-import type { AnyAuthClient } from "@vortexnyc/better-auth-ui";
+import { AuthProvider, SignInForm } from "@vortexnyc/better-auth-ui";
 
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 interface SignInSearch {
@@ -27,6 +26,7 @@ export const Route = createFileRoute("/_auth/sign-in")({
 
 function RouteComponent() {
   const { token, redirect } = Route.useSearch();
+  const client = getBetterAuthUiClient();
 
   const forceRedirectUrl = redirect
     ? redirect
@@ -34,27 +34,9 @@ function RouteComponent() {
       ? `/accept-invite?token=${encodeURIComponent(token)}`
       : "/app";
 
-  if (betterAuthClient === null) {
+  if (client === null) {
     return <p className="text-center text-sm">Auth client not configured.</p>;
   }
-
-  const authClient = betterAuthClient;
-
-  const client: AnyAuthClient = {
-    useSession: () => authClient.useSession(),
-    signOut: () => authClient.signOut(),
-    signIn: {
-      email: (args) => authClient.signIn.email(args),
-      ...(authClient.signIn.social !== undefined
-        ? {
-            social: (args) => authClient.signIn.social(args),
-          }
-        : {}),
-    },
-    signUp: {
-      email: (args) => authClient.signUp.email(args),
-    },
-  };
 
   return (
     <AuthProvider client={client}>

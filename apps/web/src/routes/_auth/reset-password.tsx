@@ -1,10 +1,10 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Password reset completion — linked from the recovery email (?token=…).
  */
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { VortexResetPasswordForm } from "@vortexnyc/auth/react";
+import { AuthProvider, ResetPasswordForm } from "@vortexnyc/better-auth-ui";
 
-import { authClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/reset-password")({
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_auth/reset-password")({
 
 function ResetPasswordRoute() {
   const { token } = Route.useSearch();
+  const client = getBetterAuthUiClient();
 
   if (!token) {
     return (
@@ -32,13 +33,18 @@ function ResetPasswordRoute() {
     );
   }
 
+  if (client === null) {
+    return <p className="text-center text-sm">Auth client not configured.</p>;
+  }
+
   return (
-    <VortexResetPasswordForm
-      authClient={authClient}
-      onReset={() => {
-        window.location.assign("/sign-in");
-      }}
-      token={token}
-    />
+    <AuthProvider client={client}>
+      <ResetPasswordForm
+        token={token}
+        onSuccess={() => {
+          window.location.assign("/sign-in");
+        }}
+      />
+    </AuthProvider>
   );
 }
