@@ -31,8 +31,10 @@ export const documentVersionsTable = defineTable({
   restoredFromVersion: v.optional(v.number()),
 
   // Tracking
+  vortexAuthCreatedBy: v.optional(v.string()),
   createdBy: v.id("users"),
   createdAt: v.number(),
 })
   .index("by_document", ["documentId", "versionNumber"])
+  .index("by_vortex_auth_creator", ["vortexAuthCreatedBy"])
   .index("by_document_latest", ["documentId", "createdAt"]);
