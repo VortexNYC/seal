@@ -434,68 +434,6 @@ describe("Payment field mutations", () => {
     });
   });
 
-  describe("storeProviderPaymentIds (internal)", () => {
-    test("stores provider IDs on config", async () => {
-      const configId = await t
-        .withIdentity({ subject: "test_owner" })
-        .mutation(
-          api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId)
-        );
-
-      await t.run(async (ctx) => {
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeProviderPaymentIds,
-          {
-            configId,
-            paymentStatus: "created",
-            providerInvoiceId: "in_internal_123",
-            providerPaymentIntentId: "pi_internal_456",
-          }
-        );
-      });
-
-      const config = await t.run(async (ctx) => {
-        return await ctx.db.get(configId);
-      });
-
-      expect(config?.paymentStatus).toBe("created");
-      expect(config?.providerInvoiceId).toBe("in_internal_123");
-      expect(config?.providerPaymentIntentId).toBe("pi_internal_456");
-    });
-
-    test("stores hostedInvoiceUrl on config", async () => {
-      const configId = await t
-        .withIdentity({ subject: "test_owner" })
-        .mutation(
-          api.payment_fields.mutations.upsertPaymentConfig,
-          makeValidPaymentArgs(paymentFieldId)
-        );
-
-      await t.run(async (ctx) => {
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeProviderPaymentIds,
-          {
-            configId,
-            paymentStatus: "awaiting",
-            providerInvoiceId: "in_url_test_123",
-            hostedInvoiceUrl: "https://billing.vortex.test/i/acct_123/test_456",
-          }
-        );
-      });
-
-      const config = await t.run(async (ctx) => {
-        return await ctx.db.get(configId);
-      });
-
-      expect(config?.paymentStatus).toBe("awaiting");
-      expect(config?.providerInvoiceId).toBe("in_url_test_123");
-      expect(config?.hostedInvoiceUrl).toBe(
-        "https://billing.vortex.test/i/acct_123/test_456"
-      );
-    });
-  });
-
   describe("storeVortexPayableIds (internal)", () => {
     test("stores Vortex payable IDs and creates one document invoice record", async () => {
       const configId = await t
@@ -576,14 +514,11 @@ describe("Payment field mutations", () => {
 
       // Store a subscription ID on the config
       await t.run(async (ctx) => {
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeProviderPaymentIds,
-          {
-            configId,
-            paymentStatus: "awaiting",
-            providerSubscriptionId: "sub_webhook_test_123",
-          }
-        );
+        await ctx.db.patch("payment_field_configs", configId, {
+          paymentStatus: "awaiting",
+          providerSubscriptionId: "sub_webhook_test_123",
+          updatedAt: Date.now(),
+        });
       });
 
       // Call the webhook mutation
@@ -631,14 +566,11 @@ describe("Payment field mutations", () => {
         );
 
       await t.run(async (ctx) => {
-        await ctx.runMutation(
-          internal.payment_fields.mutations.storeProviderPaymentIds,
-          {
-            configId,
-            paymentStatus: "awaiting",
-            providerSubscriptionId: "sub_timestamp_test",
-          }
-        );
+        await ctx.db.patch("payment_field_configs", configId, {
+          paymentStatus: "awaiting",
+          providerSubscriptionId: "sub_timestamp_test",
+          updatedAt: Date.now(),
+        });
       });
 
       const beforeUpdate = await t.run(async (ctx) => {
