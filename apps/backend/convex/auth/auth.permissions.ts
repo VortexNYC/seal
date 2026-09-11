@@ -154,21 +154,6 @@ async function getOrganizationOrThrow(
   return organization;
 }
 
-async function getActiveSubscription(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">
-): Promise<Doc<"subscriptions"> | undefined> {
-  const subscription = await ctx.db
-    .query("subscriptions")
-    .withIndex("by_organization_status", (q) =>
-      q.eq("organizationId", organizationId).eq("status", "active")
-    )
-    .order("desc")
-    .first();
-
-  return subscription ?? undefined;
-}
-
 function buildSuperAdminContext(
   user: Doc<"users">,
   member: AuthMember,
@@ -412,7 +397,6 @@ export async function getAuthContextWithPermissions(
       organizationId,
       "No membership found for super admin"
     );
-    const subscription = await getActiveSubscription(ctx, organizationId);
 
     await enforceSuiteOrgSecurityForActiveOrg(ctx, organization);
 
@@ -421,14 +405,13 @@ export async function getAuthContextWithPermissions(
       member,
       organization,
       organizationId,
-      subscription
+      undefined
     );
   }
 
   const { membership, organization, organizationId } =
     await buildActiveMembershipContext(ctx, user);
   const permissions = await resolvePermissions(ctx, membership, organization);
-  const subscription = await getActiveSubscription(ctx, organizationId);
 
   await enforceSuiteOrgSecurityForActiveOrg(ctx, organization);
 
@@ -438,7 +421,7 @@ export async function getAuthContextWithPermissions(
     organization,
     organizationId,
     permissions,
-    subscription
+    undefined
   );
 }
 
