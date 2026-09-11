@@ -164,7 +164,7 @@ export const getUserPermissions = authQuery({
     return {
       role: membership.role,
       status: membership.status,
-      isPrimary: ctx.auth.user.activeOrganizationId === args.organizationId,
+      isPrimary: ctx.auth.organizationId === args.organizationId,
       permissions: {
         // Organization management
         canManageOrganization: hasPermission(

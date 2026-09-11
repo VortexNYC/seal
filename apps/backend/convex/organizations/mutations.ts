@@ -824,7 +824,7 @@ export const activateMember = adminMutation({
       organization,
       args.memberId,
       args.role,
-      ctx.auth.user.vortexAuthUserId
+      ctx.auth.vortexAuthUserId
     );
     await setComponentMemberStatus(ctx, args.memberId, "active");
 
@@ -926,7 +926,7 @@ export const bulkActivateMembers = adminMutation({
           organization,
           update.memberId,
           update.role,
-          ctx.auth.user.vortexAuthUserId
+          ctx.auth.vortexAuthUserId
         );
         await setComponentMemberStatus(ctx, update.memberId, "active");
 

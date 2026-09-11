@@ -81,6 +81,8 @@ export type AuthOrganization = Pick<
 export interface AuthContextWithPermissions {
   userId: Id<"users">;
   organizationId: Id<"organizations">;
+  vortexAuthUserId: string;
+  vortexAuthOrganizationId: string;
   email?: string;
   name?: string;
   role: string;
@@ -172,9 +174,26 @@ function buildSuperAdminContext(
   organizationId: Id<"organizations">,
   subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
+  const vortexAuthUserId = user.vortexAuthUserId;
+  if (vortexAuthUserId === undefined) {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      "User is not anchored in Vortex Auth"
+    );
+  }
+  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
+  if (vortexAuthOrganizationId === undefined) {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      "Organization is not anchored in Vortex Auth"
+    );
+  }
+
   return {
     userId: user._id,
     organizationId,
+    vortexAuthUserId,
+    vortexAuthOrganizationId,
     email: user.email,
     name: user.name,
     role: "super_admin",
@@ -351,9 +370,26 @@ function buildPermissionContext(
   permissions: string[],
   subscription?: Doc<"subscriptions">
 ): AuthContextWithPermissions {
+  const vortexAuthUserId = user.vortexAuthUserId;
+  if (vortexAuthUserId === undefined) {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      "User is not anchored in Vortex Auth"
+    );
+  }
+  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
+  if (vortexAuthOrganizationId === undefined) {
+    throwPermissionAuthError(
+      "FORBIDDEN",
+      "Organization is not anchored in Vortex Auth"
+    );
+  }
+
   return {
     userId: user._id,
     organizationId,
+    vortexAuthUserId,
+    vortexAuthOrganizationId,
     email: user.email,
     name: user.name,
     role: membership.role,
