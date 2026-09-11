@@ -21,18 +21,30 @@ export function getBetterAuthUiClient(): AnyAuthClient | null {
     signUp: {
       email: (args) => c.signUp.email(args),
     },
-    forgetPassword: (args) =>
-      c.requestPasswordReset
-        ? c.requestPasswordReset(args)
-        : Promise.reject("Password recovery not available."),
-    ...(c.resetPassword !== undefined
-      ? { resetPassword: (args) => c.resetPassword(args) }
-      : {}),
-    ...(c.sendVerificationEmail !== undefined
-      ? { sendVerificationEmail: (args) => c.sendVerificationEmail(args) }
-      : {}),
-    ...(c.verifyEmail !== undefined
-      ? { verifyEmail: (args) => c.verifyEmail(args) }
+    forgetPassword: (args) => c.requestPasswordReset(args),
+    resetPassword: (args) => c.resetPassword(args),
+    sendVerificationEmail: (args) => c.sendVerificationEmail(args),
+    verifyEmail: (args) => c.verifyEmail(args),
+    updateUser: (args) => c.updateUser(args),
+    changeEmail: (args) => c.changeEmail(args),
+    changePassword: (args) => c.changePassword(args),
+    deleteUser: (args) => c.deleteUser(args),
+    listSessions: () => c.listSessions(),
+    revokeSession: (args) => c.revokeSession(args),
+    revokeOtherSessions: () => c.revokeOtherSessions(),
+    listAccounts: () => c.listAccounts(),
+    linkSocial: (args) => c.linkSocial(args),
+    unlinkAccount: (args) => c.unlinkAccount(args),
+    ...(c.twoFactor !== undefined
+      ? {
+          twoFactor: {
+            enable: (args) => c.twoFactor.enable(args),
+            verifyTotp: (args) => c.twoFactor.verifyTotp(args),
+            verifyBackupCode: (args) => c.twoFactor.verifyBackupCode(args),
+            disable: (args) => c.twoFactor.disable(args),
+            generateBackupCodes: (args) => c.twoFactor.generateBackupCodes(args),
+          },
+        }
       : {}),
   };
 }
