@@ -114,15 +114,10 @@ async function requireAuthenticatedUser(
 
 async function getMembershipOrThrow(
   ctx: QueryCtx | MutationCtx,
-  userId: Id<"users">,
-  organizationId: Id<"organizations">,
+  user: Doc<"users">,
+  organization: Doc<"organizations">,
   notFoundMessage: string
 ): Promise<AuthMember> {
-  const user = await ctx.db.get("users", userId);
-  if (!user) {
-    throwPermissionAuthError("UNAUTHORIZED", "User not found");
-  }
-  const organization = await getOrganizationOrThrow(ctx, organizationId);
   const componentMembership = await resolveComponentMembershipForOrganization(
     ctx,
     user,
@@ -134,8 +129,8 @@ async function getMembershipOrThrow(
   }
 
   return {
-    userId,
-    organizationId,
+    userId: user._id,
+    organizationId: organization._id,
     role: componentMembership.role,
     status: componentMembership.status,
     permissions: [],
@@ -267,18 +262,18 @@ async function buildActiveMembershipContext(
     throwPermissionAuthError("FORBIDDEN", "No active organization");
   }
 
+  const organization = await getOrganizationOrThrow(ctx, organizationId);
+
   const membership = await getMembershipOrThrow(
     ctx,
-    user._id,
-    organizationId,
+    user,
+    organization,
     "Not a member of active organization"
   );
 
   if (membership.status !== "active") {
     throwPermissionAuthError("FORBIDDEN", `Membership is ${membership.status}`);
   }
-
-  const organization = await getOrganizationOrThrow(ctx, organizationId);
   const organizationStatus = organization.status ?? "active";
   if (organizationStatus !== "active") {
     throwPermissionAuthError(
@@ -393,8 +388,8 @@ export async function getAuthContextWithPermissions(
     const organization = await getOrganizationOrThrow(ctx, organizationId);
     const member = await getMembershipOrThrow(
       ctx,
-      user._id,
-      organizationId,
+      user,
+      organization,
       "No membership found for super admin"
     );
 
