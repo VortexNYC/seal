@@ -1,3 +1,4 @@
+import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Label } from "@cloudflare/kumo/components/label";
@@ -21,7 +22,6 @@ import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
-import { Textarea } from "@/components/ui/textarea";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
 import { betterAuthClient } from "@/lib/better-auth";

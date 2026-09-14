@@ -1,29 +1,14 @@
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { AlertDialog } from "@cloudflare/kumo/primitives/alert-dialog";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Activity, Clock, Link2, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   disconnectConnectedApp,
   getConnectedApps,
@@ -100,17 +85,19 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <LayerCard>
+      <LayerCard.Secondary>
         <div className="flex items-center gap-2">
           <Link2 className="h-5 w-5" />
-          <CardTitle>Connected Apps</CardTitle>
+          <Text as="h2" variant="heading">
+            Connected Apps
+          </Text>
         </div>
-        <CardDescription>
+        <Text variant="secondary">
           Third-party applications connected to your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </Text>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         {apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Unplug className="text-muted-foreground/50 h-12 w-12" />
@@ -132,13 +119,9 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-medium">{app.appName}</span>
                     {app.active ? (
-                      <Badge variant="default" className="text-xs">
-                        Active
-                      </Badge>
+                      <Badge variant="primary">Active</Badge>
                     ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        Inactive
-                      </Badge>
+                      <Badge variant="secondary">Inactive</Badge>
                     )}
                   </div>
                   <div className="text-muted-foreground flex flex-col gap-1 text-sm sm:flex-row sm:items-center">
@@ -154,65 +137,67 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
                   </div>
                   <div className="flex flex-wrap gap-1 pt-1">
                     {app.scopes.map((scope) => (
-                      <Badge key={scope} variant="outline" className="text-xs">
+                      <Badge key={scope} variant="outline">
                         {scope}
                       </Badge>
                     ))}
                   </div>
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="min-h-[44px] self-end sm:min-h-0 sm:self-center"
-                    >
-                      <Unplug className="mr-1 h-3 w-3" />
-                      Disconnect
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
+                <AlertDialog.Root>
+                  <AlertDialog.Trigger
+                    render={
+                      <Button variant="outline" size="sm">
+                        <Unplug className="mr-1 h-3 w-3" />
+                        Disconnect
+                      </Button>
+                    }
+                  />
+                  <AlertDialog.Portal>
+                    <AlertDialog.Backdrop />
+                    <AlertDialog.Popup>
+                      <AlertDialog.Title>
                         Disconnect {app.appName}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
+                      </AlertDialog.Title>
+                      <AlertDialog.Description>
                         This will revoke {app.appName}'s access to your account.
                         The app will no longer be able to access your data.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDisconnect(app.id)}
-                      >
-                        Disconnect
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                      </AlertDialog.Description>
+                      <div className="mt-4 flex justify-end gap-2">
+                        <AlertDialog.Close
+                          render={<Button variant="outline">Cancel</Button>}
+                        />
+                        <AlertDialog.Close
+                          onClick={() => handleDisconnect(app.id)}
+                          render={<Button>Disconnect</Button>}
+                        />
+                      </div>
+                    </AlertDialog.Popup>
+                  </AlertDialog.Portal>
+                </AlertDialog.Root>
               </div>
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
 
 function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
   return (
-    <Card>
-      <CardHeader>
+    <LayerCard>
+      <LayerCard.Secondary>
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          <CardTitle>Activity Log</CardTitle>
+          <Text as="h2" variant="heading">
+            Activity Log
+          </Text>
         </div>
-        <CardDescription>
+        <Text variant="secondary">
           Recent integration activity on your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </Text>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Clock className="text-muted-foreground/50 h-12 w-12" />
@@ -233,8 +218,7 @@ function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Badge
-                      variant={log.type === "api_key" ? "default" : "secondary"}
-                      className="text-xs"
+                      variant={log.type === "api_key" ? "primary" : "secondary"}
                     >
                       {log.type === "api_key" ? "API Key" : "Connected App"}
                     </Badge>
@@ -252,7 +236,7 @@ function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
