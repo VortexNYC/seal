@@ -1,3 +1,8 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Meter } from "@cloudflare/kumo/components/meter";
 import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
 import { useState } from "react";
@@ -15,28 +20,6 @@ import {
   validateFileForUpload,
 } from "../../lib/upload-validation";
 import { cn } from "../../lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Progress } from "../ui/progress";
 
 interface UploadDialogProps {
   organizationId: string;
@@ -153,13 +136,13 @@ export function UploadDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-[625px]">
+      <Dialog.Root open={open} onOpenChange={onOpenChange}>
+        <Dialog className="flex max-h-[80vh] flex-col sm:max-w-[625px]">
+          <UploadDialogHeader />
           <form
             onSubmit={controller.handleSubmit}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <UploadDialogHeader />
             <UsageLimitNotice
               atDocumentLimit={controller.atDocumentLimit}
               usageStats={controller.usageStats}
@@ -170,8 +153,8 @@ export function UploadDialog({
             />
             <UploadDialogFooter controller={controller} />
           </form>
-        </DialogContent>
-      </Dialog>
+        </Dialog>
+      </Dialog.Root>
       <CancelUploadDialog controller={controller} />
     </>
   );
@@ -319,14 +302,14 @@ function useUploadController({
 
 function UploadDialogHeader() {
   return (
-    <DialogHeader>
-      <DialogTitle>Upload Documents</DialogTitle>
-      <DialogDescription>
+    <>
+      <Dialog.Title>Upload Documents</Dialog.Title>
+      <Dialog.Description>
         Drag and drop files here or click to browse. Maximum file size:{" "}
         {getMaxFileSizeDisplay()}. Supported types:{" "}
         {getSupportedFileTypesDisplay()}.
-      </DialogDescription>
-    </DialogHeader>
+      </Dialog.Description>
+    </>
   );
 }
 
@@ -506,7 +489,6 @@ function SelectedFileRow({
         <Button
           type="button"
           variant="ghost"
-          size="icon"
           className="h-8 w-8"
           aria-label={`Remove ${fileWithStatus.file.name}`}
           onClick={() => removeFile(index)}
@@ -547,7 +529,6 @@ function FileDetails({
         <p className="truncate text-sm font-medium">
           {fileWithStatus.file.name}
         </p>
-        <UploadProgressText fileWithStatus={fileWithStatus} />
       </div>
       <FileMetadata fileWithStatus={fileWithStatus} />
       <UploadProgressBar fileWithStatus={fileWithStatus} />
@@ -555,23 +536,6 @@ function FileDetails({
         <p className="text-destructive mt-1 text-xs">{fileWithStatus.error}</p>
       )}
     </div>
-  );
-}
-
-function UploadProgressText({
-  fileWithStatus,
-}: {
-  readonly fileWithStatus: FileWithStatus;
-}) {
-  if (
-    fileWithStatus.status !== "uploading" ||
-    fileWithStatus.progress === undefined
-  )
-    return null;
-  return (
-    <span className="text-primary text-xs font-medium">
-      {fileWithStatus.progress}%
-    </span>
   );
 }
 
@@ -628,7 +592,15 @@ function UploadProgressBar({
     fileWithStatus.progress === undefined
   )
     return null;
-  return <Progress value={fileWithStatus.progress} className="h-1.5" />;
+  return (
+    <Meter
+      label="Upload"
+      value={fileWithStatus.progress}
+      max={100}
+      customValue={`${fileWithStatus.progress}%`}
+      className="mt-2"
+    />
+  );
 }
 
 function UploadDialogFooter({
@@ -637,12 +609,13 @@ function UploadDialogFooter({
   readonly controller: UploadController;
 }) {
   return (
-    <DialogFooter>
+    <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
       <Button type="button" variant="outline" onClick={controller.requestClose}>
         Cancel
       </Button>
       <Button
         type="submit"
+        variant="primary"
         disabled={
           controller.uploading ||
           controller.files.length === 0 ||
@@ -651,7 +624,7 @@ function UploadDialogFooter({
       >
         {controller.uploading ? "Uploading..." : "Upload PDF"}
       </Button>
-    </DialogFooter>
+    </div>
   );
 }
 
@@ -661,25 +634,33 @@ function CancelUploadDialog({
   readonly controller: UploadController;
 }) {
   return (
-    <AlertDialog
+    <Dialog.Root
       open={controller.showCancelConfirm}
       onOpenChange={controller.setShowCancelConfirm}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel upload?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Upload is in progress. Canceling will stop all ongoing uploads.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Continue uploading</AlertDialogCancel>
-          <AlertDialogAction onClick={controller.confirmCancel}>
+      <Dialog>
+        <Dialog.Title>Cancel upload?</Dialog.Title>
+        <Dialog.Description>
+          Upload is in progress. Canceling will stop all ongoing uploads.
+        </Dialog.Description>
+        <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => controller.setShowCancelConfirm(false)}
+          >
+            Continue uploading
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={controller.confirmCancel}
+          >
             Cancel upload
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </div>
+      </Dialog>
+    </Dialog.Root>
   );
 }
 
