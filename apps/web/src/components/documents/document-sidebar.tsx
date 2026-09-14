@@ -32,7 +32,6 @@ import { cn } from "@/lib/utils";
 
 import { AIInsightsPanel } from "./ai-annotation-overlays";
 import type { useDocumentAnnotations } from "./ai-annotation-overlays";
-import { AIChatPanel } from "./ai-chat-panel";
 import { DocumentProgressRing } from "./document-progress-ring";
 import { DocumentStatusHero } from "./document-status-hero";
 import { FieldList } from "./field-list";
@@ -83,9 +82,6 @@ interface DocumentSidebarProps {
   // AI state
   aiEnabled: boolean;
   documentAnnotations: AIAnnotationsState;
-  showAIChat: boolean;
-  onCloseAIChat: () => void;
-  threadId: string | null;
   aiProcessingStatus?: string | null;
 
   // Whether any recipient has the "signer" role (for FieldToolbar disabled state)
@@ -461,37 +457,6 @@ function DocumentSettingsSection({
         </div>
       </Collapsible.Panel>
     </Collapsible.Root>
-  );
-}
-
-function AIChatSection({
-  canEdit,
-  aiEnabled,
-  showAIChat,
-  threadId,
-  slug,
-  onCloseAIChat,
-}: {
-  canEdit: boolean;
-  aiEnabled: boolean;
-  showAIChat: boolean;
-  threadId: string | null;
-  slug: string;
-  onCloseAIChat: () => void;
-}) {
-  if (!canEdit || !aiEnabled || !showAIChat) return null;
-  if (threadId)
-    return (
-      <AIChatPanel threadId={threadId} slug={slug} onClose={onCloseAIChat} />
-    );
-
-  return (
-    <div className="border-border bg-card flex flex-col items-center gap-3 rounded-2xl border p-8 shadow-sm sm:rounded-xl">
-      <Loader2Icon className="text-ai-accent h-5 w-5 animate-spin" />
-      <p className="text-muted-foreground font-sans text-sm">
-        Starting AI assistant...
-      </p>
-    </div>
   );
 }
 
@@ -876,14 +841,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           onSaveRedirectUrl={props.onSaveRedirectUrl}
         />
       )}
-      <AIChatSection
-        canEdit={props.canEdit}
-        aiEnabled={props.aiEnabled}
-        showAIChat={props.showAIChat}
-        threadId={props.threadId}
-        slug={props.slug}
-        onCloseAIChat={props.onCloseAIChat}
-      />
       <AIInsightsSection
         canEdit={props.canEdit}
         aiEnabled={props.aiEnabled}

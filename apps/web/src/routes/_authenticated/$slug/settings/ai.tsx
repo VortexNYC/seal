@@ -98,8 +98,8 @@ function AISettings() {
                     Enable AI features
                   </Label>
                   <Text variant="secondary" as="p">
-                    Turn off to hide all AI suggestions, annotations, and chat
-                    across your workspace.
+                    Turn off to hide all AI suggestions and annotations across
+                    your workspace.
                   </Text>
                 </div>
                 <Switch

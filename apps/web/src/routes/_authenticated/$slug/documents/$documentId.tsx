@@ -10,7 +10,6 @@ import {
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
-  MessageSquareIcon,
   SaveIcon,
   SendIcon,
 } from "lucide-react";
@@ -62,7 +61,6 @@ import { DocumentSidebar } from "../../../../components/documents/document-sideb
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import { useDocumentState } from "../../../../components/documents/hooks/use-document-state";
-import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
 import {
   useFieldPlacement,
   type SignatureData,
@@ -253,12 +251,6 @@ function DocumentDetailPage() {
   );
 
   const aiSuggestions = useAIFieldSuggestions(documentPublicId);
-  const {
-    threadId,
-    isCreating: isCreatingThread,
-    getOrCreateThread,
-  } = useDocumentThread(documentPublicId);
-  const [showAIChat, setShowAIChat] = useState(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
   // ── Derived state ───────────────────────────────────────────────────────
@@ -359,14 +351,6 @@ function DocumentDetailPage() {
   const handleToggleAiSuggestions = useCallback(() => {
     setShowAiSuggestions((prev) => !prev);
   }, []);
-
-  const handleToggleAIChat = useCallback(async () => {
-    const willOpen = !showAIChat;
-    setShowAIChat(willOpen);
-    if (willOpen && !threadId) {
-      await getOrCreateThread();
-    }
-  }, [showAIChat, threadId, getOrCreateThread]);
 
   const handleRemoveRecipientConfirm = async () => {
     if (!docState.recipientToRemove) return;
@@ -513,24 +497,6 @@ function DocumentDetailPage() {
             <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
           )}
           <span className="truncate text-xs">AI Suggestions</span>
-        </Button>
-        <Button
-          onClick={handleToggleAIChat}
-          size="sm"
-          variant="ghost"
-          disabled={isCreatingThread}
-          className={cn(
-            "text-ai-accent",
-            showAIChat && "bg-ai-accent/20 dark:bg-ai-accent/20"
-          )}
-          aria-pressed={showAIChat}
-        >
-          {isCreatingThread ? (
-            <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <MessageSquareIcon className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          <span className="truncate text-xs">AI Chat</span>
         </Button>
       </div>
     ) : null;
@@ -824,9 +790,6 @@ function DocumentDetailPage() {
               toggleSection={toggleSection}
               aiEnabled={aiEnabled}
               documentAnnotations={documentAnnotations}
-              showAIChat={showAIChat}
-              onCloseAIChat={() => setShowAIChat(false)}
-              threadId={threadId}
               aiProcessingStatus={documentData.aiProcessingStatus}
               selectedFieldId={fieldPlacement.selectedFieldId}
               onFieldSelect={fieldPlacement.handleFieldSelect}
