@@ -94,8 +94,8 @@ if (POSTHOG_KEY) {
     person_profiles: "identified_only",
     secure_cookie: true,
     enable_heatmaps: true,
-    enable_recording_console_log: true,
-    capture_performance: true,
+    enable_recording_console_log: false,
+    capture_performance: false,
     session_recording: {
       maskAllInputs: true,
       maskTextSelector: "[data-ph-mask]",
