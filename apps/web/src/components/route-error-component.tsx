@@ -1,28 +1,17 @@
+import { Button, LinkButton } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import {
-  type ErrorComponentProps,
-  Link,
-  useRouter,
-} from "@tanstack/react-router";
-import {
-  AlertTriangleIcon,
-  HomeIcon,
-  LogOut,
-  MailIcon,
-  RefreshCwIcon,
-} from "lucide-react";
+  ArrowClockwise,
+  EnvelopeSimple,
+  House,
+  SignOut,
+  Warning,
+} from "@phosphor-icons/react";
+import { type ErrorComponentProps, useRouter } from "@tanstack/react-router";
 
 import { useAnalytics } from "@/hooks/use-analytics";
 import { betterAuthClient } from "@/lib/better-auth";
-
-import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
 
 /**
  * Route-level error component for TanStack Router
@@ -60,78 +49,76 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   };
 
   return (
-    <div className="bg-background flex min-h-svh items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <div className="bg-destructive/10 mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
-            <AlertTriangleIcon className="text-destructive size-8" />
+    <div className="bg-kumo-base flex min-h-svh items-center justify-center p-4">
+      <LayerCard className="w-full max-w-lg">
+        <LayerCard.Primary className="text-center">
+          <div className="bg-kumo-danger/10 mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
+            <Warning className="text-kumo-danger size-8" />
           </div>
-          <CardTitle className="text-2xl">Something went wrong</CardTitle>
-          <CardDescription className="text-base">
+          <Text as="h2" size="lg" variant="heading">
+            Something went wrong
+          </Text>
+          <Text as="p" size="base" variant="secondary">
             We encountered an error while loading this page. Please try again or
             return to the home page.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted rounded-lg p-4 text-center">
-            <p className="text-muted-foreground text-sm">
+          </Text>
+        </LayerCard.Primary>
+        <LayerCard.Primary className="space-y-4">
+          <div className="bg-kumo-elevated rounded-lg p-4 text-center">
+            <Text as="p" size="sm" variant="secondary">
               If the problem persists, please contact our support team for
               assistance.
-            </p>
+            </Text>
           </div>
 
           {isDev && (
-            <div className="border-destructive/20 bg-destructive/5 rounded-lg border p-4">
-              <p className="text-destructive mb-2 text-sm font-medium">
+            <div className="border-kumo-danger/20 bg-kumo-danger/5 rounded-lg border p-4">
+              <Text as="p" size="sm" variant="error">
                 Error Details (Development Only):
-              </p>
-              <pre className="text-muted-foreground overflow-auto text-xs">
+              </Text>
+              <pre className="text-kumo-secondary mt-2 overflow-auto text-xs">
                 {errorMessage}
               </pre>
               {errorStack && (
                 <details className="mt-2">
-                  <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs">
+                  <summary className="text-kumo-secondary hover:text-kumo-default cursor-pointer text-xs">
                     Stack trace
                   </summary>
-                  <pre className="text-muted-foreground mt-2 overflow-auto text-xs">
+                  <pre className="text-kumo-secondary mt-2 overflow-auto text-xs">
                     {errorStack}
                   </pre>
                 </details>
               )}
             </div>
           )}
-        </CardContent>
-        <CardFooter className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            onClick={handleRetry}
-            variant="default"
-            className="w-full sm:w-auto"
-          >
-            <RefreshCwIcon className="size-4" />
+        </LayerCard.Primary>
+        <LayerCard.Primary className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Button onClick={handleRetry} variant="primary" icon={ArrowClockwise}>
             Try Again
           </Button>
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link to="/">
-              <HomeIcon className="size-4" />
-              Go to Home
-            </Link>
+          <Button
+            onClick={() => void router.navigate({ to: "/" })}
+            variant="outline"
+            icon={House}
+          >
+            Go to Home
           </Button>
-          <Button asChild variant="ghost" className="w-full sm:w-auto">
-            <a href="mailto:support@seal.nyc">
-              <MailIcon className="size-4" />
-              Contact Support
-            </a>
-          </Button>
+          <LinkButton
+            href="mailto:support@seal.nyc"
+            variant="ghost"
+            icon={EnvelopeSimple}
+          >
+            Contact Support
+          </LinkButton>
           <Button
             onClick={() => void handleSignOut()}
             variant="ghost"
-            className="w-full sm:w-auto"
+            icon={SignOut}
           >
-            <LogOut className="size-4" />
             Sign Out
           </Button>
-        </CardFooter>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
     </div>
   );
 }
