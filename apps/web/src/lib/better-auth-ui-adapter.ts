@@ -1,4 +1,4 @@
-import type { AnyAuthClient } from "@vortexnyc/better-auth-ui";
+import type { AnyAuthClient } from "@seal/auth-ui";
 
 import { betterAuthClient } from "./better-auth";
 

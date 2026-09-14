@@ -1,5 +1,5 @@
+import { AuthProvider, SignUpForm } from "@seal/auth-ui";
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthProvider, SignUpForm } from "@vortexnyc/better-auth-ui";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";

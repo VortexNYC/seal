@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
   InviteMemberForm,
   OrganizationMembers,
-} from "@vortexnyc/better-auth-ui";
+} from "@seal/auth-ui";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";

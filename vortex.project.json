@@ -8,7 +8,7 @@
   },
   "auth": {
     "enabled": true,
-    "packageName": "@vortexnyc/auth"
+    "packageName": "better-auth"
   },
   "instructions": {
     "name": "seal",
@@ -69,7 +69,6 @@
       "Support light and dark themes with practical, restrained motion."
     ],
     "referenceRepos": [
-      "../vortex-core for shared auth/tooling contracts",
       "../vortex-pos for the current pnpm + Core tooling control-plane stack",
       "../crm for the current clean Vortex Core consumer proof"
     ],

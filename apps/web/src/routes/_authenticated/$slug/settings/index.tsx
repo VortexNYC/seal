@@ -4,13 +4,9 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk } from "@phosphor-icons/react";
+import { AuthProvider, OrganizationProfile, useAuth } from "@seal/auth-ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  AuthProvider,
-  OrganizationProfile,
-  useAuth,
-} from "@vortexnyc/better-auth-ui";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 

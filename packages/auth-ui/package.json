@@ -1,0 +1,28 @@
+{
+  "name": "@seal/auth-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vendored Better Auth UI primitives for Seal web",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "react-email": "^6.9.5"
+  },
+  "peerDependencies": {
+    "@cloudflare/kumo": ">=2.13.0",
+    "@phosphor-icons/react": ">=2.1.10",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0",
+    "zod": ">=4.0.0"
+  }
+}
