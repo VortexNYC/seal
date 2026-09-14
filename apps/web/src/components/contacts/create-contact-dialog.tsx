@@ -5,38 +5,17 @@
  * Checks for duplicate emails and shows a warning toast if one exists.
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Textarea } from "@cloudflare/kumo/components/input";
+import { Select } from "@cloudflare/kumo/components/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   createContact,
   getContactByEmail,
@@ -147,192 +126,171 @@ export function CreateContactDialog({
     }
   };
 
+  const requiredAsterisk = (
+    <span className="text-kumo-danger" aria-hidden="true">
+      {" "}
+      *
+    </span>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Add Contact</DialogTitle>
-          <DialogDescription>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog size="lg" className="p-6">
+        <div className="space-y-1.5">
+          <Dialog.Title>Add Contact</Dialog.Title>
+          <Dialog.Description>
             Create a new contact for your organization.
-          </DialogDescription>
-        </DialogHeader>
+          </Dialog.Description>
+        </div>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      First Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="John" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Last Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="mt-6 space-y-4"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
               control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Email <span className="text-destructive">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="john@example.com"
-                      {...field}
-                      onBlur={(e) => {
-                        field.onBlur();
-                        void handleCheckEmail(e.target.value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  {duplicateWarning && (
-                    <p className="text-warning text-xs">
+              name="firstName"
+              render={({ field, fieldState }) => (
+                <Input
+                  {...field}
+                  label={
+                    <>
+                      First Name
+                      {requiredAsterisk}
+                    </>
+                  }
+                  placeholder="John"
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name="lastName"
+              render={({ field, fieldState }) => (
+                <Input
+                  {...field}
+                  label={
+                    <>
+                      Last Name
+                      {requiredAsterisk}
+                    </>
+                  }
+                  placeholder="Doe"
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+          </div>
+
+          <Controller
+            control={form.control}
+            name="email"
+            render={({ field, fieldState }) => (
+              <Input
+                {...field}
+                type="email"
+                label={
+                  <>
+                    Email
+                    {requiredAsterisk}
+                  </>
+                }
+                placeholder="john@example.com"
+                error={fieldState.error?.message}
+                onBlur={() => {
+                  field.onBlur();
+                  void handleCheckEmail(field.value);
+                }}
+                description={
+                  duplicateWarning ? (
+                    <span className="text-kumo-warning">
                       A contact with this email already exists.
-                    </p>
-                  )}
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="company"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Acme Inc." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                    </span>
+                  ) : undefined
+                }
               />
+            )}
+          />
 
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="CEO" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <Controller
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="tel"
+                label="Phone"
+                placeholder="+1 (555) 000-0000"
               />
-            </div>
+            )}
+          />
 
-            <FormField
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
               control={form.control}
-              name="status"
+              name="company"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="lead">Lead</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                <Input {...field} label="Company" placeholder="Acme Inc." />
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
-              name="notes"
+              name="title"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add any notes about this contact..."
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <Input {...field} label="Title" placeholder="CEO" />
               )}
             />
+          </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={form.formState.isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating..." : "Create Contact"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          <Controller
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <Select
+                label="Status"
+                value={field.value}
+                onValueChange={field.onChange}
+                items={{
+                  active: "Active",
+                  inactive: "Inactive",
+                  lead: "Lead",
+                }}
+              />
+            )}
+          />
+
+          <Controller
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <Textarea
+                {...field}
+                label="Notes"
+                placeholder="Add any notes about this contact..."
+                rows={3}
+              />
+            )}
+          />
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onOpenChange(false)}
+              disabled={form.formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Creating..." : "Create Contact"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </Dialog.Root>
   );
 }

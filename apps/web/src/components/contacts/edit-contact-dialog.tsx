@@ -5,28 +5,14 @@
  * Calls api.contacts.mutations.update with the changed fields.
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Textarea } from "@cloudflare/kumo/components/input";
+import { Select } from "@cloudflare/kumo/components/select";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { updateContact, type ApiContact } from "@/lib/api-client";
 import type { ContactStatus } from "@/lib/contact-status";
 import { parseSelectValue } from "@/lib/select-values";
@@ -138,144 +124,138 @@ export function EditContactDialog({
     }
   };
 
+  const requiredAsterisk = (
+    <span className="text-kumo-danger" aria-hidden="true">
+      {" "}
+      *
+    </span>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Edit Contact</DialogTitle>
-          <DialogDescription>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog size="lg" className="p-6">
+        <div className="space-y-1.5">
+          <Dialog.Title>Edit Contact</Dialog.Title>
+          <Dialog.Description>
             Update this contact&apos;s information.
-          </DialogDescription>
-        </DialogHeader>
+          </Dialog.Description>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-firstName">
-                First Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="edit-firstName"
-                value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value);
-                  if (errors.firstName)
-                    setErrors((prev) => ({ ...prev, firstName: undefined }));
-                }}
-                placeholder="John"
-              />
-              {errors.firstName && (
-                <p className="text-destructive text-sm">{errors.firstName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-lastName">
-                Last Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="edit-lastName"
-                value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value);
-                  if (errors.lastName)
-                    setErrors((prev) => ({ ...prev, lastName: undefined }));
-                }}
-                placeholder="Doe"
-              />
-              {errors.lastName && (
-                <p className="text-destructive text-sm">{errors.lastName}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-email">
-              Email <span className="text-destructive">*</span>
-            </Label>
             <Input
-              id="edit-email"
-              type="email"
-              value={email}
+              id="edit-firstName"
+              value={firstName}
               onChange={(e) => {
-                setEmail(e.target.value);
-                if (errors.email)
-                  setErrors((prev) => ({ ...prev, email: undefined }));
+                setFirstName(e.target.value);
+                if (errors.firstName)
+                  setErrors((prev) => ({ ...prev, firstName: undefined }));
               }}
-              placeholder="john@example.com"
+              label={
+                <>
+                  First Name
+                  {requiredAsterisk}
+                </>
+              }
+              placeholder="John"
+              error={errors.firstName}
             />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email}</p>
-            )}
+
+            <Input
+              id="edit-lastName"
+              value={lastName}
+              onChange={(e) => {
+                setLastName(e.target.value);
+                if (errors.lastName)
+                  setErrors((prev) => ({ ...prev, lastName: undefined }));
+              }}
+              label={
+                <>
+                  Last Name
+                  {requiredAsterisk}
+                </>
+              }
+              placeholder="Doe"
+              error={errors.lastName}
+            />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-phone">Phone</Label>
-            <Input
-              id="edit-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-            />
-          </div>
+          <Input
+            id="edit-email"
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email)
+                setErrors((prev) => ({ ...prev, email: undefined }));
+            }}
+            label={
+              <>
+                Email
+                {requiredAsterisk}
+              </>
+            }
+            placeholder="john@example.com"
+            error={errors.email}
+          />
+
+          <Input
+            id="edit-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            label="Phone"
+            placeholder="+1 (555) 000-0000"
+          />
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-company">Company</Label>
-              <Input
-                id="edit-company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Acme Inc."
-              />
-            </div>
+            <Input
+              id="edit-company"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              label="Company"
+              placeholder="Acme Inc."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Title</Label>
-              <Input
-                id="edit-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="CEO"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-status">Status</Label>
-            <Select
-              value={status}
-              onValueChange={(value) =>
-                setStatus(parseSelectValue(value, CONTACT_STATUSES) ?? status)
-              }
-            >
-              <SelectTrigger id="edit-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="lead">Lead</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-notes">Notes</Label>
-            <Textarea
-              id="edit-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes about this contact..."
-              rows={3}
+            <Input
+              id="edit-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              label="Title"
+              placeholder="CEO"
             />
           </div>
 
-          <DialogFooter>
+          <Select
+            label="Status"
+            value={status}
+            onValueChange={(value) => {
+              if (!value) return;
+              const parsed = parseSelectValue(value, CONTACT_STATUSES);
+              if (parsed) {
+                setStatus(parsed);
+              }
+            }}
+            items={{
+              active: "Active",
+              inactive: "Inactive",
+              lead: "Lead",
+            }}
+          />
+
+          <Textarea
+            id="edit-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            label="Notes"
+            placeholder="Add any notes about this contact..."
+            rows={3}
+          />
+
+          <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
@@ -284,9 +264,9 @@ export function EditContactDialog({
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }

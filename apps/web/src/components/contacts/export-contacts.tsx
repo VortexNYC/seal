@@ -1,13 +1,6 @@
-/**
- * Export Contacts
- *
- * Client-side CSV export for the current contacts list.
- * Downloads a CSV file with contact details.
- */
+import { Button } from "@cloudflare/kumo/components/button";
+import { Download } from "@phosphor-icons/react";
 
-import { DownloadIcon } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import type { ApiContact } from "@/lib/api-client";
 
 interface ExportContactsProps {
@@ -74,12 +67,12 @@ export function ExportContacts({ contacts }: ExportContactsProps) {
 
   return (
     <Button
-      variant="outline"
+      variant="secondary"
       size="sm"
       onClick={handleExport}
       disabled={contacts.length === 0}
     >
-      <DownloadIcon className="mr-2 h-4 w-4" />
+      <Download className="mr-2 h-4 w-4" />
       Export CSV
     </Button>
   );
