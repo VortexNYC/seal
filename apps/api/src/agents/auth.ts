@@ -51,27 +51,26 @@ export async function authenticateAgentConnection(
     .limit(1);
 
   const thread = threadRows[0];
-  if (!thread) {
-    return new Response("Thread not found", { status: 404 });
-  }
 
-  const membershipRows = await db
-    .select()
-    .from(member)
-    .where(
-      and(
-        eq(member.organizationId, thread.organizationId),
-        eq(member.userId, user.user.id)
-      )
-    )
-    .limit(1);
+  const membershipRows = thread
+    ? await db
+        .select()
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, thread.organizationId),
+            eq(member.userId, user.user.id)
+          )
+        )
+        .limit(1)
+    : [];
 
-  if (membershipRows.length === 0) {
-    return new Response("Forbidden", { status: 403 });
-  }
-
-  if (!authorizeThreadAccess(user.user.id, thread.organizationId, thread)) {
-    return new Response("Forbidden", { status: 403 });
+  if (
+    !thread ||
+    membershipRows.length === 0 ||
+    !authorizeThreadAccess(user.user.id, thread.organizationId, thread)
+  ) {
+    return new Response("Not found", { status: 404 });
   }
 
   return undefined;
