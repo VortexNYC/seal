@@ -1,27 +1,13 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Select } from "@cloudflare/kumo/components/select";
 import { useMutation } from "@tanstack/react-query";
 import { AlertTriangleIcon, ArrowRightLeftIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { transferDocument } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 interface TransferOwnershipDialogProps {
   open: boolean;
@@ -31,6 +17,7 @@ interface TransferOwnershipDialogProps {
   currentOwnerId: string;
   sharingMode: string;
   slug: string;
+  organizationSlug: string;
 }
 
 export function TransferOwnershipDialog({
@@ -41,6 +28,7 @@ export function TransferOwnershipDialog({
   currentOwnerId,
   sharingMode,
   slug,
+  organizationSlug,
 }: TransferOwnershipDialogProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +37,11 @@ export function TransferOwnershipDialog({
 
   const transferOwnership = useMutation({
     mutationFn: (variables: { publicId: string; newOwnerId: string }) =>
-      transferDocument(variables.publicId, variables.newOwnerId),
+      transferDocument(
+        organizationSlug,
+        variables.publicId,
+        variables.newOwnerId
+      ),
   });
 
   const eligibleMembers =
@@ -77,41 +69,40 @@ export function TransferOwnershipDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog size="sm" className="p-6">
+        <div className="flex flex-col items-center">
           <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
             <ArrowRightLeftIcon className="text-info h-6 w-6" />
           </div>
-          <DialogTitle className="text-center">Transfer Ownership</DialogTitle>
-          <DialogDescription className="text-center">
+          <Dialog.Title className="text-center">
+            Transfer Ownership
+          </Dialog.Title>
+          <Dialog.Description className="text-center">
             Transfer ownership of{" "}
             <span className="font-medium">{documentName}</span> to another
             organization member.
-          </DialogDescription>
-        </DialogHeader>
+          </Dialog.Description>
+        </div>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="new-owner">New owner</Label>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger id="new-owner">
-                <SelectValue placeholder="Select a member..." />
-              </SelectTrigger>
-              <SelectContent>
-                {eligibleMembers.map((member) => (
-                  <SelectItem key={member.userId} value={member.userId}>
-                    <span className="font-medium">
-                      {member.name ?? member.email}
-                    </span>
-                    <span className="text-muted-foreground ml-2 text-xs capitalize">
-                      {member.role}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            label="New owner"
+            value={selectedUserId}
+            onValueChange={(v) => setSelectedUserId(v ?? "")}
+            placeholder="Select a member..."
+          >
+            {eligibleMembers.map((member) => (
+              <Select.Option key={member.userId} value={member.userId}>
+                <span className="font-medium">
+                  {member.name ?? member.email}
+                </span>
+                <span className="text-muted-foreground ml-2 text-xs capitalize">
+                  {member.role}
+                </span>
+              </Select.Option>
+            ))}
+          </Select>
 
           {isPrivate && selectedUserId && (
             <div className="border-warning/30 bg-warning-surface flex gap-2 rounded-lg border p-3">
@@ -124,7 +115,7 @@ export function TransferOwnershipDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -138,8 +129,8 @@ export function TransferOwnershipDialog({
           >
             {isSubmitting ? "Transferring..." : "Transfer Ownership"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Dialog>
+    </Dialog.Root>
   );
 }

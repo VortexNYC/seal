@@ -5,11 +5,11 @@
  * role-based mini badges and a more editorial card design.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { UsersIcon } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 import { cn } from "@/lib/utils";
 
 interface TeamOverviewProps {
@@ -47,7 +47,7 @@ export function TeamOverview({
   const { data: memberCount } = useSuspenseQuery({
     queryKey: ["api", "organization", slug, "team"],
     queryFn: async (): Promise<TeamSummary> => {
-      const client = getBetterAuthUiClient();
+      const client = betterAuthClient;
       if (client === null) {
         throw new Error("Auth client is not available.");
       }
@@ -105,7 +105,7 @@ export function TeamOverview({
   const pendingCount = totalCount - activeCount;
 
   return (
-    <Card
+    <LayerCard
       className="group relative overflow-hidden"
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
@@ -118,18 +118,20 @@ export function TeamOverview({
         strokeWidth={1}
       />
 
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div>
-          <CardTitle>Team Overview</CardTitle>
-          <p className="text-muted-foreground mt-0.5 text-sm">
-            {organizationName}
-          </p>
+      <LayerCard.Secondary>
+        <div className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <h3 className="text-base font-semibold">Team Overview</h3>
+            <p className="text-muted-foreground mt-0.5 text-sm">
+              {organizationName}
+            </p>
+          </div>
+          <div className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg">
+            <UsersIcon className="text-muted-foreground h-5 w-5" />
+          </div>
         </div>
-        <div className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg">
-          <UsersIcon className="text-muted-foreground h-5 w-5" />
-        </div>
-      </CardHeader>
-      <CardContent>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         <div className="font-serif text-3xl font-normal tracking-tight tabular-nums">
           {activeCount}{" "}
           <span className="text-muted-foreground font-sans text-lg">
@@ -177,8 +179,8 @@ export function TeamOverview({
             />
           )}
         </div>
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
 

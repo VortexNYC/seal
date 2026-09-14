@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export interface OrganizationMemberView {
   userId: string;
@@ -38,7 +38,7 @@ export function useOrganizationMembers(slug: string, enabled = true) {
   return useQuery({
     queryKey: ["organizations", slug, "members"],
     queryFn: async (): Promise<OrganizationMemberView[]> => {
-      const client = getBetterAuthUiClient();
+      const client = betterAuthClient;
       if (
         client === null ||
         client.organization?.getFullOrganization === undefined

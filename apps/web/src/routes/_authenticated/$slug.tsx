@@ -6,6 +6,7 @@
  * Route: /{slug}/*
  */
 
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import {
   type ErrorComponentProps,
   createFileRoute,
@@ -23,11 +24,9 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
-import { DotPattern } from "@/components/ui/patterns";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -58,7 +57,7 @@ function WorkspaceLayout() {
   useJamMetadata();
 
   useEffect(() => {
-    const client = getBetterAuthUiClient();
+    const client = betterAuthClient;
     if (client?.organization?.setActive === undefined) return;
     void client.organization.setActive({ organizationSlug: slug });
   }, [slug]);
@@ -76,9 +75,8 @@ function WorkspaceLayout() {
   };
 
   return (
-    <SidebarProvider>
+    <Sidebar.Provider collapsible="icon">
       <PostHogIdentify organization={orgData} />
-      <DotPattern className="fixed inset-0 z-0" />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
         <AppSidebar
           slug={slug}
@@ -90,7 +88,7 @@ function WorkspaceLayout() {
         </main>
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
-      <FeedbackButton />
-    </SidebarProvider>
+      <FeedbackButton organizationSlug={slug} />
+    </Sidebar.Provider>
   );
 }

@@ -8,6 +8,7 @@
  * Route: /{slug}/home
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 
@@ -22,7 +23,6 @@ import { TeamOverview } from "@/components/dashboard/team-overview";
 import { TrendChart } from "@/components/dashboard/trend-chart";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { pageSEO } from "@/lib/seo";
@@ -54,15 +54,17 @@ function StatsCardsFallback(): React.ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="animate-pulse">
-          <CardHeader className="pb-2">
-            <div className="bg-muted h-4 w-1/2 rounded" />
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted mb-2 h-8 w-1/4 rounded" />
-            <div className="bg-muted h-3 w-3/4 rounded" />
-          </CardContent>
-        </Card>
+        <LayerCard key={i} className="animate-pulse">
+          <LayerCard.Primary>
+            <div className="space-y-2 pb-2">
+              <div className="bg-muted h-4 w-1/2 rounded" />
+            </div>
+            <div className="space-y-2">
+              <div className="bg-muted mb-2 h-8 w-1/4 rounded" />
+              <div className="bg-muted h-3 w-3/4 rounded" />
+            </div>
+          </LayerCard.Primary>
+        </LayerCard>
       ))}
     </div>
   );
@@ -70,44 +72,47 @@ function StatsCardsFallback(): React.ReactElement {
 
 function ChartFallback(): React.ReactElement {
   return (
-    <Card data-testid="document-activity-section" className="lg:col-span-2">
-      <CardHeader className="pb-2 sm:pb-6">
-        <div className="bg-muted mb-2 h-5 w-1/3 rounded" />
-        <div className="bg-muted h-4 w-1/2 rounded" />
-      </CardHeader>
-      <CardContent>
+    <LayerCard
+      data-testid="document-activity-section"
+      className="lg:col-span-2"
+    >
+      <LayerCard.Primary>
+        <div className="space-y-2 pb-2 sm:pb-6">
+          <div className="bg-muted mb-2 h-5 w-1/3 rounded" />
+          <div className="bg-muted h-4 w-1/2 rounded" />
+        </div>
         <div className="bg-muted h-[200px] animate-pulse rounded sm:h-[250px]" />
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
 
 function CardFallback(): React.ReactElement {
   return (
-    <Card>
-      <CardHeader>
-        <div className="bg-muted mb-2 h-5 w-1/2 rounded" />
-        <div className="bg-muted h-4 w-3/4 rounded" />
-      </CardHeader>
-      <CardContent>
+    <LayerCard>
+      <LayerCard.Primary>
+        <div className="space-y-2 pb-2">
+          <div className="bg-muted mb-2 h-5 w-1/2 rounded" />
+          <div className="bg-muted h-4 w-3/4 rounded" />
+        </div>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bg-muted h-6 rounded" />
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
 
 function RecentDocsFallback(): React.ReactElement {
   return (
-    <Card>
-      <CardHeader>
-        <div className="bg-muted mb-2 h-5 w-1/3 rounded" />
-        <div className="bg-muted h-4 w-1/2 rounded" />
-      </CardHeader>
-      <CardContent>
+    <LayerCard>
+      <LayerCard.Primary>
+        <div className="space-y-2 pb-2">
+          <div className="bg-muted mb-2 h-5 w-1/3 rounded" />
+          <div className="bg-muted h-4 w-1/2 rounded" />
+        </div>
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex animate-pulse items-center gap-3">
@@ -119,8 +124,8 @@ function RecentDocsFallback(): React.ReactElement {
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
 
@@ -162,17 +167,17 @@ function WorkspaceHome(): React.ReactElement | null {
 
         {/* Stats Cards */}
         <Suspense fallback={<StatsCardsFallback />}>
-          <StatsCards />
+          <StatsCards organizationSlug={slug} />
         </Suspense>
 
         {/* Charts and Status Breakdown */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <Suspense fallback={<ChartFallback />}>
-            <TrendChart />
+            <TrendChart organizationSlug={slug} />
           </Suspense>
 
           <Suspense fallback={<CardFallback />}>
-            <StatusBreakdown />
+            <StatusBreakdown organizationSlug={slug} />
           </Suspense>
         </div>
 
@@ -180,7 +185,7 @@ function WorkspaceHome(): React.ReactElement | null {
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Suspense fallback={<RecentDocsFallback />}>
-              <RecentDocuments slug={slug} />
+              <RecentDocuments slug={slug} organizationSlug={slug} />
             </Suspense>
           </div>
 
@@ -188,11 +193,11 @@ function WorkspaceHome(): React.ReactElement | null {
         </div>
 
         {/* Recent Activity */}
-        <RecentActivity />
+        <RecentActivity organizationSlug={slug} />
 
         {/* Needs Attention */}
         <Suspense fallback={null}>
-          <NeedsAttention slug={slug} />
+          <NeedsAttention organizationSlug={slug} />
         </Suspense>
 
         {/* Team Overview */}

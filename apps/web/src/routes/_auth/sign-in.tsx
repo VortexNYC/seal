@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthProvider, SignInForm } from "@vortex-api/better-auth-ui";
+import { AuthProvider, SignInForm } from "@vortexnyc/better-auth-ui";
 
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 interface SignInSearch {
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_auth/sign-in")({
 
 function RouteComponent() {
   const { token, redirect } = Route.useSearch();
-  const client = betterAuthClient;
+  const client = getBetterAuthUiClient();
 
   const forceRedirectUrl = redirect
     ? redirect
