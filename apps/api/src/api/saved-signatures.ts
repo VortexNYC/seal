@@ -181,7 +181,6 @@ app.openapi(createSavedSignatureRoute, async (c) => {
   );
 });
 
-
 const updateBodySchema = z.object({
   name: z.string().min(1).optional(),
   isDefault: z.boolean().optional(),

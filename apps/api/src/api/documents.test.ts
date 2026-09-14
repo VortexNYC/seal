@@ -155,7 +155,9 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/documents/test-org?workflowStatus=sent"),
+      new Request(
+        "http://localhost:8787/api/documents/test-org?workflowStatus=sent"
+      ),
       env
     );
     const list = documentListSchema.parse(await parseJson(response));
@@ -311,9 +313,12 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/send`, {
-        method: "POST",
-      }),
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/send`,
+        {
+          method: "POST",
+        }
+      ),
       env
     );
     const result = z
@@ -347,9 +352,12 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/cancel`, {
-        method: "POST",
-      }),
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/cancel`,
+        {
+          method: "POST",
+        }
+      ),
       env
     );
     const result = z
@@ -454,11 +462,14 @@ describe("documents API", () => {
     });
 
     const response = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/transfer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newOwnerId: "user_2" }),
-      }),
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/transfer`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ newOwnerId: "user_2" }),
+        }
+      ),
       env
     );
     const result = documentSchema.parse(await parseJson(response));
@@ -506,17 +517,22 @@ describe("documents API", () => {
     });
 
     const shareResponse = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "user_2", permissionLevel: "view" }),
-      }),
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/share`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user_2", permissionLevel: "view" }),
+        }
+      ),
       env
     );
     expect(shareResponse.status).toBe(200);
 
     const sharingResponse = await app.fetch(
-      new Request(`http://localhost:8787/api/documents/test-org/${publicId}/sharing`),
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/sharing`
+      ),
       env
     );
     const sharing = z

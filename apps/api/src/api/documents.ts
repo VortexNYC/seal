@@ -34,9 +34,9 @@ import {
   sendDocumentInvitationEmail,
   sendOwnershipTransferredEmail,
 } from "../platform/email.js";
-import ai from "./ai.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
+import ai from "./ai.js";
 
 const DocumentSchema = z
   .object({
@@ -308,7 +308,8 @@ app.openapi(createRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "document.created",
-    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: input.name,
     metadata: JSON.stringify({ documentId, publicId }),
     createdAt: now,
@@ -1371,7 +1372,8 @@ app.openapi(addRecipientsRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "recipients.added",
-    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -1616,7 +1618,8 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     .where(eq(recipients.id, recipient.id));
 
   if (recipient.email) {
-    const senderName = c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
+    const senderName =
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
     const emailResult = await sendDocumentInvitationEmail(c.env, {
       to: recipient.email,
       recipientName: recipient.name ?? recipient.email,
@@ -1635,7 +1638,8 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "recipient.resend",
-    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -3809,7 +3813,8 @@ app.openapi(submitSignatureRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: `recipient.${input.status}`,
-    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
@@ -4052,7 +4057,8 @@ app.openapi(sendRouteDef, async (c) => {
     })
     .where(eq(documents.id, doc.id));
 
-  const senderName = c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
+  const senderName =
+    c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
 
   const emailPromises: Promise<EmailSendResult>[] = [];
   for (const update of recipientUpdates) {
@@ -4090,7 +4096,8 @@ app.openapi(sendRouteDef, async (c) => {
     id: crypto.randomUUID(),
     organizationId,
     action: "document.sent",
-    actorName: c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,

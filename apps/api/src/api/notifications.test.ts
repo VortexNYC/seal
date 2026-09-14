@@ -166,7 +166,9 @@ describe("notifications API", () => {
     });
 
     const countRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/test-org/unread-count"),
+      new Request(
+        "http://localhost:8787/api/notifications/test-org/unread-count"
+      ),
       env
     );
     const result = countSchema.parse(await parseJson(countRes));
@@ -191,16 +193,21 @@ describe("notifications API", () => {
     });
 
     const markRes = await app.fetch(
-      new Request(`http://localhost:8787/api/notifications/test-org/${publicId}/read`, {
-        method: "POST",
-      }),
+      new Request(
+        `http://localhost:8787/api/notifications/test-org/${publicId}/read`,
+        {
+          method: "POST",
+        }
+      ),
       env
     );
     const updated = notificationSchema.parse(await parseJson(markRes));
     expect(updated.read).toBe(true);
 
     const countRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/test-org/unread-count"),
+      new Request(
+        "http://localhost:8787/api/notifications/test-org/unread-count"
+      ),
       env
     );
     const result = countSchema.parse(await parseJson(countRes));
@@ -244,7 +251,9 @@ describe("notifications API", () => {
     expect(result.count).toBe(2);
 
     const countRes = await app.fetch(
-      new Request("http://localhost:8787/api/notifications/test-org/unread-count"),
+      new Request(
+        "http://localhost:8787/api/notifications/test-org/unread-count"
+      ),
       env
     );
     const unread = countSchema.parse(await parseJson(countRes));

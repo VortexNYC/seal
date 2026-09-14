@@ -3,8 +3,8 @@ import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { contacts, documents, recipients } from "../global/schema.js";
-import type { Variables } from "../platform/types.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const ContactSchema = z
   .object({

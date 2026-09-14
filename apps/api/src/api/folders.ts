@@ -3,8 +3,8 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { folders } from "../global/schema.js";
-import type { Variables } from "../platform/types.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const FolderSchema = z
   .object({

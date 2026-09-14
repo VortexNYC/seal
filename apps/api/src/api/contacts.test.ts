@@ -241,9 +241,12 @@ describe("contacts API", () => {
     expect(getRes.status).toBe(404);
 
     const deleteRes = await app2.fetch(
-      new Request(`http://localhost:8787/api/contacts/other-org/${created.id}`, {
-        method: "DELETE",
-      }),
+      new Request(
+        `http://localhost:8787/api/contacts/other-org/${created.id}`,
+        {
+          method: "DELETE",
+        }
+      ),
       env
     );
     expect(deleteRes.status).toBe(404);

@@ -1,5 +1,5 @@
-import { createMiddleware } from "hono/factory";
 import { and, eq } from "drizzle-orm";
+import { createMiddleware } from "hono/factory";
 
 import { createD1 } from "../global/db.js";
 import { member, organization } from "../global/schema.js";
@@ -30,7 +30,9 @@ export const organizationMiddleware = createMiddleware<{
   const membershipRows = await db
     .select()
     .from(member)
-    .where(and(eq(member.organizationId, org.id), eq(member.userId, user.user.id)))
+    .where(
+      and(eq(member.organizationId, org.id), eq(member.userId, user.user.id))
+    )
     .limit(1);
 
   if (!membershipRows[0]) {
