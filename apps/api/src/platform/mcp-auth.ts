@@ -10,6 +10,7 @@ export interface McpAccessToken {
   scope: string;
   clientId: string;
   jti: string;
+  kind?: "mcp" | "api";
 }
 
 type McpVariables = {
@@ -31,7 +32,29 @@ function getIssuerAndAudience(env: CloudflareBindings): {
 }
 
 export function mcpHasScope(token: McpAccessToken, required: string): boolean {
-  return token.scope.split(/\s+/).includes(required);
+  const scopes = token.scope.split(/\s+/);
+  if (scopes.includes(required)) return true;
+  if (token.kind !== "api") return false;
+
+  if (scopes.includes("admin")) return true;
+  if (required.endsWith(":read") && scopes.includes("read")) return true;
+  if (
+    (required.endsWith(":write") ||
+      required.endsWith(":create") ||
+      required.endsWith(":update") ||
+      required.endsWith(":delete") ||
+      required.endsWith(":send")) &&
+    scopes.includes("write")
+  ) {
+    return true;
+  }
+  if (
+    (required.startsWith("signatures") || required.endsWith(":sign")) &&
+    scopes.includes("sign")
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export async function verifyMcpAccessToken(
@@ -63,6 +86,7 @@ export async function verifyMcpAccessToken(
       scope: payload.scope,
       clientId: payload.clientId,
       jti: payload.jti,
+      kind: "mcp",
     };
   } catch {
     return null;

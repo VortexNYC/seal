@@ -142,6 +142,30 @@ describe("api v1 tokens", () => {
     expect(res.status).toBe(403);
   });
 
+  it("uses a read-scoped API token to call /api/v1/documents", async () => {
+    const { plaintext } = await seedTokenContext({ tokenScopes: ["read"] });
+
+    const res = await app.fetch(
+      new Request("http://localhost:8787/api/v1/documents?limit=10", {
+        headers: { authorization: `Bearer ${plaintext}` },
+      }),
+      env
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects a write-scoped API token from /api/v1/documents GET", async () => {
+    const { plaintext } = await seedTokenContext({ tokenScopes: ["write"] });
+
+    const res = await app.fetch(
+      new Request("http://localhost:8787/api/v1/documents?limit=10", {
+        headers: { authorization: `Bearer ${plaintext}` },
+      }),
+      env
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("rejects a revoked or unknown token", async () => {
     const { slug, plaintext } = await seedTokenContext();
     const db = createD1(env.D1);

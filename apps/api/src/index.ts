@@ -36,6 +36,10 @@ import {
   paymentFieldConfigs,
   subscriptions,
 } from "./global/schema.js";
+import {
+  isApiTokenFormat,
+  loadApiTokenContext,
+} from "./platform/api-token-auth.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
@@ -796,6 +800,17 @@ app.use("/api/v1/*", async (c, next) => {
   }
 
   const header = c.req.header("authorization");
+  if (header?.startsWith("Bearer ")) {
+    const raw = header.slice("Bearer ".length).trim();
+    if (isApiTokenFormat(raw)) {
+      await loadApiTokenContext(c, raw);
+    }
+  }
+
+  if (c.get("mcp")?.kind === "api") {
+    return next();
+  }
+
   if (!header?.startsWith("Bearer ")) {
     return c.json({ error: "unauthorized" }, 401);
   }
