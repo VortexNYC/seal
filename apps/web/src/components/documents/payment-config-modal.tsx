@@ -1,3 +1,5 @@
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
 import {
@@ -27,14 +29,6 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import { Checkbox } from "../ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
 import { Label } from "../ui/label";
@@ -47,7 +41,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Switch } from "../ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 const MONEY_ROUNDING = "half-up" as const;
 const DRAFT_CURRENCY = "USD";
@@ -368,13 +361,13 @@ function PaymentConfigLoadingDialog({
   readonly onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog className="max-w-2xl">
         <div className="flex items-center justify-center py-12">
           <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }
 
@@ -394,8 +387,8 @@ function PaymentConfigDialog({
   readonly onSave: () => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <PaymentConfigHeader />
         <PaymentConfigTabs form={form} total={total} />
         <PaymentConfigFooter
@@ -404,23 +397,23 @@ function PaymentConfigDialog({
           onCancel={() => onOpenChange(false)}
           onSave={onSave}
         />
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }
 
 function PaymentConfigHeader() {
   return (
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2">
+    <>
+      <Dialog.Title className="flex items-center gap-2">
         <CreditCardIcon className="text-field-payment h-5 w-5" />
         Configure Payment
-      </DialogTitle>
-      <DialogDescription>
+      </Dialog.Title>
+      <Dialog.Description>
         Set up line items, payment terms, and accepted methods for this payment
         field.
-      </DialogDescription>
-    </DialogHeader>
+      </Dialog.Description>
+    </>
   );
 }
 
@@ -431,21 +424,35 @@ function PaymentConfigTabs({
   readonly form: PaymentConfigForm;
   readonly total: number;
 }) {
+  const [activeTab, setActiveTab] = useState("items");
+
   return (
-    <Tabs defaultValue="items" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="items">Invoice Items</TabsTrigger>
-        <TabsTrigger value="terms">Payment Terms</TabsTrigger>
-        <TabsTrigger value="methods">Methods & Tax</TabsTrigger>
-      </TabsList>
-      <InvoiceItemsTab form={form} total={total} />
-      <PaymentTermsTab
-        draft={form.draft}
-        setDraftField={form.setDraftField}
-        total={total}
+    <>
+      <Tabs
+        tabs={[
+          { value: "items", label: "Invoice Items" },
+          { value: "terms", label: "Payment Terms" },
+          { value: "methods", label: "Methods & Tax" },
+        ]}
+        value={activeTab}
+        onValueChange={(v) =>
+          setActiveTab(
+            parseSelectValue(v, ["items", "terms", "methods"]) ?? activeTab
+          )
+        }
+        className="w-full"
+        listClassName="grid w-full grid-cols-3"
       />
-      <MethodsAndTaxTab form={form} />
-    </Tabs>
+      {activeTab === "items" && <InvoiceItemsTab form={form} total={total} />}
+      {activeTab === "terms" && (
+        <PaymentTermsTab
+          draft={form.draft}
+          setDraftField={form.setDraftField}
+          total={total}
+        />
+      )}
+      {activeTab === "methods" && <MethodsAndTaxTab form={form} />}
+    </>
   );
 }
 
@@ -457,7 +464,7 @@ function InvoiceItemsTab({
   readonly total: number;
 }) {
   return (
-    <TabsContent value="items" className="space-y-4 pt-4">
+    <div className="space-y-4 pt-4">
       <div className="space-y-3">
         {form.draft.items.map((item) => (
           <InvoiceItemRow key={item.id} form={form} item={item} />
@@ -471,7 +478,7 @@ function InvoiceItemsTab({
         <span className="text-sm font-medium">Subtotal</span>
         <span className="text-sm font-bold">{formatCents(total)}</span>
       </div>
-    </TabsContent>
+    </div>
   );
 }
 
@@ -549,7 +556,7 @@ function PaymentTermsTab({
   readonly total: number;
 }) {
   return (
-    <TabsContent value="terms" className="space-y-5 pt-4">
+    <div className="space-y-5 pt-4">
       <PaymentTypeSection draft={draft} setDraftField={setDraftField} />
       {draft.paymentType === "one_time" && (
         <DueDateSection draft={draft} setDraftField={setDraftField} />
@@ -576,7 +583,7 @@ function PaymentTermsTab({
         feeHandling={draft.feeHandling}
         setDraftField={setDraftField}
       />
-    </TabsContent>
+    </div>
   );
 }
 
@@ -1154,10 +1161,10 @@ function FeeHandlingSection({
 
 function MethodsAndTaxTab({ form }: { readonly form: PaymentConfigForm }) {
   return (
-    <TabsContent value="methods" className="space-y-5 pt-4">
+    <div className="space-y-5 pt-4">
       <PaymentMethodsSection form={form} />
       <TaxSection draft={form.draft} setDraftField={form.setDraftField} />
-    </TabsContent>
+    </div>
   );
 }
 
@@ -1269,7 +1276,7 @@ function PaymentConfigFooter({
   readonly onSave: () => void;
 }) {
   return (
-    <DialogFooter className="gap-2 border-t pt-4">
+    <div className="mt-4 flex items-center justify-between gap-2 border-t pt-4">
       <div className="flex flex-1 items-center gap-2">
         <Badge
           variant="outline"
@@ -1278,20 +1285,22 @@ function PaymentConfigFooter({
           Total: {formatCents(total)}
         </Badge>
       </div>
-      <Button variant="outline" onClick={onCancel} disabled={isSaving}>
-        Cancel
-      </Button>
-      <Button onClick={onSave} disabled={isSaving}>
-        {isSaving ? (
-          <>
-            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          "Save Payment Config"
-        )}
-      </Button>
-    </DialogFooter>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+          Cancel
+        </Button>
+        <Button onClick={onSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Payment Config"
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }
 
