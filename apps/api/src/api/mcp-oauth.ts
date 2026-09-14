@@ -449,10 +449,7 @@ app.get("/authorize", async (c) => {
       .select()
       .from(member)
       .where(
-        and(
-          eq(member.userId, userId),
-          eq(member.organizationId, firstOrg.id)
-        )
+        and(eq(member.userId, userId), eq(member.organizationId, firstOrg.id))
       )
       .limit(1);
     if (memberships.length === 0) {

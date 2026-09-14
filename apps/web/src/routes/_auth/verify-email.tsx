@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Email verification landing — linked from signup / change-email messages (?token=…).
  */
-import { AuthProvider, VerifyEmailForm } from "@vortexnyc/better-auth-ui";
+import { AuthProvider, VerifyEmailForm } from "@vortex-api/better-auth-ui";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/verify-email")({
@@ -30,7 +30,7 @@ function resolveAppOrigin(): string {
 function VerifyEmailRoute() {
   const { token } = Route.useSearch();
   const { user } = useCurrentUser();
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
   const userEmail = user?.primaryEmailAddress?.emailAddress ?? null;
   const callbackUrl = `${resolveAppOrigin()}/verify-email`;
 

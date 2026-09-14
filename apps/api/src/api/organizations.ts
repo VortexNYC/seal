@@ -1,8 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, eq, isNull } from "drizzle-orm";
 
-import { organizationMiddleware } from "../platform/organization-middleware.js";
-import type { Variables } from "../platform/types.js";
 import { createD1 } from "../global/db.js";
 import {
   documents as documentsTable,
@@ -11,6 +9,8 @@ import {
   organization,
   templates as templatesTable,
 } from "../global/schema.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const TemplateListItemSchema = z
   .object({

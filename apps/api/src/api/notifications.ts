@@ -3,8 +3,8 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { notifications } from "../global/schema.js";
-import type { Variables } from "../platform/types.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const EmailStatusSchema = z
   .union([

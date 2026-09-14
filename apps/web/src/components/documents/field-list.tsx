@@ -1,5 +1,4 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { formatMoney, money } from "@vortexnyc/money";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -13,6 +12,7 @@ import {
 import { useRef } from "react";
 
 import { type Id } from "@/lib/ids";
+import { formatMoney, money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";

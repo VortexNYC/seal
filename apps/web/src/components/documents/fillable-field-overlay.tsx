@@ -1,4 +1,3 @@
-import { formatMoney, money } from "@vortexnyc/money";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { forwardRef } from "react";
 
+import { formatMoney, money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 interface SignatureDetails {

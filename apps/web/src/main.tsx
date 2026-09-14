@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import ReactDOM from "react-dom/client";
@@ -57,10 +56,13 @@ if (!rootElement) {
 
 const RAW_POSTHOG_KEY: unknown = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 const POSTHOG_KEY = typeof RAW_POSTHOG_KEY === "string" ? RAW_POSTHOG_KEY : "";
-const posthogInitOptions = createVortexPostHogWebInitOptions({
+const posthogInitOptions = {
   apiHost: "/ingest",
   uiHost: "https://us.i.posthog.com",
-});
+  autocapture: false,
+  capturePageview: false,
+  persistence: "localStorage+cookie" as const,
+};
 
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {

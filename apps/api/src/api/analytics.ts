@@ -10,8 +10,8 @@ import {
   templates,
   user,
 } from "../global/schema.js";
-import type { Variables } from "../platform/types.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;

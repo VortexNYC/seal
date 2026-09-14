@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - Security
  *
- * Sessions, two-factor enrollment, and password change via @vortexnyc/better-auth-ui.
+ * Sessions, two-factor enrollment, and password change via @vortex-api/better-auth-ui.
  * Route: /{slug}/settings/profile/security
  */
 import {
@@ -10,10 +10,10 @@ import {
   ChangePasswordForm,
   EnableTwoFactorForm,
   SessionList,
-} from "@vortexnyc/better-auth-ui";
+} from "@vortex-api/better-auth-ui";
 import { toast } from "sonner";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"
@@ -22,7 +22,7 @@ export const Route = createFileRoute(
 });
 
 function SecuritySettings() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
 
   if (client === null) {
     return <p className="text-center text-sm">Auth client not configured.</p>;

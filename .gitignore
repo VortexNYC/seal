@@ -122,3 +122,6 @@ apps/api/wrangler.toml
 
 # opencode tooling
 .opencode/
+
+# Vendored auth-ui dist is committed, not generated
+!packages/auth-ui/dist/

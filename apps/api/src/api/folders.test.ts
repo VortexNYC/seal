@@ -258,7 +258,9 @@ describe("folders API", () => {
     });
 
     const response = await app.fetch(
-      new Request("http://localhost:8787/api/folders/test-org/all?type=document"),
+      new Request(
+        "http://localhost:8787/api/folders/test-org/all?type=document"
+      ),
       env
     );
     const all = folderListSchema.parse(await parseJson(response));

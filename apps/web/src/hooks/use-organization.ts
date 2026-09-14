@@ -1,7 +1,7 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export interface OrganizationView {
   _id: string;
@@ -41,7 +41,7 @@ async function fetchOrganization(
   slug: string,
   userId: string | undefined
 ): Promise<OrganizationView | null> {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
   if (client === null) {
     throw new Error("Auth client is not available.");
   }
@@ -101,7 +101,7 @@ async function fetchOrganization(
 }
 
 function useOrganizationClient() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
   if (client === null) {
     throw new Error("Auth client is not available.");
   }

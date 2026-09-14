@@ -1,24 +1,19 @@
 /* vortex-allow-color-file: transactional email template — email clients require literal colors; CSS variables and Tailwind tokens are not supported in email HTML. */
-/**
- * Seal transactional email shell.
- *
- * CORE-FIRST: layout + brand theming come from `@vortexnyc/email`.
- * Seal only supplies product brand tokens and optional subtitle / footer
- * copy that document templates still pass. Auth mail (verify / reset /
- * org invite) is rendered by `@vortexnyc/auth` Better Auth drafts — not here.
- */
 import {
-  createEmailBrand,
-  EmailHeading,
-  EmailLayout as CoreEmailLayout,
-  EmailText,
-} from "@vortexnyc/email";
+  Body,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
 import type { ReactNode } from "react";
 
-import { email } from "../styles.js";
+import { containers, email, fonts, surfaces, text } from "../styles.js";
 
-/** Seal product brand for transactional document emails. */
-export const sealEmailBrand = createEmailBrand({
+const sealEmailBrand = {
   name: "Seal",
   logoUrl: "https://app.seal.so/seal-logo-email.png",
   logoWidth: 36,
@@ -28,9 +23,8 @@ export const sealEmailBrand = createEmailBrand({
   textColor: email.foreground,
   mutedColor: email.mutedForeground,
   borderColor: email.border,
-  fontFamily:
-    '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-});
+  fontFamily: fonts.sans,
+} as const;
 
 interface EmailLayoutProps {
   preview: string;
@@ -39,11 +33,6 @@ interface EmailLayoutProps {
   footerText?: string;
 }
 
-/**
- * Product-facing adapter over Core `EmailLayout`.
- * Keeps the existing subtitle / footerText props so document templates
- * do not churn while the shell is owned by Core.
- */
 export function EmailLayout({
   preview,
   subtitle,
@@ -51,11 +40,29 @@ export function EmailLayout({
   footerText,
 }: EmailLayoutProps) {
   return (
-    <CoreEmailLayout brand={sealEmailBrand} preview={preview}>
-      <EmailHeading>{subtitle}</EmailHeading>
-      {children}
-      {footerText ? <EmailText muted>{footerText}</EmailText> : null}
-    </CoreEmailLayout>
+    <Html lang="en">
+      <Head />
+      <Preview>{preview}</Preview>
+      <Body
+        style={{
+          ...containers.outer,
+          backgroundColor: sealEmailBrand.backgroundColor,
+          fontFamily: sealEmailBrand.fontFamily,
+        }}
+      >
+        <Container style={containers.card}>
+          <Section style={{ marginBottom: "24px" }}>
+            <Heading as="h1" style={text.heading}>
+              {subtitle}
+            </Heading>
+          </Section>
+          {children}
+          {footerText ? (
+            <Text style={surfaces.footer}>{footerText}</Text>
+          ) : null}
+        </Container>
+      </Body>
+    </Html>
   );
 }
 

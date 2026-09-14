@@ -10,8 +10,8 @@ import {
   subscriptions,
   user,
 } from "../global/schema.js";
-import type { Variables } from "../platform/types.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
+import type { Variables } from "../platform/types.js";
 
 const emailPreferencesSchema = z.object({
   enabled: z.boolean().default(true),

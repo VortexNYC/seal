@@ -1,7 +1,7 @@
+import type { member, organization } from "../global/schema.js";
 import type { createAuth } from "./auth.js";
 import type { McpAccessToken } from "./mcp-auth.js";
 import type { SessionUser } from "./session.js";
-import type { member, organization } from "../global/schema.js";
 
 export type Variables = {
   auth: ReturnType<typeof createAuth>;

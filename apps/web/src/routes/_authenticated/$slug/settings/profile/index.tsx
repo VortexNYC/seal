@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - General
  *
- * User profile, email, and account management via @vortexnyc/better-auth-ui.
+ * User profile, email, and account management via @vortex-api/better-auth-ui.
  * Route: /{slug}/settings/profile/ (index)
  */
 import {
@@ -11,10 +11,10 @@ import {
   ChangePasswordForm,
   DeleteAccountForm,
   UserProfileForm,
-} from "@vortexnyc/better-auth-ui";
+} from "@vortex-api/better-auth-ui";
 import { toast } from "sonner";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 function resolveAppOrigin(): string {
   const configured = import.meta.env.VITE_APP_URL;
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
 );
 
 function ProfileSettings() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
 
   if (client === null) {
     return <p className="text-center text-sm">Auth client not configured.</p>;

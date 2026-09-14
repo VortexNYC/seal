@@ -3,8 +3,8 @@ import {
   type InputNumberFormatProps,
   unformat,
 } from "@react-input/number-format";
-import { fromMajorUnits } from "@vortexnyc/money";
 
+import { fromMajorUnits } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { Input } from "./input";
