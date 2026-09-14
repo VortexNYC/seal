@@ -7,6 +7,13 @@
  * Route: /{slug}/templates
  */
 
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
+import { Input, Textarea } from "@cloudflare/kumo/components/input";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Table } from "@cloudflare/kumo/components/table";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
@@ -38,51 +45,7 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
@@ -231,7 +194,7 @@ function TemplatesList({
     <Button
       variant="ghost"
       onClick={() => onSortChange(field)}
-      className="h-auto p-0 hover:bg-transparent"
+      className="h-auto p-0"
     >
       <span className="font-medium">{label}</span>
       {sortField === field &&
@@ -278,58 +241,59 @@ function TemplatesList({
           {viewMode === "table" ? (
             <div className="rounded-lg border">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Preview</TableHead>
-                    <TableHead>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head className="w-[100px]">Preview</Table.Head>
+                    <Table.Head>
                       <SortHeader field="name" label="Name" />
-                    </TableHead>
-                    <TableHead>
+                    </Table.Head>
+                    <Table.Head>
                       <SortHeader field="createdAt" label="Created" />
-                    </TableHead>
-                    <TableHead>
+                    </Table.Head>
+                    <Table.Head>
                       <SortHeader field="useCount" label="Times Used" />
-                    </TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    </Table.Head>
+                    <Table.Head className="text-right">Actions</Table.Head>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {/* Folder rows (shown above templates, not paginated) */}
                   {!searchQuery.trim() &&
                     subfolders?.map((folder) => (
-                      <TableRow
+                      <Table.Row
                         key={folder.id}
-                        className="hover:bg-muted/50 cursor-pointer"
+                        className="hover:bg-kumo-elevated/50 cursor-pointer"
                         onClick={() => onFolderNavigate(folder.publicId)}
                       >
-                        <TableCell>
-                          <div className="bg-muted border-border flex h-20 w-16 items-center justify-center rounded border">
-                            <FolderIcon className="text-muted-foreground h-5 w-5" />
+                        <Table.Cell>
+                          <div className="bg-kumo-elevated border-kumo-line flex h-20 w-16 items-center justify-center rounded border">
+                            <FolderIcon className="text-kumo-secondary h-5 w-5" />
                           </div>
-                        </TableCell>
-                        <TableCell>
+                        </Table.Cell>
+                        <Table.Cell>
                           <p className="font-medium">{folder.name}</p>
-                          <p className="text-muted-foreground text-xs">
-                            Folder
-                          </p>
-                        </TableCell>
-                        <TableCell>
+                          <p className="text-kumo-secondary text-xs">Folder</p>
+                        </Table.Cell>
+                        <Table.Cell>
                           <div className="text-sm">
                             <p>{formatDate(folder.createdAt)}</p>
                           </div>
-                        </TableCell>
-                        <TableCell>
+                        </Table.Cell>
+                        <Table.Cell>
                           <Badge variant="outline" className="text-xs">
                             Folder
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right" />
-                      </TableRow>
+                        </Table.Cell>
+                        <Table.Cell className="text-right" />
+                      </Table.Row>
                     ))}
                   {paginatedTemplates.map((template) => (
-                    <TableRow key={template._id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="bg-muted border-border flex h-20 w-16 items-center justify-center overflow-hidden rounded border">
+                    <Table.Row
+                      key={template._id}
+                      className="hover:bg-kumo-elevated/50"
+                    >
+                      <Table.Cell>
+                        <div className="bg-kumo-elevated border-kumo-line flex h-20 w-16 items-center justify-center overflow-hidden rounded border">
                           {template.thumbnailDataUrl ? (
                             <img
                               src={template.thumbnailDataUrl}
@@ -337,84 +301,85 @@ function TemplatesList({
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <FileTextIcon className="text-muted-foreground h-8 w-8" />
+                            <FileTextIcon className="text-kumo-secondary h-8 w-8" />
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
+                      </Table.Cell>
+                      <Table.Cell>
                         <div>
                           <p className="font-medium">{template.name}</p>
                           {template.description && (
-                            <p className="text-muted-foreground line-clamp-1 text-sm">
+                            <p className="text-kumo-secondary line-clamp-1 text-sm">
                               {template.description}
                             </p>
                           )}
                           {template.pageCount != null &&
                             template.pageCount > 0 && (
-                              <p className="text-muted-foreground mt-1 text-xs">
+                              <p className="text-kumo-secondary mt-1 text-xs">
                                 {template.pageCount}{" "}
                                 {template.pageCount === 1 ? "page" : "pages"}
                               </p>
                             )}
                         </div>
-                      </TableCell>
-                      <TableCell>
+                      </Table.Cell>
+                      <Table.Cell>
                         <div className="text-sm">
                           <p>{formatDate(template.createdAt)}</p>
-                          <p className="text-muted-foreground">
+                          <p className="text-kumo-secondary">
                             {formatBytes(template.fileSize)}
                           </p>
                         </div>
-                      </TableCell>
-                      <TableCell>
+                      </Table.Cell>
+                      <Table.Cell>
                         <span className="text-sm font-medium">
                           {template.useCount}
                         </span>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </Table.Cell>
+                      <Table.Cell className="text-right">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenu.Trigger>
                             <Button
                               variant="ghost"
-                              size="icon"
+                              shape="square"
+                              size="sm"
                               className="h-8 w-8"
                               aria-label={`Template actions for ${template.name}`}
                             >
                               <MoreVerticalIcon className="h-4 w-4" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content align="end">
+                            <DropdownMenu.Item
                               onClick={() => onUseTemplate(template)}
                             >
                               <CopyIcon className="mr-2 h-4 w-4" />
                               Use Template
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
                               onClick={() => onEditTemplate(template)}
                             >
                               <PencilIcon className="mr-2 h-4 w-4" />
                               Edit Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
                               onClick={() => onMoveToFolder(template._id)}
                             >
                               <FolderInputIcon className="mr-2 h-4 w-4" />
                               Move to Folder
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
                               onClick={() => onDeleteTemplate(template)}
-                              className="text-destructive"
+                              variant="danger"
                             >
                               <TrashIcon className="mr-2 h-4 w-4" />
                               Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </TableBody>
+                </Table.Body>
               </Table>
             </div>
           ) : (
@@ -423,117 +388,120 @@ function TemplatesList({
               {/* Folder cards (shown above templates when not searching) */}
               {!searchQuery.trim() &&
                 subfolders?.map((folder) => (
-                  <Card
+                  <LayerCard
                     key={folder.id}
-                    className="hover:bg-secondary cursor-pointer transition-colors duration-200"
+                    className="hover:bg-kumo-elevated/50 cursor-pointer transition-colors duration-200"
                     onClick={() => onFolderNavigate(folder.publicId)}
                   >
-                    <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
-                      <FolderIcon className="text-muted-foreground h-12 w-12" />
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <FolderIcon className="h-4 w-4 shrink-0" />
-                        <span className="line-clamp-2">{folder.name}</span>
-                      </CardTitle>
-                      <CardDescription>Folder</CardDescription>
-                    </CardHeader>
-                  </Card>
+                    <LayerCard.Primary className="p-0">
+                      <div className="bg-kumo-elevated/50 flex h-32 w-full items-center justify-center border-b">
+                        <FolderIcon className="text-kumo-secondary h-12 w-12" />
+                      </div>
+                      <div className="p-4">
+                        <p className="flex items-center gap-2 text-sm font-medium">
+                          <FolderIcon className="h-4 w-4 shrink-0" />
+                          <span className="line-clamp-2">{folder.name}</span>
+                        </p>
+                        <p className="text-kumo-secondary text-sm">Folder</p>
+                      </div>
+                    </LayerCard.Primary>
+                  </LayerCard>
                 ))}
               {paginatedTemplates.map((template) => (
-                <Card
+                <LayerCard
                   key={template._id}
                   className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
                 >
-                  {template.thumbnailDataUrl && (
-                    <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
-                      <img
-                        src={template.thumbnailDataUrl}
-                        alt={`${template.name} thumbnail`}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
-                  )}
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileTextIcon className="text-muted-foreground h-5 w-5" />
-                        <CardTitle className="truncate text-base">
-                          {template.name}
-                        </CardTitle>
+                  <LayerCard.Primary className="p-0">
+                    {template.thumbnailDataUrl && (
+                      <div className="bg-kumo-elevated flex h-32 w-full items-center justify-center overflow-hidden border-b">
+                        <img
+                          src={template.thumbnailDataUrl}
+                          alt={`${template.name} thumbnail`}
+                          className="max-h-full max-w-full object-contain"
+                        />
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            aria-label={`Template actions for ${template.name}`}
-                          >
-                            <MoreVerticalIcon className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => onUseTemplate(template)}
-                          >
-                            <CopyIcon className="mr-2 h-4 w-4" />
-                            Use Template
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onEditTemplate(template)}
-                          >
-                            <PencilIcon className="mr-2 h-4 w-4" />
-                            Edit Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onMoveToFolder(template._id)}
-                          >
-                            <FolderInputIcon className="mr-2 h-4 w-4" />
-                            Move to Folder
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onDeleteTemplate(template)}
-                            className="text-destructive"
-                          >
-                            <TrashIcon className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    {template.description && (
-                      <CardDescription className="line-clamp-2">
-                        {template.description}
-                      </CardDescription>
                     )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileTextIcon className="text-kumo-secondary h-5 w-5" />
+                          <p className="truncate text-base font-medium">
+                            {template.name}
+                          </p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenu.Trigger>
+                            <Button
+                              variant="ghost"
+                              shape="square"
+                              size="sm"
+                              className="h-8 w-8"
+                              aria-label={`Template actions for ${template.name}`}
+                            >
+                              <MoreVerticalIcon className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content align="end">
+                            <DropdownMenu.Item
+                              onClick={() => onUseTemplate(template)}
+                            >
+                              <CopyIcon className="mr-2 h-4 w-4" />
+                              Use Template
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              onClick={() => onEditTemplate(template)}
+                            >
+                              <PencilIcon className="mr-2 h-4 w-4" />
+                              Edit Details
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              onClick={() => onMoveToFolder(template._id)}
+                            >
+                              <FolderInputIcon className="mr-2 h-4 w-4" />
+                              Move to Folder
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              onClick={() => onDeleteTemplate(template)}
+                              variant="danger"
+                            >
+                              <TrashIcon className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu>
+                      </div>
+                      {template.description && (
+                        <p className="text-kumo-secondary line-clamp-2 text-sm">
+                          {template.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2 p-4 pt-0">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Created</span>
+                        <span className="text-kumo-secondary">Created</span>
                         <span>{formatDate(template.createdAt)}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Times Used
-                        </span>
+                        <span className="text-kumo-secondary">Times Used</span>
                         <span className="font-medium">{template.useCount}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Pages</span>
+                        <span className="text-kumo-secondary">Pages</span>
                         <span>{template.pageCount ?? "-"}</span>
                       </div>
                     </div>
-                    <Button
-                      className="mt-4 w-full"
-                      onClick={() => onUseTemplate(template)}
-                    >
-                      <CopyIcon className="mr-2 h-4 w-4" />
-                      Use Template
-                    </Button>
-                  </CardContent>
-                </Card>
+                    <div className="p-4 pt-0">
+                      <Button
+                        className="w-full"
+                        onClick={() => onUseTemplate(template)}
+                      >
+                        <CopyIcon className="mr-2 h-4 w-4" />
+                        Use Template
+                      </Button>
+                    </div>
+                  </LayerCard.Primary>
+                </LayerCard>
               ))}
             </div>
           )}
@@ -541,7 +509,7 @@ function TemplatesList({
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-kumo-secondary text-sm">
                 Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
                 {Math.min(currentPage * ITEMS_PER_PAGE, sortedTemplates.length)}{" "}
                 of {sortedTemplates.length} templates
@@ -563,7 +531,7 @@ function TemplatesList({
                     (page) => (
                       <Button
                         key={page}
-                        variant={page === currentPage ? "default" : "outline"}
+                        variant={page === currentPage ? "primary" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(page)}
                         className="h-8 w-8 p-0"
@@ -799,20 +767,22 @@ function TemplatesPage() {
         <div className="bg-card/60 flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3">
           {/* Search */}
           <div className="relative max-w-sm flex-1">
-            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <SearchIcon className="text-kumo-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search templates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              aria-label="Search templates"
             />
           </div>
 
           {/* View mode toggle */}
-          <div className="bg-background flex items-center gap-1 rounded-md border">
+          <div className="bg-kumo-base flex items-center gap-1 rounded-md border">
             <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
-              size="icon"
+              variant={viewMode === "table" ? "primary" : "ghost"}
+              shape="square"
+              size="sm"
               className="h-9 w-9"
               aria-label="Table view"
               onClick={() => setViewMode("table")}
@@ -820,8 +790,9 @@ function TemplatesPage() {
               <LayoutListIcon className="h-4 w-4" />
             </Button>
             <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="icon"
+              variant={viewMode === "grid" ? "primary" : "ghost"}
+              shape="square"
+              size="sm"
               className="h-9 w-9"
               aria-label="Grid view"
               onClick={() => setViewMode("grid")}
@@ -832,23 +803,23 @@ function TemplatesPage() {
         </div>
 
         {/* Info card */}
-        <Card className="border-dashed">
-          <CardContent className="py-4">
+        <LayerCard className="border-dashed">
+          <LayerCard.Primary className="py-4">
             <div className="flex items-start gap-3">
-              <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
+              <FileTextIcon className="text-kumo-secondary mt-0.5 h-5 w-5" />
               <div>
                 <p className="text-sm font-medium">
                   Templates save time on recurring documents
                 </p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-kumo-secondary text-sm">
                   To create a template, prepare a document with signature
                   fields, then click "Save as Template" from the document
                   actions menu.
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </LayerCard.Primary>
+        </LayerCard>
 
         {/* Templates List */}
         <Suspense
@@ -856,19 +827,19 @@ function TemplatesPage() {
           fallback={
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="bg-muted h-32" />
-                  <CardHeader>
-                    <div className="bg-muted h-4 w-3/4 rounded" />
-                    <div className="bg-muted mt-2 h-3 w-1/2 rounded" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="bg-muted h-3 rounded" />
-                      <div className="bg-muted h-3 rounded" />
+                <LayerCard key={i} className="animate-pulse">
+                  <LayerCard.Primary className="p-0">
+                    <div className="bg-kumo-elevated h-32" />
+                    <div className="space-y-2 p-4">
+                      <div className="bg-kumo-elevated h-4 w-3/4 rounded" />
+                      <div className="bg-kumo-elevated mt-2 h-3 w-1/2 rounded" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="space-y-2 p-4 pt-0">
+                      <div className="bg-kumo-elevated h-3 rounded" />
+                      <div className="bg-kumo-elevated h-3 rounded" />
+                    </div>
+                  </LayerCard.Primary>
+                </LayerCard>
               ))}
             </div>
           }
@@ -890,31 +861,25 @@ function TemplatesPage() {
       </div>
 
       {/* Use Template Dialog */}
-      <Dialog
+      <Dialog.Root
         open={useTemplateDialog.open}
         onOpenChange={(open) => setUseTemplateDialog({ open, template: null })}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Document from Template</DialogTitle>
-            <DialogDescription>
-              Create a new document using "{useTemplateDialog.template?.name}
-              ". The new document will have all the signature fields from the
-              template.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="documentName">Document Name</Label>
-              <Input
-                id="documentName"
-                value={newDocumentName}
-                onChange={(e) => setNewDocumentName(e.target.value)}
-                placeholder="Enter document name..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
+        <Dialog size="sm" className="p-6">
+          <Dialog.Title>Create Document from Template</Dialog.Title>
+          <Dialog.Description>
+            Create a new document using "{useTemplateDialog.template?.name}
+            ". The new document will have all the signature fields from the
+            template.
+          </Dialog.Description>
+          <Input
+            id="documentName"
+            label="Document Name"
+            value={newDocumentName}
+            onChange={(e) => setNewDocumentName(e.target.value)}
+            placeholder="Enter document name..."
+          />
+          <div className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() =>
@@ -927,44 +892,38 @@ function TemplatesPage() {
             <Button onClick={handleConfirmUseTemplate} disabled={isCreating}>
               {isCreating ? "Creating..." : "Create Document"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
       {/* Edit Template Dialog */}
-      <Dialog
+      <Dialog.Root
         open={editTemplateDialog.open}
         onOpenChange={(open) => setEditTemplateDialog({ open, template: null })}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Template</DialogTitle>
-            <DialogDescription>
-              Update the template name and description.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="editName">Name</Label>
-              <Input
-                id="editName"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Template name..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editDescription">Description (optional)</Label>
-              <Textarea
-                id="editDescription"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Describe this template..."
-                rows={3}
-              />
-            </div>
+        <Dialog size="sm" className="p-6">
+          <Dialog.Title>Edit Template</Dialog.Title>
+          <Dialog.Description>
+            Update the template name and description.
+          </Dialog.Description>
+          <div className="space-y-4">
+            <Input
+              id="editName"
+              label="Name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Template name..."
+            />
+            <Textarea
+              id="editDescription"
+              label="Description (optional)"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Describe this template..."
+              rows={3}
+            />
           </div>
-          <DialogFooter>
+          <div className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() =>
@@ -980,37 +939,40 @@ function TemplatesPage() {
             >
               {isEditing ? "Saving..." : "Save Changes"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      <Dialog.Root
+        role="alertdialog"
         open={deleteConfirmDialog.open}
         onOpenChange={(open) =>
           setDeleteConfirmDialog({ open, template: null })
         }
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "
-              {deleteConfirmDialog.template?.name}"? This action cannot be
-              undone. Documents created from this template will not be affected.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteTemplate}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        <Dialog size="sm" className="p-6">
+          <Dialog.Title>Delete Template</Dialog.Title>
+          <Dialog.Description>
+            Are you sure you want to delete "
+            {deleteConfirmDialog.template?.name}"? This action cannot be undone.
+            Documents created from this template will not be affected.
+          </Dialog.Description>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setDeleteConfirmDialog({ open: false, template: null })
+              }
             >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDeleteTemplate}>
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
       <MoveToFolderDialog
         organizationSlug={slug}
