@@ -1,9 +1,11 @@
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
+import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -31,16 +33,8 @@ import {
 import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
-import { Calendar } from "../ui/calendar";
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 
 const MONEY_ROUNDING = "half-up" as const;
 const DRAFT_CURRENCY = "USD";
@@ -600,22 +594,26 @@ function PaymentTypeSection({
       <Label>Payment Type</Label>
       <Select
         value={draft.paymentType}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "paymentType",
             parseSelectValue(value, PAYMENT_TYPES) ?? draft.paymentType
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            one_time: "One-time Payment",
+            recurring: "Recurring",
+            installments: "Installments",
+            deposit_balance: "Deposit + Balance",
+          })[value as PaymentType] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="one_time">One-time Payment</SelectItem>
-          <SelectItem value="recurring">Recurring</SelectItem>
-          <SelectItem value="installments">Installments</SelectItem>
-          <SelectItem value="deposit_balance">Deposit + Balance</SelectItem>
-        </SelectContent>
+        <Select.Option value="one_time">One-time Payment</Select.Option>
+        <Select.Option value="recurring">Recurring</Select.Option>
+        <Select.Option value="installments">Installments</Select.Option>
+        <Select.Option value="deposit_balance">Deposit + Balance</Select.Option>
       </Select>
     </div>
   );
@@ -633,23 +631,28 @@ function DueDateSection({
       <Label>Due Date</Label>
       <Select
         value={draft.dueDateTerms}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "dueDateTerms",
             parseSelectValue(value, DUE_DATE_TERMS) ?? draft.dueDateTerms
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            on_receipt: "Due on receipt",
+            net_15: "Net 15",
+            net_30: "Net 30",
+            net_60: "Net 60",
+            custom: "Custom",
+          })[value as DueDateTerms] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="on_receipt">Due on receipt</SelectItem>
-          <SelectItem value="net_15">Net 15</SelectItem>
-          <SelectItem value="net_30">Net 30</SelectItem>
-          <SelectItem value="net_60">Net 60</SelectItem>
-          <SelectItem value="custom">Custom</SelectItem>
-        </SelectContent>
+        <Select.Option value="on_receipt">Due on receipt</Select.Option>
+        <Select.Option value="net_15">Net 15</Select.Option>
+        <Select.Option value="net_30">Net 30</Select.Option>
+        <Select.Option value="net_60">Net 60</Select.Option>
+        <Select.Option value="custom">Custom</Select.Option>
       </Select>
       {draft.dueDateTerms === "custom" && (
         <CustomDueDateControls draft={draft} setDraftField={setDraftField} />
@@ -738,10 +741,10 @@ function CustomDueDatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
+        <DatePicker
           mode="single"
           selected={draft.customDueDate}
-          onSelect={(date) => setDraftField("customDueDate", date)}
+          onChange={(date) => setDraftField("customDueDate", date)}
         />
       </PopoverContent>
     </Popover>
@@ -775,22 +778,26 @@ function RecurringScheduleSection({
         />
         <Select
           value={draft.recurringInterval}
-          onValueChange={(value) =>
+          onValueChange={(value) => {
+            if (!value) return;
             setDraftField(
               "recurringInterval",
               parseSelectValue(value, RECURRING_INTERVALS) ??
                 draft.recurringInterval
-            )
+            );
+          }}
+          className="w-32"
+          renderValue={(value) =>
+            ({
+              week: "Week(s)",
+              month: "Month(s)",
+              year: "Year(s)",
+            })[value as RecurringInterval] ?? value
           }
         >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Week(s)</SelectItem>
-            <SelectItem value="month">Month(s)</SelectItem>
-            <SelectItem value="year">Year(s)</SelectItem>
-          </SelectContent>
+          <Select.Option value="week">Week(s)</Select.Option>
+          <Select.Option value="month">Month(s)</Select.Option>
+          <Select.Option value="year">Year(s)</Select.Option>
         </Select>
       </div>
       <RecurringEndConditionSection
@@ -813,22 +820,25 @@ function RecurringEndConditionSection({
       <Label>End Condition</Label>
       <Select
         value={draft.recurringEndCondition}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "recurringEndCondition",
             parseSelectValue(value, RECURRING_END_CONDITIONS) ??
               draft.recurringEndCondition
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            never: "Never (until cancelled)",
+            after_count: "After # payments",
+            on_date: "On specific date",
+          })[value as RecurringEndCondition] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="never">Never (until cancelled)</SelectItem>
-          <SelectItem value="after_count">After # payments</SelectItem>
-          <SelectItem value="on_date">On specific date</SelectItem>
-        </SelectContent>
+        <Select.Option value="never">Never (until cancelled)</Select.Option>
+        <Select.Option value="after_count">After # payments</Select.Option>
+        <Select.Option value="on_date">On specific date</Select.Option>
       </Select>
       {draft.recurringEndCondition === "after_count" && (
         <div className="flex items-center gap-2">
@@ -914,21 +924,23 @@ function InstallmentIntervalSelect({
       <Label>Interval</Label>
       <Select
         value={draft.installmentsInterval}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "installmentsInterval",
             parseSelectValue(value, INSTALLMENT_INTERVALS) ??
               draft.installmentsInterval
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            week: "Weekly",
+            month: "Monthly",
+          })[value as InstallmentInterval] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="week">Weekly</SelectItem>
-          <SelectItem value="month">Monthly</SelectItem>
-        </SelectContent>
+        <Select.Option value="week">Weekly</Select.Option>
+        <Select.Option value="month">Monthly</Select.Option>
       </Select>
     </div>
   );
@@ -1074,20 +1086,22 @@ function LateFeeInputs({
         <Label className="text-xs">Type</Label>
         <Select
           value={draft.lateFeeType}
-          onValueChange={(value) =>
+          onValueChange={(value) => {
+            if (!value) return;
             setDraftField(
               "lateFeeType",
               parseSelectValue(value, LATE_FEE_TYPES) ?? draft.lateFeeType
-            )
+            );
+          }}
+          renderValue={(value) =>
+            ({
+              percentage: "Percentage",
+              fixed: "Fixed Amount",
+            })[value as LateFeeType] ?? value
           }
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="percentage">Percentage</SelectItem>
-            <SelectItem value="fixed">Fixed Amount</SelectItem>
-          </SelectContent>
+          <Select.Option value="percentage">Percentage</Select.Option>
+          <Select.Option value="fixed">Fixed Amount</Select.Option>
         </Select>
       </div>
       <LateFeeAmountInput draft={draft} setDraftField={setDraftField} />
@@ -1149,22 +1163,26 @@ function FeeHandlingSection({
       <Label>Platform Fee Handling</Label>
       <Select
         value={feeHandling}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "feeHandling",
             parseSelectValue(value, FEE_HANDLING) ?? feeHandling
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            absorb: "Absorb (you pay Seal's fee)",
+            pass_to_recipient: "Pass to recipient (added to invoice)",
+          })[value as FeeHandling] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="absorb">Absorb (you pay Seal's fee)</SelectItem>
-          <SelectItem value="pass_to_recipient">
-            Pass to recipient (added to invoice)
-          </SelectItem>
-        </SelectContent>
+        <Select.Option value="absorb">
+          Absorb (you pay Seal's fee)
+        </Select.Option>
+        <Select.Option value="pass_to_recipient">
+          Pass to recipient (added to invoice)
+        </Select.Option>
       </Select>
     </div>
   );
@@ -1254,22 +1272,26 @@ function TaxBehaviorSelect({
       <Label className="text-xs">Tax Behavior</Label>
       <Select
         value={draft.taxBehavior}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "taxBehavior",
             parseSelectValue(value, TAX_BEHAVIORS) ?? draft.taxBehavior
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            exclusive: "Exclusive (added on top)",
+            inclusive: "Inclusive (included in price)",
+          })[value as TaxBehavior] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="exclusive">Exclusive (added on top)</SelectItem>
-          <SelectItem value="inclusive">
-            Inclusive (included in price)
-          </SelectItem>
-        </SelectContent>
+        <Select.Option value="exclusive">
+          Exclusive (added on top)
+        </Select.Option>
+        <Select.Option value="inclusive">
+          Inclusive (included in price)
+        </Select.Option>
       </Select>
     </div>
   );
