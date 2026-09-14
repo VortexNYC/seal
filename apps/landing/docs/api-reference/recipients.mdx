@@ -1,0 +1,469 @@
+---
+title: Recipients API
+description: Manage document recipients with role-based access control
+---
+
+# Recipients API
+
+The Recipients API allows you to manage who can view, approve, and sign documents. Recipients are assigned roles that determine their permissions and actions within the signing workflow.
+
+## The Recipient Object
+
+### Attributes
+
+| Attribute      | Type   | Description                                                     |
+| -------------- | ------ | --------------------------------------------------------------- |
+| `id`           | string | Unique recipient identifier                                     |
+| `email`        | string | Recipient email address                                         |
+| `name`         | string | Recipient display name                                          |
+| `role`         | string | Role: `signer`, `approver`, or `viewer`                         |
+| `status`       | string | Status: `pending`, `viewed`, `signed`, `approved`, `declined`   |
+| `order`        | number | Signing order for sequential workflows (optional)               |
+| `viewed_at`    | string | ISO 8601 timestamp when recipient viewed document               |
+| `completed_at` | string | ISO 8601 timestamp when recipient signed/approved               |
+| `signing_url`  | string | Direct URL for recipient to sign (only in GET single recipient) |
+
+### Example Object
+
+```json
+{
+  "id": "rec_abc123",
+  "email": "john@example.com",
+  "name": "John Doe",
+  "role": "signer",
+  "status": "signed",
+  "order": 1,
+  "viewed_at": "2024-01-27T10:45:00Z",
+  "completed_at": "2024-01-27T11:00:00Z"
+}
+```
+
+## Recipient Roles
+
+| Role       | Can View | Can Approve | Can Sign | Description                                     |
+| ---------- | -------- | ----------- | -------- | ----------------------------------------------- |
+| `signer`   | ✓        | -           | ✓        | Must sign the document                          |
+| `approver` | ✓        | ✓           | -        | Must approve before signing can proceed         |
+| `viewer`   | ✓        | -           | -        | Can only view the document (no action required) |
+
+## Recipient Status Flow
+
+```
+pending → viewed → signed/approved
+            ↓
+        declined
+```
+
+| Status     | Description                               |
+| ---------- | ----------------------------------------- |
+| `pending`  | Recipient has not yet viewed the document |
+| `viewed`   | Recipient has opened the document         |
+| `signed`   | Signer has completed signing              |
+| `approved` | Approver has approved the document        |
+| `declined` | Recipient has declined to sign/approve    |
+
+## List Recipients
+
+Retrieve all recipients for a document.
+
+### Endpoint
+
+```
+GET /api/v1/recipients?document_id={documentId}
+```
+
+### Required Scope
+
+`seal:recipients:read`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
+
+const { data: recipients } = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "rec_abc123",
+      "email": "john@example.com",
+      "name": "John Doe",
+      "role": "signer",
+      "status": "signed",
+      "order": 1,
+      "viewed_at": "2024-01-27T10:45:00Z",
+      "completed_at": "2024-01-27T11:00:00Z"
+    },
+    {
+      "id": "rec_def456",
+      "email": "jane@example.com",
+      "name": "Jane Smith",
+      "role": "signer",
+      "status": "pending",
+      "order": 2
+    }
+  ]
+}
+```
+
+## Get Recipient
+
+Retrieve a single recipient by ID.
+
+### Endpoint
+
+```
+GET /api/v1/recipients/get?document_id={documentId}&id={id}
+```
+
+### Required Scope
+
+`seal:recipients:read`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://api.seal.nyc/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
+
+const recipient = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.seal.nyc/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "id": "rec_abc123",
+  "email": "john@example.com",
+  "name": "John Doe",
+  "role": "signer",
+  "status": "pending",
+  "order": 1,
+  "signing_url": "https://seal.nyc/sign/abc123xyz"
+}
+```
+
+<Callout type="info">
+  **Note**: The `signing_url` is only included when retrieving a single
+  recipient. This URL allows the recipient to access the document directly
+  without authentication.
+</Callout>
+
+## Add Recipient
+
+Add a new recipient to a document.
+
+### Endpoint
+
+```
+POST /api/v1/recipients?document_id={documentId}
+```
+
+### Required Scope
+
+`seal:recipients:write`
+
+### Request Body
+
+| Field     | Type   | Required | Description                              |
+| --------- | ------ | -------- | ---------------------------------------- |
+| `email`   | string | Yes      | Recipient email address                  |
+| `name`    | string | Yes      | Recipient display name                   |
+| `role`    | string | Yes      | Role: `signer`, `approver`, or `viewer`  |
+| `order`   | number | No       | Signing order (for sequential workflows) |
+| `message` | string | No       | Custom message for this recipient        |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email: "john@example.com",
+      name: "John Doe",
+      role: "signer",
+      order: 1,
+      message: "Please review and sign this agreement.",
+    }),
+  }
+);
+
+const recipient = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "name": "John Doe",
+    "role": "signer",
+    "order": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "rec_abc123",
+  "email": "john@example.com",
+  "name": "John Doe",
+  "role": "signer",
+  "status": "pending",
+  "order": 1
+}
+```
+
+## Update Recipient
+
+Update a recipient's information.
+
+### Endpoint
+
+```
+PUT /api/v1/recipients/update?document_id={documentId}&id={id}
+```
+
+### Required Scope
+
+`seal:recipients:write`
+
+### Request Body
+
+| Field   | Type   | Description         |
+| ------- | ------ | ------------------- |
+| `name`  | string | New recipient name  |
+| `email` | string | New recipient email |
+| `order` | number | New signing order   |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://api.seal.nyc/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  {
+    method: "PUT",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: "John Smith",
+      order: 2,
+    }),
+  }
+);
+
+const recipient = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X PUT "https://api.seal.nyc/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Smith",
+    "order": 2
+  }'
+```
+
+<Callout type="warn">
+  **Warning**: You cannot change a recipient's role or email after they have
+  viewed or signed the document. Create a new recipient instead.
+</Callout>
+
+## Remove Recipient
+
+Remove a recipient from a document.
+
+### Endpoint
+
+```
+DELETE /api/v1/recipients/delete?document_id={documentId}&id={id}
+```
+
+### Required Scope
+
+`seal:recipients:write`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://api.seal.nyc/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  }
+);
+
+const result = await response.json();
+// Returns { "deleted": true } with 200 on success
+```
+
+### cURL Example
+
+```bash
+curl -X DELETE "https://api.seal.nyc/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+<Callout type="warn">
+  **Warning**: You cannot remove a recipient who has already signed or approved
+  the document.
+</Callout>
+
+## Send Reminder
+
+Send a reminder email to a recipient.
+
+### Endpoint
+
+```
+POST /api/v1/recipients/remind?document_id={documentId}&id={id}
+```
+
+### Required Scope
+
+`seal:recipients:write`
+
+### Request Body
+
+| Field     | Type   | Required | Description             |
+| --------- | ------ | -------- | ----------------------- |
+| `message` | string | No       | Custom reminder message |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://api.seal.nyc/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: "Gentle reminder to review and sign the agreement.",
+    }),
+  }
+);
+
+const result = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.seal.nyc/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Gentle reminder to review and sign."
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "rec_abc123",
+  "reminder_sent": true,
+  "sent_at": "2024-01-27T14:00:00Z"
+}
+```
+
+<Callout type="info">
+  **Rate Limiting**: You can only send one reminder per recipient every 24 hours
+  to prevent spam.
+</Callout>
+
+## Sequential Signing
+
+Use the `order` field to enforce a signing sequence. Recipients with lower order numbers must complete their action before recipients with higher numbers receive the document.
+
+### Example
+
+```typescript
+// Add recipients in sequence
+await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_xxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    email: "ceo@example.com",
+    name: "CEO",
+    role: "approver",
+    order: 1, // Must approve first
+  }),
+});
+
+await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_xxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    email: "employee@example.com",
+    name: "Employee",
+    role: "signer",
+    order: 2, // Can only sign after CEO approves
+  }),
+});
+```
+
+## Next Steps
+
+- **[Documents API](/docs/api-reference/documents)** - Manage documents
+- **[Webhooks](/docs/webhooks)** - Receive notifications when recipients sign
+- **[Quick Start](/docs/getting-started/quick-start)** - Complete integration tutorial

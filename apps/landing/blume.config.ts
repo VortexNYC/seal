@@ -1,6 +1,33 @@
 import { defineConfig } from "blume";
 
 export default defineConfig({
-  title: "My Docs",
-  description: "Documentation powered by Blume.",
+  title: "Seal",
+  description: "Documentation for the Seal document signing platform.",
+
+  logo: {
+    text: "Seal",
+  },
+
+  navigation: {
+    tabs: [
+      { label: "Docs", path: "/" },
+      { label: "API Reference", path: "/reference" },
+    ],
+  },
+
+  openapi: {
+    enabled: true,
+    route: "/reference",
+    spec: "./openapi.yaml",
+  },
+
+  deployment: {
+    output: "static",
+    site: "https://seal.nyc",
+  },
+
+  seo: {
+    sitemap: true,
+    robots: true,
+  },
 });
