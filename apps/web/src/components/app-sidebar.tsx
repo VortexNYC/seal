@@ -63,7 +63,10 @@ type NavMainItem = {
   }[];
 };
 
-type AppSidebarProps = Omit<React.ComponentProps<typeof Sidebar>, "children"> & {
+type AppSidebarProps = Omit<
+  React.ComponentProps<typeof Sidebar>,
+  "children"
+> & {
   slug: string;
   organization: SidebarOrganization;
   permissions: PermissionSet | undefined;

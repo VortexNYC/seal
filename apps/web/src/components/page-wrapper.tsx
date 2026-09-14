@@ -1,9 +1,9 @@
 import { Button } from "@cloudflare/kumo/components/button";
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import { Separator } from "@cloudflare/kumo/primitives/separator";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 interface PageAction {
@@ -62,7 +62,7 @@ export function PageWrapper({
               headerCenter ? "lg:min-w-0" : "flex-1"
             )}
           >
-            <SidebarTrigger aria-label="Toggle Sidebar" />
+            <Sidebar.Trigger aria-label="Toggle Sidebar" />
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-semibold sm:text-lg">
