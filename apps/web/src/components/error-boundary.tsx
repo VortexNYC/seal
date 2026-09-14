@@ -1,15 +1,8 @@
-import { AlertTriangleIcon, HomeIcon, RefreshCwIcon } from "lucide-react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { ArrowClockwise, House, Warning } from "@phosphor-icons/react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
-
-import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -99,59 +92,60 @@ export function ErrorFallback({
   const isDev = import.meta.env.DEV;
 
   return (
-    <div className="bg-background flex min-h-svh items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <div className="bg-destructive/10 mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
-            <AlertTriangleIcon className="text-destructive size-8" />
+    <div className="bg-kumo-surface flex min-h-svh items-center justify-center p-4">
+      <LayerCard className="w-full max-w-lg">
+        <LayerCard.Primary className="text-center">
+          <div className="bg-kumo-danger/10 mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
+            <Warning className="text-kumo-danger size-8" />
           </div>
-          <CardTitle className="text-2xl">Something went wrong</CardTitle>
-          <CardDescription className="text-base">
+          <Text as="h2" size="lg" variant="heading">
+            Something went wrong
+          </Text>
+          <Text as="p" size="sm" variant="secondary">
             We're sorry, but something unexpected happened. Please try again or
             return to the home page.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </Text>
+        </LayerCard.Primary>
+        <LayerCard.Secondary className="space-y-3">
           {isDev && error && (
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-destructive mb-2 text-sm font-medium">
+            <div className="bg-kumo-elevated rounded-lg p-4">
+              <Text as="p" size="sm" variant="error" DANGEROUS_className="mb-2">
                 Error Details (Development Only):
-              </p>
-              <pre className="text-muted-foreground overflow-auto text-xs">
+              </Text>
+              <pre className="text-kumo-secondary overflow-auto text-xs">
                 {error.message}
               </pre>
               {error.stack && (
                 <details className="mt-2">
-                  <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs">
+                  <summary className="text-kumo-secondary hover:text-kumo-primary cursor-pointer text-xs">
                     Stack trace
                   </summary>
-                  <pre className="text-muted-foreground mt-2 overflow-auto text-xs">
+                  <pre className="text-kumo-secondary mt-2 overflow-auto text-xs">
                     {error.stack}
                   </pre>
                 </details>
               )}
             </div>
           )}
-        </CardContent>
-        <CardFooter className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            onClick={onReset}
-            variant="default"
-            className="w-full sm:w-auto"
-          >
-            <RefreshCwIcon className="size-4" />
-            Try Again
-          </Button>
-          <Button
-            onClick={onGoHome}
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            <HomeIcon className="size-4" />
-            Go to Home
-          </Button>
-        </CardFooter>
-      </Card>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              onClick={onReset}
+              className="w-full sm:w-auto"
+              icon={ArrowClockwise}
+            >
+              Try Again
+            </Button>
+            <Button
+              onClick={onGoHome}
+              variant="outline"
+              className="w-full sm:w-auto"
+              icon={House}
+            >
+              Go to Home
+            </Button>
+          </div>
+        </LayerCard.Secondary>
+      </LayerCard>
     </div>
   );
 }
