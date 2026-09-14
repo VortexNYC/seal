@@ -1,9 +1,9 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
-import { webhooks } from "../../global/schema.js";
+import { webhookDeliveries, webhooks } from "../../global/schema.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 
 const app = new OpenAPIHono<{
@@ -428,6 +428,62 @@ app.get("/event-types", async (c) => {
   ];
 
   return c.json(eventTypes);
+});
+
+app.get("/deliveries", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "webhooks:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const status = c.req.query("status");
+  const webhookId = c.req.query("webhook_id");
+  const limit = Math.min(
+    Math.max(parseInt(c.req.query("limit") ?? "50", 10), 1),
+    100
+  );
+  const offset = Math.max(parseInt(c.req.query("offset") ?? "0", 10), 0);
+
+  const conditions = [eq(webhookDeliveries.organizationId, organizationId)];
+  if (status) conditions.push(eq(webhookDeliveries.status, status));
+  if (webhookId) conditions.push(eq(webhookDeliveries.webhookId, webhookId));
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: webhookDeliveries.id,
+      webhookId: webhookDeliveries.webhookId,
+      eventId: webhookDeliveries.eventId,
+      eventType: webhookDeliveries.eventType,
+      status: webhookDeliveries.status,
+      attemptCount: webhookDeliveries.attemptCount,
+      maxAttempts: webhookDeliveries.maxAttempts,
+      responseStatus: webhookDeliveries.responseStatus,
+      responseBody: webhookDeliveries.responseBody,
+      lastError: webhookDeliveries.lastError,
+      nextRetryAt: webhookDeliveries.nextRetryAt,
+      deliveredAt: webhookDeliveries.deliveredAt,
+      createdAt: webhookDeliveries.createdAt,
+    })
+    .from(webhookDeliveries)
+    .where(and(...conditions))
+    .orderBy(desc(webhookDeliveries.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return c.json(
+    rows.map((row) => ({
+      ...row,
+      nextRetryAt: row.nextRetryAt?.toISOString() ?? null,
+      deliveredAt: row.deliveredAt?.toISOString() ?? null,
+      createdAt: row.createdAt?.toISOString() ?? null,
+    }))
+  );
 });
 
 export default app;

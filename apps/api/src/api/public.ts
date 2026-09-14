@@ -17,6 +17,7 @@ import {
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
 } from "../platform/email.js";
+import { emitWebhookEvent } from "../platform/webhook-events.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -700,6 +701,34 @@ app.openapi(submitRouteDef, async (c) => {
       }),
       createdAt: nowDate,
     });
+
+    if (input.status === "signed" || input.status === "approved") {
+      const emitPromise = emitWebhookEvent(c.env, {
+        organizationId: doc.organizationId,
+        eventType: "recipient.signed",
+        payload: {
+          documentId: doc.id,
+          publicId: doc.publicId,
+          recipientId: recipient.id,
+          name: recipient.name,
+          email: recipient.email,
+          status: input.status,
+          signedAt: nowDate.getTime(),
+        },
+      }).catch((err) => {
+        console.error("[webhooks] recipient.signed emit failed:", err);
+      });
+      try {
+        if (c.executionCtx?.waitUntil) {
+          c.executionCtx.waitUntil(emitPromise);
+        } else {
+          await emitPromise;
+        }
+      } catch {
+        await emitPromise;
+      }
+    }
+
     if (doc.allowDictateNextSigner) {
       const placeholderRows = await db
         .select()
@@ -756,6 +785,28 @@ app.openapi(submitRouteDef, async (c) => {
         }),
         createdAt: nowDate,
       });
+
+      const emitPromise = emitWebhookEvent(c.env, {
+        organizationId: doc.organizationId,
+        eventType: "document.completed",
+        payload: {
+          documentId: doc.id,
+          publicId: doc.publicId,
+          name: doc.name,
+          completedAt: nowDate.getTime(),
+        },
+      }).catch((err) => {
+        console.error("[webhooks] document.completed emit failed:", err);
+      });
+      try {
+        if (c.executionCtx?.waitUntil) {
+          c.executionCtx.waitUntil(emitPromise);
+        } else {
+          await emitPromise;
+        }
+      } catch {
+        await emitPromise;
+      }
 
       if (owner?.email) {
         const allRecipients = await db

@@ -10,7 +10,7 @@ export const organizationMiddleware = createMiddleware<{
   Variables: Variables;
 }>(async (c, next) => {
   const user = c.get("user");
-  const slug = c.req.param("slug");
+  const slug = c.req.param("organizationSlug") ?? c.req.param("slug");
   if (!user || !slug) {
     return c.json({ error: "Unauthorized" }, 401);
   }
@@ -25,6 +25,11 @@ export const organizationMiddleware = createMiddleware<{
   const org = rows[0];
   if (!org) {
     return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const apiToken = c.get("apiToken");
+  if (apiToken && apiToken.organizationId !== org.id) {
+    return c.json({ error: "Forbidden" }, 403);
   }
 
   const membershipRows = await db

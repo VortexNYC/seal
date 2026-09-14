@@ -1,0 +1,31 @@
+{
+  "name": "seal-cli",
+  "version": "0.1.0",
+  "description": "CLI for the Seal API",
+  "license": "MIT",
+  "bin": {
+    "seal": "./bin/seal.mjs"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "type": "module",
+  "scripts": {
+    "lint": "vp lint .",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "knip": "knip",
+    "knip:fix": "knip --fix --allow-remove-files"
+  },
+  "dependencies": {
+    "@seal/client": "workspace:*",
+    "tsx": "^4.20.5"
+  },
+  "devDependencies": {
+    "@seal/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

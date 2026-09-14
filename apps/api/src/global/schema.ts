@@ -5,6 +5,7 @@ import {
   real,
   sqliteTable,
   text,
+  unique,
 } from "drizzle-orm/sqlite-core";
 
 // -----------------------------------------------------------------------------
@@ -1157,5 +1158,82 @@ export const webhooks = sqliteTable(
   (table) => [
     index("webhooks_organizationId_idx").on(table.organizationId),
     index("webhooks_status_idx").on(table.status),
+  ]
+);
+
+export const webhookDeliveries = sqliteTable(
+  "webhook_deliveries",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    webhookId: text("webhook_id")
+      .notNull()
+      .references(() => webhooks.id, { onDelete: "cascade" }),
+    eventId: text("event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    payload: text("payload").notNull(),
+    status: text("status").notNull().default("pending"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(10),
+    nextRetryAt: integer("next_retry_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    lockedAt: integer("locked_at", { mode: "timestamp_ms" }),
+    lastError: text("last_error"),
+    responseStatus: integer("response_status"),
+    responseBody: text("response_body"),
+    deliveredAt: integer("delivered_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("webhookDeliveries_organizationId_idx").on(table.organizationId),
+    index("webhookDeliveries_webhookId_idx").on(table.webhookId),
+    index("webhookDeliveries_status_nextRetryAt_idx").on(
+      table.status,
+      table.nextRetryAt
+    ),
+    index("webhookDeliveries_eventId_webhookId_idx").on(
+      table.eventId,
+      table.webhookId
+    ),
+    unique("webhookDeliveries_webhookId_eventId_unique").on(
+      table.webhookId,
+      table.eventId
+    ),
+  ]
+);
+
+export const apiTokens = sqliteTable(
+  "api_tokens",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    scopes: text("scopes").notNull().default("[]"),
+    lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("apiTokens_organizationId_idx").on(table.organizationId),
+    index("apiTokens_userId_idx").on(table.userId),
+    index("apiTokens_tokenHash_idx").on(table.tokenHash),
   ]
 );

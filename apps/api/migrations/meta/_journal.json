@@ -176,6 +176,20 @@
       "when": 1789085009461,
       "tag": "0024_round_mister_fear",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1789423372039,
+      "tag": "0025_workable_junta",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1789424311243,
+      "tag": "0026_tired_shiver_man",
+      "breakpoints": true
     }
   ]
 }
