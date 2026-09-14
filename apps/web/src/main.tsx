@@ -1,7 +1,9 @@
+import { LinkProvider, type LinkComponentProps } from "@cloudflare/kumo/utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { createRouter, Link, RouterProvider } from "@tanstack/react-router";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
+import { forwardRef, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
@@ -21,6 +23,23 @@ const queryClient = new QueryClient({
   },
 });
 
+const AppLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(
+  ({ to, ...rest }, ref) => {
+    const { pathname, search } = useMemo(() => {
+      const resolved = to ? (to.startsWith("/") ? to : `/${to}`) : "/";
+      const url = new URL(resolved, "http://localhost");
+      const searchRecord: Record<string, string> = {};
+      url.searchParams.forEach((value, key) => {
+        searchRecord[key] = value;
+      });
+      return { pathname: `${url.pathname}${url.hash}`, search: searchRecord };
+    }, [to]);
+
+    return <Link ref={ref} to={pathname} search={search} {...rest} />;
+  }
+);
+AppLink.displayName = "AppLink";
+
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",
@@ -35,7 +54,7 @@ const router = createRouter({
     return (
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <LinkProvider component={AppLink}>{children}</LinkProvider>
         </QueryClientProvider>
       </ThemeProvider>
     );

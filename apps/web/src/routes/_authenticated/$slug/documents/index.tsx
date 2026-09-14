@@ -1578,7 +1578,6 @@ function DocumentsPage() {
           organizationSlug={slug}
           folderId={folderId}
           type="document"
-          onNavigate={handleFolderSelect}
         />
       }
     >

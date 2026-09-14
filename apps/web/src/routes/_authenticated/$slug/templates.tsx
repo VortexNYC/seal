@@ -762,7 +762,6 @@ function TemplatesPage() {
           organizationSlug={slug}
           folderId={folderId}
           type="template"
-          onNavigate={handleFolderSelect}
         />
       }
     >
