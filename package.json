@@ -2,7 +2,7 @@
   "name": "vortex-sign",
   "version": "0.0.1",
   "private": true,
-  "description": "Seal by Vortex — open-source, agent-native e-signature platform",
+  "description": "Seal — open-source, agent-native e-signature platform",
   "type": "module",
   "scripts": {
     "dev": "vp run -r dev --filter @vortex/sign-api --filter @seal/web --filter @seal/landing",

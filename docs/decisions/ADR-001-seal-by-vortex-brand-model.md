@@ -1,4 +1,4 @@
-# ADR-001: Seal by Vortex brand model
+# ADR-001: Seal brand model
 
 ## Status
 
@@ -24,7 +24,7 @@ Key questions:
 
 ## Decision
 
-The product is **Seal by Vortex**.
+The product is **Seal**.
 
 - **Consumer-facing name and domain:** Seal (`seal.nyc`)
 - **Platform attribution:** "by Vortex" — the landing, README, and product copy
@@ -37,7 +37,7 @@ The product is **Seal by Vortex**.
 ## Consequences
 
 - `README.md`, OpenAPI metadata, and AGENTS docs refer to the product as
-  "Seal by Vortex"
+  "Seal"
 - The landing and product UI use "Seal" as the primary brand, with "by Vortex"
   as secondary attribution where appropriate
 - Vortex Auth / Vortex Payments / Vortex Connect surfaces keep their Vortex

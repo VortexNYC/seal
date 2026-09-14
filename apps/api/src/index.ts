@@ -110,7 +110,7 @@ app.use(async (c, next) => {
 app.doc("/openapi.json", {
   openapi: "3.0.0",
   info: {
-    title: "Seal by Vortex API",
+    title: "Seal API",
     version: "0.0.1",
     description: "Agent-native e-signature platform on Cloudflare Workers.",
   },
