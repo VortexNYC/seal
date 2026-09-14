@@ -1,3 +1,9 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { CheckIcon, Loader2Icon, UsersIcon } from "lucide-react";
@@ -10,26 +16,6 @@ import { addRecipients, getContacts } from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 const RECIPIENT_TABS = ["team", "outsider"] as const;
 const RECIPIENT_ROLES = ["signer", "viewer", "approver"] as const;
@@ -180,30 +166,33 @@ export function AddRecipientDialog({
     (activeTab === "outsider" && (!email || !email.includes("@")));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Recipient</DialogTitle>
-          <DialogDescription>
-            Add a person who needs to take action on this document.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog size="sm" className="p-6">
+        <Dialog.Title>Add Recipient</Dialog.Title>
+        <Dialog.Description>
+          Add a person who needs to take action on this document.
+        </Dialog.Description>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs
+            tabs={[
+              {
+                value: "team",
+                label: `Team${
+                  eligibleMembers ? ` (${eligibleMembers.length})` : ""
+                }`,
+              },
+              { value: "outsider", label: "External" },
+            ]}
             value={activeTab}
             onValueChange={(v) =>
               setActiveTab(parseSelectValue(v, RECIPIENT_TABS) ?? activeTab)
             }
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="team">
-                Team{eligibleMembers ? ` (${eligibleMembers.length})` : ""}
-              </TabsTrigger>
-              <TabsTrigger value="outsider">External</TabsTrigger>
-            </TabsList>
+            listClassName="grid w-full grid-cols-2"
+          />
 
-            <TabsContent value="team" className="space-y-4">
+          {activeTab === "team" && (
+            <div className="space-y-4">
               {members === undefined ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
@@ -226,12 +215,17 @@ export function AddRecipientDialog({
                         selectedMember?.id === member.userId && "bg-accent"
                       )}
                     >
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={member.avatarUrl || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {getInitials(member.name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="from-primary to-primary/70 text-primary-foreground flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-xs">
+                        {member.avatarUrl ? (
+                          <img
+                            src={member.avatarUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          getInitials(member.name)
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">
                           {member.name || "Unknown"}
@@ -256,9 +250,11 @@ export function AddRecipientDialog({
                   </p>
                 </div>
               )}
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="outsider" className="space-y-4">
+          {activeTab === "outsider" && (
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address *</Label>
                 <div className="relative">
@@ -267,6 +263,7 @@ export function AddRecipientDialog({
                     type="email"
                     placeholder="recipient@example.com"
                     value={email}
+                    aria-label="Email address"
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setShowSuggestions(true);
@@ -316,30 +313,27 @@ export function AddRecipientDialog({
                   type="text"
                   placeholder="John Doe"
                   value={name}
+                  aria-label="Full name"
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
 
           <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
             <Select
               value={role}
-              onValueChange={(v) =>
-                setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role)
-              }
+              label="Role"
+              onValueChange={(v) => {
+                if (!v) return;
+                setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role);
+              }}
             >
-              <SelectTrigger id="role">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="signer">Signer (Must sign)</SelectItem>
-                <SelectItem value="viewer">Viewer (View only)</SelectItem>
-                <SelectItem value="approver">
-                  Approver (Must approve)
-                </SelectItem>
-              </SelectContent>
+              <Select.Option value="signer">Signer (Must sign)</Select.Option>
+              <Select.Option value="viewer">Viewer (View only)</Select.Option>
+              <Select.Option value="approver">
+                Approver (Must approve)
+              </Select.Option>
             </Select>
             <p className="text-muted-foreground text-xs">
               {role === "signer" && "This person must sign the document."}
@@ -349,7 +343,7 @@ export function AddRecipientDialog({
             </p>
           </div>
 
-          <DialogFooter>
+          <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button
               type="button"
               variant="outline"
@@ -358,12 +352,12 @@ export function AddRecipientDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitDisabled}>
+            <Button type="submit" variant="primary" disabled={isSubmitDisabled}>
               {loading ? "Adding..." : "Add Recipient"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }
