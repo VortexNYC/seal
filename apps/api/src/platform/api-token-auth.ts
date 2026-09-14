@@ -1,8 +1,10 @@
 import { and, eq, isNull } from "drizzle-orm";
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 
 import { createD1 } from "../global/db.js";
 import { apiTokens, organization, user } from "../global/schema.js";
+import type { McpAccessToken } from "./mcp-auth.js";
 import type { Variables } from "./types.js";
 
 const TOKEN_PREFIX = "seal_";
@@ -43,23 +45,12 @@ export function hasApiTokenScope(
   return scopes.includes(scope);
 }
 
-export const apiTokenAuth = createMiddleware<{
-  Bindings: CloudflareBindings;
-  Variables: Variables;
-}>(async (c, next) => {
-  const sessionUser = c.get("user");
-  if (sessionUser) {
-    return next();
-  }
-
-  const header = c.req.header("authorization");
-  if (!header?.startsWith("Bearer ")) {
-    return next();
-  }
-
-  const raw = header.slice("Bearer ".length).trim();
+export async function loadApiTokenContext<E extends CloudflareBindings>(
+  c: Context<{ Bindings: E; Variables: Variables }>,
+  raw: string
+): Promise<boolean> {
   if (!isApiTokenFormat(raw)) {
-    return next();
+    return false;
   }
 
   const hash = await hashToken(raw);
@@ -73,7 +64,7 @@ export const apiTokenAuth = createMiddleware<{
 
   const token = rows[0];
   if (!token) {
-    return next();
+    return false;
   }
 
   const now = new Date();
@@ -94,7 +85,7 @@ export const apiTokenAuth = createMiddleware<{
   const userRecord = userRow[0];
   const orgRecord = orgRow[0];
   if (!userRecord || !orgRecord) {
-    return next();
+    return false;
   }
 
   c.set("user", {
@@ -102,5 +93,28 @@ export const apiTokenAuth = createMiddleware<{
   });
   c.set("apiToken", token);
   c.set("organization", orgRecord);
+
+  const mcp: McpAccessToken = {
+    sub: userRecord.id,
+    organizationId: orgRecord.id,
+    organizationSlug: orgRecord.slug,
+    scope: parseApiTokenScopes(token.scopes).join(" "),
+    clientId: "seal",
+    jti: token.id,
+    kind: "api",
+  };
+  c.set("mcp", mcp);
+  return true;
+}
+
+export const apiTokenAuth = createMiddleware<{
+  Bindings: CloudflareBindings;
+  Variables: Variables;
+}>(async (c, next) => {
+  const header = c.req.header("authorization");
+  if (header?.startsWith("Bearer ")) {
+    const raw = header.slice("Bearer ".length).trim();
+    await loadApiTokenContext(c, raw);
+  }
   return next();
 });
