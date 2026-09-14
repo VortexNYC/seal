@@ -1,8 +1,8 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Separator } from "@cloudflare/kumo/primitives/separator";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -90,11 +90,15 @@ export function PageWrapper({
               {headerActions}
               {allActions.map((actionItem, index) => {
                 const Icon = actionItem.icon;
+                const variant =
+                  actionItem.variant === "default"
+                    ? "primary"
+                    : actionItem.variant;
                 return (
                   <Button
                     key={index}
                     onClick={actionItem.onClick}
-                    variant={actionItem.variant || "default"}
+                    variant={variant}
                     size="sm"
                     className="flex-1 sm:flex-none"
                     disabled={actionItem.disabled}
