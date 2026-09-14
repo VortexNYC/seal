@@ -11,6 +11,7 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import {
@@ -32,7 +33,6 @@ import { CreateContactDialog } from "@/components/contacts/create-contact-dialog
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { ExportContacts } from "@/components/contacts/export-contacts";
 import { PageWrapper } from "@/components/page-wrapper";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   bulkDeleteContacts,
   deleteContact,
@@ -78,25 +78,25 @@ function ContactsTableSkeleton() {
           {Array.from({ length: 5 }).map((_, i) => (
             <Table.Row key={i}>
               <Table.Cell>
-                <Skeleton className="h-4 w-4" />
+                <SkeletonLine className="h-4 w-4" />
               </Table.Cell>
               <Table.Cell>
-                <Skeleton className="h-4 w-32" />
+                <SkeletonLine className="h-4 w-32" />
               </Table.Cell>
               <Table.Cell>
-                <Skeleton className="h-4 w-40" />
+                <SkeletonLine className="h-4 w-40" />
               </Table.Cell>
               <Table.Cell className="hidden sm:table-cell">
-                <Skeleton className="h-4 w-24" />
+                <SkeletonLine className="h-4 w-24" />
               </Table.Cell>
               <Table.Cell className="hidden md:table-cell">
-                <Skeleton className="h-4 w-20" />
+                <SkeletonLine className="h-4 w-20" />
               </Table.Cell>
               <Table.Cell>
-                <Skeleton className="h-5 w-16 rounded-full" />
+                <SkeletonLine className="h-5 w-16 rounded-full" />
               </Table.Cell>
               <Table.Cell className="text-right">
-                <Skeleton className="ml-auto h-8 w-8" />
+                <SkeletonLine className="ml-auto h-8 w-8" />
               </Table.Cell>
             </Table.Row>
           ))}

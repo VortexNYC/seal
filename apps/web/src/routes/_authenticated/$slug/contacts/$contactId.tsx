@@ -10,6 +10,7 @@ import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Text } from "@cloudflare/kumo/components/text";
 import {
   ArrowLeft,
@@ -31,7 +32,6 @@ import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { PageWrapper } from "@/components/page-wrapper";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   deleteContact,
   getContact,
@@ -77,8 +77,8 @@ function RelatedDocumentsSkeleton() {
     <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-center justify-between">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-5 w-16 rounded-full" />
+          <SkeletonLine className="h-4 w-40" />
+          <SkeletonLine className="h-5 w-16 rounded-full" />
         </div>
       ))}
     </div>
@@ -379,25 +379,25 @@ function ContactDetailPage() {
       fallback={
         <PageWrapper title="Loading...">
           <div className="mb-6">
-            <Skeleton className="h-4 w-32" />
+            <SkeletonLine className="h-4 w-32" />
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <LayerCard>
                 <LayerCard.Secondary>
-                  <Skeleton className="h-6 w-48" />
+                  <SkeletonLine className="h-6 w-48" />
                 </LayerCard.Secondary>
                 <LayerCard.Primary className="space-y-4">
-                  <Skeleton className="h-4 w-64" />
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-4 w-56" />
+                  <SkeletonLine className="h-4 w-64" />
+                  <SkeletonLine className="h-4 w-48" />
+                  <SkeletonLine className="h-4 w-56" />
                 </LayerCard.Primary>
               </LayerCard>
             </div>
             <div className="lg:col-span-1">
               <LayerCard>
                 <LayerCard.Secondary>
-                  <Skeleton className="h-5 w-40" />
+                  <SkeletonLine className="h-5 w-40" />
                 </LayerCard.Secondary>
                 <LayerCard.Primary>
                   <RelatedDocumentsSkeleton />

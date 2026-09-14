@@ -14,9 +14,10 @@
  * ```
  */
 
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardSkeleton(): React.ReactElement {
   return (
@@ -24,8 +25,8 @@ export function DashboardSkeleton(): React.ReactElement {
       <div className="space-y-6" role="status" aria-label="Loading dashboard">
         {/* Greeting skeleton */}
         <div>
-          <Skeleton className="mb-2 h-9 w-[280px]" />
-          <Skeleton className="h-5 w-[220px]" />
+          <SkeletonLine className="mb-2 h-9 w-[280px]" />
+          <SkeletonLine className="h-5 w-[220px]" />
         </div>
 
         {/* Stats cards skeleton */}

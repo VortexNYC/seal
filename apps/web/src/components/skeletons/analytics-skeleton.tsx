@@ -13,9 +13,10 @@
  * ```
  */
 
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export function AnalyticsSkeleton(): React.ReactElement {
   return (
@@ -31,10 +32,10 @@ export function AnalyticsSkeleton(): React.ReactElement {
 
         {/* Tab bar skeleton */}
         <div className="flex gap-2">
-          <Skeleton className="h-9 w-24 rounded-md" />
-          <Skeleton className="h-9 w-24 rounded-md" />
-          <Skeleton className="h-9 w-24 rounded-md" />
-          <Skeleton className="h-9 w-24 rounded-md" />
+          <SkeletonLine className="h-9 w-24" />
+          <SkeletonLine className="h-9 w-24" />
+          <SkeletonLine className="h-9 w-24" />
+          <SkeletonLine className="h-9 w-24" />
         </div>
 
         {/* Chart area skeleton */}

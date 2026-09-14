@@ -1,3 +1,4 @@
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Skeleton } from "../ui/skeleton";
 
 interface ShareDocumentDialogProps {
   open: boolean;
@@ -635,17 +635,17 @@ function ShareDialogSkeleton() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <Skeleton className="h-4 w-24" />
+        <SkeletonLine className="h-4 w-24" />
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
+            <SkeletonLine key={i} className="h-20 rounded-xl" />
           ))}
         </div>
       </div>
       <div className="space-y-3">
-        <Skeleton className="h-4 w-32" />
+        <SkeletonLine className="h-4 w-32" />
         {Array.from({ length: 2 }).map((_, i) => (
-          <Skeleton key={i} className="h-14 rounded-xl" />
+          <SkeletonLine key={i} className="h-14 rounded-xl" />
         ))}
       </div>
     </div>
