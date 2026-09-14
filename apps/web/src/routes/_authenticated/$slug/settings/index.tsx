@@ -10,13 +10,13 @@ import {
   AuthProvider,
   OrganizationProfile,
   useAuth,
-} from "@vortex-api/better-auth-ui";
+} from "@vortexnyc/better-auth-ui";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 
@@ -66,7 +66,7 @@ function productFromMetadata(
 }
 
 function GeneralSettings() {
-  const client = betterAuthClient;
+  const client = getBetterAuthUiClient();
 
   if (client === null) {
     return (

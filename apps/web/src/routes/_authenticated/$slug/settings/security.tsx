@@ -16,14 +16,14 @@ import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
  */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AuthProvider, useAuth } from "@vortex-api/better-auth-ui";
+import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
@@ -39,7 +39,7 @@ interface SecurityFormData {
 }
 
 function SecuritySettings() {
-  const client = betterAuthClient;
+  const client = getBetterAuthUiClient();
 
   if (client === null) {
     return (

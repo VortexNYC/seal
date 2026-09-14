@@ -3,13 +3,13 @@ import {
   AuthProvider,
   InviteMemberForm,
   OrganizationMembers,
-} from "@vortex-api/better-auth-ui";
+} from "@vortexnyc/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";
 import { useOrganization } from "@/hooks/use-organization";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
   component: TeamSettings,
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
 
 function TeamSettings() {
   const { slug } = Route.useParams();
-  const client = betterAuthClient;
+  const client = getBetterAuthUiClient();
   const { isPro } = useSubscriptionLimits();
 
   const { data: organization } = useOrganization(slug);
