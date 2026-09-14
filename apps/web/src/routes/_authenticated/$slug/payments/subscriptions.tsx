@@ -1,13 +1,8 @@
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/payments/subscriptions"
@@ -21,21 +16,23 @@ function SubscriptionsPage() {
       title="Subscriptions"
       description="Manage recurring payments from your documents."
     >
-      <Card>
-        <CardHeader>
-          <CardTitle>Recurring payments</CardTitle>
-          <CardDescription>
+      <LayerCard>
+        <LayerCard.Primary>
+          <Text as="h2" size="lg" variant="heading">
+            Recurring payments
+          </Text>
+          <Text as="p" size="sm" variant="secondary">
             Subscriptions are managed in Vortex Payments. This list will be
             rewired to Seal's Cloudflare Worker backend once payment data is
             available there.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
+          </Text>
+        </LayerCard.Primary>
+        <LayerCard.Primary>
+          <p className="text-kumo-secondary text-sm">
             No subscriptions to display.
           </p>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
     </PageWrapper>
   );
 }

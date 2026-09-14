@@ -1,11 +1,7 @@
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+
 import { PageWrapper } from "@/components/page-wrapper";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 const surfaceCopy = {
   balances: { title: "Balances", description: "Settlement balance status." },
@@ -40,19 +36,21 @@ export function VortexMerchantOperationalSurface({
 
   return (
     <PageWrapper title={copy.title} description={copy.description}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.title}</CardTitle>
-          <CardDescription>
+      <LayerCard>
+        <LayerCard.Primary>
+          <Text as="h2" size="lg" variant="heading">
+            {copy.title}
+          </Text>
+          <Text as="p" size="sm" variant="secondary">
             Merchant payment operations are managed in Vortex Payments. This
             surface will be rewired to the Cloudflare Worker backend once
             payment data is available there.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">No data to display.</p>
-        </CardContent>
-      </Card>
+          </Text>
+        </LayerCard.Primary>
+        <LayerCard.Primary>
+          <p className="text-kumo-secondary text-sm">No data to display.</p>
+        </LayerCard.Primary>
+      </LayerCard>
     </PageWrapper>
   );
 }
