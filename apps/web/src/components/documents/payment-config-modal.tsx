@@ -5,6 +5,7 @@ import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
+import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
@@ -34,7 +35,6 @@ import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 const MONEY_ROUNDING = "half-up" as const;
 const DRAFT_CURRENCY = "USD";
@@ -728,7 +728,7 @@ function CustomDueDatePicker({
 }) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
+      <Popover.Trigger asChild>
         <Button
           type="button"
           variant="outline"
@@ -739,14 +739,14 @@ function CustomDueDatePicker({
             ? format(draft.customDueDate, "PPP")
             : "Pick a date"}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      </Popover.Trigger>
+      <Popover.Content className="w-auto p-0" align="start">
         <DatePicker
           mode="single"
           selected={draft.customDueDate}
           onChange={(date) => setDraftField("customDueDate", date)}
         />
-      </PopoverContent>
+      </Popover.Content>
     </Popover>
   );
 }
