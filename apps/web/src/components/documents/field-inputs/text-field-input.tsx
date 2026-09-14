@@ -1,8 +1,5 @@
+import { Input, InputArea } from "@cloudflare/kumo";
 import { useState } from "react";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 interface TextFieldInputProps {
   label: string;
@@ -76,41 +73,39 @@ export function TextFieldInput({
   // Determine if we should use textarea based on max length or if it's a long field
   const useTextarea = maxLength ? maxLength > 100 : false;
 
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="text-field">
-        {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
-      </Label>
-      {useTextarea ? (
-        <Textarea
-          id="text-field"
-          value={localValue}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          rows={4}
-          className={error ? "border-destructive" : ""}
-        />
-      ) : (
-        <Input
-          id="text-field"
-          value={localValue}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          className={error ? "border-destructive" : ""}
-        />
-      )}
-      {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
-      )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
-      {maxLength && (
-        <p className="text-muted-foreground text-right text-xs">
-          {localValue.length} / {maxLength}
-        </p>
-      )}
-    </div>
+  const labelNode = (
+    <>
+      {label}
+      {isRequired && <span className="text-kumo-danger ml-1">*</span>}
+    </>
+  );
+  const description =
+    helpText && !error
+      ? helpText
+      : maxLength
+        ? `${localValue.length} / ${maxLength}`
+        : undefined;
+
+  return useTextarea ? (
+    <InputArea
+      label={labelNode}
+      value={localValue}
+      onValueChange={handleChange}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      minRows={4}
+      error={error}
+      description={description}
+    />
+  ) : (
+    <Input
+      label={labelNode}
+      value={localValue}
+      onChange={(e) => handleChange(e.target.value)}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      error={error}
+      description={description}
+    />
   );
 }

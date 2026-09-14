@@ -1,13 +1,5 @@
+import { Select } from "@cloudflare/kumo/components/select";
 import { useState } from "react";
-
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface DropdownFieldInputProps {
   label: string;
@@ -41,40 +33,30 @@ export function DropdownFieldInput({
     return { isValid: true };
   };
 
-  const handleChange = (val: string) => {
-    setSelectedValue(val);
-    onChange(val);
+  const handleChange = (val: string | null) => {
+    const normalized = val ?? "";
+    setSelectedValue(normalized);
+    onChange(normalized);
 
-    const validation = validateValue(val);
+    const validation = validateValue(normalized);
     setError(validation.error);
     onValidationChange(validation.isValid, validation.error);
   };
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="dropdown-field">
-        {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
-      </Label>
-      <Select value={selectedValue} onValueChange={handleChange}>
-        <SelectTrigger
-          id="dropdown-field"
-          className={error ? "border-destructive" : ""}
-        >
-          <SelectValue placeholder="Select an option..." />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
-      )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
-    </div>
+    <Select
+      label={
+        <>
+          {label}
+          {isRequired && <span className="text-kumo-danger ml-1">*</span>}
+        </>
+      }
+      value={selectedValue}
+      onValueChange={handleChange}
+      placeholder="Select an option..."
+      items={options.map((option) => ({ value: option, label: option }))}
+      error={error}
+      description={helpText && !error ? helpText : undefined}
+    />
   );
 }

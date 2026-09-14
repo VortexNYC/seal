@@ -1,9 +1,9 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Label } from "@cloudflare/kumo/components/label";
+import { FileText, UploadSimple, X } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { FileIcon, UploadIcon, XIcon } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { uploadAttachment } from "@/lib/api-client";
 
 interface AttachmentFieldInputProps {
@@ -94,11 +94,11 @@ export function AttachmentFieldInput({
     <div className="space-y-2">
       <Label>
         {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
+        {isRequired && <span className="text-kumo-danger ml-1">*</span>}
       </Label>
 
       {!storageId ? (
-        <div className="rounded-lg border-2 border-dashed p-6 text-center">
+        <div className="border-kumo-hairline rounded-lg border-2 border-dashed p-6 text-center">
           <input
             type="file"
             id="attachment-field"
@@ -110,25 +110,27 @@ export function AttachmentFieldInput({
             htmlFor="attachment-field"
             className="flex cursor-pointer flex-col items-center gap-2"
           >
-            <UploadIcon className="text-muted-foreground h-8 w-8" />
-            <div className="text-muted-foreground text-sm">
-              <span className="text-primary font-medium">Click to upload</span>{" "}
+            <UploadSimple className="text-kumo-secondary h-8 w-8" />
+            <div className="text-kumo-secondary text-sm">
+              <span className="text-kumo-primary font-medium">
+                Click to upload
+              </span>{" "}
               or drag and drop
             </div>
-            <div className="text-muted-foreground text-xs">
+            <div className="text-kumo-secondary text-xs">
               Maximum file size: 10MB
             </div>
           </label>
         </div>
       ) : (
-        <div className="flex items-center justify-between rounded-lg border p-4">
+        <div className="border-kumo-hairline flex items-center justify-between rounded-lg border p-4">
           <div className="flex items-center gap-2">
-            <FileIcon className="text-muted-foreground h-5 w-5" />
+            <FileText className="text-kumo-secondary h-5 w-5" />
             <div>
               <div className="text-sm font-medium">
                 {fileName || "Uploaded file"}
               </div>
-              <div className="text-muted-foreground text-xs">File attached</div>
+              <div className="text-kumo-secondary text-xs">File attached</div>
             </div>
           </div>
           <Button
@@ -136,18 +138,19 @@ export function AttachmentFieldInput({
             size="sm"
             onClick={handleRemove}
             disabled={isUploading}
+            title="Remove attachment"
           >
-            <XIcon className="h-4 w-4" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
       )}
 
       {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
+        <p className="text-kumo-secondary text-xs">{helpText}</p>
       )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
+      {error && <p className="text-kumo-danger text-xs">{error}</p>}
       {isUploading && (
-        <p className="text-muted-foreground text-xs">Uploading...</p>
+        <p className="text-kumo-secondary text-xs">Uploading...</p>
       )}
     </div>
   );

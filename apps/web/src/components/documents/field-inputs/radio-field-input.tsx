@@ -1,7 +1,5 @@
+import { Radio } from "@cloudflare/kumo/components/radio";
 import { useState } from "react";
-
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface RadioFieldInputProps {
   label: string;
@@ -45,28 +43,19 @@ export function RadioFieldInput({
   };
 
   return (
-    <div className="space-y-3">
-      <Label>
+    <Radio.Group
+      value={selectedValue}
+      onValueChange={handleChange}
+      description={helpText && !error ? helpText : undefined}
+      error={error}
+    >
+      <Radio.Legend>
         {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
-      </Label>
-      <RadioGroup value={selectedValue} onValueChange={handleChange}>
-        {options.map((option) => (
-          <div key={option} className="flex items-center space-x-2">
-            <RadioGroupItem value={option} id={`radio-${option}`} />
-            <Label
-              htmlFor={`radio-${option}`}
-              className="cursor-pointer font-normal"
-            >
-              {option}
-            </Label>
-          </div>
-        ))}
-      </RadioGroup>
-      {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
-      )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
-    </div>
+        {isRequired && <span className="text-kumo-danger ml-1">*</span>}
+      </Radio.Legend>
+      {options.map((option) => (
+        <Radio.Item key={option} label={option} value={option} />
+      ))}
+    </Radio.Group>
   );
 }

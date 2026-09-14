@@ -40,7 +40,7 @@ describe("CheckboxFieldInput — single mode", () => {
     const user = userEvent.setup();
     const { onChange } = renderCheckboxField({ value: "false" });
 
-    await user.click(screen.getByLabelText("Agree to terms"));
+    await user.click(screen.getByRole("checkbox", { name: "Agree to terms" }));
 
     expect(onChange).toHaveBeenCalledWith("true");
   });
@@ -49,7 +49,7 @@ describe("CheckboxFieldInput — single mode", () => {
     const user = userEvent.setup();
     const { onChange } = renderCheckboxField({ value: "true" });
 
-    await user.click(screen.getByLabelText("Agree to terms"));
+    await user.click(screen.getByRole("checkbox", { name: "Agree to terms" }));
 
     expect(onChange).toHaveBeenCalledWith("false");
   });
@@ -94,7 +94,7 @@ describe("CheckboxFieldInput — multi-option mode", () => {
     const user = userEvent.setup();
     const { onChange } = renderCheckboxField({ options });
 
-    await user.click(screen.getByLabelText("Option A"));
+    await user.click(screen.getByRole("checkbox", { name: "Option A" }));
 
     expect(onChange).toHaveBeenCalledWith(JSON.stringify(["Option A"]));
   });
@@ -106,7 +106,7 @@ describe("CheckboxFieldInput — multi-option mode", () => {
       value: JSON.stringify(["Option A", "Option B"]),
     });
 
-    await user.click(screen.getByLabelText("Option A"));
+    await user.click(screen.getByRole("checkbox", { name: "Option A" }));
 
     expect(onChange).toHaveBeenCalledWith(JSON.stringify(["Option B"]));
   });

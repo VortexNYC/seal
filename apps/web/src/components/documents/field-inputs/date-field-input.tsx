@@ -1,10 +1,10 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Label } from "@cloudflare/kumo/components/label";
+import { CalendarBlank } from "@phosphor-icons/react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -56,7 +56,7 @@ export function DateFieldInput({
     <div className="space-y-2">
       <Label>
         {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
+        {isRequired && <span className="text-kumo-danger ml-1">*</span>}
       </Label>
       <Popover>
         <PopoverTrigger asChild>
@@ -64,11 +64,11 @@ export function DateFieldInput({
             variant="outline"
             className={cn(
               "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground",
-              error && "border-destructive"
+              !date && "text-kumo-secondary",
+              error && "border-kumo-danger"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarBlank className="mr-2 h-4 w-4" />
             {date ? format(date, "PPP") : <span>Pick a date</span>}
           </Button>
         </PopoverTrigger>
@@ -82,9 +82,9 @@ export function DateFieldInput({
         </PopoverContent>
       </Popover>
       {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
+        <p className="text-kumo-secondary text-xs">{helpText}</p>
       )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
+      {error && <p className="text-kumo-danger text-xs">{error}</p>}
     </div>
   );
 }
