@@ -92,7 +92,6 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.40.2",
     "@playwright/test": "1.59.1",
-    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "catalog:",
@@ -106,6 +105,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
+    "vitest-dom": "^0.1.1",
     "wrangler": "^4.100.0"
   }
 }

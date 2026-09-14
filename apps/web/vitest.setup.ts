@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom/vitest";
+import "vitest-dom/extend-expect";
 
 // Kumo components such as Tabs rely on ResizeObserver being present.
 // jsdom does not implement it, so provide a minimal stub for tests.
