@@ -1,3 +1,3 @@
-.vercel
-# Auto-generated on each build with updated lastmod dates
-public/sitemap.xml
+node_modules/
+.blume/
+dist/
