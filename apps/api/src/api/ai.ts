@@ -8,6 +8,8 @@ import {
   aiProgress,
   aiThreads,
   documents,
+  member,
+  organization,
 } from "../global/schema.js";
 import type { Variables } from "../platform/types.js";
 
@@ -15,6 +17,73 @@ const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
   Variables: Variables;
 }>();
+
+app.use("/*", async (c, next) => {
+  const sessionUser = c.get("user");
+  if (!sessionUser) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const pathname = new URL(c.req.url).pathname;
+  const segments = pathname.split("/").filter(Boolean);
+  const rootSegment = segments[2];
+  if (!rootSegment) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  const db = createD1(c.env.D1);
+
+  let organizationId: string | null = null;
+
+  if (rootSegment === "progress") {
+    const threadId = segments[3];
+    if (!threadId) {
+      return c.json({ error: "Not found" }, 404);
+    }
+    const threadRows = await db
+      .select({ organizationId: aiThreads.organizationId })
+      .from(aiThreads)
+      .where(eq(aiThreads.threadId, threadId))
+      .limit(1);
+    organizationId = threadRows[0]?.organizationId ?? null;
+  } else {
+    const docRows = await db
+      .select({ organizationId: documents.organizationId })
+      .from(documents)
+      .where(eq(documents.publicId, rootSegment))
+      .limit(1);
+    organizationId = docRows[0]?.organizationId ?? null;
+  }
+
+  if (!organizationId) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  const [orgRow, membershipRow] = await Promise.all([
+    db
+      .select()
+      .from(organization)
+      .where(eq(organization.id, organizationId))
+      .limit(1),
+    db
+      .select()
+      .from(member)
+      .where(
+        and(
+          eq(member.organizationId, organizationId),
+          eq(member.userId, sessionUser.user.id)
+        )
+      )
+      .limit(1),
+  ]);
+
+  if (!orgRow[0] || membershipRow.length === 0) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  c.set("organization", orgRow[0]);
+  return next();
+});
 
 const suggestionItemSchema = z.object({
   fieldType: z.string(),
