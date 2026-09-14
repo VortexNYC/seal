@@ -13,7 +13,7 @@ import {
 } from "@vortex-api/better-auth-ui";
 import { toast } from "sonner";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"
@@ -22,7 +22,7 @@ export const Route = createFileRoute(
 });
 
 function SecuritySettings() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
 
   if (client === null) {
     return <p className="text-center text-sm">Auth client not configured.</p>;

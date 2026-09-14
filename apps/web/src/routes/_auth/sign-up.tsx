@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthProvider, SignUpForm } from "@vortex-api/better-auth-ui";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 interface SignUpSearch {
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_auth/sign-up")({
 
 function RouteComponent() {
   const { token } = Route.useSearch();
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
 
   const redirectTo = token
     ? `/accept-invite?token=${encodeURIComponent(token)}`

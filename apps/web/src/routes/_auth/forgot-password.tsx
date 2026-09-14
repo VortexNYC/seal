@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
  */
 import { AuthProvider, ForgotPasswordForm } from "@vortex-api/better-auth-ui";
 
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/forgot-password")({
@@ -24,7 +24,7 @@ function resolveAppOrigin(): string {
 }
 
 function ForgotPasswordRoute() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
   const resetPasswordUrl = `${resolveAppOrigin()}/reset-password`;
 
   if (client === null) {

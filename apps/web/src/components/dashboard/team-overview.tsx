@@ -9,7 +9,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { UsersIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 import { cn } from "@/lib/utils";
 
 interface TeamOverviewProps {
@@ -47,7 +47,7 @@ export function TeamOverview({
   const { data: memberCount } = useSuspenseQuery({
     queryKey: ["api", "organization", slug, "team"],
     queryFn: async (): Promise<TeamSummary> => {
-      const client = getBetterAuthUiClient();
+      const client = betterAuthClient;
       if (client === null) {
         throw new Error("Auth client is not available.");
       }

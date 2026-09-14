@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
@@ -66,7 +66,7 @@ function productFromMetadata(
 }
 
 function GeneralSettings() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
 
   if (client === null) {
     return (

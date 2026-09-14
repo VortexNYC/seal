@@ -9,7 +9,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";
 import { useOrganization } from "@/hooks/use-organization";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
   component: TeamSettings,
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
 
 function TeamSettings() {
   const { slug } = Route.useParams();
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
   const { isPro } = useSubscriptionLimits();
 
   const { data: organization } = useOrganization(slug);

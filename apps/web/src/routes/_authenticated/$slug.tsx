@@ -27,7 +27,7 @@ import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,
@@ -58,7 +58,7 @@ function WorkspaceLayout() {
   useJamMetadata();
 
   useEffect(() => {
-    const client = getBetterAuthUiClient();
+    const client = betterAuthClient;
     if (client?.organization?.setActive === undefined) return;
     void client.organization.setActive({ organizationSlug: slug });
   }, [slug]);

@@ -24,7 +24,7 @@ import { FormSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
-import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
+import { betterAuthClient } from "@/lib/better-auth";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {
@@ -39,7 +39,7 @@ interface SecurityFormData {
 }
 
 function SecuritySettings() {
-  const client = getBetterAuthUiClient();
+  const client = betterAuthClient;
 
   if (client === null) {
     return (
