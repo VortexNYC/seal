@@ -132,6 +132,12 @@ importers:
 
   apps/landing:
     dependencies:
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.23
+        version: 1.1.23(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@radix-ui/react-slot':
+        specifier: ^1.3.3
+        version: 1.3.3(@types/react@19.2.17)(react@19.2.8)
       '@seal/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -147,9 +153,6 @@ importers:
       '@tanstack/router-core':
         specifier: 1.171.16
         version: 1.171.16
-      '@vortexnyc/ui':
-        specifier: 0.5.0
-        version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -189,6 +192,9 @@ importers:
       shiki:
         specifier: ^4.0.2
         version: 4.3.1
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
       tailwindcss:
         specifier: ^4.2.2
         version: 4.3.3
@@ -528,12 +534,12 @@ importers:
       '@react-email/components':
         specifier: ^1.0.2
         version: 1.0.12(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@react-email/render':
+        specifier: ^2.1.0
+        version: 2.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@seal/tokens':
         specifier: workspace:*
         version: link:../tokens
-      '@vortexnyc/email':
-        specifier: 0.2.3
-        version: 0.2.3(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -5394,28 +5400,12 @@ packages:
       react-email: '>=6.0.0'
       zod: '>=4.0.0'
 
-  '@vortexnyc/brand@0.2.2':
-    resolution: {integrity: sha512-3amWS3sxIMt1Wtg3DndbE8zXMTOzKS+U2/yCydiLGLXKt4tfuMUTsWgncdjBX814SULcOW+30HthQdTQbhmmeg==, tarball: https://npm.pkg.github.com/download/@vortexnyc/brand/0.2.2/1d375b073fd0a9d08d22905d24d97fbeeb598e31}
-    peerDependencies:
-      react: '>=19.0.0'
-
-  '@vortexnyc/email@0.2.3':
-    resolution: {integrity: sha512-wz7XnXK4Jqs8udYPXoXu/NlVbjo79JLJJCndqYuFIuJgou641McoC5Wil8haAOoeuoKLt+E1OaLGyTC5dyS32Q==, tarball: https://npm.pkg.github.com/download/@VortexNYC/email/0.2.3/f3480c190e26551f7b0288df800e4b20ccc64c6c}
-    peerDependencies:
-      react: ^19.0.0
-
   '@vortexnyc/tooling@0.11.25':
     resolution: {integrity: sha512-Qta7fYR4q+zWqMH1IGQWF3UP9+clVan+lrzaXEGulaNLEciV6C6qwnsQiquDQGs4kIU/CdDO0vEjvnj3OhvjZw==, tarball: https://npm.pkg.github.com/download/@VortexNYC/tooling/0.11.25/2ecf7dcfb7edf3857d4c7af6b8b69e65c60900f8}
     engines: {node: '>=22.18'}
     hasBin: true
     peerDependencies:
       typescript: '>=5.9.0'
-
-  '@vortexnyc/ui@0.5.0':
-    resolution: {integrity: sha512-kD1ZSkweYgKJBE7IXelCPNXoz3bbqa837R8LWvvNLQDVHwtJZTStWIt64liBSbiP3VUx/MUm0vVZlGJzixH6UA==, tarball: https://npm.pkg.github.com/download/@VortexNYC/ui/0.5.0/ea601cc34538113c8b50d1f1993a6c651387b4af}
-    peerDependencies:
-      react: ^19.0.0
-      react-dom: ^19.0.0
 
   '@workflow/serde@4.1.0':
     resolution: {integrity: sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ==}
@@ -14324,26 +14314,6 @@ snapshots:
       react-email: 6.9.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       zod: 4.4.3
 
-  '@vortexnyc/brand@0.2.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@vortexnyc/ui': 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react: 19.2.8
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-      - react-dom
-
-  '@vortexnyc/email@0.2.3(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@react-email/components': 1.0.12(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@react-email/render': 2.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@vortexnyc/brand': 0.2.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react: 19.2.8
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-      - react-dom
-
   '@vortexnyc/tooling@0.11.25(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(jiti@2.7.0)(typescript@5.9.3)':
     dependencies:
       '@convex-dev/eslint-plugin': 2.0.0(convex@1.42.3(@clerk/clerk-react@5.61.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8))(eslint@10.7.0(jiti@2.7.0))(typescript@5.9.3)
@@ -14356,19 +14326,6 @@ snapshots:
       - convex
       - jiti
       - supports-color
-
-  '@vortexnyc/ui@0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      class-variance-authority: 0.7.1
-      clsx: 2.1.1
-      lucide-react: 1.26.0(react@19.2.8)
-      radix-ui: 1.6.5(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react: 19.2.8
-      react-dom: 19.2.8(react@19.2.8)
-      tailwind-merge: 3.6.0
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
 
   '@workflow/serde@4.1.0': {}
 
@@ -14848,7 +14805,7 @@ snapshots:
   cmdk@1.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@radix-ui/react-compose-refs': 1.1.4(@types/react@19.2.17)(react@19.2.8)
-      '@radix-ui/react-dialog': 1.1.21(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-id': 1.1.3(@types/react@19.2.17)(react@19.2.8)
       '@radix-ui/react-primitive': 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8

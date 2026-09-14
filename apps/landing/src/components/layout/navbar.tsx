@@ -1,11 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { cn } from "@vortexnyc/ui";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { ThemeToggle } from "~/components/ui/theme-toggle";
 import { APP_URL } from "~/lib/constants";
+import { cn } from "~/lib/utils";
 
 const navItems = [
   { label: "Compare", href: "/compare" },

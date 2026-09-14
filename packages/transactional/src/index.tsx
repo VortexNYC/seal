@@ -1,4 +1,4 @@
-import { renderEmail } from "@vortexnyc/email";
+import { render } from "@react-email/render";
 
 import {
   DocumentCompleted,
@@ -69,7 +69,7 @@ export type {
 export async function renderDocumentInvitation(
   props: DocumentInvitationProps
 ): Promise<string> {
-  return renderEmail(<DocumentInvitation {...props} />);
+  return render(<DocumentInvitation {...props} />);
 }
 
 /**
@@ -78,7 +78,7 @@ export async function renderDocumentInvitation(
 export async function renderSigningComplete(
   props: SigningCompleteProps
 ): Promise<string> {
-  return renderEmail(<SigningComplete {...props} />);
+  return render(<SigningComplete {...props} />);
 }
 
 /**
@@ -87,7 +87,7 @@ export async function renderSigningComplete(
 export async function renderDocumentCompleted(
   props: DocumentCompletedProps
 ): Promise<string> {
-  return renderEmail(<DocumentCompleted {...props} />);
+  return render(<DocumentCompleted {...props} />);
 }
 
 /**
@@ -96,7 +96,7 @@ export async function renderDocumentCompleted(
 export async function renderDocumentReminder(
   props: DocumentReminderProps
 ): Promise<string> {
-  return renderEmail(<DocumentReminder {...props} />);
+  return render(<DocumentReminder {...props} />);
 }
 
 /**
@@ -105,7 +105,7 @@ export async function renderDocumentReminder(
 export async function renderDocumentShared(
   props: DocumentSharedProps
 ): Promise<string> {
-  return renderEmail(<DocumentShared {...props} />);
+  return render(<DocumentShared {...props} />);
 }
 
 /**
@@ -114,7 +114,7 @@ export async function renderDocumentShared(
 export async function renderDocumentExpired(
   props: DocumentExpiredProps
 ): Promise<string> {
-  return renderEmail(<DocumentExpired {...props} />);
+  return render(<DocumentExpired {...props} />);
 }
 
 /**
@@ -123,7 +123,7 @@ export async function renderDocumentExpired(
 export async function renderDocumentExpirationAlert(
   props: DocumentExpirationAlertProps
 ): Promise<string> {
-  return renderEmail(<DocumentExpirationAlert {...props} />);
+  return render(<DocumentExpirationAlert {...props} />);
 }
 
 /**
@@ -132,7 +132,7 @@ export async function renderDocumentExpirationAlert(
 export async function renderDocumentViewed(
   props: DocumentViewedProps
 ): Promise<string> {
-  return renderEmail(<DocumentViewed {...props} />);
+  return render(<DocumentViewed {...props} />);
 }
 
 /**
@@ -141,5 +141,5 @@ export async function renderDocumentViewed(
 export async function renderOwnershipTransferred(
   props: OwnershipTransferredProps
 ): Promise<string> {
-  return renderEmail(<OwnershipTransferred {...props} />);
+  return render(<OwnershipTransferred {...props} />);
 }
