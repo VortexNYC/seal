@@ -1,32 +1,23 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
 import {
-  CalendarIcon,
-  CheckIcon,
-  CheckSquareIcon,
-  ChevronDownIcon,
-  CircleDotIcon,
-  CreditCardIcon,
-  FileIcon,
-  HashIcon,
-  PenToolIcon,
-  SparklesIcon,
-  TypeIcon,
-  XIcon,
-} from "lucide-react";
+  CalendarBlank,
+  CaretDown,
+  Check,
+  CheckSquare,
+  Dot,
+  CreditCard,
+  File,
+  Hash,
+  PenNib,
+  Sparkle,
+  TextT,
+  X,
+} from "@phosphor-icons/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   applyFieldSuggestions as applyFieldSuggestionsApi,
   dismissFieldSuggestions as dismissFieldSuggestionsApi,
@@ -36,31 +27,30 @@ import {
 import { parseSelectValue } from "@/lib/select-values";
 import { cn } from "@/lib/utils";
 
-import { Button } from "../ui/button";
 import { FIELD_TYPES, type FieldType } from "./field-toolbar";
 
 function getFieldIcon(fieldType: FieldType) {
   switch (fieldType) {
     case "signature":
-      return <PenToolIcon className="h-3 w-3" />;
+      return <PenNib className="h-3 w-3" />;
     case "text":
-      return <TypeIcon className="h-3 w-3" />;
+      return <TextT className="h-3 w-3" />;
     case "number":
-      return <HashIcon className="h-3 w-3" />;
+      return <Hash className="h-3 w-3" />;
     case "date":
-      return <CalendarIcon className="h-3 w-3" />;
+      return <CalendarBlank className="h-3 w-3" />;
     case "checkbox":
-      return <CheckSquareIcon className="h-3 w-3" />;
+      return <CheckSquare className="h-3 w-3" />;
     case "dropdown":
-      return <ChevronDownIcon className="h-3 w-3" />;
+      return <CaretDown className="h-3 w-3" />;
     case "radio":
-      return <CircleDotIcon className="h-3 w-3" />;
+      return <Dot className="h-3 w-3" />;
     case "attachment":
-      return <FileIcon className="h-3 w-3" />;
+      return <File className="h-3 w-3" />;
     case "payment":
-      return <CreditCardIcon className="h-3 w-3" />;
+      return <CreditCard className="h-3 w-3" />;
     default:
-      return <TypeIcon className="h-3 w-3" />;
+      return <TextT className="h-3 w-3" />;
   }
 }
 
@@ -72,25 +62,25 @@ function getConfidenceColor(confidence: number): {
 } {
   if (confidence >= 0.8) {
     return {
-      bg: "bg-success-surface/50",
-      border: "border-success/40",
-      text: "text-success",
-      badge: "bg-success-surface text-success",
+      bg: "bg-kumo-success-tint/50",
+      border: "border-kumo-success/40",
+      text: "text-kumo-success",
+      badge: "bg-kumo-success-tint text-kumo-success",
     };
   }
   if (confidence >= 0.5) {
     return {
-      bg: "bg-warning-surface/50",
-      border: "border-warning/40",
-      text: "text-warning",
-      badge: "bg-warning-surface text-warning",
+      bg: "bg-kumo-warning-tint/50",
+      border: "border-kumo-warning/40",
+      text: "text-kumo-warning",
+      badge: "bg-kumo-warning-tint text-kumo-warning",
     };
   }
   return {
-    bg: "bg-muted/50",
-    border: "border-border/40",
-    text: "text-muted-foreground",
-    badge: "bg-muted text-muted-foreground",
+    bg: "bg-kumo-elevated/50",
+    border: "border-kumo-hairline/40",
+    text: "text-kumo-secondary",
+    badge: "bg-kumo-elevated text-kumo-secondary",
   };
 }
 
@@ -141,7 +131,7 @@ function SuggestionOverlay({
         colors.bg,
         colors.border,
         isSelected
-          ? "ring-info/30 opacity-100 ring-2"
+          ? "ring-kumo-info/30 opacity-100 ring-2"
           : "opacity-70 hover:opacity-100"
       )}
       style={{
@@ -157,7 +147,7 @@ function SuggestionOverlay({
           colors.badge
         )}
       >
-        <SparklesIcon className="h-2.5 w-2.5" />
+        <Sparkle className="h-2.5 w-2.5" />
         {field.label}
         <span className="ml-0.5 opacity-75">
           {Math.round(field.confidence * 100)}%
@@ -167,8 +157,8 @@ function SuggestionOverlay({
         {getFieldIcon(field.fieldType)}
       </div>
       {isSelected && (
-        <div className="bg-info text-primary-foreground absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full shadow-sm">
-          <CheckIcon className="h-2.5 w-2.5" />
+        <div className="bg-kumo-info absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white shadow-sm">
+          <Check className="h-2.5 w-2.5" />
         </div>
       )}
     </button>
@@ -384,23 +374,24 @@ export function AIFieldReviewBar({
   const highConfidenceCount = suggestions.fields.filter(
     (f) => f.confidence >= 0.8
   ).length;
+  const [dismissOpen, setDismissOpen] = useState(false);
 
   return (
     <div
       role="toolbar"
       aria-label="AI suggestion actions"
-      className="bg-card/95 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
+      className="bg-kumo-elevated/95 border-kumo-hairline flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="from-ai-accent to-primary text-primary-foreground flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm">
-          <SparklesIcon className="h-3.5 w-3.5" />
+        <div className="bg-kumo-info flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-sm">
+          <Sparkle className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
-          <span className="text-foreground font-semibold">
+          <span className="text-kumo-primary font-semibold">
             {suggestions.fields.length} field
             {suggestions.fields.length === 1 ? "" : "s"} detected
           </span>
-          <span className="text-muted-foreground ml-1.5 text-xs">
+          <span className="text-kumo-secondary ml-1.5 text-xs">
             {selectedIndices.size > 0 && `(${selectedIndices.size} selected)`}
           </span>
         </div>
@@ -426,40 +417,54 @@ export function AIFieldReviewBar({
         >
           Select all
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground h-7 text-xs"
-            >
-              <XIcon className="mr-1 h-3 w-3" />
-              Dismiss
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Dismiss AI suggestions?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will remove all {suggestions.fields.length} field
-                suggestions. You can re-analyze the document later if needed.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDismiss}>
+        <Dialog.Root
+          open={dismissOpen}
+          onOpenChange={setDismissOpen}
+          role="alertdialog"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-kumo-secondary h-7 text-xs"
+            onClick={() => setDismissOpen(true)}
+          >
+            <X className="mr-1 h-3 w-3" />
+            Dismiss
+          </Button>
+          <Dialog size="sm" className="p-6">
+            <Dialog.Title>Dismiss AI suggestions?</Dialog.Title>
+            <Dialog.Description>
+              This will remove all {suggestions.fields.length} field
+              suggestions. You can re-analyze the document later if needed.
+            </Dialog.Description>
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row">
+              <Button
+                variant="outline"
+                className="sm:w-auto"
+                onClick={() => setDismissOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                className="sm:ml-auto"
+                onClick={() => {
+                  handleDismiss();
+                  setDismissOpen(false);
+                }}
+              >
                 Dismiss
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </div>
+          </Dialog>
+        </Dialog.Root>
         <Button
           size="sm"
+          variant="primary"
           onClick={handleApply}
           disabled={isApplying}
-          className="from-ai-accent to-primary hover:from-ai-accent/90 hover:to-primary/90 text-primary-foreground h-7 bg-gradient-to-r text-xs shadow-sm"
         >
-          <CheckIcon className="mr-1 h-3 w-3" />
+          <Check className="mr-1 h-3 w-3" />
           {isApplying
             ? "Applying..."
             : selectedIndices.size > 0
