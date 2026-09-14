@@ -1,18 +1,18 @@
+import { Banner } from "@cloudflare/kumo/components/banner";
+import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  ArrowBendUpLeft,
+  ArrowClockwise,
+  House,
+  SignOut,
+  WarningCircle,
+} from "@phosphor-icons/react";
 import type { ErrorComponentProps } from "@tanstack/react-router";
-import { Link, rootRouteId, useMatch, useRouter } from "@tanstack/react-router";
-import { AlertCircle, Home, LogOut, RefreshCw, Undo2 } from "lucide-react";
+import { rootRouteId, useMatch, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { betterAuthClient } from "@/lib/better-auth";
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
@@ -42,73 +42,67 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
       role="alert"
       aria-live="assertive"
     >
-      <Card
+      <LayerCard
         ref={cardRef}
         tabIndex={-1}
         className="w-full max-w-2xl focus:outline-none"
       >
-        <CardHeader className="text-center">
-          <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
-            <AlertCircle className="text-destructive h-6 w-6" />
+        <LayerCard.Primary className="text-center">
+          <div className="bg-kumo-danger/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+            <WarningCircle className="text-kumo-danger h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">Something went wrong</CardTitle>
-          <CardDescription>
+          <Text as="h2" size="lg" variant="heading">
+            Something went wrong
+          </Text>
+          <Text size="sm" variant="secondary">
             We encountered an error while processing your request
-          </CardDescription>
-        </CardHeader>
+          </Text>
+        </LayerCard.Primary>
 
-        <CardContent className="space-y-4">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Details</AlertTitle>
-            <AlertDescription className="mt-2 font-mono text-xs">
-              {errorMessage}
-            </AlertDescription>
-          </Alert>
+        <LayerCard.Primary className="space-y-4">
+          <Banner
+            variant="error"
+            icon={<WarningCircle className="h-5 w-5" />}
+            title="Error Details"
+            description={errorMessage}
+          />
 
           {errorStack && import.meta.env.DEV && (
-            <details className="rounded-lg border p-4">
-              <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-sm font-medium">
+            <details className="border-kumo-hairline rounded-lg border p-4">
+              <summary className="text-kumo-secondary hover:text-kumo-default cursor-pointer text-sm font-medium">
                 View stack trace (development only)
               </summary>
-              <pre className="text-muted-foreground mt-2 overflow-x-auto text-xs">
+              <pre className="text-kumo-secondary mt-2 overflow-x-auto text-xs">
                 {errorStack}
               </pre>
             </details>
           )}
-        </CardContent>
+        </LayerCard.Primary>
 
-        <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <LayerCard.Primary className="flex flex-col gap-2 sm:flex-row sm:justify-between">
           <Button
             onClick={() => router.invalidate()}
-            className="w-full sm:w-auto"
-            variant="default"
+            variant="primary"
+            icon={ArrowClockwise}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
             Try Again
           </Button>
 
           {isRoot ? (
-            <Button asChild variant="outline" className="w-full sm:w-auto">
-              <Link to="/">
-                <Home className="mr-2 h-4 w-4" />
-                Go Home
-              </Link>
+            <Button
+              onClick={() => void router.navigate({ to: "/" })}
+              variant="outline"
+              icon={House}
+            >
+              Go Home
             </Button>
           ) : (
             <Button
-              asChild
+              onClick={() => window.history.back()}
               variant="outline"
-              className="w-full sm:w-auto"
-              onClick={(e) => {
-                e.preventDefault();
-                window.history.back();
-              }}
+              icon={ArrowBendUpLeft}
             >
-              <Link to="/">
-                <Undo2 className="mr-2 h-4 w-4" />
-                Go Back
-              </Link>
+              Go Back
             </Button>
           )}
 
@@ -122,14 +116,13 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
               }
               void router.navigate({ to: "/sign-in" });
             }}
-            className="w-full sm:w-auto"
             variant="ghost"
+            icon={SignOut}
           >
-            <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </Button>
-        </CardFooter>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
     </div>
   );
 }
