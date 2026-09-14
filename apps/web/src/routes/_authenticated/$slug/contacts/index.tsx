@@ -6,17 +6,23 @@
  * Route: /{slug}/contacts
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Table } from "@cloudflare/kumo/components/table";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  DotsThreeVertical,
+  MagnifyingGlass,
+  PencilSimple,
+  Trash,
+  UserPlus,
+  Users,
+  X,
+} from "@phosphor-icons/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import {
-  MoreVerticalIcon,
-  PencilIcon,
-  SearchIcon,
-  TrashIcon,
-  UserPlusIcon,
-  UsersIcon,
-  XIcon,
-} from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -25,35 +31,8 @@ import { CreateContactDialog } from "@/components/contacts/create-contact-dialog
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { ExportContacts } from "@/components/contacts/export-contacts";
 import { PageWrapper } from "@/components/page-wrapper";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   bulkDeleteContacts,
   deleteContact,
@@ -84,44 +63,44 @@ function ContactsTableSkeleton() {
       aria-label="Loading contacts"
     >
       <Table className="min-w-[600px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-10" />
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead className="hidden sm:table-cell">Company</TableHead>
-            <TableHead className="hidden md:table-cell">Title</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head className="w-10" />
+            <Table.Head>Name</Table.Head>
+            <Table.Head>Email</Table.Head>
+            <Table.Head className="hidden sm:table-cell">Company</Table.Head>
+            <Table.Head className="hidden md:table-cell">Title</Table.Head>
+            <Table.Head>Status</Table.Head>
+            <Table.Head className="text-right">Actions</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
-              <TableCell>
+            <Table.Row key={i}>
+              <Table.Cell>
                 <Skeleton className="h-4 w-4" />
-              </TableCell>
-              <TableCell>
+              </Table.Cell>
+              <Table.Cell>
                 <Skeleton className="h-4 w-32" />
-              </TableCell>
-              <TableCell>
+              </Table.Cell>
+              <Table.Cell>
                 <Skeleton className="h-4 w-40" />
-              </TableCell>
-              <TableCell className="hidden sm:table-cell">
+              </Table.Cell>
+              <Table.Cell className="hidden sm:table-cell">
                 <Skeleton className="h-4 w-24" />
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
+              </Table.Cell>
+              <Table.Cell className="hidden md:table-cell">
                 <Skeleton className="h-4 w-20" />
-              </TableCell>
-              <TableCell>
+              </Table.Cell>
+              <Table.Cell>
                 <Skeleton className="h-5 w-16 rounded-full" />
-              </TableCell>
-              <TableCell className="text-right">
+              </Table.Cell>
+              <Table.Cell className="text-right">
                 <Skeleton className="ml-auto h-8 w-8" />
-              </TableCell>
-            </TableRow>
+              </Table.Cell>
+            </Table.Row>
           ))}
-        </TableBody>
+        </Table.Body>
       </Table>
     </div>
   );
@@ -243,7 +222,7 @@ function ContactsTableContent({
     if (hasFilters) {
       return (
         <EmptyState
-          icon={SearchIcon}
+          icon={MagnifyingGlass}
           title="No contacts found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
@@ -252,13 +231,13 @@ function ContactsTableContent({
 
     return (
       <EmptyState
-        icon={UsersIcon}
+        icon={Users}
         title="No contacts yet"
         description="Add your first contact to start building your address book. Contacts can be linked to document recipients."
         action={{
           label: "Add Contact",
           onClick: onCreateOpen,
-          icon: UserPlusIcon,
+          icon: UserPlus,
         }}
       />
     );
@@ -273,9 +252,9 @@ function ContactsTableContent({
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-lg border p-2">
-          <span className="text-muted-foreground text-sm">
+          <Text as="span" variant="secondary" size="sm">
             {selectedIds.size} selected
-          </span>
+          </Text>
           <Button
             variant="destructive"
             size="sm"
@@ -288,158 +267,184 @@ function ContactsTableContent({
 
       <div className="overflow-x-auto rounded-lg border">
         <Table className="min-w-[600px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={
-                    allSelected ? true : someSelected ? "indeterminate" : false
-                  }
+          <Table.Header>
+            <Table.Row>
+              <Table.Head className="w-10">
+                <Table.CheckHead
+                  checked={allSelected}
+                  indeterminate={someSelected}
                   onCheckedChange={toggleSelectAll}
-                  aria-label="Select all contacts"
+                  label="Select all contacts"
                 />
-              </TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="hidden sm:table-cell">Company</TableHead>
-              <TableHead className="hidden md:table-cell">Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+              </Table.Head>
+              <Table.Head>Name</Table.Head>
+              <Table.Head>Email</Table.Head>
+              <Table.Head className="hidden sm:table-cell">Company</Table.Head>
+              <Table.Head className="hidden md:table-cell">Title</Table.Head>
+              <Table.Head>Status</Table.Head>
+              <Table.Head className="text-right">Actions</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {contacts.map((contact) => (
-              <TableRow
+              <Table.Row
                 key={contact._id}
-                className="hover:bg-muted/50 cursor-pointer"
-                data-state={
-                  selectedIds.has(contact._id) ? "selected" : undefined
-                }
+                className="cursor-pointer"
+                variant={selectedIds.has(contact._id) ? "selected" : "default"}
                 onClick={() => handleOpenContact(contact._id)}
               >
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selectedIds.has(contact._id)}
-                    onCheckedChange={() => toggleSelect(contact._id)}
-                    aria-label={`Select ${contact.fullName}`}
-                  />
-                </TableCell>
-                <TableCell>
-                  <p className="font-medium">{contact.fullName}</p>
-                </TableCell>
-                <TableCell>
-                  <p className="text-muted-foreground text-sm">
-                    {contact.email}
+                <Table.CheckCell
+                  checked={selectedIds.has(contact._id)}
+                  onCheckedChange={() => toggleSelect(contact._id)}
+                  label={`Select ${contact.fullName}`}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                />
+                <Table.Cell>
+                  <p className="text-kumo-default font-medium">
+                    {contact.fullName}
                   </p>
-                </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  <p className="text-sm">{contact.company ?? "-"}</p>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <p className="text-sm">{contact.title ?? "-"}</p>
-                </TableCell>
-                <TableCell>
+                </Table.Cell>
+                <Table.Cell>
+                  <Text as="p" variant="secondary" size="sm">
+                    {contact.email}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell className="hidden sm:table-cell">
+                  <Text as="p" size="sm">
+                    {contact.company ?? "-"}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell className="hidden md:table-cell">
+                  <Text as="p" size="sm">
+                    {contact.title ?? "-"}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell>
                   <ContactStatusBadge status={contact.status} />
-                </TableCell>
-                <TableCell className="text-right">
+                </Table.Cell>
+                <Table.Cell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenu.Trigger>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         aria-label={`Contact actions for ${contact.fullName ?? "selected contact"}`}
                         className="h-8 w-8"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
                       >
-                        <MoreVerticalIcon className="h-4 w-4" />
+                        <DotsThreeVertical className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content
                       align="end"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
-                      <DropdownMenuItem
+                      <DropdownMenu.Item
                         onClick={() => handleOpenContact(contact._id)}
                       >
                         Open
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setEditContact(contact)}>
-                        <PencilIcon className="mr-2 h-4 w-4" />
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onClick={() => setEditContact(contact)}
+                        icon={PencilSimple}
+                      >
                         Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
                         onClick={() =>
                           handleDelete(contact._id, contact.fullName)
                         }
-                        className="text-destructive"
+                        variant="danger"
+                        icon={Trash}
                       >
-                        <TrashIcon className="mr-2 h-4 w-4" />
                         Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
                   </DropdownMenu>
-                </TableCell>
-              </TableRow>
+                </Table.Cell>
+              </Table.Row>
             ))}
-          </TableBody>
+          </Table.Body>
         </Table>
       </div>
 
       {/* Single delete confirmation */}
-      <AlertDialog
+      <Dialog.Root
         open={deleteDialog.open}
         onOpenChange={(open) =>
           setDeleteDialog({ open, contactId: null, contactName: "" })
         }
+        role="alertdialog"
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-            <AlertDialogDescription>
+        <Dialog size="sm" className="p-6">
+          <div className="space-y-1.5">
+            <Dialog.Title>Delete Contact</Dialog.Title>
+            <Dialog.Description>
               Are you sure you want to delete &ldquo;{deleteDialog.contactName}
               &rdquo;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
+            </Dialog.Description>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                setDeleteDialog({
+                  open: false,
+                  contactId: null,
+                  contactName: "",
+                })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
               variant="destructive"
+              onClick={handleConfirmDelete}
             >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
       {/* Bulk delete confirmation */}
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {selectedIds.size} Contacts
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog.Root
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        role="alertdialog"
+      >
+        <Dialog size="sm" className="p-6">
+          <div className="space-y-1.5">
+            <Dialog.Title>Delete {selectedIds.size} Contacts</Dialog.Title>
+            <Dialog.Description>
               Are you sure you want to delete {selectedIds.size} contacts? This
               action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>
+            </Dialog.Description>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setBulkDeleteOpen(false)}
+              disabled={isBulkDeleting}
+            >
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
+            </Button>
+            <Button
+              type="button"
               variant="destructive"
+              onClick={handleBulkDelete}
               disabled={isBulkDeleting}
             >
               {isBulkDeleting
                 ? "Deleting..."
                 : `Delete ${selectedIds.size} Contacts`}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
       {/* Edit dialog */}
       {editContact && (
@@ -570,7 +575,7 @@ function ContactsPage() {
       action={{
         label: "Add Contact",
         onClick: handleCreateOpen,
-        icon: UserPlusIcon,
+        icon: UserPlus,
         variant: "default",
       }}
       headerActions={<ExportContacts contacts={loadedContacts} />}
@@ -578,7 +583,7 @@ function ContactsPage() {
       <div className="space-y-6">
         {/* Search Input */}
         <div className="bg-card/60 relative rounded-lg border px-2 py-2">
-          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <MagnifyingGlass className="text-kumo-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             type="text"
             placeholder="Search contacts by name..."
@@ -589,12 +594,12 @@ function ContactsPage() {
           {searchInput && (
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               aria-label="Clear search"
               className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
               onClick={() => setSearchInput("")}
             >
-              <XIcon className="h-4 w-4" />
+              <X className="h-4 w-4" />
               <span className="sr-only">Clear search</span>
             </Button>
           )}
@@ -602,33 +607,35 @@ function ContactsPage() {
 
         {/* Status Filter Tabs */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground self-center text-sm">
-            Status:
+          <span className="self-center">
+            <Text as="span" variant="secondary" size="sm">
+              Status:
+            </Text>
           </span>
           <Button
             size="sm"
-            variant={statusFilter === "all" ? "default" : "outline"}
+            variant={statusFilter === "all" ? "primary" : "outline"}
             onClick={() => setStatusFilter("all")}
           >
             All
           </Button>
           <Button
             size="sm"
-            variant={statusFilter === "active" ? "default" : "outline"}
+            variant={statusFilter === "active" ? "primary" : "outline"}
             onClick={() => setStatusFilter("active")}
           >
             Active
           </Button>
           <Button
             size="sm"
-            variant={statusFilter === "inactive" ? "default" : "outline"}
+            variant={statusFilter === "inactive" ? "primary" : "outline"}
             onClick={() => setStatusFilter("inactive")}
           >
             Inactive
           </Button>
           <Button
             size="sm"
-            variant={statusFilter === "lead" ? "default" : "outline"}
+            variant={statusFilter === "lead" ? "primary" : "outline"}
             onClick={() => setStatusFilter("lead")}
           >
             Lead
