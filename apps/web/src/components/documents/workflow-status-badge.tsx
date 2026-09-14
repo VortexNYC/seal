@@ -1,7 +1,6 @@
-import type { DocumentWorkflowStatus } from "@/lib/document-status";
-import { cn } from "@/lib/utils";
+import { Badge } from "@cloudflare/kumo/components/badge";
 
-import { Badge } from "../ui/badge";
+import type { DocumentWorkflowStatus } from "@/lib/document-status";
 
 export type { DocumentWorkflowStatus };
 
@@ -21,8 +20,7 @@ export function WorkflowStatusBadge({
     DocumentWorkflowStatus,
     {
       label: string;
-      variant: "default" | "secondary" | "destructive" | "outline";
-      className?: string;
+      variant: "secondary" | "info" | "warning" | "success" | "error";
     }
   > = {
     draft: {
@@ -31,43 +29,38 @@ export function WorkflowStatusBadge({
     },
     sent: {
       label: "Sent",
-      variant: "default",
-      className: "bg-info hover:bg-info/90",
+      variant: "info",
     },
     in_progress: {
       label: "In Progress",
-      variant: "default",
-      className: "bg-warning hover:bg-warning/90 text-warning-foreground",
+      variant: "warning",
     },
     waiting_for_payment: {
       label: "Awaiting Payment",
-      variant: "default",
-      className: "bg-warning hover:bg-warning/90 text-warning-foreground",
+      variant: "warning",
     },
     completed: {
       label: "Completed",
-      variant: "default",
-      className: "bg-success hover:bg-success/90",
+      variant: "success",
     },
     cancelled: {
       label: "Cancelled",
-      variant: "destructive",
+      variant: "error",
     },
     declined: {
       label: "Declined",
-      variant: "destructive",
+      variant: "error",
     },
     expired: {
       label: "Expired",
-      variant: "destructive",
-      className: "bg-expired hover:bg-expired/90 text-expired-foreground",
+      variant: "error",
     },
   };
 
-  const { label, variant, className: badgeClassName } = config[workflowStatus];
+  const { label, variant } = config[workflowStatus];
 
   return (
-    <Badge variant={variant} className={cn(badgeClassName, className)}>
+    <Badge variant={variant} className={className}>
       {label}
     </Badge>
   );
