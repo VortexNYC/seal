@@ -2,6 +2,7 @@ import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
+import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
@@ -56,7 +57,6 @@ import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { Calendar } from "@/components/ui/calendar";
-import { EmptyState } from "@/components/ui/empty-state";
 import {
   Popover,
   PopoverContent,
@@ -1012,21 +1012,25 @@ function DocumentsEmptyState({
   readonly onUploadClick: () => void;
 }) {
   return hasFiltersOrSearch ? (
-    <EmptyState
-      icon={SearchIcon}
+    <Empty
+      icon={<SearchIcon size={48} />}
       title="No documents found"
       description="Try adjusting your search or filters to find what you're looking for."
     />
   ) : (
-    <EmptyState
-      icon={FileTextIcon}
+    <Empty
+      icon={<FileTextIcon size={48} />}
       title="No documents yet"
       description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
-      action={{
-        label: "Upload Document",
-        onClick: onUploadClick,
-        icon: UploadIcon,
-      }}
+      contents={
+        <Button
+          onClick={onUploadClick}
+          variant="primary"
+          icon={<UploadIcon className="h-4 w-4" />}
+        >
+          Upload Document
+        </Button>
+      }
     />
   );
 }

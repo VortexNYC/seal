@@ -1,3 +1,4 @@
+import { Empty } from "@cloudflare/kumo/components/empty";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -315,20 +316,6 @@ function NotificationsSkeleton() {
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-      <div className="bg-muted mb-3 flex h-12 w-12 items-center justify-center rounded-full">
-        <BellIcon className="text-muted-foreground h-6 w-6" />
-      </div>
-      <p className="text-foreground text-sm font-medium">No notifications</p>
-      <p className="text-muted-foreground mt-1 text-xs">
-        You're all caught up!
-      </p>
-    </div>
-  );
-}
-
 export function NotificationsPopover({
   slug,
   organizationSlug,
@@ -410,7 +397,12 @@ export function NotificationsPopover({
           {isLoading ? (
             <NotificationsSkeleton />
           ) : !hasNotifications ? (
-            <EmptyState />
+            <Empty
+              size="sm"
+              icon={<BellIcon size={24} />}
+              title="No notifications"
+              description="You're all caught up!"
+            />
           ) : (
             <div className="space-y-1 p-2">
               {notifications?.map((notification) => (

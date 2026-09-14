@@ -9,6 +9,7 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
+import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
@@ -31,7 +32,6 @@ import { CreateContactDialog } from "@/components/contacts/create-contact-dialog
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { ExportContacts } from "@/components/contacts/export-contacts";
 import { PageWrapper } from "@/components/page-wrapper";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   bulkDeleteContacts,
@@ -221,8 +221,8 @@ function ContactsTableContent({
   if (contacts.length === 0) {
     if (hasFilters) {
       return (
-        <EmptyState
-          icon={MagnifyingGlass}
+        <Empty
+          icon={<MagnifyingGlass size={48} />}
           title="No contacts found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
@@ -230,15 +230,15 @@ function ContactsTableContent({
     }
 
     return (
-      <EmptyState
-        icon={Users}
+      <Empty
+        icon={<Users size={48} />}
         title="No contacts yet"
         description="Add your first contact to start building your address book. Contacts can be linked to document recipients."
-        action={{
-          label: "Add Contact",
-          onClick: onCreateOpen,
-          icon: UserPlus,
-        }}
+        contents={
+          <Button onClick={onCreateOpen} variant="primary" icon={UserPlus}>
+            Add Contact
+          </Button>
+        }
       />
     );
   }

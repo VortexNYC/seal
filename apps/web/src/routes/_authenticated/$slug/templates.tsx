@@ -11,6 +11,7 @@ import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
+import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input, Textarea } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
@@ -45,7 +46,6 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
-import { EmptyState } from "@/components/ui/empty-state";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
@@ -212,27 +212,31 @@ function TemplatesList({
       {sortedTemplates.length === 0 &&
       (!subfolders || subfolders.length === 0) ? (
         searchQuery ? (
-          <EmptyState
-            icon={SearchIcon}
+          <Empty
+            icon={<SearchIcon size={48} />}
             title="No templates found"
             description="No templates match your search. Try a different query."
           />
         ) : (
-          <EmptyState
-            icon={FileTextIcon}
+          <Empty
+            icon={<FileTextIcon size={48} />}
             title="No templates yet"
             description="Create templates from your documents to save time. Templates preserve signature fields and can be reused for recurring documents."
-            action={{
-              label: "Go to Documents",
-              onClick: () => {
-                void router.navigate({
-                  to: "/$slug/documents",
-                  params: { slug },
-                  search: { folderId: undefined },
-                });
-              },
-              icon: FolderOpenIcon,
-            }}
+            contents={
+              <Button
+                onClick={() => {
+                  void router.navigate({
+                    to: "/$slug/documents",
+                    params: { slug },
+                    search: { folderId: undefined },
+                  });
+                }}
+                variant="primary"
+                icon={<FolderOpenIcon className="h-4 w-4" />}
+              >
+                Go to Documents
+              </Button>
+            }
           />
         )
       ) : (
