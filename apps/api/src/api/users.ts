@@ -11,6 +11,11 @@ import {
   user,
 } from "../global/schema.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
+import {
+  getPlanFromMetadata,
+  planLimits,
+  type Plan,
+} from "../platform/plans.js";
 import type { Variables } from "../platform/types.js";
 
 const emailPreferencesSchema = z.object({
@@ -160,25 +165,6 @@ app.openapi(patchRouteDef, async (c) => {
 
   return c.json(notificationPreferencesSchema.parse(next));
 });
-
-const planLimits = {
-  free: { documentsPerMonth: 10, storageBytes: 100 * 1024 * 1024 },
-  pro: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
-  enterprise: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
-} as const;
-
-type Plan = keyof typeof planLimits;
-
-function getPlanFromMetadata(metadata: string | null): Plan {
-  const parsed = safeParseMetadata(metadata);
-  if (!parsed) return "free";
-  const value =
-    typeof parsed.plan === "string" ? parsed.plan.toLowerCase() : "free";
-  if (value === "free" || value === "pro" || value === "enterprise") {
-    return value;
-  }
-  return "free";
-}
 
 const usageResponseSchema = z.object({
   totalDocuments: z.number().int(),
