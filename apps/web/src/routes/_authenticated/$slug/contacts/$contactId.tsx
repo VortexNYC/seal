@@ -6,20 +6,24 @@
  * Route: /{slug}/contacts/{contactId}
  */
 
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  ArrowLeft,
+  Building,
+  Calendar,
+  FileText,
+  Envelope,
+  PencilSimple,
+  Phone,
+  Trash,
+  User,
+} from "@phosphor-icons/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import {
-  ArrowLeftIcon,
-  BuildingIcon,
-  CalendarIcon,
-  FileTextIcon,
-  MailIcon,
-  PencilIcon,
-  PhoneIcon,
-  StickyNoteIcon,
-  TrashIcon,
-  UserIcon,
-} from "lucide-react";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,19 +31,6 @@ import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { PageWrapper } from "@/components/page-wrapper";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   deleteContact,
@@ -68,10 +59,14 @@ function InfoRow({
   if (!value) return null;
   return (
     <div className="flex items-start gap-3">
-      <Icon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+      <Icon className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
       <div>
-        <p className="text-muted-foreground text-xs">{label}</p>
-        <p className="text-sm">{value}</p>
+        <Text as="p" variant="secondary" size="xs">
+          {label}
+        </Text>
+        <Text as="p" size="sm">
+          {value}
+        </Text>
       </div>
     </div>
   );
@@ -105,7 +100,7 @@ function RelatedDocumentsContent({
 
   if ((documents ?? []).length === 0) {
     return (
-      <p className="text-muted-foreground py-4 text-center text-sm">
+      <p className="text-kumo-secondary py-4 text-center text-sm">
         No documents found
       </p>
     );
@@ -123,13 +118,15 @@ function RelatedDocumentsContent({
               params: { slug, documentId: doc.id },
             })
           }
-          className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-2 text-left transition-colors"
+          className="hover:bg-kumo-elevated/50 flex w-full items-center justify-between rounded-md p-2 text-left transition-colors"
         >
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{doc.name}</p>
-            <p className="text-muted-foreground text-xs capitalize">
-              {doc.role}
-            </p>
+            <span className="capitalize">
+              <Text as="p" variant="secondary" size="xs">
+                {doc.role}
+              </Text>
+            </span>
           </div>
           <WorkflowStatusBadge status={toWorkflowStatus(doc.workflowStatus)} />
         </button>
@@ -178,12 +175,12 @@ function ContactDetailContent() {
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-foreground gap-1"
+          className="text-kumo-secondary hover:text-kumo-default gap-1"
           onClick={() =>
             router.navigate({ to: "/$slug/contacts", params: { slug } })
           }
         >
-          <ArrowLeftIcon className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
           Back to Contacts
         </Button>
       </div>
@@ -191,10 +188,12 @@ function ContactDetailContent() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left column: Contact info */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <LayerCard>
+            <LayerCard.Secondary className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
-                <CardTitle>{contact.fullName}</CardTitle>
+                <Text as="h2" variant="heading">
+                  {contact.fullName}
+                </Text>
                 <ContactStatusBadge status={contact.status} />
               </div>
               <Button
@@ -202,30 +201,32 @@ function ContactDetailContent() {
                 size="sm"
                 onClick={() => setEditOpen(true)}
               >
-                <PencilIcon className="mr-2 h-4 w-4" />
+                <PencilSimple className="mr-2 h-4 w-4" />
                 Edit
               </Button>
-            </CardHeader>
+            </LayerCard.Secondary>
 
-            <CardContent>
+            <LayerCard.Primary>
               <div className="grid gap-4 sm:grid-cols-2">
-                <InfoRow icon={MailIcon} label="Email" value={contact.email} />
-                <InfoRow icon={PhoneIcon} label="Phone" value={contact.phone} />
+                <InfoRow icon={Envelope} label="Email" value={contact.email} />
+                <InfoRow icon={Phone} label="Phone" value={contact.phone} />
                 <InfoRow
-                  icon={BuildingIcon}
+                  icon={Building}
                   label="Company"
                   value={contact.company}
                 />
-                <InfoRow icon={UserIcon} label="Title" value={contact.title} />
+                <InfoRow icon={User} label="Title" value={contact.title} />
               </div>
 
               {contact.notes && (
                 <div className="mt-6 border-t pt-4">
                   <div className="flex items-start gap-3">
-                    <StickyNoteIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                    <PencilSimple className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
                     <div>
-                      <p className="text-muted-foreground text-xs">Notes</p>
-                      <p className="text-sm whitespace-pre-wrap">
+                      <Text as="p" variant="secondary" size="xs">
+                        Notes
+                      </Text>
+                      <p className="text-kumo-default text-sm whitespace-pre-wrap">
                         {contact.notes}
                       </p>
                     </div>
@@ -235,7 +236,11 @@ function ContactDetailContent() {
 
               {contact.tags && contact.tags.length > 0 && (
                 <div className="mt-4 border-t pt-4">
-                  <p className="text-muted-foreground mb-2 text-xs">Tags</p>
+                  <div className="mb-2">
+                    <Text as="p" variant="secondary" size="xs">
+                      Tags
+                    </Text>
+                  </div>
                   <div className="flex flex-wrap gap-1">
                     {contact.tags.map((tag) => (
                       <Badge key={tag} variant="secondary">
@@ -249,29 +254,37 @@ function ContactDetailContent() {
               <div className="mt-6 border-t pt-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="flex items-start gap-3">
-                    <CalendarIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                    <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
                     <div>
-                      <p className="text-muted-foreground text-xs">Created</p>
-                      <p className="text-sm">{formatDate(contact.createdAt)}</p>
+                      <Text as="p" variant="secondary" size="xs">
+                        Created
+                      </Text>
+                      <Text as="p" size="sm">
+                        {formatDate(contact.createdAt)}
+                      </Text>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <CalendarIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                    <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
                     <div>
-                      <p className="text-muted-foreground text-xs">Updated</p>
-                      <p className="text-sm">{formatDate(contact.updatedAt)}</p>
+                      <Text as="p" variant="secondary" size="xs">
+                        Updated
+                      </Text>
+                      <Text as="p" size="sm">
+                        {formatDate(contact.updatedAt)}
+                      </Text>
                     </div>
                   </div>
                   {contact.lastContactedAt && (
                     <div className="flex items-start gap-3">
-                      <CalendarIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                      <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
                       <div>
-                        <p className="text-muted-foreground text-xs">
+                        <Text as="p" variant="secondary" size="xs">
                           Last Contacted
-                        </p>
-                        <p className="text-sm">
+                        </Text>
+                        <Text as="p" size="sm">
                           {formatDate(contact.lastContactedAt)}
-                        </p>
+                        </Text>
                       </div>
                     </div>
                   )}
@@ -285,29 +298,29 @@ function ContactDetailContent() {
                   size="sm"
                   onClick={() => setDeleteOpen(true)}
                 >
-                  <TrashIcon className="mr-2 h-4 w-4" />
+                  <Trash className="mr-2 h-4 w-4" />
                   Delete Contact
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </LayerCard.Primary>
+          </LayerCard>
         </div>
 
         {/* Right column: Related documents */}
         <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FileTextIcon className="h-4 w-4" />
+          <LayerCard>
+            <LayerCard.Secondary>
+              <h3 className="flex items-center gap-2 text-base font-medium">
+                <FileText className="h-4 w-4" />
                 Related Documents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h3>
+            </LayerCard.Secondary>
+            <LayerCard.Primary>
               <Suspense fallback={<RelatedDocumentsSkeleton />}>
                 <RelatedDocumentsContent email={contact.email} slug={slug} />
               </Suspense>
-            </CardContent>
-          </Card>
+            </LayerCard.Primary>
+          </LayerCard>
         </div>
       </div>
 
@@ -323,27 +336,39 @@ function ContactDetailContent() {
       />
 
       {/* Delete confirmation */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog.Root
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        role="alertdialog"
+      >
+        <Dialog size="sm" className="p-6">
+          <div className="space-y-1.5">
+            <Dialog.Title>Delete Contact</Dialog.Title>
+            <Dialog.Description>
               Are you sure you want to delete &ldquo;{contact.fullName}&rdquo;?
               This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
+            </Dialog.Description>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setDeleteOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
               variant="destructive"
+              onClick={handleDelete}
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
     </PageWrapper>
   );
 }
@@ -358,26 +383,26 @@ function ContactDetailPage() {
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
+              <LayerCard>
+                <LayerCard.Secondary>
                   <Skeleton className="h-6 w-48" />
-                </CardHeader>
-                <CardContent className="space-y-4">
+                </LayerCard.Secondary>
+                <LayerCard.Primary className="space-y-4">
                   <Skeleton className="h-4 w-64" />
                   <Skeleton className="h-4 w-48" />
                   <Skeleton className="h-4 w-56" />
-                </CardContent>
-              </Card>
+                </LayerCard.Primary>
+              </LayerCard>
             </div>
             <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
+              <LayerCard>
+                <LayerCard.Secondary>
                   <Skeleton className="h-5 w-40" />
-                </CardHeader>
-                <CardContent>
+                </LayerCard.Secondary>
+                <LayerCard.Primary>
                   <RelatedDocumentsSkeleton />
-                </CardContent>
-              </Card>
+                </LayerCard.Primary>
+              </LayerCard>
             </div>
           </div>
         </PageWrapper>
