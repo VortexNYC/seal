@@ -73,11 +73,6 @@ function assertSameCurrency(a: Money, b: Money): void {
   }
 }
 
-export function addMoney(a: Money, b: Money): Money {
-  assertSameCurrency(a, b);
-  return { amount: a.amount + b.amount, currency: a.currency };
-}
-
 export function subtractMoney(a: Money, b: Money): Money {
   assertSameCurrency(a, b);
   return { amount: a.amount - b.amount, currency: a.currency };

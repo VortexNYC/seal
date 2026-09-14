@@ -6,6 +6,8 @@ const config: KnipConfig = {
   ignore: [
     // shadcn/ui components (often used but not directly imported)
     "src/components/ui/**",
+    // CSS entry files (compiled imports are not followed)
+    "**/*.css",
   ],
   ignoreDependencies: [
     // Tailwind CSS (used by Vite plugin)
@@ -15,7 +17,7 @@ const config: KnipConfig = {
     // Radix UI (used by shadcn/ui components)
     "@radix-ui/*",
   ],
-  ignoreBinaries: ["knip", "vp"],
+  ignoreBinaries: ["knip", "vp", "vortex-react-doctor"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };
