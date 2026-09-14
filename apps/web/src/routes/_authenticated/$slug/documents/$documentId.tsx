@@ -1,4 +1,4 @@
-import { Tooltip } from "@cloudflare/kumo/components/tooltip";
+import { Button } from "@cloudflare/kumo/components/button";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Document } from "react-pdf";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { Document } from "react-pdf";
 import { pdfjs } from "react-pdf";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { toast } from "sonner";
@@ -77,7 +77,6 @@ import { RecipientSelectorDialog } from "../../../../components/documents/recipi
 import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
-import { Button } from "../../../../components/ui/button";
 
 pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
@@ -538,58 +537,43 @@ function DocumentDetailPage() {
 
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
-      canCreateTemplates ? (
+      <div key="save-template" className="flex-1 sm:flex-none">
         <Button
-          key="save-template"
           onClick={() => docState.setSaveAsTemplateOpen(true)}
           size="sm"
           variant="outline"
           className="w-full"
+          disabled={!canCreateTemplates}
+          title={
+            !canCreateTemplates
+              ? "Templates require a Professional plan"
+              : undefined
+          }
         >
           <SaveIcon className="mr-2 h-4 w-4" />
           <span className="truncate">Save as Template</span>
         </Button>
-      ) : (
-        <Tooltip
-          key="save-template"
-          content="Templates require a Professional plan"
-          render={<span className="flex-1 sm:flex-none" tabIndex={0} />}
-        >
-          <Button
-            onClick={() => docState.setSaveAsTemplateOpen(true)}
-            size="sm"
-            variant="outline"
-            className="w-full"
-            disabled
-          >
-            <SaveIcon className="mr-2 h-4 w-4" />
-            <span className="truncate">Save as Template</span>
-          </Button>
-        </Tooltip>
-      )
+      </div>
     ) : null;
 
-  const sendDocumentButton = sendDocumentValidation.canSend ? (
-    <Button
-      key="send-document"
-      onClick={() => docState.setSendDocumentOpen(true)}
-      size="sm"
-      className="flex-1 sm:flex-none"
-    >
-      <SendIcon className="mr-2 h-4 w-4" />
-      <span className="truncate">{sendButtonLabel}</span>
-    </Button>
-  ) : (
-    <Tooltip
-      key="send-document"
-      content={<p>{sendDocumentValidation.tooltip}</p>}
-      render={<span className="flex-1 sm:flex-none" />}
-    >
-      <Button disabled size="sm" className="w-full">
+  const sendDocumentButton = (
+    <div key="send-document" className="flex-1 sm:flex-none">
+      <Button
+        onClick={() => docState.setSendDocumentOpen(true)}
+        size="sm"
+        variant="primary"
+        className="w-full"
+        disabled={!sendDocumentValidation.canSend}
+        title={
+          !sendDocumentValidation.canSend
+            ? sendDocumentValidation.tooltip
+            : undefined
+        }
+      >
         <SendIcon className="mr-2 h-4 w-4" />
         <span className="truncate">{sendButtonLabel}</span>
       </Button>
-    </Tooltip>
+    </div>
   );
 
   // ── Render ───────────────────────────────────────────────────────────────
