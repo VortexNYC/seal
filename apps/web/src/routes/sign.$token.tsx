@@ -12,7 +12,6 @@ import {
   createFileRoute,
   Link,
 } from "@tanstack/react-router";
-import { formatMoney, money } from "@vortexnyc/money";
 import {
   AlertCircle,
   ArrowDownIcon,
@@ -48,10 +47,10 @@ import { toast } from "sonner";
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
+import { SignatureCapture } from "@/components/documents/signature-capture";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SealLogo } from "@/components/seal-logo";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
@@ -93,6 +92,7 @@ import {
   savePublicSigningFieldValue,
   submitPublicSigning,
 } from "@/lib/api-client";
+import { formatMoney, money } from "@/lib/money";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 function sealAssertPresent<T>(

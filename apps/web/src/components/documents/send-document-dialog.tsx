@@ -5,7 +5,6 @@
  */
 
 import { useMutation } from "@tanstack/react-query";
-import { formatMoney, money } from "@vortexnyc/money";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -22,6 +21,7 @@ import { z } from "zod";
 import { type DocumentDetailPaymentConfig } from "@/data/document-detail";
 import { sendDocument } from "@/lib/api-client";
 import { type Id } from "@/lib/ids";
+import { formatMoney, money } from "@/lib/money";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";

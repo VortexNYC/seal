@@ -1,4 +1,3 @@
-import { createVortexPostHogWebInitOptions } from "@vortexnyc/observability";
 import posthog from "posthog-js";
 
 const rawPosthogKey: unknown = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
@@ -12,10 +11,13 @@ let initialized = false;
 export function initPostHog() {
   if (initialized || !POSTHOG_KEY || typeof window === "undefined") return;
   initialized = true;
-  const posthogInitOptions = createVortexPostHogWebInitOptions({
+  const posthogInitOptions = {
     apiHost: "/ingest",
     uiHost: "https://us.i.posthog.com",
-  });
+    autocapture: false,
+    capturePageview: false,
+    persistence: "localStorage+cookie" as const,
+  };
 
   posthog.init(POSTHOG_KEY, {
     defaults: "2026-01-30",

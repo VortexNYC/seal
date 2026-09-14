@@ -1,12 +1,4 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  allocate,
-  applyRate,
-  formatMoney,
-  money,
-  subtractMoney,
-  toMajorNumber,
-} from "@vortexnyc/money";
 import { format, parse } from "date-fns";
 import {
   CalendarIcon,
@@ -20,6 +12,14 @@ import { toast } from "sonner";
 
 import type { ApiPaymentConfigDetail } from "@/lib/api-client";
 import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
+import {
+  allocate,
+  applyRate,
+  formatMoney,
+  money,
+  subtractMoney,
+  toMajorNumber,
+} from "@/lib/money";
 import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 

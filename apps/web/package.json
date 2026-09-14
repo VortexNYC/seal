@@ -62,8 +62,6 @@
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "1.168.24",
     "@vortexnyc/better-auth-ui": "0.1.1",
-    "@vortexnyc/money": "0.2.2",
-    "@vortexnyc/observability": "0.2.0",
     "agents": "0.20.1",
     "ai": "^7.0.97",
     "better-auth": "1.7.2",

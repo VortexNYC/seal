@@ -1,5 +1,4 @@
 import { canvas } from "@seal/tokens/theme";
-import { formatMoney, money } from "@vortexnyc/money";
 import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -9,6 +8,8 @@ import {
   Text,
   Transformer,
 } from "react-konva";
+
+import { formatMoney, money } from "@/lib/money";
 
 import type { FieldType } from "./field-toolbar";
 import {
