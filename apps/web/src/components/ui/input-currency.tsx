@@ -1,13 +1,13 @@
+import { Input } from "@cloudflare/kumo/components/input";
 import {
   InputNumberFormat,
   type InputNumberFormatProps,
   unformat,
 } from "@react-input/number-format";
+import * as React from "react";
 
 import { fromMajorUnits } from "@/lib/money";
 import { cn } from "@/lib/utils";
-
-import { Input } from "./input";
 
 /**
  * Parse a formatted currency string to major units (dollars).
@@ -34,10 +34,17 @@ export function parseCurrencyToMinorUnits(
 
 type InputCurrencyProps = Omit<
   InputNumberFormatProps,
-  "locales" | "format" | "currency"
+  "locales" | "format" | "currency" | "size"
 > & {
   currency?: "USD" | "EUR" | "GBP" | "BRL";
 };
+
+const CurrencyInput = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ size: _size, ...props }, ref) => <Input ref={ref} {...props} />);
+
+CurrencyInput.displayName = "CurrencyInput";
 
 /**
  * Currency input with automatic formatting.
@@ -60,12 +67,12 @@ export function InputCurrency({
   className,
   currency = "USD",
   ...props
-}: InputCurrencyProps & { ref?: React.RefObject<HTMLInputElement> }) {
+}: InputCurrencyProps) {
   const locales = currency === "BRL" ? "pt-BR" : "en-US";
 
   return (
     <InputNumberFormat
-      component={Input}
+      component={CurrencyInput}
       locales={locales}
       format="currency"
       currency={currency}

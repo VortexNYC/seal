@@ -513,6 +513,7 @@ function InvoiceItemRow({
       </div>
       <div className="w-32">
         <InputCurrency
+          aria-label="Unit price"
           value={
             item.unitPrice > 0
               ? toMajorNumber(money(item.unitPrice, "USD")).toFixed(2)
