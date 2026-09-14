@@ -8,6 +8,7 @@ import {
   hashToken,
   parseApiTokenScopes,
 } from "../../platform/api-token-auth.js";
+import { getAuditActor, writeAuditLog } from "../../platform/audit-log.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
 import type { Variables } from "../../platform/types.js";
 
@@ -90,6 +91,25 @@ app.post("/", async (c) => {
     scopes: JSON.stringify(scopes),
   });
 
+  const actor = getAuditActor({
+    apiToken: c.get("apiToken"),
+    mcp: c.get("mcp"),
+    user: c.get("user"),
+  });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "api_token.create",
+      resourceType: "api_token",
+      resourceId: id,
+      metadata: { publicId, scopes },
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      userAgent: c.req.header("user-agent"),
+    });
+  }
+
   return c.json(
     {
       id,
@@ -167,6 +187,25 @@ app.delete("/:tokenId", async (c) => {
     .update(apiTokens)
     .set({ revokedAt: now })
     .where(eq(apiTokens.id, tokenId));
+
+  const actor = getAuditActor({
+    apiToken: c.get("apiToken"),
+    mcp: c.get("mcp"),
+    user: c.get("user"),
+  });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "api_token.revoke",
+      resourceType: "api_token",
+      resourceId: tokenId,
+      metadata: {},
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      userAgent: c.req.header("user-agent"),
+    });
+  }
 
   return c.json({ revoked: true });
 });

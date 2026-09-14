@@ -2337,3 +2337,54 @@ export async function revokeApiToken(
     }
   );
 }
+
+const auditLogActorTypeSchema = z.enum(["user", "agent", "api_token"]);
+const auditLogEntrySchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  actorId: z.string(),
+  actorType: auditLogActorTypeSchema,
+  action: z.string(),
+  resourceType: z.string(),
+  resourceId: z.string().nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
+  createdAt: z.string(),
+});
+const auditLogListSchema = z.object({
+  entries: z.array(auditLogEntrySchema),
+  has_more: z.boolean(),
+  next_cursor: z.string().optional(),
+});
+type AuditLogActorType = z.infer<typeof auditLogActorTypeSchema>;
+type AuditLogEntry = z.infer<typeof auditLogEntrySchema>;
+export type AuditLogList = z.infer<typeof auditLogListSchema>;
+
+export async function getAuditLogs(
+  organizationSlug: string,
+  params?: {
+    actor?: string;
+    action?: string;
+    resourceType?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    cursor?: string;
+  }
+): Promise<AuditLogList> {
+  const url = new URL(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/audit`,
+    window.location.origin
+  );
+  if (params?.actor) url.searchParams.set("actor", params.actor);
+  if (params?.action) url.searchParams.set("action", params.action);
+  if (params?.resourceType) {
+    url.searchParams.set("resourceType", params.resourceType);
+  }
+  if (params?.from) url.searchParams.set("from", params.from);
+  if (params?.to) url.searchParams.set("to", params.to);
+  if (params?.limit) url.searchParams.set("limit", String(params.limit));
+  if (params?.cursor) url.searchParams.set("cursor", params.cursor);
+  return apiFetch(`${url.pathname}${url.search}`, auditLogListSchema);
+}

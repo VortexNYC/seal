@@ -1331,3 +1331,41 @@ export const apiTokens = sqliteTable(
     index("apiTokens_tokenHash_idx").on(table.tokenHash),
   ]
 );
+
+// -------------------------------------------------------------------------
+// Workspace audit log
+// -------------------------------------------------------------------------
+
+export const auditLogs = sqliteTable(
+  "audit_logs",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    actorId: text("actor_id").notNull(),
+    actorType: text("actor_type", {
+      enum: ["user", "agent", "api_token"] as const,
+    }).notNull(),
+    action: text("action").notNull(),
+    resourceType: text("resource_type").notNull(),
+    resourceId: text("resource_id"),
+    metadata: text("metadata"),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("auditLogs_organizationId_idx").on(table.organizationId),
+    index("auditLogs_actorType_idx").on(table.actorType),
+    index("auditLogs_action_idx").on(table.action),
+    index("auditLogs_resourceType_idx").on(table.resourceType),
+    index("auditLogs_createdAt_idx").on(table.createdAt),
+    index("auditLogs_organizationId_createdAt_idx").on(
+      table.organizationId,
+      table.createdAt
+    ),
+  ]
+);
