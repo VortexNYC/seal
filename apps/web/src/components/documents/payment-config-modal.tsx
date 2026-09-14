@@ -1,4 +1,10 @@
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Switch } from "@cloudflare/kumo/components/switch";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
@@ -25,13 +31,8 @@ import {
 import { parseSelectValue } from "@/lib/select-values";
 import { getErrorMessage } from "@/lib/utils";
 
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
-import { Checkbox } from "../ui/checkbox";
-import { Input } from "../ui/input";
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
-import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
   Select,
@@ -40,7 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Switch } from "../ui/switch";
 
 const MONEY_ROUNDING = "half-up" as const;
 const DRAFT_CURRENCY = "USD";
@@ -470,7 +470,7 @@ function InvoiceItemsTab({
           <InvoiceItemRow key={item.id} form={form} item={item} />
         ))}
       </div>
-      <Button variant="outline" size="sm" onClick={form.addItem}>
+      <Button variant="outline" onClick={form.addItem}>
         <PlusIcon className="mr-1 h-4 w-4" />
         Add Item
       </Button>
@@ -493,6 +493,7 @@ function InvoiceItemRow({
     <div className="flex items-start gap-2">
       <div className="flex-1 space-y-1">
         <Input
+          aria-label="Item description"
           placeholder="Description"
           value={item.description}
           onChange={(event) =>
@@ -502,6 +503,7 @@ function InvoiceItemRow({
       </div>
       <div className="w-20">
         <Input
+          aria-label="Quantity"
           type="number"
           min={1}
           placeholder="Qty"
@@ -534,8 +536,7 @@ function InvoiceItemRow({
       </div>
       <Button
         variant="ghost"
-        size="icon"
-        className="shrink-0"
+        className="h-8 w-8 shrink-0"
         aria-label="Remove invoice item"
         onClick={() => form.removeItem(item.id)}
         disabled={form.draft.items.length <= 1}
@@ -669,16 +670,14 @@ function CustomDueDateControls({
       <div className="flex gap-1.5">
         <Button
           type="button"
-          size="sm"
-          variant={draft.customDueDateMode === "days" ? "default" : "outline"}
+          variant={draft.customDueDateMode === "days" ? "primary" : "outline"}
           onClick={() => setDraftField("customDueDateMode", "days")}
         >
           Days from signing
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant={draft.customDueDateMode === "date" ? "default" : "outline"}
+          variant={draft.customDueDateMode === "date" ? "primary" : "outline"}
           onClick={() => setDraftField("customDueDateMode", "date")}
         >
           Specific date
@@ -703,6 +702,7 @@ function CustomDueDaysInput({
   return (
     <div className="flex items-center gap-2">
       <Input
+        aria-label="Days until due"
         type="number"
         min={1}
         className="w-24"
@@ -761,6 +761,7 @@ function RecurringScheduleSection({
       <div className="flex items-center gap-2">
         <span className="text-sm">Every</span>
         <Input
+          aria-label="Recurring interval count"
           type="number"
           min={1}
           className="w-20"
@@ -832,6 +833,7 @@ function RecurringEndConditionSection({
       {draft.recurringEndCondition === "after_count" && (
         <div className="flex items-center gap-2">
           <Input
+            aria-label="Recurring payment count"
             type="number"
             min={1}
             className="w-24"
@@ -866,6 +868,7 @@ function InstallmentPlanSection({
         <div className="space-y-2">
           <Label>Number of Payments</Label>
           <Input
+            aria-label="Number of payments"
             type="number"
             min={2}
             value={draft.installmentsCount}
@@ -986,6 +989,7 @@ function DepositPercentInput({
     <div className="space-y-2">
       <Label>Deposit (%)</Label>
       <Input
+        aria-label="Deposit percentage"
         type="number"
         min={1}
         max={99}
@@ -1012,6 +1016,7 @@ function BalanceDueDaysInput({
     <div className="space-y-2">
       <Label>Balance Due (days)</Label>
       <Input
+        aria-label="Balance due in days"
         type="number"
         min={1}
         value={draft.balanceDueDays}
@@ -1089,6 +1094,7 @@ function LateFeeInputs({
       <div className="space-y-1">
         <Label className="text-xs">Grace (days)</Label>
         <Input
+          aria-label="Late fee grace days"
           type="number"
           min={0}
           value={draft.lateFeeGraceDays}
@@ -1114,6 +1120,11 @@ function LateFeeAmountInput({
         {draft.lateFeeType === "percentage" ? "Rate (%)" : "Amount"}
       </Label>
       <Input
+        aria-label={
+          draft.lateFeeType === "percentage"
+            ? "Late fee rate"
+            : "Late fee amount"
+        }
         type="number"
         min={0}
         step={draft.lateFeeType === "percentage" ? 0.5 : 1}
@@ -1279,7 +1290,7 @@ function PaymentConfigFooter({
     <div className="mt-4 flex items-center justify-between gap-2 border-t pt-4">
       <div className="flex flex-1 items-center gap-2">
         <Badge
-          variant="outline"
+          variant="neutral"
           className="border-field-payment-border text-field-payment"
         >
           Total: {formatCents(total)}
