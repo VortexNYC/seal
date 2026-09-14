@@ -1,10 +1,12 @@
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
+import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Popover } from "@cloudflare/kumo/components/popover";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
@@ -57,12 +59,6 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
@@ -1722,50 +1718,52 @@ function DocumentsPage() {
             {/* SEA-74: Date Range Filter */}
             <div className="w-full sm:ml-2 sm:w-auto sm:border-l sm:pl-2">
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={dateRange?.from ? "primary" : "outline"}
-                    size="sm"
-                    className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {dateRange.from.toLocaleDateString("en-US", {
+                <Popover.Trigger
+                  render={
+                    <Button
+                      variant={dateRange?.from ? "primary" : "outline"}
+                      size="sm"
+                      className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {dateRange.from.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}{" "}
+                            -{" "}
+                            {dateRange.to.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </>
+                        ) : (
+                          dateRange.from.toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                          })}{" "}
-                          -{" "}
-                          {dateRange.to.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </>
+                            year: "numeric",
+                          })
+                        )
                       ) : (
-                        dateRange.from.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      )
-                    ) : (
-                      "Date Range"
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
+                        "Date Range"
+                      )}
+                    </Button>
+                  }
+                />
+                <Popover.Content className="w-auto p-0" align="start">
+                  <DatePicker
                     mode="range"
                     selected={dateRange}
-                    onSelect={setDateRange}
+                    onChange={setDateRange}
                     numberOfMonths={1}
                     className="sm:hidden"
                   />
-                  <Calendar
+                  <DatePicker
                     mode="range"
                     selected={dateRange}
-                    onSelect={setDateRange}
+                    onChange={setDateRange}
                     numberOfMonths={2}
                     className="hidden sm:block"
                   />
@@ -1781,7 +1779,7 @@ function DocumentsPage() {
                       </Button>
                     </div>
                   )}
-                </PopoverContent>
+                </Popover.Content>
               </Popover>
             </div>
           </div>
