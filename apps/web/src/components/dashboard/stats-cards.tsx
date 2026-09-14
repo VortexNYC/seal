@@ -6,6 +6,8 @@
  * entrance animations for a refined editorial feel.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Progress } from "@cloudflare/kumo/primitives/progress";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   CheckCircle2Icon,
@@ -15,8 +17,6 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { getDocumentStats } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ function StatCard({
   children,
 }: StatCardProps): React.ReactElement {
   return (
-    <Card
+    <LayerCard
       className={cn("group relative overflow-hidden", accentClassName)}
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
@@ -58,27 +58,29 @@ function StatCard({
         strokeWidth={1}
       />
 
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-medium tracking-wide">
-          {title}
-        </CardTitle>
-        <div
-          className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-lg",
-            iconClassName
-          )}
-        >
-          <Icon className="h-4 w-4" />
+      <LayerCard.Secondary>
+        <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <h3 className="text-muted-foreground text-sm font-medium tracking-wide">
+            {title}
+          </h3>
+          <div
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg",
+              iconClassName
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         <div className="font-serif text-3xl font-normal tracking-tight tabular-nums">
           {value}
         </div>
         <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>
         {children}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
 
@@ -132,7 +134,11 @@ export function StatsCards({
         accentClassName="border-brand-200/40 dark:border-brand-800/30"
         index={3}
       >
-        <Progress value={stats.completionRate} className="mt-3 h-1.5" />
+        <Progress.Root value={stats.completionRate}>
+          <Progress.Track className="mt-3 h-1.5">
+            <Progress.Indicator />
+          </Progress.Track>
+        </Progress.Root>
       </StatCard>
     </div>
   );

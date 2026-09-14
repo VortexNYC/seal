@@ -6,15 +6,9 @@
  * progress-bar-per-status approach with a single proportional visualization.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getDocumentStats } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -80,17 +74,19 @@ export function StatusBreakdown({
   const total = stats.total || 1;
 
   return (
-    <Card
+    <LayerCard
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
         animationDelay: "280ms",
       }}
     >
-      <CardHeader>
-        <CardTitle>Status Breakdown</CardTitle>
-        <CardDescription>Document distribution by status</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <LayerCard.Secondary>
+        <h3 className="text-base font-semibold">Status Breakdown</h3>
+        <p className="text-muted-foreground text-sm">
+          Document distribution by status
+        </p>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         {breakdown.length === 0 ? (
           <div className="text-muted-foreground flex h-24 items-center justify-center text-sm">
             No documents yet
@@ -132,7 +128,7 @@ export function StatusBreakdown({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }

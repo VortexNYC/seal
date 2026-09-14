@@ -2,10 +2,10 @@
  * Dashboard Export Dialog Component
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
 import { DownloadIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,

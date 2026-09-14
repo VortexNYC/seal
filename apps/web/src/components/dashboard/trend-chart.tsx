@@ -5,6 +5,7 @@
  * Uses semantic color tokens (no hardcoded hex values) and fades in on mount.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
@@ -16,13 +17,6 @@ import {
   YAxis,
 } from "recharts";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getDocumentTrends } from "@/lib/api-client";
 
 interface TrendChartProps {
@@ -50,7 +44,7 @@ export function TrendChart({
   const hasData = chartData.some((d) => d.created > 0 || d.completed > 0);
 
   return (
-    <Card
+    <LayerCard
       data-testid="document-activity-section"
       className="lg:col-span-2"
       style={{
@@ -58,15 +52,17 @@ export function TrendChart({
         animationDelay: "200ms",
       }}
     >
-      <CardHeader className="pb-2 sm:pb-6">
-        <CardTitle className="text-base sm:text-lg">
-          Document Activity
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm">
-          Created and completed over the last 30 days
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pl-0 sm:pl-6">
+      <LayerCard.Secondary>
+        <div className="pb-2 sm:pb-6">
+          <h3 className="text-base font-semibold sm:text-lg">
+            Document Activity
+          </h3>
+          <p className="text-muted-foreground text-xs sm:text-sm">
+            Created and completed over the last 30 days
+          </p>
+        </div>
+      </LayerCard.Secondary>
+      <LayerCard.Primary className="pl-0 sm:pl-6">
         {hasData ? (
           <div
             style={{
@@ -187,7 +183,7 @@ export function TrendChart({
             </span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }
