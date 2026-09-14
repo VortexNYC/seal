@@ -21,7 +21,6 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   ArrowDownIcon,
   ArrowUpIcon,

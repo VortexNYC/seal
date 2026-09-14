@@ -1321,8 +1321,6 @@ export async function updateDocumentPermission(
   );
 }
 
-
-
 const recipientSchema = z.object({
   id: z.string(),
   publicId: z.string(),

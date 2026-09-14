@@ -23,8 +23,8 @@ import { TrendChart } from "@/components/dashboard/trend-chart";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({

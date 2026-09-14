@@ -5,8 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { addRecipients, getContacts } from "@/lib/api-client";
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
+import { addRecipients, getContacts } from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";

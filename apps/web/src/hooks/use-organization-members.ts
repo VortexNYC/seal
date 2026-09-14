@@ -22,7 +22,7 @@ function toView(
       image?: string | null;
     } | null;
   },
-  status: "active" | "pending",
+  status: "active" | "pending"
 ): OrganizationMemberView {
   return {
     userId: member.userId,
@@ -39,7 +39,10 @@ export function useOrganizationMembers(slug: string, enabled = true) {
     queryKey: ["organizations", slug, "members"],
     queryFn: async (): Promise<OrganizationMemberView[]> => {
       const client = getBetterAuthUiClient();
-      if (client === null || client.organization?.getFullOrganization === undefined) {
+      if (
+        client === null ||
+        client.organization?.getFullOrganization === undefined
+      ) {
         throw new Error("Organization members are not available.");
       }
 
@@ -64,8 +67,8 @@ export function useOrganizationMembers(slug: string, enabled = true) {
               role: invitation.role ?? "member",
               user: { name: null, email: invitation.email, image: null },
             },
-            "pending",
-          ),
+            "pending"
+          )
         );
 
       return [...active, ...pending];
