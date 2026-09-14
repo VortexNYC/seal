@@ -6,6 +6,7 @@ import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
+import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
   useMutation,
   useQueryClient,
@@ -62,11 +63,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
@@ -678,11 +674,11 @@ function DocumentAiStatus({
 }) {
   if (status === "processing") {
     return tooltip ? (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
-        </TooltipTrigger>
-        <TooltipContent>AI analyzing document</TooltipContent>
+      <Tooltip
+        content="AI analyzing document"
+        render={<span className="inline-flex" />}
+      >
+        <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
       </Tooltip>
     ) : (
       <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
@@ -690,11 +686,11 @@ function DocumentAiStatus({
   }
   if (status !== "completed") return null;
   return tooltip ? (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <SparklesIcon className="text-ai-accent h-3 w-3" />
-      </TooltipTrigger>
-      <TooltipContent>AI analysis complete</TooltipContent>
+    <Tooltip
+      content="AI analysis complete"
+      render={<span className="inline-flex" />}
+    >
+      <SparklesIcon className="text-ai-accent h-3 w-3" />
     </Tooltip>
   ) : (
     <SparklesIcon className="text-ai-accent h-3 w-3" />
