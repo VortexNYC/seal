@@ -4,6 +4,7 @@ import { createMiddleware } from "hono/factory";
 
 import { createD1 } from "../global/db.js";
 import { apiTokens, organization, user } from "../global/schema.js";
+import { writeAuditLog } from "./audit-log.js";
 import type { McpAccessToken } from "./mcp-auth.js";
 import type { Variables } from "./types.js";
 
@@ -104,6 +105,23 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
     kind: "api",
   };
   c.set("mcp", mcp);
+
+  await writeAuditLog(db, {
+    organizationId: orgRecord.id,
+    actor: { type: "api_token", id: token.id },
+    action: "api_token.authenticated",
+    resourceType: "api_token",
+    resourceId: token.id,
+    metadata: {
+      method: c.req.method,
+      path: c.req.path,
+      publicId: token.publicId,
+    },
+    ipAddress:
+      c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+    userAgent: c.req.header("user-agent"),
+  });
+
   return true;
 }
 

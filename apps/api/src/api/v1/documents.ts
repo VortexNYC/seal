@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
+import { getAuditActor, writeAuditLog } from "../../platform/audit-log.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
@@ -424,6 +425,21 @@ app.post("/", async (c) => {
   const row = inserted[0];
   if (!row) {
     return c.json({ error: "server_error" }, 500);
+  }
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.create",
+      resourceType: "document",
+      resourceId: docId,
+      metadata: { publicId: row.publicId },
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      userAgent: c.req.header("user-agent"),
+    });
   }
 
   return c.json(toApiDocument(row, { total: 0, signed: 0 }));

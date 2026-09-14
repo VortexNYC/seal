@@ -18,6 +18,7 @@ import savedSignatures from "./api/saved-signatures.js";
 import users from "./api/users.js";
 import accountV1 from "./api/v1/account.js";
 import analyticsV1 from "./api/v1/analytics.js";
+import auditLogsV1 from "./api/v1/audit-logs.js";
 import auditV1 from "./api/v1/audit.js";
 import contactsV1 from "./api/v1/contacts.js";
 import documentsV1 from "./api/v1/documents.js";
@@ -787,6 +788,7 @@ app.route("/api/saved-signatures", savedSignatures);
 app.route("/api/users", users);
 
 app.route("/api/v1/organizations/:organizationSlug/tokens", tokensV1);
+app.route("/api/v1/organizations/:organizationSlug/audit", auditLogsV1);
 
 app.use("/api/v1/*", async (c, next) => {
   if (c.req.path === "/api/v1/uploads" && c.req.method === "POST") {

@@ -166,6 +166,68 @@ describe("api v1 tokens", () => {
     expect(res.status).toBe(403);
   });
 
+  it("writes audit events for token operations and lists them", async () => {
+    const { slug, plaintext } = await seedTokenContext();
+
+    const createRes = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ name: "Audit", scopes: ["read"] }),
+        }
+      ),
+      env
+    );
+    expect(createRes.status).toBe(201);
+
+    const auditRes = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/audit?action=api_token.create`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    expect(auditRes.status).toBe(200);
+    const body = (await auditRes.json()) as {
+      entries: Array<{
+        action: string;
+        actorType: string;
+        resourceType: string;
+      }>;
+    };
+    expect(body.entries.some((e) => e.action === "api_token.create")).toBe(
+      true
+    );
+    expect(body.entries[0]?.actorType).toBe("api_token");
+    expect(body.entries[0]?.resourceType).toBe("api_token");
+  });
+
+  it("rejects non-admin API token from the audit log", async () => {
+    const { slug, plaintext } = await seedTokenContext({
+      tokenScopes: ["read"],
+    });
+
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/audit`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("rejects a revoked or unknown token", async () => {
     const { slug, plaintext } = await seedTokenContext();
     const db = createD1(env.D1);
